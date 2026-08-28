@@ -2,7 +2,7 @@
 
 ## Pull request
 
-**Title:** `feat(epic-1): add explicit address search outcomes`
+**Title:** `E1-US1-AC2–AC4: Add explicit address search outcomes`
 
 **Provisional target:** the Epic 1 integration branch after AC1 and the service-worker fix are incorporated  
 **Source branch:** `feature/e1-us1-ac2-ac4-address-search`
