@@ -94,3 +94,10 @@ export const NEW_VERSION_READY =
   'A new version is ready. It is applied when you choose to reload — nothing changes until then.';
 
 export const RELOAD_NOW = 'Reload now';
+
+// ── E1-US1-AC1 address confirmation ─────────────────────────────────────────
+
+export const CONFIRM_ADDRESS_QUESTION = 'Is this the place you want to save?';
+export const PLACE_NAME_LABEL = 'Place name';
+export const SAVE_THIS_PLACE = 'Save this place';
+export const SEARCH_AGAIN = 'Search again';

@@ -9,11 +9,19 @@ export default defineConfig({
   fullyParallel: true,
   reporter: [['list']],
   use: { baseURL: `http://localhost:${PORT}` },
-  webServer: {
-    command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}/`,
-    reuseExistingServer: true,
-    timeout: 180_000,
-  },
+  webServer: [
+    {
+      command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
+      url: `http://localhost:${PORT}/`,
+      reuseExistingServer: true,
+      timeout: 180_000,
+    },
+    {
+      command: 'vite --config e2e/harness/vite.config.ts',
+      url: 'http://127.0.0.1:4174/',
+      reuseExistingServer: true,
+      timeout: 180_000,
+    },
+  ],
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
