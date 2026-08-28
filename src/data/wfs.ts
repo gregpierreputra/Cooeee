@@ -1,4 +1,8 @@
-import type { AddressCandidate } from '../core/types';
+import { addressQueryForCql, visibleAddressCandidates } from '../core/address-search';
+import { ADDRESS_RESULT_LIMIT, ADDRESS_SEARCH_TIMEOUT_MS } from '../core/constants';
+import type { AddressCandidate, AddressRecord } from '../core/types';
+
+const WFS_BASE_URL = 'https://opendata.maps.vic.gov.au/geoserver/wfs';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -48,4 +52,53 @@ export function parseAddressFeature(value: unknown): AddressCandidate {
     lat,
     lon,
   };
+}
+
+function parseAddressRecord(value: unknown): AddressRecord {
+  assertRecord(value, 'feature');
+  assertRecord(value.properties, 'feature.properties');
+  assertString(value.properties.property_status, 'feature.properties.property_status');
+  assertString(value.properties.is_primary, 'feature.properties.selection flag');
+
+  return {
+    candidate: parseAddressFeature(value),
+    propertyStatus: value.properties.property_status,
+    isPrimary: value.properties.is_primary === 'Y',
+  };
+}
+
+export function buildAddressSearchUrl(query: string): string {
+  const params = new URLSearchParams({
+    service: 'WFS',
+    version: '2.0.0',
+    request: 'GetFeature',
+    outputFormat: 'application/json',
+    typeNames: 'open-data-platform:address',
+    count: String(ADDRESS_RESULT_LIMIT),
+    CQL_FILTER: `property_status = 'A' AND ezi_address LIKE '${addressQueryForCql(query)}%'`,
+  });
+  return `${WFS_BASE_URL}?${params.toString()}`;
+}
+
+export async function fetchAddressCandidates(
+  query: string,
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
+): Promise<AddressCandidate[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ADDRESS_SEARCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetcher(buildAddressSearchUrl(query), {
+      method: 'GET',
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`Vicmap address search returned HTTP ${response.status}`);
+
+    const payload: unknown = await response.json();
+    assertRecord(payload, 'response');
+    if (!Array.isArray(payload.features)) throw new TypeError('response.features must be an array');
+    return visibleAddressCandidates(payload.features.map(parseAddressRecord));
+  } finally {
+    clearTimeout(timeout);
+  }
 }

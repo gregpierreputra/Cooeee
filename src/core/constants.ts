@@ -5,6 +5,12 @@
 export const PACK_RADIUS_KM = 6; // containment: distance <= radius, INCLUSIVE
 export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
 
+/** Vicmap Address runtime search limits. Three characters avoids an overly
+ * broad public-service query; ten is the approved candidate-list cap. */
+export const ADDRESS_QUERY_MIN_CHARS = 3;
+export const ADDRESS_RESULT_LIMIT = 10;
+export const ADDRESS_SEARCH_TIMEOUT_MS = 10_000;
+
 export const TILE_ZOOM_MIN = 10;
 export const TILE_ZOOM_MAX = 15;
 export const TILE_BYTES_CAP = 40 * 1024 * 1024;

@@ -25,7 +25,7 @@ describe('mandated literals', () => {
 
   it('an unmatched address says what to try next', () => {
     expect(copy.NO_ADDRESS_MATCH).toBe(
-      'No matching address found — check the spelling or try the nearest cross street.',
+      'No matching address found - check the spelling or try the nearest cross street.',
     );
   });
 
