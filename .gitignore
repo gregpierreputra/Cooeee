@@ -1,0 +1,25 @@
+## Local configs
+.c*
+.g*
+
+## Local documentations
+documentation/
+
+## Prevention of environment files from being pushed
+pro*/
+
+## Node modules
+node_modules/
+
+## Local development and testing
+dist/
+dev-dist/
+
+# Local testing and code coverage
+coverage/
+playwright-report/
+test-results/
+*.local
+
+# Vercel web application
+.vercel/
