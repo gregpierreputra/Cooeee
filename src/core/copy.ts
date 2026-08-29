@@ -135,3 +135,17 @@ export const AREA_CHECK_COULD_NOT_RUN =
   'We could not check the bushfire area for this address right now.';
 export const AREA_NOT_SAVED =
   'Nothing has been saved. Your address is still here — try again when you have a connection.';
+
+// ── E1-US1-AC8 pack conflict ──────────────────────────────────────────
+
+export const CHECKING_SAVED_PLACE = 'Checking the saved place on this device.';
+export const PLACE_ALREADY_SAVED = 'You already have a saved place.';
+export const SAVED_ADDRESS_LABEL = 'Saved address';
+export const NEW_ADDRESS_LABEL = 'New address';
+export const KEEP_SAVED_PLACE = 'Keep the saved place';
+export const REPLACE_WITH_THIS_ONE = 'Replace it with this one';
+export const SAVED_PLACE_CHECK_FAILED =
+  'We could not check the saved place on this device.';
+export const MULTIPLE_SAVED_PACKS =
+  'More than one saved pack was found on this device.';
+export const NOTHING_CHANGED = 'Nothing has been changed.';
