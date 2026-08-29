@@ -1,13 +1,14 @@
 import { canonicalJson, exactTextBytes, offerMatchesStoredSize } from '../core/pack-offer';
+import { hasCompleteSource, prepareProvenancedContent, type OmittedItem } from '../core/provenance';
 import type {
   Pack,
   PackManifest,
   PackOffer,
   RecoveryProgram,
-  Source,
   TextPackContent,
 } from '../core/types';
 import { db } from './db';
+import { manifestGroup } from './integrity';
 
 export type TileOfferMetadata = {
   bytes: number;
@@ -15,49 +16,33 @@ export type TileOfferMetadata = {
   available: boolean;
 };
 
-function validSource(source: Source): boolean {
-  return source.publisher.trim().length > 0
-    && source.url.trim().length > 0
-    && source.licence.trim().length > 0
-    && Number.isFinite(source.retrievedAt);
-}
-
 function assertContent(content: TextPackContent): void {
-  if (content.pack.sources.length === 0 || content.pack.sources.some((source) => !validSource(source))) {
+  if (content.pack.sources.length === 0 || content.pack.sources.some((source) => !hasCompleteSource(source))) {
     throw new TypeError('pack must carry complete source provenance');
   }
-  if (content.layers.some((row) => row.packId !== content.pack.id || !validSource(row.source))) {
+  if (content.layers.some((row) => row.packId !== content.pack.id || !hasCompleteSource(row.source))) {
     throw new TypeError('every layer must belong to the pack and carry complete source provenance');
   }
-  if (content.destinations.some((row) => row.packId !== content.pack.id || !validSource(row.source))) {
+  if (content.destinations.some((row) => row.packId !== content.pack.id || !hasCompleteSource(row.source))) {
     throw new TypeError('every destination must belong to the pack and carry complete source provenance');
   }
-  if (content.recovery.some((row) => !validSource(row.source))) {
+  if (content.recovery.some((row) => !hasCompleteSource(row.source))) {
     throw new TypeError('every recovery item must carry complete source provenance');
   }
 }
 
-async function sha256(value: unknown): Promise<string> {
-  const bytes = new TextEncoder().encode(canonicalJson(value));
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
 async function textManifest(content: TextPackContent): Promise<PackOffer['textManifest']> {
   return {
-    layers: { count: content.layers.length, sha256: await sha256(content.layers) },
-    destinations: {
-      count: content.destinations.length,
-      sha256: await sha256(content.destinations),
-    },
-    recovery: { count: content.recovery.length, sha256: await sha256(content.recovery) },
+    layers: await manifestGroup(content.layers),
+    destinations: await manifestGroup(content.destinations),
+    recovery: await manifestGroup(content.recovery),
   };
 }
 
-/** Produces AC9 metadata only. It performs no fetch and no device write. */
-export async function createPackOffer(
+async function createPreparedPackOffer(
   content: TextPackContent,
   tiles: TileOfferMetadata,
+  omittedItems: OmittedItem[],
 ): Promise<PackOffer> {
   assertContent(content);
   if (!Number.isInteger(tiles.bytes) || tiles.bytes < 0) {
@@ -72,8 +57,18 @@ export async function createPackOffer(
     tileBytes: tiles.bytes,
     tileCount: tiles.count,
     tilesAvailable: tiles.available,
+    omittedItems,
     textManifest: await textManifest(content),
   };
+}
+
+/** Produces AC9 metadata only. It performs no fetch and no device write. */
+export async function createPackOffer(
+  content: TextPackContent,
+  tiles: TileOfferMetadata,
+): Promise<PackOffer> {
+  const prepared = prepareProvenancedContent(content);
+  return createPreparedPackOffer(prepared.content, tiles, prepared.omittedItems);
 }
 
 function textOnlyManifest(offer: PackOffer): PackManifest {
@@ -99,13 +94,14 @@ export async function stageTextOnlyPack(
   content: TextPackContent,
   offer: PackOffer,
 ): Promise<void> {
-  assertContent(content);
-  const recovery = await storedRecovery(content.recovery);
-  const rebuiltOffer = await createPackOffer({ ...content, recovery }, {
+  const prepared = prepareProvenancedContent(content);
+  assertContent(prepared.content);
+  const recovery = await storedRecovery(prepared.content.recovery);
+  const rebuiltOffer = await createPreparedPackOffer({ ...prepared.content, recovery }, {
     bytes: offer.tileBytes,
     count: offer.tileCount,
     available: offer.tilesAvailable,
-  });
+  }, prepared.omittedItems);
   if (canonicalJson(rebuiltOffer) !== canonicalJson(offer)) {
     throw new Error('pack offer no longer matches the proposed content');
   }
@@ -122,8 +118,8 @@ export async function stageTextOnlyPack(
   await db.transaction('rw', db.packs, db.layers, db.destinations, async () => {
     if (await db.packs.get(buildingPack.id)) throw new Error('pack id already exists');
     await db.packs.add(buildingPack);
-    await db.layers.bulkAdd(content.layers);
-    await db.destinations.bulkAdd(content.destinations);
+    await db.layers.bulkAdd(prepared.content.layers);
+    await db.destinations.bulkAdd(prepared.content.destinations);
   });
 }
 
@@ -150,10 +146,11 @@ export async function verifyAndFinalizeTextOnlyPack(
   if (staged?.status !== 'building') throw new Error('building pack is missing');
   const layers = await db.layers.where('packId').equals(staged.id).toArray();
   const destinations = await db.destinations.where('packId').equals(staged.id).toArray();
-  const recovery = await storedRecovery(content.recovery);
-  const verifiedOffer = await createPackOffer(
+  const prepared = prepareProvenancedContent(content);
+  const recovery = await storedRecovery(prepared.content.recovery);
+  const verifiedOffer = await createPreparedPackOffer(
     {
-      pack: content.pack,
+      pack: prepared.content.pack,
       layers,
       destinations,
       recovery,
@@ -163,6 +160,7 @@ export async function verifyAndFinalizeTextOnlyPack(
       count: offer.tileCount,
       available: offer.tilesAvailable,
     },
+    prepared.omittedItems,
   );
   if (canonicalJson(verifiedOffer) !== canonicalJson(offer)
     || !offerMatchesStoredSize(offer, staged.sizeBytes, false)

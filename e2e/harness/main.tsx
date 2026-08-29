@@ -1,9 +1,18 @@
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import type { Pack, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
+import type {
+  Destination,
+  ExposureLayer,
+  Pack,
+  PendingPlace,
+  RecoveryProgram,
+  TextPackContent,
+} from '../../src/core/types';
 import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPack } from '../../src/data/pack-build';
 import { db } from '../../src/data/db';
+import { manifestGroup } from '../../src/data/integrity';
+import PackDetail from '../../src/ui/PackDetail';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
 import { Search } from '../../src/ui/PackNew/Search';
 import { Size, type DownloadChoice } from '../../src/ui/PackNew/Size';
@@ -17,6 +26,7 @@ declare global {
     __downloadCount: number;
     __keptSavedPlace: boolean;
     __readPacks: () => Promise<Pack[]>;
+    __readDestinations: () => Promise<Destination[]>;
     __storageCounts: () => Promise<Record<string, number>>;
   }
 }
@@ -26,6 +36,7 @@ window.__areaCheckCount = 0;
 window.__downloadCount = 0;
 window.__keptSavedPlace = false;
 window.__readPacks = () => db.packs.toArray();
+window.__readDestinations = () => db.destinations.toArray();
 window.__storageCounts = async () => Object.fromEntries(
   await Promise.all(db.tables.map(async (table) => [table.name, await table.count()])),
 );
@@ -162,7 +173,13 @@ const sizeContent: TextPackContent = {
     ...(sizeMode === 'interrupt' ? { supersedes: savedPack.id } : {}),
   },
   layers: [],
-  destinations: [],
+  destinations: sizeMode === 'omission' ? [{
+    id: 'new-pack:missing-source',
+    packId: 'new-pack',
+    kind: 'nsp-bushfire',
+    name: 'Malformed test-only item',
+    source: { ...packSource, publisher: '' },
+  }] : [],
   recovery: [recoveryProgram],
 };
 
@@ -190,6 +207,80 @@ if (window.location.pathname === '/size') {
   sizeFlow = <Size offer={offer} download={download} />;
 }
 
+const detailNow = Date.UTC(2026, 7, 29, 12);
+const detailMode = new URLSearchParams(window.location.search).get('mode') ?? 'fresh';
+const detailSavedAt = detailMode === 'stale'
+  ? detailNow - 31 * 86_400_000
+  : detailNow - 2 * 86_400_000;
+const detailLayer: ExposureLayer = {
+  id: 'detail-pack:BPA',
+  packId: 'detail-pack',
+  group: 'designation',
+  code: 'BPA',
+  status: 'present',
+  features: [{ planNumber: 'LEGL./25-138' }],
+  checkedAt: detailSavedAt,
+  source: { ...packSource, retrievedAt: detailSavedAt },
+};
+const detailDestination: Destination = {
+  id: 'detail-pack:nsp',
+  packId: 'detail-pack',
+  kind: 'nsp-bushfire',
+  name: 'Kalorama Reserve',
+  source: {
+    publisher: 'Country Fire Authority',
+    url: 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places',
+    licence: 'CFA website list — permission to be confirmed',
+    retrievedAt: detailSavedAt,
+  },
+};
+const detailRecovery: RecoveryProgram = {
+  ...recoveryProgram,
+  id: 'detail-recovery',
+  title: 'Disaster support reference',
+  source: {
+    publisher: 'Services Australia',
+    url: 'https://www.servicesaustralia.gov.au/natural-disaster-support',
+    licence: 'Public web content — attributed reference',
+    retrievedAt: detailSavedAt,
+  },
+};
+
+if (window.location.pathname === '/detail' || window.location.pathname === '/detail-launch') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  const recoveryManifest = await manifestGroup([detailRecovery]);
+  await db.packs.put({
+    ...savedPack,
+    id: 'detail-pack',
+    name: 'Kalorama',
+    address: testCandidate.address,
+    verifiedAt: detailSavedAt,
+    manifest: {
+      version: 1,
+      groups: {
+        layers: { count: 1, sha256: 'test-only' },
+        destinations: { count: 1, sha256: 'test-only' },
+        recovery: recoveryManifest,
+        tiles: { count: 0, bytes: 0 },
+      },
+    },
+  });
+  await db.layers.put(detailLayer);
+  await db.destinations.put(detailDestination);
+  await db.programs.put(detailRecovery);
+}
+
+function DetailLauncher() {
+  const [open, setOpen] = useState(false);
+  return open
+    ? <PackDetail packId="detail-pack" now={detailNow} />
+    : <main className="page"><button type="button" onClick={() => setOpen(true)}>Open test pack</button></main>;
+}
+
+const detailFlow = window.location.pathname === '/detail-launch'
+  ? <DetailLauncher />
+  : <PackDetail packId="detail-pack" now={detailNow} />;
+
 const areaFlow = (
   <Search
     search={async () => [testCandidate]}
@@ -203,6 +294,8 @@ createRoot(root).render(
     {window.location.pathname === '/conflict' ? conflictFlow
       : window.location.pathname === '/area' ? areaFlow
         : window.location.pathname === '/size' ? sizeFlow
+        : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
+          ? detailFlow
         : window.location.pathname === '/search' ? (
       <Search onPendingPlace={(place) => { window.__confirmedPlace = place; }} />
     ) : confirmation}

@@ -115,3 +115,31 @@ describe('shell copy', () => {
     expect(copy.NO_PACKS_HINT).toContain('while you have a connection');
   });
 });
+
+describe('E1-US2 mandated provenance and offline-source copy', () => {
+  it('states why one item was omitted and the storage rule behind it', () => {
+    expect(copy.ITEM_LEFT_OUT).toBe('One item was left out of your pack.');
+    expect(copy.ITEM_LEFT_OUT_REASON).toBe(
+      'It did not name who published it or when it was published, so it was not saved.',
+    );
+    expect(copy.PROVENANCE_STORAGE_RULE).toBe(
+      'Cooeee only stores information it can show you the source for.',
+    );
+    expect(copy.ITEMS_LEFT_OUT(2)).toBe('2 items were left out of your pack.');
+  });
+
+  it('states what an offline source tap cannot do and what remains local', () => {
+    expect(copy.SOURCE_IS_ON_WEB).toBe(
+      'This source is on the web, so it cannot open while you are offline.',
+    );
+    expect(copy.STORED_PROVENANCE_REMAINS).toBe(
+      'The publisher and the saved date below are stored on this device and stay readable.',
+    );
+  });
+
+  it('formats the shared publisher and saved date line exactly', () => {
+    expect(copy.PROVENANCE_LINE('Department of Transport and Planning', '3 March 2026')).toBe(
+      'Published by Department of Transport and Planning · Saved 3 March 2026',
+    );
+  });
+});

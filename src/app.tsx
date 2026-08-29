@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router';
+import { BrowserRouter, Route, Routes, useLocation, useParams } from 'react-router';
 import * as copy from './core/copy';
 import Home from './ui/Home';
+import PackDetail from './ui/PackDetail';
 import { Search } from './ui/PackNew/Search';
 
 /** main.tsx dispatches this when the service worker has a new version waiting.
@@ -45,6 +46,11 @@ function UpdateBanner({ applyUpdate }: { applyUpdate: () => void }) {
   );
 }
 
+function PackDetailRoute() {
+  const { packId = '' } = useParams();
+  return <PackDetail packId={packId} />;
+}
+
 export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   return (
     <BrowserRouter>
@@ -52,6 +58,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       <UpdateBanner applyUpdate={applyUpdate} />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
       </Routes>
     </BrowserRouter>

@@ -77,6 +77,30 @@ describe('E1-US1-AC9 offer preparation', () => {
     const bad = content({
       destinations: [destination({ source: source({ publisher: '' }) })],
     });
+    const offer = await createPackOffer(bad, tileMetadata);
+    expect(offer.omittedItems).toEqual([
+      { id: 'pack-1:nsp-0001', missing: 'publisher' },
+    ]);
+    expect(offer.textManifest.destinations.count).toBe(0);
+  });
+
+  it('omits an item with no saved date from both the offer and stored rows', async () => {
+    const proposed = content({
+      destinations: [destination({ source: source({ retrievedAt: 0 }) })],
+    });
+    const offer = await createPackOffer(proposed, tileMetadata);
+
+    await saveTextOnlyPack(proposed, offer, 999);
+
+    expect(offer.omittedItems).toEqual([
+      { id: 'pack-1:nsp-0001', missing: 'saved-date' },
+    ]);
+    expect(await db.destinations.count()).toBe(0);
+    expect((await listCompletePacks()).map(({ id }) => id)).toEqual(['pack-1']);
+  });
+
+  it('still rejects a retained item whose non-display provenance is incomplete', async () => {
+    const bad = content({ destinations: [destination({ source: source({ licence: '' }) })] });
     await expect(createPackOffer(bad, tileMetadata)).rejects.toThrow('destination');
   });
 });

@@ -167,3 +167,38 @@ export const MAPS_NOT_DOWNLOADED =
 export const PLACE_SAVED = 'Place saved';
 export const MAP_DOWNLOAD_UNAVAILABLE =
   'Map download is not available yet. Text only is still available.';
+
+// ── E1-US2-AC1–AC5 pack provenance and offline source access ───────────────
+
+export const YOUR_PACK = 'Your pack';
+export const PROVENANCE_LINE = (publisher: string, date: string) =>
+  `Published by ${publisher} · Saved ${date}`;
+export const SAVED_TODAY = 'Saved today';
+export const ITEM_DAYS_AGO = (days: number) => `${days} days ago`;
+export const NOT_RECENTLY_VERIFIED_LABEL = 'Not recently verified';
+export const STALE_PACK_STILL_WORKS =
+  'This pack still works. Refresh it when you are next online.';
+export const ITEM_LEFT_OUT = 'One item was left out of your pack.';
+export const ITEMS_LEFT_OUT = (count: number) => `${count} items were left out of your pack.`;
+export const ITEM_LEFT_OUT_REASON =
+  'It did not name who published it or when it was published, so it was not saved.';
+export const PROVENANCE_STORAGE_RULE =
+  'Cooeee only stores information it can show you the source for.';
+export const SOURCE_IS_ON_WEB =
+  'This source is on the web, so it cannot open while you are offline.';
+export const STORED_PROVENANCE_REMAINS =
+  'The publisher and the saved date below are stored on this device and stay readable.';
+export const TRY_SOURCE_AGAIN = 'Try again when you have a connection';
+export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
+export const CLOSE = 'Close';
+export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
+export const NO_STORED_ITEMS = 'This pack has no stored information items to show.';
+export const RECOVERY_ITEMS_UNVERIFIED =
+  'Saved recovery references could not be verified, so they are not shown.';
+export const DESIGNATED_BUSHFIRE_PRONE_AREA = 'Designated Bushfire Prone Area';
+export const BUSHFIRE_MANAGEMENT_OVERLAY = 'Bushfire Management Overlay';
+export const LAND_SUBJECT_TO_INUNDATION_OVERLAY = 'Land Subject to Inundation Overlay';
+export const FLOODWAY_OVERLAY = 'Floodway Overlay';
+export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
+export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
+export const OFFLINE_BASEMAP = 'Offline basemap';

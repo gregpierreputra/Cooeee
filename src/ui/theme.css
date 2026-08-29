@@ -224,6 +224,53 @@ h2 {
   font-weight: 400;
 }
 
+.pack-detail header,
+.provenance,
+.stale-note,
+.provenance-item {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pack-detail header p,
+.provenance p,
+.stale-note p {
+  margin: 0;
+}
+
+.provenance-item a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.stale-note {
+  padding-top: 0.5rem;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: rgb(0 0 0 / 70%);
+}
+
+.source-sheet {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 1rem;
+}
+
+.source-sheet p {
+  margin: 0;
+}
+
 .area-content p,
 .area-result p {
   margin: 0;

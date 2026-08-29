@@ -36,7 +36,7 @@ export default function Home() {
         <ul className="list">
           {packs.map((p) => (
             <li key={p.id} className="card">
-              <h2>{p.name}</h2>
+              <h2><Link to={`/packs/${p.id}`}>{p.name}</Link></h2>
               <p className="muted">{p.address}</p>
               <p className="muted figure">{freshness(now, p.verifiedAt).label}</p>
             </li>

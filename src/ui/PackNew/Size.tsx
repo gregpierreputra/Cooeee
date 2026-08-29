@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { packOfferSizeLine } from '../../core/pack-offer';
 import * as copy from '../../core/copy';
 import type { PackOffer } from '../../core/types';
+import StateCard from '../components/StateCard';
 
 export type DownloadChoice = 'both' | 'text-only';
 
@@ -61,6 +62,16 @@ export function Size({ offer, download }: SizeProps) {
         <div className="size-content" role="status" aria-live="polite">
           <h1>{copy.SAVED_WITHOUT_MAP_TILES}</h1>
           <p>{copy.MAPS_NOT_DOWNLOADED}</p>
+          {offer.omittedItems.length > 0 ? (
+            <StateCard
+              heading={offer.omittedItems.length === 1
+                ? copy.ITEM_LEFT_OUT
+                : copy.ITEMS_LEFT_OUT(offer.omittedItems.length)}
+              detail={copy.ITEM_LEFT_OUT_REASON}
+            >
+              <p>{copy.PROVENANCE_STORAGE_RULE}</p>
+            </StateCard>
+          ) : null}
         </div>
       </main>
     );

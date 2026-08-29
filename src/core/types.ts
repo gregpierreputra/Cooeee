@@ -182,6 +182,7 @@ export type PackOffer = {
   tileBytes: number;
   tileCount: number;
   tilesAvailable: boolean;
+  omittedItems: { id: string; missing: 'publisher' | 'saved-date' }[];
   textManifest: Omit<PackManifest['groups'], 'tiles'>;
 };
 
@@ -198,4 +199,22 @@ export type TextPackContent = {
   layers: ExposureLayer[];
   destinations: Destination[];
   recovery: RecoveryProgram[];
+};
+
+/** Raw rows behind one complete pack detail view. Recovery is shown only when
+ * its global snapshot still matches the pack's recorded manifest. */
+export type CompletePackContent = {
+  pack: Pack;
+  layers: ExposureLayer[];
+  destinations: Destination[];
+  recovery: RecoveryProgram[];
+  recoveryVerified: boolean;
+};
+
+/** A local item ready for the shared provenance renderer. This is a view model,
+ * not an IndexedDB record. */
+export type PackDetailItem = {
+  id: string;
+  name: string;
+  source: Source;
 };

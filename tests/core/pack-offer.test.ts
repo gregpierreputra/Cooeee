@@ -34,6 +34,7 @@ const offer: PackOffer = {
   tileBytes: 13_002_342,
   tileCount: 120,
   tilesAvailable: true,
+  omittedItems: [],
   textManifest: {
     layers: { count: 0, sha256: 'a' },
     destinations: { count: 1, sha256: 'b' },
