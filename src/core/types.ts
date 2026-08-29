@@ -173,3 +173,29 @@ export type BushfireAreaResult = {
   source: Source;
   snapshotDisagreed: boolean;
 };
+
+/** The versioned, device-generated AC9 build response. Metadata only: it
+ * authorises no payload request or device write by itself. */
+export type PackOffer = {
+  version: 1;
+  textBytes: number;
+  tileBytes: number;
+  tileCount: number;
+  tilesAvailable: boolean;
+  textManifest: Omit<PackManifest['groups'], 'tiles'>;
+};
+
+/** Pack identity and provenance before builder-owned lifecycle fields exist. */
+export type PackSeed = Omit<
+  Pack,
+  'status' | 'verifiedAt' | 'builtWithTiles' | 'sizeBytes' | 'manifest'
+>;
+
+/** Complete text content supplied to the local manifest builder. Recovery
+ * rows are pre-seeded global snapshot records and are verified, not rewritten. */
+export type TextPackContent = {
+  pack: PackSeed;
+  layers: ExposureLayer[];
+  destinations: Destination[];
+  recovery: RecoveryProgram[];
+};

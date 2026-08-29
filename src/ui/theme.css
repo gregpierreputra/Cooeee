@@ -204,6 +204,26 @@ h2 {
   font-weight: 400;
 }
 
+.size-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.size-content p {
+  margin: 0;
+}
+
+.pack-size {
+  color: var(--ink);
+  font-size: var(--step-1);
+}
+
+.size-actions button {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 400;
+}
+
 .area-content p,
 .area-result p {
   margin: 0;
