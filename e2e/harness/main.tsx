@@ -38,9 +38,43 @@ const confirmation = (
   />
 );
 
+const areaMode = new URLSearchParams(window.location.search).get('mode') ?? 'present';
+let areaAttempts = 0;
+const syntheticAreaCheck = async () => {
+  areaAttempts += 1;
+  if (areaMode === 'failure' || (areaMode === 'retry' && areaAttempts === 1)) {
+    throw new Error('synthetic area-check failure');
+  }
+  const status = areaMode === 'none'
+    ? 'none-mapped-here'
+    : areaMode === 'unpublished'
+      ? 'not-published'
+      : 'present';
+  return {
+    status,
+    checkedAt: Date.UTC(2026, 7, 28, 2),
+    lgaName: status === 'not-published' ? 'MELBOURNE' : 'YARRA RANGES',
+    source: {
+      publisher: 'Department of Transport and Planning',
+      url: 'https://opendata.maps.vic.gov.au/geoserver/wfs',
+      licence: 'CC BY 4.0',
+      retrievedAt: Date.UTC(2026, 7, 28, 2),
+    },
+    snapshotDisagreed: false,
+  } as const;
+};
+
+const areaFlow = (
+  <Search
+    search={async () => [testCandidate]}
+    checkArea={areaMode === 'offline' ? undefined : syntheticAreaCheck}
+    onPendingPlace={(place) => { window.__confirmedPlace = place; }}
+  />
+);
+
 createRoot(root).render(
   <StrictMode>
-    {window.location.pathname === '/search' ? (
+    {window.location.pathname === '/area' ? areaFlow : window.location.pathname === '/search' ? (
       <Search onPendingPlace={(place) => { window.__confirmedPlace = place; }} />
     ) : confirmation}
   </StrictMode>,

@@ -183,6 +183,17 @@ h2 {
   gap: 1rem;
 }
 
+.area-content,
+.area-result {
+  display: grid;
+  gap: 1rem;
+}
+
+.area-content p,
+.area-result p {
+  margin: 0;
+}
+
 .returned-address {
   margin: 0;
   padding: 1rem;

@@ -7,25 +7,30 @@ import {
 } from '../../core/address-search';
 import * as copy from '../../core/copy';
 import type { AddressCandidate, PendingPlace } from '../../core/types';
-import { fetchAddressCandidates } from '../../data/wfs';
+import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
+import { AreaCheck, type AreaCheckState } from './AreaCheck';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
 
 export type SearchProps = {
   search?: (query: string) => Promise<AddressCandidate[]>;
   onPendingPlace?: (place: PendingPlace) => void;
+  checkArea?: typeof fetchBushfireAreaResult;
 };
 
-/** E1-US1-AC2–AC4 address flow. Query and candidates live only in component
- * memory. A request is made only by an explicit submit or retry gesture. */
+/** E1-US1-AC2–AC7 address and area flow. Query, candidates and the confirmed
+ * place live only in component memory. Requests follow explicit user gestures. */
 export function Search({
   search = fetchAddressCandidates,
   onPendingPlace = () => undefined,
+  checkArea = fetchBushfireAreaResult,
 }: SearchProps) {
   const [query, setQuery] = useState('');
   const [state, setState] = useState<AddressSearchState>({ kind: 'search' });
   const [candidate, setCandidate] = useState<AddressCandidate | null>(null);
   const [validationVisible, setValidationVisible] = useState(false);
+  const [pendingPlace, setPendingPlace] = useState<PendingPlace | null>(null);
+  const [areaState, setAreaState] = useState<AreaCheckState | null>(null);
 
   async function runSearch() {
     if (!addressQueryCanRun(query)) {
@@ -47,11 +52,42 @@ export function Search({
     void runSearch();
   }
 
+  async function runAreaCheck(place: PendingPlace) {
+    setAreaState({ kind: 'checking' });
+    try {
+      setAreaState({ kind: 'result', result: await checkArea(place) });
+    } catch {
+      setAreaState({ kind: 'unavailable' });
+    }
+  }
+
+  function handleConfirmedPlace(place: PendingPlace) {
+    onPendingPlace(place);
+    setPendingPlace(place);
+    void runAreaCheck(place);
+  }
+
+  if (pendingPlace && areaState) {
+    return (
+      <AreaCheck
+        place={pendingPlace}
+        state={areaState}
+        onRetry={() => void runAreaCheck(pendingPlace)}
+        onSearchAgain={() => {
+          setPendingPlace(null);
+          setAreaState(null);
+          setCandidate(null);
+          setState({ kind: 'search' });
+        }}
+      />
+    );
+  }
+
   if (candidate) {
     return (
       <Confirm
         candidate={candidate}
-        onConfirm={onPendingPlace}
+        onConfirm={handleConfirmedPlace}
         onSearchAgain={() => {
           setCandidate(null);
           setState({ kind: 'search' });
