@@ -5,10 +5,10 @@ import { HOME_TITLE, NO_PACKS_HINT, NO_PACKS_YET } from '../src/core/copy';
 // bundle with the network genuinely off, not simulated and not inspected.
 
 const waitForController = async (page: import('@playwright/test').Page) => {
-  await page.waitForFunction(async () => {
-    const reg = await navigator.serviceWorker.getRegistration();
-    return Boolean(reg?.active);
-  });
+  // A registration exposes `active` while its worker may still be activating.
+  // `ready` resolves only when an active worker can control the current origin,
+  // preventing a reload during that narrow lifecycle race.
+  await page.evaluate(() => navigator.serviceWorker.ready);
   // registerType 'prompt' does not claim clients, so one more load hands control over.
   await page.reload();
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
