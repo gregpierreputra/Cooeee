@@ -227,7 +227,8 @@ Evidence is tied to immutable code snapshots because every lower-stack merge can
 | `45506cfc4dcda372526f84f31d92e9600d4795a9` | `npm run build` | **Passed** — production PWA generated; initial JavaScript 115.33 kB gzip, within the 150 kB budget |
 | `45506cfc4dcda372526f84f31d92e9600d4795a9` | Focused E1-US2 Playwright | **Passed** — 6/6, including always-confirm source access |
 | `1b279f376146d54bfe7454482b91945a23843904` | Full Playwright regression | **36/38 passed** — two service-worker controller timeouts on the pre-fix baseline |
-| `7383bf9f4329acd39e51ac500bc9956f6afc228f` | Full Playwright regression | **Passed locally — 38/38** after merging the corrected `main` baseline; GitHub CI confirmation pending |
+| `7383bf9f4329acd39e51ac500bc9956f6afc228f` | Full Playwright regression | **Passed locally — 38/38** after merging the corrected `main` baseline |
+| `1d25974538edfb255c3259fa25a0287082543298` | GitHub Actions | **Passed** — verify and full browser-regression jobs; Vercel deployment also passed ([workflow run](https://github.com/gregpierreputra/Cooeee/actions/runs/33288948425)) |
 
 The historical red result remains visible rather than being erased. After the merged PR #1 baseline was incorporated, the complete local suite passed 38/38; the GitHub run remains the independent confirmation.
 
@@ -288,7 +289,7 @@ No feature PR should bypass the Epic branch and merge directly into `main`.
 
 | Gap or risk | Effect | Required owner/action |
 |---|---|---|
-| Service-worker controller timing | Historical pre-fix run was red; corrected local baseline is 38/38 | Require the independent GitHub browser job to pass before merge |
+| Service-worker controller timing | Historical pre-fix run was red; corrected local and GitHub runs are green | Retain the historical evidence and rerun CI after every remaining integration |
 | Genuine destination and recovery contracts/content | US1/US2 cannot demonstrate every final production item type | Integrate reviewed EPIC 2 and EPIC 4 deliverables |
 | Reviewed production PMTiles archive | “Download both” and final basemap provenance cannot be accepted | Data owner supplies and licenses the reviewed archive |
 | Genuine refresh pipeline | US2 age messaging exists, but refresh action is not yet deliverable | Implement in its approved future story |
