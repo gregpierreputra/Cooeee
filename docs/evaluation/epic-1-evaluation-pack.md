@@ -227,9 +227,9 @@ Evidence is tied to immutable code snapshots because every lower-stack merge can
 | `45506cfc4dcda372526f84f31d92e9600d4795a9` | `npm run build` | **Passed** — production PWA generated; initial JavaScript 115.33 kB gzip, within the 150 kB budget |
 | `45506cfc4dcda372526f84f31d92e9600d4795a9` | Focused E1-US2 Playwright | **Passed** — 6/6, including always-confirm source access |
 | `1b279f376146d54bfe7454482b91945a23843904` | Full Playwright regression | **36/38 passed** — two service-worker controller timeouts on the pre-fix baseline |
-| Current integrated Epic snapshot | Full Playwright regression | **Pending** — required after `main` and the feature stack are synchronised |
+| `7383bf9f4329acd39e51ac500bc9956f6afc228f` | Full Playwright regression | **Passed locally — 38/38** after merging the corrected `main` baseline; GitHub CI confirmation pending |
 
-The red full-suite result has the same visual weight as the passing gates. PR #1 is now merged, but its change is not considered verified for Epic 1 until the Epic branch is synchronised and the complete suite is rerun.
+The historical red result remains visible rather than being erased. After the merged PR #1 baseline was incorporated, the complete local suite passed 38/38; the GitHub run remains the independent confirmation.
 
 ### Reproduction commands
 
@@ -256,6 +256,8 @@ Current GitHub state checked on 30 August 2026:
 | 4 | [#6 E1-US1-AC8](https://github.com/gregpierreputra/Cooeee/pull/6) | AC8 feature → AC1 feature | Draft, mergeable |
 | 5 | [#7 E1-US1-AC9](https://github.com/gregpierreputra/Cooeee/pull/7) | AC9 feature → AC8 feature | Draft |
 | 6 | [#8 E1-US2-AC1–AC5](https://github.com/gregpierreputra/Cooeee/pull/8) | US2 feature → AC9 feature | Draft |
+| Sync | [#9 Corrected main baseline](https://github.com/gregpierreputra/Cooeee/pull/9) | `main` → Epic 1 | Merged |
+| Sync | [#10 Reviewed AC2–AC7 integration](https://github.com/gregpierreputra/Cooeee/pull/10) | updated AC1 feature → Epic 1 | Merged |
 
 The feature PRs are intentionally stacked so each review shows only its own change. The next controlled sequence is:
 
@@ -286,7 +288,7 @@ No feature PR should bypass the Epic branch and merge directly into `main`.
 
 | Gap or risk | Effect | Required owner/action |
 |---|---|---|
-| Service-worker controller timing | The last complete run was red on the pre-fix feature baseline | Synchronise merged PR #1 into Epic 1 and rerun the complete suite |
+| Service-worker controller timing | Historical pre-fix run was red; corrected local baseline is 38/38 | Require the independent GitHub browser job to pass before merge |
 | Genuine destination and recovery contracts/content | US1/US2 cannot demonstrate every final production item type | Integrate reviewed EPIC 2 and EPIC 4 deliverables |
 | Reviewed production PMTiles archive | “Download both” and final basemap provenance cannot be accepted | Data owner supplies and licenses the reviewed archive |
 | Genuine refresh pipeline | US2 age messaging exists, but refresh action is not yet deliverable | Implement in its approved future story |
