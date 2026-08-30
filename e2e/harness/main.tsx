@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 
 import type { PendingPlace } from '../../src/core/types';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
+import { Search } from '../../src/ui/PackNew/Search';
 import '../../src/ui/theme.css';
 
 declare global {
@@ -25,16 +26,22 @@ const testCandidate = {
 const root = document.querySelector<HTMLDivElement>('#root');
 if (!root) throw new Error('Test harness root is missing');
 
+const confirmation = (
+  <Confirm
+    candidate={testCandidate}
+    onConfirm={(pendingPlace) => {
+      window.__confirmedPlace = pendingPlace;
+    }}
+    onSearchAgain={() => {
+      window.__searchAgainCount += 1;
+    }}
+  />
+);
+
 createRoot(root).render(
   <StrictMode>
-    <Confirm
-      candidate={testCandidate}
-      onConfirm={(pendingPlace) => {
-        window.__confirmedPlace = pendingPlace;
-      }}
-      onSearchAgain={() => {
-        window.__searchAgainCount += 1;
-      }}
-    />
+    {window.location.pathname === '/search' ? (
+      <Search onPendingPlace={(place) => { window.__confirmedPlace = place; }} />
+    ) : confirmation}
   </StrictMode>,
 );

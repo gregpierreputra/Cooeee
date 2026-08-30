@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router';
 import * as copy from './core/copy';
 import Home from './ui/Home';
+import { Search } from './ui/PackNew/Search';
 
 /** main.tsx dispatches this when the service worker has a new version waiting.
  *  Nothing reloads on its own: reloading someone mid-emergency is exactly the
@@ -51,6 +52,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       <UpdateBanner applyUpdate={applyUpdate} />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/packs/new" element={<Search />} />
       </Routes>
     </BrowserRouter>
   );

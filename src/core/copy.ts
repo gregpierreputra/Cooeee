@@ -18,7 +18,7 @@ export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
   `${NO_DESTINATION_PUBLISHED} — ${area}.`;
 
 export const NO_ADDRESS_MATCH =
-  'No matching address found — check the spelling or try the nearest cross street.';
+  'No matching address found - check the spelling or try the nearest cross street.';
 
 export const NO_GPS = 'No GPS fix — showing your saved information.';
 
@@ -101,3 +101,19 @@ export const CONFIRM_ADDRESS_QUESTION = 'Is this the place you want to save?';
 export const PLACE_NAME_LABEL = 'Place name';
 export const SAVE_THIS_PLACE = 'Save this place';
 export const SEARCH_AGAIN = 'Search again';
+
+// ── E1-US1-AC2–AC4 address search ──────────────────────────────────────────
+
+export const BUILD_A_PACK = 'Build a pack';
+export const ADDRESS_SEARCH_TITLE = 'Search for your address';
+export const ADDRESS_FIELD_LABEL = 'Address';
+export const SEARCH = 'Search';
+export const SEARCH_IN_PROGRESS = 'Searching for addresses.';
+export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
+export const CHOOSE_ADDRESS = 'Choose your address from the list.';
+export const CANDIDATE_LIST_LABEL = 'Address candidates';
+export const NONE_OF_THESE = 'None of these is my address';
+export const SEARCH_COULD_NOT_RUN = 'We could not search for this address right now.';
+export const SEARCH_FAILURE_MEANING =
+  'This is not the same as saying the address is not there. Try again when you have a connection.';
+export const TRY_AGAIN = 'Try again';
