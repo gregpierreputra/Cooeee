@@ -147,6 +147,14 @@ export type AddressCandidate = {
   lon: number;
 };
 
+/** Parsed Vicmap record metadata used only to filter and collapse candidates.
+ * It remains in memory and is never part of a pending or complete pack. */
+export type AddressRecord = {
+  candidate: AddressCandidate;
+  propertyStatus: string;
+  isPrimary: boolean;
+};
+
 /** The confirmed, still in-memory selection. It is not a saved place and must
  * not be written to IndexedDB before the pack commit conditions are met. */
 export type PendingPlace = {
@@ -154,4 +162,14 @@ export type PendingPlace = {
   address: string;
   lat: number;
   lon: number;
+};
+
+/** A transient official BPA check. It remains in memory until the complete
+ * pack pipeline persists an ExposureLayer in a later acceptance criterion. */
+export type BushfireAreaResult = {
+  status: Extract<LayerStatus, 'present' | 'none-mapped-here' | 'not-published'>;
+  checkedAt: number;
+  lgaName: string;
+  source: Source;
+  snapshotDisagreed: boolean;
 };

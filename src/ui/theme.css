@@ -132,9 +132,66 @@ h2 {
   flex-direction: column;
 }
 
+.search-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.search-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.search-result {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.search-result:empty {
+  display: none;
+}
+
+.search-result p {
+  margin: 0;
+}
+
+.search-actions {
+  padding-top: 2rem;
+}
+
+.candidate-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.candidate-action {
+  width: 100%;
+  min-height: 56px;
+  text-align: left;
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
 .confirm-content {
   display: grid;
   gap: 1rem;
+}
+
+.area-content,
+.area-result {
+  display: grid;
+  gap: 1rem;
+}
+
+.area-content p,
+.area-result p {
+  margin: 0;
 }
 
 .returned-address {
@@ -175,6 +232,18 @@ button,
   color: var(--accent);
   padding: 0.6rem 1rem;
   cursor: pointer;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .main-action {
