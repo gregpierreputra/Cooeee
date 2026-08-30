@@ -96,13 +96,21 @@ export function buildAddressSearchUrl(query: string): string {
   return `${WFS_BASE_URL}?${params.toString()}`;
 }
 
+/** The search runs while the user types, so a caller may supersede its own
+ * request. `signal` is the caller's cancellation, chained into the request's own
+ * timeout controller: when the typed query changes, the earlier request is
+ * aborted on the wire rather than left running and ignored. */
 export async function fetchAddressCandidates(
   query: string,
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
   onUnresolvedDuplicates: (message: string) => void = console.error,
+  signal?: AbortSignal,
 ): Promise<AddressCandidateResolution> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ADDRESS_SEARCH_TIMEOUT_MS);
+  const abortWithCaller = () => controller.abort(signal?.reason);
+  if (signal?.aborted) controller.abort(signal.reason);
+  else signal?.addEventListener('abort', abortWithCaller, { once: true });
 
   try {
     const response = await fetcher(buildAddressSearchUrl(query), {
@@ -125,6 +133,7 @@ export async function fetchAddressCandidates(
     return resolution;
   } finally {
     clearTimeout(timeout);
+    signal?.removeEventListener('abort', abortWithCaller);
   }
 }
 

@@ -18,7 +18,7 @@ export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
   `${NO_DESTINATION_PUBLISHED} — ${area}.`;
 
 export const NO_ADDRESS_MATCH =
-  'No matching address found - check the spelling or try the nearest cross street.';
+  'No matching address found — check the spelling or try the nearest cross street.';
 
 export const NO_GPS = 'No GPS fix — showing your saved information.';
 
@@ -122,6 +122,17 @@ export const ADDRESS_NOT_RESOLVED_REASON =
   'The address register holds multiple map locations for the same written address, so Cooeee cannot choose one.';
 export const REFINE_ADDRESS_HINT =
   'Check or add a unit or street number, then search again.';
+/** Both numbers, in one line. The lines on screen are the distinct addresses
+ * the user can choose, which is what AC2 counts; the register's own record count
+ * can be higher because retired records are excluded and records describing one
+ * address at one point collapse. Stating only the second number would hide the
+ * cap; stating only the first would disagree with the list. */
+export const ADDRESS_RESULT_COUNT = (returned: number, listed: number) =>
+  `The address register returned ${returned} ${returned === 1 ? 'record' : 'records'}; `
+  + `${listed} distinct ${listed === 1 ? 'address is' : 'addresses are'} listed below.`;
+export const ADDRESS_RESULT_CAPPED = (limit: number) =>
+  `Cooeee asks the register for at most ${limit} records, so there may be more. `
+  + 'Type more of the address to shorten the list.';
 export const SEARCH_COULD_NOT_RUN = 'We could not search for this address right now.';
 export const SEARCH_FAILURE_MEANING =
   'This is not the same as saying the address is not there. Try again when you have a connection.';
