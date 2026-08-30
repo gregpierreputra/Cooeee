@@ -1,7 +1,14 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { db, getCompletePack, listCompletePacks, sweepBuilding } from '../../src/data/db';
-import { destination, pack, source } from '../fixtures';
+import {
+  db,
+  getCompletePack,
+  getCompletePackContent,
+  listCompletePacks,
+  sweepBuilding,
+} from '../../src/data/db';
+import { manifestGroup } from '../../src/data/integrity';
+import { destination, pack, program, source } from '../fixtures';
 
 const layer = (packId: string) => ({
   id: `${packId}:BPA`,
@@ -43,6 +50,47 @@ describe('a pack is invisible until it is complete', () => {
     expect(await getCompletePack('half')).toBeUndefined();
   });
 
+  it('complete detail never exposes children of a building pack', async () => {
+    await db.packs.put(pack({ id: 'half', status: 'building' }));
+    await db.destinations.put(destination({ id: 'half:place', packId: 'half' }));
+    expect(await getCompletePackContent('half')).toBeUndefined();
+  });
+
+  it('loads complete owned rows and only a manifest-matching recovery snapshot', async () => {
+    const recovery = [program()];
+    const recoveryManifest = await manifestGroup(recovery);
+    await db.packs.put(pack({
+      manifest: {
+        ...pack().manifest,
+        groups: { ...pack().manifest.groups, recovery: recoveryManifest },
+      },
+    }));
+    await db.destinations.put(destination());
+    await db.programs.bulkPut(recovery);
+
+    const detail = await getCompletePackContent('pack-1');
+    expect(detail?.destinations).toEqual([destination()]);
+    expect(detail?.recovery).toEqual(recovery);
+    expect(detail?.recoveryVerified).toBe(true);
+  });
+
+  it('withholds recovery rows when the local snapshot does not match the pack manifest', async () => {
+    await db.packs.put(pack({
+      manifest: {
+        ...pack().manifest,
+        groups: {
+          ...pack().manifest.groups,
+          recovery: { count: 1, sha256: 'different' },
+        },
+      },
+    }));
+    await db.programs.put(program());
+
+    expect(await getCompletePackContent('pack-1')).toMatchObject({
+      recovery: [], recoveryVerified: false,
+    });
+  });
+
   it('returns a complete pack through both reads', async () => {
     await stage('done', 'complete');
     expect((await listCompletePacks()).map((p) => p.id)).toEqual(['done']);
@@ -53,9 +101,8 @@ describe('a pack is invisible until it is complete', () => {
     expect(await getCompletePack('never')).toBeUndefined();
   });
 
-  it('exposes no third read of packs', () => {
-    // If this list grows, a partial pack is about to become visible.
-    expect(Object.keys({ listCompletePacks, getCompletePack, sweepBuilding })).toHaveLength(3);
+  it('the detail loader also treats an unwritten pack as unavailable', async () => {
+    expect(await getCompletePackContent('never')).toBeUndefined();
   });
 });
 

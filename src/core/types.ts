@@ -1,6 +1,7 @@
 // Every record shape in the product. Pure types only — excluded from the coverage gate.
 // Three fields carry an honesty guarantee rather than a value: Pack.status,
-// ExposureLayer.status (three values, not two) and Destination.kind === 'absence'.
+// ExposureLayer.status (three verified values; unknown is never persisted) and
+// Destination.kind === 'absence'.
 
 export type Source = {
   publisher: string; // 'Department of Transport and Planning'
@@ -40,14 +41,19 @@ export type PackManifest = {
 
 export type LayerCode = 'BPA' | 'BMO' | 'LSIO' | 'FO' | 'SBO';
 
-export type LayerStatus = 'present' | 'none-mapped-here' | 'not-published';
+/** Publication is not boolean: a failed or skipped probe is not evidence that
+ * the layer is unpublished. */
+export type LayerPublicationStatus = 'published' | 'unpublished' | 'unknown';
+
+export type LayerStatus = 'present' | 'none-mapped-here' | 'not-published' | 'unknown';
+export type VerifiedLayerStatus = Exclude<LayerStatus, 'unknown'>;
 
 export type ExposureLayer = {
   id: string; // `${packId}:${code}`
   packId: string;
   group: 'designation' | 'overlay' | 'history'; // three groups, never merged
   code: LayerCode;
-  status: LayerStatus; // three values, not two
+  status: VerifiedLayerStatus; // an unknown check is never persisted as evidence
   features: {
     zoneCode?: string;
     description?: string;
@@ -137,3 +143,84 @@ export type LatLon = { lat: number; lon: number };
 /** A complete pack together with the destination rows stored against it —
  *  including any absence row. Referenced by deriveState(). */
 export type PackWithPlaces = { pack: Pack; places: Destination[] };
+
+/** A single address candidate returned by the address service. It remains in
+ * memory until the user explicitly confirms it. */
+export type AddressCandidate = {
+  address: string;
+  localityName: string;
+  lat: number;
+  lon: number;
+};
+
+/** Parsed Vicmap record metadata used only to filter and collapse candidates.
+ * It remains in memory and is never part of a pending or complete pack. */
+export type AddressRecord = {
+  candidate: AddressCandidate;
+  propertyStatus: string;
+  isPrimary: boolean;
+};
+
+/** The confirmed, still in-memory selection. It is not a saved place and must
+ * not be written to IndexedDB before the pack commit conditions are met. */
+export type PendingPlace = {
+  name: string;
+  address: string;
+  lat: number;
+  lon: number;
+};
+
+/** A transient official BPA check. It remains in memory until the complete
+ * pack pipeline persists an ExposureLayer in a later acceptance criterion. */
+export type BushfireAreaResult = {
+  status: VerifiedLayerStatus;
+  checkedAt: number;
+  lgaName: string;
+  source: Source;
+  snapshotDisagreed: boolean;
+};
+
+/** The versioned, device-generated AC9 build response. Metadata only: it
+ * authorises no payload request or device write by itself. */
+export type PackOffer = {
+  version: 1;
+  textBytes: number;
+  tileBytes: number;
+  tileCount: number;
+  tilesAvailable: boolean;
+  omittedItems: { id: string; missing: 'publisher' | 'saved-date' }[];
+  textManifest: Omit<PackManifest['groups'], 'tiles'>;
+};
+
+/** Pack identity and provenance before builder-owned lifecycle fields exist. */
+export type PackSeed = Omit<
+  Pack,
+  'status' | 'verifiedAt' | 'builtWithTiles' | 'sizeBytes' | 'manifest'
+>;
+
+/** Complete text content supplied to the local manifest builder. Recovery
+ * rows are pre-seeded global snapshot records and are verified, not rewritten. */
+export type TextPackContent = {
+  pack: PackSeed;
+  layers: ExposureLayer[];
+  destinations: Destination[];
+  recovery: RecoveryProgram[];
+};
+
+/** Raw rows behind one complete pack detail view. Recovery is shown only when
+ * its global snapshot still matches the pack's recorded manifest. */
+export type CompletePackContent = {
+  pack: Pack;
+  layers: ExposureLayer[];
+  destinations: Destination[];
+  recovery: RecoveryProgram[];
+  recoveryVerified: boolean;
+};
+
+/** A local item ready for the shared provenance renderer. This is a view model,
+ * not an IndexedDB record. */
+export type PackDetailItem = {
+  id: string;
+  name: string;
+  source: Source;
+};

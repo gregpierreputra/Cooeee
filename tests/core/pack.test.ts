@@ -54,13 +54,14 @@ describe('textBytes', () => {
 
 describe('layerStatus', () => {
   it('is present when the layer covers the point', () => {
-    expect(layerStatus(1, true)).toBe('present');
-    expect(layerStatus(3, false)).toBe('present');
+    expect(layerStatus(1, 'published')).toBe('present');
+    expect(layerStatus(3, 'unknown')).toBe('present');
   });
 
   it('distinguishes "published here but not at this address" from "not published at all"', () => {
-    expect(layerStatus(0, true)).toBe('none-mapped-here');
-    expect(layerStatus(0, false)).toBe('not-published');
+    expect(layerStatus(0, 'published')).toBe('none-mapped-here');
+    expect(layerStatus(0, 'unpublished')).toBe('not-published');
+    expect(layerStatus(0, 'unknown')).toBe('unknown');
   });
 });
 
