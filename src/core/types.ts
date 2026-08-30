@@ -163,3 +163,13 @@ export type PendingPlace = {
   lat: number;
   lon: number;
 };
+
+/** A transient official BPA check. It remains in memory until the complete
+ * pack pipeline persists an ExposureLayer in a later acceptance criterion. */
+export type BushfireAreaResult = {
+  status: Extract<LayerStatus, 'present' | 'none-mapped-here' | 'not-published'>;
+  checkedAt: number;
+  lgaName: string;
+  source: Source;
+  snapshotDisagreed: boolean;
+};

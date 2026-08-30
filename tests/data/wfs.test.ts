@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildBushfireAreaAtPointUrl,
+  buildBushfireAreaExistenceUrl,
+  buildLgaAtPointUrl,
   buildAddressSearchUrl,
   fetchAddressCandidates,
+  fetchBushfireAreaResult,
   parseAddressFeature,
+  parseLgaName,
 } from '../../src/data/wfs';
+import type { PendingPlace } from '../../src/core/types';
 
 function feature(overrides: Record<string, unknown> = {}) {
   return {
@@ -95,5 +101,145 @@ describe('address search request', () => {
   it('rejects a drifted feature-collection shape', async () => {
     const fetcher = async () => new Response(JSON.stringify({ features: null }), { status: 200 });
     await expect(fetchAddressCandidates('ridge', fetcher)).rejects.toThrow(TypeError);
+  });
+});
+
+const pendingPlace: PendingPlace = {
+  name: 'KALORAMA',
+  address: '6 RIDGE ROAD KALORAMA 3766',
+  lat: -37.817939,
+  lon: 145.36594,
+};
+
+function featureCollection(features: unknown[]) {
+  return { type: 'FeatureCollection', features };
+}
+
+function propertiesFeature(properties: Record<string, unknown>) {
+  return { type: 'Feature', properties };
+}
+
+function areaFetcher(options: {
+  pointHits: number;
+  liveExists?: boolean;
+  snapshotPublishedIn?: string[];
+  lgaName?: string;
+}) {
+  return async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === '/data/index.json') {
+      return Response.json({ layerExtent: { file: 'layer-extent.v2026-08-28.json' } });
+    }
+    if (url === '/data/layer-extent.v2026-08-28.json') {
+      return Response.json({
+        layers: { BPA: { publishedIn: options.snapshotPublishedIn ?? ['YARRA RANGES'] } },
+      });
+    }
+    const parsed = new URL(url);
+    const type = parsed.searchParams.get('typeNames');
+    const filter = parsed.searchParams.get('CQL_FILTER') ?? '';
+    if (type === 'open-data-platform:lga_polygon') {
+      return Response.json(featureCollection([
+        propertiesFeature({ lga_name: options.lgaName ?? 'YARRA RANGES' }),
+      ]));
+    }
+    if (filter.startsWith('INTERSECTS')) {
+      return Response.json(featureCollection(
+        options.pointHits > 0 ? [propertiesFeature({
+          lga_name: 'YARRA RANGES',
+          plan_number: 'LEGL./25-138',
+          gazettal_date: '10/07/2025',
+        })] : [],
+      ));
+    }
+    return Response.json(featureCollection(
+      options.liveExists === false ? [] : [propertiesFeature({ lga_name: 'YARRA RANGES' })],
+    ));
+  };
+}
+
+describe('bushfire-area request', () => {
+  it('uses latitude then longitude and never requests polygon geometry', () => {
+    for (const urlText of [buildLgaAtPointUrl(pendingPlace), buildBushfireAreaAtPointUrl(pendingPlace)]) {
+      const url = new URL(urlText);
+      expect(url.searchParams.get('CQL_FILTER')).toContain('POINT(-37.817939 145.36594)');
+      expect(url.searchParams.get('propertyName')).toBeTruthy();
+    }
+    expect(new URL(buildBushfireAreaAtPointUrl(pendingPlace)).searchParams.get('propertyName'))
+      .toBe('lga_name,plan_number,gazettal_date');
+  });
+
+  it('escapes the LGA name in the existence probe', () => {
+    expect(new URL(buildBushfireAreaExistenceUrl("O'CONNOR")).searchParams.get('CQL_FILTER'))
+      .toBe("lga_name='O''CONNOR'");
+  });
+
+  it('asserts the LGA response shape', () => {
+    expect(parseLgaName(featureCollection([propertiesFeature({ lga_name: 'YARRA RANGES' })])))
+      .toBe('YARRA RANGES');
+    expect(() => parseLgaName(featureCollection([]))).toThrow('exactly one');
+    expect(() => parseLgaName(featureCollection([propertiesFeature({})]))).toThrow('lga_name');
+  });
+
+  it('returns present without an absence probe', async () => {
+    const requests: string[] = [];
+    const base = areaFetcher({ pointHits: 1 });
+    const fetcher = async (input: RequestInfo | URL) => {
+      requests.push(String(input));
+      return base(input);
+    };
+    const result = await fetchBushfireAreaResult(pendingPlace, fetcher, () => 123);
+    expect(result.status).toBe('present');
+    expect(result.source).toMatchObject({
+      publisher: 'Department of Transport and Planning', licence: 'CC BY 4.0', retrievedAt: 123,
+    });
+    expect(requests.some((url) => url.includes("lga_name%3D"))).toBe(false);
+  });
+
+  it('distinguishes mapped absence from unpublished coverage using the live probe', async () => {
+    await expect(fetchBushfireAreaResult(
+      pendingPlace,
+      areaFetcher({ pointHits: 0, liveExists: true }),
+      () => 123,
+    )).resolves.toMatchObject({ status: 'none-mapped-here', snapshotDisagreed: false });
+    await expect(fetchBushfireAreaResult(
+      pendingPlace,
+      areaFetcher({
+        pointHits: 0,
+        liveExists: false,
+        snapshotPublishedIn: [],
+        lgaName: 'MELBOURNE',
+      }),
+      () => 123,
+    )).resolves.toMatchObject({ status: 'not-published', snapshotDisagreed: false });
+  });
+
+  it('prefers the live probe and raises a defect signal on snapshot drift', async () => {
+    const defects: string[] = [];
+    const result = await fetchBushfireAreaResult(
+      pendingPlace,
+      areaFetcher({ pointHits: 0, liveExists: false, snapshotPublishedIn: ['YARRA RANGES'] }),
+      () => 123,
+      (message) => defects.push(message),
+    );
+    expect(result).toMatchObject({ status: 'not-published', snapshotDisagreed: true });
+    expect(defects).toEqual(['BPA extent snapshot disagrees with live probe for YARRA RANGES']);
+  });
+
+  it('rejects a failed request so the UI can show AC7 without storing a value', async () => {
+    const fetcher = async () => new Response('', { status: 503 });
+    await expect(fetchBushfireAreaResult(pendingPlace, fetcher)).rejects.toThrow('HTTP 503');
+  });
+
+  it('rejects drift in a positive bushfire-area feature', async () => {
+    const base = areaFetcher({ pointHits: 1 });
+    const fetcher = async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      if (url.searchParams.get('typeNames') === 'open-data-platform:bushfire_prone_area') {
+        return Response.json(featureCollection([propertiesFeature({ lga_name: 'YARRA RANGES' })]));
+      }
+      return base(input);
+    };
+    await expect(fetchBushfireAreaResult(pendingPlace, fetcher)).rejects.toThrow('plan_number');
   });
 });

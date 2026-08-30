@@ -117,3 +117,21 @@ export const SEARCH_COULD_NOT_RUN = 'We could not search for this address right 
 export const SEARCH_FAILURE_MEANING =
   'This is not the same as saying the address is not there. Try again when you have a connection.';
 export const TRY_AGAIN = 'Try again';
+
+// ── E1-US1-AC5–AC7 bushfire-area check ─────────────────────────────
+
+export const AREA_CHECK_IN_PROGRESS = 'Checking the published bushfire area.';
+export const INSIDE_BUSHFIRE_AREA =
+  'This address is inside a Designated Bushfire Prone Area.';
+export const NOTHING_MAPPED_AT_ADDRESS =
+  'No Designated Bushfire Prone Area is mapped at this address in the current planning scheme.';
+export const AREA_NOT_PUBLISHED =
+  'The Designated Bushfire Prone Area is not published for this area — Department of Transport and Planning.';
+export const DTP_SAVED_DATE = (date: string) =>
+  `Published by the Department of Transport and Planning, saved ${date}.`;
+export const OFFICIAL_INSTRUCTIONS_FIRST =
+  'Follow CFA and emergency service instructions first.';
+export const AREA_CHECK_COULD_NOT_RUN =
+  'We could not check the bushfire area for this address right now.';
+export const AREA_NOT_SAVED =
+  'Nothing has been saved. Your address is still here — try again when you have a connection.';

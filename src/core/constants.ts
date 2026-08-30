@@ -11,6 +11,11 @@ export const ADDRESS_QUERY_MIN_CHARS = 3;
 export const ADDRESS_RESULT_LIMIT = 10;
 export const ADDRESS_SEARCH_TIMEOUT_MS = 10_000;
 
+/** Official area checks share one bounded request sequence. */
+export const AREA_CHECK_TIMEOUT_MS = 10_000;
+export const DTP_PUBLISHER = 'Department of Transport and Planning';
+export const DTP_LICENCE = 'CC BY 4.0';
+
 export const TILE_ZOOM_MIN = 10;
 export const TILE_ZOOM_MAX = 15;
 export const TILE_BYTES_CAP = 40 * 1024 * 1024;
