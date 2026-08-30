@@ -245,6 +245,16 @@ h2 {
   color: var(--accent);
 }
 
+/* The one way back out of a saved pack. Sits before the heading so it is the
+   first thing a keyboard or screen reader reaches. */
+.pack-detail-back {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  color: var(--accent);
+}
+
 .stale-note {
   padding-top: 0.5rem;
 }

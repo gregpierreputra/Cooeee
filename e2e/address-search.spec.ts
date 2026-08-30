@@ -3,7 +3,13 @@ import { expect, test, type Page } from '@playwright/test';
 const SEARCH_URL = 'http://127.0.0.1:4174/search';
 const WFS_PATTERN = 'https://opendata.maps.vic.gov.au/geoserver/wfs**';
 
-function addressFeature(address: string, locality: string, lon: number, lat: number) {
+function addressFeature(
+  address: string,
+  locality: string,
+  lon: number,
+  lat: number,
+  isPrimary: 'Y' | 'N' = 'Y',
+) {
   return {
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [lon, lat] },
@@ -11,7 +17,7 @@ function addressFeature(address: string, locality: string, lon: number, lat: num
       ezi_address: address,
       locality_name: locality,
       property_status: 'A',
-      is_primary: 'Y',
+      is_primary: isPrimary,
     },
   };
 }
@@ -151,4 +157,132 @@ test('AC4 retry is explicit and issues exactly one new request', async ({ page }
   await page.getByRole('button', { name: 'Try again' }).click();
   await expect(page.getByRole('status')).toContainText('No matching address found');
   expect(requests).toBe(2);
+});
+
+// ── E1-US1-AC2 duplicate visible candidates ─────────────────────────────────
+// Vicmap can return one ezi_address more than once. Identical points collapse;
+// conflicting points with no single flagged record are never guessed at.
+
+const DUP = '6 RIDGE ROAD KALORAMA 3766';
+const AMBIGUITY_REASON =
+  'The address register holds multiple map locations for the same written address, so Cooeee cannot choose one.';
+const REFINE_HINT = 'Check or add a unit or street number, then search again.';
+
+async function searchWith(page: Page, features: unknown[], query = 'RIDGE') {
+  const officialCalls: string[] = [];
+  await page.route(WFS_PATTERN, (route) => {
+    officialCalls.push(new URL(route.request().url()).searchParams.get('typeNames') ?? '');
+    return route.fulfill({ json: { type: 'FeatureCollection', features } });
+  });
+  await search(page, query);
+  return officialCalls;
+}
+
+test('AC2 collapses one repeated address returned at a single point', async ({ page }) => {
+  await searchWith(page, [
+    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'N'),
+    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'Y'),
+    addressFeature('8 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.366, -37.818),
+  ]);
+
+  const list = page.getByRole('list', { name: 'Address candidates' });
+  await expect(list.getByRole('button')).toHaveText([DUP, '8 RIDGE ROAD KALORAMA 3766']);
+  await expect(page.getByText(AMBIGUITY_REASON)).toHaveCount(0);
+});
+
+test('AC2 keeps different unit and street numbers as separate lines', async ({ page }) => {
+  const distinct = [
+    '1/6 RIDGE ROAD KALORAMA 3766',
+    '2/6 RIDGE ROAD KALORAMA 3766',
+    DUP,
+    '6A RIDGE ROAD KALORAMA 3766',
+    '16 RIDGE ROAD KALORAMA 3766',
+  ];
+  await searchWith(page, distinct.map((address) =>
+    addressFeature(address, 'KALORAMA', 145.36594, -37.817939)));
+
+  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+    .toHaveText(distinct);
+});
+
+test('AC2 retains the one flagged record when the points conflict', async ({ page }) => {
+  await searchWith(page, [
+    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'N'),
+    addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'Y'),
+  ]);
+
+  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+    .toHaveText([DUP]);
+  await expect(page.getByText(AMBIGUITY_REASON)).toHaveCount(0);
+});
+
+test('AC2 never guesses a point when conflicting records carry no flag', async ({ page }) => {
+  const officialCalls = await searchWith(page, [
+    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'N'),
+    addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'N'),
+  ]);
+
+  // The honest ambiguity state, not an empty screen and not a silent pick.
+  await expect(page.getByRole('heading', {
+    name: 'One address could not be matched to a single map location.',
+  })).toBeVisible();
+  await expect(page.getByText(AMBIGUITY_REASON)).toBeVisible();
+  await expect(page.getByText(REFINE_HINT)).toBeVisible();
+
+  // No selectable candidate, so no confirmation and no coordinate anywhere.
+  await expect(page.getByRole('list', { name: 'Address candidates' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: DUP })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Is this the place you want to save?' }))
+    .toHaveCount(0);
+  await expect(page.locator('main')).not.toContainText(/145\.|-37\.|pfi/i);
+
+  // The area check never ran and nothing was written.
+  expect(officialCalls).toEqual(['open-data-platform:address']);
+  expect(await storageIsEmpty(page)).toEqual({
+    indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
+  });
+
+  // A way forward that does not invent an answer.
+  await page.getByRole('button', { name: 'Search again' }).click();
+  await expect(page.getByLabel('Address')).toHaveValue('RIDGE');
+});
+
+test('AC2 treats more than one flagged record at conflicting points as unresolved', async ({ page }) => {
+  await searchWith(page, [
+    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'Y'),
+    addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'Y'),
+  ]);
+
+  await expect(page.getByText(AMBIGUITY_REASON)).toBeVisible();
+  await expect(page.getByRole('button', { name: DUP })).toHaveCount(0);
+});
+
+test('AC2 withholds only the unresolved address and still lists the rest', async ({ page }) => {
+  await searchWith(page, [
+    addressFeature('4 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.365, -37.817),
+    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'N'),
+    addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'N'),
+    addressFeature('8 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.366, -37.818),
+  ]);
+
+  await expect(page.getByRole('heading', { name: 'Choose your address from the list.' }))
+    .toBeVisible();
+  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+    .toHaveText(['4 RIDGE ROAD KALORAMA 3766', '8 RIDGE ROAD KALORAMA 3766']);
+  await expect(page.getByText(AMBIGUITY_REASON)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'None of these is my address' })).toBeVisible();
+});
+
+test('AC2 counts more than one unresolved address without ranking them', async ({ page }) => {
+  await searchWith(page, [
+    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'N'),
+    addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'N'),
+    addressFeature('8 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.366, -37.818, 'N'),
+    addressFeature('8 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.3661, -37.8181, 'N'),
+  ]);
+
+  await expect(page.getByRole('heading', {
+    name: '2 addresses could not be matched to a single map location.',
+  })).toBeVisible();
+  await expect(page.locator('main')).not.toContainText(/best|closest|likely|score/i);
 });
