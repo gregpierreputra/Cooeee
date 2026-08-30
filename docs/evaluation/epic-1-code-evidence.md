@@ -1,7 +1,8 @@
 # Epic 1 Code Evidence Appendix
 
 **Purpose:** focused source evidence requested in the senior tutor's initial review<br>
-**Code snapshot:** `45506cfc4dcda372526f84f31d92e9600d4795a9`<br>
+**Primary review-fix snapshot:** `45506cfc4dcda372526f84f31d92e9600d4795a9`<br>
+**Service-worker evidence update:** `9ec8906ffc1708e301c6fb37ef4dbcafc09365d2`<br>
 **Generated:** 30 August 2026
 
 This appendix copies the requested files in full so the reviewer can inspect the risk-bearing code without receiving the whole repository. The Git commit above is authoritative if a pasted excerpt and repository history ever differ.
@@ -1416,6 +1417,7 @@ test('the shell cold-starts with the radios off, and nothing reaches for the net
 
 test('the empty state states absence and never reassures', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('heading', { name: HOME_TITLE })).toBeVisible();
   const body = (await page.locator('body').textContent()) ?? '';
 
   expect(body).toContain(NO_PACKS_YET);
@@ -1613,4 +1615,3 @@ jobs:
           path: playwright-report/
           retention-days: 7
 ```
-
