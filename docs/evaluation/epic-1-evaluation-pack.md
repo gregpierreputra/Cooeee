@@ -229,7 +229,7 @@ Evidence is tied to immutable code snapshots because every lower-stack merge can
 | `1b279f376146d54bfe7454482b91945a23843904` | Full Playwright regression | **36/38 passed** — two service-worker controller timeouts on the pre-fix baseline |
 | `7383bf9f4329acd39e51ac500bc9956f6afc228f` | Full Playwright regression | **Passed locally — 38/38** after merging the corrected `main` baseline |
 | `1d25974538edfb255c3259fa25a0287082543298` | GitHub Actions | **Passed** — verify and full browser-regression jobs; Vercel deployment also passed ([workflow run](https://github.com/gregpierreputra/Cooeee/actions/runs/33288948425)) |
-| `9ec8906ffc1708e301c6fb37ef4dbcafc09365d2` | Service-worker isolation regression | **Passed locally** — focused suite 9/9 across three repetitions; complete suite 38/38 |
+| `30b5f0b64655b61221a5a5ef3c9ba00ae9761a58` | Service-worker isolation regression | **Passed locally** — focused suite 15/15 across five repetitions; the assertion now waits for the asynchronous empty state itself |
 
 The historical red result remains visible rather than being erased. After the merged PR #1 baseline was incorporated, the complete local suite passed 38/38; the GitHub run remains the independent confirmation.
 
