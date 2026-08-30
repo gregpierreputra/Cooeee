@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   areaCheckView,
+  bpaExposureLayer,
   extentSnapshotDisagrees,
   formatSavedDate,
   resolveBushfireAreaStatus,
@@ -62,6 +63,31 @@ describe('E1-US1-AC5–AC7 area decisions', () => {
       copy.NOTHING_MAPPED_AT_ADDRESS,
     );
     expect(areaCheckView(result('not-published')).resultLine).toBe(copy.AREA_NOT_PUBLISHED);
+  });
+});
+
+describe('bpaExposureLayer', () => {
+  it.each(['present', 'none-mapped-here', 'not-published'] as const)(
+    'carries the checked status %s and the official source through unchanged',
+    (status) => {
+      const layer = bpaExposureLayer('pack-1', result(status));
+      expect(layer).toEqual({
+        id: 'pack-1:BPA',
+        packId: 'pack-1',
+        group: 'designation',
+        code: 'BPA',
+        status,
+        features: [],
+        checkedAt: result(status).checkedAt,
+        source: result(status).source,
+      });
+    },
+  );
+
+  it('fetches no new data — it only reshapes the already-fetched result', () => {
+    const layer = bpaExposureLayer('pack-2', result('present'));
+    expect(layer.packId).toBe('pack-2');
+    expect(layer.id).toBe('pack-2:BPA');
   });
 });
 

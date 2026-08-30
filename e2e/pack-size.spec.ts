@@ -37,10 +37,17 @@ test('AC9 text-only consent stores one exact complete zero-tile pack', async ({ 
   const sizeLine = await page.locator('.pack-size').textContent();
   await page.getByRole('button', { name: 'Text only' }).click();
 
-  await expect(page.getByRole('heading')).toHaveText('Saved without map tiles');
+  // One screen carries every approved piece of information: AC1's "Place saved"
+  // and the confirmed address, together with AC9's text-only outcome.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
+  await expect(page.getByTestId('saved-address')).toHaveText('6 RIDGE ROAD KALORAMA 3766');
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText('Saved without map tiles');
   await expect(page.getByRole('status')).toContainText(
     'Maps were not downloaded. Everything else in this pack works offline.',
   );
+  const openSavedPack = page.getByRole('button', { name: 'Open saved pack' });
+  await expect(openSavedPack).toBeVisible();
+
   const stored = await packs(page);
   expect(stored).toHaveLength(1);
   expect(stored[0]).toMatchObject({
@@ -51,6 +58,10 @@ test('AC9 text-only consent stores one exact complete zero-tile pack', async ({ 
   expect(sizeLine).toContain(`${Math.ceil(stored[0].sizeBytes.text / 1024)} KB`);
   expect(await counts(page)).toMatchObject({ packs: 1, layers: 0, destinations: 0, tiles: 0 });
   await expect(page.locator('canvas, [role="img"], .map')).toHaveCount(0);
+
+  expect(await page.evaluate(() => window.__continueCount)).toBe(0);
+  await openSavedPack.click();
+  expect(await page.evaluate(() => window.__continueCount)).toBe(1);
 });
 
 test('AC9 interrupted staging cleans immediately and preserves the previous pack', async ({ page }) => {
@@ -68,7 +79,8 @@ test('AC9 interrupted staging cleans immediately and preserves the previous pack
   expect(await counts(page)).toMatchObject({ packs: 1, layers: 0, destinations: 0, tiles: 0 });
 
   await page.getByRole('button', { name: 'Try again' }).click();
-  await expect(page.getByRole('heading')).toHaveText('Saved without map tiles');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText('Saved without map tiles');
   expect((await packs(page)).map(({ id }) => id)).toEqual(['new-pack']);
 });
 

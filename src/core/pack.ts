@@ -1,7 +1,7 @@
-import { MS_PER_DAY, PACK_REFRESH_DAYS } from './constants';
-import { NOT_RECENTLY_VERIFIED, SAVED_DAYS_AGO } from './copy';
+import { MS_PER_DAY, PACK_RADIUS_KM, PACK_REFRESH_DAYS } from './constants';
+import { NOT_RECENTLY_VERIFIED, OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from './copy';
 import { resolveBushfireAreaStatus } from './area-check';
-import type { LayerPublicationStatus, LayerStatus, Pack } from './types';
+import type { LayerPublicationStatus, LayerStatus, Pack, PackSeed, PendingPlace, Source } from './types';
 
 /** Whole days since the pack was last verified. Freshness derives from
  *  verifiedAt, never createdAt. */
@@ -30,6 +30,33 @@ export const layerStatus = (
   hitsAtPoint: number,
   publication: LayerPublicationStatus,
 ): LayerStatus => resolveBushfireAreaStatus(hitsAtPoint, publication);
+
+/** The seed for a pack built from an already-confirmed place and an
+ * already-fetched official area result. The reminder defaults to the same
+ * mandated priority line shown on the area-result screen — there is no
+ * reminder-editing surface yet, so nothing invented is stored in its place. */
+export function buildPackSeed(
+  id: string,
+  createdAt: number,
+  place: PendingPlace,
+  lgaName: string,
+  source: Source,
+  existingPackId?: string,
+): PackSeed {
+  return {
+    id,
+    name: place.name,
+    address: place.address,
+    lat: place.lat,
+    lon: place.lon,
+    radiusKm: PACK_RADIUS_KM,
+    lgaName,
+    createdAt,
+    reminder: OFFICIAL_INSTRUCTIONS_FIRST,
+    sources: [source],
+    ...(existingPackId ? { supersedes: existingPackId } : {}),
+  };
+}
 
 export type PackFieldChange = { field: string; from: unknown; to: unknown };
 

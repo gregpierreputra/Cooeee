@@ -94,3 +94,32 @@ test('AC7 maps genuine browser offline mode to the same state', async ({ page, c
   await expect(page.getByTestId('pending-address')).toHaveText(ADDRESS);
   await context.setOffline(false);
 });
+
+test('AC9 an offer that could not be prepared offers Try again and Search again, and Search again writes nothing', async ({ page }) => {
+  await page.goto(`${AREA_URL}?mode=present&offer=fail`);
+  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByRole('button', { name: ADDRESS }).click();
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await page.getByRole('button', { name: 'See pack size' }).click();
+
+  await expect(page.getByText('We could not prepare this pack right now.')).toBeVisible();
+  const tryAgain = page.getByRole('button', { name: 'Try again' });
+  const searchAgain = page.getByRole('button', { name: 'Search again' });
+  await expect(tryAgain).toBeVisible();
+  await expect(searchAgain).toBeVisible();
+
+  // Try again re-attempts and fails again the same way — still no write.
+  await tryAgain.click();
+  await expect(page.getByText('We could not prepare this pack right now.')).toBeVisible();
+  expect(await deviceStorage(page)).toMatchObject({
+    recordCounts: { packs: 0, layers: 0, destinations: 0, tiles: 0 },
+  });
+
+  await searchAgain.click();
+  await expect(page.getByRole('heading', { name: 'Search for your address' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
+  expect(await deviceStorage(page)).toMatchObject({
+    recordCounts: { packs: 0, layers: 0, destinations: 0, tiles: 0 },
+  });
+});

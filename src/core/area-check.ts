@@ -1,6 +1,6 @@
 import * as copy from './copy';
 import { formatSavedDate } from './provenance';
-import type { BushfireAreaResult, LayerPublicationStatus, LayerStatus } from './types';
+import type { BushfireAreaResult, ExposureLayer, LayerPublicationStatus, LayerStatus } from './types';
 
 export { formatSavedDate } from './provenance';
 
@@ -21,6 +21,23 @@ export function extentSnapshotDisagrees(
   liveLayerExistsInLga: boolean,
 ): boolean {
   return snapshotPublishedIn.includes(lgaName) !== liveLayerExistsInLga;
+}
+
+/** Turns an already-fetched official area result into the one content row
+ * EPIC 1 can honestly produce. No fetch; features stay empty because
+ * fetchBushfireAreaResult validates plan_number/gazettal_date but does not
+ * surface them — a genuine gap, not a fabricated value. */
+export function bpaExposureLayer(packId: string, result: BushfireAreaResult): ExposureLayer {
+  return {
+    id: `${packId}:BPA`,
+    packId,
+    group: 'designation',
+    code: 'BPA',
+    status: result.status,
+    features: [],
+    checkedAt: result.checkedAt,
+    source: result.source,
+  };
 }
 
 export type AreaCheckView = {
