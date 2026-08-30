@@ -75,6 +75,36 @@ never an edit of version 1.
 
 ---
 
+## Branch and pull-request flow
+
+`main` is the protected production branch. Never push changes directly to it; every change reaches
+it through a reviewed pull request (PR).
+
+```text
+main
+├── fix/<problem>                 short-lived repair; PR → main; delete after merge
+└── epic/<epic-name>              temporary integration branch for one epic
+    ├── feature/<acceptance-criterion>   PR → epic branch
+    └── feature/<acceptance-criterion>   PR → epic branch
+```
+
+- Create a `fix/*` branch from `main` only for one existing production or baseline problem. After
+  testing and review, merge its PR into `main`, then delete the branch. A fix branch is not a
+  permanent collection branch.
+- Create an `epic/*` branch from the latest verified `main`. It temporarily collects the accepted
+  work for that epic.
+- Create each `feature/*` branch from its epic branch. Keep one acceptance criterion or similarly
+  reviewable feature in each branch, and target its PR at the epic branch—not `main`.
+- After every feature PR is accepted and the complete epic passes code-quality, security, UX,
+  accessibility and acceptance testing, open one final PR from the epic branch into `main`.
+- If a fix merges into `main` while an epic is active, update the epic branch from `main` before
+  continuing feature integration.
+
+Run `npm run verify`, `npm run build` and the applicable `npm run e2e` checks before requesting
+review. GitHub and Vercel checks must also pass before merge.
+
+---
+
 ## Layout
 
 ```
