@@ -137,3 +137,21 @@ export type LatLon = { lat: number; lon: number };
 /** A complete pack together with the destination rows stored against it —
  *  including any absence row. Referenced by deriveState(). */
 export type PackWithPlaces = { pack: Pack; places: Destination[] };
+
+/** A single address candidate returned by the address service. It remains in
+ * memory until the user explicitly confirms it. */
+export type AddressCandidate = {
+  address: string;
+  localityName: string;
+  lat: number;
+  lon: number;
+};
+
+/** The confirmed, still in-memory selection. It is not a saved place and must
+ * not be written to IndexedDB before the pack commit conditions are met. */
+export type PendingPlace = {
+  name: string;
+  address: string;
+  lat: number;
+  lon: number;
+};
