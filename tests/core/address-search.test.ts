@@ -3,11 +3,15 @@ import { describe, expect, it } from 'vitest';
 import {
   addressQueryCanRun,
   addressQueryForCql,
+  addressResultsAtLimit,
   completedSearchState,
+  liveSearchState,
   resolveAddressCandidates,
+  sameAddressQuery,
+  type SettledSearch,
 } from '../../src/core/address-search';
 import * as copy from '../../src/core/copy';
-import type { AddressRecord } from '../../src/core/types';
+import type { AddressCandidate, AddressRecord } from '../../src/core/types';
 
 const KALORAMA = { lat: -37.817939, lon: 145.36594 };
 const NEARBY = { lat: -37.817944, lon: 145.365951 };
@@ -61,7 +65,8 @@ describe('address search decisions', () => {
   });
 
   it('returns nothing for an empty response', () => {
-    expect(resolveAddressCandidates([])).toEqual({ candidates: [], unresolvedCount: 0 });
+    expect(resolveAddressCandidates([]))
+      .toEqual({ candidates: [], unresolvedCount: 0, returnedCount: 0 });
   });
 });
 
@@ -90,6 +95,7 @@ describe('E1-US1-AC2 duplicate resolution — identical coordinates', () => {
     expect(resolveAddressCandidates([secondary, record('NEXT'), flagged])).toEqual({
       candidates: [flagged.candidate, record('NEXT').candidate],
       unresolvedCount: 0,
+      returnedCount: 3,
     });
   });
 
@@ -111,6 +117,7 @@ describe('E1-US1-AC2 duplicate resolution — conflicting coordinates', () => {
     expect(resolveAddressCandidates([unflagged, flagged])).toEqual({
       candidates: [flagged.candidate],
       unresolvedCount: 0,
+      returnedCount: 2,
     });
   });
 
@@ -118,14 +125,14 @@ describe('E1-US1-AC2 duplicate resolution — conflicting coordinates', () => {
     expect(resolveAddressCandidates([
       at('6 RIDGE ROAD KALORAMA 3766', KALORAMA),
       at('6 RIDGE ROAD KALORAMA 3766', NEARBY),
-    ])).toEqual({ candidates: [], unresolvedCount: 1 });
+    ])).toEqual({ candidates: [], unresolvedCount: 1, returnedCount: 2 });
   });
 
   it('selects no coordinate and reports the group unresolved when more than one is flagged', () => {
     expect(resolveAddressCandidates([
       at('6 RIDGE ROAD KALORAMA 3766', KALORAMA, { isPrimary: true }),
       at('6 RIDGE ROAD KALORAMA 3766', NEARBY, { isPrimary: true }),
-    ])).toEqual({ candidates: [], unresolvedCount: 1 });
+    ])).toEqual({ candidates: [], unresolvedCount: 1, returnedCount: 2 });
   });
 
   it('withholds only the unresolved group and keeps every resolved candidate in order', () => {
@@ -149,7 +156,7 @@ describe('E1-US1-AC2 duplicate resolution — conflicting coordinates', () => {
       at('8 RIDGE ROAD KALORAMA 3766', KALORAMA),
       at('8 RIDGE ROAD KALORAMA 3766', NEARBY),
       at('8 RIDGE ROAD KALORAMA 3766', { lat: -37.9, lon: 145.4 }),
-    ])).toEqual({ candidates: [], unresolvedCount: 2 });
+    ])).toEqual({ candidates: [], unresolvedCount: 2, returnedCount: 5 });
   });
 
   it('ignores an inactive record when deciding whether a group conflicts', () => {
@@ -157,7 +164,7 @@ describe('E1-US1-AC2 duplicate resolution — conflicting coordinates', () => {
     expect(resolveAddressCandidates([
       active,
       at('6 RIDGE ROAD KALORAMA 3766', NEARBY, { propertyStatus: 'R' }),
-    ])).toEqual({ candidates: [active.candidate], unresolvedCount: 0 });
+    ])).toEqual({ candidates: [active.candidate], unresolvedCount: 0, returnedCount: 2 });
   });
 });
 
@@ -201,27 +208,27 @@ describe('E1-US1-AC2 distinct addresses are never merged', () => {
 describe('E1-US1-AC2 search state', () => {
   it('keeps a single candidate as a candidate-list state', () => {
     const candidate = record('ONLY').candidate;
-    expect(completedSearchState({ candidates: [candidate], unresolvedCount: 0 })).toEqual({
-      kind: 'candidates', candidates: [candidate], unresolvedCount: 0,
-    });
+    expect(completedSearchState({ candidates: [candidate], unresolvedCount: 0, returnedCount: 1 }))
+      .toEqual({ kind: 'candidates', candidates: [candidate], unresolvedCount: 0, returnedCount: 1 });
   });
 
   it('maps an empty successful response to no-match, not failure', () => {
-    expect(completedSearchState({ candidates: [], unresolvedCount: 0 }))
+    expect(completedSearchState({ candidates: [], unresolvedCount: 0, returnedCount: 0 }))
       .toEqual({ kind: 'no-match' });
   });
 
   it('never reports no-match while an unresolved group is present', () => {
-    expect(completedSearchState({ candidates: [], unresolvedCount: 1 })).toEqual({
-      kind: 'candidates', candidates: [], unresolvedCount: 1,
+    expect(completedSearchState({ candidates: [], unresolvedCount: 1, returnedCount: 2 })).toEqual({
+      kind: 'candidates', candidates: [], unresolvedCount: 1, returnedCount: 2,
     });
   });
 
   it('carries the unresolved count alongside resolved candidates', () => {
     const candidate = record('ONLY').candidate;
-    expect(completedSearchState({ candidates: [candidate], unresolvedCount: 2 })).toEqual({
-      kind: 'candidates', candidates: [candidate], unresolvedCount: 2,
-    });
+    expect(completedSearchState({ candidates: [candidate], unresolvedCount: 2, returnedCount: 5 }))
+      .toEqual({
+        kind: 'candidates', candidates: [candidate], unresolvedCount: 2, returnedCount: 5,
+      });
   });
 
   it('cannot turn a response holding an active record into no-match', () => {
@@ -236,10 +243,14 @@ describe('E1-US1-AC2–AC4 copy', () => {
     expect(copy.NONE_OF_THESE).toBe('None of these is my address');
   });
 
-  it('uses the baseline R2 no-match literal exactly', () => {
+  // Character for character, including the em dash. The hyphen that stood here
+  // until now was a different sentence from the one the baseline mandates.
+  it('uses the baseline R2 no-match literal exactly, em dash included', () => {
     expect(copy.NO_ADDRESS_MATCH).toBe(
-      'No matching address found - check the spelling or try the nearest cross street.',
+      'No matching address found — check the spelling or try the nearest cross street.',
     );
+    expect(copy.NO_ADDRESS_MATCH).toContain('\u2014');
+    expect(copy.NO_ADDRESS_MATCH).not.toContain('-');
   });
 
   it('keeps both search-failure sentences exact', () => {
@@ -264,6 +275,119 @@ describe('E1-US1-AC2–AC4 copy', () => {
     );
     expect(copy.REFINE_ADDRESS_HINT).toBe(
       'Check or add a unit or street number, then search again.',
+    );
+  });
+});
+
+// ── E1-US1-AC2 live search while typing ─────────────────────────────────────
+// The three states the live search must never conflate are tested one at a
+// time: still typing, answered with nothing, and could not run.
+
+const resolution = (candidates: AddressCandidate[], unresolvedCount = 0, returnedCount = candidates.length) =>
+  ({ candidates, unresolvedCount, returnedCount });
+
+const answered = (query: string, candidates: AddressCandidate[], returnedCount?: number): SettledSearch =>
+  ({ query, outcome: { kind: 'resolved', resolution: resolution(candidates, 0, returnedCount) } });
+
+const failedFor = (query: string): SettledSearch => ({ query, outcome: { kind: 'failed' } });
+
+describe('E1-US1-AC2 live search state', () => {
+  const candidate = record('6 RIDGE ROAD KALORAMA 3766').candidate;
+
+  it.each([
+    ['', 'too-short'],
+    ['RI', 'too-short'],
+    ['RID', 'pending'],
+    ['RIDG', 'pending'],
+  ])('below the minimum %j never reaches a request state', (query, expected) => {
+    expect(liveSearchState(query, null, false).kind).toBe(expected);
+  });
+
+  it('is pending, never no-match, while the query has no answer of its own', () => {
+    expect(liveSearchState('RIDGE', null, false)).toEqual({ kind: 'pending' });
+  });
+
+  it('is pending while an answer to earlier text is all that exists', () => {
+    expect(liveSearchState('RIDGE ROAD', answered('RIDGE', [candidate]), false))
+      .toEqual({ kind: 'pending' });
+  });
+
+  it('cannot show the no-match sentence for a query that was never answered', () => {
+    expect(liveSearchState('RIDGE ROAD', answered('RIDGE', []), false).kind).toBe('pending');
+  });
+
+  it('says no-match only when this exact query was answered with nothing', () => {
+    expect(liveSearchState('RIDGE', answered('RIDGE', []), false)).toEqual({ kind: 'no-match' });
+  });
+
+  it('says unavailable, never no-match, when the search could not run', () => {
+    expect(liveSearchState('RIDGE', failedFor('RIDGE'), false)).toEqual({ kind: 'unavailable' });
+  });
+
+  it('lists candidates with the count the register returned', () => {
+    expect(liveSearchState('RIDGE', answered('RIDGE', [candidate], 4), false)).toEqual({
+      kind: 'candidates', candidates: [candidate], unresolvedCount: 0, returnedCount: 4,
+    });
+  });
+
+  it('treats surrounding whitespace as the same search, not a stale answer', () => {
+    expect(liveSearchState('  RIDGE ', answered('RIDGE', [candidate]), false).kind)
+      .toBe('candidates');
+    expect(sameAddressQuery(' RIDGE ', 'RIDGE')).toBe(true);
+    expect(sameAddressQuery('RIDGE', 'RIDGE ROAD')).toBe(false);
+  });
+
+  it('withholds the list once dismissed, without claiming a result either way', () => {
+    expect(liveSearchState('RIDGE', answered('RIDGE', [candidate]), true))
+      .toEqual({ kind: 'dismissed' });
+  });
+
+  it('ends dismissal when the query changes, and returns to pending', () => {
+    // The component clears the flag on change; the state is pending regardless,
+    // because the new text has no answer of its own yet.
+    expect(liveSearchState('RIDGE R', answered('RIDGE', [candidate]), true))
+      .toEqual({ kind: 'pending' });
+  });
+
+  it('drops back to the hint below the minimum, whatever was answered before', () => {
+    expect(liveSearchState('RI', answered('RIDGE', [candidate]), false))
+      .toEqual({ kind: 'too-short' });
+  });
+});
+
+describe('E1-US1-AC2 returned-record count', () => {
+  it.each([
+    [9, false],
+    [10, true],
+    [11, true],
+  ])('treats %i returned records as at the cap: %j (inclusive at the limit)', (count, expected) => {
+    expect(addressResultsAtLimit(count)).toBe(expected);
+  });
+
+  it('counts what the register returned, not what survived filtering', () => {
+    const resolved = resolveAddressCandidates([
+      record('FIRST'),
+      record('RETIRED', { propertyStatus: 'R' }),
+      at('FIRST', KALORAMA, { isPrimary: true }),
+    ]);
+    expect(resolved.returnedCount).toBe(3);
+    expect(resolved.candidates).toHaveLength(1);
+  });
+
+  it('reports zero returned records for an empty response', () => {
+    expect(resolveAddressCandidates([]).returnedCount).toBe(0);
+  });
+
+  it('states both numbers in one line, so the cap cannot read as the whole register', () => {
+    expect(copy.ADDRESS_RESULT_COUNT(10, 8)).toBe(
+      'The address register returned 10 records; 8 distinct addresses are listed below.',
+    );
+    expect(copy.ADDRESS_RESULT_COUNT(1, 1)).toBe(
+      'The address register returned 1 record; 1 distinct address is listed below.',
+    );
+    expect(copy.ADDRESS_RESULT_CAPPED(10)).toBe(
+      'Cooeee asks the register for at most 10 records, so there may be more. '
+      + 'Type more of the address to shorten the list.',
     );
   });
 });

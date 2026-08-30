@@ -88,13 +88,43 @@ describe('address search request', () => {
         lon: 145.36594,
       }],
       unresolvedCount: 0,
+      returnedCount: 2,
     });
   });
 
   it('returns an empty list only for a valid empty feature collection', async () => {
     const fetcher = async () => new Response(JSON.stringify({ features: [] }), { status: 200 });
     await expect(fetchAddressCandidates('unknown', fetcher))
-      .resolves.toEqual({ candidates: [], unresolvedCount: 0 });
+      .resolves.toEqual({ candidates: [], unresolvedCount: 0, returnedCount: 0 });
+  });
+
+  // The search runs while the user types, so the caller supersedes its own
+  // requests. Cancellation has to reach the wire, not merely discard a reply
+  // that the device still paid for and still sent the typed prefix to obtain.
+  it('passes the caller cancellation through to the request', async () => {
+    const caller = new AbortController();
+    const fetcher = async (_input: RequestInfo | URL, init?: RequestInit) => {
+      caller.abort();
+      expect(init?.signal?.aborted).toBe(true);
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    };
+
+    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+      .rejects.toThrow('aborted');
+  });
+
+  it('never issues a request for a query the caller has already cancelled', async () => {
+    const caller = new AbortController();
+    caller.abort();
+    let signalled: AbortSignal | undefined;
+    const fetcher = async (_input: RequestInfo | URL, init?: RequestInit) => {
+      signalled = init?.signal ?? undefined;
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    };
+
+    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+      .rejects.toThrow('aborted');
+    expect(signalled?.aborted).toBe(true);
   });
 
   it('rejects service failures instead of mapping them to no-match', async () => {
@@ -136,7 +166,7 @@ describe('E1-US1-AC2 duplicate resolution at the data boundary', () => {
       collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.365951, -37.817944)]),
       () => undefined,
     );
-    expect(resolution).toEqual({ candidates: [], unresolvedCount: 1 });
+    expect(resolution).toEqual({ candidates: [], unresolvedCount: 1, returnedCount: 2 });
   });
 
   it('reports the unresolved condition as a bare count, naming no address or point', async () => {

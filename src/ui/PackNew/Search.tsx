@@ -1,12 +1,14 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 
 import {
   addressQueryCanRun,
-  completedSearchState,
+  addressResultsAtLimit,
+  liveSearchState,
   type AddressCandidateResolution,
-  type AddressSearchState,
+  type SettledSearch,
 } from '../../core/address-search';
 import { bpaExposureLayer } from '../../core/area-check';
+import { ADDRESS_QUERY_DEBOUNCE_MS, ADDRESS_RESULT_LIMIT } from '../../core/constants';
 import * as copy from '../../core/copy';
 import { decidePackConflict } from '../../core/pack-conflict';
 import { buildPackSeed } from '../../core/pack';
@@ -27,6 +29,13 @@ import { Confirm } from './Confirm';
 import { Conflict, ConflictBlocked } from './Conflict';
 import { Size } from './Size';
 
+/** Module scope, so the default has one stable identity for the life of the
+ * module. A default created inside the component would be a new function on
+ * every render, and a live search keyed on it would restart on every state
+ * change — one request per keystroke of feedback, forever. */
+const searchAddressRegister = (query: string, signal: AbortSignal) =>
+  fetchAddressCandidates(query, undefined, undefined, signal);
+
 type ConflictState =
   | { kind: 'checking' }
   | { kind: 'conflict'; savedPack: Pack }
@@ -39,7 +48,7 @@ type OfferState =
   | { kind: 'failed'; result: BushfireAreaResult };
 
 export type SearchProps = {
-  search?: (query: string) => Promise<AddressCandidateResolution>;
+  search?: (query: string, signal: AbortSignal) => Promise<AddressCandidateResolution>;
   onPendingPlace?: (place: PendingPlace) => void;
   checkArea?: typeof fetchBushfireAreaResult;
   loadPacks?: () => Promise<Pack[]>;
@@ -53,9 +62,21 @@ export type SearchProps = {
 
 /** E1-US1-AC1–AC9 address, conflict, area and pack-save flow. Query, candidates
  * and the confirmed place live only in memory until the area check succeeds and
- * the user explicitly consents to a size; nothing is written before that. */
+ * the user explicitly consents to a size; nothing is written before that.
+ *
+ * The address search runs while the user types, from ADDRESS_QUERY_MIN_CHARS and
+ * after ADDRESS_QUERY_DEBOUNCE_MS of quiet. Two rules hold it honest and both are
+ * structural rather than careful:
+ *   1. Everything the screen may say comes from core's liveSearchState, and a
+ *      result claim is reachable only through an answer that still carries the
+ *      query in the field. A pending debounce, a request in flight and an answer
+ *      to earlier text are one indistinguishable 'pending' state that claims
+ *      nothing.
+ *   2. A superseded request is aborted on the wire, and its response is dropped
+ *      on arrival by request id even so. Two independent reasons a stale answer
+ *      cannot land. */
 export function Search({
-  search = fetchAddressCandidates,
+  search = searchAddressRegister,
   onPendingPlace = () => undefined,
   checkArea = fetchBushfireAreaResult,
   loadPacks = listCompletePacks,
@@ -67,33 +88,95 @@ export function Search({
   onPackSaved = (packId: string) => window.location.assign(`/packs/${packId}`),
 }: SearchProps) {
   const [query, setQuery] = useState('');
-  const [state, setState] = useState<AddressSearchState>({ kind: 'search' });
+  const [settled, setSettled] = useState<SettledSearch | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+  // Bumped by every keystroke and by every explicit run, so the debounce restarts
+  // on each. `immediate` is an explicit run — Enter, Search, or Try again — which
+  // does not wait out a pause the user has already ended themselves.
+  const [attempt, setAttempt] = useState({ token: 0, immediate: false });
   const [candidate, setCandidate] = useState<AddressCandidate | null>(null);
-  const [validationVisible, setValidationVisible] = useState(false);
+  // Synchronous, because it guards against a second request within one tick.
+  const requestIdRef = useRef(0);
+  const inFlightQueryRef = useRef<string | null>(null);
   const [pendingPlace, setPendingPlace] = useState<PendingPlace | null>(null);
   const [areaState, setAreaState] = useState<AreaCheckState | null>(null);
   const [conflictState, setConflictState] = useState<ConflictState | null>(null);
   const [supersedesId, setSupersedesId] = useState<string | undefined>(undefined);
   const [offerState, setOfferState] = useState<OfferState | null>(null);
 
-  async function runSearch() {
-    if (!addressQueryCanRun(query)) {
-      setValidationVisible(true);
-      return;
+  const trimmedQuery = query.trim();
+  const live = liveSearchState(query, settled, dismissed);
+
+  // Read through a ref so that a caller passing an inline function cannot make
+  // the search restart on every render. Only the typed query and an explicit run
+  // may start a request.
+  const searchRef = useRef(search);
+  useEffect(() => {
+    searchRef.current = search;
+  }, [search]);
+
+  // The typed prefix leaves the device only from here: once per settled query,
+  // after the debounce, and never below ADDRESS_QUERY_MIN_CHARS.
+  useEffect(() => {
+    if (!addressQueryCanRun(trimmedQuery)) return;
+
+    const controller = new AbortController();
+    const id = requestIdRef.current + 1;
+
+    async function run() {
+      requestIdRef.current = id;
+      inFlightQueryRef.current = trimmedQuery;
+      try {
+        const resolution = await searchRef.current(trimmedQuery, controller.signal);
+        // A newer query owns the screen; this answer is about older text.
+        if (id !== requestIdRef.current) return;
+        setSettled({ query: trimmedQuery, outcome: { kind: 'resolved', resolution } });
+      } catch {
+        // Our own cancellation is not the register failing to answer. A request
+        // we superseded or abandoned says nothing about whether a search can
+        // run, so it must never settle as AC4's unavailable state.
+        if (controller.signal.aborted || id !== requestIdRef.current) return;
+        setSettled({ query: trimmedQuery, outcome: { kind: 'failed' } });
+      } finally {
+        if (id === requestIdRef.current) inFlightQueryRef.current = null;
+      }
     }
 
-    setValidationVisible(false);
-    setState({ kind: 'searching' });
-    try {
-      setState(completedSearchState(await search(query)));
-    } catch {
-      setState({ kind: 'unavailable' });
+    if (attempt.immediate) {
+      void run();
+      return () => controller.abort();
     }
+
+    const timer = setTimeout(() => void run(), ADDRESS_QUERY_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+    // `attempt` changes on every keystroke, so the cleanup above is the debounce
+    // and the cancellation at once.
+  }, [trimmedQuery, attempt]);
+
+  function handleQueryChange(event: ChangeEvent<HTMLInputElement>) {
+    setQuery(event.currentTarget.value);
+    // Dismissal lasts until the query changes — including a change back to text
+    // that was searched before, which is a fresh request and a fresh list.
+    setDismissed(false);
+    setAttempt((previous) => ({ token: previous.token + 1, immediate: false }));
+  }
+
+  /** Enter, Search, Search again and Try again: run this query now. A request
+   * already in flight for this exact text is left to finish, so an explicit tap
+   * during the wait cannot double the outbound requests. */
+  function runSearchNow() {
+    if (inFlightQueryRef.current === trimmedQuery) return;
+    setDismissed(false);
+    setSettled(null);
+    setAttempt((previous) => ({ token: previous.token + 1, immediate: true }));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void runSearch();
+    runSearchNow();
   }
 
   async function runAreaCheck(place: PendingPlace) {
@@ -148,7 +231,6 @@ export function Search({
     setCandidate(null);
     setSupersedesId(undefined);
     setOfferState(null);
-    setState({ kind: 'search' });
   }
 
   if (pendingPlace && conflictState?.kind === 'checking') {
@@ -249,28 +331,10 @@ export function Search({
       <Confirm
         candidate={candidate}
         onConfirm={(place) => void handleConfirmedPlace(place)}
-        onSearchAgain={() => {
-          setCandidate(null);
-          setState({ kind: 'search' });
-        }}
+        onSearchAgain={() => setCandidate(null)}
       />
     );
   }
-
-  if (state.kind === 'candidates') {
-    return (
-      <Candidates
-        candidates={state.candidates}
-        unresolvedCount={state.unresolvedCount}
-        onChoose={setCandidate}
-        onNone={() => setState({ kind: 'search' })}
-      />
-    );
-  }
-
-  const searching = state.kind === 'searching';
-  const noMatch = state.kind === 'no-match';
-  const unavailable = state.kind === 'unavailable';
 
   return (
     <main className="page search-page">
@@ -282,35 +346,60 @@ export function Search({
             id="address-query"
             name="addressQuery"
             value={query}
+            autoComplete="off"
             aria-describedby="address-result"
-            aria-invalid={validationVisible || undefined}
-            onChange={(event) => setQuery(event.currentTarget.value)}
+            onChange={handleQueryChange}
           />
 
+          {/* One polite live region for the field. It carries the count when the
+              list changes under a screen reader, which the list markup alone
+              does not announce, and it is the only place a result is claimed. */}
           <div id="address-result" className="search-result" role="status" aria-live="polite">
-            {validationVisible ? <p>{copy.ADDRESS_QUERY_TOO_SHORT}</p> : null}
-            {searching ? <p>{copy.SEARCH_IN_PROGRESS}</p> : null}
-            {noMatch ? <p>{copy.NO_ADDRESS_MATCH}</p> : null}
-            {unavailable ? (
+            {live.kind === 'too-short' ? <p>{copy.ADDRESS_QUERY_TOO_SHORT}</p> : null}
+            {live.kind === 'pending' ? <p>{copy.SEARCH_IN_PROGRESS}</p> : null}
+            {live.kind === 'dismissed' ? <p>{copy.REFINE_ADDRESS_HINT}</p> : null}
+            {live.kind === 'no-match' ? <p>{copy.NO_ADDRESS_MATCH}</p> : null}
+            {live.kind === 'candidates' ? (
+              <>
+                <p>{copy.ADDRESS_RESULT_COUNT(live.returnedCount, live.candidates.length)}</p>
+                {addressResultsAtLimit(live.returnedCount) ? (
+                  <p>{copy.ADDRESS_RESULT_CAPPED(ADDRESS_RESULT_LIMIT)}</p>
+                ) : null}
+              </>
+            ) : null}
+            {live.kind === 'unavailable' ? (
               <>
                 <p>{copy.SEARCH_COULD_NOT_RUN}</p>
                 <p>{copy.SEARCH_FAILURE_MEANING}</p>
               </>
             ) : null}
           </div>
+
+          {live.kind === 'candidates' ? (
+            <Candidates
+              candidates={live.candidates}
+              unresolvedCount={live.unresolvedCount}
+              onChoose={setCandidate}
+              onNone={() => setDismissed(true)}
+            />
+          ) : null}
         </div>
 
+        {/* One primary action, labelled for the state it is in. It is never
+            disabled: a search that has not answered yet must still be re-runnable
+            by hand, and a tap during a request in flight is a no-op, not a second
+            request. */}
         <div className="actions search-actions">
-          {noMatch ? (
-            <button type="button" onClick={() => setState({ kind: 'search' })}>
-              {copy.SEARCH_AGAIN}
-            </button>
-          ) : unavailable ? (
-            <button className="main-action" type="button" onClick={() => void runSearch()}>
+          {live.kind === 'unavailable' ? (
+            <button className="main-action" type="button" onClick={runSearchNow}>
               {copy.TRY_AGAIN}
             </button>
+          ) : live.kind === 'no-match' ? (
+            <button className="main-action" type="button" onClick={runSearchNow}>
+              {copy.SEARCH_AGAIN}
+            </button>
           ) : (
-            <button className="main-action" type="submit" disabled={searching}>
+            <button className="main-action" type="submit">
               {copy.SEARCH}
             </button>
           )}

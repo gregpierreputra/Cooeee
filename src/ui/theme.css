@@ -371,3 +371,24 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+/* The candidate list sits under the address field while the search runs on
+   typing, so the field it answers to stays editable. It is a section in the
+   flow, not a page: no card, no border and no colour of its own, so that
+   nothing about a returned list reads as emphasis. */
+.candidate-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* The one heading level below the section heading; h1 and h2 are already sized
+   globally. */
+.candidate-section h3 {
+  font-size: var(--step-1);
+  margin: 0;
+}
+
+.candidate-dismiss {
+  display: flex;
+  flex-direction: column;
+}
