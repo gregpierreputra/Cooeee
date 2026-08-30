@@ -1,6 +1,7 @@
 import { MS_PER_DAY, PACK_REFRESH_DAYS } from './constants';
 import { NOT_RECENTLY_VERIFIED, SAVED_DAYS_AGO } from './copy';
-import type { LayerStatus, Pack } from './types';
+import { resolveBushfireAreaStatus } from './area-check';
+import type { LayerPublicationStatus, LayerStatus, Pack } from './types';
 
 /** Whole days since the pack was last verified. Freshness derives from
  *  verifiedAt, never createdAt. */
@@ -23,12 +24,12 @@ export const freshness = (
 export const textBytes = (rows: unknown): number =>
   new TextEncoder().encode(JSON.stringify(rows)).length;
 
-/** The trichotomy that makes "not published for this area" verifiable and makes
- *  "not designated" unrepresentable. Two values here would be a false all-clear. */
-export const layerStatus = (hitsAtPoint: number, layerExistsInLga: boolean): LayerStatus => {
-  if (hitsAtPoint > 0) return 'present';
-  return layerExistsInLga ? 'none-mapped-here' : 'not-published';
-};
+/** The area decision that makes publication uncertainty explicit and makes a
+ *  failed probe impossible to collapse into a confident negative result. */
+export const layerStatus = (
+  hitsAtPoint: number,
+  publication: LayerPublicationStatus,
+): LayerStatus => resolveBushfireAreaStatus(hitsAtPoint, publication);
 
 export type PackFieldChange = { field: string; from: unknown; to: unknown };
 

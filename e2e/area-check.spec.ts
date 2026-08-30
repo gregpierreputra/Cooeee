@@ -14,7 +14,7 @@ async function reachAreaCheck(page: Page, mode: string, context?: BrowserContext
 
 async function deviceStorage(page: Page) {
   return page.evaluate(async () => ({
-    indexedDbNames: (await indexedDB.databases()).map(({ name }) => name),
+    recordCounts: await window.__storageCounts(),
     localStorageLength: localStorage.length,
     sessionStorageLength: sessionStorage.length,
   }));
@@ -65,7 +65,19 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
   );
   await expect(page.getByTestId('pending-address')).toHaveText(ADDRESS);
   expect(await deviceStorage(page)).toEqual({
-    indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
+    recordCounts: {
+      actions: 0,
+      destinations: 0,
+      kv: 0,
+      layers: 0,
+      packs: 0,
+      pending: 0,
+      programs: 0,
+      queue: 0,
+      tiles: 0,
+    },
+    localStorageLength: 0,
+    sessionStorageLength: 0,
   });
 
   await page.getByRole('button', { name: 'Try again' }).click();

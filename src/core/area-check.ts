@@ -1,14 +1,18 @@
 import * as copy from './copy';
-import type { BushfireAreaResult, LayerStatus } from './types';
+import { formatSavedDate } from './provenance';
+import type { BushfireAreaResult, LayerPublicationStatus, LayerStatus } from './types';
+
+export { formatSavedDate } from './provenance';
 
 /** A positive point hit controls immediately. For zero hits, the live
  * existence probe controls; the snapshot is an independent drift check. */
 export function resolveBushfireAreaStatus(
   pointHits: number,
-  liveLayerExistsInLga: boolean,
+  publication: LayerPublicationStatus,
 ): LayerStatus {
   if (pointHits > 0) return 'present';
-  return liveLayerExistsInLga ? 'none-mapped-here' : 'not-published';
+  if (publication === 'unknown') return 'unknown';
+  return publication === 'published' ? 'none-mapped-here' : 'not-published';
 }
 
 export function extentSnapshotDisagrees(
@@ -17,15 +21,6 @@ export function extentSnapshotDisagrees(
   liveLayerExistsInLga: boolean,
 ): boolean {
   return snapshotPublishedIn.includes(lgaName) !== liveLayerExistsInLga;
-}
-
-export function formatSavedDate(epochMs: number): string {
-  return new Intl.DateTimeFormat('en-AU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Australia/Melbourne',
-  }).format(epochMs);
 }
 
 export type AreaCheckView = {

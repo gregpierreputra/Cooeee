@@ -135,3 +135,72 @@ export const AREA_CHECK_COULD_NOT_RUN =
   'We could not check the bushfire area for this address right now.';
 export const AREA_NOT_SAVED =
   'Nothing has been saved. Your address is still here — try again when you have a connection.';
+
+// ── E1-US1-AC8 pack conflict ──────────────────────────────────────────
+
+export const CHECKING_SAVED_PLACE = 'Checking the saved place on this device.';
+export const PLACE_ALREADY_SAVED = 'You already have a saved place.';
+export const SAVED_ADDRESS_LABEL = 'Saved address';
+export const NEW_ADDRESS_LABEL = 'New address';
+export const KEEP_SAVED_PLACE = 'Keep the saved place';
+export const REPLACE_WITH_THIS_ONE = 'Replace it with this one';
+export const SAVED_PLACE_CHECK_FAILED =
+  'We could not check the saved place on this device.';
+export const MULTIPLE_SAVED_PACKS =
+  'More than one saved pack was found on this device.';
+export const NOTHING_CHANGED = 'Nothing has been changed.';
+
+// ── E1-US1-AC9 pack offer and download ─────────────────────────────
+
+export const READY_TO_DOWNLOAD = 'Ready to download';
+export const PACK_SIZE_LINE = (textSize: string, tileSize: string) =>
+  `Text ${textSize} · Map tiles ${tileSize} for about 10 km around this place`;
+export const DOWNLOAD_BOTH = 'Download both';
+export const TEXT_ONLY = 'Text only';
+export const SAVING_PACK = 'Saving the pack.';
+export const DOWNLOAD_STOPPED = 'The download stopped before it finished.';
+export const PREVIOUS_PACK_UNTOUCHED =
+  'Nothing has been changed. Your previous pack is untouched.';
+export const SAVED_WITHOUT_MAP_TILES = 'Saved without map tiles';
+export const MAPS_NOT_DOWNLOADED =
+  'Maps were not downloaded. Everything else in this pack works offline.';
+export const PLACE_SAVED = 'Place saved';
+export const MAP_DOWNLOAD_UNAVAILABLE =
+  'Map download is not available yet. Text only is still available.';
+
+// ── E1-US2-AC1–AC5 pack provenance and offline source access ───────────────
+
+export const YOUR_PACK = 'Your pack';
+export const PROVENANCE_LINE = (publisher: string, date: string) =>
+  `Published by ${publisher} · Saved ${date}`;
+export const SAVED_TODAY = 'Saved today';
+export const ITEM_DAYS_AGO = (days: number) => `${days} days ago`;
+export const NOT_RECENTLY_VERIFIED_LABEL = 'Not recently verified';
+export const STALE_PACK_STILL_WORKS =
+  'This pack still works. Refresh it when you are next online.';
+export const ITEM_LEFT_OUT = 'One item was left out of your pack.';
+export const ITEMS_LEFT_OUT = (count: number) => `${count} items were left out of your pack.`;
+export const ITEM_LEFT_OUT_REASON =
+  'It did not name who published it or when it was published, so it was not saved.';
+export const PROVENANCE_STORAGE_RULE =
+  'Cooeee only stores information it can show you the source for.';
+export const SOURCE_IS_ON_WEB = 'This source is on the web.';
+export const STORED_PROVENANCE_REMAINS =
+  'The publisher and the saved date below are stored on this device and stay readable.';
+export const TRY_SOURCE_AGAIN = 'Try again when you have a connection';
+export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
+export const EXTERNAL_SOURCE_NOTICE =
+  'Opening it may use your connection and leave Cooeee.';
+export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to original source (web)';
+export const CLOSE = 'Close';
+export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
+export const NO_STORED_ITEMS = 'This pack has no stored information items to show.';
+export const RECOVERY_ITEMS_UNVERIFIED =
+  'Saved recovery references could not be verified, so they are not shown.';
+export const DESIGNATED_BUSHFIRE_PRONE_AREA = 'Designated Bushfire Prone Area';
+export const BUSHFIRE_MANAGEMENT_OVERLAY = 'Bushfire Management Overlay';
+export const LAND_SUBJECT_TO_INUNDATION_OVERLAY = 'Land Subject to Inundation Overlay';
+export const FLOODWAY_OVERLAY = 'Floodway Overlay';
+export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
+export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
+export const OFFLINE_BASEMAP = 'Offline basemap';

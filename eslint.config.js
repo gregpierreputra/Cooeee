@@ -12,12 +12,12 @@ const NO_RAW_DB = {
     {
       name: '../data/db',
       importNames: ['db'],
-      message: 'Use listCompletePacks / getCompletePack. A raw table read can expose a building pack.',
+      message: 'Use a complete-pack read API. A raw table read can expose a building pack.',
     },
     {
       name: '../../data/db',
       importNames: ['db'],
-      message: 'Use listCompletePacks / getCompletePack. A raw table read can expose a building pack.',
+      message: 'Use a complete-pack read API. A raw table read can expose a building pack.',
     },
   ],
 };
@@ -66,7 +66,7 @@ export default tseslint.config(
   // RULE 2 — the offline surfaces import no network path and cannot call fetch.
   // Recovery.tsx reaches probe.ts only, the one sanctioned same-origin request.
   {
-    files: ['src/ui/BlackSky.tsx', 'src/ui/Recovery.tsx'],
+    files: ['src/ui/BlackSky.tsx', 'src/ui/Recovery.tsx', 'src/ui/PackDetail.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',

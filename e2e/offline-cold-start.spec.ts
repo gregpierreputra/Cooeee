@@ -41,6 +41,8 @@ test('the shell cold-starts with the radios off, and nothing reaches for the net
 
 test('the empty state states absence and never reassures', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('heading', { name: HOME_TITLE })).toBeVisible();
+  await expect(page.getByText(NO_PACKS_YET)).toBeVisible();
   const body = (await page.locator('body').textContent()) ?? '';
 
   expect(body).toContain(NO_PACKS_YET);

@@ -6,24 +6,37 @@ import {
   type AddressSearchState,
 } from '../../core/address-search';
 import * as copy from '../../core/copy';
-import type { AddressCandidate, PendingPlace } from '../../core/types';
+import { decidePackConflict } from '../../core/pack-conflict';
+import type { AddressCandidate, Pack, PendingPlace } from '../../core/types';
+import { listCompletePacks } from '../../data/db';
 import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
+import { Conflict, ConflictBlocked } from './Conflict';
+
+type ConflictState =
+  | { kind: 'checking' }
+  | { kind: 'conflict'; savedPack: Pack }
+  | { kind: 'unavailable' }
+  | { kind: 'invalid-multiple' };
 
 export type SearchProps = {
   search?: (query: string) => Promise<AddressCandidate[]>;
   onPendingPlace?: (place: PendingPlace) => void;
   checkArea?: typeof fetchBushfireAreaResult;
+  loadPacks?: () => Promise<Pack[]>;
+  onKeepSavedPlace?: () => void;
 };
 
-/** E1-US1-AC2–AC7 address and area flow. Query, candidates and the confirmed
- * place live only in component memory. Requests follow explicit user gestures. */
+/** E1-US1-AC2–AC8 address, conflict and area flow. Query, candidates and the
+ * confirmed place live only in memory. Requests follow explicit choices. */
 export function Search({
   search = fetchAddressCandidates,
   onPendingPlace = () => undefined,
   checkArea = fetchBushfireAreaResult,
+  loadPacks = listCompletePacks,
+  onKeepSavedPlace = () => window.location.assign('/'),
 }: SearchProps) {
   const [query, setQuery] = useState('');
   const [state, setState] = useState<AddressSearchState>({ kind: 'search' });
@@ -31,6 +44,7 @@ export function Search({
   const [validationVisible, setValidationVisible] = useState(false);
   const [pendingPlace, setPendingPlace] = useState<PendingPlace | null>(null);
   const [areaState, setAreaState] = useState<AreaCheckState | null>(null);
+  const [conflictState, setConflictState] = useState<ConflictState | null>(null);
 
   async function runSearch() {
     if (!addressQueryCanRun(query)) {
@@ -61,10 +75,65 @@ export function Search({
     }
   }
 
-  function handleConfirmedPlace(place: PendingPlace) {
+  async function handleConfirmedPlace(place: PendingPlace) {
     onPendingPlace(place);
     setPendingPlace(place);
-    void runAreaCheck(place);
+    setConflictState({ kind: 'checking' });
+    try {
+      const decision = decidePackConflict(await loadPacks());
+      if (decision.kind === 'none') {
+        setConflictState(null);
+        await runAreaCheck(place);
+      } else if (decision.kind === 'conflict') {
+        setConflictState(decision);
+      } else {
+        setConflictState({ kind: 'invalid-multiple' });
+      }
+    } catch {
+      setConflictState({ kind: 'unavailable' });
+    }
+  }
+
+  function resetToSearch() {
+    setPendingPlace(null);
+    setAreaState(null);
+    setConflictState(null);
+    setCandidate(null);
+    setState({ kind: 'search' });
+  }
+
+  if (pendingPlace && conflictState?.kind === 'checking') {
+    return (
+      <main className="page conflict-page">
+        <div role="status" aria-live="polite"><p>{copy.CHECKING_SAVED_PLACE}</p></div>
+      </main>
+    );
+  }
+
+  if (pendingPlace && conflictState?.kind === 'conflict') {
+    return (
+      <Conflict
+        savedAddress={conflictState.savedPack.address}
+        newAddress={pendingPlace.address}
+        onKeep={() => {
+          onKeepSavedPlace();
+          resetToSearch();
+        }}
+        onReplace={() => {
+          setConflictState(null);
+          void runAreaCheck(pendingPlace);
+        }}
+      />
+    );
+  }
+
+  if (conflictState?.kind === 'unavailable' || conflictState?.kind === 'invalid-multiple') {
+    return (
+      <ConflictBlocked
+        multiple={conflictState.kind === 'invalid-multiple'}
+        onSearchAgain={resetToSearch}
+      />
+    );
   }
 
   if (pendingPlace && areaState) {
@@ -74,10 +143,7 @@ export function Search({
         state={areaState}
         onRetry={() => void runAreaCheck(pendingPlace)}
         onSearchAgain={() => {
-          setPendingPlace(null);
-          setAreaState(null);
-          setCandidate(null);
-          setState({ kind: 'search' });
+          resetToSearch();
         }}
       />
     );
@@ -87,7 +153,7 @@ export function Search({
     return (
       <Confirm
         candidate={candidate}
-        onConfirm={handleConfirmedPlace}
+        onConfirm={(place) => void handleConfirmedPlace(place)}
         onSearchAgain={() => {
           setCandidate(null);
           setState({ kind: 'search' });

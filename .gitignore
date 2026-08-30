@@ -1,6 +1,10 @@
 ## Local configs
 .c*
 .g*
+!.github/
+!.github/workflows/
+!.github/workflows/*.yml
+.DS_Store
 
 ## Local documentations
 documentation/

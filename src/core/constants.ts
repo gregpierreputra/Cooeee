@@ -46,6 +46,8 @@ export const OFFICIAL_DOMAINS = [
   'emergency.vic.gov.au',
   'redcross.org.au',
   'ses.vic.gov.au',
+  'openstreetmap.org',
+  'protomaps.com',
 ] as const;
 
 export const MS_PER_DAY = 86_400_000;

@@ -24,15 +24,19 @@ const result = (status: BushfireAreaResult['status']): BushfireAreaResult => ({
 
 describe('E1-US1-AC5–AC7 area decisions', () => {
   it('maps a positive point hit to present regardless of the existence input', () => {
-    expect(resolveBushfireAreaStatus(1, false)).toBe('present');
+    expect(resolveBushfireAreaStatus(1, 'unknown')).toBe('present');
   });
 
   it('maps zero hits with a live LGA hit to none-mapped-here', () => {
-    expect(resolveBushfireAreaStatus(0, true)).toBe('none-mapped-here');
+    expect(resolveBushfireAreaStatus(0, 'published')).toBe('none-mapped-here');
   });
 
   it('maps zero hits with no live LGA hit to not-published', () => {
-    expect(resolveBushfireAreaStatus(0, false)).toBe('not-published');
+    expect(resolveBushfireAreaStatus(0, 'unpublished')).toBe('not-published');
+  });
+
+  it('keeps a failed or skipped publication probe unknown', () => {
+    expect(resolveBushfireAreaStatus(0, 'unknown')).toBe('unknown');
   });
 
   it.each([
