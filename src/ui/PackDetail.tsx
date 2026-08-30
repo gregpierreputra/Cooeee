@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 
 import * as copy from '../core/copy';
-import { packDetailItems } from '../core/provenance';
+import { decideOriginalSourceAccess, packDetailItems } from '../core/provenance';
 import type { CompletePackContent, PackDetailItem } from '../core/types';
 import { getCompletePackContent } from '../data/db';
 import ProvenanceLine from './components/ProvenanceLine';
@@ -14,7 +14,8 @@ export type PackDetailProps = {
 };
 
 /** A network-blind pack view. Every value comes from the complete-pack store;
- * an offline source tap is intercepted before browser navigation. */
+ * every source tap is intercepted before browser navigation and requires a
+ * second explicit choice before leaving Cooeee. */
 export default function PackDetail({
   packId,
   loadContent = getCompletePackContent,
@@ -40,10 +41,9 @@ export default function PackDetail({
   }
 
   const items = packDetailItems(content);
-  const interceptOffline = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
-    if (navigator.onLine) return;
+  const interceptSource = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
     event.preventDefault();
-    setOfflineSource(item);
+    setOfflineSource(decideOriginalSourceAccess(item).item);
   };
 
   return (
@@ -70,7 +70,7 @@ export default function PackDetail({
                 href={item.source.url}
                 target="_blank"
                 rel="noreferrer"
-                onClick={(event) => interceptOffline(event, item)}
+                onClick={(event) => interceptSource(event, item)}
               >
                 {copy.OPEN_ORIGINAL_SOURCE}
               </a>
@@ -90,7 +90,10 @@ export default function PackDetail({
             <h2 id="offline-source-heading">{copy.SOURCE_IS_ON_WEB}</h2>
             <p>{copy.STORED_PROVENANCE_REMAINS}</p>
             <ProvenanceLine source={offlineSource.source} now={now} />
-            <p>{copy.TRY_SOURCE_AGAIN}</p>
+            <p>{copy.EXTERNAL_SOURCE_NOTICE}</p>
+            <a href={offlineSource.source.url} target="_blank" rel="noreferrer">
+              {copy.CONTINUE_TO_ORIGINAL_SOURCE}
+            </a>
             <button ref={closeRef} type="button" onClick={() => setOfflineSource(null)}>
               {copy.CLOSE}
             </button>

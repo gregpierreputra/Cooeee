@@ -1,6 +1,6 @@
 import * as copy from './copy';
 import { formatSavedDate } from './provenance';
-import type { BushfireAreaResult, LayerStatus } from './types';
+import type { BushfireAreaResult, LayerPublicationStatus, LayerStatus } from './types';
 
 export { formatSavedDate } from './provenance';
 
@@ -8,10 +8,11 @@ export { formatSavedDate } from './provenance';
  * existence probe controls; the snapshot is an independent drift check. */
 export function resolveBushfireAreaStatus(
   pointHits: number,
-  liveLayerExistsInLga: boolean,
+  publication: LayerPublicationStatus,
 ): LayerStatus {
   if (pointHits > 0) return 'present';
-  return liveLayerExistsInLga ? 'none-mapped-here' : 'not-published';
+  if (publication === 'unknown') return 'unknown';
+  return publication === 'published' ? 'none-mapped-here' : 'not-published';
 }
 
 export function extentSnapshotDisagrees(

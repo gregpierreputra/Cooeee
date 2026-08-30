@@ -184,12 +184,14 @@ export const ITEM_LEFT_OUT_REASON =
   'It did not name who published it or when it was published, so it was not saved.';
 export const PROVENANCE_STORAGE_RULE =
   'Cooeee only stores information it can show you the source for.';
-export const SOURCE_IS_ON_WEB =
-  'This source is on the web, so it cannot open while you are offline.';
+export const SOURCE_IS_ON_WEB = 'This source is on the web.';
 export const STORED_PROVENANCE_REMAINS =
   'The publisher and the saved date below are stored on this device and stay readable.';
 export const TRY_SOURCE_AGAIN = 'Try again when you have a connection';
 export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
+export const EXTERNAL_SOURCE_NOTICE =
+  'Opening it may use your connection and leave Cooeee.';
+export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to original source (web)';
 export const CLOSE = 'Close';
 export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
 export const NO_STORED_ITEMS = 'This pack has no stored information items to show.';

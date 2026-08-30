@@ -111,3 +111,15 @@ export function packDetailItems(content: CompletePackContent): PackDetailItem[] 
   }
   return items;
 }
+
+export type OriginalSourceDecision = {
+  kind: 'explain-before-open';
+  item: PackDetailItem;
+};
+
+/** Opening a source is always a two-step, explicit choice. Connectivity is not
+ * guessed from navigator.onLine because an interface can exist without a
+ * working route to the source. */
+export function decideOriginalSourceAccess(item: PackDetailItem): OriginalSourceDecision {
+  return { kind: 'explain-before-open', item };
+}

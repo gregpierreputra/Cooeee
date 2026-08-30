@@ -130,11 +130,15 @@ describe('E1-US2 mandated provenance and offline-source copy', () => {
 
   it('states what an offline source tap cannot do and what remains local', () => {
     expect(copy.SOURCE_IS_ON_WEB).toBe(
-      'This source is on the web, so it cannot open while you are offline.',
+      'This source is on the web.',
     );
     expect(copy.STORED_PROVENANCE_REMAINS).toBe(
       'The publisher and the saved date below are stored on this device and stay readable.',
     );
+    expect(copy.EXTERNAL_SOURCE_NOTICE).toBe(
+      'Opening it may use your connection and leave Cooeee.',
+    );
+    expect(copy.CONTINUE_TO_ORIGINAL_SOURCE).toBe('Continue to original source (web)');
   });
 
   it('formats the shared publisher and saved date line exactly', () => {

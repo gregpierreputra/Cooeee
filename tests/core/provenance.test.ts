@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 import {
+  decideOriginalSourceAccess,
   formatSavedDate,
   hasCompleteSource,
   isAllowedSourceUrl,
@@ -114,6 +115,14 @@ describe('E1-US2 required provenance', () => {
 });
 
 describe('E1-US2 original source links', () => {
+  it('always requires an explanation before the browser may leave Cooeee', () => {
+    const item = { id: 'source-1', name: 'Official source', source: source() };
+    expect(decideOriginalSourceAccess(item)).toEqual({
+      kind: 'explain-before-open',
+      item,
+    });
+  });
+
   it.each([
     'https://servicesaustralia.gov.au/example',
     'https://opendata.maps.vic.gov.au/example',

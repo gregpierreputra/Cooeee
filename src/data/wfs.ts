@@ -284,8 +284,16 @@ export async function fetchBushfireAreaResult(
     }
 
     const checkedAt = now();
+    const status = resolveBushfireAreaStatus(
+      pointHits,
+      liveLayerExists ? 'published' : 'unpublished',
+    );
+    // Successful response parsing makes this unreachable today. Keeping the
+    // guard means a future three-state probe cannot accidentally persist an
+    // unknown check as a confident result.
+    if (status === 'unknown') throw new Error('bushfire-area publication could not be verified');
     return {
-      status: resolveBushfireAreaStatus(pointHits, liveLayerExists),
+      status,
       checkedAt,
       lgaName,
       source: {

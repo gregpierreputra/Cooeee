@@ -85,9 +85,8 @@ test('US2 AC4 labels day 31 without disabling or hiding pack functions', async (
   )).toBe(true);
 });
 
-test('US2 AC5 keeps the pack open and explains an original source tap offline', async ({ context, page }) => {
+test('US2 AC5 always explains before an original source can leave Cooeee', async ({ page }) => {
   await page.goto(DETAIL_URL);
-  await context.setOffline(true);
   let requests = 0;
   await page.route('**', async (route) => {
     requests += 1;
@@ -96,13 +95,14 @@ test('US2 AC5 keeps the pack open and explains an original source tap offline', 
   await page.getByRole('link', { name: 'Open original source (web)' }).first().click();
 
   const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText(
-    'This source is on the web, so it cannot open while you are offline.',
-  );
+  await expect(dialog).toContainText('This source is on the web.');
   await expect(dialog).toContainText(
     'The publisher and the saved date below are stored on this device and stay readable.',
   );
+  await expect(dialog).toContainText('Opening it may use your connection and leave Cooeee.');
   await expect(dialog).toContainText('Published by Department of Transport and Planning');
+  await expect(dialog.getByRole('link', { name: 'Continue to original source (web)' }))
+    .toHaveAttribute('href', /^https:\/\//);
   await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
   expect(requests).toBe(0);

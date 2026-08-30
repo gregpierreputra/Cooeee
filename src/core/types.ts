@@ -1,6 +1,7 @@
 // Every record shape in the product. Pure types only — excluded from the coverage gate.
 // Three fields carry an honesty guarantee rather than a value: Pack.status,
-// ExposureLayer.status (three values, not two) and Destination.kind === 'absence'.
+// ExposureLayer.status (three verified values; unknown is never persisted) and
+// Destination.kind === 'absence'.
 
 export type Source = {
   publisher: string; // 'Department of Transport and Planning'
@@ -40,14 +41,19 @@ export type PackManifest = {
 
 export type LayerCode = 'BPA' | 'BMO' | 'LSIO' | 'FO' | 'SBO';
 
-export type LayerStatus = 'present' | 'none-mapped-here' | 'not-published';
+/** Publication is not boolean: a failed or skipped probe is not evidence that
+ * the layer is unpublished. */
+export type LayerPublicationStatus = 'published' | 'unpublished' | 'unknown';
+
+export type LayerStatus = 'present' | 'none-mapped-here' | 'not-published' | 'unknown';
+export type VerifiedLayerStatus = Exclude<LayerStatus, 'unknown'>;
 
 export type ExposureLayer = {
   id: string; // `${packId}:${code}`
   packId: string;
   group: 'designation' | 'overlay' | 'history'; // three groups, never merged
   code: LayerCode;
-  status: LayerStatus; // three values, not two
+  status: VerifiedLayerStatus; // an unknown check is never persisted as evidence
   features: {
     zoneCode?: string;
     description?: string;
@@ -167,7 +173,7 @@ export type PendingPlace = {
 /** A transient official BPA check. It remains in memory until the complete
  * pack pipeline persists an ExposureLayer in a later acceptance criterion. */
 export type BushfireAreaResult = {
-  status: Extract<LayerStatus, 'present' | 'none-mapped-here' | 'not-published'>;
+  status: VerifiedLayerStatus;
   checkedAt: number;
   lgaName: string;
   source: Source;
