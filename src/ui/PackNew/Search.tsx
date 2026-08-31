@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import {
   addressQueryCanRun,
   completedSearchState,
+  type AddressCandidateResolution,
   type AddressSearchState,
 } from '../../core/address-search';
 import { bpaExposureLayer } from '../../core/area-check';
@@ -38,7 +39,7 @@ type OfferState =
   | { kind: 'failed'; result: BushfireAreaResult };
 
 export type SearchProps = {
-  search?: (query: string) => Promise<AddressCandidate[]>;
+  search?: (query: string) => Promise<AddressCandidateResolution>;
   onPendingPlace?: (place: PendingPlace) => void;
   checkArea?: typeof fetchBushfireAreaResult;
   loadPacks?: () => Promise<Pack[]>;
@@ -260,6 +261,7 @@ export function Search({
     return (
       <Candidates
         candidates={state.candidates}
+        unresolvedCount={state.unresolvedCount}
         onChoose={setCandidate}
         onNone={() => setState({ kind: 'search' })}
       />
