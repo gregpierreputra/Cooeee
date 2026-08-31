@@ -131,9 +131,6 @@ export const SEARCH_AGAIN = 'Search again';
 // ── E1-US1-AC2–AC4 address search ──────────────────────────────────────────
 
 export const BUILD_A_PACK = 'Build a pack';
-/** Kicker label above the pack-build flow's screens. A decorative span,
- *  uppercased by CSS — never a heading. */
-export const NEW_PACK_KICKER = 'New pack';
 export const ADDRESS_SEARCH_TITLE = 'Search for your address';
 export const ADDRESS_FIELD_LABEL = 'Address';
 export const SEARCH = 'Search';
@@ -255,6 +252,23 @@ export const FLOODWAY_OVERLAY = 'Floodway Overlay';
 export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
+
+// ── Screen eyebrows ─────────────────────────────────────────────────────────
+// The small label above each screen's heading, rendered as the hero kicker. It
+// names the step of the flow the user is in, so the label earns its place
+// rather than repeating the mode.
+//
+// Sentence case here, capitals on screen: .kicker carries text-transform, and
+// the DOM carries an ordinary word. Some screen readers spell an all-caps string
+// out letter by letter, so the stored casing is an accessibility decision, not a
+// styling one — and keeping the transform meaningful stops it silently diverging
+// from what is stored. tests/core/copy.test.ts locks all five by exact match.
+
+export const EYEBROW_SET_UP_YOUR_PLACE = 'Set up your place';
+export const EYEBROW_CONFIRM_ADDRESS = 'Confirm address';
+export const EYEBROW_AREA_RESULT = 'Area result';
+export const EYEBROW_SAVE_YOUR_PACK = 'Save your pack';
+export const EYEBROW_MY_PACK = 'My pack';
 
 // ── E3-US1-AC1 BlackSky prepared direction ──────────────────────────────────
 

@@ -39,7 +39,8 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
   if (state.kind === 'saving') {
     return (
       <main className="page size-page">
-        <div role="status" aria-live="polite"><p>{copy.SAVING_PACK}</p></div>
+        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
+        <div className="card" role="status" aria-live="polite"><p>{copy.SAVING_PACK}</p></div>
       </main>
     );
   }
@@ -47,7 +48,8 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
   if (state.kind === 'interrupted') {
     return (
       <main className="page size-page">
-        <div className="size-content" role="status" aria-live="polite">
+        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
+        <div className="card size-content" role="status" aria-live="polite">
           <h1>{copy.DOWNLOAD_STOPPED}</h1>
           <p>{copy.PREVIOUS_PACK_UNTOUCHED}</p>
         </div>
@@ -61,7 +63,8 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
   if (state.kind === 'saved') {
     return (
       <main className="page size-page">
-        <div className="size-content" role="status" aria-live="polite">
+        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
+        <div className="card size-content" role="status" aria-live="polite">
           <h1>{copy.PLACE_SAVED}</h1>
           <p className="returned-address" data-testid="saved-address">{address}</p>
           {offer.omittedItems.length > 0 ? (
@@ -88,7 +91,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     <main className="page size-page">
       <div className="size-content">
         <header className="hero">
-          <span className="kicker">{copy.NEW_PACK_KICKER}</span>
+          <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
           <h1>{copy.READY_TO_DOWNLOAD}</h1>
         </header>
         <p className="pack-size figure">{packOfferSizeLine(offer)}</p>

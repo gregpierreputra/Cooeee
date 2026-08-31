@@ -25,7 +25,7 @@ export function Confirm({ candidate, onConfirm, onSearchAgain }: ConfirmProps) {
       <form className="confirm-form" onSubmit={handleSubmit}>
         <div className="confirm-content">
           <header className="hero">
-            <span className="kicker">{copy.NEW_PACK_KICKER}</span>
+            <span className="kicker">{copy.EYEBROW_CONFIRM_ADDRESS}</span>
             <h1>{copy.CONFIRM_ADDRESS_QUESTION}</h1>
           </header>
           <p className="returned-address" data-testid="returned-address">

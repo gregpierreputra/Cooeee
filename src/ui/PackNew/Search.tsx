@@ -236,7 +236,8 @@ export function Search({
   if (pendingPlace && conflictState?.kind === 'checking') {
     return (
       <main className="page conflict-page">
-        <div role="status" aria-live="polite"><p>{copy.CHECKING_SAVED_PLACE}</p></div>
+        <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
+        <div className="card" role="status" aria-live="polite"><p>{copy.CHECKING_SAVED_PLACE}</p></div>
       </main>
     );
   }
@@ -272,7 +273,8 @@ export function Search({
     if (offerState.kind === 'building') {
       return (
         <main className="page size-page">
-          <div role="status" aria-live="polite"><p>{copy.PREPARING_PACK_OFFER}</p></div>
+          <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
+          <div className="card" role="status" aria-live="polite"><p>{copy.PREPARING_PACK_OFFER}</p></div>
         </main>
       );
     }
@@ -280,7 +282,8 @@ export function Search({
     if (offerState.kind === 'failed') {
       return (
         <main className="page size-page">
-          <div role="status" aria-live="polite"><p>{copy.PACK_OFFER_FAILED}</p></div>
+          <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
+          <div className="card" role="status" aria-live="polite"><p>{copy.PACK_OFFER_FAILED}</p></div>
           <div className="actions">
             <button
               className="main-action"
@@ -340,7 +343,7 @@ export function Search({
       <form className="search-form" onSubmit={handleSubmit}>
         <div className="search-content">
           <header className="hero">
-            <span className="kicker">{copy.NEW_PACK_KICKER}</span>
+            <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
             <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
           </header>
           <label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>
@@ -356,7 +359,7 @@ export function Search({
           {/* One polite live region for the field. It carries the count when the
               list changes under a screen reader, which the list markup alone
               does not announce, and it is the only place a result is claimed. */}
-          <div id="address-result" className="search-result" role="status" aria-live="polite">
+          <div id="address-result" className="card search-result" role="status" aria-live="polite">
             {live.kind === 'too-short' ? <p>{copy.ADDRESS_QUERY_TOO_SHORT}</p> : null}
             {live.kind === 'pending' ? <p>{copy.SEARCH_IN_PROGRESS}</p> : null}
             {live.kind === 'dismissed' ? <p>{copy.REFINE_ADDRESS_HINT}</p> : null}

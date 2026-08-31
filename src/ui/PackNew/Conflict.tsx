@@ -14,7 +14,7 @@ export function Conflict({ savedAddress, newAddress, onKeep, onReplace }: Confli
     <main className="page conflict-page">
       <div className="conflict-content">
         <header className="hero">
-          <span className="kicker">{copy.NEW_PACK_KICKER}</span>
+          <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
           <h1>{copy.PLACE_ALREADY_SAVED}</h1>
         </header>
         <section className="card" aria-labelledby="saved-address-label">
@@ -40,7 +40,8 @@ export function ConflictBlocked({ multiple, onSearchAgain }: {
 }) {
   return (
     <main className="page conflict-page">
-      <div className="conflict-content" role="status" aria-live="polite">
+      <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
+      <div className="card conflict-content" role="status" aria-live="polite">
         <h1>{multiple ? copy.MULTIPLE_SAVED_PACKS : copy.SAVED_PLACE_CHECK_FAILED}</h1>
         <p>{copy.NOTHING_CHANGED}</p>
       </div>
