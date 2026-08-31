@@ -10,41 +10,41 @@ async function packs(page: Page) {
   return page.evaluate(() => window.__readPacks());
 }
 
-test('AC9 presents exact sizes and two equal, unselected choices before any write', async ({ page }) => {
+test('AC9 states the size before any write', async ({ page }) => {
   await page.goto(SIZE_URL);
 
   await expect(page.locator('main').locator('h1, .pack-size, button')).toHaveText([
     'Ready to download',
-    'Text 1 KB · Map tiles 12.4 MB for about 10 km around this place',
-    'Download both',
-    'Text only',
+    'This pack is 1 KB',
+    'Save this pack',
   ]);
-  const both = page.getByRole('button', { name: 'Download both' });
-  const text = page.getByRole('button', { name: 'Text only' });
-  await expect(both).not.toBeFocused();
-  await expect(text).not.toBeFocused();
-  await expect(both).toHaveCSS('background-color', await text.evaluate(
-    (element) => getComputedStyle(element).backgroundColor,
-  ));
-  expect(await both.evaluate((element) => element.getBoundingClientRect().height >= 24)).toBe(true);
-  expect(await text.evaluate((element) => element.getBoundingClientRect().height >= 24)).toBe(true);
+  const save = page.getByRole('button', { name: 'Save this pack' });
+  await expect(save).not.toBeFocused();
+  expect(await save.evaluate((element) => element.getBoundingClientRect().height >= 24)).toBe(true);
+
+  // Nothing has run and nothing has been written: the size is stated first.
   expect(await page.evaluate(() => window.__downloadCount)).toBe(0);
   expect(await counts(page)).toMatchObject({ packs: 0, layers: 0, destinations: 0, tiles: 0 });
 });
 
-test('AC9 text-only consent stores one exact complete zero-tile pack', async ({ page }) => {
+test('AC9 offers exactly one action', async ({ page }) => {
+  await page.goto(SIZE_URL);
+
+  // Map tiles are out of Iteration 1, so there is one kind of pack. A second
+  // button would offer a choice the user does not have.
+  await expect(page.locator('main').getByRole('button')).toHaveCount(1);
+  await expect(page.locator('main').getByRole('button')).toHaveText('Save this pack');
+  await expect(page.locator('main')).not.toContainText(/tile|map|text only|download both/i);
+  expect(await page.evaluate(() => window.__downloadCount)).toBe(0);
+});
+
+test('AC9 consent stores one complete pack of exactly the stated size', async ({ page }) => {
   await page.goto(SIZE_URL);
   const sizeLine = await page.locator('.pack-size').textContent();
-  await page.getByRole('button', { name: 'Text only' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
 
-  // One screen carries every approved piece of information: AC1's "Place saved"
-  // and the confirmed address, together with AC9's text-only outcome.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByTestId('saved-address')).toHaveText('6 RIDGE ROAD KALORAMA 3766');
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText('Saved without map tiles');
-  await expect(page.getByRole('status')).toContainText(
-    'Maps were not downloaded. Everything else in this pack works offline.',
-  );
   const openSavedPack = page.getByRole('button', { name: 'Open saved pack' });
   await expect(openSavedPack).toBeVisible();
 
@@ -69,7 +69,7 @@ test('AC9 interrupted staging cleans immediately and preserves the previous pack
   await expect(page.getByRole('heading')).toHaveText('Ready to download');
   const before = await packs(page);
   expect(before).toHaveLength(1);
-  await page.getByRole('button', { name: 'Text only' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
 
   await expect(page.getByRole('heading')).toHaveText('The download stopped before it finished.');
   await expect(page.getByRole('status')).toContainText(
@@ -80,17 +80,5 @@ test('AC9 interrupted staging cleans immediately and preserves the previous pack
 
   await page.getByRole('button', { name: 'Try again' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText('Saved without map tiles');
   expect((await packs(page)).map(({ id }) => id)).toEqual(['new-pack']);
-});
-
-test('AC9 makes unavailable maps explicit while keeping text-only available', async ({ page }) => {
-  await page.goto(`${SIZE_URL}?mode=unavailable`);
-
-  await expect(page.getByRole('status')).toHaveText(
-    'Map download is not available yet. Text only is still available.',
-  );
-  await expect(page.getByRole('button', { name: 'Download both' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Text only' })).toBeEnabled();
-  expect(await page.evaluate(() => window.__downloadCount)).toBe(0);
 });

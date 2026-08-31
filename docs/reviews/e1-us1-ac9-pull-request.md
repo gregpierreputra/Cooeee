@@ -1,5 +1,14 @@
 # E1-US1-AC9: Add pack size offer and text-only staging
 
+> **SCOPE ADDENDUM — 31 AUGUST 2026**
+>
+> The team approved a mapless Iteration 1. Historical implementation and test
+> evidence below is preserved as written, but PMTiles, `Download both`, tile
+> size disclosure and basemap provenance are no longer Epic 1 completion gaps.
+> The accepted outcome is exact structured-pack sizing, explicit save consent,
+> hidden staging, verification, interruption cleanup and atomic finalisation.
+> See `docs/decisions/iteration-1-mapless-scope.md`.
+
 > **STACKED DRAFT — DO NOT MERGE YET**
 
 This branch is stacked on `feature/e1-us1-ac8-pack-conflict` so review shows
@@ -63,12 +72,11 @@ approved sources and must not fabricate data owned by later epics.
 
 ## Status
 
-`Partial` — the local offer contract, exact text accounting, consent boundary,
-text-only staging/finalisation, replacement transaction and failure cleanup are
-implemented. Production `Download both` remains unavailable until a reviewed
-self-hosted PMTiles archive URL and measured metadata exist. Production flow
-integration also waits for the real EPIC 2 and EPIC 4 content contracts rather
-than inserting empty or synthetic product data.
+`Implemented under the revised Iteration 1 scope` — the local offer contract,
+exact text accounting, consent boundary, hidden staging/finalisation,
+replacement transaction and failure cleanup are implemented. The historical
+map branch is superseded by the approved mapless decision. Real EPIC 2 and
+EPIC 4 content remains governed by those epics and must not be fabricated.
 
 ## Review focus
 

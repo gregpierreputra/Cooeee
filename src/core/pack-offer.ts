@@ -36,13 +36,15 @@ export function formatPackBytes(bytes: number): string {
 }
 
 export function packOfferSizeLine(offer: PackOffer): string {
-  return copy.PACK_SIZE_LINE(formatPackBytes(offer.textBytes), formatPackBytes(offer.tileBytes));
+  return copy.PACK_SIZE_LINE(formatPackBytes(offer.textBytes));
 }
 
+/** The stated size and the stored size must be the same number. A stored pack
+ * claiming tile bytes cannot match an offer, because nothing in this iteration
+ * can produce them: that is a corrupted record, not a bigger pack. */
 export function offerMatchesStoredSize(
   offer: PackOffer,
   stored: { text: number; tiles: number },
-  withTiles: boolean,
 ): boolean {
-  return stored.text === offer.textBytes && stored.tiles === (withTiles ? offer.tileBytes : 0);
+  return stored.text === offer.textBytes && stored.tiles === 0;
 }

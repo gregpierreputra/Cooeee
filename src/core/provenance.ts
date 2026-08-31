@@ -105,6 +105,9 @@ export function packDetailItems(content: CompletePackContent): PackDetailItem[] 
     })),
     ...content.recovery.map((row) => ({ id: row.id, name: row.title, source: row.source })),
   ];
+  // ponytail: unreachable for Iteration 1 packs, which are all built without a
+  // basemap; kept because builtWithTiles is a stored field and this is the
+  // rendering the basemap capability will need when it lands.
   if (content.pack.builtWithTiles) {
     const source = content.pack.sources.find(({ licence }) => licence === 'ODbL');
     if (source) items.push({ id: `${content.pack.id}:basemap`, name: copy.OFFLINE_BASEMAP, source });

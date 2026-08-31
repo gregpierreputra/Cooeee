@@ -77,17 +77,10 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   });
 
   await searchConfirmAndReachOffer(page);
-  await expect(page.locator('.pack-size')).toContainText('Map tiles 0 KB');
-  await expect(page.getByRole('button', { name: 'Download both' })).toBeDisabled();
-
-  await page.getByRole('button', { name: 'Text only' }).click();
+  await expect(page.locator('.pack-size')).toContainText('This pack is');
+  await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText('Saved without map tiles');
-  await expect(page.getByText(
-    'Maps were not downloaded. Everything else in this pack works offline.',
-  )).toBeVisible();
-
   await page.getByRole('button', { name: 'Open saved pack' }).click();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
@@ -110,7 +103,7 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
     bpaHits: [bpaHitFeature(LGA_NAME)],
   });
   await searchConfirmAndReachOffer(page);
-  await page.getByRole('button', { name: 'Text only' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
   const firstPackUrl = page.url();
 
@@ -135,7 +128,7 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
     'This address is inside a Designated Bushfire Prone Area.',
   );
   await page.getByRole('button', { name: 'See pack size' }).click();
-  await page.getByRole('button', { name: 'Text only' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
 
   expect(page.url()).not.toBe(firstPackUrl);
@@ -157,7 +150,7 @@ async function saveAPackAndOpenIt(page: Page) {
     bpaHits: [bpaHitFeature(LGA_NAME)],
   });
   await searchConfirmAndReachOffer(page);
-  await page.getByRole('button', { name: 'Text only' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
 }

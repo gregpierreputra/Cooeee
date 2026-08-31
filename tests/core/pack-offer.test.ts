@@ -31,9 +31,6 @@ const content: TextPackContent = {
 const offer: PackOffer = {
   version: 1,
   textBytes: 421_888,
-  tileBytes: 13_002_342,
-  tileCount: 120,
-  tilesAvailable: true,
   omittedItems: [],
   textManifest: {
     layers: { count: 0, sha256: 'a' },
@@ -78,16 +75,20 @@ describe('E1-US1-AC9 size display and verification', () => {
     expect(() => formatPackBytes(bytes)).toThrow(RangeError);
   });
 
-  it('builds the mandated split size line', () => {
-    expect(packOfferSizeLine(offer)).toBe(
-      'Text 412 KB · Map tiles 12.4 MB for about 10 km around this place',
-    );
+  // Map tiles are out of Iteration 1, so the line states one size. There is no
+  // second figure to contrast it with and no word left over from the one there
+  // was.
+  it('states the pack size as one figure', () => {
+    expect(packOfferSizeLine(offer)).toBe('This pack is 412 KB');
   });
 
-  it('requires exact text and selected tile bytes', () => {
-    expect(offerMatchesStoredSize(offer, { text: 421_888, tiles: 13_002_342 }, true)).toBe(true);
-    expect(offerMatchesStoredSize(offer, { text: 421_888, tiles: 0 }, false)).toBe(true);
-    expect(offerMatchesStoredSize(offer, { text: 421_887, tiles: 0 }, false)).toBe(false);
-    expect(offerMatchesStoredSize(offer, { text: 421_888, tiles: 1 }, false)).toBe(false);
+  it('requires the stored text bytes to be exactly the stated size', () => {
+    expect(offerMatchesStoredSize(offer, { text: 421_888, tiles: 0 })).toBe(true);
+    expect(offerMatchesStoredSize(offer, { text: 421_887, tiles: 0 })).toBe(false);
+    expect(offerMatchesStoredSize(offer, { text: 421_889, tiles: 0 })).toBe(false);
+  });
+
+  it('rejects a stored pack claiming tile bytes nothing can produce', () => {
+    expect(offerMatchesStoredSize(offer, { text: 421_888, tiles: 1 })).toBe(false);
   });
 });

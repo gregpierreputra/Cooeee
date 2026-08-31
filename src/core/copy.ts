@@ -202,20 +202,13 @@ export const NOTHING_CHANGED = 'Nothing has been changed.';
 // ── E1-US1-AC9 pack offer and download ─────────────────────────────
 
 export const READY_TO_DOWNLOAD = 'Ready to download';
-export const PACK_SIZE_LINE = (textSize: string, tileSize: string) =>
-  `Text ${textSize} · Map tiles ${tileSize} for about 10 km around this place`;
-export const DOWNLOAD_BOTH = 'Download both';
-export const TEXT_ONLY = 'Text only';
+export const PACK_SIZE_LINE = (size: string) => `This pack is ${size}`;
+export const SAVE_PACK = 'Save this pack';
 export const SAVING_PACK = 'Saving the pack.';
 export const DOWNLOAD_STOPPED = 'The download stopped before it finished.';
 export const PREVIOUS_PACK_UNTOUCHED =
   'Nothing has been changed. Your previous pack is untouched.';
-export const SAVED_WITHOUT_MAP_TILES = 'Saved without map tiles';
-export const MAPS_NOT_DOWNLOADED =
-  'Maps were not downloaded. Everything else in this pack works offline.';
 export const PLACE_SAVED = 'Place saved';
-export const MAP_DOWNLOAD_UNAVAILABLE =
-  'Map download is not available yet. Text only is still available.';
 
 // ── E1-US2-AC1–AC5 pack provenance and offline source access ───────────────
 
