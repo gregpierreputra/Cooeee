@@ -41,7 +41,6 @@ const content = (over: Partial<TextPackContent> = {}): TextPackContent => ({
   ...over,
 });
 
-const tileMetadata = { bytes: 13_002_342, count: 120, available: true };
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((table) => table.clear()));
@@ -50,12 +49,9 @@ beforeEach(async () => {
 
 describe('E1-US1-AC9 offer preparation', () => {
   it('computes metadata without writing any store', async () => {
-    const offer = await createPackOffer(content(), tileMetadata);
+    const offer = await createPackOffer(content());
     expect(offer).toMatchObject({
       version: 1,
-      tileBytes: 13_002_342,
-      tileCount: 120,
-      tilesAvailable: true,
       textManifest: {
         layers: { count: 1 }, destinations: { count: 1 }, recovery: { count: 1 },
       },
@@ -66,18 +62,11 @@ describe('E1-US1-AC9 offer preparation', () => {
     expect(await db.tiles.count()).toBe(0);
   });
 
-  it.each([
-    [{ bytes: -1, count: 0, available: true }, 'tile bytes'],
-    [{ bytes: 0, count: -1, available: true }, 'tile count'],
-  ])('rejects invalid tile metadata', async (tiles, message) => {
-    await expect(createPackOffer(content(), tiles)).rejects.toThrow(message);
-  });
-
   it('requires provenance on every proposed item', async () => {
     const bad = content({
       destinations: [destination({ source: source({ publisher: '' }) })],
     });
-    const offer = await createPackOffer(bad, tileMetadata);
+    const offer = await createPackOffer(bad);
     expect(offer.omittedItems).toEqual([
       { id: 'pack-1:nsp-0001', missing: 'publisher' },
     ]);
@@ -88,7 +77,7 @@ describe('E1-US1-AC9 offer preparation', () => {
     const proposed = content({
       destinations: [destination({ source: source({ retrievedAt: 0 }) })],
     });
-    const offer = await createPackOffer(proposed, tileMetadata);
+    const offer = await createPackOffer(proposed);
 
     await saveTextOnlyPack(proposed, offer, 999);
 
@@ -101,14 +90,14 @@ describe('E1-US1-AC9 offer preparation', () => {
 
   it('still rejects a retained item whose non-display provenance is incomplete', async () => {
     const bad = content({ destinations: [destination({ source: source({ licence: '' }) })] });
-    await expect(createPackOffer(bad, tileMetadata)).rejects.toThrow('destination');
+    await expect(createPackOffer(bad)).rejects.toThrow('destination');
   });
 });
 
 describe('E1-US1-AC9 text-only staging and finalisation', () => {
   it('writes nothing before consent, then stores an exact zero-tile complete pack', async () => {
     const proposed = content();
-    const offer = await createPackOffer(proposed, tileMetadata);
+    const offer = await createPackOffer(proposed);
     expect(await listCompletePacks()).toEqual([]);
 
     await saveTextOnlyPack(proposed, offer, 999);
@@ -125,7 +114,7 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
 
   it('stage then cancel immediately removes every owned row', async () => {
     const proposed = content();
-    const offer = await createPackOffer(proposed, tileMetadata);
+    const offer = await createPackOffer(proposed);
     await stageTextOnlyPack(proposed, offer);
     expect(await listCompletePacks()).toEqual([]);
 
@@ -139,7 +128,7 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
 
   it('rejects tampering and can then clean the hidden build', async () => {
     const proposed = content();
-    const offer = await createPackOffer(proposed, tileMetadata);
+    const offer = await createPackOffer(proposed);
     await stageTextOnlyPack(proposed, offer);
     await db.layers.update('pack-1:BPA', { checkedAt: 2 });
 
@@ -160,7 +149,7 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
       destinations: [],
       recovery: [{ ...recovery, id: 'missing-program' }],
     });
-    const offer = await createPackOffer(proposed, tileMetadata);
+    const offer = await createPackOffer(proposed);
 
     await expect(saveTextOnlyPack(proposed, offer, 999)).rejects.toThrow('not present');
     expect(await db.packs.get(old.id)).toEqual(before);
@@ -179,7 +168,7 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
       layers: [{ ...content().layers[0], id: 'new-pack:BPA', packId: 'new-pack' }],
       destinations: [destination({ id: 'new-pack:d', packId: 'new-pack' })],
     });
-    const offer = await createPackOffer(proposed, tileMetadata);
+    const offer = await createPackOffer(proposed);
     await saveTextOnlyPack(proposed, offer, 999);
 
     expect((await listCompletePacks()).map(({ id }) => id)).toEqual(['new-pack']);

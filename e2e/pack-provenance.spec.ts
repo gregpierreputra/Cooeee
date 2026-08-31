@@ -32,7 +32,7 @@ test('US2 AC1 provenance remains readable at 200 percent text size', async ({ pa
 
 test('US2 AC2 leaves missing-provenance content out of both storage and the saved result', async ({ page }) => {
   await page.goto(`${SIZE_URL}?mode=omission`);
-  await page.getByRole('button', { name: 'Text only' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
 
   await expect(page.getByRole('heading', { name: 'One item was left out of your pack.' }))
     .toBeVisible();

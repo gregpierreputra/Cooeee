@@ -198,7 +198,7 @@ export function Search({
         destinations: [],
         recovery: [],
       };
-      const offer = await buildOffer(content, { bytes: 0, count: 0, available: false });
+      const offer = await buildOffer(content);
       setOfferState({ kind: 'ready', offer, content });
     } catch {
       setOfferState({ kind: 'failed', result });
@@ -301,8 +301,7 @@ export function Search({
       <Size
         offer={offerState.offer}
         address={offerState.content.pack.address}
-        download={async (choice) => {
-          if (choice === 'both') throw new Error('map download is not available yet');
+        download={async () => {
           await savePack(offerState.content, offerState.offer, now());
         }}
         onContinue={() => onPackSaved(offerState.content.pack.id)}

@@ -10,12 +10,6 @@ import type {
 import { db } from './db';
 import { manifestGroup } from './integrity';
 
-export type TileOfferMetadata = {
-  bytes: number;
-  count: number;
-  available: boolean;
-};
-
 function assertContent(content: TextPackContent): void {
   if (content.pack.sources.length === 0 || content.pack.sources.some((source) => !hasCompleteSource(source))) {
     throw new TypeError('pack must carry complete source provenance');
@@ -41,34 +35,21 @@ async function textManifest(content: TextPackContent): Promise<PackOffer['textMa
 
 async function createPreparedPackOffer(
   content: TextPackContent,
-  tiles: TileOfferMetadata,
   omittedItems: OmittedItem[],
 ): Promise<PackOffer> {
   assertContent(content);
-  if (!Number.isInteger(tiles.bytes) || tiles.bytes < 0) {
-    throw new RangeError('tile bytes must be a non-negative integer');
-  }
-  if (!Number.isInteger(tiles.count) || tiles.count < 0) {
-    throw new RangeError('tile count must be a non-negative integer');
-  }
   return {
     version: 1,
     textBytes: exactTextBytes(content),
-    tileBytes: tiles.bytes,
-    tileCount: tiles.count,
-    tilesAvailable: tiles.available,
     omittedItems,
     textManifest: await textManifest(content),
   };
 }
 
 /** Produces AC9 metadata only. It performs no fetch and no device write. */
-export async function createPackOffer(
-  content: TextPackContent,
-  tiles: TileOfferMetadata,
-): Promise<PackOffer> {
+export async function createPackOffer(content: TextPackContent): Promise<PackOffer> {
   const prepared = prepareProvenancedContent(content);
-  return createPreparedPackOffer(prepared.content, tiles, prepared.omittedItems);
+  return createPreparedPackOffer(prepared.content, prepared.omittedItems);
 }
 
 function textOnlyManifest(offer: PackOffer): PackManifest {
@@ -97,11 +78,10 @@ export async function stageTextOnlyPack(
   const prepared = prepareProvenancedContent(content);
   assertContent(prepared.content);
   const recovery = await storedRecovery(prepared.content.recovery);
-  const rebuiltOffer = await createPreparedPackOffer({ ...prepared.content, recovery }, {
-    bytes: offer.tileBytes,
-    count: offer.tileCount,
-    available: offer.tilesAvailable,
-  }, prepared.omittedItems);
+  const rebuiltOffer = await createPreparedPackOffer(
+    { ...prepared.content, recovery },
+    prepared.omittedItems,
+  );
   if (canonicalJson(rebuiltOffer) !== canonicalJson(offer)) {
     throw new Error('pack offer no longer matches the proposed content');
   }
@@ -155,15 +135,10 @@ export async function verifyAndFinalizeTextOnlyPack(
       destinations,
       recovery,
     },
-    {
-      bytes: offer.tileBytes,
-      count: offer.tileCount,
-      available: offer.tilesAvailable,
-    },
     prepared.omittedItems,
   );
   if (canonicalJson(verifiedOffer) !== canonicalJson(offer)
-    || !offerMatchesStoredSize(offer, staged.sizeBytes, false)
+    || !offerMatchesStoredSize(offer, staged.sizeBytes)
     || canonicalJson(staged.manifest) !== canonicalJson(textOnlyManifest(offer))) {
     throw new Error('staged pack failed manifest or size verification');
   }

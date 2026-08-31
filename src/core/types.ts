@@ -21,6 +21,12 @@ export type Pack = {
   lgaName: string;
   createdAt: number;
   verifiedAt: number; // freshness derives from THIS, not createdAt
+  // ponytail: constant for Iteration 1 — the basemap is out of scope, so every
+  // pack is written with builtWithTiles false and sizeBytes.tiles 0. The fields
+  // stay because they are already the honest description of a pack with no
+  // tiles, and because removing them would rewrite every stored pack row at
+  // startup, outside the user's choice. Upgrade path: the basemap capability
+  // populates them; no migration is needed when it lands.
   builtWithTiles: boolean;
   sizeBytes: { text: number; tiles: number };
   reminder: string; // the one short BlackSky reminder
@@ -35,6 +41,9 @@ export type PackManifest = {
     layers: { count: number; sha256: string };
     destinations: { count: number; sha256: string };
     recovery: { count: number; sha256: string };
+    // ponytail: constant { count: 0, bytes: 0 } for Iteration 1, which is the
+    // lifecycle contract's explicit no-tiles marker rather than a placeholder.
+    // Upgrade path: the basemap capability fills it from the range reader.
     tiles: { count: number; bytes: number }; // count 0 = the explicit text-only marker
   };
 };
@@ -185,9 +194,6 @@ export type BushfireAreaResult = {
 export type PackOffer = {
   version: 1;
   textBytes: number;
-  tileBytes: number;
-  tileCount: number;
-  tilesAvailable: boolean;
   omittedItems: { id: string; missing: 'publisher' | 'saved-date' }[];
   textManifest: Omit<PackManifest['groups'], 'tiles'>;
 };
