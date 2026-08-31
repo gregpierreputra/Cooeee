@@ -85,6 +85,11 @@ describe('composed lines', () => {
   it('a fresh pack is dated without a verdict attached', () => {
     expect(copy.SAVED_DAYS_AGO(3)).toBe('Saved 3 days ago');
   });
+
+  it('the choose hint pluralises for one place versus two', () => {
+    expect(copy.CHOOSE_PLACES_HINT(1)).toBe('Choose the place to save.');
+    expect(copy.CHOOSE_PLACES_HINT(2)).toBe('Choose two places to save.');
+  });
 });
 
 describe('shared vocabulary', () => {

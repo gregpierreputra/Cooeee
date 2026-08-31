@@ -1,7 +1,7 @@
 import { absenceRow } from './destination';
 import { withinRadius } from './geo';
 import * as copy from './copy';
-import type { Destination, LatLon, NspSite, NspSnapshot } from './types';
+import type { Destination, HazardType, LatLon, NspSite, NspSnapshot } from './types';
 
 // The council names in the CFA list carry a governance suffix ("Yarra Ranges
 // Shire") that a pack's lgaName ("YARRA RANGES") does not, and either side may
@@ -31,18 +31,26 @@ const isLocated = (site: NspSite): boolean =>
  *  could not place on the map.
  *
  *  The radius is never widened when the result is empty, and the list is never
- *  joined to any other data — a park or hall from the basemap has no path in. */
+ *  joined to any other data — a park or hall from the basemap has no path in.
+ *
+ *  Neighbourhood Safer Places are a bushfire concept: for a flood or heat pack
+ *  this returns nothing at all, whatever the snapshot holds. */
 export const selectSitesForPack = (
   sites: NspSite[],
   centre: LatLon,
   lgaName: string,
   radiusKm: number,
-): { located: NspSite[]; unlocated: NspSite[] } => ({
-  located: sites.filter(
-    (site) => isLocated(site) && withinRadius(centre, { lat: site.lat!, lon: site.lon! }, radiusKm),
-  ),
-  unlocated: sites.filter((site) => !isLocated(site) && sameLga(site.municipality, lgaName)),
-});
+  hazard: HazardType = 'bushfire',
+): { located: NspSite[]; unlocated: NspSite[] } => {
+  if (hazard !== 'bushfire') return { located: [], unlocated: [] };
+  return {
+    located: sites.filter(
+      (site) =>
+        isLocated(site) && withinRadius(centre, { lat: site.lat!, lon: site.lon! }, radiusKm),
+    ),
+    unlocated: sites.filter((site) => !isLocated(site) && sameLga(site.municipality, lgaName)),
+  };
+};
 
 const composeAddress = (site: NspSite): string =>
   [site.street, site.subLocation, site.township]
@@ -93,22 +101,27 @@ export const formatIsoDateShort = (iso: string): string => {
 export const nspListDateLabel = (listAsAt: string): string =>
   copy.NSP_LIST_AS_AT(formatIsoDateShort(listAsAt));
 
-/** The destination rows to persist for a pack. When the CFA list yields nothing
- *  for the area — no site in range and none listed for the council — the pack
- *  still carries ONE row: the absence marker, with its reason and the area it
- *  applies to. Absence is a row, never an empty array, so PackDetail and
- *  BlackSky read the same truth. The radius is never widened and no place from a
- *  neighbouring council is ever substituted — that is already true of
- *  `selectSitesForPack`; this function just never papers over its empty result. */
+/** The destination rows to persist for a pack.
+ *
+ *  A flood or heat pack gets NONE — no places and no absence marker, because an
+ *  NSP-shaped absence row would itself be offering a bushfire-only concept.
+ *
+ *  For a bushfire pack: when the CFA list yields nothing for the area — no site
+ *  in range and none listed for the council — the pack still carries ONE row,
+ *  the absence marker, with its reason and the area it applies to. Absence is a
+ *  row, never an empty array, so PackDetail and BlackSky read the same truth.
+ *  Otherwise the pack carries exactly the places the user chose (`chosen`) —
+ *  never the whole list, never a neighbouring council, never a widened radius. */
 export const destinationsForPack = (
   selection: { located: NspSite[]; unlocated: NspSite[] },
+  chosen: Destination[],
   packId: string,
   snapshot: Pick<NspSnapshot, 'listAsAt' | 'source'>,
   area: string,
-): Destination[] =>
-  selection.located.length === 0 && selection.unlocated.length === 0
+  hazard: HazardType = 'bushfire',
+): Destination[] => {
+  if (hazard !== 'bushfire') return [];
+  return selection.located.length === 0 && selection.unlocated.length === 0
     ? [absenceRow(packId, area, snapshot.source)]
-    : [
-        ...selection.located.map((site) => toDestination(site, packId, snapshot)),
-        ...selection.unlocated.map((site) => toDestination(site, packId, snapshot)),
-      ];
+    : chosen;
+};

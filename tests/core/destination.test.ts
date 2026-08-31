@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { NO_DESTINATION_PUBLISHED } from '../../src/core/copy';
 import {
   absenceRow,
+  canSaveDestinations,
   chooseRules,
+  chosenDestinations,
   formatDistanceM,
   ordinalLabel,
   orderByDistance,
+  savableCount,
 } from '../../src/core/destination';
 import { KALORAMA, destination, source } from '../fixtures';
 
@@ -108,6 +111,67 @@ describe('chooseRules', () => {
     const chosen = ['a'];
     chooseRules(chosen, 'b');
     expect(chosen).toEqual(['a']);
+  });
+});
+
+describe('savableCount', () => {
+  it('is two, or fewer when fewer places are located', () => {
+    expect(savableCount(0)).toBe(0);
+    expect(savableCount(1)).toBe(1);
+    expect(savableCount(2)).toBe(2);
+    expect(savableCount(5)).toBe(2);
+  });
+});
+
+describe('canSaveDestinations', () => {
+  it.each([
+    [0, 0, false],
+    [1, 0, false],
+    [1, 1, true],
+    [2, 1, false],
+    [2, 2, true],
+    [3, 2, true],
+  ])('located %i, chosen %i -> %s', (located, chosen, expected) => {
+    expect(canSaveDestinations(located, chosen)).toBe(expected);
+  });
+});
+
+describe('chosenDestinations', () => {
+  const ordered = [
+    destination({ id: 'a', name: 'A', council: 'Yarra Ranges Shire', listAsAt: '2026-08-18', distanceM: 100, distanceOrder: 0 }),
+    destination({ id: 'b', name: 'B', council: 'Yarra Ranges Shire', listAsAt: '2026-08-18', distanceM: 200, distanceOrder: 1 }),
+    destination({ id: 'c', name: 'C', council: 'Yarra Ranges Shire', listAsAt: '2026-08-18', distanceM: 300, distanceOrder: 2 }),
+  ];
+
+  it('keeps the picks in the list order, each marked chosen and nothing more', () => {
+    const picks = chosenDestinations(ordered, ['c', 'a']);
+    expect(picks.map((d) => d.id)).toEqual(['a', 'c']);
+    expect(picks.every((d) => d.chosen === true)).toBe(true);
+  });
+
+  it('carries type, council, recorded date and distance through unchanged', () => {
+    const [pick] = chosenDestinations(ordered, ['b']);
+    expect(pick).toMatchObject({
+      kind: 'nsp-bushfire',
+      council: 'Yarra Ranges Shire',
+      listAsAt: '2026-08-18',
+      distanceM: 200,
+      distanceOrder: 1,
+      chosen: true,
+    });
+  });
+
+  it('adds nothing when nothing is chosen', () => {
+    expect(chosenDestinations(ordered, [])).toEqual([]);
+  });
+
+  it('throws rather than persist a third place', () => {
+    expect(() => chosenDestinations(ordered, ['a', 'b', 'c'])).toThrow(/at most 2/);
+  });
+
+  it('does not mutate its input', () => {
+    chosenDestinations(ordered, ['a']);
+    expect(ordered[0].chosen).toBeUndefined();
   });
 });
 

@@ -101,6 +101,29 @@ h2 {
   font-size: var(--step-0);
 }
 
+/* Selecting places to save. The checkbox is small, so the label carries the
+   44px target and the whole row head is the hit area. */
+.destination-item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.destination-item-head input[type='checkbox'] {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  flex: none;
+}
+.destination-item-head label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+}
+.destination-choose-hint {
+  margin: 0;
+  color: var(--ink-2);
+}
+
 /* Absence states use the SAME neutral treatment as presence states. Absence must
    read as absence — never as reassurance, never as an error. There are no alert
    colours and no warning iconography in this stylesheet at all. */

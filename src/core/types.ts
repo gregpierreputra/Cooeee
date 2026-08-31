@@ -10,6 +10,11 @@ export type Source = {
   retrievedAt: number; // epoch ms
 };
 
+/** The hazard a pack is prepared for. Iteration 1 builds bushfire packs only; an
+ * absent value means bushfire. Neighbourhood Safer Places are a bushfire concept
+ * and are never offered for flood or heat. */
+export type HazardType = 'bushfire' | 'flood' | 'heat';
+
 export type Pack = {
   id: string; // crypto.randomUUID()
   status: 'building' | 'complete'; // THE atomicity mechanism
@@ -27,6 +32,7 @@ export type Pack = {
   manifest: PackManifest;
   sources: Source[];
   supersedes?: string; // set by "update"; the old pack lives until acknowledged
+  hazardType?: HazardType; // absent = 'bushfire' (Iteration 1 builds bushfire only)
 };
 
 export type PackManifest = {
