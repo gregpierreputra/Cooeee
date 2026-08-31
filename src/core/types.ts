@@ -224,3 +224,28 @@ export type PackDetailItem = {
   name: string;
   source: Source;
 };
+
+/** One row of the CFA Neighbourhood Safer Places state-wide list, as produced by
+ * scripts/build-nsp.ts. The raw snapshot shape — not an IndexedDB record.
+ * `lat`/`lon` are present for every geocode except 'none'. */
+export type NspSite = {
+  id: string; // stable across rebuilds: slug(municipality|township|name)
+  municipality: string; // the responsible council, shown on every entry
+  township: string;
+  name: string; // the place name, shown on every entry
+  subLocation: string; // may be empty
+  street: string;
+  geocode: 'exact' | 'street' | 'township' | 'none';
+  lat?: number; // absent only when geocode === 'none'
+  lon?: number;
+};
+
+/** The precached CFA NSP snapshot file. One state-wide `listAsAt` date; there is
+ * no per-site date and no stated licence
+ * (see prompt-bank/datasets/licence-and-attribution.txt). */
+export type NspSnapshot = {
+  listAsAt: string; // ISO date — the list's own date, shown as the list's date
+  retrievedAt: number; // epoch ms
+  source: Source;
+  sites: NspSite[];
+};
