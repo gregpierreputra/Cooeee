@@ -75,8 +75,28 @@ function ScreenBody({ screen }: { screen: Screen }) {
   switch (screen.kind) {
     case 'NO_PACK':
       return <StateCard heading={copy.NO_PACKS_YET} detail={copy.NO_PACKS_HINT} />;
+    // AC2: no usable fix. The saved information degrades to reference text —
+    // names, addresses and the reminder, WITHOUT an arrow or a distance. A
+    // designed state, not an error: the next derivation with a fresh fix
+    // renders IN_AREA again on its own.
     case 'ACQUIRING':
-      return <StateCard heading={copy.NO_GPS} />;
+      return (
+        <>
+          <p className="muted">{copy.NO_GPS}</p>
+          <ul className="list">
+            {screen.places.map((place) => (
+              <li key={place.id} className="blacksky-place">
+                {place.name ? <h2>{place.name}</h2> : null}
+                {place.addressText ? <p className="muted">{place.addressText}</p> : null}
+                {place.reason ? <p className="muted">{place.reason}</p> : null}
+              </li>
+            ))}
+          </ul>
+          {screen.pack.reminder ? (
+            <p className="blacksky-reminder">{screen.pack.reminder}</p>
+          ) : null}
+        </>
+      );
     case 'LOW_ACCURACY':
       return <StateCard heading={copy.GPS_TOO_INACCURATE(screen.accuracyM)} />;
     case 'OUT_OF_AREA':
