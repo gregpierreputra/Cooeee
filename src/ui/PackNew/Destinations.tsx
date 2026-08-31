@@ -23,8 +23,9 @@ export type DestinationsProps = {
   listAsAt: string;
   /** The area the list applies to, for the honest-absence line. */
   area: string;
-  /** 'unavailable' when the cached list could not be read at all. */
-  status?: 'ok' | 'unavailable';
+  /** 'unavailable' when the cached list could not be read at all;
+   *  'not-bushfire' when the pack is for flood or heat (NSPs do not apply). */
+  status?: 'ok' | 'unavailable' | 'not-bushfire';
   /** When provided, the ordered rows become selectable and the two the user
    *  picks are persisted by this callback. Absent = a read-only list. */
   save?: (chosenIds: string[]) => Promise<void>;
@@ -98,6 +99,15 @@ export function Destinations({
       <main className="page destinations-page">
         <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
         <StateCard heading={copy.OFFICIAL_LIST_UNAVAILABLE} />
+      </main>
+    );
+  }
+
+  if (status === 'not-bushfire') {
+    return (
+      <main className="page destinations-page">
+        <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+        <StateCard heading={copy.NSP_BUSHFIRE_ONLY} />
       </main>
     );
   }

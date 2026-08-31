@@ -244,6 +244,8 @@ export const NSP_UNLOCATED_HEADING =
   'On the CFA list but not located to a point on the map';
 export const OFFICIAL_LIST_UNAVAILABLE =
   'The official list could not be included for this area.';
+export const NSP_BUSHFIRE_ONLY =
+  'Neighbourhood Safer Places are for bushfire only. None are shown for this pack.';
 
 // ── E2-US2 choose and save two ────────────────────────────────────────────
 

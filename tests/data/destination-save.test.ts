@@ -100,4 +100,27 @@ describe("E2-US2-AC1 saving the user's two picks", () => {
     expect(await db.packs.count()).toBe(0);
     expect(await db.destinations.count()).toBe(0);
   });
+
+  it('E2-US2-AC2: a flood pack saves with zero Neighbourhood Safer Place rows', async () => {
+    const content: TextPackContent = {
+      pack: seed({ hazardType: 'flood' }),
+      layers: [],
+      destinations: destinationsForPack(
+        selection,
+        chosenDestinations(ordered, ['pack-1:s-near', 'pack-1:s-mid']),
+        'pack-1',
+        snapshot,
+        'Yarra Ranges',
+        'flood',
+      ),
+      recovery: [],
+    };
+    const offer = await createPackOffer(content, tiles);
+    await saveTextOnlyPack(content, offer, 999);
+
+    const saved = await db.packs.get('pack-1');
+    expect(saved?.hazardType).toBe('flood');
+    expect(saved?.manifest.groups.destinations.count).toBe(0);
+    expect(await db.destinations.where('packId').equals('pack-1').count()).toBe(0);
+  });
 });

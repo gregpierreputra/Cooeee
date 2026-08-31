@@ -106,6 +106,34 @@ describe('selectSitesForPack', () => {
   });
 });
 
+describe('selectSitesForPack — the bushfire-only gate', () => {
+  const sites = [
+    nspSite({ id: 'a', lat: KALORAMA.lat + 0.01, lon: KALORAMA.lon }),
+    nspSite({ id: 'b', geocode: 'none', lat: undefined, lon: undefined }),
+  ];
+
+  it('returns nothing for a flood pack, whatever the snapshot holds', () => {
+    expect(selectSitesForPack(sites, KALORAMA, 'YARRA RANGES', 6, 'flood')).toEqual({
+      located: [],
+      unlocated: [],
+    });
+  });
+
+  it('returns nothing for a heat pack', () => {
+    expect(selectSitesForPack(sites, KALORAMA, 'YARRA RANGES', 6, 'heat')).toEqual({
+      located: [],
+      unlocated: [],
+    });
+  });
+
+  it('is identical for an explicit bushfire hazard and an omitted one', () => {
+    const explicit = selectSitesForPack(sites, KALORAMA, 'YARRA RANGES', 6, 'bushfire');
+    expect(explicit).toEqual(selectSitesForPack(sites, KALORAMA, 'YARRA RANGES', 6));
+    expect(explicit.located.map((s) => s.id)).toEqual(['a']);
+    expect(explicit.unlocated.map((s) => s.id)).toEqual(['b']);
+  });
+});
+
 describe('toDestination', () => {
   const snap = nspSnapshot();
 
@@ -245,5 +273,11 @@ describe('destinationsForPack', () => {
     const rows = destinationsForPack(selection, [], 'pack-9', snapshot, 'Yarra Ranges');
     expect(rows).toHaveLength(1);
     expect(rows[0].kind).toBe('absence');
+  });
+
+  it('a flood or heat pack gets no rows at all — not even an absence marker', () => {
+    const populated = { located: [nspSite({ id: 'a' })], unlocated: [] };
+    expect(destinationsForPack(populated, picks, 'pack-9', snap, 'Yarra Ranges', 'flood')).toEqual([]);
+    expect(destinationsForPack({ located: [], unlocated: [] }, [], 'pack-9', snap, 'Yarra Ranges', 'heat')).toEqual([]);
   });
 });

@@ -228,3 +228,23 @@ test('US2-AC1 the un-located group is never selectable', async ({ page }) => {
     page.locator('[data-testid=unlocated-destinations] input[type=checkbox]'),
   ).toHaveCount(0);
 });
+
+const BUSHFIRE_ONLY =
+  'Neighbourhood Safer Places are for bushfire only. None are shown for this pack.';
+
+test('US2-AC2 a flood pack is offered no Neighbourhood Safer Place', async ({ page }) => {
+  await page.goto(`${URL}?hazard=flood&select=1`);
+
+  await expect(page.getByText(BUSHFIRE_ONLY)).toBeVisible();
+  await expect(page.locator('.destination-item')).toHaveCount(0);
+  await expect(page.locator('input[type=checkbox]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: SAVE })).toHaveCount(0);
+  await expect(page.getByText('No official place of last resort is published')).toHaveCount(0);
+  await expect(page.getByText(CAVEAT)).toHaveCount(0);
+});
+
+test('US2-AC2 a heat pack is treated the same as flood', async ({ page }) => {
+  await page.goto(`${URL}?hazard=heat`);
+  await expect(page.getByText(BUSHFIRE_ONLY)).toBeVisible();
+  await expect(page.locator('.destination-item')).toHaveCount(0);
+});

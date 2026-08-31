@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router';
 import type {
   Destination,
   ExposureLayer,
+  HazardType,
   Pack,
   PendingPlace,
   RecoveryProgram,
@@ -327,10 +328,12 @@ if (window.location.pathname === '/destinations') {
       : async () => jsonResponse(nspFixture);
 
   const selectable = new URLSearchParams(window.location.search).get('select') === '1';
+  const hazard =
+    (new URLSearchParams(window.location.search).get('hazard') as HazardType | null) ?? 'bushfire';
 
   try {
     const snapshot = await loadNspSnapshot(fetchImpl);
-    const selection = selectSitesForPack(snapshot.sites, centre, lgaName, 6);
+    const selection = selectSitesForPack(snapshot.sites, centre, lgaName, 6, hazard);
     const { ordered } = orderByDistance(
       selection.located.map((site) => toDestination(site, packId, snapshot)),
       centre,
@@ -348,6 +351,7 @@ if (window.location.pathname === '/destinations') {
           createdAt: destinationsNow,
           reminder: 'Follow official information during an emergency.',
           sources: [snapshot.source],
+          ...(hazard === 'bushfire' ? {} : { hazardType: hazard }),
         },
         layers: [],
         destinations: destinationsForPack(
@@ -356,6 +360,7 @@ if (window.location.pathname === '/destinations') {
           packId,
           snapshot,
           area,
+          hazard,
         ),
         recovery: [],
       };
@@ -368,6 +373,7 @@ if (window.location.pathname === '/destinations') {
         unlocated={selection.unlocated.map((site) => toDestination(site, packId, snapshot))}
         listAsAt={snapshot.listAsAt}
         area={area}
+        status={hazard === 'bushfire' ? undefined : 'not-bushfire'}
         save={selectable ? save : undefined}
         now={destinationsNow}
       />
