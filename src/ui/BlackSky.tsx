@@ -3,7 +3,7 @@ import { deriveState, type Screen } from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { arrowGlyph, cardinalAbbr } from '../core/geo';
-import type { Fix, PackWithPlaces } from '../core/types';
+import type { Destination, Fix, Pack, PackWithPlaces } from '../core/types';
 import { listCompletePacksWithPlaces } from '../data/db';
 import StateCard from './components/StateCard';
 
@@ -75,30 +75,20 @@ function ScreenBody({ screen }: { screen: Screen }) {
   switch (screen.kind) {
     case 'NO_PACK':
       return <StateCard heading={copy.NO_PACKS_YET} detail={copy.NO_PACKS_HINT} />;
-    // AC2: no usable fix. The saved information degrades to reference text —
-    // names, addresses and the reminder, WITHOUT an arrow or a distance. A
-    // designed state, not an error: the next derivation with a fresh fix
-    // renders IN_AREA again on its own.
+    // AC2: no usable fix. AC3: a fix too vague to trust. Both degrade to the
+    // same reference text — names, addresses and the reminder, WITHOUT an arrow
+    // or a distance — and the state line says why. A designed state, not an
+    // error: the next derivation with a good fix renders IN_AREA on its own.
     case 'ACQUIRING':
-      return (
-        <>
-          <p className="muted">{copy.NO_GPS}</p>
-          <ul className="list">
-            {screen.places.map((place) => (
-              <li key={place.id} className="blacksky-place">
-                {place.name ? <h2>{place.name}</h2> : null}
-                {place.addressText ? <p className="muted">{place.addressText}</p> : null}
-                {place.reason ? <p className="muted">{place.reason}</p> : null}
-              </li>
-            ))}
-          </ul>
-          {screen.pack.reminder ? (
-            <p className="blacksky-reminder">{screen.pack.reminder}</p>
-          ) : null}
-        </>
-      );
+      return <ReferenceBody line={copy.NO_GPS} places={screen.places} pack={screen.pack} />;
     case 'LOW_ACCURACY':
-      return <StateCard heading={copy.GPS_TOO_INACCURATE(screen.accuracyM)} />;
+      return (
+        <ReferenceBody
+          line={copy.GPS_TOO_INACCURATE(screen.accuracyM)}
+          places={screen.places}
+          pack={screen.pack}
+        />
+      );
     case 'OUT_OF_AREA':
       return <StateCard heading={copy.OUTSIDE_AREAS} />;
     case 'IN_AREA':
@@ -119,12 +109,40 @@ function ScreenBody({ screen }: { screen: Screen }) {
               </li>
             ))}
           </ul>
+          <p className="muted figure">{copy.ACCURACY_READOUT(screen.accuracyM)}</p>
           {screen.absence?.reason ? <p className="muted">{screen.absence.reason}</p> : null}
           {screen.pack.reminder ? (
             <p className="blacksky-reminder">{screen.pack.reminder}</p>
           ) : null}
-          <p className="muted figure">{copy.ACCURACY_READOUT(screen.accuracyM)}</p>
         </>
       );
   }
+}
+
+/** The degraded screen shared by AC2 and AC3: saved information as reference
+ *  text, no bearing figures, with one line saying why. */
+function ReferenceBody({
+  line,
+  places,
+  pack,
+}: {
+  line: string;
+  places: Destination[];
+  pack: Pack;
+}) {
+  return (
+    <>
+      <p className="muted">{line}</p>
+      <ul className="list">
+        {places.map((place) => (
+          <li key={place.id} className="blacksky-place">
+            {place.name ? <h2>{place.name}</h2> : null}
+            {place.addressText ? <p className="muted">{place.addressText}</p> : null}
+            {place.reason ? <p className="muted">{place.reason}</p> : null}
+          </li>
+        ))}
+      </ul>
+      {pack.reminder ? <p className="blacksky-reminder">{pack.reminder}</p> : null}
+    </>
+  );
 }
