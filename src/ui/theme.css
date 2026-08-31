@@ -23,6 +23,10 @@
   --step-3: 2rem; /* 32 */
   --step-s: 0.875rem; /* 14 */
   --step-xs: 0.75rem; /* 12 */
+
+  /* BlackSky's amber, referenced OUTSIDE blacksky mode by the one control that
+     opens it, so the control reads as the mode it leads to. */
+  --blacksky-accent: #ffc53d;
 }
 
 :root[data-mode='prepare'] {
@@ -358,6 +362,88 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  font-size: var(--step-s);
+}
+
+/* ── BlackSky (E3-US1-AC1) ──────────────────────────────────────────────────
+   True black is a battery decision: on OLED a #000 pixel is switched off. The
+   bearing figure is the biggest thing on screen — readable at arm's length,
+   while walking. Amber, never white, keeps dark-adapted eyes adapted. */
+
+.blacksky-title {
+  font-size: var(--step-s);
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.blacksky-place {
+  padding: 0.75rem 0;
+  display: grid;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+/* The hairline separates rows; a trailing one under the last row would read
+   as a divider to nothing. */
+.blacksky-place:last-child {
+  border-bottom: 0;
+}
+
+.blacksky-place h2 {
+  font-size: var(--step-1);
+  font-weight: 600;
+}
+
+.blacksky-figure {
+  margin: 0;
+  font-size: var(--step-3);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+
+.blacksky-reminder {
+  margin: 0;
+  font-size: var(--step-1);
+  font-weight: 600;
+}
+
+.blacksky-guidance p {
+  margin: 0;
+}
+
+.blacksky-guidance a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.blacksky-hold {
+  min-height: 56px;
+  font-weight: 700;
+  border-color: var(--blacksky-accent);
+  color: var(--blacksky-accent);
+  /* a hold control, not a tap: a long-press must not pop the context menu,
+     the iOS callout, or select the label text */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* The press is visibly acknowledged for the whole hold — the confirmation cue
+   on devices without vibration. A fill, not an animation: nothing moves. */
+.blacksky-hold:active {
+  background: var(--blacksky-accent);
+  color: var(--ink-on-accent);
+}
+
+.blacksky-hold-hint {
+  margin: 0;
+  text-align: center;
   font-size: var(--step-s);
 }
 

@@ -6,6 +6,7 @@ import type {
   ExposureLayer,
   Kv,
   Pack,
+  PackWithPlaces,
   Pending,
   QueuedJob,
   RecoveryProgram,
@@ -60,6 +61,19 @@ export const getCompletePack = async (id: string): Promise<Pack | undefined> => 
   const p = await db.packs.get(id);
   return p?.status === 'complete' ? p : undefined;
 };
+
+/** Every complete pack with its destination rows, for BlackSky. Routes through
+ *  listCompletePacks, so a building pack stays exactly as invisible here as it
+ *  is everywhere else. */
+export async function listCompletePacksWithPlaces(): Promise<PackWithPlaces[]> {
+  const packs = await listCompletePacks();
+  return Promise.all(
+    packs.map(async (pack) => ({
+      pack,
+      places: await db.destinations.where('packId').equals(pack.id).toArray(),
+    })),
+  );
+}
 
 /** Load only children of an already sanctioned complete pack. Recovery rows are
  * returned only when the current local snapshot exactly matches its manifest. */
