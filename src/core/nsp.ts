@@ -1,3 +1,4 @@
+import { absenceRow } from './destination';
 import { withinRadius } from './geo';
 import * as copy from './copy';
 import type { Destination, LatLon, NspSite, NspSnapshot } from './types';
@@ -91,3 +92,23 @@ export const formatIsoDateShort = (iso: string): string => {
  *  date. A per-site date would be a provenance fabrication. */
 export const nspListDateLabel = (listAsAt: string): string =>
   copy.NSP_LIST_AS_AT(formatIsoDateShort(listAsAt));
+
+/** The destination rows to persist for a pack. When the CFA list yields nothing
+ *  for the area — no site in range and none listed for the council — the pack
+ *  still carries ONE row: the absence marker, with its reason and the area it
+ *  applies to. Absence is a row, never an empty array, so PackDetail and
+ *  BlackSky read the same truth. The radius is never widened and no place from a
+ *  neighbouring council is ever substituted — that is already true of
+ *  `selectSitesForPack`; this function just never papers over its empty result. */
+export const destinationsForPack = (
+  selection: { located: NspSite[]; unlocated: NspSite[] },
+  packId: string,
+  snapshot: Pick<NspSnapshot, 'listAsAt' | 'source'>,
+  area: string,
+): Destination[] =>
+  selection.located.length === 0 && selection.unlocated.length === 0
+    ? [absenceRow(packId, area, snapshot.source)]
+    : [
+        ...selection.located.map((site) => toDestination(site, packId, snapshot)),
+        ...selection.unlocated.map((site) => toDestination(site, packId, snapshot)),
+      ];

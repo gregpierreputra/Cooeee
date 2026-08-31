@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
+import { absenceRow } from '../../src/core/destination';
 import {
   decideOriginalSourceAccess,
   formatSavedDate,
   hasCompleteSource,
   isAllowedSourceUrl,
   missingDisplayProvenance,
+  packDetailAbsence,
   packDetailItems,
   prepareProvenancedContent,
   provenanceView,
@@ -148,7 +150,7 @@ describe('E1-US2 pack item projection', () => {
         sources: [source({ publisher: 'OpenStreetMap contributors', licence: 'ODbL' })],
       }),
       layers: [layer],
-      destinations: [destination(), destination({ id: 'pack-1:absence', kind: 'absence', name: undefined })],
+      destinations: [destination()],
       recovery: [program()],
       recoveryVerified: true,
     };
@@ -156,7 +158,6 @@ describe('E1-US2 pack item projection', () => {
     expect(packDetailItems(content).map(({ name }) => name)).toEqual([
       'Designated Bushfire Prone Area',
       'Example Reserve',
-      'Official place of last resort information',
       'Example payment',
       'Offline basemap',
     ]);
@@ -168,5 +169,64 @@ describe('E1-US2 pack item projection', () => {
       layers: [], destinations: [], recovery: [], recoveryVerified: true,
     };
     expect(packDetailItems(content)).toEqual([]);
+  });
+});
+
+describe('E2-US1-AC3 stored absence row', () => {
+  const withAbsence = (): CompletePackContent => ({
+    pack: pack(),
+    layers: [],
+    destinations: [absenceRow('pack-1', 'Yarra Ranges', source())],
+    recovery: [],
+    recoveryVerified: true,
+  });
+
+  it('is never projected as an information item — it has no content to open', () => {
+    const content = withAbsence();
+    content.destinations.unshift(destination());
+    expect(packDetailItems(content).map(({ id }) => id)).toEqual(['pack-1:nsp-0001']);
+  });
+
+  it('a present destination with no name of its own still gets the neutral label', () => {
+    const content: CompletePackContent = {
+      pack: pack(),
+      layers: [],
+      destinations: [destination({ id: 'pack-1:x', name: undefined })],
+      recovery: [],
+      recoveryVerified: true,
+    };
+    expect(packDetailItems(content).map(({ name }) => name)).toEqual([
+      'Official place of last resort information',
+    ]);
+  });
+
+  it('packDetailAbsence returns its stored reason, verbatim', () => {
+    expect(packDetailAbsence(withAbsence())).toBe(
+      'No official place of last resort is published for this area — Yarra Ranges.',
+    );
+  });
+
+  it('packDetailAbsence returns null when every destination is a present place', () => {
+    expect(
+      packDetailAbsence({
+        pack: pack(),
+        layers: [],
+        destinations: [destination()],
+        recovery: [],
+        recoveryVerified: true,
+      }),
+    ).toBeNull();
+  });
+
+  it('packDetailAbsence returns null for an absence row that carries no reason', () => {
+    expect(
+      packDetailAbsence({
+        pack: pack(),
+        layers: [],
+        destinations: [destination({ id: 'pack-1:absence', kind: 'absence', name: undefined })],
+        recovery: [],
+        recoveryVerified: true,
+      }),
+    ).toBeNull();
   });
 });

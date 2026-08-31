@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { distanceM } from '../../src/core/geo';
 import {
+  destinationsForPack,
   formatIsoDateShort,
   nspListDateLabel,
   sameLga,
@@ -176,5 +177,71 @@ describe('formatIsoDateShort', () => {
 describe('nspListDateLabel', () => {
   it('is the list’s own date, labelled as the list’s date', () => {
     expect(nspListDateLabel('2026-08-18')).toBe('CFA state-wide list as at 18 Aug 2026');
+  });
+});
+
+describe('destinationsForPack', () => {
+  const snap = nspSnapshot();
+  const nowhere = { geocode: 'none' as const, lat: undefined, lon: undefined };
+
+  it('writes exactly one absence row when nothing is published for the area', () => {
+    const rows = destinationsForPack({ located: [], unlocated: [] }, 'pack-9', snap, 'Yarra Ranges');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].kind).toBe('absence');
+    expect(rows[0].id).toBe('pack-9:absence');
+    expect(rows[0].reason).toBe(
+      'No official place of last resort is published for this area — Yarra Ranges.',
+    );
+  });
+
+  it('the absence row carries the snapshot Source and no coordinates', () => {
+    const [row] = destinationsForPack({ located: [], unlocated: [] }, 'pack-9', snap, 'Yarra Ranges');
+    expect(row.source).toEqual(snap.source);
+    expect(row.lat).toBeUndefined();
+    expect(row.lon).toBeUndefined();
+    expect(row.chosen).toBeUndefined();
+  });
+
+  it('maps located and un-located sites and writes NO absence row when any exist', () => {
+    const rows = destinationsForPack(
+      { located: [nspSite({ id: 'a' })], unlocated: [nspSite({ id: 'b', ...nowhere })] },
+      'pack-9',
+      snap,
+      'Yarra Ranges',
+    );
+    expect(rows.map((r) => r.kind)).toEqual(['nsp-bushfire', 'nsp-bushfire']);
+    expect(rows.map((r) => r.id)).toEqual(['pack-9:a', 'pack-9:b']);
+  });
+
+  it('un-located sites alone are still published places, not an absence', () => {
+    const rows = destinationsForPack(
+      { located: [], unlocated: [nspSite({ id: 'b', ...nowhere })] },
+      'pack-9',
+      snap,
+      'Yarra Ranges',
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].kind).toBe('nsp-bushfire');
+  });
+
+  it('substitutes nothing from a neighbouring council: only out-of-area sites yield an absence', () => {
+    const snapshot = nspSnapshot({
+      sites: [
+        nspSite({ id: 'far', name: 'Far Reserve', lat: KALORAMA.lat + 0.1, lon: KALORAMA.lon }),
+        nspSite({
+          id: 'nbr',
+          name: 'Alexandra Showgrounds',
+          municipality: 'Murrindindi Shire',
+          ...nowhere,
+        }),
+      ],
+    });
+    const selection = selectSitesForPack(snapshot.sites, KALORAMA, 'YARRA RANGES', 6);
+    const rows = destinationsForPack(selection, 'pack-9', snapshot, 'Yarra Ranges');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].kind).toBe('absence');
+    expect(rows.some((r) => r.name === 'Alexandra Showgrounds' || r.name === 'Far Reserve')).toBe(
+      false,
+    );
   });
 });

@@ -10,7 +10,7 @@ import type {
   RecoveryProgram,
   TextPackContent,
 } from '../../src/core/types';
-import { orderByDistance } from '../../src/core/destination';
+import { absenceRow, orderByDistance } from '../../src/core/destination';
 import { selectSitesForPack, toDestination } from '../../src/core/nsp';
 import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPack } from '../../src/data/pack-build';
 import { db } from '../../src/data/db';
@@ -237,18 +237,21 @@ const detailLayer: ExposureLayer = {
   checkedAt: detailSavedAt,
   source: { ...packSource, retrievedAt: detailSavedAt },
 };
-const detailDestination: Destination = {
-  id: 'detail-pack:nsp',
-  packId: 'detail-pack',
-  kind: 'nsp-bushfire',
-  name: 'Kalorama Reserve',
-  source: {
-    publisher: 'Country Fire Authority',
-    url: 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places',
-    licence: 'CFA website list — permission to be confirmed',
-    retrievedAt: detailSavedAt,
-  },
+const cfaSource = {
+  publisher: 'Country Fire Authority',
+  url: 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places',
+  licence: 'CFA website list — permission to be confirmed',
+  retrievedAt: detailSavedAt,
 };
+const detailDestination: Destination = detailMode === 'absence'
+  ? absenceRow('detail-pack', 'Yarra Ranges', cfaSource)
+  : {
+      id: 'detail-pack:nsp',
+      packId: 'detail-pack',
+      kind: 'nsp-bushfire',
+      name: 'Kalorama Reserve',
+      source: cfaSource,
+    };
 const detailRecovery: RecoveryProgram = {
   ...recoveryProgram,
   id: 'detail-recovery',
