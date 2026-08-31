@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { deriveState, estimateFix, type Mark, type Screen } from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { arrowGlyph, cardinalAbbr } from '../core/geo';
 import type { Destination, Fix, Pack, PackWithPlaces } from '../core/types';
 import { listCompletePacksWithPlaces } from '../data/db';
-import StateCard from './components/StateCard';
 
 export type BlackSkyProps = {
   loadPacks?: () => Promise<PackWithPlaces[]>;
@@ -93,8 +93,24 @@ function ScreenBody({
   onMark: (mark: Mark) => void;
 }) {
   switch (screen.kind) {
+    // US2-AC2: no pack stored. Nothing is invented, borrowed or extrapolated —
+    // there is simply nothing to point at, so the screen says so, offers the
+    // built-in preparation guidance, and prompts a build for when next online.
     case 'NO_PACK':
-      return <StateCard heading={copy.NO_PACKS_YET} detail={copy.NO_PACKS_HINT} />;
+      return (
+        <>
+          <p className="muted">{copy.NO_PACK_HERE}</p>
+          <p className="muted">{copy.NO_PACKS_HINT}</p>
+          <Link className="action" to="/packs/new">
+            {copy.BUILD_A_PACK}
+          </Link>
+          <section className="card blacksky-guidance">
+            <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
+            <p>{copy.PREP_KIT_LINE}</p>
+            <p>{copy.PREP_PLAN_LINE}</p>
+          </section>
+        </>
+      );
     // AC2: no usable fix. AC3: a fix too vague to trust. Both degrade to the
     // same reference text — names, addresses and the reminder, WITHOUT an arrow
     // or a distance — and the state line says why. A designed state, not an

@@ -302,3 +302,14 @@ export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 export const EMERGENCY_BROADCASTER =
   'ABC local radio broadcasts official emergency information.';
 export const PHONE_MAY_WORK = `Phone calls ${CANNOT_DETECT_SIGNAL}.`;
+
+// ── E3-US2-AC2 no pack stored ───────────────────────────────────────────────
+
+export const NO_PACK_HERE = 'No saved pack covers this place.';
+
+// Built-in static preparation guidance, readable on a fresh install that has
+// never been online since setup.
+export const PREPARATION_GUIDANCE_TITLE = 'Preparing for an emergency';
+export const PREP_KIT_LINE =
+  'Keep water, medications, a torch and a battery radio where you can grab them.';
+export const PREP_PLAN_LINE = 'Decide where you would go and how, before you need to.';
