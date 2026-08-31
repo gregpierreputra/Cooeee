@@ -113,6 +113,15 @@ export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
 export const CHOOSE_ADDRESS = 'Choose your address from the list.';
 export const CANDIDATE_LIST_LABEL = 'Address candidates';
 export const NONE_OF_THESE = 'None of these is my address';
+/** The register describes one address at more than one point and does not say
+ * which it means. Stated as the limit it is, never as a result. */
+export const ADDRESS_NOT_RESOLVED = 'One address could not be matched to a single map location.';
+export const ADDRESSES_NOT_RESOLVED = (count: number) =>
+  `${count} addresses could not be matched to a single map location.`;
+export const ADDRESS_NOT_RESOLVED_REASON =
+  'The address register holds multiple map locations for the same written address, so Cooeee cannot choose one.';
+export const REFINE_ADDRESS_HINT =
+  'Check or add a unit or street number, then search again.';
 export const SEARCH_COULD_NOT_RUN = 'We could not search for this address right now.';
 export const SEARCH_FAILURE_MEANING =
   'This is not the same as saying the address is not there. Try again when you have a connection.';
@@ -193,6 +202,15 @@ export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to original source (web)';
 export const CLOSE = 'Close';
+// ── E1-US1-AC1/AC9 production pack-save wiring ──────────────────────────────
+
+export const SEE_PACK_SIZE = 'See pack size';
+export const PREPARING_PACK_OFFER = 'Preparing the pack offer.';
+export const PACK_OFFER_FAILED = 'We could not prepare this pack right now.';
+export const OPEN_SAVED_PACK = 'Open saved pack';
+
+export const BACK_TO_YOUR_PACKS = 'Back to Your packs';
+
 export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
 export const NO_STORED_ITEMS = 'This pack has no stored information items to show.';
 export const RECOVERY_ITEMS_UNVERIFIED =

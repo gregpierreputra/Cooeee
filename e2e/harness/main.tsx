@@ -1,5 +1,6 @@
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { MemoryRouter } from 'react-router';
 
 import type {
   Destination,
@@ -24,6 +25,7 @@ declare global {
     __searchAgainCount: number;
     __areaCheckCount: number;
     __downloadCount: number;
+    __continueCount: number;
     __keptSavedPlace: boolean;
     __readPacks: () => Promise<Pack[]>;
     __readDestinations: () => Promise<Destination[]>;
@@ -34,6 +36,7 @@ declare global {
 window.__searchAgainCount = 0;
 window.__areaCheckCount = 0;
 window.__downloadCount = 0;
+window.__continueCount = 0;
 window.__keptSavedPlace = false;
 window.__readPacks = () => db.packs.toArray();
 window.__readDestinations = () => db.destinations.toArray();
@@ -129,7 +132,7 @@ if (window.location.pathname === '/conflict' && await db.packs.count() === 0) {
 const conflictMode = new URLSearchParams(window.location.search).get('mode');
 const conflictFlow = (
   <Search
-    search={async () => [testCandidate]}
+    search={async () => ({ candidates: [testCandidate], unresolvedCount: 0 })}
     checkArea={syntheticAreaCheck}
     loadPacks={conflictMode === 'unavailable'
       ? async () => { throw new Error('synthetic store failure'); }
@@ -204,7 +207,14 @@ if (window.location.pathname === '/size') {
     if (choice === 'both') throw new Error('production map archive is unavailable');
     await saveTextOnlyPack(sizeContent, offer, Date.UTC(2026, 7, 28, 4));
   };
-  sizeFlow = <Size offer={offer} download={download} />;
+  sizeFlow = (
+    <Size
+      offer={offer}
+      address={sizeContent.pack.address}
+      download={download}
+      onContinue={() => { window.__continueCount += 1; }}
+    />
+  );
 }
 
 const detailNow = Date.UTC(2026, 7, 29, 12);
@@ -277,14 +287,25 @@ function DetailLauncher() {
     : <main className="page"><button type="button" onClick={() => setOpen(true)}>Open test pack</button></main>;
 }
 
-const detailFlow = window.location.pathname === '/detail-launch'
-  ? <DetailLauncher />
-  : <PackDetail packId="detail-pack" now={detailNow} />;
+// PackDetail links back to the pack list, so it needs router context. The
+// harness has no routes of its own, so an in-memory one keeps the component
+// mountable in isolation without inventing a second application shell.
+const detailFlow = (
+  <MemoryRouter>
+    {window.location.pathname === '/detail-launch'
+      ? <DetailLauncher />
+      : <PackDetail packId="detail-pack" now={detailNow} />}
+  </MemoryRouter>
+);
 
+const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
-    search={async () => [testCandidate]}
+    search={async () => ({ candidates: [testCandidate], unresolvedCount: 0 })}
     checkArea={areaMode === 'offline' ? undefined : syntheticAreaCheck}
+    buildOffer={offerShouldFail
+      ? async () => { throw new Error('synthetic pack-offer failure'); }
+      : undefined}
     onPendingPlace={(place) => { window.__confirmedPlace = place; }}
   />
 );

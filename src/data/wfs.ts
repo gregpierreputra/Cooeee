@@ -1,4 +1,8 @@
-import { addressQueryForCql, visibleAddressCandidates } from '../core/address-search';
+import {
+  addressQueryForCql,
+  resolveAddressCandidates,
+  type AddressCandidateResolution,
+} from '../core/address-search';
 import { extentSnapshotDisagrees, resolveBushfireAreaStatus } from '../core/area-check';
 import {
   ADDRESS_RESULT_LIMIT,
@@ -95,7 +99,8 @@ export function buildAddressSearchUrl(query: string): string {
 export async function fetchAddressCandidates(
   query: string,
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
-): Promise<AddressCandidate[]> {
+  onUnresolvedDuplicates: (message: string) => void = console.error,
+): Promise<AddressCandidateResolution> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ADDRESS_SEARCH_TIMEOUT_MS);
 
@@ -109,7 +114,15 @@ export async function fetchAddressCandidates(
     const payload: unknown = await response.json();
     assertRecord(payload, 'response');
     if (!Array.isArray(payload.features)) throw new TypeError('response.features must be an array');
-    return visibleAddressCandidates(payload.features.map(parseAddressRecord));
+    const resolution = resolveAddressCandidates(payload.features.map(parseAddressRecord));
+    // A bare count. The searched text, the returned addresses and their points
+    // are the user's business and none of them belongs in a diagnostic.
+    if (resolution.unresolvedCount > 0) {
+      onUnresolvedDuplicates(
+        `Vicmap address search left ${resolution.unresolvedCount} group(s) unresolved`,
+      );
+    }
+    return resolution;
   } finally {
     clearTimeout(timeout);
   }

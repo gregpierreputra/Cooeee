@@ -80,17 +80,21 @@ describe('address search request', () => {
       type: 'FeatureCollection', features: [feature(), inactive],
     }), { status: 200 });
 
-    await expect(fetchAddressCandidates('ridge', fetcher)).resolves.toEqual([{
-      address: '6 RIDGE ROAD KALORAMA 3766',
-      localityName: 'KALORAMA',
-      lat: -37.817939,
-      lon: 145.36594,
-    }]);
+    await expect(fetchAddressCandidates('ridge', fetcher)).resolves.toEqual({
+      candidates: [{
+        address: '6 RIDGE ROAD KALORAMA 3766',
+        localityName: 'KALORAMA',
+        lat: -37.817939,
+        lon: 145.36594,
+      }],
+      unresolvedCount: 0,
+    });
   });
 
   it('returns an empty list only for a valid empty feature collection', async () => {
     const fetcher = async () => new Response(JSON.stringify({ features: [] }), { status: 200 });
-    await expect(fetchAddressCandidates('unknown', fetcher)).resolves.toEqual([]);
+    await expect(fetchAddressCandidates('unknown', fetcher))
+      .resolves.toEqual({ candidates: [], unresolvedCount: 0 });
   });
 
   it('rejects service failures instead of mapping them to no-match', async () => {
@@ -101,6 +105,79 @@ describe('address search request', () => {
   it('rejects a drifted feature-collection shape', async () => {
     const fetcher = async () => new Response(JSON.stringify({ features: null }), { status: 200 });
     await expect(fetchAddressCandidates('ridge', fetcher)).rejects.toThrow(TypeError);
+  });
+});
+
+describe('E1-US1-AC2 duplicate resolution at the data boundary', () => {
+  const duplicateAt = (lon: number, lat: number, isPrimary = 'N') => feature({
+    geometry: { type: 'Point', coordinates: [lon, lat] },
+    properties: {
+      ezi_address: '6 RIDGE ROAD KALORAMA 3766',
+      locality_name: 'KALORAMA',
+      property_status: 'A',
+      is_primary: isPrimary,
+    },
+  });
+  const collection = (features: unknown[]) => async () =>
+    new Response(JSON.stringify({ type: 'FeatureCollection', features }), { status: 200 });
+
+  it('collapses a repeated address that the service returned at one point', async () => {
+    const resolution = await fetchAddressCandidates(
+      'ridge',
+      collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.36594, -37.817939, 'Y')]),
+    );
+    expect(resolution.candidates).toHaveLength(1);
+    expect(resolution.unresolvedCount).toBe(0);
+  });
+
+  it('withholds a repeated address the service returned at conflicting points', async () => {
+    const resolution = await fetchAddressCandidates(
+      'ridge',
+      collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.365951, -37.817944)]),
+      () => undefined,
+    );
+    expect(resolution).toEqual({ candidates: [], unresolvedCount: 1 });
+  });
+
+  it('reports the unresolved condition as a bare count, naming no address or point', async () => {
+    const reported: string[] = [];
+    await fetchAddressCandidates(
+      'ridge',
+      collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.365951, -37.817944)]),
+      (message) => reported.push(message),
+    );
+    expect(reported).toHaveLength(1);
+    expect(reported[0]).toContain('1');
+    expect(reported[0]).not.toMatch(/RIDGE|KALORAMA|145\.|-37\.|pfi/i);
+  });
+
+  it('stays silent when every group resolved', async () => {
+    const reported: string[] = [];
+    await fetchAddressCandidates(
+      'ridge',
+      collection([duplicateAt(145.36594, -37.817939)]),
+      (message) => reported.push(message),
+    );
+    expect(reported).toEqual([]);
+  });
+
+  it('keeps distinct unit addresses returned at one shared point', async () => {
+    const unit = (address: string) => feature({
+      properties: {
+        ezi_address: address, locality_name: 'KALORAMA',
+        property_status: 'A', is_primary: 'Y',
+      },
+    });
+    const resolution = await fetchAddressCandidates('ridge', collection([
+      unit('1/6 RIDGE ROAD KALORAMA 3766'),
+      unit('2/6 RIDGE ROAD KALORAMA 3766'),
+      unit('6 RIDGE ROAD KALORAMA 3766'),
+    ]));
+    expect(resolution.candidates.map(({ address }) => address)).toEqual([
+      '1/6 RIDGE ROAD KALORAMA 3766',
+      '2/6 RIDGE ROAD KALORAMA 3766',
+      '6 RIDGE ROAD KALORAMA 3766',
+    ]);
   });
 });
 
