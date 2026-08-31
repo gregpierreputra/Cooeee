@@ -10,8 +10,8 @@ import type {
   RecoveryProgram,
   TextPackContent,
 } from '../../src/core/types';
-import { absenceRow, orderByDistance } from '../../src/core/destination';
-import { selectSitesForPack, toDestination } from '../../src/core/nsp';
+import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
+import { destinationsForPack, selectSitesForPack, toDestination } from '../../src/core/nsp';
 import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPack } from '../../src/data/pack-build';
 import { db } from '../../src/data/db';
 import { manifestGroup } from '../../src/data/integrity';
@@ -326,19 +326,49 @@ if (window.location.pathname === '/destinations') {
       ? async () => jsonResponse({ listAsAt: 'not-a-date', sites: 'nope' })
       : async () => jsonResponse(nspFixture);
 
+  const selectable = new URLSearchParams(window.location.search).get('select') === '1';
+
   try {
     const snapshot = await loadNspSnapshot(fetchImpl);
-    const { located, unlocated } = selectSitesForPack(snapshot.sites, centre, lgaName, 6);
+    const selection = selectSitesForPack(snapshot.sites, centre, lgaName, 6);
     const { ordered } = orderByDistance(
-      located.map((site) => toDestination(site, packId, snapshot)),
+      selection.located.map((site) => toDestination(site, packId, snapshot)),
       centre,
     );
+    const save = async (ids: string[]) => {
+      const content = {
+        pack: {
+          id: packId,
+          name: 'Kalorama',
+          address: '6 RIDGE ROAD KALORAMA 3766',
+          lat: centre.lat,
+          lon: centre.lon,
+          radiusKm: 6,
+          lgaName,
+          createdAt: destinationsNow,
+          reminder: 'Follow official information during an emergency.',
+          sources: [snapshot.source],
+        },
+        layers: [],
+        destinations: destinationsForPack(
+          selection,
+          chosenDestinations(ordered, ids),
+          packId,
+          snapshot,
+          area,
+        ),
+        recovery: [],
+      };
+      const offer = await createPackOffer(content, { bytes: 0, count: 0, available: false });
+      await saveTextOnlyPack(content, offer, destinationsNow);
+    };
     destinationsFlow = (
       <Destinations
         ordered={ordered}
-        unlocated={unlocated.map((site) => toDestination(site, packId, snapshot))}
+        unlocated={selection.unlocated.map((site) => toDestination(site, packId, snapshot))}
         listAsAt={snapshot.listAsAt}
         area={area}
+        save={selectable ? save : undefined}
         now={destinationsNow}
       />
     );

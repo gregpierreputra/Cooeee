@@ -244,3 +244,15 @@ export const NSP_UNLOCATED_HEADING =
   'On the CFA list but not located to a point on the map';
 export const OFFICIAL_LIST_UNAVAILABLE =
   'The official list could not be included for this area.';
+
+// ── E2-US2 choose and save two ────────────────────────────────────────────
+
+export const SAVE_LAST_RESORT_PLACES = 'Save last-resort places';
+export const CHOOSE_PLACES_HINT = (n: number) =>
+  n === 1 ? 'Choose the place to save.' : 'Choose two places to save.';
+export const TWO_PLACES_ALREADY_CHOSEN =
+  'Two places are already chosen. Unchoose one to change your selection.';
+export const SAVING_LAST_RESORT_PLACES = 'Saving your last-resort places.';
+export const LAST_RESORT_PLACES_SAVED = 'Last-resort places saved';
+export const LAST_RESORT_SAVE_FAILED =
+  'Your places were not saved. Your selection is still here — try again.';

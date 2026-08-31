@@ -5,6 +5,11 @@
 export const PACK_RADIUS_KM = 6; // containment: distance <= radius, INCLUSIVE
 export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
 
+/** The number of last-resort places a pack holds. Two equal-status places, with
+ * no ordering of worth between them. A hard cap, not a target: an area may
+ * publish fewer. */
+export const DESTINATIONS_MAX = 2;
+
 /** Vicmap Address runtime search limits. Three characters avoids an overly
  * broad public-service query; ten is the approved candidate-list cap. */
 export const ADDRESS_QUERY_MIN_CHARS = 3;

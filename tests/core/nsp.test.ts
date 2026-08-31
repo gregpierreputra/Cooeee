@@ -10,7 +10,7 @@ import {
   toDestination,
 } from '../../src/core/nsp';
 import { hasCompleteSource } from '../../src/core/provenance';
-import { KALORAMA, nspSite, nspSnapshot, source } from '../fixtures';
+import { KALORAMA, destination, nspSite, nspSnapshot, source } from '../fixtures';
 
 describe('sameLga', () => {
   it('matches a bare lgaName to the "Shire" form, ignoring case', () => {
@@ -183,9 +183,13 @@ describe('nspListDateLabel', () => {
 describe('destinationsForPack', () => {
   const snap = nspSnapshot();
   const nowhere = { geocode: 'none' as const, lat: undefined, lon: undefined };
+  const picks = [
+    destination({ id: 'pack-9:a', packId: 'pack-9', chosen: true }),
+    destination({ id: 'pack-9:b', packId: 'pack-9', chosen: true }),
+  ];
 
   it('writes exactly one absence row when nothing is published for the area', () => {
-    const rows = destinationsForPack({ located: [], unlocated: [] }, 'pack-9', snap, 'Yarra Ranges');
+    const rows = destinationsForPack({ located: [], unlocated: [] }, [], 'pack-9', snap, 'Yarra Ranges');
     expect(rows).toHaveLength(1);
     expect(rows[0].kind).toBe('absence');
     expect(rows[0].id).toBe('pack-9:absence');
@@ -195,36 +199,37 @@ describe('destinationsForPack', () => {
   });
 
   it('the absence row carries the snapshot Source and no coordinates', () => {
-    const [row] = destinationsForPack({ located: [], unlocated: [] }, 'pack-9', snap, 'Yarra Ranges');
+    const [row] = destinationsForPack({ located: [], unlocated: [] }, [], 'pack-9', snap, 'Yarra Ranges');
     expect(row.source).toEqual(snap.source);
     expect(row.lat).toBeUndefined();
     expect(row.lon).toBeUndefined();
     expect(row.chosen).toBeUndefined();
   });
 
-  it('maps located and un-located sites and writes NO absence row when any exist', () => {
+  it('returns exactly the chosen rows — never the whole list — when places are published', () => {
     const rows = destinationsForPack(
-      { located: [nspSite({ id: 'a' })], unlocated: [nspSite({ id: 'b', ...nowhere })] },
+      { located: [nspSite({ id: 'a' }), nspSite({ id: 'b' }), nspSite({ id: 'c' })], unlocated: [] },
+      picks,
       'pack-9',
       snap,
       'Yarra Ranges',
     );
+    expect(rows).toBe(picks);
     expect(rows.map((r) => r.kind)).toEqual(['nsp-bushfire', 'nsp-bushfire']);
-    expect(rows.map((r) => r.id)).toEqual(['pack-9:a', 'pack-9:b']);
   });
 
-  it('un-located sites alone are still published places, not an absence', () => {
+  it('un-located sites alone still count as published — the chosen rows are returned', () => {
     const rows = destinationsForPack(
       { located: [], unlocated: [nspSite({ id: 'b', ...nowhere })] },
+      picks,
       'pack-9',
       snap,
       'Yarra Ranges',
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0].kind).toBe('nsp-bushfire');
+    expect(rows).toBe(picks);
   });
 
-  it('substitutes nothing from a neighbouring council: only out-of-area sites yield an absence', () => {
+  it('only out-of-area sites: the selection is empty, so an absence is written, no neighbour substituted', () => {
     const snapshot = nspSnapshot({
       sites: [
         nspSite({ id: 'far', name: 'Far Reserve', lat: KALORAMA.lat + 0.1, lon: KALORAMA.lon }),
@@ -237,11 +242,8 @@ describe('destinationsForPack', () => {
       ],
     });
     const selection = selectSitesForPack(snapshot.sites, KALORAMA, 'YARRA RANGES', 6);
-    const rows = destinationsForPack(selection, 'pack-9', snapshot, 'Yarra Ranges');
+    const rows = destinationsForPack(selection, [], 'pack-9', snapshot, 'Yarra Ranges');
     expect(rows).toHaveLength(1);
     expect(rows[0].kind).toBe('absence');
-    expect(rows.some((r) => r.name === 'Alexandra Showgrounds' || r.name === 'Far Reserve')).toBe(
-      false,
-    );
   });
 });

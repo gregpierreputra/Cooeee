@@ -97,18 +97,16 @@ export const nspListDateLabel = (listAsAt: string): string =>
  *  for the area — no site in range and none listed for the council — the pack
  *  still carries ONE row: the absence marker, with its reason and the area it
  *  applies to. Absence is a row, never an empty array, so PackDetail and
- *  BlackSky read the same truth. The radius is never widened and no place from a
- *  neighbouring council is ever substituted — that is already true of
- *  `selectSitesForPack`; this function just never papers over its empty result. */
+ *  BlackSky read the same truth. Otherwise the pack carries exactly the places
+ *  the user chose (`chosen`), and nothing else — never the whole list, never a
+ *  place from a neighbouring council, never a widened radius. */
 export const destinationsForPack = (
   selection: { located: NspSite[]; unlocated: NspSite[] },
+  chosen: Destination[],
   packId: string,
   snapshot: Pick<NspSnapshot, 'listAsAt' | 'source'>,
   area: string,
 ): Destination[] =>
   selection.located.length === 0 && selection.unlocated.length === 0
     ? [absenceRow(packId, area, snapshot.source)]
-    : [
-        ...selection.located.map((site) => toDestination(site, packId, snapshot)),
-        ...selection.unlocated.map((site) => toDestination(site, packId, snapshot)),
-      ];
+    : chosen;
