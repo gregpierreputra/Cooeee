@@ -29,6 +29,7 @@ export default tseslint.config(
       'dev-dist/**',
       'coverage/**',
       'node_modules/**',
+      '**/worktrees/**',
       'playwright-report/**',
       'test-results/**',
     ],
