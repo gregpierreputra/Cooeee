@@ -26,6 +26,7 @@ export default function Home() {
 
   return (
     <main className="page">
+      <p className="eyebrow">{copy.EYEBROW_HOME}</p>
       <h1>{copy.HOME_TITLE}</h1>
 
       {packs === null ? null : packs.length === 0 ? (

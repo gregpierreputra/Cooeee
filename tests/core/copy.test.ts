@@ -152,3 +152,32 @@ describe('E1-US2 mandated provenance and offline-source copy', () => {
     );
   });
 });
+
+// The eyebrows are stored sentence case and rendered uppercase by .eyebrow. The
+// casing is an accessibility decision — an all-caps string in the DOM is spelled
+// out letter by letter by some screen readers — so it is asserted here rather
+// than left to whoever next edits the file.
+describe('screen eyebrows', () => {
+  it('names the step of the flow, one label per screen', () => {
+    expect(copy.EYEBROW_SET_UP_YOUR_PLACE).toBe('Set up your place');
+    expect(copy.EYEBROW_CONFIRM_ADDRESS).toBe('Confirm address');
+    expect(copy.EYEBROW_AREA_RESULT).toBe('Area result');
+    expect(copy.EYEBROW_SAVE_YOUR_PACK).toBe('Save your pack');
+    expect(copy.EYEBROW_HOME).toBe('Home');
+    expect(copy.EYEBROW_MY_PACK).toBe('My pack');
+  });
+
+  it('stores sentence case, so the capitals stay a visual transform', () => {
+    for (const eyebrow of [
+      copy.EYEBROW_SET_UP_YOUR_PLACE,
+      copy.EYEBROW_CONFIRM_ADDRESS,
+      copy.EYEBROW_AREA_RESULT,
+      copy.EYEBROW_SAVE_YOUR_PACK,
+      copy.EYEBROW_HOME,
+      copy.EYEBROW_MY_PACK,
+    ]) {
+      expect(eyebrow).not.toBe(eyebrow.toUpperCase());
+      expect(eyebrow).toBe(eyebrow[0].toUpperCase() + eyebrow.slice(1).toLowerCase());
+    }
+  });
+});

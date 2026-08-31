@@ -84,6 +84,34 @@ h2 {
   margin: 0;
 }
 
+/* The small label above a screen's heading: it names the step of the flow, in
+   the muted ink, so it reads as orientation and never as a heading of its own.
+   It is a paragraph, not a heading element — the heading is the line below it.
+
+   The capitals are made here, not in copy.ts. An all-caps string in the DOM is
+   spelled out letter by letter by some screen readers, so the stored string is
+   an ordinary sentence-case word and this rule does the shouting. */
+.eyebrow {
+  margin: 0;
+  font-size: var(--step-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* The eyebrow belongs to the heading (or to the card that carries it), so it
+   sits closer to it than the 1 rem stack gap. Where the stack is already tight
+   — the pack-detail header — there is nothing to take back. */
+.eyebrow + h1,
+.eyebrow + .card {
+  margin-top: -0.5rem;
+}
+
+.pack-detail header .eyebrow + h1 {
+  margin-top: 0;
+}
+
 .muted {
   color: var(--ink-2);
 }
@@ -198,11 +226,6 @@ h2 {
   margin: 0;
 }
 
-.conflict-actions button {
-  background: transparent;
-  color: var(--accent);
-  font-weight: 400;
-}
 
 .size-content {
   display: grid;
@@ -218,11 +241,6 @@ h2 {
   font-size: var(--step-1);
 }
 
-.size-actions button {
-  background: transparent;
-  color: var(--accent);
-  font-weight: 400;
-}
 
 .pack-detail header,
 .provenance,
@@ -233,6 +251,7 @@ h2 {
 }
 
 .pack-detail header p,
+.pack-detail .card > p,
 .provenance p,
 .stale-note p {
   margin: 0;
@@ -313,13 +332,16 @@ input {
   padding-top: 2rem;
 }
 
+/* One primary action per screen carries the accent fill. Every other control is
+   ghosted: same shape, same target size, no fill, a neutral rule rather than an
+   accent one, so a screen has exactly one thing that looks like the action. */
 button,
 .action {
   min-height: 44px;
   min-width: 44px;
   font: inherit;
   border-radius: 10px;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--line);
   background: transparent;
   color: var(--accent);
   padding: 0.6rem 1rem;
@@ -340,6 +362,7 @@ button:disabled {
 
 .main-action {
   background: var(--accent);
+  border-color: var(--accent);
   color: var(--ink-on-accent);
   font-weight: 700;
 }

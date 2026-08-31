@@ -226,3 +226,20 @@ export const FLOODWAY_OVERLAY = 'Floodway Overlay';
 export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
+
+// ── Screen eyebrows ─────────────────────────────────────────────────────────
+// The small label above each screen's heading. It names the step of the flow
+// the user is in, so the label earns its place rather than repeating the mode.
+//
+// Sentence case here, capitals on screen: .eyebrow carries text-transform, and
+// the DOM carries an ordinary word. Some screen readers spell an all-caps string
+// out letter by letter, so the stored casing is an accessibility decision, not a
+// styling one — and keeping the transform meaningful stops it silently diverging
+// from what is stored. tests/core/copy.test.ts locks all six by exact match.
+
+export const EYEBROW_SET_UP_YOUR_PLACE = 'Set up your place';
+export const EYEBROW_CONFIRM_ADDRESS = 'Confirm address';
+export const EYEBROW_AREA_RESULT = 'Area result';
+export const EYEBROW_SAVE_YOUR_PACK = 'Save your pack';
+export const EYEBROW_HOME = 'Home';
+export const EYEBROW_MY_PACK = 'My pack';
