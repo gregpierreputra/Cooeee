@@ -9,28 +9,6 @@
   },
   "sites": [
     {
-      "id": "nsp-kalorama-memorial-reserve",
-      "municipality": "Yarra Ranges Shire",
-      "township": "Kalorama",
-      "name": "Kalorama Memorial Reserve",
-      "subLocation": "",
-      "street": "Ridge Road",
-      "geocode": "exact",
-      "lat": -37.808,
-      "lon": 145.36
-    },
-    {
-      "id": "nsp-mount-dandenong-reserve",
-      "municipality": "Yarra Ranges Shire",
-      "township": "Mount Dandenong",
-      "name": "Mount Dandenong Reserve",
-      "subLocation": "",
-      "street": "Ridge Road",
-      "geocode": "street",
-      "lat": -37.836,
-      "lon": 145.355
-    },
-    {
       "id": "nsp-olinda-recreation-reserve",
       "municipality": "Yarra Ranges Shire",
       "township": "Olinda",
@@ -73,6 +51,17 @@
       "geocode": "none"
     },
     {
+      "id": "nsp-kalorama-memorial-reserve",
+      "municipality": "Yarra Ranges Shire",
+      "township": "Kalorama",
+      "name": "Kalorama Memorial Reserve",
+      "subLocation": "",
+      "street": "Ridge Road",
+      "geocode": "exact",
+      "lat": -37.808,
+      "lon": 145.36
+    },
+    {
       "id": "nsp-alexandra-showgrounds",
       "municipality": "Murrindindi Shire",
       "township": "Alexandra",
@@ -80,6 +69,17 @@
       "subLocation": "",
       "street": "Downey Street",
       "geocode": "none"
+    },
+    {
+      "id": "nsp-mount-dandenong-reserve",
+      "municipality": "Yarra Ranges Shire",
+      "township": "Mount Dandenong",
+      "name": "Mount Dandenong Reserve",
+      "subLocation": "",
+      "street": "Ridge Road",
+      "geocode": "street",
+      "lat": -37.836,
+      "lon": 145.355
     }
   ]
 }

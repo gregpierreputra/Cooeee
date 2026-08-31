@@ -3,6 +3,7 @@ import { NO_DESTINATION_PUBLISHED } from '../../src/core/copy';
 import {
   absenceRow,
   chooseRules,
+  formatDistanceM,
   ordinalLabel,
   orderByDistance,
 } from '../../src/core/destination';
@@ -38,6 +39,36 @@ describe('orderByDistance', () => {
     orderByDistance(sites, KALORAMA);
     expect(sites.map((d) => d.id)).toEqual(['b', 'a']);
     expect(sites[0].distanceM).toBeUndefined();
+  });
+
+  it('keeps input order for two sites at the same distance — a stable order, no tie-break key', () => {
+    const a = destination({ id: 'a', lat: KALORAMA.lat + 0.01, lon: KALORAMA.lon });
+    const b = destination({ id: 'b', lat: KALORAMA.lat + 0.01, lon: KALORAMA.lon });
+    const { ordered } = orderByDistance([a, b], KALORAMA);
+    expect(ordered.map((d) => d.id)).toEqual(['a', 'b']);
+    expect(ordered[0].distanceM).toBe(ordered[1].distanceM);
+    expect(ordered.map((d) => d.distanceOrder)).toEqual([0, 1]);
+  });
+});
+
+describe('formatDistanceM', () => {
+  it('shows a sub-kilometre distance to the nearest ten metres', () => {
+    expect(formatDistanceM(0)).toBe('0 m');
+    expect(formatDistanceM(84)).toBe('80 m');
+    expect(formatDistanceM(85)).toBe('90 m'); // .5 rounds up
+    expect(formatDistanceM(850)).toBe('850 m');
+  });
+
+  it('switches to kilometres at exactly 1000 m (inclusive)', () => {
+    expect(formatDistanceM(999)).toBe('1000 m'); // still the metres branch
+    expect(formatDistanceM(1000)).toBe('1.0 km');
+    expect(formatDistanceM(1001)).toBe('1.0 km');
+  });
+
+  it('shows a kilometre distance to one decimal place', () => {
+    expect(formatDistanceM(1140)).toBe('1.1 km');
+    expect(formatDistanceM(1260)).toBe('1.3 km');
+    expect(formatDistanceM(12_345)).toBe('12.3 km');
   });
 });
 

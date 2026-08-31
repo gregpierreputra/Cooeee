@@ -92,6 +92,15 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
+/* The mandated framing line above the distance-ordered list. Full-strength body
+   text — it does real safety work and is never the faintest thing on screen —
+   and never an alert colour. */
+.caveat {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--step-0);
+}
+
 /* Absence states use the SAME neutral treatment as presence states. Absence must
    read as absence — never as reassurance, never as an error. There are no alert
    colours and no warning iconography in this stylesheet at all. */

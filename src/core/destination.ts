@@ -1,3 +1,4 @@
+import { METRES_PER_KM } from './constants';
 import { distanceM } from './geo';
 import { NO_DESTINATION_PUBLISHED_FOR, ORDINALS } from './copy';
 import type { Destination, LatLon, Source } from './types';
@@ -28,6 +29,15 @@ export const orderByDistance = (
  *  Beyond the third there is no label, because there is no ranking to extend. */
 export const ordinalLabel = (order: number): (typeof ORDINALS)[number] | undefined =>
   ORDINALS[order];
+
+/** A straight-line distance for display: whole tens of metres below a kilometre,
+ *  one decimal place above it. The figure is a ±5% estimate, so it is never
+ *  shown to the metre. Fed by the SAME haversine that produced the ordering, so
+ *  the figure and the order can never disagree. */
+export const formatDistanceM = (metres: number): string =>
+  metres < METRES_PER_KM
+    ? `${Math.round(metres / 10) * 10} m`
+    : `${(metres / METRES_PER_KM).toFixed(1)} km`;
 
 /** Toggling one place in the current selection. At most two, nothing
  *  pre-selected, both equals. Returns the new selection, or null when the cap

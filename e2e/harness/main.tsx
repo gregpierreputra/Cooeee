@@ -10,6 +10,7 @@ import type {
   RecoveryProgram,
   TextPackContent,
 } from '../../src/core/types';
+import { orderByDistance } from '../../src/core/destination';
 import { selectSitesForPack, toDestination } from '../../src/core/nsp';
 import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPack } from '../../src/data/pack-build';
 import { db } from '../../src/data/db';
@@ -325,9 +326,13 @@ if (window.location.pathname === '/destinations') {
   try {
     const snapshot = await loadNspSnapshot(fetchImpl);
     const { located, unlocated } = selectSitesForPack(snapshot.sites, centre, lgaName, 6);
+    const { ordered } = orderByDistance(
+      located.map((site) => toDestination(site, packId, snapshot)),
+      centre,
+    );
     destinationsFlow = (
       <Destinations
-        located={located.map((site) => toDestination(site, packId, snapshot))}
+        ordered={ordered}
         unlocated={unlocated.map((site) => toDestination(site, packId, snapshot))}
         listAsAt={snapshot.listAsAt}
         area={area}
@@ -337,7 +342,7 @@ if (window.location.pathname === '/destinations') {
   } catch {
     destinationsFlow = (
       <Destinations
-        located={[]}
+        ordered={[]}
         unlocated={[]}
         listAsAt="2026-08-18"
         area={area}

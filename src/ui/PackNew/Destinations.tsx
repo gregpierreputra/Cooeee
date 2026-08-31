@@ -1,12 +1,14 @@
 import * as copy from '../../core/copy';
+import { formatDistanceM, ordinalLabel } from '../../core/destination';
 import { nspListDateLabel } from '../../core/nsp';
 import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
 import StateCard from '../components/StateCard';
 
 export type DestinationsProps = {
-  /** NSP rows within the pack radius, already mapped from the snapshot. */
-  located: Destination[];
+  /** NSP rows within the pack radius, ordered strictly ascending by distance
+   *  (each carries `distanceM` and a zero-based `distanceOrder`). */
+  ordered: Destination[];
   /** NSP rows the CFA lists for this council but could not place on the map. */
   unlocated: Destination[];
   /** The snapshot's own `listAsAt` (ISO date). Shown as the list's date. */
@@ -27,9 +29,16 @@ function DestinationRow({
   listLine: string;
   now: number;
 }) {
+  const ordinal =
+    typeof place.distanceOrder === 'number' ? ordinalLabel(place.distanceOrder) : undefined;
+  const distance =
+    typeof place.distanceM === 'number' ? formatDistanceM(place.distanceM) : undefined;
+
   return (
     <li className="card destination-item">
       <h2>{place.name ?? copy.OFFICIAL_DESTINATION_INFORMATION}</h2>
+      {ordinal ? <p>{ordinal}</p> : null}
+      {distance ? <p className="figure">{distance}</p> : null}
       <p>{copy.NSP_KIND_LABEL}</p>
       {place.addressText ? <p className="muted">{place.addressText}</p> : null}
       {place.council ? <p>{copy.NSP_COUNCIL_LABEL(place.council)}</p> : null}
@@ -39,13 +48,13 @@ function DestinationRow({
   );
 }
 
-/** E2-US1-AC1. Lists only officially published Neighbourhood Safer Places for
- *  the pack's area, each with its responsible council and the list's recorded
- *  date. There is no path for any non-official place to appear: the data comes
- *  from the NSP snapshot alone, with no join to the basemap. Distance, ordinals
- *  and selection arrive in AC2 and E2-US2-AC1. */
+/** E2-US1-AC1 + AC2. Lists only officially published Neighbourhood Safer Places
+ *  for the pack's area — from the NSP snapshot alone, with no join to the
+ *  basemap — ordered by straight-line distance from the saved place, the first
+ *  three labelled by position, under the mandated caveat line. The order carries
+ *  no judgement beyond distance. Selection is E2-US2-AC1. */
 export function Destinations({
-  located,
+  ordered,
   unlocated,
   listAsAt,
   area,
@@ -62,7 +71,7 @@ export function Destinations({
   }
 
   const listLine = nspListDateLabel(listAsAt);
-  const nonePublished = located.length === 0 && unlocated.length === 0;
+  const nonePublished = ordered.length === 0 && unlocated.length === 0;
 
   return (
     <main className="page destinations-page">
@@ -72,18 +81,21 @@ export function Destinations({
         <StateCard heading={copy.NO_DESTINATION_PUBLISHED_FOR(area)} />
       ) : (
         <>
-          {located.length > 0 ? (
-            <ul className="list destination-list">
-              {located.map((place) => (
-                <DestinationRow key={place.id} place={place} listLine={listLine} now={now} />
-              ))}
-            </ul>
+          {ordered.length > 0 ? (
+            <>
+              <p className="caveat">{copy.SORTED_BY_DISTANCE}</p>
+              <ul className="list destination-list" data-testid="ordered-destinations">
+                {ordered.map((place) => (
+                  <DestinationRow key={place.id} place={place} listLine={listLine} now={now} />
+                ))}
+              </ul>
+            </>
           ) : null}
 
           {unlocated.length > 0 ? (
             <section className="destination-unlocated">
               <h2>{copy.NSP_UNLOCATED_HEADING}</h2>
-              <ul className="list destination-list">
+              <ul className="list destination-list" data-testid="unlocated-destinations">
                 {unlocated.map((place) => (
                   <DestinationRow key={place.id} place={place} listLine={listLine} now={now} />
                 ))}
