@@ -11,14 +11,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest,woff2}'],
         // ping.txt MUST stay out, or the connectivity probe answers from cache
-        // and reports "online" with the radios off. The map chunk stays out so a
-        // text-only user never downloads it.
-        globIgnores: [
-          '**/ping.txt',
-          '**/MapView*.js',
-          '**/maplibre*.js',
-          '**/pmtiles*.js',
-        ],
+        // and reports "online" with the radios off.
+        globIgnores: ['**/ping.txt'],
         navigateFallback: '/index.html',
         runtimeCaching: [], // durable data lives in IndexedDB by design
       },

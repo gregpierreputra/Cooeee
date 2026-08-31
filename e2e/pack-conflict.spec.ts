@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { HARNESS, readPacks as packs } from './helpers';
 
-const CONFLICT_URL = 'http://127.0.0.1:4174/conflict';
+const CONFLICT_URL = `${HARNESS}/conflict`;
 const SAVED_ADDRESS = '10 OLD ROAD FERNY CREEK 3786';
 const NEW_ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 
@@ -12,10 +13,6 @@ async function reachConflict(page: Page, suffix = '') {
   await page.getByRole('button', { name: 'Save this place' }).click();
   await expect(page.getByRole('heading', { name: 'You already have a saved place.' }))
     .toBeVisible();
-}
-
-async function packs(page: Page) {
-  return page.evaluate(() => window.__readPacks());
 }
 
 test('AC8 shows both unchanged addresses and equal unselected choices before network', async ({ page }) => {
@@ -66,7 +63,7 @@ test('AC8 keep leaves the original complete pack byte-identical', async ({ page 
 test('AC8 leaving without a choice leaves the original complete pack byte-identical', async ({ page }) => {
   await reachConflict(page);
   const before = await packs(page);
-  await page.goto('http://127.0.0.1:4174/');
+  await page.goto(`${HARNESS}/`);
 
   expect(await packs(page)).toEqual(before);
   expect(await page.evaluate(() => window.__areaCheckCount)).toBe(0);

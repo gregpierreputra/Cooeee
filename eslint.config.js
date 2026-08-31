@@ -65,14 +65,10 @@ export default tseslint.config(
   { files: ['src/ui/**'], rules: { 'no-restricted-imports': ['error', NO_RAW_DB] } },
 
   // RULE 2 — the offline surfaces import no network path and cannot call fetch.
-  // Recovery.tsx reaches probe.ts only, the one sanctioned same-origin request.
   {
-    files: ['src/ui/BlackSky.tsx', 'src/ui/Recovery.tsx', 'src/ui/PackDetail.tsx'],
+    files: ['src/ui/BlackSky.tsx', 'src/ui/PackDetail.tsx'],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        { ...NO_RAW_DB, patterns: ['**/wfs', '**/tiles', '**/snapshots'] },
-      ],
+      'no-restricted-imports': ['error', { ...NO_RAW_DB, patterns: ['**/wfs'] }],
       'no-restricted-globals': ['error', 'fetch'],
     },
   },

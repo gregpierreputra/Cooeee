@@ -149,9 +149,19 @@ from `main`; every other branch gets its own preview URL.
 
 ## Where this is up to
 
-Milestones 1 and 2 of `documentation/Cooeee, Implementation Specification.md` §15: the scaffold and
-the full pure core, with the boundary values the register names under test.
+Implemented and merged to `main`:
 
-Not built yet, each belonging to a story with a named owner: the pack build pipeline (`pack-build.ts`),
-the WFS client (`wfs.ts`), tiles, snapshots, the connectivity probe, every screen beyond Home, the
-`scripts/build-*.ts` snapshot builders, and MapLibre.
+- **Epic 1 — Build a Prepared Local Pack**: the whole E1-US1 flow (address search with live
+  suggestions, confirmation, pack conflict, official bushfire-area check, pack offer and the
+  atomic text-only save) and E1-US2 provenance (publisher/date on every item, age labels,
+  offline reads, explained original-source access).
+- **Epic 3 — BlackSky**: the offline screen at `/blacksky` with prepared direction, honest
+  degradation without GPS, accuracy gating, the marked-position estimate, outside-area and
+  no-pack states, and deliberate hold-to-enter activation.
+
+Iteration 1 is **mapless** (`docs/decisions/iteration-1-mapless-scope.md`): no basemap, no
+tiles; every pack is text-only with the tile fields stored as their honest zeros. Epics 2, 4,
+5, 6 and 7 have no code yet.
+
+The full cross-epic explanation — architecture, every implemented acceptance criterion mapped
+to its module and test — is `docs/technical-overview.md`.

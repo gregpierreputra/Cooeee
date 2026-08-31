@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CARDINAL_POINTS } from '../../src/core/copy';
-import { bboxAround, bearingDeg, cardinal, distanceM, withinRadius } from '../../src/core/geo';
+import { CARDINAL_ABBR } from '../../src/core/copy';
+import { arrowGlyph, bearingDeg, cardinalAbbr, distanceM } from '../../src/core/geo';
 import { CBD, KALORAMA } from '../fixtures';
 
 // Reference figures computed independently of Turf (haversine, R = 6 371 008.8 m)
@@ -44,61 +44,30 @@ describe('bearingDeg', () => {
   });
 });
 
-describe('cardinal', () => {
+describe('cardinalAbbr', () => {
   it('names every one of the 16 sectors at its 22.5 degree centre', () => {
-    CARDINAL_POINTS.forEach((name, i) => {
-      expect(cardinal(i * 22.5)).toBe(name);
+    CARDINAL_ABBR.forEach((name, i) => {
+      expect(cardinalAbbr(i * 22.5)).toBe(name);
     });
   });
 
   it('wraps at and beyond 360', () => {
-    expect(cardinal(360)).toBe('NORTH');
-    expect(cardinal(720)).toBe('NORTH');
-    expect(cardinal(382.5)).toBe('NORTH-NORTH-EAST');
+    expect(cardinalAbbr(360)).toBe('N');
+    expect(cardinalAbbr(720)).toBe('N');
+    expect(cardinalAbbr(382.5)).toBe('NNE');
   });
 
   it('handles a negative bearing', () => {
-    expect(cardinal(-22.5)).toBe('NORTH-NORTH-WEST');
-    expect(cardinal(-90)).toBe('WEST');
+    expect(cardinalAbbr(-22.5)).toBe('NNW');
+    expect(cardinalAbbr(-90)).toBe('W');
   });
 });
 
-describe('withinRadius', () => {
-  // Latitude offsets, so the distance is independent of the cosine term.
-  const north = (km: number) => ({ lat: KALORAMA.lat + km / 111.195, lon: KALORAMA.lon });
-
-  it('is INCLUSIVE: a point exactly on the radius is inside', () => {
-    const p = north(6);
-    const exact = distanceM(KALORAMA, p) / 1000;
-    expect(withinRadius(KALORAMA, p, exact)).toBe(true);
-    expect(withinRadius(KALORAMA, p, exact + 0.001)).toBe(true);
-    expect(withinRadius(KALORAMA, p, exact - 0.001)).toBe(false);
-  });
-
-  it('holds at the 5.99 / 6.00 / 6.01 km boundary of a 6 km pack', () => {
-    expect(withinRadius(KALORAMA, north(5.99), 6)).toBe(true);
-    expect(withinRadius(KALORAMA, north(6.01), 6)).toBe(false);
-    expect(distanceM(KALORAMA, north(6))).toBeCloseTo(6000, -1);
-  });
-});
-
-describe('bboxAround', () => {
-  it('brackets the centre', () => {
-    const [minLon, minLat, maxLon, maxLat] = bboxAround(KALORAMA, 6);
-    expect(minLon).toBeLessThan(KALORAMA.lon);
-    expect(maxLon).toBeGreaterThan(KALORAMA.lon);
-    expect(minLat).toBeLessThan(KALORAMA.lat);
-    expect(maxLat).toBeGreaterThan(KALORAMA.lat);
-  });
-
-  it('is wider in longitude than in latitude at Victorian latitudes', () => {
-    const [minLon, minLat, maxLon, maxLat] = bboxAround(KALORAMA, 6);
-    expect(maxLon - minLon).toBeGreaterThan(maxLat - minLat);
-  });
-
-  it('grows with the radius', () => {
-    const small = bboxAround(KALORAMA, 6);
-    const large = bboxAround(KALORAMA, 12);
-    expect(large[2] - large[0]).toBeGreaterThan(small[2] - small[0]);
+describe('arrowGlyph', () => {
+  it('points north at 0 and rotates one glyph per 45-degree sector', () => {
+    expect(arrowGlyph(0)).toBe('↑');
+    expect(arrowGlyph(45)).toBe('↗');
+    expect(arrowGlyph(180)).toBe('↓');
+    expect(arrowGlyph(315)).toBe('↖');
   });
 });

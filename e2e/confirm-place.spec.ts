@@ -1,14 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { HARNESS, storageState } from './helpers';
 
-const HARNESS_URL = 'http://127.0.0.1:4174/';
-
-async function storageState(page: Page) {
-  return page.evaluate(async () => ({
-    indexedDbNames: (await indexedDB.databases()).map((database) => database.name),
-    localStorageLength: localStorage.length,
-    sessionStorageLength: sessionStorage.length,
-  }));
-}
+const HARNESS_URL = `${HARNESS}/`;
 
 test('AC1 renders the confirmation order and immutable address', async ({ page }) => {
   await page.goto(HARNESS_URL);

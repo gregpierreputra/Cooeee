@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { waitForController } from './helpers';
 import {
   BLACKSKY_TITLE,
   HOLD_FOR_BLACKSKY,
@@ -9,13 +10,6 @@ import {
 
 // BlackSky's whole promise is made for the moment the radios are off. Both
 // tests here run against the real production bundle, like offline-cold-start.
-
-const waitForController = async (page: import('@playwright/test').Page) => {
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  // registerType 'prompt' does not claim clients, so one more load hands control over.
-  await page.reload();
-  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
-};
 
 test('BlackSky cold-starts offline on a fresh install: the designed no-pack state, zero network', async ({
   page,

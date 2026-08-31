@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { deviceStorage, HARNESS } from './helpers';
 
-const AREA_URL = 'http://127.0.0.1:4174/area';
+const AREA_URL = `${HARNESS}/area`;
 const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 
 async function reachAreaCheck(page: Page, mode: string, context?: BrowserContext) {
@@ -10,14 +11,6 @@ async function reachAreaCheck(page: Page, mode: string, context?: BrowserContext
   await page.getByRole('button', { name: ADDRESS }).click();
   if (context) await context.setOffline(true);
   await page.getByRole('button', { name: 'Save this place' }).click();
-}
-
-async function deviceStorage(page: Page) {
-  return page.evaluate(async () => ({
-    recordCounts: await window.__storageCounts(),
-    localStorageLength: localStorage.length,
-    sessionStorageLength: sessionStorage.length,
-  }));
 }
 
 test('AC5 shows designation, publisher/date and instruction priority in order', async ({ page }) => {

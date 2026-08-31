@@ -126,7 +126,7 @@ describe('E1-US2 original source links', () => {
   it.each([
     'https://servicesaustralia.gov.au/example',
     'https://opendata.maps.vic.gov.au/example',
-    'https://www.openstreetmap.org/copyright',
+    'https://www.cfa.vic.gov.au/plan-prepare',
   ])('allows the reviewed HTTPS source %s', (url) => {
     expect(isAllowedSourceUrl(url)).toBe(true);
   });

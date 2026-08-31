@@ -2,8 +2,6 @@ import * as copy from './copy';
 import { formatSavedDate } from './provenance';
 import type { BushfireAreaResult, ExposureLayer, LayerPublicationStatus, LayerStatus } from './types';
 
-export { formatSavedDate } from './provenance';
-
 /** A positive point hit controls immediately. For zero hits, the live
  * existence probe controls; the snapshot is an independent drift check. */
 export function resolveBushfireAreaStatus(

@@ -142,8 +142,6 @@ export type Kv = { key: string; value: unknown };
 
 export type Fix = { lat: number; lon: number; accuracyM: number; at: number };
 
-export type ConnState = 'online' | 'no-data' | 'offline';
-
 /** A geographic point in the order this codebase uses everywhere: named fields,
  *  never a positional pair, because the axis-order trap is the defect that
  *  returns HTTP 200 with zero matches. */

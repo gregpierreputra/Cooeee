@@ -4,6 +4,7 @@ import { packOfferSizeLine } from '../../core/pack-offer';
 import * as copy from '../../core/copy';
 import type { PackOffer } from '../../core/types';
 import StateCard from '../components/StateCard';
+import StatusPage from '../components/StatusPage';
 
 export type SizeProps = {
   offer: PackOffer;
@@ -38,52 +39,59 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
 
   if (state.kind === 'saving') {
     return (
-      <main className="page size-page">
-        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
-        <div className="card" role="status" aria-live="polite"><p>{copy.SAVING_PACK}</p></div>
-      </main>
+      <StatusPage
+        page="size-page"
+        kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+        card={<p>{copy.SAVING_PACK}</p>}
+      />
     );
   }
 
   if (state.kind === 'interrupted') {
     return (
-      <main className="page size-page">
-        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
-        <div className="card size-content" role="status" aria-live="polite">
-          <h1>{copy.DOWNLOAD_STOPPED}</h1>
-          <p>{copy.PREVIOUS_PACK_UNTOUCHED}</p>
-        </div>
-        <div className="actions">
-          <button type="button" onClick={() => void run()}>{copy.TRY_AGAIN}</button>
-        </div>
-      </main>
+      <StatusPage
+        page="size-page"
+        kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+        cardClass="size-content"
+        card={
+          <>
+            <h1>{copy.DOWNLOAD_STOPPED}</h1>
+            <p>{copy.PREVIOUS_PACK_UNTOUCHED}</p>
+          </>
+        }
+        actions={<button type="button" onClick={() => void run()}>{copy.TRY_AGAIN}</button>}
+      />
     );
   }
 
   if (state.kind === 'saved') {
     return (
-      <main className="page size-page">
-        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
-        <div className="card size-content" role="status" aria-live="polite">
-          <h1>{copy.PLACE_SAVED}</h1>
-          <p className="returned-address" data-testid="saved-address">{address}</p>
-          {offer.omittedItems.length > 0 ? (
-            <StateCard
-              heading={offer.omittedItems.length === 1
-                ? copy.ITEM_LEFT_OUT
-                : copy.ITEMS_LEFT_OUT(offer.omittedItems.length)}
-              detail={copy.ITEM_LEFT_OUT_REASON}
-            >
-              <p>{copy.PROVENANCE_STORAGE_RULE}</p>
-            </StateCard>
-          ) : null}
-        </div>
-        <div className="actions">
+      <StatusPage
+        page="size-page"
+        kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+        cardClass="size-content"
+        card={
+          <>
+            <h1>{copy.PLACE_SAVED}</h1>
+            <p className="returned-address" data-testid="saved-address">{address}</p>
+            {offer.omittedItems.length > 0 ? (
+              <StateCard
+                heading={offer.omittedItems.length === 1
+                  ? copy.ITEM_LEFT_OUT
+                  : copy.ITEMS_LEFT_OUT(offer.omittedItems.length)}
+                detail={copy.ITEM_LEFT_OUT_REASON}
+              >
+                <p>{copy.PROVENANCE_STORAGE_RULE}</p>
+              </StateCard>
+            ) : null}
+          </>
+        }
+        actions={
           <button className="main-action" type="button" onClick={onContinue}>
             {copy.OPEN_SAVED_PACK}
           </button>
-        </div>
-      </main>
+        }
+      />
     );
   }
 
