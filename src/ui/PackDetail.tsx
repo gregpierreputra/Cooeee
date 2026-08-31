@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
 import * as copy from '../core/copy';
-import { decideOriginalSourceAccess, packDetailItems } from '../core/provenance';
+import { decideOriginalSourceAccess, packDetailAbsence, packDetailItems } from '../core/provenance';
 import type { CompletePackContent, PackDetailItem } from '../core/types';
 import { getCompletePackContent } from '../data/db';
 import ProvenanceLine from './components/ProvenanceLine';
@@ -42,6 +42,7 @@ export default function PackDetail({
   }
 
   const items = packDetailItems(content);
+  const absence = packDetailAbsence(content);
   const interceptSource = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
     event.preventDefault();
     setOfflineSource(decideOriginalSourceAccess(item).item);
@@ -62,9 +63,11 @@ export default function PackDetail({
         <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />
       ) : null}
 
-      {items.length === 0 ? (
-        <StateCard heading={copy.NO_STORED_ITEMS} />
-      ) : (
+      {/* A stored absence row: its own plain statement, never an item in the
+          list and never a source to open. */}
+      {absence ? <StateCard heading={absence} /> : null}
+
+      {items.length > 0 ? (
         <ul className="list pack-item-list">
           {items.map((item) => (
             <li key={item.id} className="card provenance-item">
@@ -81,6 +84,8 @@ export default function PackDetail({
             </li>
           ))}
         </ul>
+      ) : absence ? null : (
+        <StateCard heading={copy.NO_STORED_ITEMS} />
       )}
 
       {offlineSource ? (

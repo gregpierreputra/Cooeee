@@ -10,13 +10,18 @@ import type {
   RecoveryProgram,
   TextPackContent,
 } from '../../src/core/types';
+import { absenceRow, orderByDistance } from '../../src/core/destination';
+import { selectSitesForPack, toDestination } from '../../src/core/nsp';
 import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPack } from '../../src/data/pack-build';
 import { db } from '../../src/data/db';
 import { manifestGroup } from '../../src/data/integrity';
+import { loadNspSnapshot } from '../../src/data/nsp';
 import PackDetail from '../../src/ui/PackDetail';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
+import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
 import { Size, type DownloadChoice } from '../../src/ui/PackNew/Size';
+import nspFixture from '../../public/data/nsp.v2026-08-18.json';
 import '../../src/ui/theme.css';
 
 declare global {
@@ -232,18 +237,21 @@ const detailLayer: ExposureLayer = {
   checkedAt: detailSavedAt,
   source: { ...packSource, retrievedAt: detailSavedAt },
 };
-const detailDestination: Destination = {
-  id: 'detail-pack:nsp',
-  packId: 'detail-pack',
-  kind: 'nsp-bushfire',
-  name: 'Kalorama Reserve',
-  source: {
-    publisher: 'Country Fire Authority',
-    url: 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places',
-    licence: 'CFA website list — permission to be confirmed',
-    retrievedAt: detailSavedAt,
-  },
+const cfaSource = {
+  publisher: 'Country Fire Authority',
+  url: 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places',
+  licence: 'CFA website list — permission to be confirmed',
+  retrievedAt: detailSavedAt,
 };
+const detailDestination: Destination = detailMode === 'absence'
+  ? absenceRow('detail-pack', 'Yarra Ranges', cfaSource)
+  : {
+      id: 'detail-pack:nsp',
+      packId: 'detail-pack',
+      kind: 'nsp-bushfire',
+      name: 'Kalorama Reserve',
+      source: cfaSource,
+    };
 const detailRecovery: RecoveryProgram = {
   ...recoveryProgram,
   id: 'detail-recovery',
@@ -298,6 +306,56 @@ const detailFlow = (
   </MemoryRouter>
 );
 
+const destinationsMode = new URLSearchParams(window.location.search).get('mode') ?? 'sites';
+const destinationsNow = Date.UTC(2026, 8, 1);
+let destinationsFlow = confirmation;
+if (window.location.pathname === '/destinations') {
+  const centre = { lat: -37.813, lon: 145.362 };
+  const lgaName = 'YARRA RANGES';
+  const area = 'Yarra Ranges';
+  const packId = 'destinations-pack';
+
+  const jsonResponse = (body: unknown): Response =>
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  const fetchImpl: typeof fetch = destinationsMode === 'empty'
+    ? async () => jsonResponse({ ...nspFixture, sites: [] })
+    : destinationsMode === 'malformed'
+      ? async () => jsonResponse({ listAsAt: 'not-a-date', sites: 'nope' })
+      : async () => jsonResponse(nspFixture);
+
+  try {
+    const snapshot = await loadNspSnapshot(fetchImpl);
+    const { located, unlocated } = selectSitesForPack(snapshot.sites, centre, lgaName, 6);
+    const { ordered } = orderByDistance(
+      located.map((site) => toDestination(site, packId, snapshot)),
+      centre,
+    );
+    destinationsFlow = (
+      <Destinations
+        ordered={ordered}
+        unlocated={unlocated.map((site) => toDestination(site, packId, snapshot))}
+        listAsAt={snapshot.listAsAt}
+        area={area}
+        now={destinationsNow}
+      />
+    );
+  } catch {
+    destinationsFlow = (
+      <Destinations
+        ordered={[]}
+        unlocated={[]}
+        listAsAt="2026-08-18"
+        area={area}
+        status="unavailable"
+        now={destinationsNow}
+      />
+    );
+  }
+}
+
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
@@ -315,6 +373,7 @@ createRoot(root).render(
     {window.location.pathname === '/conflict' ? conflictFlow
       : window.location.pathname === '/area' ? areaFlow
         : window.location.pathname === '/size' ? sizeFlow
+        : window.location.pathname === '/destinations' ? destinationsFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

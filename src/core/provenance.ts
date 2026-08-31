@@ -95,14 +95,23 @@ const LAYER_NAMES: Record<LayerCode, string> = {
   SBO: copy.SPECIAL_BUILDING_OVERLAY,
 };
 
+/** The absence marker is a stored row but not an information item: it has no
+ * publisher-attributed content to open, only a reason. It renders as its own
+ * plain statement, never as a pseudo-item in the list. */
+export function packDetailAbsence(content: CompletePackContent): string | null {
+  return content.destinations.find((row) => row.kind === 'absence')?.reason ?? null;
+}
+
 export function packDetailItems(content: CompletePackContent): PackDetailItem[] {
   const items: PackDetailItem[] = [
     ...content.layers.map((row) => ({ id: row.id, name: LAYER_NAMES[row.code], source: row.source })),
-    ...content.destinations.map((row) => ({
-      id: row.id,
-      name: row.name ?? copy.OFFICIAL_DESTINATION_INFORMATION,
-      source: row.source,
-    })),
+    ...content.destinations
+      .filter((row) => row.kind !== 'absence')
+      .map((row) => ({
+        id: row.id,
+        name: row.name ?? copy.OFFICIAL_DESTINATION_INFORMATION,
+        source: row.source,
+      })),
     ...content.recovery.map((row) => ({ id: row.id, name: row.title, source: row.source })),
   ];
   if (content.pack.builtWithTiles) {

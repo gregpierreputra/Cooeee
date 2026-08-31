@@ -233,3 +233,14 @@ export const FLOODWAY_OVERLAY = 'Floodway Overlay';
 export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
+
+// ── E2-US1 official places of last resort ──────────────────────────────────
+
+export const DESTINATIONS_STEP_TITLE = 'Official places of last resort';
+export const NSP_KIND_LABEL = 'Bushfire place of last resort';
+export const NSP_COUNCIL_LABEL = (council: string) => `Responsible council: ${council}`;
+export const NSP_LIST_AS_AT = (date: string) => `CFA state-wide list as at ${date}`;
+export const NSP_UNLOCATED_HEADING =
+  'On the CFA list but not located to a point on the map';
+export const OFFICIAL_LIST_UNAVAILABLE =
+  'The official list could not be included for this area.';

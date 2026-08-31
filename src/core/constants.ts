@@ -65,3 +65,7 @@ export const OFFICIAL_DOMAINS = [
 ] as const;
 
 export const MS_PER_DAY = 86_400_000;
+
+/** Unit constant. The metres↔kilometres display cutoff and divisor for
+ * destination.formatDistanceM — not a safety threshold. */
+export const METRES_PER_KM = 1_000;

@@ -1,0 +1,85 @@
+{
+  "listAsAt": "2026-08-18",
+  "retrievedAt": 1787011200000,
+  "source": {
+    "publisher": "Country Fire Authority",
+    "url": "https://www.cfa.vic.gov.au/ArticleDocuments/441/Designated%20NSP-BPLR%20-%20CFA%20Website%20complete%20list%20%2018-08-2026.pdf.aspx",
+    "licence": "CFA website list — permission to be confirmed",
+    "retrievedAt": 1787011200000
+  },
+  "sites": [
+    {
+      "id": "nsp-olinda-recreation-reserve",
+      "municipality": "Yarra Ranges Shire",
+      "township": "Olinda",
+      "name": "Olinda Recreation Reserve",
+      "subLocation": "Oval adjacent to the hall",
+      "street": "Olinda-Monbulk Road",
+      "geocode": "street",
+      "lat": -37.848,
+      "lon": 145.363
+    },
+    {
+      "id": "nsp-silvan-recreation-reserve",
+      "municipality": "Yarra Ranges Shire",
+      "township": "Silvan",
+      "name": "Silvan Recreation Reserve",
+      "subLocation": "",
+      "street": "Monbulk-Silvan Road",
+      "geocode": "township",
+      "lat": -37.828,
+      "lon": 145.415
+    },
+    {
+      "id": "nsp-belgrave-recreation-reserve",
+      "municipality": "Yarra Ranges Shire",
+      "township": "Belgrave",
+      "name": "Belgrave Recreation Reserve",
+      "subLocation": "",
+      "street": "Reserve Road",
+      "geocode": "exact",
+      "lat": -37.872,
+      "lon": 145.362
+    },
+    {
+      "id": "nsp-wandin-north-reserve",
+      "municipality": "Yarra Ranges Shire",
+      "township": "Wandin North",
+      "name": "Wandin North Reserve",
+      "subLocation": "",
+      "street": "Warburton Highway",
+      "geocode": "none"
+    },
+    {
+      "id": "nsp-kalorama-memorial-reserve",
+      "municipality": "Yarra Ranges Shire",
+      "township": "Kalorama",
+      "name": "Kalorama Memorial Reserve",
+      "subLocation": "",
+      "street": "Ridge Road",
+      "geocode": "exact",
+      "lat": -37.808,
+      "lon": 145.36
+    },
+    {
+      "id": "nsp-alexandra-showgrounds",
+      "municipality": "Murrindindi Shire",
+      "township": "Alexandra",
+      "name": "Alexandra Showgrounds",
+      "subLocation": "",
+      "street": "Downey Street",
+      "geocode": "none"
+    },
+    {
+      "id": "nsp-mount-dandenong-reserve",
+      "municipality": "Yarra Ranges Shire",
+      "township": "Mount Dandenong",
+      "name": "Mount Dandenong Reserve",
+      "subLocation": "",
+      "street": "Ridge Road",
+      "geocode": "street",
+      "lat": -37.836,
+      "lon": 145.355
+    }
+  ]
+}
