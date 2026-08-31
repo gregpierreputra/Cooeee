@@ -1,14 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { HARNESS, readPacks as packs, storageCounts as counts } from './helpers';
 
-const SIZE_URL = 'http://127.0.0.1:4174/size';
-
-async function counts(page: Page) {
-  return page.evaluate(() => window.__storageCounts());
-}
-
-async function packs(page: Page) {
-  return page.evaluate(() => window.__readPacks());
-}
+const SIZE_URL = `${HARNESS}/size`;
 
 test('AC9 states the size before any write', async ({ page }) => {
   await page.goto(SIZE_URL);

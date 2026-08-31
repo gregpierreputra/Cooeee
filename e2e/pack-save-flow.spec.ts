@@ -1,25 +1,12 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { addressFeature, waitForController, WFS_PATTERN } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
 // disconnected test harness. Only the official WFS endpoint is intercepted —
 // everything else (routing, IndexedDB, the service worker shell) is real.
 
-const WFS_PATTERN = 'https://opendata.maps.vic.gov.au/geoserver/wfs**';
 const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 const LGA_NAME = 'YARRA RANGES';
-
-function addressFeature(address: string, locality: string, lon: number, lat: number) {
-  return {
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [lon, lat] },
-    properties: {
-      ezi_address: address,
-      locality_name: locality,
-      property_status: 'A',
-      is_primary: 'Y',
-    },
-  };
-}
 
 async function mockOfficialServices(page: Page, opts: {
   candidates: unknown[];
@@ -153,12 +140,6 @@ async function saveAPackAndOpenIt(page: Page) {
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
-}
-
-async function waitForController(page: Page) {
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.reload();
-  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
 }
 
 test('US2 the pack detail offers an explicit return to the pack list', async ({ page }) => {

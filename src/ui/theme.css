@@ -77,15 +77,6 @@
   --btn-ink: #ffb020;
   --glow: none;
 }
-:root[data-mode='recover'] {
-  --bg: #0d0f14;
-  --surface: #171b22;
-  --surface-2: #131720;
-  --accent: #ff8a4c;
-  --ink-on-accent: #2a1204;
-  --glow: radial-gradient(50rem 32rem at 12% -6%, rgb(255 138 76 / 7%), transparent 60%);
-}
-
 *,
 *::before,
 *::after {
@@ -277,11 +268,6 @@ button,
   text-decoration: none;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
 .main-action {
   min-height: 60px;
   background: var(--accent);
@@ -427,13 +413,13 @@ input {
   gap: 1rem;
 }
 
+.area-result {
+  padding: 1.5rem 1.25rem;
+}
+
 .area-content p,
 .area-result p {
   margin: 0;
-}
-
-.area-result {
-  padding: 1.5rem 1.25rem;
 }
 
 .area-result p {
@@ -484,11 +470,6 @@ input {
   font-weight: var(--w-med);
 }
 
-#tile-unavailable {
-  font-size: var(--step-s);
-  color: var(--ink-3);
-}
-
 /* ── Pack detail and provenance ────────────────────────────────────────────── */
 
 .pack-detail header,
@@ -499,20 +480,9 @@ input {
   gap: 0.5rem;
 }
 
-.pack-detail header p,
 .provenance p,
 .stale-note p {
   margin: 0;
-}
-
-/* Header hierarchy: quiet way back, hero title, then the place itself. */
-.pack-detail header > p {
-  font-size: var(--step-1);
-  font-weight: var(--w-bold);
-}
-.pack-detail header > p.muted {
-  font-size: var(--step-0);
-  font-weight: 400;
 }
 
 /* The one way back out of a saved pack. Sits before the heading so it is the

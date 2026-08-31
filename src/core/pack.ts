@@ -1,35 +1,20 @@
-import { MS_PER_DAY, PACK_RADIUS_KM, PACK_REFRESH_DAYS } from './constants';
+import { PACK_RADIUS_KM, PACK_REFRESH_DAYS } from './constants';
 import { NOT_RECENTLY_VERIFIED, OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from './copy';
-import { resolveBushfireAreaStatus } from './area-check';
-import type { LayerPublicationStatus, LayerStatus, Pack, PackSeed, PendingPlace, Source } from './types';
-
-/** Whole days since the pack was last verified. Freshness derives from
- *  verifiedAt, never createdAt. */
-export const ageDays = (now: number, verifiedAt: number): number =>
-  Math.floor((now - verifiedAt) / MS_PER_DAY);
+import { savedAgeDays } from './provenance';
+import type { Pack, PackSeed, PendingPlace, Source } from './types';
 
 /** A pack past its refresh window stays FULLY USABLE and gains a label.
  *  Nothing expires; nothing auto-refreshes; nothing is replaced silently.
- *  The window is inclusive: at exactly PACK_REFRESH_DAYS the pack is not stale. */
+ *  The window is inclusive: at exactly PACK_REFRESH_DAYS the pack is not stale.
+ *  Freshness derives from verifiedAt, never createdAt. */
 export const freshness = (
   now: number,
   verifiedAt: number,
 ): { stale: boolean; label: string } => {
-  const days = ageDays(now, verifiedAt);
+  const days = savedAgeDays(now, verifiedAt);
   const stale = days > PACK_REFRESH_DAYS;
   return { stale, label: stale ? NOT_RECENTLY_VERIFIED(days) : SAVED_DAYS_AGO(days) };
 };
-
-/** Exact encoded size of the rows about to be written, for the size screen. */
-export const textBytes = (rows: unknown): number =>
-  new TextEncoder().encode(JSON.stringify(rows)).length;
-
-/** The area decision that makes publication uncertainty explicit and makes a
- *  failed probe impossible to collapse into a confident negative result. */
-export const layerStatus = (
-  hitsAtPoint: number,
-  publication: LayerPublicationStatus,
-): LayerStatus => resolveBushfireAreaStatus(hitsAtPoint, publication);
 
 /** The seed for a pack built from an already-confirmed place and an
  * already-fetched official area result. The reminder defaults to the same

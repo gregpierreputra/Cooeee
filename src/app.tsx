@@ -13,16 +13,12 @@ export const SW_UPDATE_EVENT = 'cooeee:update-ready';
 
 // Route prefix to <html data-mode>. Routing configuration, not a threshold —
 // it decides nothing about the user's situation, so it stays out of src/core.
-const MODE_BY_PREFIX: readonly (readonly [string, string])[] = [
-  ['/blacksky', 'blacksky'],
-  ['/recover', 'recover'],
-];
-
 function ModeSwitch() {
   const { pathname } = useLocation();
   useEffect(() => {
-    const mode = MODE_BY_PREFIX.find(([prefix]) => pathname.startsWith(prefix))?.[1] ?? 'prepare';
-    document.documentElement.dataset.mode = mode;
+    document.documentElement.dataset.mode = pathname.startsWith('/blacksky')
+      ? 'blacksky'
+      : 'prepare';
   }, [pathname]);
   return null;
 }

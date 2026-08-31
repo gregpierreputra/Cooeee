@@ -1,18 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { HOME_TITLE, NO_PACKS_HINT, NO_PACKS_YET } from '../src/core/copy';
+import { waitForController } from './helpers';
 
 // The offline claim is the product. It is asserted against the real production
 // bundle with the network genuinely off, not simulated and not inspected.
-
-const waitForController = async (page: import('@playwright/test').Page) => {
-  // A registration exposes `active` while its worker may still be activating.
-  // `ready` resolves only when an active worker can control the current origin,
-  // preventing a reload during that narrow lifecycle race.
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  // registerType 'prompt' does not claim clients, so one more load hands control over.
-  await page.reload();
-  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
-};
 
 test('the shell cold-starts with the radios off, and nothing reaches for the network', async ({
   page,

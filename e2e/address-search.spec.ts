@@ -1,26 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { addressFeature, HARNESS, storageState, WFS_PATTERN } from './helpers';
 
-const SEARCH_URL = 'http://127.0.0.1:4174/search';
-const WFS_PATTERN = 'https://opendata.maps.vic.gov.au/geoserver/wfs**';
-
-function addressFeature(
-  address: string,
-  locality: string,
-  lon: number,
-  lat: number,
-  isPrimary: 'Y' | 'N' = 'Y',
-) {
-  return {
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [lon, lat] },
-    properties: {
-      ezi_address: address,
-      locality_name: locality,
-      property_status: 'A',
-      is_primary: isPrimary,
-    },
-  };
-}
+const SEARCH_URL = `${HARNESS}/search`;
 
 // The search now runs on typing, so filling the field IS the search. The explicit
 // Search button remains and is exercised separately, below.
@@ -46,13 +27,6 @@ function addressField(page: Page) {
   return page.getByLabel('Address', { exact: true });
 }
 
-async function storageIsEmpty(page: Page) {
-  return page.evaluate(async () => ({
-    indexedDbNames: (await indexedDB.databases()).map(({ name }) => name),
-    localStorageLength: localStorage.length,
-    sessionStorageLength: sessionStorage.length,
-  }));
-}
 
 test('AC2 lists every returned candidate in service order with no selection', async ({ page }) => {
   const addresses = [
@@ -98,7 +72,7 @@ test('AC2 none-of-these returns to editable search and retains nothing', async (
   await page.getByRole('button', { name: 'None of these is my address' }).click();
 
   await expect(page.getByLabel('Address')).toHaveValue('RIDGE');
-  expect(await storageIsEmpty(page)).toEqual({
+  expect(await storageState(page)).toEqual({
     indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
   });
 });
@@ -144,7 +118,7 @@ test('AC4 maps a service failure to both honesty sentences and no saved place', 
   );
   await expect(status).not.toContainText(/no results|none found|not found|no match/i);
   await expect(page.getByLabel('Address')).toHaveValue('RIDGE');
-  expect(await storageIsEmpty(page)).toEqual({
+  expect(await storageState(page)).toEqual({
     indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
   });
 });
@@ -259,7 +233,7 @@ test('AC2 never guesses a point when conflicting records carry no flag', async (
 
   // The area check never ran and nothing was written.
   expect(officialCalls).toEqual(['open-data-platform:address']);
-  expect(await storageIsEmpty(page)).toEqual({
+  expect(await storageState(page)).toEqual({
     indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
   });
 
@@ -606,7 +580,7 @@ test('AC2 nothing typed, returned or rejected is written to the device', async (
   await page.getByRole('button', { name: 'None of these is my address' }).click();
   await field.fill('RIDGE');
 
-  expect(await storageIsEmpty(page)).toEqual({
+  expect(await storageState(page)).toEqual({
     indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
   });
 });

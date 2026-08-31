@@ -6,17 +6,6 @@
 
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
 
-export const ORG_DECIDES = 'the responsible organisation decides who is eligible';
-
-export const PAST_NOT_PREDICTION = 'Past events are not a prediction.';
-
-export const NO_DESTINATION_PUBLISHED =
-  'No official place of last resort is published for this area';
-
-/** The absence row's own reason: the mandated line, plus the area it applies to. */
-export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
-  `${NO_DESTINATION_PUBLISHED} — ${area}.`;
-
 export const NO_ADDRESS_MATCH =
   'No matching address found — check the spelling or try the nearest cross street.';
 
@@ -27,44 +16,13 @@ export const GPS_TOO_INACCURATE = (m: number) =>
 
 export const OUTSIDE_AREAS = "You're outside the areas you've prepared";
 
-export const OFFLINE_LINE = (date: string) => `Offline — showing your saved pack from ${date}.`;
-
 export const NOT_RECENTLY_VERIFIED = (days: number) =>
   `Saved ${days} days ago — not recently verified`;
 
-export const CHECK_DID_NOT_FINISH = (date: string) =>
-  `The check did not finish — showing your saved copy from ${date}.`;
-
-export const NO_DATA = 'Internet not reachable. Phone calls and SMS may still work.';
-
-export const CANNOT_DETECT_SIGNAL =
-  'may work if your phone shows signal — this app cannot detect phone signal';
-
 // ── Shared vocabulary ────────────────────────────────────────────────────────
 
-/** 16-point compass names, index 0 = north, one entry every 22.5 degrees.
- *  Read by core/geo.ts cardinal(). */
-export const CARDINAL_POINTS = [
-  'NORTH',
-  'NORTH-NORTH-EAST',
-  'NORTH-EAST',
-  'EAST-NORTH-EAST',
-  'EAST',
-  'EAST-SOUTH-EAST',
-  'SOUTH-EAST',
-  'SOUTH-SOUTH-EAST',
-  'SOUTH',
-  'SOUTH-SOUTH-WEST',
-  'SOUTH-WEST',
-  'WEST-SOUTH-WEST',
-  'WEST',
-  'WEST-NORTH-WEST',
-  'NORTH-WEST',
-  'NORTH-NORTH-WEST',
-] as const;
-
-/** The same 16 points as short compass labels, same indexing.
- *  Read by core/geo.ts cardinalAbbr(). */
+/** 16-point compass abbreviations, index 0 = north, one entry every 22.5
+ *  degrees. Read by core/geo.ts cardinalAbbr(). */
 export const CARDINAL_ABBR = [
   'N',
   'NNE',
@@ -88,20 +46,6 @@ export const CARDINAL_ABBR = [
  *  degrees. Read by core/geo.ts arrowGlyph(). A screen-relative glyph, not a
  *  compass needle: it points where the bearing sits on a north-up dial. */
 export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'] as const;
-
-/** Distance ordinals, zero-based. Position in a distance-ordered list is not a
- *  ranking of worth, so there is no fourth label and no superlative anywhere. */
-export const ORDINALS = ['nearest', 'second nearest', 'third nearest'] as const;
-
-/** The needs vocabulary. Selections are held in memory only, never stored. */
-export const NEED_LABELS = {
-  stay: 'Somewhere to stay',
-  money: 'Money for immediate needs',
-  food: 'Food and essentials',
-  property: 'Property and repairs',
-  health: 'Health and wellbeing',
-  documents: 'Help with documents',
-} as const;
 
 // ── Application shell ────────────────────────────────────────────────────────
 
@@ -226,7 +170,6 @@ export const PROVENANCE_STORAGE_RULE =
 export const SOURCE_IS_ON_WEB = 'This source is on the web.';
 export const STORED_PROVENANCE_REMAINS =
   'The publisher and the saved date below are stored on this device and stay readable.';
-export const TRY_SOURCE_AGAIN = 'Try again when you have a connection';
 export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
 export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';
@@ -311,7 +254,9 @@ export const CALL_TRIPLE_ZERO = 'Call 000 (Triple Zero) for life-threatening eme
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 export const EMERGENCY_BROADCASTER =
   'ABC local radio broadcasts official emergency information.';
-export const PHONE_MAY_WORK = `Phone calls ${CANNOT_DETECT_SIGNAL}.`;
+/** States what the app cannot detect — never a promise about the network. */
+export const PHONE_MAY_WORK =
+  'Phone calls may work if your phone shows signal — this app cannot detect phone signal.';
 
 // ── E3-US2-AC2 no pack stored ───────────────────────────────────────────────
 
