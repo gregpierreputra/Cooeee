@@ -9,7 +9,9 @@ export type DownloadChoice = 'both' | 'text-only';
 
 export type SizeProps = {
   offer: PackOffer;
+  address: string;
   download: (choice: DownloadChoice) => Promise<void>;
+  onContinue: () => void;
 };
 
 type DownloadState =
@@ -21,7 +23,7 @@ type DownloadState =
 
 /** E1-US1-AC9 offer and result states. No callback runs before a button tap,
  * and the two available choices intentionally have identical visual weight. */
-export function Size({ offer, download }: SizeProps) {
+export function Size({ offer, address, download, onContinue }: SizeProps) {
   const [state, setState] = useState<DownloadState>({ kind: 'offer' });
 
   async function run(choice: DownloadChoice) {
@@ -60,7 +62,9 @@ export function Size({ offer, download }: SizeProps) {
     return (
       <main className="page size-page">
         <div className="size-content" role="status" aria-live="polite">
-          <h1>{copy.SAVED_WITHOUT_MAP_TILES}</h1>
+          <h1>{copy.PLACE_SAVED}</h1>
+          <p className="returned-address" data-testid="saved-address">{address}</p>
+          <h2>{copy.SAVED_WITHOUT_MAP_TILES}</h2>
           <p>{copy.MAPS_NOT_DOWNLOADED}</p>
           {offer.omittedItems.length > 0 ? (
             <StateCard
@@ -72,6 +76,11 @@ export function Size({ offer, download }: SizeProps) {
               <p>{copy.PROVENANCE_STORAGE_RULE}</p>
             </StateCard>
           ) : null}
+        </div>
+        <div className="actions">
+          <button className="main-action" type="button" onClick={onContinue}>
+            {copy.OPEN_SAVED_PACK}
+          </button>
         </div>
       </main>
     );

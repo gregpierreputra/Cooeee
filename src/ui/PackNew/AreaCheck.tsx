@@ -12,11 +12,12 @@ export type AreaCheckProps = {
   state: AreaCheckState;
   onRetry: () => void;
   onSearchAgain: () => void;
+  onContinue: () => void;
 };
 
 /** E1-US1-AC5–AC7. The pending place stays in parent memory only; this screen
  * has no storage access and retry is always an explicit user gesture. */
-export function AreaCheck({ place, state, onRetry, onSearchAgain }: AreaCheckProps) {
+export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: AreaCheckProps) {
   if (state.kind === 'checking') {
     return (
       <main className="page area-page">
@@ -54,6 +55,11 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain }: AreaCheckPro
         <h1>{view.resultLine}</h1>
         <p>{view.publisherLine}</p>
         <p>{view.priorityLine}</p>
+      </div>
+      <div className="actions">
+        <button className="main-action" type="button" onClick={onContinue}>
+          {copy.SEE_PACK_SIZE}
+        </button>
       </div>
     </main>
   );

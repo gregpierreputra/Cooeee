@@ -193,6 +193,13 @@ export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to original source (web)';
 export const CLOSE = 'Close';
+// ── E1-US1-AC1/AC9 production pack-save wiring ──────────────────────────────
+
+export const SEE_PACK_SIZE = 'See pack size';
+export const PREPARING_PACK_OFFER = 'Preparing the pack offer.';
+export const PACK_OFFER_FAILED = 'We could not prepare this pack right now.';
+export const OPEN_SAVED_PACK = 'Open saved pack';
+
 export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
 export const NO_STORED_ITEMS = 'This pack has no stored information items to show.';
 export const RECOVERY_ITEMS_UNVERIFIED =
