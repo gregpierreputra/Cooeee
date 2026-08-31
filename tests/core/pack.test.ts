@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { MS_PER_DAY, PACK_REFRESH_DAYS } from '../../src/core/constants';
-import { NOT_RECENTLY_VERIFIED, SAVED_DAYS_AGO } from '../../src/core/copy';
-import { ageDays, diffPacks, freshness, layerStatus, textBytes } from '../../src/core/pack';
-import { pack } from '../fixtures';
+import { MS_PER_DAY, PACK_RADIUS_KM, PACK_REFRESH_DAYS } from '../../src/core/constants';
+import { NOT_RECENTLY_VERIFIED, OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from '../../src/core/copy';
+import {
+  ageDays,
+  buildPackSeed,
+  diffPacks,
+  freshness,
+  layerStatus,
+  textBytes,
+} from '../../src/core/pack';
+import { pack, source } from '../fixtures';
 
 const NOW = 1_800_000_000_000;
 const daysAgo = (n: number) => NOW - n * MS_PER_DAY;
@@ -62,6 +69,32 @@ describe('layerStatus', () => {
     expect(layerStatus(0, 'published')).toBe('none-mapped-here');
     expect(layerStatus(0, 'unpublished')).toBe('not-published');
     expect(layerStatus(0, 'unknown')).toBe('unknown');
+  });
+});
+
+describe('buildPackSeed', () => {
+  const place = { name: 'Kalorama', address: '6 RIDGE ROAD KALORAMA 3766', lat: -37.82, lon: 145.37 };
+
+  it('builds a fresh seed with no supersedes when nothing is being replaced', () => {
+    const seed = buildPackSeed('pack-1', 1_000, place, 'YARRA RANGES', source(), undefined);
+    expect(seed).toEqual({
+      id: 'pack-1',
+      name: 'Kalorama',
+      address: '6 RIDGE ROAD KALORAMA 3766',
+      lat: -37.82,
+      lon: 145.37,
+      radiusKm: PACK_RADIUS_KM,
+      lgaName: 'YARRA RANGES',
+      createdAt: 1_000,
+      reminder: OFFICIAL_INSTRUCTIONS_FIRST,
+      sources: [source()],
+    });
+    expect(seed).not.toHaveProperty('supersedes');
+  });
+
+  it('carries the exact prior pack id as supersedes on a replace', () => {
+    const seed = buildPackSeed('pack-2', 1_000, place, 'YARRA RANGES', source(), 'old-pack-id');
+    expect(seed.supersedes).toBe('old-pack-id');
   });
 });
 
