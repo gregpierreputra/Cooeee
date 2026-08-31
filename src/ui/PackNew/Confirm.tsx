@@ -24,8 +24,10 @@ export function Confirm({ candidate, onConfirm, onSearchAgain }: ConfirmProps) {
     <main className="page confirm-page">
       <form className="confirm-form" onSubmit={handleSubmit}>
         <div className="confirm-content">
-          <p className="eyebrow">{copy.EYEBROW_CONFIRM_ADDRESS}</p>
-          <h1>{copy.CONFIRM_ADDRESS_QUESTION}</h1>
+          <header className="hero">
+            <span className="kicker">{copy.EYEBROW_CONFIRM_ADDRESS}</span>
+            <h1>{copy.CONFIRM_ADDRESS_QUESTION}</h1>
+          </header>
           <p className="returned-address" data-testid="returned-address">
             {candidate.address}
           </p>

@@ -39,7 +39,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
   if (state.kind === 'saving') {
     return (
       <main className="page size-page">
-        <p className="eyebrow">{copy.EYEBROW_SAVE_YOUR_PACK}</p>
+        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
         <div className="card" role="status" aria-live="polite"><p>{copy.SAVING_PACK}</p></div>
       </main>
     );
@@ -48,7 +48,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
   if (state.kind === 'interrupted') {
     return (
       <main className="page size-page">
-        <p className="eyebrow">{copy.EYEBROW_SAVE_YOUR_PACK}</p>
+        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
         <div className="card size-content" role="status" aria-live="polite">
           <h1>{copy.DOWNLOAD_STOPPED}</h1>
           <p>{copy.PREVIOUS_PACK_UNTOUCHED}</p>
@@ -63,7 +63,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
   if (state.kind === 'saved') {
     return (
       <main className="page size-page">
-        <p className="eyebrow">{copy.EYEBROW_SAVE_YOUR_PACK}</p>
+        <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
         <div className="card size-content" role="status" aria-live="polite">
           <h1>{copy.PLACE_SAVED}</h1>
           <p className="returned-address" data-testid="saved-address">{address}</p>
@@ -89,9 +89,11 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
 
   return (
     <main className="page size-page">
-      <p className="eyebrow">{copy.EYEBROW_SAVE_YOUR_PACK}</p>
-      <div className="card size-content">
-        <h1>{copy.READY_TO_DOWNLOAD}</h1>
+      <div className="size-content">
+        <header className="hero">
+          <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
+          <h1>{copy.READY_TO_DOWNLOAD}</h1>
+        </header>
         <p className="pack-size figure">{packOfferSizeLine(offer)}</p>
       </div>
       <div className="actions size-actions">

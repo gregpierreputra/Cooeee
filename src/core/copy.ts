@@ -63,6 +63,32 @@ export const CARDINAL_POINTS = [
   'NORTH-NORTH-WEST',
 ] as const;
 
+/** The same 16 points as short compass labels, same indexing.
+ *  Read by core/geo.ts cardinalAbbr(). */
+export const CARDINAL_ABBR = [
+  'N',
+  'NNE',
+  'NE',
+  'ENE',
+  'E',
+  'ESE',
+  'SE',
+  'SSE',
+  'S',
+  'SSW',
+  'SW',
+  'WSW',
+  'W',
+  'WNW',
+  'NW',
+  'NNW',
+] as const;
+
+/** Arrow glyphs for the 8 primary directions, index 0 = north, one every 45
+ *  degrees. Read by core/geo.ts arrowGlyph(). A screen-relative glyph, not a
+ *  compass needle: it points where the bearing sits on a north-up dial. */
+export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'] as const;
+
 /** Distance ordinals, zero-based. Position in a distance-ordered list is not a
  *  ranking of worth, so there is no fourth label and no superlative anywhere. */
 export const ORDINALS = ['nearest', 'second nearest', 'third nearest'] as const;
@@ -228,18 +254,86 @@ export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort i
 export const OFFLINE_BASEMAP = 'Offline basemap';
 
 // ── Screen eyebrows ─────────────────────────────────────────────────────────
-// The small label above each screen's heading. It names the step of the flow
-// the user is in, so the label earns its place rather than repeating the mode.
+// The small label above each screen's heading, rendered as the hero kicker. It
+// names the step of the flow the user is in, so the label earns its place
+// rather than repeating the mode.
 //
-// Sentence case here, capitals on screen: .eyebrow carries text-transform, and
+// Sentence case here, capitals on screen: .kicker carries text-transform, and
 // the DOM carries an ordinary word. Some screen readers spell an all-caps string
 // out letter by letter, so the stored casing is an accessibility decision, not a
 // styling one — and keeping the transform meaningful stops it silently diverging
-// from what is stored. tests/core/copy.test.ts locks all six by exact match.
+// from what is stored. tests/core/copy.test.ts locks all five by exact match.
 
 export const EYEBROW_SET_UP_YOUR_PLACE = 'Set up your place';
 export const EYEBROW_CONFIRM_ADDRESS = 'Confirm address';
 export const EYEBROW_AREA_RESULT = 'Area result';
 export const EYEBROW_SAVE_YOUR_PACK = 'Save your pack';
-export const EYEBROW_HOME = 'Home';
 export const EYEBROW_MY_PACK = 'My pack';
+
+// ── E3-US1-AC1 BlackSky prepared direction ──────────────────────────────────
+
+export const BLACKSKY_TITLE = 'BlackSky';
+export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
+
+export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
+
+/** "850 m" under a kilometre, "1.1 km" from there. The precision a person on
+ *  foot can act on — never more. */
+export const distanceLabel = (m: number): string =>
+  m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
+
+/** The whole bearing-and-distance figure: "NE ↗ · 1.1 km". This is the display
+ *  in full — never a route, an ETA or an arrival promise. */
+export const BEARING_FIGURE = (point: string, glyph: string, distance: string) =>
+  `${point} ${glyph} · ${distance}`;
+
+// ── E3-US1-AC4 marked-position estimate ─────────────────────────────────────
+
+export const MARK_HINT =
+  'If you are standing at your saved place, mark it — bearings can be estimated from there. This is not GPS.';
+
+export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${address}`;
+
+/** Always the word ESTIMATE, and the uncertainty stated as growing — a marked
+ *  position must never read like a fix. */
+export const ESTIMATE_READOUT = (m: number) =>
+  `ESTIMATE from your marked position — ± ${m} m and growing`;
+
+// ── E3-US2-AC1 outside every pack area ──────────────────────────────────────
+
+/** Distance to a pack area's EDGE — never presented as a direction. */
+export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area`;
+
+// General official guidance, stored in the app itself so it is readable with
+// zero network. The numbers are safety copy: exact-match tested, never retyped.
+export const GENERAL_GUIDANCE_TITLE = 'General official guidance';
+export const CALL_TRIPLE_ZERO = 'Call 000 (Triple Zero) for life-threatening emergencies.';
+export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
+export const EMERGENCY_BROADCASTER =
+  'ABC local radio broadcasts official emergency information.';
+export const PHONE_MAY_WORK = `Phone calls ${CANNOT_DETECT_SIGNAL}.`;
+
+// ── E3-US2-AC2 no pack stored ───────────────────────────────────────────────
+
+export const NO_PACK_HERE = 'No saved pack covers this place.';
+
+// Built-in static preparation guidance, readable on a fresh install that has
+// never been online since setup.
+export const PREPARATION_GUIDANCE_TITLE = 'Preparing for an emergency';
+export const PREP_KIT_LINE =
+  'Keep water, medications, a torch and a battery radio where you can grab them.';
+export const PREP_PLAN_LINE = 'Decide where you would go and how, before you need to.';
+
+// ── E3-US2-AC3 BlackSky never says safe ─────────────────────────────────────
+
+/** How every saved place is described, with its source. The term is the CFA's
+ *  own — a place of LAST resort — and the wording promises nothing about it. */
+export const PLACE_DESCRIPTOR = (publisher: string) =>
+  `Official place of last resort · ${publisher}`;
+
+// ── E3-US3-AC1 deliberate activation ────────────────────────────────────────
+
+/** Shown after a stray tap on the hold control — the tap itself does nothing. */
+export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
+
+export const LEAVE_BLACKSKY = 'Leave BlackSky';

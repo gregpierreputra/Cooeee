@@ -1,7 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 const WFS_URL = 'https://opendata.maps.vic.gov.au/geoserver/wfs';
-const PAGE_SIZE = 1_000;
+// Safety margin above the current 76 features so the layer can grow.
+const COUNT = 500;
 
 function assertRecord(value, field) {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -11,36 +12,36 @@ function assertRecord(value, field) {
 
 async function publishedBpaLgas() {
   const names = new Set();
-  let startIndex = 0;
+  const params = new URLSearchParams({
+    service: 'WFS',
+    version: '2.0.0',
+    request: 'GetFeature',
+    outputFormat: 'application/json',
+    typeNames: 'open-data-platform:bushfire_prone_area',
+    propertyName: 'lga_name',
+    count: String(COUNT),
+  });
+  const response = await fetch(`${WFS_URL}?${params}`);
+  if (!response.ok) throw new Error(`BPA extent request returned HTTP ${response.status}`);
+  if (!(response.headers.get('content-type') ?? '').includes('json')) {
+    throw new Error(`BPA extent request returned non-JSON: ${(await response.text()).slice(0, 300)}`);
+  }
+  const payload = await response.json();
+  assertRecord(payload, 'response');
+  if (!Array.isArray(payload.features)) throw new TypeError('response.features must be an array');
+  if (typeof payload.numberMatched === 'number' && payload.numberMatched > payload.features.length) {
+    throw new Error(
+      `layer has ${payload.numberMatched} features, more than count=${COUNT} — raise COUNT`,
+    );
+  }
 
-  for (;;) {
-    const params = new URLSearchParams({
-      service: 'WFS',
-      version: '2.0.0',
-      request: 'GetFeature',
-      outputFormat: 'application/json',
-      typeNames: 'open-data-platform:bushfire_prone_area',
-      propertyName: 'lga_name',
-      count: String(PAGE_SIZE),
-      startIndex: String(startIndex),
-    });
-    const response = await fetch(`${WFS_URL}?${params}`);
-    if (!response.ok) throw new Error(`BPA extent request returned HTTP ${response.status}`);
-    const payload = await response.json();
-    assertRecord(payload, 'response');
-    if (!Array.isArray(payload.features)) throw new TypeError('response.features must be an array');
-
-    for (const [index, feature] of payload.features.entries()) {
-      assertRecord(feature, `features[${index}]`);
-      assertRecord(feature.properties, `features[${index}].properties`);
-      if (typeof feature.properties.lga_name !== 'string') {
-        throw new TypeError(`features[${index}].properties.lga_name must be a string`);
-      }
-      names.add(feature.properties.lga_name);
+  for (const [index, feature] of payload.features.entries()) {
+    assertRecord(feature, `features[${index}]`);
+    assertRecord(feature.properties, `features[${index}].properties`);
+    if (typeof feature.properties.lga_name !== 'string') {
+      throw new TypeError(`features[${index}].properties.lga_name must be a string`);
     }
-
-    if (payload.features.length < PAGE_SIZE) break;
-    startIndex += payload.features.length;
+    names.add(feature.properties.lga_name);
   }
 
   return [...names].sort();
@@ -59,7 +60,6 @@ const snapshot = {
     publisher: 'Department of Transport and Planning',
     url: WFS_URL,
     licence: 'CC BY 4.0',
-    retrievedAt,
   },
   layers: { BPA: { publishedIn: await publishedBpaLgas() } },
 };

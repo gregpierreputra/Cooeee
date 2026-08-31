@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { deriveState } from '../../src/core/blacksky';
-import { ACCURACY_MAX_M, FIX_STALE_MS } from '../../src/core/constants';
+import { deriveState, estimateFix } from '../../src/core/blacksky';
+import {
+  ACCURACY_MAX_M,
+  FIX_STALE_MS,
+  MARK_DRIFT_M_PER_S,
+  MARK_START_ACCURACY_M,
+} from '../../src/core/constants';
 import { distanceM } from '../../src/core/geo';
 import type { Destination, Fix, PackWithPlaces } from '../../src/core/types';
 import { KALORAMA, destination, pack, source } from '../fixtures';
@@ -129,13 +134,14 @@ describe('OUT_OF_AREA', () => {
   // ordering is unambiguous rather than a coin flip between two equal distances.
   const s = deriveState(NOW, [faraway, kalorama()], fix(km(15)), 'granted', 0);
 
-  it('names every stored pack with its distance, nearest first', () => {
+  it('names every stored pack with the distance to its AREA edge, nearest first', () => {
     expect(s.kind).toBe('OUT_OF_AREA');
     if (s.kind !== 'OUT_OF_AREA') return;
     expect(s.packs.map((p) => p.pack.id)).toEqual(['pack-1', 'pack-2']);
     expect(s.packs[0].distanceKm).toBeLessThan(s.packs[1].distanceKm);
-    expect(s.packs[0].distanceKm).toBeCloseTo(15, 0);
-    expect(s.packs[1].distanceKm).toBeCloseTo(25, 0);
+    // 15 km and 25 km from the centres, minus each pack's 6 km radius.
+    expect(s.packs[0].distanceKm).toBeCloseTo(9, 0);
+    expect(s.packs[1].distanceKm).toBeCloseTo(19, 0);
   });
 
   it('carries no bearing to an out-of-area point — there is no arrow on this screen', () => {
@@ -212,5 +218,37 @@ describe('absence', () => {
   it('leaves absence undefined when the pack has real chosen places', () => {
     const s = deriveState(NOW, [kalorama()], fix(), 'granted', null);
     expect(s.kind === 'IN_AREA' && s.absence).toBeUndefined();
+  });
+});
+
+// E3-US1-AC4: the marked-position estimate. Its whole safety contract is that
+// uncertainty grows and the estimate dies at the same threshold a GPS fix would.
+describe('estimateFix', () => {
+  const mark = { lat: KALORAMA.lat, lon: KALORAMA.lon, at: NOW };
+
+  it('starts at the marked point with the published starting uncertainty', () => {
+    expect(estimateFix(mark, NOW)).toEqual({
+      lat: mark.lat,
+      lon: mark.lon,
+      accuracyM: MARK_START_ACCURACY_M,
+      at: NOW,
+    });
+  });
+
+  it('grows the uncertainty at walking pace', () => {
+    const after10s = estimateFix(mark, NOW + 10_000);
+    expect(after10s?.accuracyM).toBe(Math.round(MARK_START_ACCURACY_M + 10 * MARK_DRIFT_M_PER_S));
+  });
+
+  it('cannot be maintained past the confidence threshold — null, never a vague fix', () => {
+    const secondsToThreshold = (ACCURACY_MAX_M - MARK_START_ACCURACY_M) / MARK_DRIFT_M_PER_S;
+    const justBefore = estimateFix(mark, NOW + Math.floor(secondsToThreshold) * 1000);
+    const wellPast = estimateFix(mark, NOW + Math.ceil(secondsToThreshold + 1) * 1000);
+    expect(justBefore?.accuracyM).toBeLessThanOrEqual(ACCURACY_MAX_M);
+    expect(wellPast).toBeNull();
+  });
+
+  it('is never stale: the returned fix carries the caller clock', () => {
+    expect(estimateFix(mark, NOW + 20_000)?.at).toBe(NOW + 20_000);
   });
 });

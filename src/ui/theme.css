@@ -1,44 +1,89 @@
-/* Design tokens. Near-black base with ONE accent per mode: the colour tells the
-   user which phase they are in before they read a word. There is no per-component
-   colour anywhere — every colour is a token reference. */
+/* Cooeee design system. Near-black base, ONE accent per mode: the colour tells
+   the user which phase they are in before they read a word. Editorial type —
+   uppercase kicker labels over heavy tight-tracked headlines — with every
+   colour a token reference; there is no per-component colour anywhere. */
+
+/* Self-hosted so the shell works with zero network. Precached by the service
+   worker alongside the rest of the shell. */
+@font-face {
+  font-family: 'InterVariable';
+  src: url('/fonts/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
-  --ink: #e8f3f0;
-  --ink-2: #8fa9a4;
-  --ink-3: #5c7873; /* borders and rules only — not body text, contrast is 3.4:1 */
-  --line: #1e322e;
+  color-scheme: dark;
+
+  --ink: #ffffff;
+  --ink-2: #9fb0c4; /* secondary text, ledes, labels */
+  --ink-3: #7d8ca0; /* meta rows and footnotes — 5.7:1 on the base */
+  --line: #223040;
 
   /* Default set = prepare, so a missing data-mode still renders a designed page. */
-  --bg: #0b1416;
-  --surface: #131e21;
-  --accent: #3fe0c5;
-  --ink-on-accent: #0b1416;
+  --bg: #070c11;
+  --surface: #141c24; /* cards */
+  --surface-2: #111821; /* inputs, ghost buttons */
+  --accent: #2dd4bf;
+  --ink-on-accent: #04211c;
+  --btn-ink: #ffffff; /* ghost-button text, rebound per mode */
+  --glow: radial-gradient(50rem 32rem at 12% -6%, rgb(45 212 191 / 9%), transparent 60%);
 
   --font:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    'InterVariable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
 
   --step-0: 1rem; /* 16px — body never goes below this */
   --step-1: 1.25rem; /* 20 */
   --step-2: 1.5rem; /* 24 */
-  --step-3: 2rem; /* 32 */
-  --step-s: 0.875rem; /* 14 */
-  --step-xs: 0.75rem; /* 12 */
+  --step-3: clamp(1.875rem, 7.5vw, 2.25rem); /* hero headline */
+  --step-s: 0.875rem; /* 14 — meta, labels, footnotes */
+  --step-xs: 0.75rem; /* 12 — kickers only, uppercase + heavy carries them */
+
+  --w-med: 600;
+  --w-bold: 700;
+  --w-heavy: 800;
+  --track-tight: -0.02em;
+  --track-wide: 0.14em;
+
+  --r-card: 16px;
+  --r-input: 14px;
+  --r-pill: 999px;
+
+  /* BlackSky's amber, referenced OUTSIDE blacksky mode by the one control that
+     opens it, so the control reads as the mode it leads to. */
+  --blacksky-accent: #ffb020;
 }
 
 :root[data-mode='prepare'] {
-  --bg: #0b1416;
-  --surface: #131e21;
-  --accent: #3fe0c5;
+  --bg: #070c11;
+  --surface: #141c24;
+  --accent: #2dd4bf;
 }
+/* True black is a battery decision: on OLED a #000 pixel is switched off.
+   Amber, never bright white blocks, keeps dark-adapted eyes adapted. The dim
+   amber for secondary text stays above 4.5:1 on black; the mockups' deeper
+   ambers are reserved for hairlines. No glow: every non-amber pixel stays off. */
 :root[data-mode='blacksky'] {
   --bg: #000000;
   --surface: #0a0a0a;
-  --accent: #ffc53d;
+  --surface-2: #0d0902;
+  --line: #3a2808;
+  --accent: #ffb020;
+  --ink-on-accent: #000000;
+  --ink-2: #c79232;
+  --ink-3: #c79232;
+  --btn-ink: #ffb020;
+  --glow: none;
 }
 :root[data-mode='recover'] {
-  --bg: #0e1116;
+  --bg: #0d0f14;
   --surface: #171b22;
+  --surface-2: #131720;
   --accent: #ff8a4c;
+  --ink-on-accent: #2a1204;
+  --glow: radial-gradient(50rem 32rem at 12% -6%, rgb(255 138 76 / 7%), transparent 60%);
 }
 
 *,
@@ -50,8 +95,12 @@
 html,
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--ink);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -59,6 +108,15 @@ body {
   font-size: var(--step-0);
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
+  /* One soft radial wash per non-black mode: zero extra elements, switched off
+     entirely in blacksky by the token. */
+  background-image: var(--glow);
+  background-repeat: no-repeat;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--ink-on-accent);
 }
 
 /* Single column, max 560 px, centred on desktop. There is no second layout:
@@ -66,51 +124,54 @@ body {
 .page {
   max-width: 560px;
   margin: 0 auto;
-  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  padding: max(1.5rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right))
+    max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 }
+
+/* ── Editorial type ────────────────────────────────────────────────────────── */
 
 h1 {
   font-size: var(--step-3);
-  line-height: 1.15;
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1.12;
   margin: 0;
+  text-wrap: balance;
 }
 h2 {
   font-size: var(--step-2);
+  font-weight: var(--w-bold);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
   margin: 0;
 }
 
-/* The small label above a screen's heading: it names the step of the flow, in
-   the muted ink, so it reads as orientation and never as a heading of its own.
-   It is a paragraph, not a heading element — the heading is the line below it.
-
-   The capitals are made here, not in copy.ts. An all-caps string in the DOM is
-   spelled out letter by letter by some screen readers, so the stored string is
-   an ordinary sentence-case word and this rule does the shouting. */
-.eyebrow {
-  margin: 0;
+/* The uppercase accent label above a headline. Always a <span> — never a
+   heading or paragraph, so it stays invisible to heading counts and text-order
+   checks. */
+.kicker {
   font-size: var(--step-xs);
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
   text-transform: uppercase;
-  color: var(--ink-2);
+  color: var(--accent);
 }
 
-/* The eyebrow belongs to the heading (or to the card that carries it), so it
-   sits closer to it than the 1 rem stack gap. Where the stack is already tight
-   — the pack-detail header — there is nothing to take back. */
-.eyebrow + h1,
-.eyebrow + .card {
-  margin-top: -0.5rem;
+.hero {
+  display: grid;
+  gap: 0.625rem;
+  justify-items: start;
 }
 
-.pack-detail header .eyebrow + h1 {
-  margin-top: 0;
+/* Rhythm comes from container gaps, not paragraph margins. */
+p {
+  margin: 0;
 }
+
 
 .muted {
   color: var(--ink-2);
@@ -120,14 +181,21 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+/* ── Cards and lists ───────────────────────────────────────────────────────── */
+
 /* Absence states use the SAME neutral treatment as presence states. Absence must
    read as absence — never as reassurance, never as an error. There are no alert
    colours and no warning iconography in this stylesheet at all. */
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: var(--r-card);
+  padding: 1.125rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -135,6 +203,10 @@ h2 {
 
 .card > h2 {
   font-size: var(--step-1);
+}
+
+.card h2 a {
+  text-decoration: none;
 }
 
 .list {
@@ -146,19 +218,106 @@ h2 {
   gap: 0.75rem;
 }
 
+/* Pack rows on Home: name leads, address and freshness recede. */
+.list .card .muted {
+  font-size: var(--step-s);
+}
+.list .card .figure {
+  color: var(--ink-3);
+}
+
 /* Primary action sits at the bottom of the viewport, within thumb reach. */
 .actions {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
-.confirm-form {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
+/* ── Controls ──────────────────────────────────────────────────────────────── */
+
+label {
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  letter-spacing: 0.01em;
+  color: var(--ink-2);
 }
+
+input {
+  min-height: 56px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-input);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+}
+
+/* The default control is a ghost pill. Screens whose two choices must carry
+   identical visual weight (conflict, download) simply use it twice: one shared
+   rule is the equal-weight guarantee. */
+button,
+.action {
+  min-height: 56px;
+  min-width: 44px;
+  font: inherit;
+  font-weight: var(--w-med);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--btn-ink);
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.main-action {
+  min-height: 60px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+  font-weight: var(--w-heavy);
+  font-size: 1.0625rem;
+}
+
+@media (hover: hover) {
+  button:not(:disabled):hover,
+  .action:hover {
+    border-color: var(--accent);
+  }
+  .main-action:hover {
+    filter: brightness(1.07);
+  }
+}
+
+button,
+.action,
+a,
+input {
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    filter 0.15s ease;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Address search ────────────────────────────────────────────────────────── */
 
 .search-form {
   display: flex;
@@ -174,6 +333,7 @@ h2 {
 .search-result {
   display: grid;
   gap: 0.75rem;
+  color: var(--ink-2);
 }
 
 .search-result:empty {
@@ -186,213 +346,6 @@ h2 {
 
 .search-actions {
   padding-top: 2rem;
-}
-
-.candidate-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.candidate-action {
-  width: 100%;
-  min-height: 56px;
-  text-align: left;
-  background: var(--surface);
-  color: var(--ink);
-  border-color: var(--line);
-}
-
-.confirm-content {
-  display: grid;
-  gap: 1rem;
-}
-
-.area-content,
-.area-result {
-  display: grid;
-  gap: 1rem;
-}
-
-.conflict-content {
-  display: grid;
-  gap: 1rem;
-}
-
-.conflict-content p {
-  margin: 0;
-}
-
-
-.size-content {
-  display: grid;
-  gap: 1rem;
-}
-
-.size-content p {
-  margin: 0;
-}
-
-.pack-size {
-  color: var(--ink);
-  font-size: var(--step-1);
-}
-
-
-.pack-detail header,
-.provenance,
-.stale-note,
-.provenance-item {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.pack-detail header p,
-.pack-detail .card > p,
-.provenance p,
-.stale-note p {
-  margin: 0;
-}
-
-.provenance-item a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--accent);
-}
-
-/* The one way back out of a saved pack. Sits before the heading so it is the
-   first thing a keyboard or screen reader reaches. */
-.pack-detail-back {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-self: start;
-  color: var(--accent);
-}
-
-.stale-note {
-  padding-top: 0.5rem;
-}
-
-.sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-  background: rgb(0 0 0 / 70%);
-}
-
-.source-sheet {
-  width: min(100%, 560px);
-  display: grid;
-  gap: 1rem;
-}
-
-.source-sheet p {
-  margin: 0;
-}
-
-.area-content p,
-.area-result p {
-  margin: 0;
-}
-
-.returned-address {
-  margin: 0;
-  padding: 1rem;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  font-size: var(--step-1);
-}
-
-label {
-  font-weight: 600;
-}
-
-input {
-  min-height: 48px;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-}
-
-.confirm-actions {
-  padding-top: 2rem;
-}
-
-/* One primary action per screen carries the accent fill. Every other control is
-   ghosted: same shape, same target size, no fill, a neutral rule rather than an
-   accent one, so a screen has exactly one thing that looks like the action. */
-button,
-.action {
-  min-height: 44px;
-  min-width: 44px;
-  font: inherit;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--accent);
-  padding: 0.6rem 1rem;
-  cursor: pointer;
-}
-
-.action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-}
-
-button:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.main-action {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--ink-on-accent);
-  font-weight: 700;
-}
-
-:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* The service-worker banner. Stated in words, never an auto-reload. */
-.banner {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-size: var(--step-s);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }
 
 /* The candidate list sits under the address field while the search runs on
@@ -411,7 +364,363 @@ button:disabled {
   margin: 0;
 }
 
+.candidate-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Candidate rows are cards, not pills: a left-aligned address per row, every
+   row identical — the DOM order is the service order and nothing ranks them. */
+.candidate-action {
+  width: 100%;
+  min-height: 56px;
+  text-align: left;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+  padding: 1rem 1.25rem;
+}
+
 .candidate-dismiss {
   display: flex;
   flex-direction: column;
+}
+
+/* ── Confirm ───────────────────────────────────────────────────────────────── */
+
+.confirm-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.confirm-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.confirm-actions {
+  padding-top: 2rem;
+}
+
+.returned-address {
+  margin: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  letter-spacing: -0.01em;
+}
+
+/* ── Area check ────────────────────────────────────────────────────────────── */
+
+.area-content,
+.area-result {
+  display: grid;
+  gap: 1rem;
+}
+
+.area-content p,
+.area-result p {
+  margin: 0;
+}
+
+.area-result {
+  padding: 1.5rem 1.25rem;
+}
+
+.area-result p {
+  color: var(--ink-2);
+}
+
+/* ── Conflict ──────────────────────────────────────────────────────────────── */
+
+.conflict-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.conflict-content p {
+  margin: 0;
+}
+
+/* The two address cards are labelled, not ranked: their headings render as
+   quiet uppercase labels while the addresses themselves lead. */
+.conflict-content .card > h2 {
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.conflict-content .card p {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  letter-spacing: -0.01em;
+}
+
+/* ── Pack size and download ────────────────────────────────────────────────── */
+
+.size-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.size-content p {
+  margin: 0;
+}
+
+.pack-size {
+  color: var(--ink);
+  font-size: var(--step-1);
+  font-weight: var(--w-med);
+}
+
+#tile-unavailable {
+  font-size: var(--step-s);
+  color: var(--ink-3);
+}
+
+/* ── Pack detail and provenance ────────────────────────────────────────────── */
+
+.pack-detail header,
+.provenance,
+.stale-note,
+.provenance-item {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pack-detail header p,
+.provenance p,
+.stale-note p {
+  margin: 0;
+}
+
+/* Header hierarchy: quiet way back, hero title, then the place itself. */
+.pack-detail header > p {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+}
+.pack-detail header > p.muted {
+  font-size: var(--step-0);
+  font-weight: 400;
+}
+
+/* The one way back out of a saved pack. Sits before the heading so it is the
+   first thing a keyboard or screen reader reaches. */
+.pack-detail-back {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  color: var(--accent);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  text-decoration: none;
+}
+
+.provenance > p {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+
+.provenance > p.figure {
+  color: var(--ink-3);
+}
+
+/* Prominence through weight and a hairline — never an alert colour. */
+.stale-note {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.stale-note p:first-child {
+  font-weight: var(--w-bold);
+  color: var(--ink);
+}
+.stale-note p + p {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+
+.provenance-item a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  font-weight: var(--w-med);
+}
+
+/* ── Source sheet ──────────────────────────────────────────────────────────── */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: rgb(2 6 10 / 72%);
+}
+
+.source-sheet {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem 1.25rem;
+  border-radius: 20px;
+  box-shadow: 0 -16px 48px rgb(0 0 0 / 45%);
+}
+
+.source-sheet p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.source-sheet a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-weight: var(--w-med);
+}
+
+/* ── Update banner ─────────────────────────────────────────────────────────── */
+
+/* The service-worker banner. Stated in words, never an auto-reload. */
+.banner {
+  width: min(100% - 2.5rem, 560px);
+  margin: 0.75rem auto 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+
+/* ── BlackSky ──────────────────────────────────────────────────────────────── */
+
+/* The bearing figure is the biggest thing on screen — readable at arm's length,
+   while walking. Everything else recedes into dim amber. */
+
+.blacksky-title {
+  font-size: var(--step-s);
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.blacksky-place {
+  padding: 1.125rem 0;
+  display: grid;
+  gap: 0.375rem;
+  border-bottom: 1px solid var(--line);
+}
+
+/* The hairline separates rows; a trailing one under the last row would read
+   as a divider to nothing. */
+.blacksky-place:last-child {
+  border-bottom: 0;
+}
+
+.blacksky-place h2 {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+}
+
+.blacksky-figure {
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+  color: var(--accent);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  font-size: var(--step-2);
+}
+
+/* The distance, at arm's-length size. Bounded below so three digits and a unit
+   still fit a 320 px viewport at doubled font size. */
+.blacksky-figure-main {
+  font-size: clamp(2.5rem, 14vw, 3.75rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.blacksky-figure-point {
+  font-size: var(--step-0);
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.18em;
+  color: var(--ink);
+}
+
+.blacksky-reminder {
+  margin: 0;
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+}
+
+.blacksky-guidance p {
+  margin: 0;
+}
+
+.blacksky-guidance a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  font-weight: var(--w-med);
+}
+
+.blacksky-hold {
+  min-height: 56px;
+  font-weight: var(--w-bold);
+  border-color: var(--blacksky-accent);
+  color: var(--blacksky-accent);
+  /* a hold control, not a tap: a long-press must not pop the context menu,
+     the iOS callout, or select the label text */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* The press is visibly acknowledged for the whole hold — the confirmation cue
+   on devices without vibration. A fill, not an animation: nothing moves. */
+.blacksky-hold:active {
+  background: var(--blacksky-accent);
+  border-color: var(--blacksky-accent);
+  color: #000000;
+}
+
+.blacksky-hold-hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--step-s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

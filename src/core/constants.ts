@@ -46,6 +46,14 @@ export const DECLINATION_DEG = 12;
 export const HOLD_MS = 2_000;
 export const TICK_MS = 5_000;
 
+// Marked-position estimate (E3-US1-AC4). How well a person standing at their
+// own gate knows the spot, and how fast that knowledge decays — with no motion
+// sensors, the holder may be walking the whole time. ACCURACY_MAX_M above stays
+// the ONE confidence threshold: an estimate is withheld at exactly the point a
+// GPS fix would be.
+export const MARK_START_ACCURACY_M = 25;
+export const MARK_DRIFT_M_PER_S = 1.4;
+
 export const PROBE_TIMEOUT_MS = 5_000;
 export const PROBE_INTERVAL_MS = 60_000; // only while Recovery is mounted
 export const RETRY_SCHEDULE_MS = [0, 30_000, 300_000] as const;

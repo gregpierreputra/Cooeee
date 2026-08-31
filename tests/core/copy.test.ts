@@ -153,7 +153,7 @@ describe('E1-US2 mandated provenance and offline-source copy', () => {
   });
 });
 
-// The eyebrows are stored sentence case and rendered uppercase by .eyebrow. The
+// The eyebrows are stored sentence case and rendered uppercase by .kicker. The
 // casing is an accessibility decision — an all-caps string in the DOM is spelled
 // out letter by letter by some screen readers — so it is asserted here rather
 // than left to whoever next edits the file.
@@ -163,7 +163,6 @@ describe('screen eyebrows', () => {
     expect(copy.EYEBROW_CONFIRM_ADDRESS).toBe('Confirm address');
     expect(copy.EYEBROW_AREA_RESULT).toBe('Area result');
     expect(copy.EYEBROW_SAVE_YOUR_PACK).toBe('Save your pack');
-    expect(copy.EYEBROW_HOME).toBe('Home');
     expect(copy.EYEBROW_MY_PACK).toBe('My pack');
   });
 
@@ -173,11 +172,89 @@ describe('screen eyebrows', () => {
       copy.EYEBROW_CONFIRM_ADDRESS,
       copy.EYEBROW_AREA_RESULT,
       copy.EYEBROW_SAVE_YOUR_PACK,
-      copy.EYEBROW_HOME,
       copy.EYEBROW_MY_PACK,
     ]) {
       expect(eyebrow).not.toBe(eyebrow.toUpperCase());
       expect(eyebrow).toBe(eyebrow[0].toUpperCase() + eyebrow.slice(1).toLowerCase());
     }
+  });
+});
+
+// E3-US1-AC1: the whole BlackSky display is these formatters. If one drifts,
+// the screen shows a figure the register never promised.
+describe('BlackSky bearing and distance figures', () => {
+  it('reads accuracy back with the ± sign', () => {
+    expect(copy.ACCURACY_READOUT(12)).toBe('± 12 m');
+  });
+
+  it('shows metres under a kilometre and one decimal above', () => {
+    expect(copy.distanceLabel(850)).toBe('850 m');
+    expect(copy.distanceLabel(999.4)).toBe('999 m');
+    expect(copy.distanceLabel(1120)).toBe('1.1 km');
+    expect(copy.distanceLabel(2700)).toBe('2.7 km');
+  });
+
+  it('composes the scenario figure exactly', () => {
+    expect(copy.BEARING_FIGURE('NE', '↗', '1.1 km')).toBe('NE ↗ · 1.1 km');
+  });
+});
+
+describe('BlackSky compass sectors', () => {
+  it('abbreviations align index-for-index with the full names', () => {
+    expect(copy.CARDINAL_ABBR).toHaveLength(copy.CARDINAL_POINTS.length);
+    expect(copy.CARDINAL_ABBR[copy.CARDINAL_POINTS.indexOf('NORTH-EAST')]).toBe('NE');
+  });
+
+  it('has one arrow glyph per 45-degree sector, north first', () => {
+    expect(copy.ARROW_GLYPHS).toHaveLength(8);
+    expect(copy.ARROW_GLYPHS[0]).toBe('↑');
+  });
+});
+
+// E3-US1-AC4: a marked position must never read like a fix.
+describe('marked-position estimate copy', () => {
+  it('is labelled ESTIMATE with the uncertainty stated as growing', () => {
+    expect(copy.ESTIMATE_READOUT(53)).toBe(
+      'ESTIMATE from your marked position — ± 53 m and growing',
+    );
+  });
+});
+
+// E3-US2-AC1: the emergency figures are safety copy — a wrong number here is
+// the worst possible typo, so each is pinned character for character.
+describe('general official guidance', () => {
+  it('carries the exact emergency numbers', () => {
+    expect(copy.CALL_TRIPLE_ZERO).toBe('Call 000 (Triple Zero) for life-threatening emergencies.');
+    expect(copy.VICEMERGENCY_HOTLINE).toBe('VicEmergency hotline 1800 226 226.');
+  });
+
+  it('states the area distance without implying a direction', () => {
+    expect(copy.AREA_DISTANCE_LINE('9.2 km')).toBe('9.2 km to its area');
+  });
+});
+
+// E3-US2-AC2: the no-pack statement — absence stated plainly, nothing invented.
+describe('no pack stored', () => {
+  it('states that no saved pack covers this place', () => {
+    expect(copy.NO_PACK_HERE).toBe('No saved pack covers this place.');
+  });
+});
+
+// E3-US2-AC3: every saved place is described by the official term, with its
+// source — and by nothing that promises anything about it.
+describe('place descriptor', () => {
+  it('names the place kind and its publisher, nothing more', () => {
+    expect(copy.PLACE_DESCRIPTOR('CFA')).toBe('Official place of last resort · CFA');
+  });
+});
+
+// E3-US3-AC1: deliberate activation — the stray-tap hint and the one exit.
+describe('deliberate activation', () => {
+  it('a stray tap earns only the hold hint', () => {
+    expect(copy.HOLD_TO_ENTER).toBe('Hold to enter — two seconds.');
+  });
+
+  it('leaving the mode is one plainly named action', () => {
+    expect(copy.LEAVE_BLACKSKY).toBe('Leave BlackSky');
   });
 });

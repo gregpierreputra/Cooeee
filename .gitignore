@@ -1,6 +1,7 @@
 ## Local configs
 .c*
 .g*
+.env
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml

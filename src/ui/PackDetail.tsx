@@ -40,7 +40,7 @@ export default function PackDetail({
   if (content === undefined) {
     return (
       <main className="page">
-        <p className="eyebrow">{copy.EYEBROW_MY_PACK}</p>
+        <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
         <StateCard heading={copy.PACK_NOT_FOUND} />
       </main>
     );
@@ -58,7 +58,7 @@ export default function PackDetail({
         {/* A client-side route change, so the offline guarantee holds: no
             document request, no revalidation, nothing but stored rows. */}
         <Link className="pack-detail-back" to="/">{copy.BACK_TO_YOUR_PACKS}</Link>
-        <p className="eyebrow">{copy.EYEBROW_MY_PACK}</p>
+        <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
         <h1>{copy.YOUR_PACK}</h1>
       </header>
 

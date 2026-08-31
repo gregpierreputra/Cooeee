@@ -21,7 +21,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
   if (state.kind === 'checking') {
     return (
       <main className="page area-page">
-        <p className="eyebrow">{copy.EYEBROW_AREA_RESULT}</p>
+        <span className="kicker">{copy.EYEBROW_AREA_RESULT}</span>
         <div className="card" role="status" aria-live="polite">
           <p>{copy.AREA_CHECK_IN_PROGRESS}</p>
         </div>
@@ -32,7 +32,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
   if (state.kind === 'unavailable') {
     return (
       <main className="page area-page">
-        <p className="eyebrow">{copy.EYEBROW_AREA_RESULT}</p>
+        <span className="kicker">{copy.EYEBROW_AREA_RESULT}</span>
         <div className="card area-content" role="status" aria-live="polite">
           <h1>{copy.AREA_CHECK_COULD_NOT_RUN}</h1>
           <p>{copy.AREA_NOT_SAVED}</p>
@@ -53,7 +53,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
   const view = areaCheckView(state.result);
   return (
     <main className="page area-page">
-      <p className="eyebrow">{copy.EYEBROW_AREA_RESULT}</p>
+      <span className="kicker">{copy.EYEBROW_AREA_RESULT}</span>
       <div className="card area-result" role="status" aria-live="polite">
         <h1>{view.resultLine}</h1>
         <p>{view.publisherLine}</p>
