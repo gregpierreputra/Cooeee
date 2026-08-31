@@ -220,3 +220,14 @@ describe('place descriptor', () => {
     expect(copy.PLACE_DESCRIPTOR('CFA')).toBe('Official place of last resort · CFA');
   });
 });
+
+// E3-US3-AC1: deliberate activation — the stray-tap hint and the one exit.
+describe('deliberate activation', () => {
+  it('a stray tap earns only the hold hint', () => {
+    expect(copy.HOLD_TO_ENTER).toBe('Hold to enter — two seconds.');
+  });
+
+  it('leaving the mode is one plainly named action', () => {
+    expect(copy.LEAVE_BLACKSKY).toBe('Leave BlackSky');
+  });
+});

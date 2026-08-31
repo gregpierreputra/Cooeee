@@ -320,3 +320,10 @@ export const PREP_PLAN_LINE = 'Decide where you would go and how, before you nee
  *  own — a place of LAST resort — and the wording promises nothing about it. */
 export const PLACE_DESCRIPTOR = (publisher: string) =>
   `Official place of last resort · ${publisher}`;
+
+// ── E3-US3-AC1 deliberate activation ────────────────────────────────────────
+
+/** Shown after a stray tap on the hold control — the tap itself does nothing. */
+export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
+
+export const LEAVE_BLACKSKY = 'Leave BlackSky';

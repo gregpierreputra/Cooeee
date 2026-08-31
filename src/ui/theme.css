@@ -427,6 +427,19 @@ button:disabled {
   touch-action: manipulation;
 }
 
+/* The press is visibly acknowledged for the whole hold — the confirmation cue
+   on devices without vibration. A fill, not an animation: nothing moves. */
+.blacksky-hold:active {
+  background: var(--blacksky-accent);
+  color: var(--ink-on-accent);
+}
+
+.blacksky-hold-hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--step-s);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

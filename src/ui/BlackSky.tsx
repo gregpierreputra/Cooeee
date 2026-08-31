@@ -65,7 +65,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
 
   if (packs === null) return null;
 
-  // AC4: with no usable fix, a marked position stands in for one. estimateFix
+  // US1-AC4: with no usable fix, a marked position stands in for one. estimateFix
   // returns null once its growing uncertainty passes the confidence threshold,
   // which drops the screen back to ACQUIRING — the AC2 reference state. While
   // an estimate is active it substitutes the fix entirely, so the GPS
@@ -79,6 +79,13 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
     <main className="page blacksky">
       <h1 className="blacksky-title">{copy.BLACKSKY_TITLE}</h1>
       <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
+      {/* US3-AC1: leaving is ONE obvious action — full-width, at thumb reach.
+          Only entering demands the deliberate hold. */}
+      <div className="actions">
+        <Link className="action" to="/">
+          {copy.LEAVE_BLACKSKY}
+        </Link>
+      </div>
     </main>
   );
 }
@@ -111,15 +118,15 @@ function ScreenBody({
           </section>
         </>
       );
-    // AC2: no usable fix. AC3: a fix too vague to trust. Both degrade to the
-    // same reference text — names, addresses and the reminder, WITHOUT an arrow
+    // US1-AC2: no usable fix. US1-AC3: a fix too vague to trust. Both degrade
+    // to the same reference text — names, addresses and the reminder, WITHOUT an arrow
     // or a distance — and the state line says why. A designed state, not an
     // error: the next derivation with a good fix renders IN_AREA on its own.
     case 'ACQUIRING':
       return (
         <>
           <ReferenceBody line={copy.NO_GPS} places={screen.places} pack={screen.pack} />
-          {/* AC4: the mark control. Offered for every ACQUIRING reason —
+          {/* US1-AC4: the mark control. Offered for every ACQUIRING reason —
               someone who denied GPS is exactly who needs it. */}
           <p className="muted">{copy.MARK_HINT}</p>
           <button
@@ -200,7 +207,7 @@ function ScreenBody({
   }
 }
 
-/** The degraded screen shared by AC2 and AC3: saved information as reference
+/** The degraded screen shared by US1-AC2 and US1-AC3: saved information as reference
  *  text, no bearing figures, with one line saying why. */
 function ReferenceBody({
   line,

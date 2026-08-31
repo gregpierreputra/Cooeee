@@ -16,18 +16,33 @@ export default function Home() {
 
   // BlackSky opens on a HOLD, not a tap: a pocket press must not switch the
   // phone into an emergency screen. The timer lives in a ref, and any release
-  // or exit before HOLD_MS cancels it.
+  // or exit before HOLD_MS cancels it. A cut-short press earns only the small
+  // "hold to enter" hint; a completed hold gets a confirmation buzz where the
+  // device supports one (iOS does not — there, the pressed colour fill is the
+  // cue) and then enters the mode.
+  const [showHoldHint, setShowHoldHint] = useState(false);
   const holdTimer = useRef<number | null>(null);
-  const startHold = () => {
-    holdTimer.current = window.setTimeout(() => navigate('/blacksky'), HOLD_MS);
-  };
-  const cancelHold = () => {
+  const clearHold = () => {
     if (holdTimer.current !== null) {
       clearTimeout(holdTimer.current);
       holdTimer.current = null;
     }
   };
-  useEffect(() => cancelHold, []);
+  const startHold = () => {
+    setShowHoldHint(false);
+    holdTimer.current = window.setTimeout(() => {
+      holdTimer.current = null;
+      if ('vibrate' in navigator) navigator.vibrate(100);
+      navigate('/blacksky');
+    }, HOLD_MS);
+  };
+  const releaseHold = () => {
+    if (holdTimer.current !== null) {
+      clearHold();
+      setShowHoldHint(true);
+    }
+  };
+  useEffect(() => clearHold, []);
 
   useEffect(() => {
     let live = true;
@@ -69,16 +84,21 @@ export default function Home() {
           type="button"
           className="blacksky-hold"
           onPointerDown={startHold}
-          onPointerUp={cancelHold}
-          onPointerLeave={cancelHold}
-          onPointerCancel={cancelHold}
+          onPointerUp={releaseHold}
+          onPointerLeave={releaseHold}
+          onPointerCancel={releaseHold}
           onKeyDown={(e) => {
             if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) startHold();
           }}
-          onKeyUp={cancelHold}
+          onKeyUp={releaseHold}
         >
           {copy.HOLD_FOR_BLACKSKY}
         </button>
+        {showHoldHint ? (
+          <p className="muted blacksky-hold-hint" role="status">
+            {copy.HOLD_TO_ENTER}
+          </p>
+        ) : null}
       </div>
     </main>
   );
