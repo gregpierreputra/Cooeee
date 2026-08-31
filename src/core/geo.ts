@@ -1,6 +1,6 @@
 import { bearing } from '@turf/bearing';
 import { distance } from '@turf/distance';
-import { CARDINAL_POINTS } from './copy';
+import { ARROW_GLYPHS, CARDINAL_ABBR, CARDINAL_POINTS } from './copy';
 import type { LatLon } from './types';
 
 // ONE haversine feeds both the ordering and the displayed figure, so an order and
@@ -20,12 +20,24 @@ export const bearingDeg = (a: LatLon, b: LatLon): number => {
   return ((deg % 360) + 360) % 360;
 };
 
-/** 16-point compass name. Sector centres sit every 22.5 degrees, so a boundary
- *  falls at 11.25 + k × 22.5 and rounds into the sector it opens. */
-export const cardinal = (deg: number): (typeof CARDINAL_POINTS)[number] => {
+/** Which of n equal sectors a bearing falls in. Sector centres sit every
+ *  360/n degrees, so a boundary rounds into the sector it opens. */
+const sector = (deg: number, n: number): number => {
   const normalised = ((deg % 360) + 360) % 360;
-  return CARDINAL_POINTS[Math.round(normalised / 22.5) % 16];
+  return Math.round(normalised / (360 / n)) % n;
 };
+
+/** 16-point compass name. */
+export const cardinal = (deg: number): (typeof CARDINAL_POINTS)[number] =>
+  CARDINAL_POINTS[sector(deg, 16)];
+
+/** 16-point compass abbreviation, same sectors as cardinal(). */
+export const cardinalAbbr = (deg: number): (typeof CARDINAL_ABBR)[number] =>
+  CARDINAL_ABBR[sector(deg, 16)];
+
+/** 8-direction arrow glyph. */
+export const arrowGlyph = (deg: number): (typeof ARROW_GLYPHS)[number] =>
+  ARROW_GLYPHS[sector(deg, 8)];
 
 /** Containment test. INCLUSIVE: a point exactly on the radius is inside. */
 export const withinRadius = (a: LatLon, b: LatLon, km: number): boolean =>

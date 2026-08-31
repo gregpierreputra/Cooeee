@@ -152,3 +152,34 @@ describe('E1-US2 mandated provenance and offline-source copy', () => {
     );
   });
 });
+
+// E3-US1-AC1: the whole BlackSky display is these formatters. If one drifts,
+// the screen shows a figure the register never promised.
+describe('BlackSky bearing and distance figures', () => {
+  it('reads accuracy back with the ± sign', () => {
+    expect(copy.ACCURACY_READOUT(12)).toBe('± 12 m');
+  });
+
+  it('shows metres under a kilometre and one decimal above', () => {
+    expect(copy.distanceLabel(850)).toBe('850 m');
+    expect(copy.distanceLabel(999.4)).toBe('999 m');
+    expect(copy.distanceLabel(1120)).toBe('1.1 km');
+    expect(copy.distanceLabel(2700)).toBe('2.7 km');
+  });
+
+  it('composes the scenario figure exactly', () => {
+    expect(copy.BEARING_FIGURE('NE', '↗', '1.1 km')).toBe('NE ↗ · 1.1 km');
+  });
+});
+
+describe('BlackSky compass sectors', () => {
+  it('abbreviations align index-for-index with the full names', () => {
+    expect(copy.CARDINAL_ABBR).toHaveLength(copy.CARDINAL_POINTS.length);
+    expect(copy.CARDINAL_ABBR[copy.CARDINAL_POINTS.indexOf('NORTH-EAST')]).toBe('NE');
+  });
+
+  it('has one arrow glyph per 45-degree sector, north first', () => {
+    expect(copy.ARROW_GLYPHS).toHaveLength(8);
+    expect(copy.ARROW_GLYPHS[0]).toBe('↑');
+  });
+});

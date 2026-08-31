@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { HOLD_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { freshness } from '../core/pack';
 import type { Pack } from '../core/types';
@@ -11,6 +12,22 @@ export default function Home() {
   // local IndexedDB, and a spinner would be a promise about a wait that isn't
   // happening, so nothing is drawn for it.
   const [packs, setPacks] = useState<Pack[] | null>(null);
+  const navigate = useNavigate();
+
+  // BlackSky opens on a HOLD, not a tap: a pocket press must not switch the
+  // phone into an emergency screen. The timer lives in a ref, and any release
+  // or exit before HOLD_MS cancels it.
+  const holdTimer = useRef<number | null>(null);
+  const startHold = () => {
+    holdTimer.current = window.setTimeout(() => navigate('/blacksky'), HOLD_MS);
+  };
+  const cancelHold = () => {
+    if (holdTimer.current !== null) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  };
+  useEffect(() => cancelHold, []);
 
   useEffect(() => {
     let live = true;
@@ -48,6 +65,20 @@ export default function Home() {
         <Link className="action main-action" to="/packs/new">
           {copy.BUILD_A_PACK}
         </Link>
+        <button
+          type="button"
+          className="blacksky-hold"
+          onPointerDown={startHold}
+          onPointerUp={cancelHold}
+          onPointerLeave={cancelHold}
+          onPointerCancel={cancelHold}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) startHold();
+          }}
+          onKeyUp={cancelHold}
+        >
+          {copy.HOLD_FOR_BLACKSKY}
+        </button>
       </div>
     </main>
   );

@@ -63,6 +63,32 @@ export const CARDINAL_POINTS = [
   'NORTH-NORTH-WEST',
 ] as const;
 
+/** The same 16 points as short compass labels, same indexing.
+ *  Read by core/geo.ts cardinalAbbr(). */
+export const CARDINAL_ABBR = [
+  'N',
+  'NNE',
+  'NE',
+  'ENE',
+  'E',
+  'ESE',
+  'SE',
+  'SSE',
+  'S',
+  'SSW',
+  'SW',
+  'WSW',
+  'W',
+  'WNW',
+  'NW',
+  'NNW',
+] as const;
+
+/** Arrow glyphs for the 8 primary directions, index 0 = north, one every 45
+ *  degrees. Read by core/geo.ts arrowGlyph(). A screen-relative glyph, not a
+ *  compass needle: it points where the bearing sits on a north-up dial. */
+export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'] as const;
+
 /** Distance ordinals, zero-based. Position in a distance-ordered list is not a
  *  ranking of worth, so there is no fourth label and no superlative anywhere. */
 export const ORDINALS = ['nearest', 'second nearest', 'third nearest'] as const;
@@ -233,3 +259,20 @@ export const FLOODWAY_OVERLAY = 'Floodway Overlay';
 export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
+
+// ── E3-US1-AC1 BlackSky prepared direction ──────────────────────────────────
+
+export const BLACKSKY_TITLE = 'BlackSky';
+export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
+
+export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
+
+/** "850 m" under a kilometre, "1.1 km" from there. The precision a person on
+ *  foot can act on — never more. */
+export const distanceLabel = (m: number): string =>
+  m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
+
+/** The whole bearing-and-distance figure: "NE ↗ · 1.1 km". This is the display
+ *  in full — never a route, an ETA or an arrival promise. */
+export const BEARING_FIGURE = (point: string, glyph: string, distance: string) =>
+  `${point} ${glyph} · ${distance}`;
