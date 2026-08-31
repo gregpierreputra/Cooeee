@@ -192,3 +192,16 @@ describe('marked-position estimate copy', () => {
     );
   });
 });
+
+// E3-US2-AC1: the emergency figures are safety copy — a wrong number here is
+// the worst possible typo, so each is pinned character for character.
+describe('general official guidance', () => {
+  it('carries the exact emergency numbers', () => {
+    expect(copy.CALL_TRIPLE_ZERO).toBe('Call 000 (Triple Zero) for life-threatening emergencies.');
+    expect(copy.VICEMERGENCY_HOTLINE).toBe('VicEmergency hotline 1800 226 226.');
+  });
+
+  it('states the area distance without implying a direction', () => {
+    expect(copy.AREA_DISTANCE_LINE('9.2 km')).toBe('9.2 km to its area');
+  });
+});

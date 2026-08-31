@@ -134,13 +134,14 @@ describe('OUT_OF_AREA', () => {
   // ordering is unambiguous rather than a coin flip between two equal distances.
   const s = deriveState(NOW, [faraway, kalorama()], fix(km(15)), 'granted', 0);
 
-  it('names every stored pack with its distance, nearest first', () => {
+  it('names every stored pack with the distance to its AREA edge, nearest first', () => {
     expect(s.kind).toBe('OUT_OF_AREA');
     if (s.kind !== 'OUT_OF_AREA') return;
     expect(s.packs.map((p) => p.pack.id)).toEqual(['pack-1', 'pack-2']);
     expect(s.packs[0].distanceKm).toBeLessThan(s.packs[1].distanceKm);
-    expect(s.packs[0].distanceKm).toBeCloseTo(15, 0);
-    expect(s.packs[1].distanceKm).toBeCloseTo(25, 0);
+    // 15 km and 25 km from the centres, minus each pack's 6 km radius.
+    expect(s.packs[0].distanceKm).toBeCloseTo(9, 0);
+    expect(s.packs[1].distanceKm).toBeCloseTo(19, 0);
   });
 
   it('carries no bearing to an out-of-area point — there is no arrow on this screen', () => {

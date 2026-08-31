@@ -124,10 +124,14 @@ export function deriveState(
   // Containment is INCLUSIVE: a point exactly on the radius is inside.
   const containing = byDistance.filter((p) => p.metres <= p.pack.radiusKm * 1000);
 
+  // "Distance to its area" is to the area's EDGE, not the pack centre — the
+  // honest figure for how far the user is from ground they prepared.
   if (containing.length === 0)
     return {
       kind: 'OUT_OF_AREA',
-      packs: byDistance.map((p) => ({ pack: p.pack, distanceKm: p.metres / 1000 })),
+      packs: byDistance
+        .map((p) => ({ pack: p.pack, distanceKm: (p.metres - p.pack.radiusKm * 1000) / 1000 }))
+        .sort((a, b) => a.distanceKm - b.distanceKm),
     };
 
   const here = containing[0];

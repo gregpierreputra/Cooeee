@@ -124,8 +124,33 @@ function ScreenBody({
           pack={screen.pack}
         />
       );
+    // US2-AC1: outside every prepared area. The stored packs are offered by
+    // name with the distance to their area's edge — informational rows, never
+    // a bearing to an out-of-area point — plus general official guidance.
     case 'OUT_OF_AREA':
-      return <StateCard heading={copy.OUTSIDE_AREAS} />;
+      return (
+        <>
+          <p className="muted">{copy.OUTSIDE_AREAS}</p>
+          <ul className="list">
+            {screen.packs.map(({ pack, distanceKm }) => (
+              <li key={pack.id} className="blacksky-place">
+                <h2>{pack.name}</h2>
+                <p className="muted figure">
+                  {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <section className="card blacksky-guidance">
+            <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
+            <a href="tel:000">{copy.CALL_TRIPLE_ZERO}</a>
+            <a href="tel:1800226226">{copy.VICEMERGENCY_HOTLINE}</a>
+            <p>{copy.EMERGENCY_BROADCASTER}</p>
+            <p className="muted">{copy.PHONE_MAY_WORK}</p>
+            <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+          </section>
+        </>
+      );
     case 'IN_AREA':
       return (
         <>

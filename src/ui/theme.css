@@ -404,6 +404,17 @@ button:disabled {
   font-weight: 600;
 }
 
+.blacksky-guidance p {
+  margin: 0;
+}
+
+.blacksky-guidance a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}
+
 .blacksky-hold {
   min-height: 56px;
   font-weight: 700;

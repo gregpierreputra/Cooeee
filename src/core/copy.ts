@@ -288,3 +288,17 @@ export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${addre
  *  position must never read like a fix. */
 export const ESTIMATE_READOUT = (m: number) =>
   `ESTIMATE from your marked position — ± ${m} m and growing`;
+
+// ── E3-US2-AC1 outside every pack area ──────────────────────────────────────
+
+/** Distance to a pack area's EDGE — never presented as a direction. */
+export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area`;
+
+// General official guidance, stored in the app itself so it is readable with
+// zero network. The numbers are safety copy: exact-match tested, never retyped.
+export const GENERAL_GUIDANCE_TITLE = 'General official guidance';
+export const CALL_TRIPLE_ZERO = 'Call 000 (Triple Zero) for life-threatening emergencies.';
+export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
+export const EMERGENCY_BROADCASTER =
+  'ABC local radio broadcasts official emergency information.';
+export const PHONE_MAY_WORK = `Phone calls ${CANNOT_DETECT_SIGNAL}.`;
