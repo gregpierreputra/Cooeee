@@ -4,8 +4,9 @@ Cooeee assembles a location-specific pack of official bushfire information while
 signal, then keeps every part of it usable with the radios off. It issues no warnings, no live
 routes and no eligibility decisions.
 
-**The pack download is the only required connection in the whole journey.** Everything downstream
-of it runs with zero connectivity.
+**Iteration 1 is mapless.** Address and official-context checks use the approved
+services while connected; the completed structured-data pack then opens with
+zero connectivity. No basemap or map-tile download is an Iteration 1 outcome.
 
 ---
 
@@ -52,8 +53,8 @@ code rather than fighting it.
 
 **The offline rule.** `ui/BlackSky.tsx` and `ui/Recovery.tsx` may import `src/core/*` and
 `src/data/db.ts` only (Recovery may also import `src/data/probe.ts`). Never `wfs`, `tiles`,
-`snapshots` or `fetch`. There are exactly five sanctioned network calls in the product; if you are
-adding a sixth, stop and raise it.
+`snapshots` or `fetch`. There are exactly four sanctioned Iteration 1 network-call categories in
+the product; if you are adding a fifth, stop and raise it.
 
 **The atomicity rule.** A pack is written `status: 'building'` and flipped to `'complete'` in one
 single-row transaction. Never `await` a non-Dexie promise inside a Dexie transaction. Cancel leaves
