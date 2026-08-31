@@ -212,3 +212,11 @@ describe('no pack stored', () => {
     expect(copy.NO_PACK_HERE).toBe('No saved pack covers this place.');
   });
 });
+
+// E3-US2-AC3: every saved place is described by the official term, with its
+// source — and by nothing that promises anything about it.
+describe('place descriptor', () => {
+  it('names the place kind and its publisher, nothing more', () => {
+    expect(copy.PLACE_DESCRIPTOR('CFA')).toBe('Official place of last resort · CFA');
+  });
+});

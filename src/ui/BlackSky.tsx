@@ -182,6 +182,7 @@ function ScreenBody({
                     copy.distanceLabel(place.distanceM),
                   )}
                 </p>
+                <p className="muted">{copy.PLACE_DESCRIPTOR(place.d.source.publisher)}</p>
               </li>
             ))}
           </ul>
@@ -218,6 +219,9 @@ function ReferenceBody({
           <li key={place.id} className="blacksky-place">
             {place.name ? <h2>{place.name}</h2> : null}
             {place.addressText ? <p className="muted">{place.addressText}</p> : null}
+            {place.kind === 'nsp-bushfire' ? (
+              <p className="muted">{copy.PLACE_DESCRIPTOR(place.source.publisher)}</p>
+            ) : null}
             {place.reason ? <p className="muted">{place.reason}</p> : null}
           </li>
         ))}

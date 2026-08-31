@@ -280,7 +280,7 @@ export const BEARING_FIGURE = (point: string, glyph: string, distance: string) =
 // ── E3-US1-AC4 marked-position estimate ─────────────────────────────────────
 
 export const MARK_HINT =
-  'If you are standing at your saved place, mark it — directions can be estimated from there. This is not GPS.';
+  'If you are standing at your saved place, mark it — bearings can be estimated from there. This is not GPS.';
 
 export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${address}`;
 
@@ -313,3 +313,10 @@ export const PREPARATION_GUIDANCE_TITLE = 'Preparing for an emergency';
 export const PREP_KIT_LINE =
   'Keep water, medications, a torch and a battery radio where you can grab them.';
 export const PREP_PLAN_LINE = 'Decide where you would go and how, before you need to.';
+
+// ── E3-US2-AC3 BlackSky never says safe ─────────────────────────────────────
+
+/** How every saved place is described, with its source. The term is the CFA's
+ *  own — a place of LAST resort — and the wording promises nothing about it. */
+export const PLACE_DESCRIPTOR = (publisher: string) =>
+  `Official place of last resort · ${publisher}`;
