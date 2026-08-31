@@ -24,6 +24,7 @@ declare global {
     __searchAgainCount: number;
     __areaCheckCount: number;
     __downloadCount: number;
+    __continueCount: number;
     __keptSavedPlace: boolean;
     __readPacks: () => Promise<Pack[]>;
     __readDestinations: () => Promise<Destination[]>;
@@ -34,6 +35,7 @@ declare global {
 window.__searchAgainCount = 0;
 window.__areaCheckCount = 0;
 window.__downloadCount = 0;
+window.__continueCount = 0;
 window.__keptSavedPlace = false;
 window.__readPacks = () => db.packs.toArray();
 window.__readDestinations = () => db.destinations.toArray();
@@ -204,7 +206,14 @@ if (window.location.pathname === '/size') {
     if (choice === 'both') throw new Error('production map archive is unavailable');
     await saveTextOnlyPack(sizeContent, offer, Date.UTC(2026, 7, 28, 4));
   };
-  sizeFlow = <Size offer={offer} download={download} />;
+  sizeFlow = (
+    <Size
+      offer={offer}
+      address={sizeContent.pack.address}
+      download={download}
+      onContinue={() => { window.__continueCount += 1; }}
+    />
+  );
 }
 
 const detailNow = Date.UTC(2026, 7, 29, 12);
@@ -281,10 +290,14 @@ const detailFlow = window.location.pathname === '/detail-launch'
   ? <DetailLauncher />
   : <PackDetail packId="detail-pack" now={detailNow} />;
 
+const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
     search={async () => [testCandidate]}
     checkArea={areaMode === 'offline' ? undefined : syntheticAreaCheck}
+    buildOffer={offerShouldFail
+      ? async () => { throw new Error('synthetic pack-offer failure'); }
+      : undefined}
     onPendingPlace={(place) => { window.__confirmedPlace = place; }}
   />
 );
