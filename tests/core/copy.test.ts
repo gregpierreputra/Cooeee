@@ -23,10 +23,15 @@ describe('mandated literals', () => {
     );
   });
 
-  it('an unmatched address says what to try next', () => {
+  // Exact match including punctuation. The literal is mandated with an em dash;
+  // a hyphen-minus in its place is a different sentence, and it stood in this
+  // file undetected because the assertion carried the same typo.
+  it('an unmatched address says what to try next, with the mandated em dash', () => {
     expect(copy.NO_ADDRESS_MATCH).toBe(
-      'No matching address found - check the spelling or try the nearest cross street.',
+      'No matching address found — check the spelling or try the nearest cross street.',
     );
+    expect([...copy.NO_ADDRESS_MATCH].filter((c) => c === '\u2014')).toHaveLength(1);
+    expect(copy.NO_ADDRESS_MATCH).not.toContain('-');
   });
 
   it('no fix falls back to saved information, in words', () => {

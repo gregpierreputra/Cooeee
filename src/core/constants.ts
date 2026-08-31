@@ -11,6 +11,20 @@ export const ADDRESS_QUERY_MIN_CHARS = 3;
 export const ADDRESS_RESULT_LIMIT = 10;
 export const ADDRESS_SEARCH_TIMEOUT_MS = 10_000;
 
+/** The pause after the last keystroke before the typed prefix leaves the device.
+ *  The search runs while the user types, so with ADDRESS_QUERY_MIN_CHARS this is
+ *  the only thing bounding request volume against a public service: a twenty
+ *  character address costs one request, not eighteen.
+ *
+ *  250 ms is an engineering default, not a measured figure. It is long enough to
+ *  collapse an ordinary typing burst into one request and short enough that the
+ *  list still reads as a response to typing, given that the register's own search
+ *  returned in 0.59 s when it was last verified. Change it on evidence, not on
+ *  taste: raise it if observed requests per completed address are more than a
+ *  handful, or if the service asks us to; lower it only if the list is observed
+ *  to feel detached from the keystroke that caused it. */
+export const ADDRESS_QUERY_DEBOUNCE_MS = 250;
+
 /** Official area checks share one bounded request sequence. */
 export const AREA_CHECK_TIMEOUT_MS = 10_000;
 export const DTP_PUBLISHER = 'Department of Transport and Planning';

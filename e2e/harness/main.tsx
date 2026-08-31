@@ -132,7 +132,7 @@ if (window.location.pathname === '/conflict' && await db.packs.count() === 0) {
 const conflictMode = new URLSearchParams(window.location.search).get('mode');
 const conflictFlow = (
   <Search
-    search={async () => ({ candidates: [testCandidate], unresolvedCount: 0 })}
+    search={async () => ({ candidates: [testCandidate], unresolvedCount: 0, returnedCount: 1 })}
     checkArea={syntheticAreaCheck}
     loadPacks={conflictMode === 'unavailable'
       ? async () => { throw new Error('synthetic store failure'); }
@@ -301,7 +301,7 @@ const detailFlow = (
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
-    search={async () => ({ candidates: [testCandidate], unresolvedCount: 0 })}
+    search={async () => ({ candidates: [testCandidate], unresolvedCount: 0, returnedCount: 1 })}
     checkArea={areaMode === 'offline' ? undefined : syntheticAreaCheck}
     buildOffer={offerShouldFail
       ? async () => { throw new Error('synthetic pack-offer failure'); }
