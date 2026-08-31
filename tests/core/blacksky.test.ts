@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { deriveState } from '../../src/core/blacksky';
-import { ACCURACY_MAX_M, FIX_STALE_MS } from '../../src/core/constants';
+import { deriveState, estimateFix } from '../../src/core/blacksky';
+import {
+  ACCURACY_MAX_M,
+  FIX_STALE_MS,
+  MARK_DRIFT_M_PER_S,
+  MARK_START_ACCURACY_M,
+} from '../../src/core/constants';
 import { distanceM } from '../../src/core/geo';
 import type { Destination, Fix, PackWithPlaces } from '../../src/core/types';
 import { KALORAMA, destination, pack, source } from '../fixtures';
@@ -212,5 +217,37 @@ describe('absence', () => {
   it('leaves absence undefined when the pack has real chosen places', () => {
     const s = deriveState(NOW, [kalorama()], fix(), 'granted', null);
     expect(s.kind === 'IN_AREA' && s.absence).toBeUndefined();
+  });
+});
+
+// E3-US1-AC4: the marked-position estimate. Its whole safety contract is that
+// uncertainty grows and the estimate dies at the same threshold a GPS fix would.
+describe('estimateFix', () => {
+  const mark = { lat: KALORAMA.lat, lon: KALORAMA.lon, at: NOW };
+
+  it('starts at the marked point with the published starting uncertainty', () => {
+    expect(estimateFix(mark, NOW)).toEqual({
+      lat: mark.lat,
+      lon: mark.lon,
+      accuracyM: MARK_START_ACCURACY_M,
+      at: NOW,
+    });
+  });
+
+  it('grows the uncertainty at walking pace', () => {
+    const after10s = estimateFix(mark, NOW + 10_000);
+    expect(after10s?.accuracyM).toBe(Math.round(MARK_START_ACCURACY_M + 10 * MARK_DRIFT_M_PER_S));
+  });
+
+  it('cannot be maintained past the confidence threshold — null, never a vague fix', () => {
+    const secondsToThreshold = (ACCURACY_MAX_M - MARK_START_ACCURACY_M) / MARK_DRIFT_M_PER_S;
+    const justBefore = estimateFix(mark, NOW + Math.floor(secondsToThreshold) * 1000);
+    const wellPast = estimateFix(mark, NOW + Math.ceil(secondsToThreshold + 1) * 1000);
+    expect(justBefore?.accuracyM).toBeLessThanOrEqual(ACCURACY_MAX_M);
+    expect(wellPast).toBeNull();
+  });
+
+  it('is never stale: the returned fix carries the caller clock', () => {
+    expect(estimateFix(mark, NOW + 20_000)?.at).toBe(NOW + 20_000);
   });
 });

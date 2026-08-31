@@ -276,3 +276,15 @@ export const distanceLabel = (m: number): string =>
  *  in full — never a route, an ETA or an arrival promise. */
 export const BEARING_FIGURE = (point: string, glyph: string, distance: string) =>
   `${point} ${glyph} · ${distance}`;
+
+// ── E3-US1-AC4 marked-position estimate ─────────────────────────────────────
+
+export const MARK_HINT =
+  'If you are standing at your saved place, mark it — directions can be estimated from there. This is not GPS.';
+
+export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${address}`;
+
+/** Always the word ESTIMATE, and the uncertainty stated as growing — a marked
+ *  position must never read like a fix. */
+export const ESTIMATE_READOUT = (m: number) =>
+  `ESTIMATE from your marked position — ± ${m} m and growing`;

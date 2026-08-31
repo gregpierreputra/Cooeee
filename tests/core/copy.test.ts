@@ -183,3 +183,12 @@ describe('BlackSky compass sectors', () => {
     expect(copy.ARROW_GLYPHS[0]).toBe('↑');
   });
 });
+
+// E3-US1-AC4: a marked position must never read like a fix.
+describe('marked-position estimate copy', () => {
+  it('is labelled ESTIMATE with the uncertainty stated as growing', () => {
+    expect(copy.ESTIMATE_READOUT(53)).toBe(
+      'ESTIMATE from your marked position — ± 53 m and growing',
+    );
+  });
+});

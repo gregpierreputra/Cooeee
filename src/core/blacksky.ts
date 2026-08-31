@@ -1,8 +1,35 @@
-import { ACCURACY_MAX_M, FIX_STALE_MS } from './constants';
+import {
+  ACCURACY_MAX_M,
+  FIX_STALE_MS,
+  MARK_DRIFT_M_PER_S,
+  MARK_START_ACCURACY_M,
+} from './constants';
 import { bearingDeg, distanceM } from './geo';
 import type { Destination, Fix, Pack, PackWithPlaces } from './types';
 
 export type PlacedDestination = { d: Destination; bearingDeg: number; distanceM: number };
+
+/** A position the user marked themselves — a known point such as their front
+ *  gate — and when they marked it. */
+export type Mark = { lat: number; lon: number; at: number };
+
+/**
+ * The marked position as a synthetic Fix (E3-US1-AC4). Its uncertainty starts
+ * at MARK_START_ACCURACY_M and grows at walking pace, because without motion
+ * sensors the holder may have been walking since the mark. `at` is `now`: an
+ * estimate is never "stale" — its decay IS the accuracy figure.
+ *
+ * Returns null once the uncertainty passes ACCURACY_MAX_M: the estimate cannot
+ * be maintained, and a null fix hands the screen back to ACQUIRING — the AC2
+ * reference state — rather than drawing a confident arrow.
+ */
+// ponytail: time-only drift, no sensors. Upgrade to accelerometer/gyro PDR only
+// after the Iteration 1 drift spike validates it (card E3-US1-AC4).
+export function estimateFix(mark: Mark, now: number): Fix | null {
+  const accuracyM = Math.round(MARK_START_ACCURACY_M + ((now - mark.at) / 1000) * MARK_DRIFT_M_PER_S);
+  if (accuracyM > ACCURACY_MAX_M) return null;
+  return { lat: mark.lat, lon: mark.lon, accuracyM, at: now };
+}
 
 export type Screen =
   | { kind: 'NO_PACK' }

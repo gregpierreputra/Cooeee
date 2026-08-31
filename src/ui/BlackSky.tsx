@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { deriveState, type Screen } from '../core/blacksky';
+import { deriveState, estimateFix, type Mark, type Screen } from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { arrowGlyph, cardinalAbbr } from '../core/geo';
@@ -19,6 +19,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
   const [packs, setPacks] = useState<PackWithPlaces[] | null>(null);
   const [fix, setFix] = useState<Fix | null>(null);
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [mark, setMark] = useState<Mark | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
     const watch = navigator.geolocation.watchPosition(
       (position) => {
         setPermission('granted');
+        setMark(null); // a real fix always beats a marked-position estimate
         setFix({
           lat: position.coords.latitude,
           lon: position.coords.longitude,
@@ -63,15 +65,33 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
 
   if (packs === null) return null;
 
+  // AC4: with no usable fix, a marked position stands in for one. estimateFix
+  // returns null once its growing uncertainty passes the confidence threshold,
+  // which drops the screen back to ACQUIRING — the AC2 reference state. While
+  // an estimate is active it substitutes the fix entirely, so the GPS
+  // permission state no longer decides.
+  const estimate = mark ? estimateFix(mark, now) : null;
+  const screen = estimate
+    ? deriveState(now, packs, estimate, 'granted', null)
+    : deriveState(now, packs, fix, permission, null);
+
   return (
     <main className="page blacksky">
       <h1 className="blacksky-title">{copy.BLACKSKY_TITLE}</h1>
-      <ScreenBody screen={deriveState(now, packs, fix, permission, null)} />
+      <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
     </main>
   );
 }
 
-function ScreenBody({ screen }: { screen: Screen }) {
+function ScreenBody({
+  screen,
+  estimating,
+  onMark,
+}: {
+  screen: Screen;
+  estimating: boolean;
+  onMark: (mark: Mark) => void;
+}) {
   switch (screen.kind) {
     case 'NO_PACK':
       return <StateCard heading={copy.NO_PACKS_YET} detail={copy.NO_PACKS_HINT} />;
@@ -80,7 +100,22 @@ function ScreenBody({ screen }: { screen: Screen }) {
     // or a distance — and the state line says why. A designed state, not an
     // error: the next derivation with a good fix renders IN_AREA on its own.
     case 'ACQUIRING':
-      return <ReferenceBody line={copy.NO_GPS} places={screen.places} pack={screen.pack} />;
+      return (
+        <>
+          <ReferenceBody line={copy.NO_GPS} places={screen.places} pack={screen.pack} />
+          {/* AC4: the mark control. Offered for every ACQUIRING reason —
+              someone who denied GPS is exactly who needs it. */}
+          <p className="muted">{copy.MARK_HINT}</p>
+          <button
+            type="button"
+            onClick={() =>
+              onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
+            }
+          >
+            {copy.MARK_AT_SAVED_PLACE(screen.pack.address)}
+          </button>
+        </>
+      );
     case 'LOW_ACCURACY':
       return (
         <ReferenceBody
@@ -109,7 +144,11 @@ function ScreenBody({ screen }: { screen: Screen }) {
               </li>
             ))}
           </ul>
-          <p className="muted figure">{copy.ACCURACY_READOUT(screen.accuracyM)}</p>
+          <p className="muted figure">
+            {estimating
+              ? copy.ESTIMATE_READOUT(screen.accuracyM)
+              : copy.ACCURACY_READOUT(screen.accuracyM)}
+          </p>
           {screen.absence?.reason ? <p className="muted">{screen.absence.reason}</p> : null}
           {screen.pack.reminder ? (
             <p className="blacksky-reminder">{screen.pack.reminder}</p>
