@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { deriveState, estimateFix, type Mark, type Screen } from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
@@ -22,6 +22,11 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
   const [mark, setMark] = useState<Mark | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
+  // US3-AC2, the power rule: GPS samples land in this ref (no render), and the
+  // TICK_MS interval below is the ONE publisher to state — so the screen
+  // updates at most once per tick, however often the sensor chatters.
+  const latestFix = useRef<Fix | null>(null);
+
   useEffect(() => {
     let live = true;
     loadPacks().then((rows) => {
@@ -39,27 +44,39 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
     }
     const watch = navigator.geolocation.watchPosition(
       (position) => {
-        setPermission('granted');
-        setMark(null); // a real fix always beats a marked-position estimate
-        setFix({
+        latestFix.current = {
           lat: position.coords.latitude,
           lon: position.coords.longitude,
           accuracyM: Math.round(position.coords.accuracy),
           at: position.timestamp,
-        });
+        };
+        setPermission('granted');
+        setMark(null); // a real fix always beats a marked-position estimate
+        // Acquiring → showing a direction IS a meaningful change, so the very
+        // first fix renders immediately. Every later sample waits for the tick.
+        setFix((previous) => previous ?? latestFix.current);
       },
       (error) => {
         if (error.code === error.PERMISSION_DENIED) setPermission('denied');
       },
-      { enableHighAccuracy: true },
+      // maximumAge lets the OS hand back a recent cached position instead of
+      // forcing a fresh sensor read. High accuracy stays on: without it, coarse
+      // cell-tower fixes would keep the arrow permanently withheld by the
+      // ACCURACY_MAX_M gate.
+      { enableHighAccuracy: true, maximumAge: TICK_MS },
     );
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  // Staleness is a function of the clock, so the clock must tick: without this,
-  // a fix that stops arriving would stay trusted forever.
+  // The tick: publishes the clock AND the newest fix together, once per
+  // TICK_MS. Staleness needs the clock to move (a fix that stops arriving must
+  // stop being trusted), and publishing both in one place keeps renders to one
+  // per tick.
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), TICK_MS);
+    const timer = setInterval(() => {
+      setNow(Date.now());
+      setFix(latestFix.current);
+    }, TICK_MS);
     return () => clearInterval(timer);
   }, []);
 
