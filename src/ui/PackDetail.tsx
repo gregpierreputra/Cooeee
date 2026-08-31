@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { Link } from 'react-router';
 
 import * as copy from '../core/copy';
 import { decideOriginalSourceAccess, packDetailItems } from '../core/provenance';
@@ -49,6 +50,9 @@ export default function PackDetail({
   return (
     <main className="page pack-detail">
       <header>
+        {/* A client-side route change, so the offline guarantee holds: no
+            document request, no revalidation, nothing but stored rows. */}
+        <Link className="pack-detail-back" to="/">{copy.BACK_TO_YOUR_PACKS}</Link>
         <h1>{copy.YOUR_PACK}</h1>
         <p>{content.pack.name}</p>
         <p className="muted">{content.pack.address}</p>
