@@ -48,7 +48,10 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
           lat: position.coords.latitude,
           lon: position.coords.longitude,
           accuracyM: Math.round(position.coords.accuracy),
-          at: position.timestamp,
+          // Receipt time, NOT position.timestamp: staleness is measured against
+          // Date.now(), and some mobile engines report GPS timestamps from a
+          // different clock. Mixing clock domains would break the 30 s rule.
+          at: Date.now(),
         };
         setPermission('granted');
         setMark(null); // a real fix always beats a marked-position estimate

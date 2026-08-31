@@ -28,8 +28,12 @@ export default function Home() {
       holdTimer.current = null;
     }
   };
+  // Once shown, the hint stays until the mode is actually entered (navigating
+  // unmounts this screen). Removing it when a press starts would shift the
+  // layout UNDER the active press, slide the button out from beneath the
+  // finger, and fire pointerleave — silently cancelling the very hold the
+  // hint taught.
   const startHold = () => {
-    setShowHoldHint(false);
     holdTimer.current = window.setTimeout(() => {
       holdTimer.current = null;
       if ('vibrate' in navigator) navigator.vibrate(100);

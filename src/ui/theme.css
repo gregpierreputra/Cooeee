@@ -385,6 +385,12 @@ button:disabled {
   border-bottom: 1px solid var(--line);
 }
 
+/* The hairline separates rows; a trailing one under the last row would read
+   as a divider to nothing. */
+.blacksky-place:last-child {
+  border-bottom: 0;
+}
+
 .blacksky-place h2 {
   font-size: var(--step-1);
   font-weight: 600;
@@ -420,8 +426,9 @@ button:disabled {
   font-weight: 700;
   border-color: var(--blacksky-accent);
   color: var(--blacksky-accent);
-  /* a hold control, not a tap: a long-press must not pop the context menu or
-     select the label text */
+  /* a hold control, not a tap: a long-press must not pop the context menu,
+     the iOS callout, or select the label text */
+  -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
