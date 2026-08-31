@@ -13,7 +13,10 @@ export function Conflict({ savedAddress, newAddress, onKeep, onReplace }: Confli
   return (
     <main className="page conflict-page">
       <div className="conflict-content">
-        <h1>{copy.PLACE_ALREADY_SAVED}</h1>
+        <header className="hero">
+          <span className="kicker">{copy.NEW_PACK_KICKER}</span>
+          <h1>{copy.PLACE_ALREADY_SAVED}</h1>
+        </header>
         <section className="card" aria-labelledby="saved-address-label">
           <h2 id="saved-address-label">{copy.SAVED_ADDRESS_LABEL}</h2>
           <p data-testid="saved-address">{savedAddress}</p>

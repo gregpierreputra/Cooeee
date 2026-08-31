@@ -62,7 +62,10 @@ export default function Home() {
 
   return (
     <main className="page">
-      <h1>{copy.HOME_TITLE}</h1>
+      <header className="hero">
+        <span className="kicker">{copy.APP_NAME}</span>
+        <h1>{copy.HOME_TITLE}</h1>
+      </header>
 
       {packs === null ? null : packs.length === 0 ? (
         <StateCard heading={copy.NO_PACKS_YET} detail={copy.NO_PACKS_HINT} />

@@ -202,12 +202,15 @@ function ScreenBody({
             {screen.places.map((place) => (
               <li key={place.d.id} className="blacksky-place">
                 <h2>{place.d.name}</h2>
+                {/* The mega figure: arrow and distance at arm's-length size,
+                    the compass point beneath. Same information as
+                    copy.BEARING_FIGURE, recomposed for scale. */}
                 <p className="figure blacksky-figure">
-                  {copy.BEARING_FIGURE(
-                    cardinalAbbr(place.bearingDeg),
-                    arrowGlyph(place.bearingDeg),
-                    copy.distanceLabel(place.distanceM),
-                  )}
+                  <span className="blacksky-figure-main">
+                    <span aria-hidden="true">{arrowGlyph(place.bearingDeg)}</span>{' '}
+                    {copy.distanceLabel(place.distanceM)}
+                  </span>
+                  <span className="blacksky-figure-point">{cardinalAbbr(place.bearingDeg)}</span>
                 </p>
                 <p className="muted">{copy.PLACE_DESCRIPTOR(place.d.source.publisher)}</p>
               </li>

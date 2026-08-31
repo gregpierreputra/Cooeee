@@ -131,6 +131,9 @@ export const SEARCH_AGAIN = 'Search again';
 // ── E1-US1-AC2–AC4 address search ──────────────────────────────────────────
 
 export const BUILD_A_PACK = 'Build a pack';
+/** Kicker label above the pack-build flow's screens. A decorative span,
+ *  uppercased by CSS — never a heading. */
+export const NEW_PACK_KICKER = 'New pack';
 export const ADDRESS_SEARCH_TITLE = 'Search for your address';
 export const ADDRESS_FIELD_LABEL = 'Address';
 export const SEARCH = 'Search';

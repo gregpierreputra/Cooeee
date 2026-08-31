@@ -99,7 +99,10 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
   return (
     <main className="page size-page">
       <div className="size-content">
-        <h1>{copy.READY_TO_DOWNLOAD}</h1>
+        <header className="hero">
+          <span className="kicker">{copy.NEW_PACK_KICKER}</span>
+          <h1>{copy.READY_TO_DOWNLOAD}</h1>
+        </header>
         <p className="pack-size figure">{packOfferSizeLine(offer)}</p>
         {!offer.tilesAvailable ? (
           <p id="tile-unavailable" role="status">{copy.MAP_DOWNLOAD_UNAVAILABLE}</p>

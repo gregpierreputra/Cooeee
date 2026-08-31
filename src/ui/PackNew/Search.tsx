@@ -340,7 +340,10 @@ export function Search({
     <main className="page search-page">
       <form className="search-form" onSubmit={handleSubmit}>
         <div className="search-content">
-          <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
+          <header className="hero">
+            <span className="kicker">{copy.NEW_PACK_KICKER}</span>
+            <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
+          </header>
           <label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>
           <input
             id="address-query"
