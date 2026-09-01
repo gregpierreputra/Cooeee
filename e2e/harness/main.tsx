@@ -231,7 +231,7 @@ const detailLayer: ExposureLayer = {
   group: 'designation',
   code: 'BPA',
   status: 'present',
-  features: [{ planNumber: 'LEGL./25-138' }],
+  features: [{ planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' }],
   checkedAt: detailSavedAt,
   source: { ...packSource, retrievedAt: detailSavedAt },
 };

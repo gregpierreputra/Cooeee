@@ -34,6 +34,14 @@ export const ADDRESS_QUERY_DEBOUNCE_MS = 250;
 export const AREA_CHECK_TIMEOUT_MS = 10_000;
 export const DTP_PUBLISHER = 'Department of Transport and Planning';
 export const DTP_LICENCE = 'CC BY 4.0';
+/** The publisher's own human-readable page for the designation dataset: title,
+ * plain-English description, the CC BY 4.0 licence above, a last-updated date
+ * and a map preview. One fixed URL describing the dataset itself, so it is what
+ * a person is sent to — present or absent, every pack, every query. A stored
+ * source.url stays the record of the exact query that was run; it answers to a
+ * machine, in raw JSON, and is not a page to read. */
+export const DTP_DATASET_URL =
+  'https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa';
 
 export const FIX_STALE_MS = 30_000;
 export const ACCURACY_MAX_M = 100;

@@ -9,6 +9,7 @@ import {
   hasCompleteSource,
   isAllowedSourceUrl,
   missingDisplayProvenance,
+  formatGazettalDate,
   packDetailAbsence,
   packDetailItems,
   prepareProvenancedContent,
@@ -46,6 +47,15 @@ const layer = {
 describe('E1-US2 saved date and age', () => {
   it('formats day, full month name and year with no leading zero', () => {
     expect(formatSavedDate(Date.UTC(2026, 2, 3, 1))).toBe('3 March 2026');
+  });
+
+  // Vicmap writes a gazettal date as dd/mm/yyyy; it is read back the same way a
+  // saved date is, and anything else is left exactly as the publisher wrote it.
+  it('reads a gazettal date the same way it reads a saved date', () => {
+    expect(formatGazettalDate('10/07/2025')).toBe('10 July 2025');
+    expect(formatGazettalDate('01/01/2020')).toBe('1 January 2020');
+    expect(formatGazettalDate('2025-07-10')).toBe('2025-07-10');
+    expect(formatGazettalDate('')).toBe('');
   });
 
   it.each([
@@ -161,6 +171,65 @@ describe('E1-US2 pack item projection', () => {
       'Example payment',
       'Offline basemap',
     ]);
+  });
+
+  // The reported defect: a pack whose stored BPA status was an absence still
+  // rendered as "Designated Bushfire Prone Area", so its stored point query —
+  // which correctly returns no feature — looked like it contradicted the row.
+  it.each([
+    ['none-mapped-here', 'Designated Bushfire Prone Area — none mapped at this address'],
+    ['not-published', 'Designated Bushfire Prone Area — not published for this area'],
+  ] as const)('names a stored %s layer row by its status, never as a designation', (status, name) => {
+    const content: CompletePackContent = {
+      pack: pack(),
+      layers: [{ ...layer, status }],
+      destinations: [], recovery: [], recoveryVerified: true,
+    };
+    expect(packDetailItems(content).map((item) => item.name)).toEqual([name]);
+  });
+
+  it('names a stored present layer row by the designation alone', () => {
+    const content: CompletePackContent = {
+      pack: pack(),
+      layers: [layer],
+      destinations: [], recovery: [], recoveryVerified: true,
+    };
+    expect(packDetailItems(content).map((item) => item.name)).toEqual([
+      copy.DESIGNATED_BUSHFIRE_PRONE_AREA,
+    ]);
+  });
+
+  // "Open original source (web)" used to be the only way to see what had been
+  // checked, and it leads to a raw GeoServer response. The stored plan is the
+  // same fact in words, so it travels with the item.
+  it('cites the gazetted plan a present BPA row stored, dated for reading', () => {
+    const content: CompletePackContent = {
+      pack: pack(),
+      layers: [{
+        ...layer,
+        features: [{ planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' }],
+      }],
+      destinations: [], recovery: [], recoveryVerified: true,
+    };
+    expect(packDetailItems(content).map(({ citation }) => citation)).toEqual([
+      'Bushfire Prone Area plan LEGL./25-138 · gazetted 10 July 2025 · YARRA RANGES'
+      + ' — Department of Transport and Planning',
+    ]);
+  });
+
+  it.each([
+    ['a row with no stored plan', { ...layer }],
+    ['a plan with no gazettal date', { ...layer, features: [{ planNumber: 'LEGL./25-138' }] }],
+    ['an absence that stored no feature', { ...layer, status: 'none-mapped-here' as const }],
+    ['a destination row', null],
+  ])('cites nothing for %s', (_case, row) => {
+    const content: CompletePackContent = {
+      pack: pack(),
+      layers: row ? [row] : [],
+      destinations: row ? [] : [destination()],
+      recovery: [], recoveryVerified: true,
+    };
+    expect(packDetailItems(content).map(({ citation }) => citation)).toEqual([undefined]);
   });
 
   it('does not invent a basemap item when its attribution source is absent', () => {

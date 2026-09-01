@@ -79,6 +79,28 @@ describe('bpaExposureLayer', () => {
     },
   );
 
+  it('stores the gazetted plan behind a hit, so the pack can cite it offline', () => {
+    const layer = bpaExposureLayer('pack-1', {
+      ...result('present'),
+      planNumber: 'LEGL./25-138',
+      gazettalDate: '10/07/2025',
+    });
+    expect(layer.features).toEqual([
+      { planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' },
+    ]);
+  });
+
+  // A plan number attached to an absence would describe a designation that was
+  // not matched at this address.
+  it('stores no feature for an absence, whatever the result carries', () => {
+    const layer = bpaExposureLayer('pack-1', {
+      ...result('none-mapped-here'),
+      planNumber: 'LEGL./25-138',
+      gazettalDate: '10/07/2025',
+    });
+    expect(layer.features).toEqual([]);
+  });
+
   it('fetches no new data — it only reshapes the already-fetched result', () => {
     const layer = bpaExposureLayer('pack-2', result('present'));
     expect(layer.packId).toBe('pack-2');

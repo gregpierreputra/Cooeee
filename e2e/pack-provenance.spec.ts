@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { DTP_DATASET_URL } from '../src/core/constants';
 import { HARNESS } from './helpers';
 
 const DETAIL_URL = `${HARNESS}/detail`;
@@ -15,6 +16,8 @@ test('US2 AC1 lists every available stored item with grouped publisher and full 
   )).toHaveCount(3);
   await expect(items.getByText('2 days ago', { exact: true })).toHaveCount(3);
   await expect(page.getByRole('link', { name: 'Open original source (web)' })).toHaveCount(3);
+  await expect(page.getByRole('link', { name: 'Open original source (web)' }).first())
+    .toHaveAttribute('href', DTP_DATASET_URL);
   await expect(page.locator('main')).not.toContainText(
     /Unknown publisher|Unknown|Source unavailable|n\/a/i,
   );
@@ -102,8 +105,16 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
   );
   await expect(dialog).toContainText('Opening it may use your connection and leave Cooeee.');
   await expect(dialog).toContainText('Published by Department of Transport and Planning');
-  await expect(dialog.getByRole('link', { name: 'Continue to original source (web)' }))
-    .toHaveAttribute('href', /^https:\/\//);
+  // The stored citation, so the raw response behind the link is no longer the
+  // only way to read what was checked.
+  await expect(dialog).toContainText(
+    'Bushfire Prone Area plan LEGL./25-138 · gazetted 10 July 2025 · YARRA RANGES'
+    + ' — Department of Transport and Planning',
+  );
+  // The publisher's readable page for the dataset, not the stored WFS query URL,
+  // which answers in raw JSON and is never a page.
+  await expect(dialog.getByRole('link', { name: "Continue to the publisher's dataset page (web)" }))
+    .toHaveAttribute('href', DTP_DATASET_URL);
   await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
   expect(requests).toBe(0);
@@ -111,4 +122,15 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
   await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.locator('.provenance-item')).toHaveCount(3);
+});
+
+test('US2 AC5 leaves the sheet as it was for an item with no citation to state', async ({ page }) => {
+  await page.goto(DETAIL_URL);
+  await page.getByRole('link', { name: 'Open original source (web)' }).nth(1).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('This source is on the web.');
+  await expect(dialog).not.toContainText('Bushfire Prone Area plan');
+  await expect(dialog.getByRole('link', { name: 'Continue to original source (web)' }))
+    .toHaveAttribute('href', DTP_DATASET_URL);
 });

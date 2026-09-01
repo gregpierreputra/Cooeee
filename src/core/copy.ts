@@ -177,6 +177,20 @@ export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
 export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to original source (web)';
+/** The citation a stored designation can state in the app itself: the gazetted
+ * plan the check matched, in the planning scheme's own terms. It is the answer
+ * to "what was checked"; the raw response behind it is then an extra, not the
+ * only way to read the result. */
+export const BPA_PLAN_CITATION = (
+  planNumber: string,
+  gazettedDate: string,
+  lgaName: string,
+  publisher: string,
+) => `Bushfire Prone Area plan ${planNumber} · gazetted ${gazettedDate} · ${lgaName} — ${publisher}`;
+/** Used in place of CONTINUE_TO_ORIGINAL_SOURCE once the citation above is on
+ * screen: what is on the far end is the publisher's page for the dataset as a
+ * whole, not the only readable statement of this result. */
+export const CONTINUE_TO_DATASET_PAGE = "Continue to the publisher's dataset page (web)";
 export const CLOSE = 'Close';
 
 // E1-US1-AC1/AC9 production pack-save wiring
@@ -196,6 +210,12 @@ export const BUSHFIRE_MANAGEMENT_OVERLAY = 'Bushfire Management Overlay';
 export const LAND_SUBJECT_TO_INUNDATION_OVERLAY = 'Land Subject to Inundation Overlay';
 export const FLOODWAY_OVERLAY = 'Floodway Overlay';
 export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
+// A saved layer row states its stored result, not just the layer's name. The
+// name alone read as a designation even when the stored status was an absence.
+export const LAYER_NONE_MAPPED_HERE = (layer: string) =>
+  `${layer} — none mapped at this address`;
+export const LAYER_NOT_PUBLISHED = (layer: string) =>
+  `${layer} — not published for this area`;
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
 

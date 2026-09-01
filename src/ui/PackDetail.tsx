@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 
+import { DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
 import { decideOriginalSourceAccess, packDetailAbsence, packDetailItems } from '../core/provenance';
 import type { CompletePackContent, PackDetailItem } from '../core/types';
@@ -78,8 +79,11 @@ export default function PackDetail({
             <li key={item.id} className="card provenance-item">
               <h2>{item.name}</h2>
               <ProvenanceLine source={item.source} now={now} />
+              {/* The publisher's page for the dataset, not the stored query URL:
+                  that URL is a WFS endpoint answering in raw JSON, never a page,
+                  whether the query hit or missed. */}
               <a
-                href={item.source.url}
+                href={DTP_DATASET_URL}
                 target="_blank"
                 rel="noreferrer"
                 onClick={(event) => interceptSource(event, item)}
@@ -105,8 +109,22 @@ export default function PackDetail({
             <p>{copy.STORED_PROVENANCE_REMAINS}</p>
             <ProvenanceLine source={offlineSource.source} now={now} />
             <p>{copy.EXTERNAL_SOURCE_NOTICE}</p>
-            <a href={offlineSource.source.url} target="_blank" rel="noreferrer">
-              {copy.CONTINUE_TO_ORIGINAL_SOURCE}
+            {/* The stored citation answers "what was checked" here, in the app.
+                Where there is one, the link behind it is the publisher's account
+                of the dataset rather than the only readable statement of the
+                result. */}
+            {offlineSource.citation ? (
+              <p className="source-citation">{offlineSource.citation}</p>
+            ) : null}
+            <a
+              className={offlineSource.citation ? 'secondary-action' : undefined}
+              href={DTP_DATASET_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {offlineSource.citation
+                ? copy.CONTINUE_TO_DATASET_PAGE
+                : copy.CONTINUE_TO_ORIGINAL_SOURCE}
             </a>
             <button ref={closeRef} type="button" onClick={() => setOfflineSource(null)}>
               {copy.CLOSE}

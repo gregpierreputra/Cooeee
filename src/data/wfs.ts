@@ -196,24 +196,40 @@ export function parseLgaName(value: unknown): string {
   return features[0].properties.lga_name;
 }
 
-function parseBushfireAreaPointHits(value: unknown): number {
+/** The point query is capped at count=1, so a hit is at most one feature. The
+ * gazetted plan it names is the citation the pack shows in place of a raw
+ * response URL, so it is read out here rather than validated and discarded. */
+type BushfireAreaPointHit = {
+  count: number;
+  lgaName?: string;
+  planNumber?: string;
+  gazettalDate?: string;
+};
+
+function parseBushfireAreaPointHit(value: unknown): BushfireAreaPointHit {
   const features = parseFeatures(value, 'bushfire-area response');
-  for (const [index, feature] of features.entries()) {
+  const hits = features.map((feature, index) => {
     assertRecord(feature.properties, `bushfire-area response.features[${index}].properties`);
+    const properties = feature.properties;
     assertString(
-      feature.properties.lga_name,
+      properties.lga_name,
       `bushfire-area response.features[${index}].properties.lga_name`,
     );
     assertString(
-      feature.properties.plan_number,
+      properties.plan_number,
       `bushfire-area response.features[${index}].properties.plan_number`,
     );
     assertString(
-      feature.properties.gazettal_date,
+      properties.gazettal_date,
       `bushfire-area response.features[${index}].properties.gazettal_date`,
     );
-  }
-  return features.length;
+    return {
+      lgaName: properties.lga_name,
+      planNumber: properties.plan_number,
+      gazettalDate: properties.gazettal_date,
+    };
+  });
+  return { count: hits.length, ...hits[0] };
 }
 
 function parseBushfireAreaExistence(value: unknown): boolean {
@@ -282,11 +298,11 @@ export async function fetchBushfireAreaResult(
       fetchJson(pointUrl, controller.signal, fetcher),
     ]);
     const lgaName = parseLgaName(lgaPayload);
-    const pointHits = parseBushfireAreaPointHits(pointPayload);
+    const pointHit = parseBushfireAreaPointHit(pointPayload);
 
     let liveLayerExists = true;
     let snapshotDisagreed = false;
-    if (pointHits === 0) {
+    if (pointHit.count === 0) {
       const index = parseExtentIndex(
         await fetchJson('/data/index.json', controller.signal, fetcher),
       );
@@ -308,7 +324,7 @@ export async function fetchBushfireAreaResult(
 
     const checkedAt = now();
     const status = resolveBushfireAreaStatus(
-      pointHits,
+      pointHit.count,
       liveLayerExists ? 'published' : 'unpublished',
     );
     // Successful response parsing makes this unreachable today. Keeping the
@@ -326,6 +342,11 @@ export async function fetchBushfireAreaResult(
         retrievedAt: checkedAt,
       },
       snapshotDisagreed,
+      // The gazetted plan behind a positive hit only. An absence has no plan to
+      // cite, so the fields stay absent rather than carrying an empty string.
+      ...(status === 'present'
+        ? { planNumber: pointHit.planNumber, gazettalDate: pointHit.gazettalDate }
+        : {}),
     };
   } finally {
     clearTimeout(timeout);

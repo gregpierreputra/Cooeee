@@ -89,6 +89,9 @@ describe('E1-US2 mandated provenance and offline-source copy', () => {
       'Opening it may use your connection and leave Cooeee.',
     );
     expect(copy.CONTINUE_TO_ORIGINAL_SOURCE).toBe('Continue to original source (web)');
+    // Both labels lead to the publisher's page for the dataset; neither promises
+    // a statement of this one result on the far end.
+    expect(copy.CONTINUE_TO_DATASET_PAGE).toBe("Continue to the publisher's dataset page (web)");
   });
 
   it('formats the shared publisher and saved date line exactly', () => {

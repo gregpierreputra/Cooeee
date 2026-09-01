@@ -276,6 +276,18 @@ describe('bushfire-area request', () => {
       .toBe('lga_name,plan_number,gazettal_date');
   });
 
+  // Verified against the live GeoServer on 2026-09-02: POINT(lat lon) returns
+  // the designation feature for this address on both layers, and POINT(lon lat)
+  // returns nothing. A "corrected" swap would silently turn every point hit into
+  // an absence, so the axis order is pinned here rather than left to a comment.
+  it('keeps the axis order the live layers accept, never longitude first', () => {
+    for (const urlText of [buildLgaAtPointUrl(pendingPlace), buildBushfireAreaAtPointUrl(pendingPlace)]) {
+      const filter = new URL(urlText).searchParams.get('CQL_FILTER') ?? '';
+      expect(filter).toContain(`POINT(${pendingPlace.lat} ${pendingPlace.lon})`);
+      expect(filter).not.toContain(`POINT(${pendingPlace.lon} ${pendingPlace.lat})`);
+    }
+  });
+
   it('escapes the LGA name in the existence probe', () => {
     expect(new URL(buildBushfireAreaExistenceUrl("O'CONNOR")).searchParams.get('CQL_FILTER'))
       .toBe("lga_name='O''CONNOR'");
@@ -297,10 +309,30 @@ describe('bushfire-area request', () => {
     };
     const result = await fetchBushfireAreaResult(pendingPlace, fetcher, () => 123);
     expect(result.status).toBe('present');
+    // The hit's own plan and gazettal date, kept rather than validated and
+    // dropped: they are what the pack can cite without a network.
+    expect(result).toMatchObject({
+      planNumber: 'LEGL./25-138',
+      gazettalDate: '10/07/2025',
+    });
     expect(result.source).toMatchObject({
       publisher: 'Department of Transport and Planning', licence: 'CC BY 4.0', retrievedAt: 123,
     });
     expect(requests.some((url) => url.includes("lga_name%3D"))).toBe(false);
+    // A present result is only ever a direct point hit, so the URL it cites has
+    // to be that hit's own query — never a query that returned nothing.
+    expect(result.source.url).toBe(buildBushfireAreaAtPointUrl(pendingPlace));
+  });
+
+  it('carries no plan or gazettal date when nothing was matched', async () => {
+    const result = await fetchBushfireAreaResult(
+      pendingPlace,
+      areaFetcher({ pointHits: 0, liveExists: true }),
+      () => 123,
+    );
+    expect(result.status).toBe('none-mapped-here');
+    expect(result.planNumber).toBeUndefined();
+    expect(result.gazettalDate).toBeUndefined();
   });
 
   it('distinguishes mapped absence from unpublished coverage using the live probe', async () => {

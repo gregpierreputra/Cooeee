@@ -24,17 +24,20 @@ export function extentSnapshotDisagrees(
 
 /** Turns an already-fetched official area result into the one content row
  * EPIC 1 can honestly produce. 
- * No fetch; features stay empty because
- * fetchBushfireAreaResult validates plan_number/gazettal_date but does not
- * surface them — a genuine gap, not a fabricated value. */
+ * No fetch; the single feature is the gazetted plan the point hit named, and it
+ * is stored only when there was a hit. An absence keeps an empty feature list,
+ * because there is no designation to describe. */
 export function bpaExposureLayer(packId: string, result: BushfireAreaResult): ExposureLayer {
+  const { planNumber, gazettalDate } = result;
   return {
     id: `${packId}:BPA`,
     packId,
     group: 'designation',
     code: 'BPA',
     status: result.status,
-    features: [],
+    features: result.status === 'present' && planNumber && gazettalDate
+      ? [{ planNumber, gazettalDate }]
+      : [],
     checkedAt: result.checkedAt,
     source: result.source,
   };

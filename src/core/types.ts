@@ -240,6 +240,11 @@ export type BushfireAreaResult = {
   lgaName: string;
   source: Source;
   snapshotDisagreed: boolean;
+  // The gazetted plan the point hit matched. Present only when status is
+  // 'present' — an absence has no plan to name, so the fields stay absent
+  // rather than carrying a placeholder.
+  planNumber?: string;
+  gazettalDate?: string;
 };
 
 /** The versioned, device-generated AC9 build response. Metadata only: it
@@ -285,6 +290,9 @@ export type PackDetailItem = {
   id: string;
   name: string;
   source: Source;
+  // The stored citation for this item, when it has one — present only where the
+  // saved row itself names what was matched.
+  citation?: string;
 };
 
 /** One row of the CFA Neighbourhood Safer Places state-wide list, as produced by
