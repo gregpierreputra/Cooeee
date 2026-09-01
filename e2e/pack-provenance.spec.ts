@@ -102,7 +102,13 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
   );
   await expect(dialog).toContainText('Opening it may use your connection and leave Cooeee.');
   await expect(dialog).toContainText('Published by Department of Transport and Planning');
-  await expect(dialog.getByRole('link', { name: 'Continue to original source (web)' }))
+  // The stored citation, so the raw response behind the link is no longer the
+  // only way to read what was checked.
+  await expect(dialog).toContainText(
+    'Bushfire Prone Area plan LEGL./25-138 · gazetted 10 July 2025 · YARRA RANGES'
+    + ' — Department of Transport and Planning',
+  );
+  await expect(dialog.getByRole('link', { name: 'Continue to the raw government data (web)' }))
     .toHaveAttribute('href', /^https:\/\//);
   await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
@@ -111,4 +117,15 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
   await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.locator('.provenance-item')).toHaveCount(3);
+});
+
+test('US2 AC5 leaves the sheet as it was for an item with no citation to state', async ({ page }) => {
+  await page.goto(DETAIL_URL);
+  await page.getByRole('link', { name: 'Open original source (web)' }).nth(1).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('This source is on the web.');
+  await expect(dialog).not.toContainText('Bushfire Prone Area plan');
+  await expect(dialog.getByRole('link', { name: 'Continue to original source (web)' }))
+    .toHaveAttribute('href', /^https:\/\//);
 });

@@ -619,6 +619,19 @@ input {
   font-weight: var(--w-med);
 }
 
+/* The stored citation is the answer on screen, so it carries the weight the
+   external link used to. */
+.source-sheet .source-citation {
+  color: var(--ink);
+  font-weight: var(--w-med);
+}
+
+/* With a citation above it, the link out is the extra rather than the way to
+   read the result. */
+.source-sheet a.secondary-action {
+  font-weight: normal;
+}
+
 /* ── Update banner ─────────────────────────────────────────────────────────── */
 
 /* The service-worker banner. Stated in words, never an auto-reload. */

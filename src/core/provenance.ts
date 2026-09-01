@@ -61,6 +61,17 @@ export function formatSavedDate(epochMs: number): string {
   }).format(epochMs);
 }
 
+/** Vicmap states a gazettal date as dd/mm/yyyy. It is read back through
+ * formatSavedDate so a gazetted date reads exactly like a saved date; midday is
+ * used so the Melbourne rendering cannot fall to the day before. Text that is
+ * not that shape is shown exactly as the publisher wrote it, never guessed at. */
+export function formatGazettalDate(stated: string): string {
+  const parts = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(stated);
+  if (!parts) return stated;
+  const [, day, month, year] = parts;
+  return formatSavedDate(Date.UTC(Number(year), Number(month) - 1, Number(day), 12));
+}
+
 export function savedAgeDays(now: number, savedAt: number): number {
   return Math.max(0, Math.floor((now - savedAt) / MS_PER_DAY));
 }
@@ -119,9 +130,32 @@ export function packDetailAbsence(content: CompletePackContent): string | null {
   return content.destinations.find((row) => row.kind === 'absence')?.reason ?? null;
 }
 
+/** What a designated layer row can state about itself without a network: the
+ * gazetted plan the check matched. Only a BPA hit stores one, and only when both
+ * halves of it were saved — a half-citation would name a plan without dating it. */
+function layerCitation(row: ExposureLayer, lgaName: string): string | undefined {
+  if (row.code !== 'BPA' || row.status !== 'present') return undefined;
+  const [feature] = row.features;
+  if (!feature?.planNumber || !feature.gazettalDate) return undefined;
+  return copy.BPA_PLAN_CITATION(
+    feature.planNumber,
+    formatGazettalDate(feature.gazettalDate),
+    lgaName,
+    row.source.publisher,
+  );
+}
+
 export function packDetailItems(content: CompletePackContent): PackDetailItem[] {
   const items: PackDetailItem[] = [
-    ...content.layers.map((row) => ({ id: row.id, name: layerItemName(row), source: row.source })),
+    ...content.layers.map((row) => {
+      const citation = layerCitation(row, content.pack.lgaName);
+      return {
+        id: row.id,
+        name: layerItemName(row),
+        source: row.source,
+        ...(citation ? { citation } : {}),
+      };
+    }),
     ...content.destinations
       .filter((row) => row.kind !== 'absence')
       .map((row) => ({

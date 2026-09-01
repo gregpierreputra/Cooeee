@@ -109,8 +109,21 @@ export default function PackDetail({
             <p>{copy.STORED_PROVENANCE_REMAINS}</p>
             <ProvenanceLine source={offlineSource.source} now={now} />
             <p>{copy.EXTERNAL_SOURCE_NOTICE}</p>
-            <a href={offlineSource.source.url} target="_blank" rel="noreferrer">
-              {copy.CONTINUE_TO_ORIGINAL_SOURCE}
+            {/* The stored citation answers "what was checked" here, in the app.
+                Where there is one, the link behind it is the raw published data
+                rather than the only readable statement of the result. */}
+            {offlineSource.citation ? (
+              <p className="source-citation">{offlineSource.citation}</p>
+            ) : null}
+            <a
+              className={offlineSource.citation ? 'secondary-action' : undefined}
+              href={offlineSource.source.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {offlineSource.citation
+                ? copy.CONTINUE_TO_RAW_SOURCE_DATA
+                : copy.CONTINUE_TO_ORIGINAL_SOURCE}
             </a>
             <button ref={closeRef} type="button" onClick={() => setOfflineSource(null)}>
               {copy.CLOSE}

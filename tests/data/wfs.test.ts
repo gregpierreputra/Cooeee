@@ -309,6 +309,12 @@ describe('bushfire-area request', () => {
     };
     const result = await fetchBushfireAreaResult(pendingPlace, fetcher, () => 123);
     expect(result.status).toBe('present');
+    // The hit's own plan and gazettal date, kept rather than validated and
+    // dropped: they are what the pack can cite without a network.
+    expect(result).toMatchObject({
+      planNumber: 'LEGL./25-138',
+      gazettalDate: '10/07/2025',
+    });
     expect(result.source).toMatchObject({
       publisher: 'Department of Transport and Planning', licence: 'CC BY 4.0', retrievedAt: 123,
     });
@@ -316,6 +322,17 @@ describe('bushfire-area request', () => {
     // A present result is only ever a direct point hit, so the URL it cites has
     // to be that hit's own query — never a query that returned nothing.
     expect(result.source.url).toBe(buildBushfireAreaAtPointUrl(pendingPlace));
+  });
+
+  it('carries no plan or gazettal date when nothing was matched', async () => {
+    const result = await fetchBushfireAreaResult(
+      pendingPlace,
+      areaFetcher({ pointHits: 0, liveExists: true }),
+      () => 123,
+    );
+    expect(result.status).toBe('none-mapped-here');
+    expect(result.planNumber).toBeUndefined();
+    expect(result.gazettalDate).toBeUndefined();
   });
 
   it('distinguishes mapped absence from unpublished coverage using the live probe', async () => {

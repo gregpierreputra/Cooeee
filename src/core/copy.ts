@@ -172,6 +172,20 @@ export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
 export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to original source (web)';
+/** The citation a stored designation can state in the app itself: the gazetted
+ * plan the check matched, in the planning scheme's own terms. It is the answer
+ * to "what was checked"; the raw response behind it is then an extra, not the
+ * only way to read the result. */
+export const BPA_PLAN_CITATION = (
+  planNumber: string,
+  gazettedDate: string,
+  lgaName: string,
+  publisher: string,
+) => `Bushfire Prone Area plan ${planNumber} · gazetted ${gazettedDate} · ${lgaName} — ${publisher}`;
+/** Used in place of CONTINUE_TO_ORIGINAL_SOURCE once the citation above is on
+ * screen: what is on the far end is the raw published data, not the only
+ * readable statement of the result. */
+export const CONTINUE_TO_RAW_SOURCE_DATA = 'Continue to the raw government data (web)';
 export const CLOSE = 'Close';
 
 // E1-US1-AC1/AC9 production pack-save wiring
