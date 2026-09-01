@@ -606,19 +606,6 @@ input {
   margin: 0;
 }
 
-/* The one way back out of a saved pack. Sits before the heading so it is the
-   first thing a keyboard or screen reader reaches. */
-.pack-detail-back {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-self: start;
-  color: var(--accent);
-  font-size: var(--step-s);
-  font-weight: var(--w-bold);
-  text-decoration: none;
-}
-
 .provenance > p {
   font-size: var(--step-s);
   color: var(--ink-2);

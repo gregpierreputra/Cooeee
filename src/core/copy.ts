@@ -187,7 +187,6 @@ export const PREPARING_PACK_OFFER = 'Preparing the pack offer.';
 export const PACK_OFFER_FAILED = 'We could not prepare this pack right now.';
 export const OPEN_SAVED_PACK = 'Open saved pack';
 
-export const BACK_TO_YOUR_PACKS = 'Back to Your packs';
 export const BACK_TO_HOME = 'Back to Home';
 
 export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
