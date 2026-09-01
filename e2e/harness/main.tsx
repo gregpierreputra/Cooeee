@@ -17,7 +17,9 @@ import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPa
 import { db } from '../../src/data/db';
 import { manifestGroup } from '../../src/data/integrity';
 import { loadNspSnapshot } from '../../src/data/nsp';
+import Home from '../../src/ui/Home';
 import PackDetail from '../../src/ui/PackDetail';
+import AppHeader from '../../src/ui/components/AppHeader';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
 import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
@@ -296,6 +298,25 @@ const detailFlow =
     ? <DetailLauncher />
     : <PackDetail packId="detail-pack" now={detailNow} />;
 
+// E1-US2-AC6. The returning-user home and the fixed header, at a fixed instant
+// so the header's age states are exact rather than clock-dependent.
+const homeNow = Date.UTC(2026, 8, 1, 9);
+const homeMode = new URLSearchParams(window.location.search).get('mode') ?? 'pack';
+const homeDays = Number(new URLSearchParams(window.location.search).get('days') ?? '3');
+let homeFlow = confirmation;
+if (window.location.pathname === '/home') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  if (homeMode !== 'none') {
+    await db.packs.put({ ...savedPack, verifiedAt: homeNow - homeDays * 86_400_000 });
+  }
+  homeFlow = (
+    <>
+      <AppHeader now={homeNow} />
+      <Home now={homeNow} />
+    </>
+  );
+}
+
 const destinationsMode = new URLSearchParams(window.location.search).get('mode') ?? 'sites';
 const destinationsNow = Date.UTC(2026, 8, 1);
 let destinationsFlow = confirmation;
@@ -399,7 +420,8 @@ const areaFlow = (
 createRoot(root).render(
   <StrictMode>
     <MemoryRouter>
-    {window.location.pathname === '/conflict' ? conflictFlow
+    {window.location.pathname === '/home' ? homeFlow
+      : window.location.pathname === '/conflict' ? conflictFlow
       : window.location.pathname === '/area' ? areaFlow
         : window.location.pathname === '/size' ? sizeFlow
         : window.location.pathname === '/destinations' ? destinationsFlow

@@ -1,4 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { OPEN_PACK, SAVED_PLACE_LABEL } from '../src/core/copy';
+import { displayAddress } from '../src/core/home';
 import { acknowledgeFirstOpen, addressFeature, waitForController, WFS_PATTERN } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
@@ -83,7 +85,7 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
 
   await page.goto('/');
-  await expect(page.getByText(ADDRESS)).toBeVisible();
+  await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
 });
 
 test('AC8 replace atomically supersedes the previous pack', async ({ page }) => {
@@ -125,8 +127,8 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
   await expect(page.locator('.pack-detail')).toContainText(NEW_ADDRESS);
 
   await page.goto('/');
-  await expect(page.getByText(NEW_ADDRESS)).toBeVisible();
-  await expect(page.getByText(ADDRESS, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(displayAddress(NEW_ADDRESS))).toBeVisible();
+  await expect(page.getByText(displayAddress(ADDRESS), { exact: true })).toHaveCount(0);
 });
 
 // ── E1-US2 pack-detail return path ──────────────────────────────────────────
@@ -159,8 +161,8 @@ test('US2 the global Back bar works offline and the stored pack survives it', as
   // pack list via a client-side route change — no document request offline.
   await page.getByRole('button', { name: 'Back' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Your packs' })).toBeVisible();
-  await expect(page.getByText(ADDRESS)).toBeVisible();
+  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
+  await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
   await expect(page.locator('main')).not.toContainText(/Loading|Reconnect|not available/i);
   expect(failed).toEqual([]);
 
@@ -172,9 +174,11 @@ test('US2 the pack reopens unchanged after returning to the pack list', async ({
   const before = await page.locator('.pack-detail').innerText();
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Your packs' })).toBeVisible();
+  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
 
-  await page.getByRole('link', { name: 'Kalorama' }).click();
+  // E1-US2-AC6 replaced the pack list with the one-pack Open-or-Build home:
+  // the saved place carries one way in, named 'Open'.
+  await page.getByRole('link', { name: OPEN_PACK, exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
   expect(await page.locator('.pack-detail').innerText()).toBe(before);
 

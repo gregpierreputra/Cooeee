@@ -9,7 +9,7 @@ import {
   DISCLOSURE_DOES_NOT,
   DISCLOSURE_POSITION,
   FIRST_OPEN_PURPOSE,
-  HOME_TITLE,
+  HEADER_HOME_LABEL,
   OFFICIAL_CHANNELS_LINE,
 } from '../src/core/copy';
 
@@ -82,7 +82,7 @@ test('ticking the box enables continue, which records the acknowledgement and mo
 
   await continueButton(page).click();
 
-  await expect(page.getByRole('heading', { name: HOME_TITLE })).toBeVisible();
+  await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
   expect(await storedFlag(page)).toBe(ACKNOWLEDGEMENT_VALUE);
 });
 
@@ -101,10 +101,10 @@ test('a later open goes straight past the screen', async ({ page }) => {
   await page.goto('/');
   await checkbox(page).check();
   await continueButton(page).click();
-  await expect(page.getByRole('heading', { name: HOME_TITLE })).toBeVisible();
+  await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: HOME_TITLE })).toBeVisible();
+  await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
   await expect(page.getByText(ACKNOWLEDGE_CHECKBOX)).toHaveCount(0);
 });
 
@@ -122,7 +122,7 @@ test('clearing site data returns the app to first open', async ({ page }) => {
   await page.goto('/');
   await checkbox(page).check();
   await continueButton(page).click();
-  await expect(page.getByRole('heading', { name: HOME_TITLE })).toBeVisible();
+  await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
 
   await page.evaluate(() => localStorage.clear());
   await page.goto('/');
@@ -173,7 +173,7 @@ test('the acknowledgement is one flag holding one marker', async ({ page }) => {
   await page.goto('/');
   await checkbox(page).check();
   await continueButton(page).click();
-  await expect(page.getByRole('heading', { name: HOME_TITLE })).toBeVisible();
+  await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
 
   expect(
     await page.evaluate(() =>

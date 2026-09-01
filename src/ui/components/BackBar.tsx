@@ -3,8 +3,8 @@ import * as copy from '../../core/copy';
 
 /** The one persistent way back, at the top of every screen. Each click steps
  *  back through the pages the user actually visited; when there is nothing
- *  left to step back through, it lands on the pack list — never outside the
- *  app. The pack list itself is that terminal point, so the bar hides there.
+ *  left to step back through, it lands on the home screen — never outside the
+ *  app. The home screen itself is that terminal point, so the bar hides there.
  *  BlackSky hides it too: that mode's only exit is its own Leave control, so
  *  none of the prepare-mode chrome offers a way out. */
 export default function BackBar() {
