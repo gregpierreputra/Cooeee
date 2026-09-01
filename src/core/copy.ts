@@ -65,6 +65,13 @@ export const NO_PACKS_HINT =
   'Build a pack while you have a connection, so it is on your phone when there is none.';
 export const SAVED_DAYS_AGO = (days: number) => `Saved ${days} days ago`;
 
+// Deleting a saved pack — the × opens an in-card confirmation; nothing is
+// removed until the ✓ is chosen.
+export const DELETE_PACK = 'Delete this pack';
+export const DELETE_PACK_QUESTION = 'Are you sure you would like to delete this offline pack?';
+export const KEEP_THIS_PACK = 'Keep this pack';
+export const CONFIRM_DELETE_PACK = 'Yes, delete this pack';
+
 export const NEW_VERSION_READY =
   'A new version is ready. It is applied when you choose to reload — nothing changes until then.';
 export const RELOAD_NOW = 'Reload now';
@@ -180,7 +187,6 @@ export const PREPARING_PACK_OFFER = 'Preparing the pack offer.';
 export const PACK_OFFER_FAILED = 'We could not prepare this pack right now.';
 export const OPEN_SAVED_PACK = 'Open saved pack';
 
-export const BACK_TO_YOUR_PACKS = 'Back to Your packs';
 export const BACK_TO_HOME = 'Back to Home';
 
 export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
@@ -310,4 +316,5 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 // E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
+export const HOLD_TO_LEAVE = 'Hold to leave — two seconds.';
 export const LEAVE_BLACKSKY = 'Leave BlackSky';

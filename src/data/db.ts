@@ -118,5 +118,33 @@ export async function sweepBuilding(): Promise<void> {
   });
 }
 
+/** Permanently delete ONE complete pack and every row it owns. The shared
+ *  recovery-programs snapshot is cleared only when no remaining pack still
+ *  references recovery — it is one snapshot shared by every pack manifest,
+ *  so it may only go when the last referencing pack goes. */
+export async function deleteCompletePack(id: string): Promise<void> {
+  await db.transaction(
+    'rw',
+    db.packs,
+    db.layers,
+    db.destinations,
+    db.tiles,
+    db.programs,
+    async () => {
+      const target = await db.packs.get(id);
+      if (target?.status !== 'complete') return;
+      await db.layers.where('packId').equals(id).delete();
+      await db.destinations.where('packId').equals(id).delete();
+      await db.tiles.where('packId').equals(id).delete();
+      await db.packs.delete(id);
+      const remaining = await db.packs.toArray();
+      if (!remaining.some((p) => p.manifest.groups.recovery.count > 0)) {
+        await db.programs.clear();
+      }
+    },
+  );
+}
+
 // There is no third read of `packs`. If you find yourself adding one, stop —
-// you are about to make a partial pack visible.
+// you are about to make a partial pack visible. (The status check inside
+// deleteCompletePack is a write-path guard, not a read API.)

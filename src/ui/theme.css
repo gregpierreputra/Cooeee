@@ -227,7 +227,10 @@ a {
 
 /* Absence states use the SAME neutral treatment as presence states. Absence must
    read as absence — never as reassurance, never as an error. There are no alert
-   colours and no warning iconography in this stylesheet at all. */
+   colours and no warning iconography in this stylesheet, with ONE deliberate
+   exception: the destructive delete-a-pack controls below reuse the fixed
+   connection colours (--offline red, --online green) so that destroying data
+   can never look like a neutral action. */
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -238,7 +241,8 @@ a {
   gap: 0.5rem;
 }
 
-.card > h2 {
+.card > h2,
+.card-title-row h2 {
   font-size: var(--step-1);
 }
 
@@ -261,6 +265,68 @@ a {
 }
 .list .card .figure {
   color: var(--ink-3);
+}
+
+/* Home pack rows: the name link stretches over the whole card, so the card is
+   the tap target. Controls inside the card must sit above the overlay
+   (position + z-index) to stay independently clickable. */
+.pack-card {
+  position: relative;
+}
+.pack-card h2 a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+@media (hover: hover) {
+  .pack-card:hover {
+    border-color: var(--accent);
+  }
+}
+
+/* Delete-a-pack: the name row carries the ×, the confirm state swaps the card
+   body for the question and an equal-weight ✗/✓ pair (see the exception note
+   at the top of this section). */
+.card-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.card-delete {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-pill);
+  color: var(--offline);
+  font-size: var(--step-1);
+  line-height: 1;
+  position: relative;
+  z-index: 1; /* above the pack-card stretched link */
+}
+
+.card-confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.card-confirm-actions button {
+  flex: 1;
+  font-size: var(--step-1);
+}
+
+.card-confirm-no {
+  color: var(--offline);
+  border-color: var(--offline);
+}
+
+.card-confirm-yes {
+  color: var(--online);
+  border-color: var(--online);
 }
 
 /* Primary action sits at the bottom of the viewport, within thumb reach. */
@@ -538,19 +604,6 @@ input {
 .provenance p,
 .stale-note p {
   margin: 0;
-}
-
-/* The one way back out of a saved pack. Sits before the heading so it is the
-   first thing a keyboard or screen reader reaches. */
-.pack-detail-back {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-self: start;
-  color: var(--accent);
-  font-size: var(--step-s);
-  font-weight: var(--w-bold);
-  text-decoration: none;
 }
 
 .provenance > p {
