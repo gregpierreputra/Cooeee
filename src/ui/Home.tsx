@@ -4,7 +4,7 @@ import { HOLD_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { freshness } from '../core/pack';
 import type { Pack } from '../core/types';
-import { listCompletePacks } from '../data/db';
+import { deleteCompletePack, listCompletePacks } from '../data/db';
 import StateCard from './components/StateCard';
 
 export default function Home() {
@@ -62,6 +62,20 @@ export default function Home() {
     };
   }, []);
 
+  // Deleting a pack takes two taps: the × swaps the card for a question, and
+  // only the ✓ destroys data. The ✗ restores the card untouched.
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (confirmingId) cancelRef.current?.focus();
+  }, [confirmingId]);
+
+  const removePack = async (id: string) => {
+    await deleteCompletePack(id);
+    setPacks(await listCompletePacks());
+    setConfirmingId(null);
+  };
+
   const now = Date.now();
 
   return (
@@ -78,10 +92,47 @@ export default function Home() {
         // first entry gets no visual weight.
         <ul className="list">
           {packs.map((p) => (
-            <li key={p.id} className="card pack-card">
-              <h2><Link to={`/packs/${p.id}`}>{p.name}</Link></h2>
-              <p className="muted">{p.address}</p>
-              <p className="muted figure">{freshness(now, p.verifiedAt).label}</p>
+            <li key={p.id} className={confirmingId === p.id ? 'card' : 'card pack-card'}>
+              {confirmingId === p.id ? (
+                <>
+                  <p>{copy.DELETE_PACK_QUESTION}</p>
+                  <div className="card-confirm-actions">
+                    <button
+                      ref={cancelRef}
+                      type="button"
+                      className="card-confirm-no"
+                      aria-label={copy.KEEP_THIS_PACK}
+                      onClick={() => setConfirmingId(null)}
+                    >
+                      ✗
+                    </button>
+                    <button
+                      type="button"
+                      className="card-confirm-yes"
+                      aria-label={copy.CONFIRM_DELETE_PACK}
+                      onClick={() => void removePack(p.id)}
+                    >
+                      ✓
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="card-title-row">
+                    <h2><Link to={`/packs/${p.id}`}>{p.name}</Link></h2>
+                    <button
+                      type="button"
+                      className="card-delete"
+                      aria-label={copy.DELETE_PACK}
+                      onClick={() => setConfirmingId(p.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p className="muted">{p.address}</p>
+                  <p className="muted figure">{freshness(now, p.verifiedAt).label}</p>
+                </>
+              )}
             </li>
           ))}
         </ul>

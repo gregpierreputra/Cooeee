@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   db,
+  deleteCompletePack,
   getCompletePack,
   getCompletePackContent,
   listCompletePacks,
@@ -36,6 +37,7 @@ beforeEach(async () => {
     db.layers.clear(),
     db.destinations.clear(),
     db.tiles.clear(),
+    db.programs.clear(),
   ]);
 });
 
@@ -149,6 +151,60 @@ describe('sweepBuilding', () => {
     await sweepBuilding();
     await sweepBuilding();
     expect(await db.packs.count()).toBe(0);
+  });
+});
+
+describe('deleteCompletePack', () => {
+  // A pack whose manifest still references the shared recovery snapshot.
+  const withRecovery = (id: string, status: 'building' | 'complete' = 'complete') =>
+    pack({
+      id,
+      status,
+      manifest: {
+        ...pack().manifest,
+        groups: { ...pack().manifest.groups, recovery: { count: 1, sha256: 'r' } },
+      },
+    });
+
+  it('deletes the pack and every row it owns, leaving another pack untouched', async () => {
+    await stage('gone', 'complete');
+    await stage('kept', 'complete');
+    const before = await db.packs.get('kept');
+
+    await deleteCompletePack('gone');
+
+    expect((await db.packs.toArray()).map((p) => p.id)).toEqual(['kept']);
+    expect(await db.layers.where('packId').equals('gone').count()).toBe(0);
+    expect(await db.destinations.where('packId').equals('gone').count()).toBe(0);
+    expect(await db.tiles.where('packId').equals('gone').count()).toBe(0);
+    expect(await db.packs.get('kept')).toEqual(before);
+    expect(await db.layers.where('packId').equals('kept').count()).toBe(1);
+  });
+
+  it('refuses a building pack — only sweepBuilding removes those', async () => {
+    await stage('half', 'building');
+    await deleteCompletePack('half');
+    expect(await db.packs.count()).toBe(1);
+    expect(await db.layers.count()).toBe(1);
+  });
+
+  it('clears the shared programs when the last recovery-referencing pack goes', async () => {
+    await db.packs.put(withRecovery('only'));
+    await db.programs.put(program());
+
+    await deleteCompletePack('only');
+
+    expect(await db.programs.count()).toBe(0);
+  });
+
+  it('keeps the shared programs while another pack still references recovery', async () => {
+    await db.packs.put(withRecovery('gone'));
+    await db.packs.put(withRecovery('kept'));
+    await db.programs.put(program());
+
+    await deleteCompletePack('gone');
+
+    expect(await db.programs.count()).toBe(1);
   });
 });
 

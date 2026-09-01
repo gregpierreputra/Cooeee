@@ -65,6 +65,13 @@ export const NO_PACKS_HINT =
   'Build a pack while you have a connection, so it is on your phone when there is none.';
 export const SAVED_DAYS_AGO = (days: number) => `Saved ${days} days ago`;
 
+// Deleting a saved pack — the × opens an in-card confirmation; nothing is
+// removed until the ✓ is chosen.
+export const DELETE_PACK = 'Delete this pack';
+export const DELETE_PACK_QUESTION = 'Are you sure you would like to delete this offline pack?';
+export const KEEP_THIS_PACK = 'Keep this pack';
+export const CONFIRM_DELETE_PACK = 'Yes, delete this pack';
+
 export const NEW_VERSION_READY =
   'A new version is ready. It is applied when you choose to reload — nothing changes until then.';
 export const RELOAD_NOW = 'Reload now';
