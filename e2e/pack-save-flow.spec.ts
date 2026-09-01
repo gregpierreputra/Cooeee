@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { OPEN_PACK, SAVED_PLACE_LABEL } from '../src/core/copy';
 import { displayAddress } from '../src/core/home';
-import { addressFeature, waitForController, WFS_PATTERN } from './helpers';
+import { acknowledgeFirstOpen, addressFeature, waitForController, WFS_PATTERN } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
 // disconnected test harness. Only the official WFS endpoint is intercepted —
@@ -54,6 +54,9 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
 }
 
 test.beforeEach(async ({ page }) => {
+  // A returning device: the first-open disclosure (E1-US1-AC0) is already
+  // acknowledged, so this spec starts where the save journey starts.
+  await acknowledgeFirstOpen(page);
   await page.goto('/');
   await page.evaluate(() => indexedDB.deleteDatabase('cooeee'));
 });
@@ -129,8 +132,7 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
 });
 
 // ── E1-US2 pack-detail return path ──────────────────────────────────────────
-
-const BACK = 'Back to Your packs';
+// The return path is the global Back bar at the top of every screen.
 
 async function saveAPackAndOpenIt(page: Page) {
   await mockOfficialServices(page, {
@@ -144,40 +146,7 @@ async function saveAPackAndOpenIt(page: Page) {
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
 }
 
-test('US2 the pack detail offers an explicit return to the pack list', async ({ page }) => {
-  await saveAPackAndOpenIt(page);
-
-  const back = page.getByRole('link', { name: BACK });
-  await expect(back).toBeVisible();
-  await expect(back).toHaveAttribute('href', '/');
-
-  await back.click();
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
-  await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
-});
-
-test('US2 the return action is keyboard operable and meets the touch target', async ({ page }) => {
-  await saveAPackAndOpenIt(page);
-  const back = page.getByRole('link', { name: BACK });
-
-  await back.focus();
-  await expect(back).toBeFocused();
-
-  const box = await back.boundingBox();
-  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
-
-  // It precedes the pack heading, so it is the first thing reached on the screen.
-  expect(await back.evaluate((el) => {
-    const h1 = document.querySelector('.pack-detail h1');
-    return h1 ? el.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING : 0;
-  })).toBeTruthy();
-
-  await back.press('Enter');
-  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
-});
-
-test('US2 the return action works offline and the stored pack survives it', async ({ page, context }) => {
+test('US2 the global Back bar works offline and the stored pack survives it', async ({ page, context }) => {
   await saveAPackAndOpenIt(page);
   const packUrl = page.url();
   await waitForController(page);
@@ -188,7 +157,9 @@ test('US2 the return action works offline and the stored pack survives it', asyn
 
   await page.goto(packUrl);
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
-  await page.getByRole('link', { name: BACK }).click();
+  // A fresh document load has history position 0, so the Back bar lands on the
+  // pack list via a client-side route change — no document request offline.
+  await page.getByRole('button', { name: 'Back' }).click();
 
   await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
   await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
@@ -202,7 +173,7 @@ test('US2 the pack reopens unchanged after returning to the pack list', async ({
   await saveAPackAndOpenIt(page);
   const before = await page.locator('.pack-detail').innerText();
 
-  await page.getByRole('link', { name: BACK }).click();
+  await page.goto('/');
   await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
 
   // E1-US2-AC6 replaced the pack list with the one-pack Open-or-Build home:

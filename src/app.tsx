@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useParams } from 'react-router';
+import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import * as copy from './core/copy';
+import { localFlagStore } from './data/acknowledgement';
 import BlackSky from './ui/BlackSky';
+import FirstOpen from './ui/FirstOpen';
 import Home from './ui/Home';
 import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
@@ -63,6 +66,26 @@ function PackDetailRoute() {
 }
 
 export default function App({ applyUpdate }: { applyUpdate: () => void }) {
+  // E1-US1-AC0. Read once, synchronously, before the first paint: the
+  // disclosure screen comes BEFORE any other screen, so there is no frame in
+  // which a route renders behind it. A store that cannot be read reads as "not
+  // acknowledged", which shows the screen rather than blocking the app.
+  const [screen, setScreen] = useState(() => openingScreen(localFlagStore()));
+
+  if (screen === 'first-open') {
+    return (
+      <FirstOpen
+        onAcknowledge={() => {
+          // The user moves on either way. A browser that refuses the write is a
+          // reason to ask again on the next open, never a reason to trap
+          // someone on this screen.
+          writeAcknowledgement(localFlagStore());
+          setScreen('prepared');
+        }}
+      />
+    );
+  }
+
   return (
     <BrowserRouter>
       <ModeSwitch />

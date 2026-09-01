@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
 import { displayAddress, homeView, titleCase, type HomeView } from '../core/home';
 import type { Pack } from '../core/types';
-import { listCompletePacks } from '../data/db';
+import { deleteCompletePack, listCompletePacks } from '../data/db';
 import BottomNav from './components/BottomNav';
 import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
@@ -37,6 +37,20 @@ export default function Home({ now }: { now?: number }) {
     };
   }, [seed]);
 
+  // Deleting the pack takes two taps: the × swaps the card for a question, and
+  // only the ✓ destroys data. The ✗ restores the card untouched.
+  const [confirming, setConfirming] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (confirming) cancelRef.current?.focus();
+  }, [confirming]);
+
+  const removePack = async (id: string) => {
+    await deleteCompletePack(id);
+    setView(homeView(seed, await listCompletePacks()));
+    setConfirming(false);
+  };
+
   return (
     <main className="page home">
       {/* One preparation line under its own eyebrow, so it reads as the day's
@@ -53,21 +67,49 @@ export default function Home({ now }: { now?: number }) {
 
       {view === null ? null : view.kind === 'no-pack' ? (
         <StateCard heading={copy.NO_PACK_SAVED} detail={copy.NO_PACKS_HINT} />
+      ) : confirming ? (
+        <section className="card">
+          <p>{copy.DELETE_PACK_QUESTION}</p>
+          <div className="card-confirm-actions">
+            <button
+              ref={cancelRef}
+              type="button"
+              className="card-confirm-no"
+              aria-label={copy.KEEP_THIS_PACK}
+              onClick={() => setConfirming(false)}
+            >
+              ✗
+            </button>
+            <button
+              type="button"
+              className="card-confirm-yes"
+              aria-label={copy.CONFIRM_DELETE_PACK}
+              onClick={() => void removePack(view.pack.id)}
+            >
+              ✓
+            </button>
+          </div>
+        </section>
       ) : (
-        <section className="card saved-place">
+        <section className="card pack-card saved-place">
           <span className="kicker">{copy.SAVED_PLACE_LABEL}</span>
           <div className="saved-place-title">
             {/* Cased by the same rule as the address line below, so the two
                 read alike: the name defaults to the locality the geocoder
                 returned, and arrives in the same capitals. Storage keeps the
-                name exactly as it was saved. */}
-            <h2>{titleCase(view.pack.name)}</h2>
-            {/* The way in is the 'Open' action below; this only points at it,
-                so it is hidden from the screen reader rather than read out as
-                a second, wordless control. */}
-            <span className="saved-place-chevron" aria-hidden="true">
-              ›
-            </span>
+                name exactly as it was saved. The link stretches over the whole
+                card (see .pack-card); the × sits above it. */}
+            <h2>
+              <Link to={`/packs/${view.pack.id}`}>{titleCase(view.pack.name)}</Link>
+            </h2>
+            <button
+              type="button"
+              className="card-delete"
+              aria-label={copy.DELETE_PACK}
+              onClick={() => setConfirming(true)}
+            >
+              ×
+            </button>
           </div>
           {/* Title-cased for reading only. The pack still stores the address
               exactly as the custodian returned it. */}
@@ -91,11 +133,14 @@ export default function Home({ now }: { now?: number }) {
           </Link>
         ) : null}
         {/* Reachable in both states, including with no pack saved. */}
-        <HoldButton
-          label={copy.HOLD_FOR_BLACKSKY}
-          hasPack={view !== null && view.kind === 'pack'}
-          onHold={() => navigate('/blacksky')}
-        />
+        <HoldButton onHold={() => navigate('/blacksky')} hint={copy.HOLD_TO_ENTER}>
+          <span className="blacksky-hold-label">{copy.HOLD_FOR_BLACKSKY}</span>
+          <span className="blacksky-hold-sub">
+            {view !== null && view.kind === 'pack'
+              ? copy.BLACKSKY_SEPARATE_FROM_EVERYDAY
+              : copy.BLACKSKY_WORKS_WITHOUT_PACK}
+          </span>
+        </HoldButton>
       </div>
 
       {view === null ? null : <BottomNav items={view.nav} />}

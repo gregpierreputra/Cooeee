@@ -1,45 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { HOLD_MS } from '../../core/constants';
-import * as copy from '../../core/copy';
 
-/** The hold-to-enter control, extracted from Home so every screen that offers
- *  BlackSky offers the same gesture rather than its own copy of the timer.
- *
- *  BlackSky opens on a HOLD, not a tap: a pocket press must not switch the
- *  phone into an emergency screen. The timer lives in a ref, and any release or
- *  exit before HOLD_MS cancels it. A cut-short press earns only the small
- *  "hold to enter" hint. A completed hold gets a confirmation buzz where the
- *  device supports one (iOS does not — there, the pressed colour fill is the
- *  cue) and then runs onHold.
- *
- *  Keyboard-operable by the same rule: Enter or Space held for the same
- *  duration, so the gesture has an accessible equivalent rather than being
- *  pointer-only. */
-export default function HoldButton({
-  label,
-  hasPack,
-  onHold,
-  className = 'blacksky-hold',
-}: {
-  label: string;
-  hasPack: boolean;
+export type HoldButtonProps = {
   onHold: () => void;
-  className?: string;
-}) {
-  // Once shown, the hint stays until the mode is actually entered (entering
-  // unmounts this screen). Removing it when a press starts would shift the
-  // layout UNDER the active press, slide the button out from beneath the
-  // finger, and fire pointerleave — silently cancelling the very hold the hint
-  // taught.
-  const [showHoldHint, setShowHoldHint] = useState(false);
-  const holdTimer = useRef<number | null>(null);
+  hint: string;
+  children: ReactNode;
+};
 
+/** A mode switch fires on a HOLD, not a tap: a pocket press must not flip the
+ *  phone into or out of an emergency screen. The timer lives in a ref, and any
+ *  release or exit before HOLD_MS cancels it. A cut-short press earns only the
+ *  small "hold" hint. A completed hold gets a confirmation buzz where the
+ *  device supports one (iOS does not — there, the pressed colour fill is the
+ *  cue) and then runs onHold. */
+export default function HoldButton({ onHold, hint, children }: HoldButtonProps) {
+  const [showHint, setShowHint] = useState(false);
+  const holdTimer = useRef<number | null>(null);
   const clearHold = () => {
     if (holdTimer.current !== null) {
       clearTimeout(holdTimer.current);
       holdTimer.current = null;
     }
   };
+
+  // Once shown, the hint stays until the hold completes (onHold unmounts this
+  // screen). Removing it when a press starts would shift the layout UNDER the
+  // active press, slide the button out from beneath the finger, and fire
+  // pointerleave — silently cancelling the very hold the hint taught.
 
   const startHold = () => {
     holdTimer.current = window.setTimeout(() => {
@@ -52,7 +39,7 @@ export default function HoldButton({
   const releaseHold = () => {
     if (holdTimer.current !== null) {
       clearHold();
-      setShowHoldHint(true);
+      setShowHint(true);
     }
   };
 
@@ -62,7 +49,7 @@ export default function HoldButton({
     <>
       <button
         type="button"
-        className={className}
+        className="blacksky-hold"
         onPointerDown={startHold}
         onPointerUp={releaseHold}
         onPointerLeave={releaseHold}
@@ -72,16 +59,11 @@ export default function HoldButton({
         }}
         onKeyUp={releaseHold}
       >
-        <span className="blacksky-hold-label">{label}</span>
-        {/* What the mode IS, not an urging into it: a separate place entered on
-            purpose, and one that is reachable with nothing saved. */}
-        <span className="blacksky-hold-sub">
-          {hasPack ? copy.BLACKSKY_SEPARATE_FROM_EVERYDAY : copy.BLACKSKY_WORKS_WITHOUT_PACK}
-        </span>
+        {children}
       </button>
-      {showHoldHint ? (
+      {showHint ? (
         <p className="muted blacksky-hold-hint" role="status">
-          {copy.HOLD_TO_ENTER}
+          {hint}
         </p>
       ) : null}
     </>

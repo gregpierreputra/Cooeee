@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { deriveState, estimateFix, type Mark, type Screen } from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { arrowGlyph, cardinalAbbr } from '../core/geo';
 import type { Destination, Fix, Pack, PackWithPlaces } from '../core/types';
 import { listCompletePacksWithPlaces } from '../data/db';
+import HoldButton from './components/HoldButton';
 
 export type BlackSkyProps = {
   loadPacks?: () => Promise<PackWithPlaces[]>;
@@ -21,6 +22,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [mark, setMark] = useState<Mark | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const navigate = useNavigate();
 
   // US3-AC2, the power rule: GPS samples land in this ref (no render), and the
   // TICK_MS interval below is the ONE publisher to state — so the screen
@@ -104,12 +106,13 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
     <main className="page blacksky">
       <h1 className="blacksky-title">{copy.BLACKSKY_TITLE}</h1>
       <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
-      {/* US3-AC1: leaving is ONE obvious action — full-width, at thumb reach.
-          Only entering demands the deliberate hold. */}
+      {/* US3-AC1: one plainly named exit, full-width at thumb reach. Leaving
+          demands the same deliberate 2s hold as entering, so a pocket press
+          cannot silently drop the emergency screen. */}
       <div className="actions">
-        <Link className="action" to="/">
+        <HoldButton onHold={() => navigate('/')} hint={copy.HOLD_TO_LEAVE}>
           {copy.LEAVE_BLACKSKY}
-        </Link>
+        </HoldButton>
       </div>
     </main>
   );

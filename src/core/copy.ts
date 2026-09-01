@@ -51,7 +51,6 @@ export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '�
 
 // Application shell
 export const APP_NAME = 'Cooeee';
-export const HOME_TITLE = 'Your packs';
 export const BACK = 'Back';
 
 // Connection notice. States what the browser reports, nothing more — this app
@@ -60,10 +59,16 @@ export const ONLINE_NOTICE = 'Online — connected to a network.';
 export const OFFLINE_NOTICE = 'Offline — saved packs still work.';
 export const DISMISS_NOTICE = 'Dismiss connection notice';
 
-export const NO_PACKS_YET = 'No packs saved yet.';
 export const NO_PACKS_HINT =
   'Build a pack while you have a connection, so it is on your phone when there is none.';
 export const SAVED_DAYS_AGO = (days: number) => `Saved ${days} days ago`;
+
+// Deleting a saved pack — the × opens an in-card confirmation; nothing is
+// removed until the ✓ is chosen.
+export const DELETE_PACK = 'Delete this pack';
+export const DELETE_PACK_QUESTION = 'Are you sure you would like to delete this offline pack?';
+export const KEEP_THIS_PACK = 'Keep this pack';
+export const CONFIRM_DELETE_PACK = 'Yes, delete this pack';
 
 export const NEW_VERSION_READY =
   'A new version is ready. It is applied when you choose to reload — nothing changes until then.';
@@ -180,7 +185,6 @@ export const PREPARING_PACK_OFFER = 'Preparing the pack offer.';
 export const PACK_OFFER_FAILED = 'We could not prepare this pack right now.';
 export const OPEN_SAVED_PACK = 'Open saved pack';
 
-export const BACK_TO_YOUR_PACKS = 'Back to Your packs';
 export const BACK_TO_HOME = 'Back to Home';
 
 export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
@@ -310,6 +314,7 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 // E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
+export const HOLD_TO_LEAVE = 'Hold to leave — two seconds.';
 export const LEAVE_BLACKSKY = 'Leave BlackSky';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
@@ -372,3 +377,36 @@ export const OPENS_WITHOUT_SIGNAL = ' · opens without signal';
  *  mode entered on purpose, and it is reachable with nothing saved. */
 export const BLACKSKY_SEPARATE_FROM_EVERYDAY = 'SEPARATE FROM EVERYDAY USE';
 export const BLACKSKY_WORKS_WITHOUT_PACK = 'WORKS WITHOUT A SAVED PACK';
+
+// ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────
+// The four statements are the screen. They are literal on-screen text, never
+// behind a link or an accordion, and each one is asserted by exact match in
+// tests/core/copy.test.ts.
+
+export const FIRST_OPEN_PURPOSE =
+  'Get one address ready now — bushfire information that still opens when the signal drops.';
+
+export const DISCLOSURE_DOES_HEADING = 'What Cooeee does';
+export const DISCLOSURE_DOES =
+  'Saves a preparation pack for one address on this phone. It opens with no signal.';
+
+export const DISCLOSURE_DOES_NOT_HEADING = 'What Cooeee does not do';
+export const DISCLOSURE_DOES_NOT =
+  'Does not watch conditions, and will never contact you. Nothing here tells you when to act.';
+
+export const DISCLOSURE_ADDRESS_HEADING = 'Where your address goes';
+export const DISCLOSURE_ADDRESS =
+  'On this phone once saved. Checking your address uses Victorian Government data, and we run no server that could hold it.';
+
+export const DISCLOSURE_POSITION_HEADING = 'When Cooeee asks for your position';
+export const DISCLOSURE_POSITION =
+  'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device — you can refuse, and everything else still works.';
+
+/** The quieter line under the four statements: who to go to for what Cooeee
+ *  itself will never provide. */
+export const OFFICIAL_CHANNELS_LINE =
+  'During an incident, official updates come from VicEmergency. In an emergency, call Triple Zero (000).';
+
+export const ACKNOWLEDGE_CHECKBOX =
+  'I understand how Cooeee works, and what it does not do.';
+export const CONTINUE = 'Continue';

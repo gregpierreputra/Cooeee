@@ -1,9 +1,15 @@
 import { expect, test } from '@playwright/test';
 import { HEADER_HOME_LABEL, NO_PACK_SAVED, NO_PACKS_HINT } from '../src/core/copy';
-import { waitForController } from './helpers';
+import { acknowledgeFirstOpen, waitForController } from './helpers';
 
 // The offline claim is the product. It is asserted against the real production
 // bundle with the network genuinely off, not simulated and not inspected.
+
+// A returning device: the first-open disclosure (E1-US1-AC0) is acknowledged
+// already, so the shell under test is the one behind it.
+test.beforeEach(async ({ page }) => {
+  await acknowledgeFirstOpen(page);
+});
 
 test('the shell cold-starts with the radios off, and nothing reaches for the network', async ({
   page,

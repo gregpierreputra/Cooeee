@@ -62,7 +62,6 @@ describe('shell copy', () => {
   });
 
   it('says a pack is missing without implying anything about the place', () => {
-    expect(copy.NO_PACKS_YET).toBe('No packs saved yet.');
     expect(copy.NO_PACKS_HINT).toContain('while you have a connection');
   });
 });
@@ -249,5 +248,68 @@ describe('the returning-user home', () => {
     for (const line of copy.PREPARATION_LINES) {
       expect(line).not.toMatch(/today|right now|currently|well done|you should have/i);
     }
+  });
+});
+
+// E1-US1-AC0: the four disclosure statements are the screen. Each is pinned
+// character for character, because a reworded statement is a different
+// disclosure from the one the user acknowledged.
+describe('first-open disclosure', () => {
+  it('states the purpose in one line', () => {
+    expect(copy.FIRST_OPEN_PURPOSE).toBe(
+      'Get one address ready now — bushfire information that still opens when the signal drops.',
+    );
+  });
+
+  it('states what Cooeee does', () => {
+    expect(copy.DISCLOSURE_DOES).toBe(
+      'Saves a preparation pack for one address on this phone. It opens with no signal.',
+    );
+  });
+
+  it('states what Cooeee does not do, including that it issues no warnings', () => {
+    expect(copy.DISCLOSURE_DOES_NOT).toBe(
+      'Does not watch conditions, and will never contact you. Nothing here tells you when to act.',
+    );
+  });
+
+  it('states where the address goes and what stays on the device', () => {
+    expect(copy.DISCLOSURE_ADDRESS).toBe(
+      'On this phone once saved. Checking your address uses Victorian Government data, and we run no server that could hold it.',
+    );
+  });
+
+  it('states when the position is asked for and that it is never sent', () => {
+    expect(copy.DISCLOSURE_POSITION).toBe(
+      'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device — you can refuse, and everything else still works.',
+    );
+  });
+
+  it('names the official channels for what Cooeee itself never provides', () => {
+    expect(copy.OFFICIAL_CHANNELS_LINE).toBe(
+      'During an incident, official updates come from VicEmergency. In an emergency, call Triple Zero (000).',
+    );
+  });
+
+  it('the acknowledgement covers both what the app does and what it does not', () => {
+    expect(copy.ACKNOWLEDGE_CHECKBOX).toBe(
+      'I understand how Cooeee works, and what it does not do.',
+    );
+  });
+
+  // The disclosure is the one screen that must not read as reassurance while
+  // explaining what the product is. Nothing here may promise an outcome.
+  it('no statement claims Cooeee monitors, notifies or keeps the user informed', () => {
+    const statements = [
+      copy.FIRST_OPEN_PURPOSE,
+      copy.DISCLOSURE_DOES,
+      copy.DISCLOSURE_DOES_NOT,
+      copy.DISCLOSURE_ADDRESS,
+      copy.DISCLOSURE_POSITION,
+      copy.OFFICIAL_CHANNELS_LINE,
+      copy.ACKNOWLEDGE_CHECKBOX,
+    ].join(' ');
+    expect(statements).not.toMatch(/\bmonitors\b|\bnotifies\b|\bkeeps you informed\b/i);
+    expect(statements).toMatch(/[Dd]oes not watch conditions/);
   });
 });

@@ -1,15 +1,22 @@
 import { expect, test } from '@playwright/test';
-import { waitForController } from './helpers';
+import { acknowledgeFirstOpen, waitForController } from './helpers';
 import {
   BLACKSKY_TITLE,
   HOLD_FOR_BLACKSKY,
   HOLD_TO_ENTER,
+  HOLD_TO_LEAVE,
   LEAVE_BLACKSKY,
   NO_PACK_HERE,
 } from '../src/core/copy';
 
 // BlackSky's whole promise is made for the moment the radios are off. Both
 // tests here run against the real production bundle, like offline-cold-start.
+
+// This is a returning device: the first-open disclosure (E1-US1-AC0) has
+// already been acknowledged, so these specs exercise the screens they are about.
+test.beforeEach(async ({ page }) => {
+  await acknowledgeFirstOpen(page);
+});
 
 test('BlackSky cold-starts offline on a fresh install: the designed no-pack state, zero network', async ({
   page,
@@ -28,7 +35,7 @@ test('BlackSky cold-starts offline on a fresh install: the designed no-pack stat
 
   await expect(page.getByRole('heading', { name: BLACKSKY_TITLE })).toBeVisible();
   await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
-  await expect(page.getByRole('link', { name: LEAVE_BLACKSKY })).toBeVisible();
+  await expect(page.getByRole('button', { name: LEAVE_BLACKSKY })).toBeVisible();
   expect(failed).toEqual([]);
 
   await context.setOffline(false);
@@ -51,7 +58,15 @@ test('entry demands the hold: a tap earns only the hint, a full hold enters', as
   await expect(page).toHaveURL('/blacksky', { timeout: 5_000 });
   await page.mouse.up();
 
-  // Leaving is one tap.
-  await page.getByRole('link', { name: LEAVE_BLACKSKY }).click();
-  await expect(page).toHaveURL('/');
+  // Leaving demands the same hold: a stray tap earns only the hint.
+  const leave = page.getByRole('button', { name: LEAVE_BLACKSKY });
+  await leave.click();
+  await expect(page.getByText(HOLD_TO_LEAVE)).toBeVisible();
+  await expect(page).toHaveURL('/blacksky');
+
+  const leaveBox = (await leave.boundingBox())!;
+  await page.mouse.move(leaveBox.x + leaveBox.width / 2, leaveBox.y + leaveBox.height / 2);
+  await page.mouse.down();
+  await expect(page).toHaveURL('/', { timeout: 5_000 });
+  await page.mouse.up();
 });
