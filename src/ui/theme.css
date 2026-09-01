@@ -75,8 +75,12 @@
   --line: #3a2808;
   --accent: #ffb020;
   --ink-on-accent: #000000;
-  --ink-2: #c79232;
-  --ink-3: #c79232;
+  /* ONE text colour in BlackSky: every ink token is the same amber as the
+     accent, so no piece of text can deviate from it. Amber on true black
+     stays ~10:1, and no white block ever breaks dark-adapted eyes. */
+  --ink: #ffb020;
+  --ink-2: #ffb020;
+  --ink-3: #ffb020;
   --btn-ink: #ffb020;
   --glow: none;
 }
