@@ -115,7 +115,7 @@ export const AREA_NOT_PUBLISHED =
 export const DTP_SAVED_DATE = (date: string) =>
   `Published by the Department of Transport and Planning, saved ${date}.`;
 export const OFFICIAL_INSTRUCTIONS_FIRST =
-  'Follow CFA and emergency service instructions first.';
+  'Follow Country Fire Authority and emergency service instructions first.';
 export const AREA_CHECK_COULD_NOT_RUN =
   'We could not check the bushfire area for this address right now.';
 export const AREA_NOT_SAVED =
@@ -194,9 +194,9 @@ export const OFFLINE_BASEMAP = 'Offline basemap';
 export const DESTINATIONS_STEP_TITLE = 'Official places of last resort';
 export const NSP_KIND_LABEL = 'Bushfire place of last resort';
 export const NSP_COUNCIL_LABEL = (council: string) => `Responsible council: ${council}`;
-export const NSP_LIST_AS_AT = (date: string) => `CFA state-wide list as at ${date}`;
+export const NSP_LIST_AS_AT = (date: string) => `Country Fire Authority state-wide list as at ${date}`;
 export const NSP_UNLOCATED_HEADING =
-  'On the CFA list but not located to a point on the map';
+  'On the Country Fire Authority list but not located to a point on the map';
 export const OFFICIAL_LIST_UNAVAILABLE =
   'The official list could not be included for this area.';
 export const NSP_BUSHFIRE_ONLY =
@@ -280,7 +280,7 @@ export const GENERAL_GUIDANCE_TITLE = 'General official guidance';
 export const CALL_TRIPLE_ZERO = 'Call 000 (Triple Zero) for life-threatening emergencies.';
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 export const EMERGENCY_BROADCASTER =
-  'ABC local radio broadcasts official emergency information.';
+  'Australian Broadcasting Corporation local radio broadcasts official emergency information.';
 /** States what the app cannot detect — never a promise about the network. */
 export const PHONE_MAY_WORK =
   'Phone calls may work if your phone shows signal — this app cannot detect phone signal.';
