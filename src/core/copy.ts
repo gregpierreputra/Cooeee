@@ -316,4 +316,5 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 // E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
+export const HOLD_TO_LEAVE = 'Hold to leave — two seconds.';
 export const LEAVE_BLACKSKY = 'Leave BlackSky';
