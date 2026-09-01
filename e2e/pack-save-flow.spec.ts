@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { OPEN_PACK } from '../src/core/copy';
 import { addressFeature, waitForController, WFS_PATTERN } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
@@ -203,7 +204,9 @@ test('US2 the pack reopens unchanged after returning to the pack list', async ({
   await page.getByRole('link', { name: BACK }).click();
   await expect(page.getByRole('heading', { name: 'Your packs' })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Kalorama' }).click();
+  // E1-US2-AC6 replaced the pack list with the one-pack Open-or-Build home:
+  // the saved place carries one way in, named 'Open'.
+  await page.getByRole('link', { name: OPEN_PACK, exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
   expect(await page.locator('.pack-detail').innerText()).toBe(before);
 

@@ -311,3 +311,45 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
 export const LEAVE_BLACKSKY = 'Leave BlackSky';
+
+// ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
+
+/** The header's age line, inside the refresh window. Deliberately different
+ *  wording from the pack card's SAVED_DAYS_AGO: the card reports when the pack
+ *  was written, the header reports when its contents were last checked, and one
+ *  sentence must never be mistaken for the other. */
+export const CHECKED_DAYS_AGO = (days: number) => `Checked ${days} days ago`;
+
+/** The header's home control. The mark is decorative; this names it. */
+export const HEADER_HOME_LABEL = 'Cooeee home';
+
+/** The connection dot carries no words on screen, so its whole meaning has to
+ *  live in its accessible name. It reports what the browser reports and nothing
+ *  more — this app cannot detect phone signal, and never claims to. */
+export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a network.';
+export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
+
+export const NO_PACK_SAVED = 'No pack is saved on this device.';
+export const OPEN_PACK = 'Open';
+export const SAVED_PLACE_LABEL = 'Saved place';
+
+export const NAV_LABEL = 'Main';
+export const NAV_HOME = 'Home';
+export const NAV_MY_PACK = 'My pack';
+
+/** Eight preparation lines, each grounded in Country Fire Authority plan-and-
+ *  prepare guidance. One is shown per day and named with its source on screen;
+ *  none of them is advice about a particular place, and none of them says
+ *  anything about what is happening outside. */
+export const PREPARATION_LINES = [
+  'Write your household bushfire plan down, and decide who does what.',
+  'Decide what would make you leave, and leave early on a hot, windy day.',
+  'Clear the leaves from your gutters and cut long grass near the house.',
+  'Move woodpiles, mulch and outdoor furniture away from walls and windows.',
+  'Put together a fire-ready kit: water, medications, a torch and a battery radio.',
+  'Decide now what you would take — identity documents, medicines, phone chargers.',
+  'Plan how you would move pets, horses and other animals, and where they would go.',
+  'Talk the plan through with everyone in the house before the fire season starts.',
+] as const;
+
+export const PREPARATION_SOURCE = 'Country Fire Authority — plan and prepare guidance.';

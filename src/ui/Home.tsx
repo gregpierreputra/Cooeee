@@ -1,116 +1,85 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { HOLD_MS } from '../core/constants';
 import * as copy from '../core/copy';
-import { freshness } from '../core/pack';
+import { homeView, type HomeView } from '../core/home';
 import type { Pack } from '../core/types';
 import { listCompletePacks } from '../data/db';
+import BottomNav from './components/BottomNav';
+import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
 
-export default function Home() {
-  // null = the store has not answered yet. 
-  // It answers in a frame or two from local IndexedDB, and 
+/** E1-US2-AC6 — where someone who set up a place some time ago lands when they
+ *  open Cooeee again.
+ *
+ *  One pack or none: it is opened, or it is built, and never both. Without
+ *  scrolling or tapping the screen carries the saved place, its age, the way
+ *  into the pack and the BlackSky control. It reads IndexedDB and nothing else:
+ *  no request is made here in any state, and no position is asked for. */
+export default function Home({ now }: { now?: number }) {
+  // null = the store has not answered yet.
+  // It answers in a frame or two from local IndexedDB, and
   // a spinner would be a promise about a wait that isn't happening, so nothing is drawn for it.
-  const [packs, setPacks] = useState<Pack[] | null>(null);
+  const [view, setView] = useState<HomeView | null>(null);
   const navigate = useNavigate();
 
-  // BlackSky opens on a HOLD, not a tap: a pocket press must not switch the
-  // phone into an emergency screen. 
-  // The timer lives in a ref, and any release or exit before HOLD_MS cancels it. 
-  // A cut-short press earns only the small "hold to enter" hint
-  // A completed hold gets a confirmation buzz where the device supports one (iOS does not — there, the pressed colour fill is the
-  // cue) and then enters the mode.
-  const [showHoldHint, setShowHoldHint] = useState(false);
-  const holdTimer = useRef<number | null>(null);
-  const clearHold = () => {
-    if (holdTimer.current !== null) {
-      clearTimeout(holdTimer.current);
-      holdTimer.current = null;
-    }
-  };
-
-  // Once shown, the hint stays until the mode is actually entered (navigating
-  // unmounts this screen). Removing it when a press starts would shift the
-  // layout UNDER the active press, slide the button out from beneath the
-  // finger, and fire pointerleave — silently cancelling the very hold the
-  // hint taught.
-
-  const startHold = () => {
-    holdTimer.current = window.setTimeout(() => {
-      holdTimer.current = null;
-      if ('vibrate' in navigator) navigator.vibrate(100);
-      navigate('/blacksky');
-    }, HOLD_MS);
-  };
-
-  const releaseHold = () => {
-    if (holdTimer.current !== null) {
-      clearHold();
-      setShowHoldHint(true);
-    }
-  };
-
-  useEffect(() => clearHold, []);
+  // Captured once, at mount: the preparation line is chosen from whole days, so
+  // it is fixed for the life of the screen and does not reshuffle when the user
+  // navigates away and comes back.
+  const [seed] = useState(() => now ?? Date.now());
 
   useEffect(() => {
     let live = true;
-    listCompletePacks().then((rows) => {
-      if (live) setPacks(rows);
+    listCompletePacks().then((rows: Pack[]) => {
+      if (live) setView(homeView(seed, rows));
     });
     return () => {
       live = false;
     };
-  }, []);
-
-  const now = Date.now();
+  }, [seed]);
 
   return (
-    <main className="page">
+    <main className="page home">
       <header className="hero">
-        <span className="kicker">{copy.APP_NAME}</span>
         <h1>{copy.HOME_TITLE}</h1>
       </header>
 
-      {packs === null ? null : packs.length === 0 ? (
-        <StateCard heading={copy.NO_PACKS_YET} detail={copy.NO_PACKS_HINT} />
+      {/* One preparation line, with the organisation that publishes the
+          guidance named on screen beside it. It says nothing about a
+          particular place, and nothing about what is happening outside. */}
+      {view === null ? null : (
+        <section className="preparation">
+          <p>{view.preparation.text}</p>
+          <p className="muted preparation-source">{view.preparation.source}</p>
+        </section>
+      )}
+
+      {view === null ? null : view.kind === 'no-pack' ? (
+        <StateCard heading={copy.NO_PACK_SAVED} detail={copy.NO_PACKS_HINT} />
       ) : (
-        // Stored order. The packs are equals: nothing here ranks them, and the
-        // first entry gets no visual weight.
-        <ul className="list">
-          {packs.map((p) => (
-            <li key={p.id} className="card">
-              <h2><Link to={`/packs/${p.id}`}>{p.name}</Link></h2>
-              <p className="muted">{p.address}</p>
-              <p className="muted figure">{freshness(now, p.verifiedAt).label}</p>
-            </li>
-          ))}
-        </ul>
+        <section className="card saved-place">
+          <span className="kicker">{copy.SAVED_PLACE_LABEL}</span>
+          <h2>{view.pack.name}</h2>
+          <p className="muted">{view.pack.address}</p>
+          <p className="muted figure">{view.ageLine}</p>
+        </section>
       )}
 
       <div className="actions">
-        <Link className="action main-action" to="/packs/new">
-          {copy.BUILD_A_PACK}
-        </Link>
-        <button
-          type="button"
-          className="blacksky-hold"
-          onPointerDown={startHold}
-          onPointerUp={releaseHold}
-          onPointerLeave={releaseHold}
-          onPointerCancel={releaseHold}
-          onKeyDown={(e) => {
-            if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) startHold();
-          }}
-          onKeyUp={releaseHold}
-        >
-          {copy.HOLD_FOR_BLACKSKY}
-        </button>
-        {showHoldHint ? (
-          <p className="muted blacksky-hold-hint" role="status">
-            {copy.HOLD_TO_ENTER}
-          </p>
+        {view !== null && view.kind === 'no-pack' ? (
+          <Link className="action main-action" to="/packs/new">
+            {copy.BUILD_A_PACK}
+          </Link>
         ) : null}
+        {view !== null && view.kind === 'pack' ? (
+          <Link className="action main-action" to={`/packs/${view.pack.id}`}>
+            {copy.OPEN_PACK}
+          </Link>
+        ) : null}
+        {/* Reachable in both states, including with no pack saved. */}
+        <HoldButton label={copy.HOLD_FOR_BLACKSKY} onHold={() => navigate('/blacksky')} />
       </div>
+
+      {view === null ? null : <BottomNav items={view.nav} />}
     </main>
   );
 }

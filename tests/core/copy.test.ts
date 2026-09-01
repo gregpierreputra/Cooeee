@@ -206,3 +206,44 @@ describe('deliberate activation', () => {
     expect(copy.LEAVE_BLACKSKY).toBe('Leave BlackSky');
   });
 });
+
+// E1-US2-AC6: the header's three age states are exact strings, and the two
+// age wordings in the product must stay distinguishable — the card reports when
+// the pack was written, the header when its contents were last checked.
+describe('the fixed header', () => {
+  it('states the age in days inside the refresh window', () => {
+    expect(copy.CHECKED_DAYS_AGO(0)).toBe('Checked 0 days ago');
+    expect(copy.CHECKED_DAYS_AGO(30)).toBe('Checked 30 days ago');
+  });
+
+  it('carries the label, and no verdict, past the window', () => {
+    expect(copy.NOT_RECENTLY_VERIFIED_LABEL).toBe('Not recently verified');
+  });
+
+  it('keeps the header wording distinct from the pack card wording', () => {
+    expect(copy.CHECKED_DAYS_AGO(3)).not.toBe(copy.SAVED_DAYS_AGO(3));
+  });
+
+  it('gives the wordless connection dot its whole meaning in its name', () => {
+    expect(copy.CONNECTION_ONLINE_LABEL).toBe('Connection: your browser reports a network.');
+    expect(copy.CONNECTION_OFFLINE_LABEL).toBe('Connection: your browser reports no network.');
+  });
+});
+
+describe('the returning-user home', () => {
+  it('states that no pack is saved, and offers to build one', () => {
+    expect(copy.NO_PACK_SAVED).toBe('No pack is saved on this device.');
+    expect(copy.BUILD_A_PACK).toBe('Build a pack');
+  });
+
+  it('names the source of the preparation line on screen', () => {
+    expect(copy.PREPARATION_SOURCE).toBe('Country Fire Authority — plan and prepare guidance.');
+    expect(copy.PREPARATION_SOURCE).toContain('Country Fire Authority');
+  });
+
+  it('says nothing about conditions, incidents or being prepared enough', () => {
+    for (const line of copy.PREPARATION_LINES) {
+      expect(line).not.toMatch(/today|right now|currently|well done|you should have/i);
+    }
+  });
+});

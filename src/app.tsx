@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation, useParams } from 'react-rout
 import * as copy from './core/copy';
 import BlackSky from './ui/BlackSky';
 import Home from './ui/Home';
+import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
 import NoticeBar from './ui/components/NoticeBar';
 import PackDetail from './ui/PackDetail';
@@ -23,6 +24,17 @@ function ModeSwitch() {
       : 'prepare';
   }, [pathname]);
   return null;
+}
+
+/** E1-US2-AC6 — the fixed header is ONE component, mounted here for the whole
+ *  application rather than copied into each screen. BlackSky is the exception:
+ *  it is a full-screen mode with a single deliberate way out, and a second
+ *  navigation bar across the top of it would be a second way to leave it by
+ *  accident. */
+function HeaderHost() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/blacksky')) return null;
+  return <AppHeader />;
 }
 
 function UpdateBanner({ applyUpdate }: { applyUpdate: () => void }) {
@@ -55,6 +67,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
     <BrowserRouter>
       <ModeSwitch />
       <NoticeBar />
+      <HeaderHost />
       <UpdateBanner applyUpdate={applyUpdate} />
       <BackBar />
       <Routes>
