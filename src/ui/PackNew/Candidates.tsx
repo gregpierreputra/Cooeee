@@ -1,7 +1,7 @@
 import * as copy from '../../core/copy';
 import type { AddressCandidate } from '../../core/types';
 
-export type CandidatesProps = {
+type CandidatesProps = {
   candidates: readonly AddressCandidate[];
   unresolvedCount: number;
   onChoose: (candidate: AddressCandidate) => void;

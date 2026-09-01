@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { deriveState, estimateFix, type Mark, type Screen } from '../core/blacksky';
+import { deriveState, estimateFix, type Mark as PositionMark, type Screen } from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { arrowGlyph, cardinalAbbr } from '../core/geo';
@@ -8,7 +8,7 @@ import type { Destination, Fix, Pack, PackWithPlaces } from '../core/types';
 import { listCompletePacksWithPlaces } from '../data/db';
 import HoldButton from './components/HoldButton';
 
-export type BlackSkyProps = {
+type BlackSkyProps = {
   loadPacks?: () => Promise<PackWithPlaces[]>;
 };
 
@@ -20,7 +20,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
   const [packs, setPacks] = useState<PackWithPlaces[] | null>(null);
   const [fix, setFix] = useState<Fix | null>(null);
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
-  const [mark, setMark] = useState<Mark | null>(null);
+  const [mark, setMark] = useState<PositionMark | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const navigate = useNavigate();
 
@@ -44,7 +44,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
       setPermission('denied');
       return;
     }
-    
+
     const watch = navigator.geolocation.watchPosition(
       (position) => {
         latestFix.current = {
@@ -56,7 +56,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
           // different clock. Mixing clock domains would break the 30 s rule.
           at: Date.now(),
         };
-        
+
         setPermission('granted');
         setMark(null); // a real fix always beats a marked-position estimate
         // Acquiring → showing a direction IS a meaningful change, so the very
@@ -70,9 +70,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
       // forcing a fresh sensor read. High accuracy stays on: without it, coarse
       // cell-tower fixes would keep the arrow permanently withheld by the
       // ACCURACY_MAX_M gate.
-      { 
-        enableHighAccuracy: true, maximumAge: TICK_MS 
-      },
+      { enableHighAccuracy: true, maximumAge: TICK_MS },
     );
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
@@ -85,8 +83,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
     const timer = setInterval(() => {
       setNow(Date.now());
       setFix(latestFix.current);
-    }, 
-    TICK_MS);
+    }, TICK_MS);
     return () => clearInterval(timer);
   }, []);
 
@@ -99,12 +96,12 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
   // permission state no longer decides.
   const estimate = mark ? estimateFix(mark, now) : null;
   const screen = estimate
-    ? deriveState(now, packs, estimate, 'granted', null)
-    : deriveState(now, packs, fix, permission, null);
+    ? deriveState(now, packs, estimate, 'granted')
+    : deriveState(now, packs, fix, permission);
 
   return (
     <main className="page blacksky">
-      <h1 className="blacksky-title">{copy.BLACKSKY_TITLE}</h1>
+      <h1 className="kicker blacksky-title">{copy.BLACKSKY_TITLE}</h1>
       <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
       {/* US3-AC1: one plainly named exit, full-width at thumb reach. Leaving
           demands the same deliberate 2s hold as entering, so a pocket press
@@ -125,7 +122,7 @@ function ScreenBody({
 }: {
   screen: Screen;
   estimating: boolean;
-  onMark: (mark: Mark) => void;
+  onMark: (mark: PositionMark) => void;
 }) {
   switch (screen.kind) {
     // US2-AC2: no pack stored. Nothing is invented, borrowed or extrapolated —

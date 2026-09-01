@@ -1,7 +1,7 @@
 import * as copy from '../../core/copy';
 import BackHomeLink from '../components/BackHomeLink';
 
-export type ConflictProps = {
+type ConflictProps = {
   savedAddress: string;
   newAddress: string;
   onKeep: () => void;

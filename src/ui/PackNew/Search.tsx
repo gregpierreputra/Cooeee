@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
 
 import {
   addressQueryCanRun,
@@ -8,18 +9,25 @@ import {
   type SettledSearch,
 } from '../../core/address-search';
 import { bpaExposureLayer } from '../../core/area-check';
-import { ADDRESS_QUERY_DEBOUNCE_MS, ADDRESS_RESULT_LIMIT } from '../../core/constants';
+import { ADDRESS_QUERY_DEBOUNCE_MS, ADDRESS_RESULT_LIMIT, PACK_RADIUS_KM } from '../../core/constants';
 import * as copy from '../../core/copy';
+import { chosenDestinations, orderByDistance } from '../../core/destination';
+import { titleCase } from '../../core/home';
+import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
 import { buildPackSeed } from '../../core/pack';
 import type {
   AddressCandidate,
   BushfireAreaResult,
+  Destination,
+  NspSite,
+  NspSnapshot,
   Pack,
   PackOffer,
   PendingPlace,
   TextPackContent,
 } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
+import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
 import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
 import StatusPage from '../components/StatusPage';
@@ -27,6 +35,7 @@ import { AreaCheck, type AreaCheckState } from './AreaCheck';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
 import { Conflict, ConflictBlocked } from './Conflict';
+import { Destinations } from './Destinations';
 import { Size } from './Size';
 
 /** Module scope, so the default has one stable identity for the life of the
@@ -45,13 +54,27 @@ type ConflictState =
 type OfferState =
   | { kind: 'building' }
   | { kind: 'ready'; offer: PackOffer; content: TextPackContent }
-  | { kind: 'failed'; result: BushfireAreaResult };
+  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[] };
 
-export type SearchProps = {
+/** E2-US1/US2: the official places of last resort for the confirmed place,
+ * read from the precached CFA snapshot. Nothing here is written to the device. */
+type PlacesState =
+  | { kind: 'loading' }
+  | { kind: 'unavailable' }
+  | {
+      kind: 'ready';
+      snapshot: NspSnapshot;
+      selection: { located: NspSite[]; unlocated: NspSite[] };
+      ordered: Destination[];
+      unlocated: Destination[];
+    };
+
+type SearchProps = {
   search?: (query: string, signal: AbortSignal) => Promise<AddressCandidateResolution>;
   onPendingPlace?: (place: PendingPlace) => void;
   checkArea?: typeof fetchBushfireAreaResult;
   loadPacks?: () => Promise<Pack[]>;
+  loadNsp?: () => Promise<NspSnapshot>;
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
   savePack?: typeof saveTextOnlyPack;
@@ -80,20 +103,29 @@ export function Search({
   onPendingPlace = () => undefined,
   checkArea = fetchBushfireAreaResult,
   loadPacks = listCompletePacks,
-  onKeepSavedPlace = () => window.location.assign('/'),
+  loadNsp = loadNspSnapshot,
+  onKeepSavedPlace,
   buildOffer = createPackOffer,
   savePack = saveTextOnlyPack,
   makePackId = () => crypto.randomUUID(),
   now = Date.now,
-  onPackSaved = (packId: string) => window.location.assign(`/packs/${packId}`),
+  onPackSaved,
 }: SearchProps) {
+  // Client-side navigation: a full document load would restart the offline
+  // shell right after a save, which is the worst moment for it. Both leave the
+  // wizard for good, so they replace its history entry: Back from the pack
+  // never returns into a finished wizard.
+  const navigate = useNavigate();
+  const keepSavedPlace = onKeepSavedPlace ?? (() => navigate('/', { replace: true }));
+  const openSavedPack =
+    onPackSaved ?? ((packId: string) => navigate(`/packs/${packId}`, { replace: true }));
   const [query, setQuery] = useState('');
   const [settled, setSettled] = useState<SettledSearch | null>(null);
   const [dismissed, setDismissed] = useState(false);
   // Bumped by every keystroke and by every explicit run, so the debounce restarts
   // on each. `immediate` is an explicit run — Enter, Search, or Try again — which
   // does not wait out a pause the user has already ended themselves.
-  const [attempt, setAttempt] = useState({ token: 0, immediate: false });
+  const [attempt, setAttempt] = useState({ immediate: false });
   const [candidate, setCandidate] = useState<AddressCandidate | null>(null);
   // Synchronous, because it guards against a second request within one tick.
   const requestIdRef = useRef(0);
@@ -103,6 +135,10 @@ export function Search({
   const [conflictState, setConflictState] = useState<ConflictState | null>(null);
   const [supersedesId, setSupersedesId] = useState<string | undefined>(undefined);
   const [offerState, setOfferState] = useState<OfferState | null>(null);
+  const [placesState, setPlacesState] = useState<PlacesState | null>(null);
+  // Made once per confirmed place, before the places step: destination rows
+  // carry the pack id, so the id must exist before the user chooses them.
+  const [packId, setPackId] = useState('');
 
   const trimmedQuery = query.trim();
   const live = liveSearchState(query, settled, dismissed);
@@ -161,7 +197,7 @@ export function Search({
     // Dismissal lasts until the query changes — including a change back to text
     // that was searched before, which is a fresh request and a fresh list.
     setDismissed(false);
-    setAttempt((previous) => ({ token: previous.token + 1, immediate: false }));
+    setAttempt({ immediate: false });
   }
 
   /** Enter, Search, Search again and Try again: run this query now. A request
@@ -171,7 +207,7 @@ export function Search({
     if (inFlightQueryRef.current === trimmedQuery) return;
     setDismissed(false);
     setSettled(null);
-    setAttempt((previous) => ({ token: previous.token + 1, immediate: true }));
+    setAttempt({ immediate: true });
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -188,20 +224,40 @@ export function Search({
     }
   }
 
-  async function buildPackOfferForResult(place: PendingPlace, result: BushfireAreaResult) {
+  async function runPlaces(place: PendingPlace, result: BushfireAreaResult) {
+    const id = makePackId();
+    setPackId(id);
+    setPlacesState({ kind: 'loading' });
+    try {
+      const snapshot = await loadNsp();
+      const selection = selectSitesForPack(snapshot.sites, place, result.lgaName, PACK_RADIUS_KM);
+      const asRow = (site: NspSite) => toDestination(site, id, snapshot);
+      const { ordered } = orderByDistance(selection.located.map(asRow), place);
+      const unlocated = selection.unlocated.map(asRow);
+      setPlacesState({ kind: 'ready', snapshot, selection, ordered, unlocated });
+    } catch {
+      setPlacesState({ kind: 'unavailable' });
+    }
+  }
+
+  async function buildPackOfferForResult(
+    place: PendingPlace,
+    result: BushfireAreaResult,
+    destinations: Destination[],
+  ) {
     setOfferState({ kind: 'building' });
     try {
-      const seed = buildPackSeed(makePackId(), now(), place, result.lgaName, result.source, supersedesId);
+      const seed = buildPackSeed(packId, now(), place, result.lgaName, result.source, supersedesId);
       const content: TextPackContent = {
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
-        destinations: [],
+        destinations,
         recovery: [],
       };
       const offer = await buildOffer(content);
       setOfferState({ kind: 'ready', offer, content });
     } catch {
-      setOfferState({ kind: 'failed', result });
+      setOfferState({ kind: 'failed', result, destinations });
     }
   }
 
@@ -233,6 +289,7 @@ export function Search({
     setCandidate(null);
     setSupersedesId(undefined);
     setOfferState(null);
+    setPlacesState(null);
   }
 
   if (pendingPlace && conflictState?.kind === 'checking') {
@@ -251,7 +308,7 @@ export function Search({
         savedAddress={conflictState.savedPack.address}
         newAddress={pendingPlace.address}
         onKeep={() => {
-          onKeepSavedPlace();
+          keepSavedPlace();
           resetToSearch();
         }}
         onReplace={() => {
@@ -294,7 +351,13 @@ export function Search({
               <button
                 className="main-action"
                 type="button"
-                onClick={() => void buildPackOfferForResult(pendingPlace, offerState.result)}
+                onClick={() =>
+                  void buildPackOfferForResult(
+                    pendingPlace,
+                    offerState.result,
+                    offerState.destinations,
+                  )
+                }
               >
                 {copy.TRY_AGAIN}
               </button>
@@ -314,7 +377,65 @@ export function Search({
         download={async () => {
           await savePack(offerState.content, offerState.offer, now());
         }}
-        onContinue={() => onPackSaved(offerState.content.pack.id)}
+        onContinue={() => openSavedPack(offerState.content.pack.id)}
+      />
+    );
+  }
+
+  if (pendingPlace && areaState?.kind === 'result' && placesState) {
+    const { result } = areaState;
+    if (placesState.kind === 'loading') {
+      return (
+        <StatusPage
+          page="places-page"
+          kicker={copy.DESTINATIONS_STEP_TITLE}
+          card={<p>{copy.LOADING_LAST_RESORT_PLACES}</p>}
+        />
+      );
+    }
+
+    if (placesState.kind === 'unavailable') {
+      return (
+        <StatusPage
+          page="places-page"
+          kicker={copy.DESTINATIONS_STEP_TITLE}
+          card={<p>{copy.OFFICIAL_LIST_UNAVAILABLE}</p>}
+          actions={
+            <>
+              <button
+                className="main-action"
+                type="button"
+                onClick={() => void runPlaces(pendingPlace, result)}
+              >
+                {copy.TRY_AGAIN}
+              </button>
+              <button type="button" onClick={resetToSearch}>
+                {copy.SEARCH_AGAIN}
+              </button>
+            </>
+          }
+        />
+      );
+    }
+
+    // The pack keeps exactly the places the user chose, or the absence row
+    // when the CFA publishes none for this area (see destinationsForPack).
+    const { snapshot, selection, ordered, unlocated } = placesState;
+    const area = titleCase(result.lgaName);
+    const continueWith = (chosen: Destination[]) =>
+      buildPackOfferForResult(
+        pendingPlace,
+        result,
+        destinationsForPack(selection, chosen, packId, snapshot, area),
+      );
+    return (
+      <Destinations
+        ordered={ordered}
+        unlocated={unlocated}
+        listAsAt={snapshot.listAsAt}
+        area={area}
+        save={(ids) => continueWith(chosenDestinations(ordered, ids))}
+        onContinue={() => void continueWith([])}
       />
     );
   }
@@ -325,11 +446,9 @@ export function Search({
         place={pendingPlace}
         state={areaState}
         onRetry={() => void runAreaCheck(pendingPlace)}
-        onSearchAgain={() => {
-          resetToSearch();
-        }}
+        onSearchAgain={resetToSearch}
         onContinue={() => {
-          if (areaState.kind === 'result') void buildPackOfferForResult(pendingPlace, areaState.result);
+          if (areaState.kind === 'result') void runPlaces(pendingPlace, areaState.result);
         }}
       />
     );

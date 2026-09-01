@@ -45,7 +45,7 @@ export function buildPackSeed(
   };
 }
 
-export type PackFieldChange = { field: string; from: unknown; to: unknown };
+type PackFieldChange = { field: string; from: unknown; to: unknown };
 
 // The user-visible fields of a Pack. Anything not listed here is machinery
 // (ids, timestamps, the manifest) and its change is not a change the user made.

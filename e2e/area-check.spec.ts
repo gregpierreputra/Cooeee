@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { deviceStorage, HARNESS } from './helpers';
+import { chooseLastResortPlaces, deviceStorage, HARNESS } from './helpers';
 
 const AREA_URL = `${HARNESS}/area`;
 const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
@@ -59,14 +59,10 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
   await expect(page.getByTestId('pending-address')).toHaveText(ADDRESS);
   expect(await deviceStorage(page)).toEqual({
     recordCounts: {
-      actions: 0,
       destinations: 0,
-      kv: 0,
       layers: 0,
       packs: 0,
-      pending: 0,
       programs: 0,
-      queue: 0,
       tiles: 0,
     },
     localStorageLength: 0,
@@ -94,7 +90,8 @@ test('AC9 an offer that could not be prepared offers Try again and Search again,
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
-  await page.getByRole('button', { name: 'See pack size' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await chooseLastResortPlaces(page);
 
   await expect(page.getByText('We could not prepare this pack right now.')).toBeVisible();
   const tryAgain = page.getByRole('button', { name: 'Try again' });

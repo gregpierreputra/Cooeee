@@ -20,7 +20,7 @@ import {
   PREPARATION_SOURCE,
   SAVED_DAYS_AGO,
 } from '../src/core/copy';
-import { displayAddress } from '../src/core/home';
+import { titleCase as displayAddress } from '../src/core/home';
 import { HARNESS } from './helpers';
 
 // E1-US2-AC6. The harness mounts the real header and the real home screen over

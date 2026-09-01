@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE } from '../src/core/constants';
 
 /** The isolated component harness (e2e/harness), served on its own port. */
@@ -65,6 +65,16 @@ export async function storageCounts(page: Page) {
 /** Raw pack rows. Harness pages only. */
 export async function readPacks(page: Page) {
   return page.evaluate(() => window.__readPacks());
+}
+
+/** E2-US2: the places step of the wizard. Ticks as many places as the area
+ *  lets the user save (two, or fewer when fewer are located) and moves on. */
+export async function chooseLastResortPlaces(page: Page) {
+  const boxes = page.getByRole('checkbox');
+  await expect(boxes.first()).toBeVisible(); // the list has been read from the snapshot
+  const count = Math.min(2, await boxes.count());
+  for (let i = 0; i < count; i += 1) await boxes.nth(i).check();
+  await page.getByRole('button', { name: 'Save last-resort places' }).click();
 }
 
 /** E1-US1-AC0. The first-open disclosure stands in front of every screen, so a

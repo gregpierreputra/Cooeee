@@ -119,7 +119,7 @@ const LAYER_STATUS_NAME: Record<VerifiedLayerStatus, (layerName: string) => stri
   'not-published': copy.LAYER_NOT_PUBLISHED,
 };
 
-export function layerItemName(row: Pick<ExposureLayer, 'code' | 'status'>): string {
+function layerItemName(row: Pick<ExposureLayer, 'code' | 'status'>): string {
   return LAYER_STATUS_NAME[row.status](LAYER_NAMES[row.code]);
 }
 
@@ -175,7 +175,7 @@ export function packDetailItems(content: CompletePackContent): PackDetailItem[] 
   return items;
 }
 
-export type OriginalSourceDecision = {
+type OriginalSourceDecision = {
   kind: 'explain-before-open';
   item: PackDetailItem;
 };

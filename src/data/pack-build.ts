@@ -87,7 +87,7 @@ export async function stageTextOnlyPack(
   }
 
   const buildingPack: Pack = {
-    ...content.pack,
+    ...prepared.content.pack,
     status: 'building',
     verifiedAt: 0,
     builtWithTiles: false,

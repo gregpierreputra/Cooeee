@@ -209,17 +209,13 @@ describe('deleteCompletePack', () => {
 });
 
 describe('schema', () => {
-  it('is version 1 with the nine stores', () => {
-    expect(db.verno).toBe(1);
+  it('is version 2 with the five stores', () => {
+    expect(db.verno).toBe(2);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
-      'actions',
       'destinations',
-      'kv',
       'layers',
       'packs',
-      'pending',
       'programs',
-      'queue',
       'tiles',
     ]);
   });

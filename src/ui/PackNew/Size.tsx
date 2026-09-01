@@ -6,7 +6,7 @@ import type { PackOffer } from '../../core/types';
 import StateCard from '../components/StateCard';
 import StatusPage from '../components/StatusPage';
 
-export type SizeProps = {
+type SizeProps = {
   offer: PackOffer;
   address: string;
   download: () => Promise<void>;

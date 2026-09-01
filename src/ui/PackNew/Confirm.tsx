@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import * as copy from '../../core/copy';
 import type { AddressCandidate, PendingPlace } from '../../core/types';
 
-export type ConfirmProps = {
+type ConfirmProps = {
   candidate: AddressCandidate;
   onConfirm: (pendingPlace: PendingPlace) => void;
   onSearchAgain: () => void;

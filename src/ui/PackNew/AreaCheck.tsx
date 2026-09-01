@@ -8,7 +8,7 @@ export type AreaCheckState =
   | { kind: 'result'; result: BushfireAreaResult }
   | { kind: 'unavailable' };
 
-export type AreaCheckProps = {
+type AreaCheckProps = {
   place: PendingPlace;
   state: AreaCheckState;
   onRetry: () => void;
@@ -71,7 +71,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
       }
       actions={
         <button className="main-action" type="button" onClick={onContinue}>
-          {copy.SEE_PACK_SIZE}
+          {copy.CONTINUE}
         </button>
       }
     />

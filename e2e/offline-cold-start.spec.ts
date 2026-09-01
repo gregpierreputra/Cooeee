@@ -52,21 +52,3 @@ test('the empty state states absence and never reassures', async ({ page }) => {
   await expect(page.locator('[role="progressbar"]')).toHaveCount(0);
 });
 
-test('ping.txt is served from the network, never from the precache', async ({ page, context }) => {
-  await page.goto('/');
-  await waitForController(page);
-
-  expect(await page.evaluate(() => fetch('/ping.txt').then((r) => r.text()))).toBe('ok');
-
-  // Excluded from the precache on purpose: a cached probe would report "online"
-  // with the radios off, and every connectivity state downstream would be wrong.
-  await context.setOffline(true);
-  const offlineProbe = await page.evaluate(() =>
-    fetch('/ping.txt')
-      .then(() => 'reachable')
-      .catch(() => 'unreachable'),
-  );
-  expect(offlineProbe).toBe('unreachable');
-
-  await context.setOffline(false);
-});

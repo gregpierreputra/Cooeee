@@ -1,7 +1,13 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { OPEN_PACK, SAVED_PLACE_LABEL } from '../src/core/copy';
-import { displayAddress } from '../src/core/home';
-import { acknowledgeFirstOpen, addressFeature, waitForController, WFS_PATTERN } from './helpers';
+import { titleCase as displayAddress } from '../src/core/home';
+import {
+  acknowledgeFirstOpen,
+  addressFeature,
+  chooseLastResortPlaces,
+  waitForController,
+  WFS_PATTERN,
+} from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
 // disconnected test harness. Only the official WFS endpoint is intercepted —
@@ -49,7 +55,8 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   await expect(page.getByRole('heading')).toHaveText(
     'This address is inside a Designated Bushfire Prone Area.',
   );
-  await page.getByRole('button', { name: 'See pack size' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await chooseLastResortPlaces(page);
   await expect(page.getByRole('heading')).toHaveText('Ready to download');
 }
 
@@ -119,7 +126,8 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
   await expect(page.getByRole('heading')).toHaveText(
     'This address is inside a Designated Bushfire Prone Area.',
   );
-  await page.getByRole('button', { name: 'See pack size' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await chooseLastResortPlaces(page);
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
 

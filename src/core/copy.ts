@@ -194,7 +194,6 @@ export const CONTINUE_TO_DATASET_PAGE = "Continue to the publisher's dataset pag
 export const CLOSE = 'Close';
 
 // E1-US1-AC1/AC9 production pack-save wiring
-export const SEE_PACK_SIZE = 'See pack size';
 export const PREPARING_PACK_OFFER = 'Preparing the pack offer.';
 export const PACK_OFFER_FAILED = 'We could not prepare this pack right now.';
 export const OPEN_SAVED_PACK = 'Open saved pack';
@@ -240,6 +239,7 @@ export const CHOOSE_PLACES_HINT = (n: number) =>
 export const TWO_PLACES_ALREADY_CHOSEN =
   'Two places are already chosen. Unchoose one to change your selection.';
 export const SAVING_LAST_RESORT_PLACES = 'Saving your last-resort places.';
+export const LOADING_LAST_RESORT_PLACES = 'Reading the official list of places of last resort.';
 export const LAST_RESORT_PLACES_SAVED = 'Last-resort places saved';
 export const LAST_RESORT_SAVE_FAILED =
   'Your places were not saved. Your selection is still here — try again.';
