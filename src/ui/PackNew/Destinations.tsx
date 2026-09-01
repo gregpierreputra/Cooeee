@@ -1,0 +1,224 @@
+import { useState } from 'react';
+
+import * as copy from '../../core/copy';
+import {
+  canSaveDestinations,
+  chooseRules,
+  formatDistanceM,
+  ordinalLabel,
+  savableCount,
+} from '../../core/destination';
+import { nspListDateLabel } from '../../core/nsp';
+import type { Destination } from '../../core/types';
+import ProvenanceLine from '../components/ProvenanceLine';
+import StateCard from '../components/StateCard';
+
+export type DestinationsProps = {
+  /** NSP rows within the pack radius, ordered strictly ascending by distance
+   *  (each carries `distanceM` and a zero-based `distanceOrder`). */
+  ordered: Destination[];
+  /** NSP rows the CFA lists for this council but could not place on the map. */
+  unlocated: Destination[];
+  /** The snapshot's own `listAsAt` (ISO date). Shown as the list's date. */
+  listAsAt: string;
+  /** The area the list applies to, for the honest-absence line. */
+  area: string;
+  /** 'unavailable' when the cached list could not be read at all;
+   *  'not-bushfire' when the pack is for flood or heat (NSPs do not apply). */
+  status?: 'ok' | 'unavailable' | 'not-bushfire';
+  /** When provided, the ordered rows become selectable and the two the user
+   *  picks are persisted by this callback. Absent = a read-only list. */
+  save?: (chosenIds: string[]) => Promise<void>;
+  now?: number;
+};
+
+type RowSelection = { chosen: boolean; onToggle: () => void };
+
+function DestinationRow({
+  place,
+  listLine,
+  now,
+  selection,
+}: {
+  place: Destination;
+  listLine: string;
+  now: number;
+  selection?: RowSelection;
+}) {
+  const ordinal =
+    typeof place.distanceOrder === 'number' ? ordinalLabel(place.distanceOrder) : undefined;
+  const distance =
+    typeof place.distanceM === 'number' ? formatDistanceM(place.distanceM) : undefined;
+  const name = place.name ?? copy.OFFICIAL_DESTINATION_INFORMATION;
+  const inputId = `choose-${place.id}`;
+
+  return (
+    <li className="card destination-item">
+      <div className="destination-item-head">
+        {selection ? (
+          <input
+            type="checkbox"
+            id={inputId}
+            checked={selection.chosen}
+            onChange={selection.onToggle}
+          />
+        ) : null}
+        <h2>{selection ? <label htmlFor={inputId}>{name}</label> : name}</h2>
+      </div>
+      {ordinal ? <p>{ordinal}</p> : null}
+      {distance ? <p className="figure">{distance}</p> : null}
+      <p>{copy.NSP_KIND_LABEL}</p>
+      {place.addressText ? <p className="muted">{place.addressText}</p> : null}
+      {place.council ? <p>{copy.NSP_COUNCIL_LABEL(place.council)}</p> : null}
+      <p className="figure">{listLine}</p>
+      <ProvenanceLine source={place.source} now={now} />
+    </li>
+  );
+}
+
+/** E2-US1-AC1/AC2 + E2-US2-AC1. Lists only officially published Neighbourhood
+ *  Safer Places for the pack's area — from the NSP snapshot alone — ordered by
+ *  straight-line distance, the first three labelled by position, under the
+ *  mandated caveat line. When `save` is supplied, the user chooses up to two
+ *  (equal status, nothing pre-selected) and saves them. */
+export function Destinations({
+  ordered,
+  unlocated,
+  listAsAt,
+  area,
+  status = 'ok',
+  save,
+  now = Date.now(),
+}: DestinationsProps) {
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [capReached, setCapReached] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+
+  if (status === 'unavailable') {
+    return (
+      <main className="page destinations-page">
+        <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+        <StateCard heading={copy.OFFICIAL_LIST_UNAVAILABLE} />
+      </main>
+    );
+  }
+
+  if (status === 'not-bushfire') {
+    return (
+      <main className="page destinations-page">
+        <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+        <StateCard heading={copy.NSP_BUSHFIRE_ONLY} />
+      </main>
+    );
+  }
+
+  if (saveState === 'saved') {
+    return (
+      <main className="page destinations-page">
+        <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+        <StateCard heading={copy.LAST_RESORT_PLACES_SAVED} />
+      </main>
+    );
+  }
+
+  if (saveState === 'saving') {
+    return (
+      <main className="page destinations-page">
+        <div role="status" aria-live="polite">
+          <p>{copy.SAVING_LAST_RESORT_PLACES}</p>
+        </div>
+      </main>
+    );
+  }
+
+  const listLine = nspListDateLabel(listAsAt);
+  const nonePublished = ordered.length === 0 && unlocated.length === 0;
+  const selectable = Boolean(save) && ordered.length > 0;
+
+  const toggle = (id: string) => {
+    const next = chooseRules(chosen, id);
+    if (next) {
+      setChosen(next);
+      setCapReached(false);
+    } else {
+      setCapReached(true);
+    }
+  };
+
+  async function runSave() {
+    if (!save) return;
+    setSaveState('saving');
+    try {
+      await save(chosen);
+      setSaveState('saved');
+    } catch {
+      setSaveState('failed');
+    }
+  }
+
+  return (
+    <main className="page destinations-page">
+      <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+
+      {nonePublished ? (
+        <StateCard heading={copy.NO_DESTINATION_PUBLISHED_FOR(area)} />
+      ) : (
+        <>
+          {ordered.length > 0 ? (
+            <>
+              <p className="caveat">{copy.SORTED_BY_DISTANCE}</p>
+              <ul className="list destination-list" data-testid="ordered-destinations">
+                {ordered.map((place) => (
+                  <DestinationRow
+                    key={place.id}
+                    place={place}
+                    listLine={listLine}
+                    now={now}
+                    selection={
+                      selectable
+                        ? { chosen: chosen.includes(place.id), onToggle: () => toggle(place.id) }
+                        : undefined
+                    }
+                  />
+                ))}
+              </ul>
+            </>
+          ) : null}
+
+          {unlocated.length > 0 ? (
+            <section className="destination-unlocated">
+              <h2>{copy.NSP_UNLOCATED_HEADING}</h2>
+              <ul className="list destination-list" data-testid="unlocated-destinations">
+                {unlocated.map((place) => (
+                  <DestinationRow key={place.id} place={place} listLine={listLine} now={now} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {selectable ? (
+            <>
+              <p className="destination-choose-hint">
+                {copy.CHOOSE_PLACES_HINT(savableCount(ordered.length))}
+              </p>
+              <div role="status" aria-live="polite">
+                {capReached ? <p>{copy.TWO_PLACES_ALREADY_CHOSEN}</p> : null}
+                {saveState === 'failed' ? <p>{copy.LAST_RESORT_SAVE_FAILED}</p> : null}
+              </div>
+              <div className="actions">
+                <button
+                  type="button"
+                  className="main-action"
+                  disabled={!canSaveDestinations(ordered.length, chosen.length)}
+                  onClick={() => void runSave()}
+                >
+                  {copy.SAVE_LAST_RESORT_PLACES}
+                </button>
+              </div>
+            </>
+          ) : null}
+        </>
+      )}
+    </main>
+  );
+}

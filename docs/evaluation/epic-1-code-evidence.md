@@ -1,10 +1,5 @@
 # Epic 1 Code Evidence Appendix
 
-> **Scope note — 31 August 2026:** Iteration 1 is mapless. Tile-compatible
-> fields and excerpts in this SHA-bound evidence are dormant compatibility,
-> remain zero/false in the Iteration 1 flow, and are not a required map outcome.
-> See `docs/decisions/iteration-1-mapless-scope.md`.
-
 **Purpose:** focused source evidence requested in the senior tutor's initial review<br>
 **Primary review-fix snapshot:** `45506cfc4dcda372526f84f31d92e9600d4795a9`<br>
 **Service-worker evidence update:** `30b5f0b64655b61221a5a5ef3c9ba00ae9761a58`<br>

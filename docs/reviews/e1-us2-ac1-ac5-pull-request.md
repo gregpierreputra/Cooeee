@@ -1,12 +1,5 @@
 # E1-US2-AC1–AC5: Add offline pack provenance and source handling
 
-> **SCOPE ADDENDUM — 31 AUGUST 2026**
->
-> The team approved a mapless Iteration 1. The historical basemap references
-> below are retained as review history but are not current Epic 1 requirements.
-> US2 provenance applies to the structured information items actually included
-> in the Iteration 1 pack. See `docs/decisions/iteration-1-mapless-scope.md`.
-
 > **STACKED DRAFT — DO NOT MERGE YET**
 
 This branch is stacked on `feature/e1-us1-ac9-pack-size-download` so review
@@ -17,7 +10,7 @@ only then request merge review.
 ## Scope
 
 - Open a complete saved pack from Home and list each available stored layer,
-  destination and manifest-verified recovery reference.
+  destination, manifest-verified recovery reference and attributed basemap.
 - Group each item name with `Published by <publisher> · Saved <date>` and its
   device-calculated age, using full Australian month names and no leading zero.
 - Label items from day 31 as `Not recently verified` without hiding, dimming or
@@ -87,8 +80,8 @@ only then request merge review.
 
 - `E1-US2-AC1 — Partial`: all available typed item categories render through
   the shared provenance component, but final evidence with real EPIC 2
-  destinations and EPIC 4 recovery content remains blocked by those approved
-  contracts/assets. A basemap is not an Iteration 1 item.
+  destinations, EPIC 4 recovery content and production basemap remains blocked
+  by those approved contracts/assets.
 - `E1-US2-AC2 — Implemented`: missing publisher/date items are excluded before
   offer calculation and storage, the reason is shown, and no keep-anyway
   control exists.
@@ -115,8 +108,7 @@ only then request merge review.
 ## Deferred
 
 - Real EPIC 2 destination and EPIC 4 recovery contracts/content.
-- Maps, PMTiles and basemap attribution; these are outside Iteration 1 rather
-  than deferred Epic 1 completion work.
+- Reviewed production PMTiles archive and basemap attribution row.
 - Genuine online pack-refresh pipeline and refresh control.
 - Deployed-build, real-device VoiceOver and airplane-mode evidence remain for
   TEST/UAT owners before mentor acceptance.

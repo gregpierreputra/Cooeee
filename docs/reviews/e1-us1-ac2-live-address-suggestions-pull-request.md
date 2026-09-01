@@ -48,7 +48,7 @@ Two existing checks are unchanged (WCAG 1.3.1, the list is marked up as a list s
 - Outbound: the trimmed, uppercased, CQL-escaped typed prefix, by GET, to the Vicmap WFS address endpoint. One endpoint, no body, no other host — asserted by a route interceptor over every request the page makes.
 - The typed prefix leaves the device more often than under an explicit submit. `ADDRESS_QUERY_MIN_CHARS` and `ADDRESS_QUERY_DEBOUNCE_MS` are what bound the volume: a nineteen-character address costs one request, asserted.
 - Nothing typed, returned, rejected or dismissed is written to IndexedDB, localStorage or sessionStorage — asserted after four queries, a dismissal and a correction.
-- No analytics, device identifier, position or background retry is introduced. No fifth Iteration 1 network-call category is introduced.
+- No analytics, device identifier, position or background retry is introduced. No sixth network call.
 
 ## Verification recorded
 

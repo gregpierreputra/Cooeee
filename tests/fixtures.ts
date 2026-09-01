@@ -1,4 +1,11 @@
-import type { Destination, Pack, RecoveryProgram, Source } from '../src/core/types';
+import type {
+  Destination,
+  NspSite,
+  NspSnapshot,
+  Pack,
+  RecoveryProgram,
+  Source,
+} from '../src/core/types';
 
 /** Kalorama — the register's reference point (Implementation Spec §1). */
 export const KALORAMA = { lat: -37.813, lon: 145.362 };
@@ -62,5 +69,27 @@ export const program = (over: Partial<RecoveryProgram> = {}): RecoveryProgram =>
   officialUrl: 'https://www.servicesaustralia.gov.au/example',
   snapshotDate: '2026-08-18',
   source: source({ publisher: 'Services Australia' }),
+  ...over,
+});
+
+/** One CFA NSP list row. Defaults to a located site in Yarra Ranges Shire. */
+export const nspSite = (over: Partial<NspSite> = {}): NspSite => ({
+  id: 'nsp-example-reserve',
+  municipality: 'Yarra Ranges Shire',
+  township: 'Kalorama',
+  name: 'Example Reserve',
+  subLocation: '',
+  street: 'Ridge Road',
+  geocode: 'street',
+  lat: KALORAMA.lat,
+  lon: KALORAMA.lon,
+  ...over,
+});
+
+export const nspSnapshot = (over: Partial<NspSnapshot> = {}): NspSnapshot => ({
+  listAsAt: '2026-08-18',
+  retrievedAt: 1_756_100_000_000,
+  source: source(),
+  sites: [nspSite()],
   ...over,
 });

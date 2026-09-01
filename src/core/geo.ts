@@ -12,6 +12,10 @@ const coord = (p: LatLon): [number, number] => [p.lon, p.lat];
 export const distanceM = (a: LatLon, b: LatLon): number =>
   distance(coord(a), coord(b), { units: 'kilometers' }) * 1000;
 
+/** Containment test. INCLUSIVE: a point exactly on the radius is inside. */
+export const withinRadius = (a: LatLon, b: LatLon, km: number): boolean =>
+  distanceM(a, b) <= km * 1000;
+
 /** Initial great-circle bearing from a to b, TRUE north, normalised to 0–360. */
 export const bearingDeg = (a: LatLon, b: LatLon): number => {
   const deg = bearing(coord(a), coord(b));

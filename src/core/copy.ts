@@ -187,6 +187,41 @@ export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
 
+// ── E2-US1 official places of last resort ──────────────────────────────────
+
+export const DESTINATIONS_STEP_TITLE = 'Official places of last resort';
+export const NSP_KIND_LABEL = 'Bushfire place of last resort';
+export const NSP_COUNCIL_LABEL = (council: string) => `Responsible council: ${council}`;
+export const NSP_LIST_AS_AT = (date: string) => `CFA state-wide list as at ${date}`;
+export const NSP_UNLOCATED_HEADING =
+  'On the CFA list but not located to a point on the map';
+export const OFFICIAL_LIST_UNAVAILABLE =
+  'The official list could not be included for this area.';
+export const NSP_BUSHFIRE_ONLY =
+  'Neighbourhood Safer Places are for bushfire only. None are shown for this pack.';
+
+// ── E2-US2 choose and save two ────────────────────────────────────────────
+
+export const SAVE_LAST_RESORT_PLACES = 'Save last-resort places';
+export const CHOOSE_PLACES_HINT = (n: number) =>
+  n === 1 ? 'Choose the place to save.' : 'Choose two places to save.';
+export const TWO_PLACES_ALREADY_CHOSEN =
+  'Two places are already chosen. Unchoose one to change your selection.';
+export const SAVING_LAST_RESORT_PLACES = 'Saving your last-resort places.';
+export const LAST_RESORT_PLACES_SAVED = 'Last-resort places saved';
+export const LAST_RESORT_SAVE_FAILED =
+  'Your places were not saved. Your selection is still here — try again.';
+
+/** The mandated absence line, plus the area it applies to. */
+export const NO_DESTINATION_PUBLISHED =
+  'No official place of last resort is published for this area';
+export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
+  `${NO_DESTINATION_PUBLISHED} — ${area}.`;
+
+/** Position words for the distance-ordered list; beyond the third there is no
+ *  label, because there is no ranking to extend. */
+export const ORDINALS = ['nearest', 'second nearest', 'third nearest'] as const;
+
 // Screen eyebrows
 // The small label above each screen's heading, rendered as the hero kicker. 
 // It names the step of the flow the user is in, so the label earns its place

@@ -17,7 +17,7 @@ This pack summarises the Epic 1 implementation, connects each acceptance criteri
 - UX and accessibility behaviour; and
 - readiness for controlled integration into the Epic branch and, later, `main`.
 
-Epic 1 provides an end-to-end **prepared local pack foundation**. It does not claim that every production dataset is complete. Real destination and recovery assets owned by later epics are deliberately not fabricated. The approved 31 August 2026 scope decision makes Iteration 1 mapless; PMTiles are not a missing Epic 1 asset.
+Epic 1 provides an end-to-end **prepared local pack foundation**. It does not claim that every production dataset is complete. Real destination, recovery and PMTiles assets owned by later epics are deliberately not fabricated.
 
 ## 2. Product outcome
 
@@ -29,7 +29,7 @@ Search address
   -> confirm the selected place and editable name
   -> check the official bushfire-area result
   -> resolve any existing-pack conflict
-  -> review the exact prepared-pack size
+  -> review exact text/tile size choices
   -> build, verify and atomically expose the pack
   -> open the completed pack
   -> inspect publisher, saved date and age while offline
@@ -44,7 +44,7 @@ The implementation keeps uncertainty visible. It distinguishes “nothing mapped
 - One prepared local pack for one confirmed Victorian place.
 - Explicit address-search, confirmation and bushfire-area states.
 - Existing-pack conflict choice.
-- Exact local pack offer and explicit save path.
+- Exact local pack offer and text-only build path.
 - Atomic replacement and interruption cleanup.
 - Complete-pack-only local reads.
 - Item-level source provenance and offline source-link handling.
@@ -55,7 +55,7 @@ The implementation keeps uncertainty visible. It distinguishes “nothing mapped
 - Live emergency warnings, routes or personalised safety advice.
 - Multiple simultaneously active packs.
 - Fabricated EPIC 2 destination data or EPIC 4 recovery-program data.
-- Maps, map tiles and map downloads; Iteration 1 is intentionally mapless.
+- A production PMTiles archive where the reviewed asset is not yet available.
 - A genuine online refresh pipeline and refresh control.
 - Final deployed-device, VoiceOver and airplane-mode evidence, which belongs to TEST/UAT sign-off.
 
@@ -78,11 +78,11 @@ Status vocabulary in this pack has two values only:
 | AC6 | Keep `none-mapped-here` and `not-published` as distinct domain states. | **Implemented** | [AC5–AC7 review](https://github.com/gregpierreputra/Cooeee/blob/feature/e1-us2-ac1-ac5-pack-provenance/docs/reviews/e1-us1-ac5-ac7-pull-request.md) |
 | AC7 | Show a failed-check state while retaining the confirmed place for retry. | **Implemented** | [AC5–AC7 review](https://github.com/gregpierreputra/Cooeee/blob/feature/e1-us2-ac1-ac5-pack-provenance/docs/reviews/e1-us1-ac5-ac7-pull-request.md) |
 | AC8 | Detect an existing pack and require an explicit keep-or-replace choice. | **Implemented** | [AC8 review](https://github.com/gregpierreputra/Cooeee/blob/feature/e1-us2-ac1-ac5-pack-provenance/docs/reviews/e1-us1-ac8-pull-request.md), replacement integration tests |
-| AC9 | Calculate exact offer bytes, obtain explicit save consent, stage invisibly, verify, clean up interruption and replace atomically. | **Implemented** | [AC9 review](https://github.com/gregpierreputra/Cooeee/blob/feature/e1-us2-ac1-ac5-pack-provenance/docs/reviews/e1-us1-ac9-pull-request.md), [manifest topology](https://github.com/gregpierreputra/Cooeee/blob/feature/e1-us2-ac1-ac5-pack-provenance/docs/architecture/pack-manifest-topology.md), `docs/decisions/iteration-1-mapless-scope.md` |
+| AC9 | Calculate exact offer bytes, support the available build choice, stage invisibly, verify, clean up interruption and replace atomically. | **Partial** | [AC9 review](https://github.com/gregpierreputra/Cooeee/blob/feature/e1-us2-ac1-ac5-pack-provenance/docs/reviews/e1-us1-ac9-pull-request.md), [manifest topology](https://github.com/gregpierreputra/Cooeee/blob/feature/e1-us2-ac1-ac5-pack-provenance/docs/architecture/pack-manifest-topology.md) |
 
 **AC1 status clarification:** its original feature PR was correctly Partial because it contained only place confirmation. In the current aggregate Epic 1 code, the later pack-build work completes the save-and-reopen path, so AC1 is now Implemented.
 
-**AC9 scope clarification:** the controlled structured-data implementation is the complete Iteration 1 outcome under the approved mapless-scope decision. `Download both` and a PMTiles archive are no longer acceptance dependencies. Level 4 manual TEST/UAT evidence remains separately required before final mentor sign-off.
+**Why AC9 remains Partial:** the controlled text-only implementation is present, but “Download both” cannot be accepted until a reviewed production PMTiles archive exists.
 
 ### E1-US2 — Understand what is in a saved pack
 
@@ -112,7 +112,7 @@ Key controls:
 3. **Atomic replacement.** The existing complete pack is retained until the new pack has passed verification; final exposure and old-pack removal occur in one transaction.
 4. **Complete provenance before persistence.** Optional information with missing display provenance is removed before offer sizing and storage. Invalid source URLs or missing licences fail the build invariant.
 5. **Network-blind pack detail.** Opening a pack reads complete local data only. Every first source action is intercepted without consulting `navigator.onLine`; leaving Cooeee requires a second explicit action.
-6. **No silent overclaiming.** Unavailable later-epic datasets remain explicit gaps instead of being represented by synthetic production content. Tile-compatible fields stay zero/false and do not imply a map feature.
+6. **No silent overclaiming.** Unavailable later-epic datasets and tiles remain explicit gaps instead of being represented by synthetic production content.
 
 ## 6. Representative implementation code
 
@@ -280,7 +280,7 @@ No feature PR should bypass the Epic branch and merge directly into `main`.
 3. **Place confirmation:** edit the place name, including empty or whitespace-only text, and verify that the exact value is preserved as required.
 4. **Area outcomes:** exercise `present`, `none-mapped-here`, `not-published` and failed-check states; confirm their wording and retry boundaries remain distinct.
 5. **Conflict choice:** create an existing complete pack and verify that keep/replace is explicit and that cancellation leaves it unchanged.
-6. **Build interruption:** interrupt structured-pack staging and confirm no `building` pack appears as complete and the old pack survives.
+6. **Build interruption:** interrupt text-only staging and confirm no `building` pack appears as complete and the old pack survives.
 7. **Atomic completion:** finalise a verified replacement and confirm that the new pack appears only after verification and the old owned rows are removed atomically.
 8. **Provenance:** inspect publisher, Australian saved date, same-day text and the day-30/day-31 boundary.
 9. **Offline behaviour:** open the completed pack offline and activate an original-source link; confirm no request is sent, the pack remains visible and the explanation repeats local provenance.
@@ -292,7 +292,7 @@ No feature PR should bypass the Epic branch and merge directly into `main`.
 |---|---|---|
 | Service-worker controller timing | Historical pre-fix run was red; corrected local and GitHub runs are green | Retain the historical evidence and rerun CI after every remaining integration |
 | Genuine destination and recovery contracts/content | US1/US2 cannot demonstrate every final production item type | Integrate reviewed EPIC 2 and EPIC 4 deliverables |
-| Map capability | Deliberately outside Iteration 1; it does not block Epic 1 | A future epic must supply its own requirement, licence, architecture and evidence |
+| Reviewed production PMTiles archive | “Download both” and final basemap provenance cannot be accepted | Data owner supplies and licenses the reviewed archive |
 | Genuine refresh pipeline | US2 age messaging exists, but refresh action is not yet deliverable | Implement in its approved future story |
 | Real-device evaluation | Automated evidence cannot replace VoiceOver, airplane-mode and target-device UAT | TEST/UAT owners execute and attach results |
 | Stacked-branch drift | A lower-branch change can invalidate later evidence | CI now runs verify, build and full Playwright on every PR; retain SHA-bound evidence after each merge |

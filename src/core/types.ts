@@ -12,6 +12,11 @@ export type Source = {
   retrievedAt: number;    // epoch ms
 };
 
+/** The hazard a pack is prepared for. Iteration 1 builds bushfire packs only; an
+ * absent value means bushfire. Neighbourhood Safer Places are a bushfire concept
+ * and are never offered for flood or heat. */
+export type HazardType = 'bushfire' | 'flood' | 'heat';
+
 export type PackManifest = {
   version: 1;
   groups: {
@@ -65,6 +70,7 @@ export type Pack = {
   manifest: PackManifest;
   sources: Source[];
   supersedes?: string;              // optional attribute, set by "update" the old pack lives until acknowledged
+  hazardType?: HazardType;          // absent = 'bushfire' (Iteration 1 builds bushfire only)
 };
 
 export type LayerCode = 'BPA' | 'BMO' | 'LSIO' | 'FO' | 'SBO';
@@ -279,4 +285,29 @@ export type PackDetailItem = {
   id: string;
   name: string;
   source: Source;
+};
+
+/** One row of the CFA Neighbourhood Safer Places state-wide list, as produced by
+ * scripts/build-nsp.ts. The raw snapshot shape — not an IndexedDB record.
+ * `lat`/`lon` are present for every geocode except 'none'. */
+export type NspSite = {
+  id: string; // stable across rebuilds: slug(municipality|township|name)
+  municipality: string; // the responsible council, shown on every entry
+  township: string;
+  name: string; // the place name, shown on every entry
+  subLocation: string; // may be empty
+  street: string;
+  geocode: 'exact' | 'street' | 'township' | 'none';
+  lat?: number; // absent only when geocode === 'none'
+  lon?: number;
+};
+
+/** The precached CFA NSP snapshot file. One state-wide `listAsAt` date; there is
+ * no per-site date and no stated licence
+ * (see prompt-bank/datasets/licence-and-attribution.txt). */
+export type NspSnapshot = {
+  listAsAt: string; // ISO date — the list's own date, shown as the list's date
+  retrievedAt: number; // epoch ms
+  source: Source;
+  sites: NspSite[];
 };
