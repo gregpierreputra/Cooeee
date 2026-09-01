@@ -873,12 +873,25 @@ input {
   gap: 0.375rem;
 }
 
+/* The mark and the name are the hero title of this screen, so they are stacked
+   and centred rather than set as a header lockup on the left margin. Only these
+   two are centred; the line under them reads as body text and stays ranged
+   left. */
+.first-open-hero .mark,
+.first-open-hero h1 {
+  justify-self: center;
+  text-align: center;
+}
+
 .first-open-hero .mark {
   color: var(--accent);
 }
 
+/* The heaviest pairing the scale defines — the same one h1 carries by default,
+   restored here in place of the smaller header-sized override. */
 .first-open-hero h1 {
-  font-size: var(--step-2);
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
 }
 
 /* One card, four rows. The card's own padding frames the block; the rows carry

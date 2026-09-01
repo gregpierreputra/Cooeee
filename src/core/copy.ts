@@ -318,28 +318,28 @@ export const LEAVE_BLACKSKY = 'Leave BlackSky';
 // tests/core/copy.test.ts.
 
 export const FIRST_OPEN_PURPOSE =
-  'Official bushfire information for one place you choose, kept on your phone for when the network is not there.';
+  'Get one address ready now — bushfire information that still opens when the signal drops.';
 
 export const DISCLOSURE_DOES_HEADING = 'What Cooeee does';
 export const DISCLOSURE_DOES =
-  'Cooeee saves official bushfire information for one place you choose, while you have a connection, so you can still read it when you have none.';
+  'Saves a preparation pack for one address on this phone. It opens with no signal.';
 
 export const DISCLOSURE_DOES_NOT_HEADING = 'What Cooeee does not do';
 export const DISCLOSURE_DOES_NOT =
-  'Cooeee issues no warnings. It does not monitor conditions, send notifications, or keep you informed about what is happening. It cannot tell you whether a place will be all right in a fire.';
+  'Does not watch conditions, and will never contact you. Nothing here tells you when to act.';
 
 export const DISCLOSURE_ADDRESS_HEADING = 'Where your address goes';
 export const DISCLOSURE_ADDRESS =
-  'The address you type is sent to the Victorian Government address register so it can be found, and the address you confirm is sent to official Victorian services to check the published bushfire area. Nothing else about you is sent, and the pack you save stays on this device.';
+  'On this phone once saved. Checking your address uses Victorian Government data, and we run no server that could hold it.';
 
 export const DISCLOSURE_POSITION_HEADING = 'When Cooeee asks for your position';
 export const DISCLOSURE_POSITION =
-  'Cooeee asks for your device position only inside BlackSky, the offline screen that points towards the places you saved. It is used on this device and is never sent anywhere. You can refuse, and everything else still works.';
+  'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device — you can refuse, and everything else still works.';
 
 /** The quieter line under the four statements: who to go to for what Cooeee
  *  itself will never provide. */
 export const OFFICIAL_CHANNELS_LINE =
-  'For official updates during an emergency, use VicEmergency. In an emergency, call Triple Zero (000).';
+  'During an incident, official updates come from VicEmergency. In an emergency, call Triple Zero (000).';
 
 export const ACKNOWLEDGE_CHECKBOX =
   'I understand how Cooeee works, and what it does not do.';

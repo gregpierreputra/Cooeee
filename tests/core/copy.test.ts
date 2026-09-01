@@ -213,37 +213,37 @@ describe('deliberate activation', () => {
 describe('first-open disclosure', () => {
   it('states the purpose in one line', () => {
     expect(copy.FIRST_OPEN_PURPOSE).toBe(
-      'Official bushfire information for one place you choose, kept on your phone for when the network is not there.',
+      'Get one address ready now — bushfire information that still opens when the signal drops.',
     );
   });
 
   it('states what Cooeee does', () => {
     expect(copy.DISCLOSURE_DOES).toBe(
-      'Cooeee saves official bushfire information for one place you choose, while you have a connection, so you can still read it when you have none.',
+      'Saves a preparation pack for one address on this phone. It opens with no signal.',
     );
   });
 
   it('states what Cooeee does not do, including that it issues no warnings', () => {
     expect(copy.DISCLOSURE_DOES_NOT).toBe(
-      'Cooeee issues no warnings. It does not monitor conditions, send notifications, or keep you informed about what is happening. It cannot tell you whether a place will be all right in a fire.',
+      'Does not watch conditions, and will never contact you. Nothing here tells you when to act.',
     );
   });
 
   it('states where the address goes and what stays on the device', () => {
     expect(copy.DISCLOSURE_ADDRESS).toBe(
-      'The address you type is sent to the Victorian Government address register so it can be found, and the address you confirm is sent to official Victorian services to check the published bushfire area. Nothing else about you is sent, and the pack you save stays on this device.',
+      'On this phone once saved. Checking your address uses Victorian Government data, and we run no server that could hold it.',
     );
   });
 
   it('states when the position is asked for and that it is never sent', () => {
     expect(copy.DISCLOSURE_POSITION).toBe(
-      'Cooeee asks for your device position only inside BlackSky, the offline screen that points towards the places you saved. It is used on this device and is never sent anywhere. You can refuse, and everything else still works.',
+      'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device — you can refuse, and everything else still works.',
     );
   });
 
   it('names the official channels for what Cooeee itself never provides', () => {
     expect(copy.OFFICIAL_CHANNELS_LINE).toBe(
-      'For official updates during an emergency, use VicEmergency. In an emergency, call Triple Zero (000).',
+      'During an incident, official updates come from VicEmergency. In an emergency, call Triple Zero (000).',
     );
   });
 
@@ -266,6 +266,6 @@ describe('first-open disclosure', () => {
       copy.ACKNOWLEDGE_CHECKBOX,
     ].join(' ');
     expect(statements).not.toMatch(/\bmonitors\b|\bnotifies\b|\bkeeps you informed\b/i);
-    expect(statements).toMatch(/does not monitor conditions/);
+    expect(statements).toMatch(/[Dd]oes not watch conditions/);
   });
 });

@@ -112,12 +112,13 @@ function Glyph({ children }: { children: ReactNode }) {
   );
 }
 
-/** Saved down onto the phone in your hand. */
+/** A page: the preparation pack this saves. */
 function SavesIcon() {
   return (
     <Glyph>
-      <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
-      <path d="M12 7v6.5M9.5 11.5 12 14l2.5-2.5" />
+      <path d="M13.5 2.5H7a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+      <path d="M13.5 2.5V8H19" />
+      <path d="M8.5 13h7M8.5 17h5" />
     </Glyph>
   );
 }
@@ -132,23 +133,23 @@ function DoesNotIcon() {
   );
 }
 
-/** A pin: the address you type. */
+/** A padlock: where the address stays once it is saved. */
 function AddressIcon() {
   return (
     <Glyph>
-      <path d="M12 21.5s6.5-6 6.5-10.5a6.5 6.5 0 0 0-13 0C5.5 15.5 12 21.5 12 21.5Z" />
-      <circle cx="12" cy="11" r="2.25" />
+      <rect x="4.5" y="10.5" width="15" height="10.5" rx="2" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+      <circle cx="12" cy="15.75" r="1.25" fill="currentColor" stroke="none" />
     </Glyph>
   );
 }
 
-/** Crosshairs: the device position, asked for only where it is used. */
+/** A pin: the device position, asked for only where it is used. */
 function PositionIcon() {
   return (
     <Glyph>
-      <circle cx="12" cy="12" r="7" />
-      <circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none" />
-      <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+      <path d="M12 21.5s6.5-6 6.5-10.5a6.5 6.5 0 0 0-13 0C5.5 15.5 12 21.5 12 21.5Z" />
+      <circle cx="12" cy="11" r="2.25" />
     </Glyph>
   );
 }
