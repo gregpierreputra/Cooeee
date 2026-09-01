@@ -1,6 +1,6 @@
 import { canonicalJson } from '../core/pack-offer';
 
-export async function sha256Canonical(value: unknown): Promise<string> {
+async function sha256Canonical(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(canonicalJson(value));
   const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
   

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { MS_PER_DAY, PACK_REFRESH_DAYS } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 import {
-  displayAddress,
   headerAge,
   homeView,
   navItems,
@@ -168,7 +167,6 @@ describe('the home view', () => {
   it('offers to build, and reports no age, when nothing is saved', () => {
     const view = homeView(NOW, []);
     expect(view.kind).toBe('no-pack');
-    expect(view.header).toEqual({ kind: 'none' });
     expect(view.nav[1]).toEqual({ key: 'pack', label: 'Build a pack', to: '/packs/new' });
   });
 
@@ -178,7 +176,6 @@ describe('the home view', () => {
     expect(view.kind).toBe('pack');
     expect(view.kind === 'pack' && view.pack).toBe(saved);
     expect(view.kind === 'pack' && view.ageLine).toBe('Saved 3 days ago');
-    expect(view.header).toEqual({ kind: 'checked', days: 3, text: 'Checked 3 days ago' });
   });
 
   // The two wordings are deliberately different, and mean different things: the
@@ -186,9 +183,8 @@ describe('the home view', () => {
   it('keeps the card wording and the header wording distinct past the window', () => {
     const view = homeView(NOW, [pack({ verifiedAt: daysAgo(44) })]);
     expect(view.kind === 'pack' && view.ageLine).toBe('Saved 44 days ago — not recently verified');
-    expect(view.header.kind === 'not-recently-verified' && view.header.text).toBe(
-      'Not recently verified',
-    );
+    const age = headerAge(NOW, daysAgo(44));
+    expect(age.kind === 'not-recently-verified' && age.text).toBe('Not recently verified');
   });
 
   it('carries one preparation line and its source in every state', () => {
@@ -202,6 +198,7 @@ describe('the home view', () => {
 // Display only. The pack still stores the custodian's own string, so nothing
 // downstream is ever compared against a value this function invented.
 describe('address for display', () => {
+  const displayAddress = titleCase;
   it('title-cases the capitals the geocoder returns, and leaves the numbers alone', () => {
     expect(displayAddress('10 OLD ROAD FERNY CREEK 3786')).toBe('10 Old Road Ferny Creek 3786');
     expect(displayAddress('6 RIDGE ROAD KALORAMA 3766')).toBe('6 Ridge Road Kalorama 3766');
@@ -232,9 +229,5 @@ describe('place name for display', () => {
   it('leaves a name the user typed themselves as they wrote it', () => {
     expect(titleCase('Kalorama')).toBe('Kalorama');
     expect(titleCase("Mum's Place")).toBe("Mum's Place");
-  });
-
-  it('cases the name and the address by the same rule', () => {
-    expect(titleCase('KALORAMA')).toBe(displayAddress('KALORAMA'));
   });
 });

@@ -39,7 +39,7 @@ export type SettledSearch = {
  *
  *   'unavailable'  — the search could not be run. Never 'no-match'.
  **/
-export type AddressSearchState =
+type AddressSearchState =
   | { kind: 'too-short' }
   | { kind: 'pending' }
   | {
@@ -69,10 +69,11 @@ export function sameAddressQuery(a: string, b: string): boolean {
   return a.trim() === b.trim();
 }
 
-/** The query sent to Vicmap is uppercase and CQL apostrophes are doubled.
+/** The query sent to Vicmap is uppercase, CQL apostrophes are doubled, and the
+ * LIKE wildcards % and _ are dropped so a typed one cannot widen the match.
  * The original text stays untouched in UI state for correction. */
 export function addressQueryForCql(query: string): string {
-  return query.trim().toUpperCase().replaceAll("'", "''");
+  return query.trim().toUpperCase().replaceAll("'", "''").replace(/[%_]/g, '');
 }
 
 function pointKey({ lat, lon }: AddressCandidate): string {

@@ -55,6 +55,7 @@ test('a device with nothing stored opens on the disclosure screen, continue inac
 
 test('the order on screen is the order the criterion names', async ({ page }) => {
   await page.goto('/');
+  await expect(continueButton(page)).toBeVisible(); // rendered, not merely loaded
   const body = (await page.locator('body').innerText()) ?? '';
   const order = [
     APP_NAME,

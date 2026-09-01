@@ -3,7 +3,7 @@ import { distanceM } from './geo';
 import { NO_DESTINATION_PUBLISHED_FOR, ORDINALS } from './copy';
 import type { Destination, LatLon, Source } from './types';
 
-const isGeocoded = (d: Destination): boolean =>
+export const isGeocoded = (d: Destination): boolean =>
   typeof d.lat === 'number' && typeof d.lon === 'number';
 
 /** Sites with a location, ordered strictly ascending by distance from the pack

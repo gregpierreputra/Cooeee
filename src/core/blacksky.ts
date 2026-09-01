@@ -4,10 +4,11 @@ import {
   MARK_DRIFT_M_PER_S,
   MARK_START_ACCURACY_M,
 } from './constants';
+import { isGeocoded } from './destination';
 import { bearingDeg, distanceM } from './geo';
 import type { Destination, Fix, Pack, PackWithPlaces } from './types';
 
-export type PlacedDestination = { d: Destination; bearingDeg: number; distanceM: number };
+type PlacedDestination = { d: Destination; bearingDeg: number; distanceM: number };
 
 /** A position the user marked themselves — a known point such as their front
  *  gate — and when they marked it. */
@@ -26,9 +27,7 @@ export type Mark = { lat: number; lon: number; at: number };
 // ponytail: time-only drift, no sensors. Upgrade to accelerometer/gyro PDR only
 // after the Iteration 1 drift spike validates it (card E3-US1-AC4).
 export function estimateFix(mark: Mark, now: number): Fix | null {
-  
   const accuracyM = Math.round(MARK_START_ACCURACY_M + ((now - mark.at) / 1000) * MARK_DRIFT_M_PER_S);
-  
   if (accuracyM > ACCURACY_MAX_M) return null;
   return { lat: mark.lat, lon: mark.lon, accuracyM, at: now };
 }
@@ -48,12 +47,8 @@ export type Screen =
       pack: Pack;
       places: PlacedDestination[];
       accuracyM: number;
-      headingDeg?: number;
       absence?: Destination;
     };
-
-const isGeocoded = (d: Destination): boolean =>
-  typeof d.lat === 'number' && typeof d.lon === 'number';
 
 // The chosen places, plus any absence row — which is never "chosen" but must
 // always be rendered.
@@ -61,8 +56,8 @@ const shown = (places: Destination[]): Destination[] =>
   places.filter((d) => d.chosen === true || d.kind === 'absence');
 
 /**
- * The whole BlackSky screen, derived from scratch on every fix, every accepted
- * heading sample and every TICK_MS tick. It is a DERIVATION, not a state machine:
+ * The whole BlackSky screen, derived from scratch on every fix and every
+ * TICK_MS tick. It is a DERIVATION, not a state machine:
  * "the arrow returns automatically when a fix arrives" needs no code, because it
  * is simply what the next derivation returns.
  *
@@ -78,7 +73,6 @@ export function deriveState(
   packs: PackWithPlaces[],
   fix: Fix | null,
   permission: 'granted' | 'denied' | 'prompt',
-  headingDeg: number | null,
 ): Screen {
   if (packs.length === 0) return { kind: 'NO_PACK' };
 
@@ -152,7 +146,6 @@ export function deriveState(
     pack: here.pack,
     places,
     accuracyM: fix.accuracyM,
-    ...(headingDeg === null ? {} : { headingDeg }),
     ...(absence ? { absence } : {}),
   };
 }

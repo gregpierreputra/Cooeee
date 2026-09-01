@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
-import { displayAddress, homeView, titleCase, type HomeView } from '../core/home';
+import { homeView, titleCase, type HomeView } from '../core/home';
 import type { Pack } from '../core/types';
 import { deleteCompletePack, listCompletePacks } from '../data/db';
 import BottomNav from './components/BottomNav';
@@ -38,7 +38,7 @@ export default function Home({ now }: { now?: number }) {
   }, [seed]);
 
   // Deleting the pack takes two taps: the × swaps the card for a question, and
-  // only the ✓ destroys data. The ✗ restores the card untouched.
+  // only the second destroys data. Keep restores the card untouched.
   const [confirming, setConfirming] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -75,18 +75,16 @@ export default function Home({ now }: { now?: number }) {
               ref={cancelRef}
               type="button"
               className="card-confirm-no"
-              aria-label={copy.KEEP_THIS_PACK}
               onClick={() => setConfirming(false)}
             >
-              ✗
+              {copy.KEEP_THIS_PACK}
             </button>
             <button
               type="button"
               className="card-confirm-yes"
-              aria-label={copy.CONFIRM_DELETE_PACK}
               onClick={() => void removePack(view.pack.id)}
             >
-              ✓
+              {copy.CONFIRM_DELETE_PACK}
             </button>
           </div>
         </section>
@@ -113,7 +111,7 @@ export default function Home({ now }: { now?: number }) {
           </div>
           {/* Title-cased for reading only. The pack still stores the address
               exactly as the custodian returned it. */}
-          <p className="muted">{displayAddress(view.pack.address)}</p>
+          <p className="muted">{titleCase(view.pack.address)}</p>
           <p className="muted figure saved-place-footer">
             {view.ageLine}
             {copy.OPENS_WITHOUT_SIGNAL}

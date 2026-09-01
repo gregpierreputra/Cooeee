@@ -7,8 +7,9 @@ import type { CompletePackContent, PackDetailItem } from '../core/types';
 import { getCompletePackContent } from '../data/db';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
+import StatusPage from './components/StatusPage';
 
-export type PackDetailProps = {
+type PackDetailProps = {
   packId: string;
   loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
   now?: number;
@@ -28,8 +29,12 @@ export default function PackDetail({
 
   useEffect(() => {
     let live = true;
-    loadContent(packId).then((value) => { if (live) setContent(value); });
-    return () => { live = false; };
+    loadContent(packId).then((value) => {
+      if (live) setContent(value);
+    });
+    return () => {
+      live = false;
+    };
   }, [loadContent, packId]);
 
   useEffect(() => {
@@ -39,10 +44,11 @@ export default function PackDetail({
   if (content === null) return null;
   if (content === undefined) {
     return (
-      <main className="page">
-        <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
-        <StateCard heading={copy.PACK_NOT_FOUND} />
-      </main>
+      <StatusPage
+        page="pack-detail"
+        kicker={copy.EYEBROW_MY_PACK}
+        card={<p>{copy.PACK_NOT_FOUND}</p>}
+      />
     );
   }
 
@@ -60,10 +66,7 @@ export default function PackDetail({
         <h1>{copy.YOUR_PACK}</h1>
       </header>
 
-      <div className="card">
-        <p>{content.pack.name}</p>
-        <p className="muted">{content.pack.address}</p>
-      </div>
+      <StateCard heading={content.pack.name} detail={content.pack.address} />
 
       {!content.recoveryVerified ? (
         <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />

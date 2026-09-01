@@ -66,11 +66,6 @@
   --offline-ink: #2a0a0a;
 }
 
-:root[data-mode='prepare'] {
-  --bg: #070c11;
-  --surface: #141c24;
-  --accent: #2dd4bf;
-}
 /* True black is a battery decision: on OLED a #000 pixel is switched off.
    Amber, never bright white blocks, keeps dark-adapted eyes adapted. The dim
    amber for secondary text stays above 4.5:1 on black; the mockups' deeper
@@ -82,12 +77,12 @@
   --line: #3a2808;
   --accent: #ffb020;
   --ink-on-accent: #000000;
-  /* ONE text colour in BlackSky: every ink token is the same amber as the
-     accent, so no piece of text can deviate from it. Amber on true black
-     stays ~10:1, and no white block ever breaks dark-adapted eyes. */
+  /* Two ambers in BlackSky, as in the mockups: the bright accent for what
+     must be read at arm's length, a dim tier for everything that recedes.
+     Neither is white, so no block ever breaks dark-adapted eyes. */
   --ink: #ffb020;
-  --ink-2: #ffb020;
-  --ink-3: #ffb020;
+  --ink-2: #b87a12; /* the mockups' dim amber tier, lifted to 5.8:1 on black */
+  --ink-3: #b87a12;
   --btn-ink: #ffb020;
   --glow: none;
 }
@@ -125,13 +120,15 @@ body {
 }
 
 /* Single column, max 560 px, centred on desktop. There is no second layout:
-   the product's centre of gravity is a phone in someone's hand. */
+   the product's centre of gravity is a phone in someone's hand. The sticky
+   chrome above the page (notice bar 2.25rem, header 3rem + 1px, back bar
+   3.25rem) is outside .page, so the minimum height leaves room for it. */
 .page {
   max-width: 560px;
   margin: 0 auto;
-  padding: max(1.5rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right))
-    max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
-  min-height: 100dvh;
+  padding: 1.5rem max(1.75rem, env(safe-area-inset-right))
+    max(1.75rem, env(safe-area-inset-bottom)) max(1.75rem, env(safe-area-inset-left));
+  min-height: calc(100dvh - 8.5rem - 1px);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -176,7 +173,6 @@ h2 {
 p {
   margin: 0;
 }
-
 
 .muted {
   color: var(--ink-2);
@@ -241,9 +237,13 @@ a {
   gap: 0.5rem;
 }
 
-.card > h2,
-.card-title-row h2 {
+.card > h2 {
   font-size: var(--step-1);
+}
+
+/* A long unbroken token (a locality, a URL) wraps instead of escaping the card. */
+.card p {
+  overflow-wrap: anywhere;
 }
 
 .card h2 a {
@@ -257,14 +257,6 @@ a {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-/* Pack rows on Home: name leads, address and freshness recede. */
-.list .card .muted {
-  font-size: var(--step-s);
-}
-.list .card .figure {
-  color: var(--ink-3);
 }
 
 /* Home pack rows: the name link stretches over the whole card, so the card is
@@ -286,15 +278,8 @@ a {
 }
 
 /* Delete-a-pack: the name row carries the ×, the confirm state swaps the card
-   body for the question and an equal-weight ✗/✓ pair (see the exception note
-   at the top of this section). */
-.card-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
+   body for the question and an equal-weight keep/delete pair (see the
+   exception note at the top of this section). */
 .card-delete {
   min-height: 44px;
   min-width: 44px;
@@ -356,15 +341,15 @@ input {
   font: inherit;
 }
 
-/* The default control is a ghost pill. Screens whose two choices must carry
-   identical visual weight (conflict, download) simply use it twice: one shared
-   rule is the equal-weight guarantee. */
+/* The default control is a ghost pill, as the mockups' .btn.g. Screens whose
+   two choices must carry identical visual weight (conflict, download) simply
+   use it twice: one shared rule is the equal-weight guarantee. */
 button,
 .action {
   min-height: 56px;
   min-width: 44px;
   font: inherit;
-  font-weight: var(--w-med);
+  font-weight: var(--w-bold);
   border-radius: var(--r-pill);
   border: 1px solid var(--line);
   background: var(--surface-2);
@@ -380,22 +365,15 @@ button,
   text-decoration: none;
 }
 
-/* The Feature-3 escape: filled with the screen's own accent so it is never the
-   darkest control in the row, and never mistaken for a flow action. */
-.back-home {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--ink-on-accent);
-  font-weight: var(--w-bold);
-}
-
+/* The one filled control on a screen, at the mockups' 64 px. The way home on a
+   status screen stays a ghost pill, so two filled buttons never stack. */
 .main-action {
-  min-height: 60px;
+  min-height: 64px;
   background: var(--accent);
   border-color: var(--accent);
   color: var(--ink-on-accent);
   font-weight: var(--w-heavy);
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
 }
 
 @media (hover: hover) {
@@ -422,6 +400,11 @@ input {
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* An accent ring on an accent fill would vanish. */
+.main-action:focus-visible {
+  outline-color: var(--ink);
 }
 
 /* ── Address search ────────────────────────────────────────────────────────── */
@@ -534,10 +517,6 @@ input {
   gap: 1rem;
 }
 
-.area-result {
-  padding: 1.5rem 1.25rem;
-}
-
 .area-content p,
 .area-result p {
   margin: 0;
@@ -595,8 +574,7 @@ input {
 
 .pack-detail header,
 .provenance,
-.stale-note,
-.provenance-item {
+.stale-note {
   display: grid;
   gap: 0.5rem;
 }
@@ -646,8 +624,8 @@ input {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  padding: max(1.75rem, env(safe-area-inset-top)) max(1.75rem, env(safe-area-inset-right))
+    max(1.75rem, env(safe-area-inset-bottom)) max(1.75rem, env(safe-area-inset-left));
   background: rgb(2 6 10 / 72%);
 }
 
@@ -656,7 +634,7 @@ input {
   display: grid;
   gap: 1rem;
   padding: 1.5rem 1.25rem;
-  border-radius: 20px;
+  border-radius: var(--r-card);
   box-shadow: 0 -16px 48px rgb(0 0 0 / 45%);
 }
 
@@ -685,14 +663,11 @@ input {
   font-weight: normal;
 }
 
-/* ── Update banner ─────────────────────────────────────────────────────────── */
-
-/* The service-worker banner. Stated in words, never an auto-reload. */
 /* ── Connection notice ─────────────────────────────────────────────────────── */
 
 /* A thin horizontal strip pinned to the very top, spanning the full viewport
    width, above the back bar. Its background is the state: green online, red
-   offline. */
+   offline. It is the topmost sticky element, so it pays the phone's top inset. */
 .notice-bar {
   position: sticky;
   top: 0;
@@ -703,7 +678,7 @@ input {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.125rem 0.5rem;
+  padding: env(safe-area-inset-top) 0.5rem 0.125rem;
   font-size: var(--step-s);
   font-weight: var(--w-med);
 }
@@ -717,10 +692,11 @@ input {
   color: var(--offline-ink);
 }
 
-/* The dismiss control: quiet, inside the bar, inheriting the state colour. */
+/* The dismiss control: quiet, inside the bar, inheriting the state colour,
+   and still a 44 px target. */
 .notice-bar button {
-  min-height: 2rem;
-  min-width: 2rem;
+  min-height: 44px;
+  min-width: 44px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -746,11 +722,6 @@ input {
   border-radius: 0;
 }
 
-/* With only the sliver above it, the back bar sticks just below the strip. */
-.notice-sliver ~ .back-bar {
-  top: 6px;
-}
-
 /* ── Back bar ──────────────────────────────────────────────────────────────── */
 
 /* The persistent way back, pinned to the top of every screen except the pack
@@ -764,13 +735,8 @@ input {
   padding: 0.5rem 0 0.25rem;
 }
 
-/* With the notice bar open above it, the back bar sticks just below it. */
-.notice-bar ~ .back-bar {
-  top: 2.25rem;
-}
-
 .back-bar-inner {
-  width: min(100% - 2.5rem, 560px);
+  width: min(100% - 3.5rem, 560px);
   margin: 0 auto;
 }
 
@@ -784,8 +750,9 @@ input {
   font-size: var(--step-s);
 }
 
+/* The service-worker banner. Stated in words, never an auto-reload. */
 .banner {
-  width: min(100% - 2.5rem, 560px);
+  width: min(100% - 3.5rem, 560px);
   margin: 0.75rem auto 0;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -803,12 +770,8 @@ input {
 /* The bearing figure is the biggest thing on screen — readable at arm's length,
    while walking. Everything else recedes into dim amber. */
 
+/* The mode's name in the kicker treatment, ruled off from the screen below. */
 .blacksky-title {
-  font-size: var(--step-s);
-  font-weight: var(--w-heavy);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--accent);
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--line);
 }
@@ -844,9 +807,9 @@ input {
 /* The distance, at arm's-length size. Bounded below so three digits and a unit
    still fit a 320 px viewport at doubled font size. */
 .blacksky-figure-main {
-  font-size: clamp(2.5rem, 14vw, 3.75rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-size: clamp(3rem, 16vw, 4.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
 }
 
 .blacksky-figure-point {
@@ -875,17 +838,15 @@ input {
 }
 
 .blacksky-hold {
-  min-height: 56px;
+  min-height: 64px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.125rem;
   font-weight: var(--w-bold);
-  /* Dashed, and in the amber of the mode it opens: the control is a way into a
-     separate place, and it should not read as one more solid action in the row
-     above it. */
-  border-style: dashed;
+  /* In the amber of the mode it opens: the control is a door into a separate
+     place, not one more action in the row above it. */
   border-color: var(--blacksky-accent);
   color: var(--blacksky-accent);
   /* a hold control, not a tap: a long-press must not pop the context menu,
@@ -894,15 +855,12 @@ input {
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
-}
-
-/* The hold is acknowledged by a fill that sweeps left to right for the length
-   of the hold — the confirmation cue on devices without vibration. The 2s
-   sweep matches HOLD_MS in core/constants.ts, so a completed hold is exactly a
-   completed fill; releasing early snaps the fill back. Painted as a background
-   gradient growing under the label, so the amber text stays readable
-   throughout. */
-.blacksky-hold {
+  /* The hold is acknowledged by a fill that sweeps left to right for the
+     length of the hold — the confirmation cue on devices without vibration.
+     The 2s sweep matches HOLD_MS in core/constants.ts, so a completed hold is
+     exactly a completed fill; releasing early snaps the fill back. Painted as
+     a background gradient growing under the label, so the amber text stays
+     readable throughout. */
   background-image: linear-gradient(var(--blacksky-fill), var(--blacksky-fill));
   background-repeat: no-repeat;
   background-position: left;
@@ -957,17 +915,21 @@ input {
   z-index: 2;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
+  /* Topmost only while the notice is dismissed to its sliver, so the inset is
+     paid here too. */
+  padding-top: env(safe-area-inset-top);
 }
 
 .notice-bar ~ .app-header {
   top: 2.25rem;
+  padding-top: 0;
 }
 .notice-sliver ~ .app-header {
   top: 6px;
 }
 
 .app-header-inner {
-  width: min(100% - 2.5rem, 560px);
+  width: min(100% - 3.5rem, 560px);
   margin: 0 auto;
   min-height: 3rem;
   display: flex;
@@ -1035,16 +997,16 @@ input {
   background: var(--offline);
 }
 
-/* With the header above it, the back bar sticks below the header rather than
-   under the notice alone. */
+/* The back bar sticks below the header's 3rem plus its 1px hairline, and below
+   whatever the notice is showing above that. */
 .app-header ~ .back-bar {
-  top: 3rem;
+  top: calc(3rem + 1px);
 }
 .notice-bar ~ .app-header ~ .back-bar {
-  top: 5.25rem;
+  top: calc(5.25rem + 1px);
 }
 .notice-sliver ~ .app-header ~ .back-bar {
-  top: calc(3rem + 6px);
+  top: calc(3rem + 1px + 6px);
 }
 
 /* ── Returning-user home (E1-US2-AC6) ──────────────────────────────────────── */
@@ -1076,6 +1038,9 @@ input {
   justify-content: space-between;
   gap: 0.75rem;
 }
+.saved-place-title h2 {
+  min-width: 0; /* a long name wraps rather than pushing the × out of the card */
+}
 
 /* The freshness line sits below a hairline, as a footer to the card rather than
    one more paragraph in it. */
@@ -1085,8 +1050,6 @@ input {
   border-top: 1px solid var(--line);
 }
 
-/* Bottom navigation, under the primary actions and inside the safe area. Two
-   equal destinations: neither is weighted, and BlackSky is not among them. */
 /* A fixed bar on the panel colour, inside the safe area, so it stays within
    thumb reach whatever the page above it does. Two equal destinations: neither
    is weighted, and BlackSky is not among them. */
@@ -1102,7 +1065,7 @@ input {
 
 /* The same centred column as every page. */
 .bottom-nav-inner {
-  width: min(100% - 2.5rem, 560px);
+  width: min(100% - 3.5rem, 560px);
   margin: 0 auto;
   display: flex;
   gap: 0.75rem;
@@ -1132,12 +1095,13 @@ input {
   letter-spacing: 0.01em;
 }
 
-/* Room under the last action for the fixed bar, so nothing sits beneath it —
-   and a column short enough to leave that room: the header above the page and
-   the bar below it both take height the viewport unit does not know about. */
+/* Room under the last action for the fixed bar (56 px + hairline), so nothing
+   sits beneath it — and a column short enough to leave that room: the notice
+   and header above the page and the bar below it all take height the viewport
+   unit does not know about. */
 .home {
-  min-height: calc(100dvh - 3rem);
-  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  min-height: calc(100dvh - 5.25rem - 1px);
+  padding-bottom: calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom));
 }
 
 /* ── First open (E1-US1-AC0) ───────────────────────────────────────────────── */
@@ -1232,7 +1196,7 @@ input {
   align-items: start;
   gap: 0.625rem;
   padding: 0.75rem 1rem;
-  border-radius: var(--r-input);
+  border-radius: var(--r-card);
   background: var(--surface-2);
   font-size: var(--step-s);
   color: var(--ink-2);

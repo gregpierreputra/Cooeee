@@ -51,7 +51,7 @@ export function preparationLineIndex(seed: number, count: number): number {
   return (((Math.floor(seed / MS_PER_DAY) % count) + count) % count);
 }
 
-export type PreparationLine = { text: string; source: string };
+type PreparationLine = { text: string; source: string };
 
 export function preparationLine(seed: number): PreparationLine {
   return {
@@ -80,29 +80,26 @@ export function navItems(packId: string | null): NavItem[] {
  *  when there is nothing saved, so this screen can never be the way a second
  *  complete pack comes to exist. */
 export type HomeView =
-  | { kind: 'no-pack'; header: HeaderAge; preparation: PreparationLine; nav: NavItem[] }
+  | { kind: 'no-pack'; preparation: PreparationLine; nav: NavItem[] }
   | {
       kind: 'pack';
       pack: Pack;
       ageLine: string;
-      header: HeaderAge;
       preparation: PreparationLine;
       nav: NavItem[];
     };
 
 export function homeView(now: number, packs: Pack[]): HomeView {
   const pack = oldestPack(packs);
-  const header = headerAge(now, pack?.verifiedAt ?? null);
   const preparation = preparationLine(now);
   const nav = navItems(pack?.id ?? null);
-  if (pack === null) return { kind: 'no-pack', header, preparation, nav };
+  if (pack === null) return { kind: 'no-pack', preparation, nav };
   return {
     kind: 'pack',
     pack,
     // The pack card's own wording, unchanged: 'Saved N days ago', and past the
     // window the mandated 'Saved N days ago — not recently verified'.
     ageLine: freshness(now, pack.verifiedAt).label,
-    header,
     preparation,
     nav,
   };
@@ -128,8 +125,3 @@ export function titleCase(text: string): string {
         `${lead}${first}'${letter.toUpperCase()}`,
     );
 }
-
-/** The pack card's address line. Geocoded addresses arrive from the custodian
- *  in capitals — '10 OLD ROAD FERNY CREEK 3786' — which reads as shouting on a
- *  card. */
-export const displayAddress = titleCase;

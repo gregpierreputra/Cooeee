@@ -4,6 +4,7 @@ import * as copy from '../../core/copy';
 import { headerAge, oldestPack, type HeaderAge } from '../../core/home';
 import type { Pack } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
+import { useOnline } from './useOnline';
 
 /** The fixed header — ONE component, mounted once by the application shell, so
  *  every screen carries the same header rather than its own copy of it.
@@ -75,19 +76,7 @@ function AppMark() {
  *  nothing more — this app cannot detect phone signal — so its whole meaning
  *  lives in its accessible name, and it never offers a way into anything. */
 function ConnectionDot() {
-  const [online, setOnline] = useState(navigator.onLine);
-
-  useEffect(() => {
-    const up = () => setOnline(true);
-    const down = () => setOnline(false);
-    window.addEventListener('online', up);
-    window.addEventListener('offline', down);
-    return () => {
-      window.removeEventListener('online', up);
-      window.removeEventListener('offline', down);
-    };
-  }, []);
-
+  const online = useOnline();
   return (
     <span
       className={`connection-dot ${online ? 'connection-online' : 'connection-offline'}`}

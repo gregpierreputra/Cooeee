@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { HOLD_MS } from '../../core/constants';
 
-export type HoldButtonProps = {
+type HoldButtonProps = {
   onHold: () => void;
   hint: string;
   children: ReactNode;
@@ -29,6 +29,7 @@ export default function HoldButton({ onHold, hint, children }: HoldButtonProps) 
   // pointerleave — silently cancelling the very hold the hint taught.
 
   const startHold = () => {
+    clearHold(); // a key press during a pointer hold must not start a second timer
     holdTimer.current = window.setTimeout(() => {
       holdTimer.current = null;
       if ('vibrate' in navigator) navigator.vibrate(100);
@@ -55,6 +56,7 @@ export default function HoldButton({ onHold, hint, children }: HoldButtonProps) 
         onPointerLeave={releaseHold}
         onPointerCancel={releaseHold}
         onKeyDown={(e) => {
+          if (e.key === ' ') e.preventDefault(); // Space must not scroll the page under a hold
           if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) startHold();
         }}
         onKeyUp={releaseHold}

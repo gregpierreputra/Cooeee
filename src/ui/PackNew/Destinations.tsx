@@ -13,7 +13,7 @@ import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
 import StateCard from '../components/StateCard';
 
-export type DestinationsProps = {
+type DestinationsProps = {
   /** NSP rows within the pack radius, ordered strictly ascending by distance
    *  (each carries `distanceM` and a zero-based `distanceOrder`). */
   ordered: Destination[];
@@ -29,6 +29,9 @@ export type DestinationsProps = {
   /** When provided, the ordered rows become selectable and the two the user
    *  picks are persisted by this callback. Absent = a read-only list. */
   save?: (chosenIds: string[]) => Promise<void>;
+  /** The way on when there is nothing to choose: no place published, or only
+   *  places the CFA could not put on the map. */
+  onContinue?: () => void;
   now?: number;
 };
 
@@ -88,35 +91,27 @@ export function Destinations({
   area,
   status = 'ok',
   save,
+  onContinue,
   now = Date.now(),
 }: DestinationsProps) {
   const [chosen, setChosen] = useState<string[]>([]);
   const [capReached, setCapReached] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
 
-  if (status === 'unavailable') {
+  // One plain statement and nothing to choose.
+  const statement =
+    status === 'unavailable'
+      ? copy.OFFICIAL_LIST_UNAVAILABLE
+      : status === 'not-bushfire'
+        ? copy.NSP_BUSHFIRE_ONLY
+        : saveState === 'saved'
+          ? copy.LAST_RESORT_PLACES_SAVED
+          : null;
+  if (statement) {
     return (
       <main className="page destinations-page">
         <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
-        <StateCard heading={copy.OFFICIAL_LIST_UNAVAILABLE} />
-      </main>
-    );
-  }
-
-  if (status === 'not-bushfire') {
-    return (
-      <main className="page destinations-page">
-        <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
-        <StateCard heading={copy.NSP_BUSHFIRE_ONLY} />
-      </main>
-    );
-  }
-
-  if (saveState === 'saved') {
-    return (
-      <main className="page destinations-page">
-        <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
-        <StateCard heading={copy.LAST_RESORT_PLACES_SAVED} />
+        <StateCard heading={statement} />
       </main>
     );
   }
@@ -161,7 +156,16 @@ export function Destinations({
       <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
 
       {nonePublished ? (
-        <StateCard heading={copy.NO_DESTINATION_PUBLISHED_FOR(area)} />
+        <>
+          <StateCard heading={copy.NO_DESTINATION_PUBLISHED_FOR(area)} />
+          {onContinue ? (
+            <div className="actions">
+              <button className="main-action" type="button" onClick={onContinue}>
+                {copy.CONTINUE}
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <>
           {ordered.length > 0 ? (
@@ -194,6 +198,14 @@ export function Destinations({
                 ))}
               </ul>
             </section>
+          ) : null}
+
+          {onContinue && !selectable ? (
+            <div className="actions">
+              <button className="main-action" type="button" onClick={onContinue}>
+                {copy.CONTINUE}
+              </button>
+            </div>
           ) : null}
 
           {selectable ? (

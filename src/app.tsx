@@ -17,6 +17,15 @@ import { Search } from './ui/PackNew/Search';
  *  silent replacement this product forbids, in the place it would hurt most. */
 export const SW_UPDATE_EVENT = 'cooeee:update-ready';
 
+// Latched as well as dispatched: the worker can report a waiting update before
+// the banner has mounted its listener, and a missed event would leave the old
+// shell running until the next full reload.
+let updateReady = false;
+export function markUpdateReady() {
+  updateReady = true;
+  window.dispatchEvent(new Event(SW_UPDATE_EVENT));
+}
+
 // Route prefix to <html data-mode>. Routing configuration, not a threshold —
 // it decides nothing about the user's situation, so it stays out of src/core.
 function ModeSwitch() {
@@ -41,7 +50,7 @@ function HeaderHost() {
 }
 
 function UpdateBanner({ applyUpdate }: { applyUpdate: () => void }) {
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(updateReady);
 
   useEffect(() => {
     const onReady = () => setReady(true);

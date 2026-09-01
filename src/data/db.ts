@@ -1,14 +1,10 @@
 import Dexie, { type Table } from 'dexie';
 import type {
-  ActionItem,
   CompletePackContent,
   Destination,
   ExposureLayer,
-  Kv,
   Pack,
   PackWithPlaces,
-  Pending,
-  QueuedJob,
   RecoveryProgram,
   TileRow,
 } from '../core/types';
@@ -21,19 +17,13 @@ class CooeeeDb extends Dexie {
   layers!: Table<ExposureLayer, string>;
   destinations!: Table<Destination, string>;
   programs!: Table<RecoveryProgram, string>;
-  actions!: Table<ActionItem, string>;
   tiles!: Table<TileRow, [string, number, number, number]>;
-  queue!: Table<QueuedJob, string>;
-  pending!: Table<Pending, string>;
-  kv!: Table<Kv, string>;
 
   constructor() {
     super('cooeee');
-    
-    // A SHIPPED VERSION IS NEVER MUTATED. A schema change is db.version(2) with
-    // its own .upgrade(); Dexie applies every version above the stored one, in
-    // order, on open.
 
+    // A SHIPPED VERSION IS NEVER MUTATED. A schema change is a new db.version(n);
+    // Dexie applies every version above the stored one, in order, on open.
     this.version(1).stores({
       packs: 'id, status, address',
       layers: 'id, packId',
@@ -44,6 +34,15 @@ class CooeeeDb extends Dexie {
       queue: 'id',
       pending: 'id',
       kv: 'key',
+    });
+    // Version 2 drops the four stores nothing ever wrote to, and the unused
+    // address index on packs.
+    this.version(2).stores({
+      packs: 'id, status',
+      actions: null,
+      queue: null,
+      pending: null,
+      kv: null,
     });
   }
 }
@@ -137,14 +136,15 @@ export async function deleteCompletePack(id: string): Promise<void> {
       await db.destinations.where('packId').equals(id).delete();
       await db.tiles.where('packId').equals(id).delete();
       await db.packs.delete(id);
-      const remaining = await db.packs.toArray();
-      if (!remaining.some((p) => p.manifest.groups.recovery.count > 0)) {
-        await db.programs.clear();
-      }
+      const stillReferenced = await db.packs
+        .filter((p) => p.manifest.groups.recovery.count > 0)
+        .count();
+      if (stillReferenced === 0) await db.programs.clear();
     },
   );
 }
 
-// There is no third read of `packs`. If you find yourself adding one, stop —
-// you are about to make a partial pack visible. (The status check inside
-// deleteCompletePack is a write-path guard, not a read API.)
+// Every read of `packs` that leaves this file goes through the complete-only
+// functions above. A new raw read here is how a partial pack becomes visible.
+// (The status checks inside sweepBuilding and deleteCompletePack are write-path
+// guards, not read APIs.)

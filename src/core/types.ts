@@ -125,7 +125,7 @@ export type Destination = {
 
 // --- Recovery ---
 // NeedKey string for a given recovery program
-export type NeedKey = 'stay' | 'money' | 'food' | 'property' | 'health' | 'documents'; 
+type NeedKey = 'stay' | 'money' | 'food' | 'property' | 'health' | 'documents'; 
 
 export type RecoveryProgram = {
   id: string;
@@ -145,15 +145,6 @@ export type RecoveryProgram = {
   source: Source;
 };
 
-export type ActionItem = {
-  id: string;             // Action item IDs
-  text: string;           // Text
-  programId?: string;     // Optional, program ID
-  createdAt: number;      // Action item created at datetime
-  done: boolean;          // Status
-  doneAt?: number;        // Optional, done at number
-};
-
 // ID alongside x, y, z alongside with the blobs for info bytes
 export type TileRow = { 
   packId: string;
@@ -162,30 +153,6 @@ export type TileRow = {
   y: number; 
   bytes: Blob 
 };
-
-export type QueuedJob = {
-  id: string;
-  kind: 'recovery-refresh';
-  lgaName: string;
-  queuedAt: number;
-  attempts: number;
-  lastError?: string;
-}; // carries NOTHING about the user
-
-export type Pending = {
-  id: string;
-  kind: 'recovery';
-  payload: RecoveryProgram[];
-  diff: { 
-    added: string[]; 
-    removed: string[]; 
-    changed: string[] };
-  fetchedAt: number;
-};
-
-export type Kv = { 
-  key: string; 
-  value: unknown };
 
 export type Fix = { 
   lat: number; 

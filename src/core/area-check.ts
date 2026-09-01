@@ -43,7 +43,7 @@ export function bpaExposureLayer(packId: string, result: BushfireAreaResult): Ex
   };
 }
 
-export type AreaCheckView = {
+type AreaCheckView = {
   resultLine: string;
   publisherLine: string;
   priorityLine: string;

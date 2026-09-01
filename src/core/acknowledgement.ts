@@ -10,7 +10,7 @@ export type FlagStore = {
 
 /** Which screen the app opens on. Derived from the stored flag every time it is
  *  asked, never held as a second copy of the same fact. */
-export type OpeningScreen = 'first-open' | 'prepared';
+type OpeningScreen = 'first-open' | 'prepared';
 
 /** True only for the exact marker this version of the screen writes. Anything
  *  else — absent, empty, a stale value, a value from another origin's key, or a
