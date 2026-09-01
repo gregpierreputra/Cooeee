@@ -49,7 +49,6 @@ const contentWith = (ids: string[]): TextPackContent => ({
   recovery: [],
 });
 
-const tiles = { bytes: 0, count: 0, available: false };
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((table) => table.clear()));
@@ -58,7 +57,7 @@ beforeEach(async () => {
 describe("E2-US2-AC1 saving the user's two picks", () => {
   it('persists exactly the two chosen places, marked chosen, each with its distance', async () => {
     const content = contentWith(['pack-1:s-far', 'pack-1:s-near']);
-    const offer = await createPackOffer(content, tiles);
+    const offer = await createPackOffer(content);
 
     await saveTextOnlyPack(content, offer, 999);
 
@@ -73,7 +72,7 @@ describe("E2-US2-AC1 saving the user's two picks", () => {
 
   it('the two rows survive a reopen unchanged', async () => {
     const content = contentWith(['pack-1:s-near', 'pack-1:s-mid']);
-    const offer = await createPackOffer(content, tiles);
+    const offer = await createPackOffer(content);
     await saveTextOnlyPack(content, offer, 999);
 
     const readBack = await getCompletePackContent('pack-1');
@@ -91,7 +90,7 @@ describe("E2-US2-AC1 saving the user's two picks", () => {
 
   it('an interrupted save leaves no pack and no rows', async () => {
     const content = contentWith(['pack-1:s-near', 'pack-1:s-mid']);
-    const offer = await createPackOffer(content, tiles);
+    const offer = await createPackOffer(content);
     await stageTextOnlyPack(content, offer);
     expect(await listCompletePacks()).toEqual([]);
 
@@ -115,7 +114,7 @@ describe("E2-US2-AC1 saving the user's two picks", () => {
       ),
       recovery: [],
     };
-    const offer = await createPackOffer(content, tiles);
+    const offer = await createPackOffer(content);
     await saveTextOnlyPack(content, offer, 999);
 
     const saved = await db.packs.get('pack-1');

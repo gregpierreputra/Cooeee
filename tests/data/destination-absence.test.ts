@@ -34,7 +34,6 @@ const nonePublished = (): TextPackContent => ({
   recovery: [recovery],
 });
 
-const tiles = { bytes: 13_002_342, count: 120, available: true };
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((table) => table.clear()));
@@ -44,7 +43,7 @@ beforeEach(async () => {
 describe('E2-US1-AC3 a pack with no published places still saves', () => {
   it('stores the absence marker and a complete pack — no place rows', async () => {
     const content = nonePublished();
-    const offer = await createPackOffer(content, tiles);
+    const offer = await createPackOffer(content);
 
     await saveTextOnlyPack(content, offer, 999);
 
@@ -60,7 +59,7 @@ describe('E2-US1-AC3 a pack with no published places still saves', () => {
 
   it('reads back as its reason, never as an information item', async () => {
     const content = nonePublished();
-    const offer = await createPackOffer(content, tiles);
+    const offer = await createPackOffer(content);
     await saveTextOnlyPack(content, offer, 999);
 
     const readBack = await getCompletePackContent('pack-1');
@@ -73,7 +72,7 @@ describe('E2-US1-AC3 a pack with no published places still saves', () => {
 
   it('an interrupted save leaves no pack and no absence row', async () => {
     const content = nonePublished();
-    const offer = await createPackOffer(content, tiles);
+    const offer = await createPackOffer(content);
     await stageTextOnlyPack(content, offer);
     expect(await listCompletePacks()).toEqual([]);
 

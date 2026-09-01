@@ -1,8 +1,37 @@
-import { ACCURACY_MAX_M, FIX_STALE_MS } from './constants';
+import {
+  ACCURACY_MAX_M,
+  FIX_STALE_MS,
+  MARK_DRIFT_M_PER_S,
+  MARK_START_ACCURACY_M,
+} from './constants';
 import { bearingDeg, distanceM } from './geo';
 import type { Destination, Fix, Pack, PackWithPlaces } from './types';
 
 export type PlacedDestination = { d: Destination; bearingDeg: number; distanceM: number };
+
+/** A position the user marked themselves — a known point such as their front
+ *  gate — and when they marked it. */
+export type Mark = { lat: number; lon: number; at: number };
+
+/**
+ * The marked position as a synthetic Fix (E3-US1-AC4). Its uncertainty starts
+ * at MARK_START_ACCURACY_M and grows at walking pace, because without motion
+ * sensors the holder may have been walking since the mark. `at` is `now`: an
+ * estimate is never "stale" — its decay IS the accuracy figure.
+ *
+ * Returns null once the uncertainty passes ACCURACY_MAX_M: the estimate cannot
+ * be maintained, and a null fix hands the screen back to ACQUIRING — the AC2
+ * reference state — rather than drawing a confident arrow.
+ */
+// ponytail: time-only drift, no sensors. Upgrade to accelerometer/gyro PDR only
+// after the Iteration 1 drift spike validates it (card E3-US1-AC4).
+export function estimateFix(mark: Mark, now: number): Fix | null {
+  
+  const accuracyM = Math.round(MARK_START_ACCURACY_M + ((now - mark.at) / 1000) * MARK_DRIFT_M_PER_S);
+  
+  if (accuracyM > ACCURACY_MAX_M) return null;
+  return { lat: mark.lat, lon: mark.lon, accuracyM, at: now };
+}
 
 export type Screen =
   | { kind: 'NO_PACK' }
@@ -97,10 +126,14 @@ export function deriveState(
   // Containment is INCLUSIVE: a point exactly on the radius is inside.
   const containing = byDistance.filter((p) => p.metres <= p.pack.radiusKm * 1000);
 
+  // "Distance to its area" is to the area's EDGE, not the pack centre — the
+  // honest figure for how far the user is from ground they prepared.
   if (containing.length === 0)
     return {
       kind: 'OUT_OF_AREA',
-      packs: byDistance.map((p) => ({ pack: p.pack, distanceKm: p.metres / 1000 })),
+      packs: byDistance
+        .map((p) => ({ pack: p.pack, distanceKm: (p.metres - p.pack.radiusKm * 1000) / 1000 }))
+        .sort((a, b) => a.distanceKm - b.distanceKm),
     };
 
   const here = containing[0];

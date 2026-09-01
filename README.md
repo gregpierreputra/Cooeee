@@ -4,8 +4,9 @@ Cooeee assembles a location-specific pack of official bushfire information while
 signal, then keeps every part of it usable with the radios off. It issues no warnings, no live
 routes and no eligibility decisions.
 
-**The pack download is the only required connection in the whole journey.** Everything downstream
-of it runs with zero connectivity.
+**Iteration 1 is mapless.** Address and official-context checks use the approved
+services while connected; the completed structured-data pack then opens with
+zero connectivity. No basemap or map-tile download is an Iteration 1 outcome.
 
 ---
 
@@ -52,8 +53,8 @@ code rather than fighting it.
 
 **The offline rule.** `ui/BlackSky.tsx` and `ui/Recovery.tsx` may import `src/core/*` and
 `src/data/db.ts` only (Recovery may also import `src/data/probe.ts`). Never `wfs`, `tiles`,
-`snapshots` or `fetch`. There are exactly five sanctioned network calls in the product; if you are
-adding a sixth, stop and raise it.
+`snapshots` or `fetch`. There are exactly four sanctioned Iteration 1 network-call categories in
+the product; if you are adding a fifth, stop and raise it.
 
 **The atomicity rule.** A pack is written `status: 'building'` and flipped to `'complete'` in one
 single-row transaction. Never `await` a non-Dexie promise inside a Dexie transaction. Cancel leaves
@@ -148,9 +149,19 @@ from `main`; every other branch gets its own preview URL.
 
 ## Where this is up to
 
-Milestones 1 and 2 of `documentation/Cooeee, Implementation Specification.md` §15: the scaffold and
-the full pure core, with the boundary values the register names under test.
+Implemented and merged to `main`:
 
-Not built yet, each belonging to a story with a named owner: the pack build pipeline (`pack-build.ts`),
-the WFS client (`wfs.ts`), tiles, snapshots, the connectivity probe, every screen beyond Home, the
-`scripts/build-*.ts` snapshot builders, and MapLibre.
+- **Epic 1 — Build a Prepared Local Pack**: the whole E1-US1 flow (address search with live
+  suggestions, confirmation, pack conflict, official bushfire-area check, pack offer and the
+  atomic text-only save) and E1-US2 provenance (publisher/date on every item, age labels,
+  offline reads, explained original-source access).
+- **Epic 3 — BlackSky**: the offline screen at `/blacksky` with prepared direction, honest
+  degradation without GPS, accuracy gating, the marked-position estimate, outside-area and
+  no-pack states, and deliberate hold-to-enter activation.
+
+Iteration 1 is **mapless** (`docs/decisions/iteration-1-mapless-scope.md`): no basemap, no
+tiles; every pack is text-only with the tile fields stored as their honest zeros. Epics 2, 4,
+5, 6 and 7 have no code yet.
+
+The full cross-epic explanation — architecture, every implemented acceptance criterion mapped
+to its module and test — is `docs/technical-overview.md`.

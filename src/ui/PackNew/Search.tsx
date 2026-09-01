@@ -10,7 +10,6 @@ import {
 import { bpaExposureLayer } from '../../core/area-check';
 import { ADDRESS_QUERY_DEBOUNCE_MS, ADDRESS_RESULT_LIMIT } from '../../core/constants';
 import * as copy from '../../core/copy';
-import { decidePackConflict } from '../../core/pack-conflict';
 import { buildPackSeed } from '../../core/pack';
 import type {
   AddressCandidate,
@@ -23,6 +22,7 @@ import type {
 import { listCompletePacks } from '../../data/db';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
 import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
+import StatusPage from '../components/StatusPage';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
@@ -198,7 +198,7 @@ export function Search({
         destinations: [],
         recovery: [],
       };
-      const offer = await buildOffer(content, { bytes: 0, count: 0, available: false });
+      const offer = await buildOffer(content);
       setOfferState({ kind: 'ready', offer, content });
     } catch {
       setOfferState({ kind: 'failed', result });
@@ -210,12 +210,14 @@ export function Search({
     setPendingPlace(place);
     setConflictState({ kind: 'checking' });
     try {
-      const decision = decidePackConflict(await loadPacks());
-      if (decision.kind === 'none') {
+      // EPIC 1 permits one complete pack. Any existing complete pack requires
+      // an explicit keep-or-replace decision before the next network call.
+      const packs = await loadPacks();
+      if (packs.length === 0) {
         setConflictState(null);
         await runAreaCheck(place);
-      } else if (decision.kind === 'conflict') {
-        setConflictState(decision);
+      } else if (packs.length === 1) {
+        setConflictState({ kind: 'conflict', savedPack: packs[0] });
       } else {
         setConflictState({ kind: 'invalid-multiple' });
       }
@@ -235,9 +237,11 @@ export function Search({
 
   if (pendingPlace && conflictState?.kind === 'checking') {
     return (
-      <main className="page conflict-page">
-        <div role="status" aria-live="polite"><p>{copy.CHECKING_SAVED_PLACE}</p></div>
-      </main>
+      <StatusPage
+        page="conflict-page"
+        kicker={copy.EYEBROW_SET_UP_YOUR_PLACE}
+        card={<p>{copy.CHECKING_SAVED_PLACE}</p>}
+      />
     );
   }
 
@@ -271,29 +275,35 @@ export function Search({
   if (pendingPlace && offerState) {
     if (offerState.kind === 'building') {
       return (
-        <main className="page size-page">
-          <div role="status" aria-live="polite"><p>{copy.PREPARING_PACK_OFFER}</p></div>
-        </main>
+        <StatusPage
+          page="size-page"
+          kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+          card={<p>{copy.PREPARING_PACK_OFFER}</p>}
+        />
       );
     }
 
     if (offerState.kind === 'failed') {
       return (
-        <main className="page size-page">
-          <div role="status" aria-live="polite"><p>{copy.PACK_OFFER_FAILED}</p></div>
-          <div className="actions">
-            <button
-              className="main-action"
-              type="button"
-              onClick={() => void buildPackOfferForResult(pendingPlace, offerState.result)}
-            >
-              {copy.TRY_AGAIN}
-            </button>
-            <button type="button" onClick={resetToSearch}>
-              {copy.SEARCH_AGAIN}
-            </button>
-          </div>
-        </main>
+        <StatusPage
+          page="size-page"
+          kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+          card={<p>{copy.PACK_OFFER_FAILED}</p>}
+          actions={
+            <>
+              <button
+                className="main-action"
+                type="button"
+                onClick={() => void buildPackOfferForResult(pendingPlace, offerState.result)}
+              >
+                {copy.TRY_AGAIN}
+              </button>
+              <button type="button" onClick={resetToSearch}>
+                {copy.SEARCH_AGAIN}
+              </button>
+            </>
+          }
+        />
       );
     }
 
@@ -301,8 +311,7 @@ export function Search({
       <Size
         offer={offerState.offer}
         address={offerState.content.pack.address}
-        download={async (choice) => {
-          if (choice === 'both') throw new Error('map download is not available yet');
+        download={async () => {
           await savePack(offerState.content, offerState.offer, now());
         }}
         onContinue={() => onPackSaved(offerState.content.pack.id)}
@@ -340,7 +349,10 @@ export function Search({
     <main className="page search-page">
       <form className="search-form" onSubmit={handleSubmit}>
         <div className="search-content">
-          <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
+          <header className="hero">
+            <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
+            <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
+          </header>
           <label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>
           <input
             id="address-query"
@@ -354,7 +366,7 @@ export function Search({
           {/* One polite live region for the field. It carries the count when the
               list changes under a screen reader, which the list markup alone
               does not announce, and it is the only place a result is claimed. */}
-          <div id="address-result" className="search-result" role="status" aria-live="polite">
+          <div id="address-result" className="card search-result" role="status" aria-live="polite">
             {live.kind === 'too-short' ? <p>{copy.ADDRESS_QUERY_TOO_SHORT}</p> : null}
             {live.kind === 'pending' ? <p>{copy.SEARCH_IN_PROGRESS}</p> : null}
             {live.kind === 'dismissed' ? <p>{copy.REFINE_ADDRESS_HINT}</p> : null}

@@ -9,16 +9,10 @@ export default defineConfig({
       // 'prompt', never 'autoUpdate'. A new shell waits for the user to choose it.
       registerType: 'prompt',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest,woff2}'],
         // ping.txt MUST stay out, or the connectivity probe answers from cache
-        // and reports "online" with the radios off. The map chunk stays out so a
-        // text-only user never downloads it.
-        globIgnores: [
-          '**/ping.txt',
-          '**/MapView*.js',
-          '**/maplibre*.js',
-          '**/pmtiles*.js',
-        ],
+        // and reports "online" with the radios off.
+        globIgnores: ['**/ping.txt'],
         navigateFallback: '/index.html',
         runtimeCaching: [], // durable data lives in IndexedDB by design
       },
@@ -31,8 +25,8 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         scope: '/',
-        theme_color: '#0B1416',
-        background_color: '#0B1416',
+        theme_color: '#070C11',
+        background_color: '#070C11',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

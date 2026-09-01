@@ -21,7 +21,7 @@ import PackDetail from '../../src/ui/PackDetail';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
 import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
-import { Size, type DownloadChoice } from '../../src/ui/PackNew/Size';
+import { Size } from '../../src/ui/PackNew/Size';
 import nspFixture from '../../public/data/nsp.v2026-08-18.json';
 import '../../src/ui/theme.css';
 
@@ -196,21 +196,16 @@ let sizeFlow = confirmation;
 if (window.location.pathname === '/size') {
   await db.programs.put(recoveryProgram);
   if (sizeMode === 'interrupt') await db.packs.put(savedPack);
-  const offer = await createPackOffer(sizeContent, {
-    bytes: 13_002_342,
-    count: 120,
-    available: sizeMode !== 'unavailable',
-  });
+  const offer = await createPackOffer(sizeContent);
   let interruptOnce = sizeMode === 'interrupt';
-  const download = async (choice: DownloadChoice) => {
+  const download = async () => {
     window.__downloadCount += 1;
     if (interruptOnce) {
       interruptOnce = false;
       await stageTextOnlyPack(sizeContent, offer);
       await discardBuildingPack(sizeContent.pack.id);
-      throw new Error('synthetic interrupted download');
+      throw new Error('synthetic interrupted save');
     }
-    if (choice === 'both') throw new Error('production map archive is unavailable');
     await saveTextOnlyPack(sizeContent, offer, Date.UTC(2026, 7, 28, 4));
   };
   sizeFlow = (
@@ -364,7 +359,7 @@ if (window.location.pathname === '/destinations') {
         ),
         recovery: [],
       };
-      const offer = await createPackOffer(content, { bytes: 0, count: 0, available: false });
+      const offer = await createPackOffer(content);
       await saveTextOnlyPack(content, offer, destinationsNow);
     };
     destinationsFlow = (

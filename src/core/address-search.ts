@@ -6,31 +6,39 @@ import type { AddressCandidate, AddressRecord } from './types';
  * than one point without identifying which one it means. Those groups yield no
  * candidate: a coordinate the user cannot see is never guessed at. */
 export type AddressCandidateResolution = {
+
   candidates: AddressCandidate[];
   unresolvedCount: number;
+
   /** How many records the register actually returned, before any exclusion or
-   * collapsing. Rendered next to the number of lines so a capped response reads
+   * collapsing. 
+   * Rendered next to the number of lines so a capped response reads
    * as a cap and not as the whole register. */
   returnedCount: number;
 };
 
-/** What the register said about ONE query. The query it answers is carried with
- * it, which is what makes a stale answer structurally unusable rather than
+/** What the register said about ONE query.
+ * The query it answers is carried with it, 
+ * which is what makes a stale answer structurally unusable rather than 
  * merely unlikely: nothing can render it once the field says something else. */
 export type SettledSearch = {
   query: string;
   outcome:
-    | { kind: 'resolved'; resolution: AddressCandidateResolution }
+    | { kind: 'resolved', resolution: AddressCandidateResolution }
     | { kind: 'failed' };
 };
 
-/** The six states of the search field. Three of them are routinely conflated by
+/** The six states of the search field.
+ * Three of them are routinely conflated by 
  * live-search implementations and are separated here by construction:
  *   'pending'      — the query has no answer of its own yet, whether the debounce
  *                    is still running or the request is in flight. No result
  *                    claim of any kind is reachable from this state.
+ *
  *   'no-match'     — the register answered, about this exact query, with nothing.
- *   'unavailable'  — the search could not be run. Never 'no-match'. */
+ *
+ *   'unavailable'  — the search could not be run. Never 'no-match'.
+ **/
 export type AddressSearchState =
   | { kind: 'too-short' }
   | { kind: 'pending' }
@@ -48,9 +56,9 @@ export function addressQueryCanRun(query: string): boolean {
   return query.trim().length >= ADDRESS_QUERY_MIN_CHARS;
 }
 
-/** True when the response is the size of the cap, so the register may hold more
- * than it was asked for. Inclusive at the limit: a response of exactly
- * ADDRESS_RESULT_LIMIT records cannot be shown as the whole answer. */
+/** True when the response is the size of the cap, so the register may hold more than it was asked for. 
+ * Inclusive at the limit: a response of exactly
+ * ADDRESS_RESULT_LIMIT records cannot be shown the whole answer. */
 export function addressResultsAtLimit(returnedCount: number): boolean {
   return returnedCount >= ADDRESS_RESULT_LIMIT;
 }
@@ -81,9 +89,9 @@ function resolveGroup(group: readonly AddressRecord[]): AddressCandidate | null 
 
   // One point: the records differ only in fields the user never sees and never
   // chose between, so collapsing loses nothing. The selection flag breaks the
-  // tie in place; without it the service's own first record stands. Neither
+  // tie in place, without it the service's own first record stands. Neither
   // moves a candidate or marks it.
-  if (onePoint) return (flagged[0] ?? group[0]).candidate;
+  if (onePoint)  return (flagged[0] ?? group[0]).candidate;
 
   // Different points: exactly one flagged record is the only evidence of which
   // location the register means. With none, or with several, any pick would be
@@ -143,7 +151,7 @@ export function completedSearchState(
  * through a settled answer whose own query still matches the field. A query the
  * user is still typing, a request in flight, and an answer to something they
  * typed earlier all land in 'pending', which claims nothing. `dismissed` is the
- * user having said none of the listed addresses is theirs; it lasts until the
+ * user having said none of the listed addresses is theirs, it lasts until the
  * query changes, and it withholds the list without asserting a result either. */
 export function liveSearchState(
   query: string,

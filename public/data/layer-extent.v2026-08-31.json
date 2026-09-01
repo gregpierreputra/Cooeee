@@ -1,11 +1,10 @@
 {
-  "version": "v2026-08-28",
-  "retrievedAt": 1787957975495,
+  "version": "v2026-08-31",
+  "retrievedAt": 1788177320583,
   "source": {
     "publisher": "Department of Transport and Planning",
     "url": "https://opendata.maps.vic.gov.au/geoserver/wfs",
-    "licence": "CC BY 4.0",
-    "retrievedAt": 1787957975495
+    "licence": "CC BY 4.0"
   },
   "layers": {
     "BPA": {

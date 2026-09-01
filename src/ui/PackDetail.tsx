@@ -38,7 +38,12 @@ export default function PackDetail({
 
   if (content === null) return null;
   if (content === undefined) {
-    return <main className="page"><StateCard heading={copy.PACK_NOT_FOUND} /></main>;
+    return (
+      <main className="page">
+        <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
+        <StateCard heading={copy.PACK_NOT_FOUND} />
+      </main>
+    );
   }
 
   const items = packDetailItems(content);
@@ -54,10 +59,14 @@ export default function PackDetail({
         {/* A client-side route change, so the offline guarantee holds: no
             document request, no revalidation, nothing but stored rows. */}
         <Link className="pack-detail-back" to="/">{copy.BACK_TO_YOUR_PACKS}</Link>
+        <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
         <h1>{copy.YOUR_PACK}</h1>
+      </header>
+
+      <div className="card">
         <p>{content.pack.name}</p>
         <p className="muted">{content.pack.address}</p>
-      </header>
+      </div>
 
       {!content.recoveryVerified ? (
         <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />

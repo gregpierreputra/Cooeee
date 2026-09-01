@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useParams } from 'react-router';
 import * as copy from './core/copy';
+import BlackSky from './ui/BlackSky';
 import Home from './ui/Home';
 import PackDetail from './ui/PackDetail';
 import { Search } from './ui/PackNew/Search';
@@ -12,16 +13,12 @@ export const SW_UPDATE_EVENT = 'cooeee:update-ready';
 
 // Route prefix to <html data-mode>. Routing configuration, not a threshold —
 // it decides nothing about the user's situation, so it stays out of src/core.
-const MODE_BY_PREFIX: readonly (readonly [string, string])[] = [
-  ['/blacksky', 'blacksky'],
-  ['/recover', 'recover'],
-];
-
 function ModeSwitch() {
   const { pathname } = useLocation();
   useEffect(() => {
-    const mode = MODE_BY_PREFIX.find(([prefix]) => pathname.startsWith(prefix))?.[1] ?? 'prepare';
-    document.documentElement.dataset.mode = mode;
+    document.documentElement.dataset.mode = pathname.startsWith('/blacksky')
+      ? 'blacksky'
+      : 'prepare';
   }, [pathname]);
   return null;
 }
@@ -60,6 +57,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/" element={<Home />} />
         <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
+        <Route path="/blacksky" element={<BlackSky />} />
       </Routes>
     </BrowserRouter>
   );

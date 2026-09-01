@@ -7,7 +7,6 @@
 // a schema the data scripts have not written yet.
 
 import { existsSync, readFileSync } from 'node:fs';
-import ts from 'typescript';
 
 const INDEX = 'public/data/index.json';
 const CONSTANTS = 'src/core/constants.ts';
@@ -17,12 +16,15 @@ if (!existsSync(INDEX)) {
   process.exit(0);
 }
 
-const js = ts.transpileModule(readFileSync(CONSTANTS, 'utf8'), {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const { SNAPSHOT_MAX_AGE_DAYS, MS_PER_DAY } = await import(
-  'data:text/javascript;base64,' + Buffer.from(js).toString('base64')
-);
+// The limit is read straight out of constants.ts so the threshold has ONE home.
+// A rename or reformat there fails here loudly rather than drifting silently.
+const match = readFileSync(CONSTANTS, 'utf8').match(/SNAPSHOT_MAX_AGE_DAYS = (\d+)/);
+if (!match) {
+  console.error(`snapshot-age: SNAPSHOT_MAX_AGE_DAYS not found in ${CONSTANTS}`);
+  process.exit(1);
+}
+const SNAPSHOT_MAX_AGE_DAYS = Number(match[1]);
+const MS_PER_DAY = 86_400_000;
 
 const stamps = [];
 const collect = (node) => {

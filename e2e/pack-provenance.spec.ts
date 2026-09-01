@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { HARNESS } from './helpers';
 
-const DETAIL_URL = 'http://127.0.0.1:4174/detail';
-const SIZE_URL = 'http://127.0.0.1:4174/size';
+const DETAIL_URL = `${HARNESS}/detail`;
+const SIZE_URL = `${HARNESS}/size`;
 
 test('US2 AC1 lists every available stored item with grouped publisher and full saved date', async ({ page }) => {
   await page.goto(DETAIL_URL);
@@ -32,7 +33,7 @@ test('US2 AC1 provenance remains readable at 200 percent text size', async ({ pa
 
 test('US2 AC2 leaves missing-provenance content out of both storage and the saved result', async ({ page }) => {
   await page.goto(`${SIZE_URL}?mode=omission`);
-  await page.getByRole('button', { name: 'Text only' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
 
   await expect(page.getByRole('heading', { name: 'One item was left out of your pack.' }))
     .toBeVisible();
@@ -55,7 +56,7 @@ test('US2 AC3 opens the same provenance offline with zero requests and no loadin
   const onlineText = await onlinePage.locator('main').innerText();
   await onlinePage.close();
 
-  await page.goto('http://127.0.0.1:4174/detail-launch');
+  await page.goto(`${HARNESS}/detail-launch`);
   let requests = 0;
   await page.route('**', async (route) => {
     requests += 1;

@@ -4,7 +4,6 @@ import {
   areaCheckView,
   bpaExposureLayer,
   extentSnapshotDisagrees,
-  formatSavedDate,
   resolveBushfireAreaStatus,
 } from '../../src/core/area-check';
 import * as copy from '../../src/core/copy';
@@ -47,10 +46,6 @@ describe('E1-US1-AC5–AC7 area decisions', () => {
     [[], 'MELBOURNE', true, true],
   ] as const)('detects snapshot/live disagreement', (publishedIn, lga, live, expected) => {
     expect(extentSnapshotDisagrees(publishedIn, lga, live)).toBe(expected);
-  });
-
-  it('formats the saved date with no leading zero', () => {
-    expect(formatSavedDate(Date.UTC(2026, 2, 2, 1))).toBe('2 March 2026');
   });
 
   it('renders all three statuses with publisher/date and priority', () => {

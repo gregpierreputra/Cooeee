@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 
 import * as copy from '../../core/copy';
-import { makePendingPlace } from '../../core/place';
 import type { AddressCandidate, PendingPlace } from '../../core/types';
 
 export type ConfirmProps = {
@@ -17,14 +16,20 @@ export function Confirm({ candidate, onConfirm, onSearchAgain }: ConfirmProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onConfirm(makePendingPlace(candidate, name));
+    
+    // The in-memory selection, with no normalising of user or source text: the
+    // edited name is kept exactly as typed, the address exactly as returned.
+    onConfirm({ name, address: candidate.address, lat: candidate.lat, lon: candidate.lon });
   }
 
   return (
     <main className="page confirm-page">
       <form className="confirm-form" onSubmit={handleSubmit}>
         <div className="confirm-content">
-          <h1>{copy.CONFIRM_ADDRESS_QUESTION}</h1>
+          <header className="hero">
+            <span className="kicker">{copy.EYEBROW_CONFIRM_ADDRESS}</span>
+            <h1>{copy.CONFIRM_ADDRESS_QUESTION}</h1>
+          </header>
           <p className="returned-address" data-testid="returned-address">
             {candidate.address}
           </p>
