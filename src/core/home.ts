@@ -108,19 +108,28 @@ export function homeView(now: number, packs: Pack[]): HomeView {
   };
 }
 
-/** Title-cases a stored address FOR DISPLAY ONLY.
+/** Title-cases a stored string FOR DISPLAY ONLY.
  *
- *  Geocoded addresses arrive from the custodian in capitals — '10 OLD ROAD
- *  FERNY CREEK 3786' — which reads as shouting on a card. What is STORED is
- *  never touched: the pack keeps the custodian's own string, so nothing
- *  downstream ever compares against a value this function invented. Digits and
- *  postcodes pass through unchanged; a letter after a space, a hyphen, a slash
- *  or an apostrophe leads its word. */
-export function displayAddress(address: string): string {
-  return address
+ *  What is STORED is never touched: the pack keeps the string it was saved
+ *  with, so nothing downstream ever compares against a value this function
+ *  invented. Digits and postcodes pass through unchanged; a letter after a
+ *  space, a hyphen or a slash leads its word. An apostrophe leads a word only
+ *  behind a single letter — "O'Hara", never a possessive turned "Mum'S". */
+export function titleCase(text: string): string {
+  return text
     .toLowerCase()
     .replace(
-      /(^|[\s\-/'])([a-z])/g,
+      /(^|[\s\-/])([a-z])/g,
       (_m, lead: string, letter: string) => lead + letter.toUpperCase(),
+    )
+    .replace(
+      /(^|[\s\-/])([A-Za-z])'([a-z])/g,
+      (_m, lead: string, first: string, letter: string) =>
+        `${lead}${first}'${letter.toUpperCase()}`,
     );
 }
+
+/** The pack card's address line. Geocoded addresses arrive from the custodian
+ *  in capitals — '10 OLD ROAD FERNY CREEK 3786' — which reads as shouting on a
+ *  card. */
+export const displayAddress = titleCase;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
-import { displayAddress, homeView, type HomeView } from '../core/home';
+import { displayAddress, homeView, titleCase, type HomeView } from '../core/home';
 import type { Pack } from '../core/types';
 import { listCompletePacks } from '../data/db';
 import BottomNav from './components/BottomNav';
@@ -55,7 +55,11 @@ export default function Home({ now }: { now?: number }) {
         <section className="card saved-place">
           <span className="kicker">{copy.SAVED_PLACE_LABEL}</span>
           <div className="saved-place-title">
-            <h2>{view.pack.name}</h2>
+            {/* Cased by the same rule as the address line below, so the two
+                read alike: the name defaults to the locality the geocoder
+                returned, and arrives in the same capitals. Storage keeps the
+                name exactly as it was saved. */}
+            <h2>{titleCase(view.pack.name)}</h2>
             {/* The way in is the 'Open' action below; this only points at it,
                 so it is hidden from the screen reader rather than read out as
                 a second, wordless control. */}

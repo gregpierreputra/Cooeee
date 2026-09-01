@@ -9,6 +9,7 @@ import {
   oldestPack,
   preparationLine,
   preparationLineIndex,
+  titleCase,
 } from '../../src/core/home';
 import { pack } from '../fixtures';
 
@@ -210,10 +211,30 @@ describe('address for display', () => {
     expect(displayAddress('12-14 ST ANDREWS ROAD')).toBe('12-14 St Andrews Road');
     expect(displayAddress('2/8 OBRIENS ROAD')).toBe('2/8 Obriens Road');
     expect(displayAddress("5 O'HARA STREET")).toBe("5 O'Hara Street");
+    // A possessive is not a new word: the letter after its apostrophe stays down.
+    expect(displayAddress("12 ST PATRICK'S ROAD")).toBe("12 St Patrick's Road");
   });
 
   it('returns the empty string unchanged, and never invents a character', () => {
     expect(displayAddress('')).toBe('');
     expect(displayAddress('10 OLD ROAD')).toHaveLength('10 OLD ROAD'.length);
+  });
+});
+
+// The heading and the address line are cased by the one rule, so the card does
+// not shout its name over a title-cased line. Storage is untouched either way.
+describe('place name for display', () => {
+  it('title-cases the locality the geocoder returned as the default name', () => {
+    expect(titleCase('CLAYTON')).toBe('Clayton');
+    expect(titleCase('FERNY CREEK')).toBe('Ferny Creek');
+  });
+
+  it('leaves a name the user typed themselves as they wrote it', () => {
+    expect(titleCase('Kalorama')).toBe('Kalorama');
+    expect(titleCase("Mum's Place")).toBe("Mum's Place");
+  });
+
+  it('cases the name and the address by the same rule', () => {
+    expect(titleCase('KALORAMA')).toBe(displayAddress('KALORAMA'));
   });
 });
