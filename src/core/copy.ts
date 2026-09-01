@@ -183,9 +183,9 @@ export const BPA_PLAN_CITATION = (
   publisher: string,
 ) => `Bushfire Prone Area plan ${planNumber} · gazetted ${gazettedDate} · ${lgaName} — ${publisher}`;
 /** Used in place of CONTINUE_TO_ORIGINAL_SOURCE once the citation above is on
- * screen: what is on the far end is the raw published data, not the only
- * readable statement of the result. */
-export const CONTINUE_TO_RAW_SOURCE_DATA = 'Continue to the raw government data (web)';
+ * screen: what is on the far end is the publisher's page for the dataset as a
+ * whole, not the only readable statement of this result. */
+export const CONTINUE_TO_DATASET_PAGE = "Continue to the publisher's dataset page (web)";
 export const CLOSE = 'Close';
 
 // E1-US1-AC1/AC9 production pack-save wiring
