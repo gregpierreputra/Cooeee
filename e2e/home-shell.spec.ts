@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
+  BLACKSKY_SEPARATE_FROM_EVERYDAY,
+  BLACKSKY_WORKS_WITHOUT_PACK,
   BUILD_A_PACK,
   CHECKED_DAYS_AGO,
   CONNECTION_OFFLINE_LABEL,
@@ -13,10 +15,12 @@ import {
   NO_PACK_SAVED,
   NOT_RECENTLY_VERIFIED_LABEL,
   OPEN_PACK,
+  OPENS_WITHOUT_SIGNAL,
   PREPARATION_LINES,
   PREPARATION_SOURCE,
   SAVED_DAYS_AGO,
 } from '../src/core/copy';
+import { displayAddress } from '../src/core/home';
 import { HARNESS } from './helpers';
 
 // E1-US2-AC6. The harness mounts the real header and the real home screen over
@@ -83,8 +87,11 @@ test.describe('the returning-user home screen', () => {
     await page.goto(home('?days=3'));
 
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
-    await expect(page.getByText('10 OLD ROAD FERNY CREEK 3786')).toBeVisible();
-    await expect(page.getByText(SAVED_DAYS_AGO(3), { exact: true })).toBeVisible();
+    // Title-cased for reading; the stored string keeps the custodian's capitals.
+    await expect(page.getByText(displayAddress('10 OLD ROAD FERNY CREEK 3786'))).toBeVisible();
+    await expect(
+      page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole('link', { name: OPEN_PACK })).toBeVisible();
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
 
@@ -93,7 +100,7 @@ test.describe('the returning-user home screen', () => {
     for (const box of await Promise.all(
       [
         page.getByRole('heading', { name: 'Ferny Creek' }),
-        page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
+        page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
         page.getByRole('link', { name: OPEN_PACK }),
         page.getByRole('button', { name: HOLD_FOR_BLACKSKY }),
       ].map((locator) => locator.boundingBox()),
@@ -129,6 +136,27 @@ test.describe('the returning-user home screen', () => {
     await page.getByRole('button', { name: HOLD_FOR_BLACKSKY }).click();
     await expect(page.getByText(HOLD_TO_ENTER)).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
+  });
+
+  test('the hold control names what the mode is, and changes the line with no pack', async ({
+    page,
+  }) => {
+    await page.goto(home('?days=3'));
+    const hold = page.getByRole('button', { name: HOLD_FOR_BLACKSKY });
+    await expect(hold).toContainText(BLACKSKY_SEPARATE_FROM_EVERYDAY);
+
+    await page.goto(home('?mode=none'));
+    await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toContainText(
+      BLACKSKY_WORKS_WITHOUT_PACK,
+    );
+  });
+
+  test('the pack card carries the offline fact under the age, not in place of it', async ({
+    page,
+  }) => {
+    await page.goto(home('?days=3'));
+    const footer = page.locator('.saved-place-footer');
+    await expect(footer).toHaveText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL);
   });
 
   test('the hold control meets the 44px minimum target size', async ({ page }) => {

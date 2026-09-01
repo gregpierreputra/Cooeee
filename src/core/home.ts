@@ -107,3 +107,20 @@ export function homeView(now: number, packs: Pack[]): HomeView {
     nav,
   };
 }
+
+/** Title-cases a stored address FOR DISPLAY ONLY.
+ *
+ *  Geocoded addresses arrive from the custodian in capitals — '10 OLD ROAD
+ *  FERNY CREEK 3786' — which reads as shouting on a card. What is STORED is
+ *  never touched: the pack keeps the custodian's own string, so nothing
+ *  downstream ever compares against a value this function invented. Digits and
+ *  postcodes pass through unchanged; a letter after a space, a hyphen, a slash
+ *  or an apostrophe leads its word. */
+export function displayAddress(address: string): string {
+  return address
+    .toLowerCase()
+    .replace(
+      /(^|[\s\-/'])([a-z])/g,
+      (_m, lead: string, letter: string) => lead + letter.toUpperCase(),
+    );
+}

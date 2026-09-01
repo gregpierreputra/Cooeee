@@ -353,3 +353,15 @@ export const PREPARATION_LINES = [
 ] as const;
 
 export const PREPARATION_SOURCE = 'Country Fire Authority — plan and prepare guidance.';
+
+/** The pack card's footer line. Appended to the card's own age wording rather
+ *  than written into it: the age is a fact about the pack, and this is a fact
+ *  about the pack's whole point — it is on the device, so it opens with the
+ *  radios off. It states what the pack does, never what it protects you from. */
+export const OPENS_WITHOUT_SIGNAL = ' · opens without signal';
+
+/** Under the hold control. Two lines, chosen by whether a pack is saved, both
+ *  saying what BlackSky IS rather than urging anyone into it: it is a separate
+ *  mode entered on purpose, and it is reachable with nothing saved. */
+export const BLACKSKY_SEPARATE_FROM_EVERYDAY = 'SEPARATE FROM EVERYDAY USE';
+export const BLACKSKY_WORKS_WITHOUT_PACK = 'WORKS WITHOUT A SAVED PACK';

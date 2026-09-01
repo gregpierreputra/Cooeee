@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { OPEN_PACK } from '../src/core/copy';
+import { OPEN_PACK, SAVED_PLACE_LABEL } from '../src/core/copy';
+import { displayAddress } from '../src/core/home';
 import { addressFeature, waitForController, WFS_PATTERN } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
@@ -81,7 +82,7 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
 
   await page.goto('/');
-  await expect(page.getByText(ADDRESS)).toBeVisible();
+  await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
 });
 
 test('AC8 replace atomically supersedes the previous pack', async ({ page }) => {
@@ -123,8 +124,8 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
   await expect(page.locator('.pack-detail')).toContainText(NEW_ADDRESS);
 
   await page.goto('/');
-  await expect(page.getByText(NEW_ADDRESS)).toBeVisible();
-  await expect(page.getByText(ADDRESS, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(displayAddress(NEW_ADDRESS))).toBeVisible();
+  await expect(page.getByText(displayAddress(ADDRESS), { exact: true })).toHaveCount(0);
 });
 
 // ── E1-US2 pack-detail return path ──────────────────────────────────────────
@@ -152,8 +153,8 @@ test('US2 the pack detail offers an explicit return to the pack list', async ({ 
 
   await back.click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading', { name: 'Your packs' })).toBeVisible();
-  await expect(page.getByText(ADDRESS)).toBeVisible();
+  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
+  await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
 });
 
 test('US2 the return action is keyboard operable and meets the touch target', async ({ page }) => {
@@ -173,7 +174,7 @@ test('US2 the return action is keyboard operable and meets the touch target', as
   })).toBeTruthy();
 
   await back.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Your packs' })).toBeVisible();
+  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
 });
 
 test('US2 the return action works offline and the stored pack survives it', async ({ page, context }) => {
@@ -189,8 +190,8 @@ test('US2 the return action works offline and the stored pack survives it', asyn
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
   await page.getByRole('link', { name: BACK }).click();
 
-  await expect(page.getByRole('heading', { name: 'Your packs' })).toBeVisible();
-  await expect(page.getByText(ADDRESS)).toBeVisible();
+  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
+  await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
   await expect(page.locator('main')).not.toContainText(/Loading|Reconnect|not available/i);
   expect(failed).toEqual([]);
 
@@ -202,7 +203,7 @@ test('US2 the pack reopens unchanged after returning to the pack list', async ({
   const before = await page.locator('.pack-detail').innerText();
 
   await page.getByRole('link', { name: BACK }).click();
-  await expect(page.getByRole('heading', { name: 'Your packs' })).toBeVisible();
+  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
 
   // E1-US2-AC6 replaced the pack list with the one-pack Open-or-Build home:
   // the saved place carries one way in, named 'Open'.

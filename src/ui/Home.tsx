@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
-import { homeView, type HomeView } from '../core/home';
+import { displayAddress, homeView, type HomeView } from '../core/home';
 import type { Pack } from '../core/types';
 import { listCompletePacks } from '../data/db';
 import BottomNav from './components/BottomNav';
@@ -39,10 +39,6 @@ export default function Home({ now }: { now?: number }) {
 
   return (
     <main className="page home">
-      <header className="hero">
-        <h1>{copy.HOME_TITLE}</h1>
-      </header>
-
       {/* One preparation line, with the organisation that publishes the
           guidance named on screen beside it. It says nothing about a
           particular place, and nothing about what is happening outside. */}
@@ -58,9 +54,22 @@ export default function Home({ now }: { now?: number }) {
       ) : (
         <section className="card saved-place">
           <span className="kicker">{copy.SAVED_PLACE_LABEL}</span>
-          <h2>{view.pack.name}</h2>
-          <p className="muted">{view.pack.address}</p>
-          <p className="muted figure">{view.ageLine}</p>
+          <div className="saved-place-title">
+            <h2>{view.pack.name}</h2>
+            {/* The way in is the 'Open' action below; this only points at it,
+                so it is hidden from the screen reader rather than read out as
+                a second, wordless control. */}
+            <span className="saved-place-chevron" aria-hidden="true">
+              ›
+            </span>
+          </div>
+          {/* Title-cased for reading only. The pack still stores the address
+              exactly as the custodian returned it. */}
+          <p className="muted">{displayAddress(view.pack.address)}</p>
+          <p className="muted figure saved-place-footer">
+            {view.ageLine}
+            {copy.OPENS_WITHOUT_SIGNAL}
+          </p>
         </section>
       )}
 
@@ -76,7 +85,11 @@ export default function Home({ now }: { now?: number }) {
           </Link>
         ) : null}
         {/* Reachable in both states, including with no pack saved. */}
-        <HoldButton label={copy.HOLD_FOR_BLACKSKY} onHold={() => navigate('/blacksky')} />
+        <HoldButton
+          label={copy.HOLD_FOR_BLACKSKY}
+          hasPack={view !== null && view.kind === 'pack'}
+          onHold={() => navigate('/blacksky')}
+        />
       </div>
 
       {view === null ? null : <BottomNav items={view.nav} />}

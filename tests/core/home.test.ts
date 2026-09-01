@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MS_PER_DAY, PACK_REFRESH_DAYS } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 import {
+  displayAddress,
   headerAge,
   homeView,
   navItems,
@@ -194,5 +195,25 @@ describe('the home view', () => {
       expect(copy.PREPARATION_LINES).toContain(view.preparation.text);
       expect(view.preparation.source).toBe(copy.PREPARATION_SOURCE);
     }
+  });
+});
+
+// Display only. The pack still stores the custodian's own string, so nothing
+// downstream is ever compared against a value this function invented.
+describe('address for display', () => {
+  it('title-cases the capitals the geocoder returns, and leaves the numbers alone', () => {
+    expect(displayAddress('10 OLD ROAD FERNY CREEK 3786')).toBe('10 Old Road Ferny Creek 3786');
+    expect(displayAddress('6 RIDGE ROAD KALORAMA 3766')).toBe('6 Ridge Road Kalorama 3766');
+  });
+
+  it('leads the word after a hyphen, a slash and an apostrophe', () => {
+    expect(displayAddress('12-14 ST ANDREWS ROAD')).toBe('12-14 St Andrews Road');
+    expect(displayAddress('2/8 OBRIENS ROAD')).toBe('2/8 Obriens Road');
+    expect(displayAddress("5 O'HARA STREET")).toBe("5 O'Hara Street");
+  });
+
+  it('returns the empty string unchanged, and never invents a character', () => {
+    expect(displayAddress('')).toBe('');
+    expect(displayAddress('10 OLD ROAD')).toHaveLength('10 OLD ROAD'.length);
   });
 });

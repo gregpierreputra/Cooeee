@@ -810,7 +810,16 @@ input {
 
 .blacksky-hold {
   min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
   font-weight: var(--w-bold);
+  /* Dashed, and in the amber of the mode it opens: the control is a way into a
+     separate place, and it should not read as one more solid action in the row
+     above it. */
+  border-style: dashed;
   border-color: var(--blacksky-accent);
   color: var(--blacksky-accent);
   /* a hold control, not a tap: a long-press must not pop the context menu,
@@ -838,6 +847,20 @@ input {
 .blacksky-hold:active {
   background-size: 100% 100%;
   transition: background-size 2s linear;
+}
+
+.blacksky-hold-label {
+  font-weight: var(--w-bold);
+}
+
+/* What the mode is, in the kicker's own treatment: small, wide-tracked and
+   quieter than the label above it. */
+.blacksky-hold-sub {
+  font-size: var(--step-xs);
+  font-weight: var(--w-med);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  opacity: 0.75;
 }
 
 .blacksky-hold-hint {
@@ -910,10 +933,17 @@ input {
   letter-spacing: var(--track-tight);
 }
 
+/* A small pill: the dot leads, the age follows it. The card colour and the same
+   hairline as every card, so it reads as a quiet fact carried by the header —
+   not as a status light with a verdict attached. */
 .app-header-state {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
 }
 
 /* Real text, announced like any other text — never an image and never a colour
@@ -973,24 +1003,81 @@ input {
   color: var(--ink-3);
 }
 
+/* The name leads the row and the chevron closes it, pointing at the 'Open'
+   action below rather than standing in for it. */
+.saved-place-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.saved-place-chevron {
+  font-size: var(--step-1);
+  line-height: 1;
+  color: var(--ink-3);
+  flex: none;
+}
+
+/* The freshness line sits below a hairline, as a footer to the card rather than
+   one more paragraph in it. */
+.saved-place-footer {
+  margin-top: 0.25rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--line);
+}
+
 /* Bottom navigation, under the primary actions and inside the safe area. Two
    equal destinations: neither is weighted, and BlackSky is not among them. */
+/* A fixed bar on the panel colour, inside the safe area, so it stays within
+   thumb reach whatever the page above it does. Two equal destinations: neither
+   is weighted, and BlackSky is not among them. */
 .bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* The same centred column as every page. */
+.bottom-nav-inner {
+  width: min(100% - 2.5rem, 560px);
+  margin: 0 auto;
   display: flex;
   gap: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
 }
 
 .bottom-nav-item {
   flex: 1;
-  min-height: 44px;
+  min-height: 56px;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-pill);
+  gap: 0.125rem;
+  padding: 0.375rem 0;
+  border-radius: var(--r-card);
   color: var(--ink-2);
-  font-size: var(--step-s);
+  font-size: var(--step-xs);
   font-weight: var(--w-med);
   text-decoration: none;
+}
+
+.bottom-nav-icon {
+  flex: none;
+}
+
+.bottom-nav-label {
+  letter-spacing: 0.01em;
+}
+
+/* Room under the last action for the fixed bar, so nothing sits beneath it —
+   and a column short enough to leave that room: the header above the page and
+   the bar below it both take height the viewport unit does not know about. */
+.home {
+  min-height: calc(100dvh - 3rem);
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
 }

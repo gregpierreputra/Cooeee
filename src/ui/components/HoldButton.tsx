@@ -17,10 +17,12 @@ import * as copy from '../../core/copy';
  *  pointer-only. */
 export default function HoldButton({
   label,
+  hasPack,
   onHold,
   className = 'blacksky-hold',
 }: {
   label: string;
+  hasPack: boolean;
   onHold: () => void;
   className?: string;
 }) {
@@ -70,7 +72,12 @@ export default function HoldButton({
         }}
         onKeyUp={releaseHold}
       >
-        {label}
+        <span className="blacksky-hold-label">{label}</span>
+        {/* What the mode IS, not an urging into it: a separate place entered on
+            purpose, and one that is reachable with nothing saved. */}
+        <span className="blacksky-hold-sub">
+          {hasPack ? copy.BLACKSKY_SEPARATE_FROM_EVERYDAY : copy.BLACKSKY_WORKS_WITHOUT_PACK}
+        </span>
       </button>
       {showHoldHint ? (
         <p className="muted blacksky-hold-hint" role="status">

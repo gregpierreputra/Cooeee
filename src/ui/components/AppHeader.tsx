@@ -33,13 +33,13 @@ export default function AppHeader({ now }: { now?: number }) {
           <AppMark />
           <span className="app-header-name">{copy.APP_NAME}</span>
         </Link>
+        {/* One pill on the right: the dot leads, the age follows it as real
+            text. Nothing at all in place of the age when no pack is saved: no
+            dash, no zero, no placeholder standing in for a fact that does not
+            exist. */}
         <div className="app-header-state">
-          {/* Nothing at all when no pack is saved: no dash, no zero, no
-              placeholder standing in for an age that does not exist. */}
-          {age.kind === 'none' ? null : (
-            <span className="app-header-age figure">{age.text}</span>
-          )}
           <ConnectionDot />
+          {age.kind === 'none' ? null : <span className="app-header-age figure">{age.text}</span>}
         </div>
       </div>
     </header>
