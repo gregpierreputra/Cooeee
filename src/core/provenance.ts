@@ -2,10 +2,12 @@ import { MS_PER_DAY, OFFICIAL_DOMAINS, PACK_REFRESH_DAYS } from './constants';
 import * as copy from './copy';
 import type {
   CompletePackContent,
+  ExposureLayer,
   LayerCode,
   PackDetailItem,
   Source,
   TextPackContent,
+  VerifiedLayerStatus,
 } from './types';
 
 export type OmittedItem = { id: string; missing: 'publisher' | 'saved-date' };
@@ -95,6 +97,21 @@ const LAYER_NAMES: Record<LayerCode, string> = {
   SBO: copy.SPECIAL_BUILDING_OVERLAY,
 };
 
+/** A layer row is named by its stored status as well as its code. Naming it by
+ * code alone made an absence indistinguishable from a designation: a pack whose
+ * BPA status was 'none-mapped-here' or 'not-published' still rendered as
+ * "Designated Bushfire Prone Area", so its stored source query — which correctly
+ * returns no feature for an absence — read as a contradiction of the row. */
+const LAYER_STATUS_NAME: Record<VerifiedLayerStatus, (layerName: string) => string> = {
+  present: (layerName) => layerName,
+  'none-mapped-here': copy.LAYER_NONE_MAPPED_HERE,
+  'not-published': copy.LAYER_NOT_PUBLISHED,
+};
+
+export function layerItemName(row: Pick<ExposureLayer, 'code' | 'status'>): string {
+  return LAYER_STATUS_NAME[row.status](LAYER_NAMES[row.code]);
+}
+
 /** The absence marker is a stored row but not an information item: it has no
  * publisher-attributed content to open, only a reason. It renders as its own
  * plain statement, never as a pseudo-item in the list. */
@@ -104,7 +121,7 @@ export function packDetailAbsence(content: CompletePackContent): string | null {
 
 export function packDetailItems(content: CompletePackContent): PackDetailItem[] {
   const items: PackDetailItem[] = [
-    ...content.layers.map((row) => ({ id: row.id, name: LAYER_NAMES[row.code], source: row.source })),
+    ...content.layers.map((row) => ({ id: row.id, name: layerItemName(row), source: row.source })),
     ...content.destinations
       .filter((row) => row.kind !== 'absence')
       .map((row) => ({

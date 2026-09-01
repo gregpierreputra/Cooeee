@@ -192,6 +192,12 @@ export const BUSHFIRE_MANAGEMENT_OVERLAY = 'Bushfire Management Overlay';
 export const LAND_SUBJECT_TO_INUNDATION_OVERLAY = 'Land Subject to Inundation Overlay';
 export const FLOODWAY_OVERLAY = 'Floodway Overlay';
 export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
+// A saved layer row states its stored result, not just the layer's name. The
+// name alone read as a designation even when the stored status was an absence.
+export const LAYER_NONE_MAPPED_HERE = (layer: string) =>
+  `${layer} — none mapped at this address`;
+export const LAYER_NOT_PUBLISHED = (layer: string) =>
+  `${layer} — not published for this area`;
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
 

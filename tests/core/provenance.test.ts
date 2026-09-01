@@ -163,6 +163,32 @@ describe('E1-US2 pack item projection', () => {
     ]);
   });
 
+  // The reported defect: a pack whose stored BPA status was an absence still
+  // rendered as "Designated Bushfire Prone Area", so its stored point query —
+  // which correctly returns no feature — looked like it contradicted the row.
+  it.each([
+    ['none-mapped-here', 'Designated Bushfire Prone Area — none mapped at this address'],
+    ['not-published', 'Designated Bushfire Prone Area — not published for this area'],
+  ] as const)('names a stored %s layer row by its status, never as a designation', (status, name) => {
+    const content: CompletePackContent = {
+      pack: pack(),
+      layers: [{ ...layer, status }],
+      destinations: [], recovery: [], recoveryVerified: true,
+    };
+    expect(packDetailItems(content).map((item) => item.name)).toEqual([name]);
+  });
+
+  it('names a stored present layer row by the designation alone', () => {
+    const content: CompletePackContent = {
+      pack: pack(),
+      layers: [layer],
+      destinations: [], recovery: [], recoveryVerified: true,
+    };
+    expect(packDetailItems(content).map((item) => item.name)).toEqual([
+      copy.DESIGNATED_BUSHFIRE_PRONE_AREA,
+    ]);
+  });
+
   it('does not invent a basemap item when its attribution source is absent', () => {
     const content: CompletePackContent = {
       pack: pack({ builtWithTiles: true }),
