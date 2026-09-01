@@ -236,9 +236,13 @@ describe('the returning-user home', () => {
     expect(copy.BUILD_A_PACK).toBe('Build a pack');
   });
 
-  it('names the source of the preparation line on screen', () => {
-    expect(copy.PREPARATION_SOURCE).toBe('Country Fire Authority — plan and prepare guidance.');
-    expect(copy.PREPARATION_SOURCE).toContain('Country Fire Authority');
+  it('labels the preparation line as a daily reminder', () => {
+    expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
+  });
+
+  it('credits the guidance behind the preparation line, without quoting it', () => {
+    expect(copy.PREPARATION_SOURCE).toBe('Based on CFA guidance.');
+    expect(copy.PREPARATION_SOURCE).not.toMatch(/["“”]/);
   });
 
   it('says nothing about conditions, incidents or being prepared enough', () => {

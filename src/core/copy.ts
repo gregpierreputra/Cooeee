@@ -337,6 +337,10 @@ export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_MY_PACK = 'My pack';
 
+/** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
+ *  is written here in sentence case and read out as words, not as letters. */
+export const PREPARATION_LABEL = "Today's reminder";
+
 /** Eight preparation lines, each grounded in Country Fire Authority plan-and-
  *  prepare guidance. One is shown per day and named with its source on screen;
  *  none of them is advice about a particular place, and none of them says
@@ -352,7 +356,10 @@ export const PREPARATION_LINES = [
   'Talk the plan through with everyone in the house before the fire season starts.',
 ] as const;
 
-export const PREPARATION_SOURCE = 'Country Fire Authority — plan and prepare guidance.';
+/** Attribution, not citation: the lines above are Cooeee's own wording of
+ *  Country Fire Authority plan-and-prepare guidance, so the byline credits the
+ *  guidance rather than quoting it. Nothing here is ever shown in quotes. */
+export const PREPARATION_SOURCE = 'Based on CFA guidance.';
 
 /** The pack card's footer line. Appended to the card's own age wording rather
  *  than written into it: the age is a fact about the pack, and this is a fact

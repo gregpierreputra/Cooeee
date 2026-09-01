@@ -39,11 +39,13 @@ export default function Home({ now }: { now?: number }) {
 
   return (
     <main className="page home">
-      {/* One preparation line, with the organisation that publishes the
-          guidance named on screen beside it. It says nothing about a
+      {/* One preparation line under its own eyebrow, so it reads as the day's
+          reminder rather than as an explanation of the app, with the guidance
+          it is drawn from credited beneath it. It says nothing about a
           particular place, and nothing about what is happening outside. */}
       {view === null ? null : (
         <section className="preparation">
+          <span className="kicker">{copy.PREPARATION_LABEL}</span>
           <p>{view.preparation.text}</p>
           <p className="muted preparation-source">{view.preparation.source}</p>
         </section>
