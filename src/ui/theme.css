@@ -52,8 +52,11 @@
   --r-pill: 999px;
 
   /* BlackSky's amber, referenced OUTSIDE blacksky mode by the one control that
-     opens it, so the control reads as the mode it leads to. */
+     opens it, so the control reads as the mode it leads to. The fill is the
+     mockups' deep amber: dark enough that the amber label stays readable while
+     the hold progress sweeps under it. */
   --blacksky-accent: #ffb020;
+  --blacksky-fill: #3a2808;
 }
 
 :root[data-mode='prepare'] {
@@ -734,12 +737,23 @@ input {
   touch-action: manipulation;
 }
 
-/* The press is visibly acknowledged for the whole hold — the confirmation cue
-   on devices without vibration. A fill, not an animation: nothing moves. */
+/* The hold is acknowledged by a fill that sweeps left to right for the length
+   of the hold — the confirmation cue on devices without vibration. The 2s
+   sweep matches HOLD_MS in core/constants.ts, so a completed hold is exactly a
+   completed fill; releasing early snaps the fill back. Painted as a background
+   gradient growing under the label, so the amber text stays readable
+   throughout. */
+.blacksky-hold {
+  background-image: linear-gradient(var(--blacksky-fill), var(--blacksky-fill));
+  background-repeat: no-repeat;
+  background-position: left;
+  background-size: 0% 100%;
+  transition: background-size 0.2s ease;
+}
+
 .blacksky-hold:active {
-  background: var(--blacksky-accent);
-  border-color: var(--blacksky-accent);
-  color: #000000;
+  background-size: 100% 100%;
+  transition: background-size 2s linear;
 }
 
 .blacksky-hold-hint {
