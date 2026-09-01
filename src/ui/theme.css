@@ -300,6 +300,15 @@ button,
   text-decoration: none;
 }
 
+/* The Feature-3 escape: filled with the screen's own accent so it is never the
+   darkest control in the row, and never mistaken for a flow action. */
+.back-home {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+  font-weight: var(--w-bold);
+}
+
 .main-action {
   min-height: 60px;
   background: var(--accent);

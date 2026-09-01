@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import BackHomeLink from './BackHomeLink';
 
 /** The shared shell for a transient flow state: kicker label, one polite
  *  status card, optional actions. Every waiting/failed/result screen in the
@@ -23,7 +24,10 @@ export default function StatusPage({
       <div className={cardClass ? `card ${cardClass}` : 'card'} role="status" aria-live="polite">
         {card}
       </div>
-      {actions ? <div className="actions">{actions}</div> : null}
+      <div className="actions">
+        {actions}
+        <BackHomeLink />
+      </div>
     </main>
   );
 }

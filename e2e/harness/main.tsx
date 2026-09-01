@@ -291,16 +291,10 @@ function DetailLauncher() {
     : <main className="page"><button type="button" onClick={() => setOpen(true)}>Open test pack</button></main>;
 }
 
-// PackDetail links back to the pack list, so it needs router context. The
-// harness has no routes of its own, so an in-memory one keeps the component
-// mountable in isolation without inventing a second application shell.
-const detailFlow = (
-  <MemoryRouter>
-    {window.location.pathname === '/detail-launch'
-      ? <DetailLauncher />
-      : <PackDetail packId="detail-pack" now={detailNow} />}
-  </MemoryRouter>
-);
+const detailFlow =
+  window.location.pathname === '/detail-launch'
+    ? <DetailLauncher />
+    : <PackDetail packId="detail-pack" now={detailNow} />;
 
 const destinationsMode = new URLSearchParams(window.location.search).get('mode') ?? 'sites';
 const destinationsNow = Date.UTC(2026, 8, 1);
@@ -399,8 +393,12 @@ const areaFlow = (
   />
 );
 
+// Screens link back to the pack list, so they need router context. The
+// harness has no routes of its own, so ONE in-memory router keeps every
+// component mountable in isolation without a second application shell.
 createRoot(root).render(
   <StrictMode>
+    <MemoryRouter>
     {window.location.pathname === '/conflict' ? conflictFlow
       : window.location.pathname === '/area' ? areaFlow
         : window.location.pathname === '/size' ? sizeFlow
@@ -410,5 +408,6 @@ createRoot(root).render(
         : window.location.pathname === '/search' ? (
       <Search onPendingPlace={(place) => { window.__confirmedPlace = place; }} />
     ) : confirmation}
+    </MemoryRouter>
   </StrictMode>,
 );
