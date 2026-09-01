@@ -78,7 +78,7 @@ export default function Home() {
         // first entry gets no visual weight.
         <ul className="list">
           {packs.map((p) => (
-            <li key={p.id} className="card">
+            <li key={p.id} className="card pack-card">
               <h2><Link to={`/packs/${p.id}`}>{p.name}</Link></h2>
               <p className="muted">{p.address}</p>
               <p className="muted figure">{freshness(now, p.verifiedAt).label}</p>

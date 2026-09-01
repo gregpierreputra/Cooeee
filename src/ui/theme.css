@@ -263,6 +263,24 @@ a {
   color: var(--ink-3);
 }
 
+/* Home pack rows: the name link stretches over the whole card, so the card is
+   the tap target. Controls inside the card must sit above the overlay
+   (position + z-index) to stay independently clickable. */
+.pack-card {
+  position: relative;
+}
+.pack-card h2 a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+@media (hover: hover) {
+  .pack-card:hover {
+    border-color: var(--accent);
+  }
+}
+
 /* Primary action sits at the bottom of the viewport, within thumb reach. */
 .actions {
   margin-top: auto;
