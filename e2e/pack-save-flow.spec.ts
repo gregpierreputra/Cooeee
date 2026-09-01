@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addressFeature, waitForController, WFS_PATTERN } from './helpers';
+import { acknowledgeFirstOpen, addressFeature, waitForController, WFS_PATTERN } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
 // disconnected test harness. Only the official WFS endpoint is intercepted —
@@ -52,6 +52,9 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
 }
 
 test.beforeEach(async ({ page }) => {
+  // A returning device: the first-open disclosure (E1-US1-AC0) is already
+  // acknowledged, so this spec starts where the save journey starts.
+  await acknowledgeFirstOpen(page);
   await page.goto('/');
   await page.evaluate(() => indexedDB.deleteDatabase('cooeee'));
 });

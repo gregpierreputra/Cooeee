@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { waitForController } from './helpers';
+import { acknowledgeFirstOpen, waitForController } from './helpers';
 import {
   BLACKSKY_TITLE,
   HOLD_FOR_BLACKSKY,
@@ -10,6 +10,12 @@ import {
 
 // BlackSky's whole promise is made for the moment the radios are off. Both
 // tests here run against the real production bundle, like offline-cold-start.
+
+// This is a returning device: the first-open disclosure (E1-US1-AC0) has
+// already been acknowledged, so these specs exercise the screens they are about.
+test.beforeEach(async ({ page }) => {
+  await acknowledgeFirstOpen(page);
+});
 
 test('BlackSky cold-starts offline on a fresh install: the designed no-pack state, zero network', async ({
   page,
