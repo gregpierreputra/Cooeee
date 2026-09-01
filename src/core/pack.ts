@@ -4,7 +4,7 @@ import { savedAgeDays } from './provenance';
 import type { Pack, PackSeed, PendingPlace, Source } from './types';
 
 /** A pack past its refresh window stays FULLY USABLE and gains a label.
- *  Nothing expires; nothing auto-refreshes; nothing is replaced silently.
+ *  Nothing expires, nothing auto-refreshes, nothing is replaced silently.
  *  The window is inclusive: at exactly PACK_REFRESH_DAYS the pack is not stale.
  *  Freshness derives from verifiedAt, never createdAt. */
 export const freshness = (
@@ -13,13 +13,15 @@ export const freshness = (
 ): { stale: boolean; label: string } => {
   const days = savedAgeDays(now, verifiedAt);
   const stale = days > PACK_REFRESH_DAYS;
-  return { stale, label: stale ? NOT_RECENTLY_VERIFIED(days) : SAVED_DAYS_AGO(days) };
+  return { 
+    stale, 
+    label: stale ? NOT_RECENTLY_VERIFIED(days) : SAVED_DAYS_AGO(days) };
 };
 
 /** The seed for a pack built from an already-confirmed place and an
- * already-fetched official area result. The reminder defaults to the same
- * mandated priority line shown on the area-result screen — there is no
- * reminder-editing surface yet, so nothing invented is stored in its place. */
+ * already-fetched official area result. 
+ * The reminder defaults to the same mandated priority line shown on the area-result screen — 
+ * there is no reminder-editing surface yet, so nothing invented is stored in its place. */
 export function buildPackSeed(
   id: string,
   createdAt: number,

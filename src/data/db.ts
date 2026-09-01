@@ -29,9 +29,11 @@ class CooeeeDb extends Dexie {
 
   constructor() {
     super('cooeee');
+    
     // A SHIPPED VERSION IS NEVER MUTATED. A schema change is db.version(2) with
     // its own .upgrade(); Dexie applies every version above the stored one, in
     // order, on open.
+
     this.version(1).stores({
       packs: 'id, status, address',
       layers: 'id, packId',
@@ -46,25 +48,26 @@ class CooeeeDb extends Dexie {
   }
 }
 
-/** The database handle. src/data/ only — ESLint blocks importing it from src/ui/,
- * because a raw table read from a component is how a half-built pack becomes
- * visible. UI loaders must enter through the complete-pack guards below. */
+/** The database handle. 
+ * src/data/ only — ESLint blocks importing it from src/ui/,
+ * because a raw table read from a component is how a half-built pack becomes visible. 
+ * UI loaders must enter through the complete-pack guards below. */
 export const db = new CooeeeDb();
 
 /** THE read API — complete packs only. */
 export const listCompletePacks = (): Promise<Pack[]> =>
   db.packs.where('status').equals('complete').toArray();
 
-/** THE read API — one complete pack, or undefined. A building pack is
- *  indistinguishable from a pack that does not exist, which is the point. */
+/** THE read API — one complete pack, or undefined. 
+ * A building pack is indistinguishable from a pack that does not exist, which is the point. */
 export const getCompletePack = async (id: string): Promise<Pack | undefined> => {
   const p = await db.packs.get(id);
   return p?.status === 'complete' ? p : undefined;
 };
 
-/** Every complete pack with its destination rows, for BlackSky. Routes through
- *  listCompletePacks, so a building pack stays exactly as invisible here as it
- *  is everywhere else. */
+/** Every complete pack with its destination rows, for BlackSky. 
+ * Routes through listCompletePacks, so a building pack stays exactly as invisible here as it is everywhere else. 
+ **/
 export async function listCompletePacksWithPlaces(): Promise<PackWithPlaces[]> {
   const packs = await listCompletePacks();
   return Promise.all(

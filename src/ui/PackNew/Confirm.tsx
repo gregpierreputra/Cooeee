@@ -16,6 +16,7 @@ export function Confirm({ candidate, onConfirm, onSearchAgain }: ConfirmProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    
     // The in-memory selection, with no normalising of user or source text: the
     // edited name is kept exactly as typed, the address exactly as returned.
     onConfirm({ name, address: candidate.address, lat: candidate.lat, lon: candidate.lon });

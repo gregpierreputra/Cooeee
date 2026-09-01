@@ -1,9 +1,11 @@
-// EVERY user-facing string in the product. Components contain no inline literals.
-// The mandated lines below are exact — punctuation and em dashes included — and
-// tests/core/copy.test.ts asserts each one by exact match. Never reword them.
+// EVERY user-facing string in the product. 
+// Components contain no inline literals.
+// The mandated lines below are exact, punctuation, and em dashes included — and
+// tests/core/copy.test.ts asserts each one by exact match.
+// The exact text literal that will be used in all of the main pages.
+// Never reword them.
 
-// ── Mandated literals ────────────────────────────────────────────────────────
-
+// Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
 
 export const NO_ADDRESS_MATCH =
@@ -19,10 +21,10 @@ export const OUTSIDE_AREAS = "You're outside the areas you've prepared";
 export const NOT_RECENTLY_VERIFIED = (days: number) =>
   `Saved ${days} days ago — not recently verified`;
 
-// ── Shared vocabulary ────────────────────────────────────────────────────────
-
-/** 16-point compass abbreviations, index 0 = north, one entry every 22.5
- *  degrees. Read by core/geo.ts cardinalAbbr(). */
+// Shared vocabulary
+/** 16-point compass abbreviations, 
+ * index 0 = north, one entry every 22.5 degrees. 
+ * Read by core/geo.ts cardinalAbbr(). */
 export const CARDINAL_ABBR = [
   'N',
   'NNE',
@@ -47,33 +49,26 @@ export const CARDINAL_ABBR = [
  *  compass needle: it points where the bearing sits on a north-up dial. */
 export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'] as const;
 
-// ── Application shell ────────────────────────────────────────────────────────
-
+// Application shell
 export const APP_NAME = 'Cooeee';
-
 export const HOME_TITLE = 'Your packs';
 
 export const NO_PACKS_YET = 'No packs saved yet.';
-
 export const NO_PACKS_HINT =
   'Build a pack while you have a connection, so it is on your phone when there is none.';
-
 export const SAVED_DAYS_AGO = (days: number) => `Saved ${days} days ago`;
 
 export const NEW_VERSION_READY =
   'A new version is ready. It is applied when you choose to reload — nothing changes until then.';
-
 export const RELOAD_NOW = 'Reload now';
 
-// ── E1-US1-AC1 address confirmation ─────────────────────────────────────────
-
+// E1-US1-AC1 address confirmation
 export const CONFIRM_ADDRESS_QUESTION = 'Is this the place you want to save?';
 export const PLACE_NAME_LABEL = 'Place name';
 export const SAVE_THIS_PLACE = 'Save this place';
 export const SEARCH_AGAIN = 'Search again';
 
-// ── E1-US1-AC2–AC4 address search ──────────────────────────────────────────
-
+// E1-US1-AC2–AC4 address search
 export const BUILD_A_PACK = 'Build a pack';
 export const ADDRESS_SEARCH_TITLE = 'Search for your address';
 export const ADDRESS_FIELD_LABEL = 'Address';
@@ -108,8 +103,7 @@ export const SEARCH_FAILURE_MEANING =
   'This is not the same as saying the address is not there. Try again when you have a connection.';
 export const TRY_AGAIN = 'Try again';
 
-// ── E1-US1-AC5–AC7 bushfire-area check ─────────────────────────────
-
+// E1-US1-AC5–AC7 bushfire-area check
 export const AREA_CHECK_IN_PROGRESS = 'Checking the published bushfire area.';
 export const INSIDE_BUSHFIRE_AREA =
   'This address is inside a Designated Bushfire Prone Area.';
@@ -126,8 +120,7 @@ export const AREA_CHECK_COULD_NOT_RUN =
 export const AREA_NOT_SAVED =
   'Nothing has been saved. Your address is still here — try again when you have a connection.';
 
-// ── E1-US1-AC8 pack conflict ──────────────────────────────────────────
-
+// E1-US1-AC8 pack conflict
 export const CHECKING_SAVED_PLACE = 'Checking the saved place on this device.';
 export const PLACE_ALREADY_SAVED = 'You already have a saved place.';
 export const SAVED_ADDRESS_LABEL = 'Saved address';
@@ -140,8 +133,7 @@ export const MULTIPLE_SAVED_PACKS =
   'More than one saved pack was found on this device.';
 export const NOTHING_CHANGED = 'Nothing has been changed.';
 
-// ── E1-US1-AC9 pack offer and download ─────────────────────────────
-
+// E1-US1-AC9 pack offer and download
 export const READY_TO_DOWNLOAD = 'Ready to download';
 export const PACK_SIZE_LINE = (size: string) => `This pack is ${size}`;
 export const SAVE_PACK = 'Save this pack';
@@ -151,8 +143,7 @@ export const PREVIOUS_PACK_UNTOUCHED =
   'Nothing has been changed. Your previous pack is untouched.';
 export const PLACE_SAVED = 'Place saved';
 
-// ── E1-US2-AC1–AC5 pack provenance and offline source access ───────────────
-
+// E1-US2-AC1–AC5 pack provenance and offline source access
 export const YOUR_PACK = 'Your pack';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
@@ -175,8 +166,8 @@ export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to original source (web)';
 export const CLOSE = 'Close';
-// ── E1-US1-AC1/AC9 production pack-save wiring ──────────────────────────────
 
+// E1-US1-AC1/AC9 production pack-save wiring
 export const SEE_PACK_SIZE = 'See pack size';
 export const PREPARING_PACK_OFFER = 'Preparing the pack offer.';
 export const PACK_OFFER_FAILED = 'We could not prepare this pack right now.';
@@ -196,15 +187,17 @@ export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
 
-// ── Screen eyebrows ─────────────────────────────────────────────────────────
-// The small label above each screen's heading, rendered as the hero kicker. It
-// names the step of the flow the user is in, so the label earns its place
+// Screen eyebrows
+// The small label above each screen's heading, rendered as the hero kicker. 
+// It names the step of the flow the user is in, so the label earns its place
 // rather than repeating the mode.
-//
+// 
 // Sentence case here, capitals on screen: .kicker carries text-transform, and
-// the DOM carries an ordinary word. Some screen readers spell an all-caps string
-// out letter by letter, so the stored casing is an accessibility decision, not a
-// styling one — and keeping the transform meaningful stops it silently diverging
+// the DOM carries an ordinary word. 
+// 
+// Some screen readers spell an all-caps string out letter by letter, 
+// so the stored casing is an accessibility decision, not a styling one — 
+// and keeping the transform meaningful stops it silently diverging
 // from what is stored. tests/core/copy.test.ts locks all five by exact match.
 
 export const EYEBROW_SET_UP_YOUR_PLACE = 'Set up your place';
@@ -213,8 +206,7 @@ export const EYEBROW_AREA_RESULT = 'Area result';
 export const EYEBROW_SAVE_YOUR_PACK = 'Save your pack';
 export const EYEBROW_MY_PACK = 'My pack';
 
-// ── E3-US1-AC1 BlackSky prepared direction ──────────────────────────────────
-
+// E3-US1-AC1 BlackSky prepared direction
 export const BLACKSKY_TITLE = 'BlackSky';
 export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
 
@@ -230,8 +222,7 @@ export const distanceLabel = (m: number): string =>
 export const BEARING_FIGURE = (point: string, glyph: string, distance: string) =>
   `${point} ${glyph} · ${distance}`;
 
-// ── E3-US1-AC4 marked-position estimate ─────────────────────────────────────
-
+// E3-US1-AC4 marked-position estimate
 export const MARK_HINT =
   'If you are standing at your saved place, mark it — bearings can be estimated from there. This is not GPS.';
 
@@ -242,8 +233,7 @@ export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${addre
 export const ESTIMATE_READOUT = (m: number) =>
   `ESTIMATE from your marked position — ± ${m} m and growing`;
 
-// ── E3-US2-AC1 outside every pack area ──────────────────────────────────────
-
+// E3-US2-AC1 outside every pack area
 /** Distance to a pack area's EDGE — never presented as a direction. */
 export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area`;
 
@@ -258,8 +248,7 @@ export const EMERGENCY_BROADCASTER =
 export const PHONE_MAY_WORK =
   'Phone calls may work if your phone shows signal — this app cannot detect phone signal.';
 
-// ── E3-US2-AC2 no pack stored ───────────────────────────────────────────────
-
+// E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
 
 // Built-in static preparation guidance, readable on a fresh install that has
@@ -269,16 +258,13 @@ export const PREP_KIT_LINE =
   'Keep water, medications, a torch and a battery radio where you can grab them.';
 export const PREP_PLAN_LINE = 'Decide where you would go and how, before you need to.';
 
-// ── E3-US2-AC3 BlackSky never says safe ─────────────────────────────────────
-
+// E3-US2-AC3 BlackSky never says safe
 /** How every saved place is described, with its source. The term is the CFA's
  *  own — a place of LAST resort — and the wording promises nothing about it. */
 export const PLACE_DESCRIPTOR = (publisher: string) =>
   `Official place of last resort · ${publisher}`;
 
-// ── E3-US3-AC1 deliberate activation ────────────────────────────────────────
-
+// E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
-
 export const LEAVE_BLACKSKY = 'Leave BlackSky';
