@@ -4,6 +4,7 @@ import * as copy from './core/copy';
 import BlackSky from './ui/BlackSky';
 import Home from './ui/Home';
 import BackBar from './ui/components/BackBar';
+import NoticeBar from './ui/components/NoticeBar';
 import PackDetail from './ui/PackDetail';
 import { Search } from './ui/PackNew/Search';
 
@@ -53,6 +54,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   return (
     <BrowserRouter>
       <ModeSwitch />
+      <NoticeBar />
       <UpdateBanner applyUpdate={applyUpdate} />
       <BackBar />
       <Routes>

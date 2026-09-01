@@ -54,6 +54,12 @@ export const APP_NAME = 'Cooeee';
 export const HOME_TITLE = 'Your packs';
 export const BACK = 'Back';
 
+// Connection notice. States what the browser reports, nothing more — this app
+// cannot detect phone signal, and never claims to.
+export const ONLINE_NOTICE = 'Online — connected to a network.';
+export const OFFLINE_NOTICE = 'Offline — saved packs still work.';
+export const DISMISS_NOTICE = 'Dismiss connection notice';
+
 export const NO_PACKS_YET = 'No packs saved yet.';
 export const NO_PACKS_HINT =
   'Build a pack while you have a connection, so it is on your phone when there is none.';

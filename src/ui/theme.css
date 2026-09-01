@@ -57,6 +57,13 @@
      the hold progress sweeps under it. */
   --blacksky-accent: #ffb020;
   --blacksky-fill: #3a2808;
+
+  /* Connection notice. Fixed green/red by requirement, in every mode: the
+     state colour IS the information, so it never rebinds per mode. */
+  --online: #2dd4bf;
+  --online-ink: #04211c;
+  --offline: #f87171;
+  --offline-ink: #2a0a0a;
 }
 
 :root[data-mode='prepare'] {
@@ -615,6 +622,61 @@ input {
 /* ── Update banner ─────────────────────────────────────────────────────────── */
 
 /* The service-worker banner. Stated in words, never an auto-reload. */
+/* ── Connection notice ─────────────────────────────────────────────────────── */
+
+/* A thin strip pinned to the very top, above the back bar. Its background is
+   the state: green online, red offline. */
+.notice-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+}
+
+.notice-online {
+  background: var(--online);
+  color: var(--online-ink);
+}
+.notice-offline {
+  background: var(--offline);
+  color: var(--offline-ink);
+}
+
+/* The dismiss control: quiet, inside the bar, inheriting the state colour. */
+.notice-bar button {
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: var(--step-1);
+  line-height: 1;
+}
+
+/* Dismissed, the notice folds to one always-visible sliver at the top left,
+   still in the state colour; pressing it reopens the bar. */
+.notice-sliver {
+  position: fixed;
+  top: 0.75rem;
+  left: 0;
+  z-index: 3;
+  width: 6px;
+  height: 28px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0 4px 4px 0;
+}
+
 /* ── Back bar ──────────────────────────────────────────────────────────────── */
 
 /* The persistent way back, pinned to the top of every screen except the pack
@@ -626,6 +688,11 @@ input {
   z-index: 1;
   background: var(--bg);
   padding: 0.75rem 0 0.5rem;
+}
+
+/* With the notice bar open above it, the back bar sticks just below it. */
+.notice-bar ~ .back-bar {
+  top: 2.5rem;
 }
 
 .back-bar button {
