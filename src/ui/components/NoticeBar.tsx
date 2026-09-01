@@ -4,8 +4,8 @@ import * as copy from '../../core/copy';
 /** The connection notice, pinned above everything at the top of the page.
  *  Green when the browser reports a network connection, red when it reports
  *  none — reported state only, never a probe: this component makes no network
- *  request. Dismissing it leaves a small always-visible sliver in the same
- *  colour, which reopens the bar. */
+ *  request. Dismissing it leaves a thin always-visible full-width strip in the
+ *  same colour, which reopens the bar. */
 export default function NoticeBar() {
   const [online, setOnline] = useState(navigator.onLine);
   const [open, setOpen] = useState(true);

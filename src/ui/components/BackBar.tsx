@@ -21,9 +21,11 @@ export default function BackBar() {
 
   return (
     <nav className="back-bar">
-      <button type="button" onClick={goBack}>
-        <span aria-hidden="true">‹</span> {copy.BACK}
-      </button>
+      <div className="back-bar-inner">
+        <button type="button" onClick={goBack}>
+          <span aria-hidden="true">‹</span> {copy.BACK}
+        </button>
+      </div>
     </nav>
   );
 }
