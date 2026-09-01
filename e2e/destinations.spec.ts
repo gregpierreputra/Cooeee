@@ -44,7 +44,7 @@ test('AC1 lists only the official in-range places, each with its council and the
   for (const text of [
     'Bushfire place of last resort',
     'Responsible council: Yarra Ranges Shire',
-    'CFA state-wide list as at 18 Aug 2026',
+    'Country Fire Authority state-wide list as at 18 Aug 2026',
   ]) {
     await expect(page.getByText(text).first()).toBeVisible();
     expect(await page.getByText(text).count()).toBe(BY_DISTANCE.length + 1);
@@ -67,7 +67,7 @@ test('AC1 keeps an un-located published place, under its own heading', async ({ 
 
   const section = page.locator('.destination-unlocated');
   await expect(
-    section.getByRole('heading', { name: 'On the CFA list but not located to a point on the map' }),
+    section.getByRole('heading', { name: 'On the Country Fire Authority list but not located to a point on the map' }),
   ).toBeVisible();
   await expect(section.getByRole('heading', { name: UNLOCATED_SAME_LGA, exact: true })).toBeVisible();
 });

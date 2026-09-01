@@ -1,4 +1,5 @@
 import * as copy from '../../core/copy';
+import BackHomeLink from '../components/BackHomeLink';
 
 export type ConflictProps = {
   savedAddress: string;
@@ -29,6 +30,7 @@ export function Conflict({ savedAddress, newAddress, onKeep, onReplace }: Confli
       <div className="actions conflict-actions">
         <button type="button" onClick={onKeep}>{copy.KEEP_SAVED_PLACE}</button>
         <button type="button" onClick={onReplace}>{copy.REPLACE_WITH_THIS_ONE}</button>
+        <BackHomeLink />
       </div>
     </main>
   );
@@ -47,6 +49,7 @@ export function ConflictBlocked({ multiple, onSearchAgain }: {
       </div>
       <div className="actions">
         <button type="button" onClick={onSearchAgain}>{copy.SEARCH_AGAIN}</button>
+        <BackHomeLink />
       </div>
     </main>
   );

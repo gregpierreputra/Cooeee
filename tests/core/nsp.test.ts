@@ -204,7 +204,7 @@ describe('formatIsoDateShort', () => {
 
 describe('nspListDateLabel', () => {
   it('is the list’s own date, labelled as the list’s date', () => {
-    expect(nspListDateLabel('2026-08-18')).toBe('CFA state-wide list as at 18 Aug 2026');
+    expect(nspListDateLabel('2026-08-18')).toBe('Country Fire Authority state-wide list as at 18 Aug 2026');
   });
 });
 

@@ -52,8 +52,18 @@
   --r-pill: 999px;
 
   /* BlackSky's amber, referenced OUTSIDE blacksky mode by the one control that
-     opens it, so the control reads as the mode it leads to. */
+     opens it, so the control reads as the mode it leads to. The fill is the
+     mockups' deep amber: dark enough that the amber label stays readable while
+     the hold progress sweeps under it. */
   --blacksky-accent: #ffb020;
+  --blacksky-fill: #3a2808;
+
+  /* Connection notice. Fixed green/red by requirement, in every mode: the
+     state colour IS the information, so it never rebinds per mode. */
+  --online: #2dd4bf;
+  --online-ink: #04211c;
+  --offline: #f87171;
+  --offline-ink: #2a0a0a;
 }
 
 :root[data-mode='prepare'] {
@@ -72,8 +82,12 @@
   --line: #3a2808;
   --accent: #ffb020;
   --ink-on-accent: #000000;
-  --ink-2: #c79232;
-  --ink-3: #c79232;
+  /* ONE text colour in BlackSky: every ink token is the same amber as the
+     accent, so no piece of text can deviate from it. Amber on true black
+     stays ~10:1, and no white block ever breaks dark-adapted eyes. */
+  --ink: #ffb020;
+  --ink-2: #ffb020;
+  --ink-3: #ffb020;
   --btn-ink: #ffb020;
   --glow: none;
 }
@@ -298,6 +312,15 @@ button,
   align-items: center;
   justify-content: center;
   text-decoration: none;
+}
+
+/* The Feature-3 escape: filled with the screen's own accent so it is never the
+   darkest control in the row, and never mistaken for a flow action. */
+.back-home {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+  font-weight: var(--w-bold);
 }
 
 .main-action {
@@ -599,6 +622,102 @@ input {
 /* ── Update banner ─────────────────────────────────────────────────────────── */
 
 /* The service-worker banner. Stated in words, never an auto-reload. */
+/* ── Connection notice ─────────────────────────────────────────────────────── */
+
+/* A thin horizontal strip pinned to the very top, spanning the full viewport
+   width, above the back bar. Its background is the state: green online, red
+   offline. */
+.notice-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  width: 100%;
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+}
+
+.notice-online {
+  background: var(--online);
+  color: var(--online-ink);
+}
+.notice-offline {
+  background: var(--offline);
+  color: var(--offline-ink);
+}
+
+/* The dismiss control: quiet, inside the bar, inheriting the state colour. */
+.notice-bar button {
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: var(--step-1);
+  line-height: 1;
+}
+
+/* Dismissed, the notice folds to one always-visible sliver: a thin horizontal
+   strip spanning the full page width at the very top, still in the state
+   colour. Pressing it reopens the bar. */
+.notice-sliver {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  height: 6px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+/* With only the sliver above it, the back bar sticks just below the strip. */
+.notice-sliver ~ .back-bar {
+  top: 6px;
+}
+
+/* ── Back bar ──────────────────────────────────────────────────────────────── */
+
+/* The persistent way back, pinned to the top of every screen except the pack
+   list. The solid base colour stops content showing through as it scrolls
+   under; the inner column keeps the small button on the page's left edge. */
+.back-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg);
+  padding: 0.5rem 0 0.25rem;
+}
+
+/* With the notice bar open above it, the back bar sticks just below it. */
+.notice-bar ~ .back-bar {
+  top: 2.25rem;
+}
+
+.back-bar-inner {
+  width: min(100% - 2.5rem, 560px);
+  margin: 0 auto;
+}
+
+/* A compact pill, not a full-width action: noticeable, 44px target, no more. */
+.back-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  font-size: var(--step-s);
+}
+
 .banner {
   width: min(100% - 2.5rem, 560px);
   margin: 0.75rem auto 0;
@@ -702,12 +821,23 @@ input {
   touch-action: manipulation;
 }
 
-/* The press is visibly acknowledged for the whole hold — the confirmation cue
-   on devices without vibration. A fill, not an animation: nothing moves. */
+/* The hold is acknowledged by a fill that sweeps left to right for the length
+   of the hold — the confirmation cue on devices without vibration. The 2s
+   sweep matches HOLD_MS in core/constants.ts, so a completed hold is exactly a
+   completed fill; releasing early snaps the fill back. Painted as a background
+   gradient growing under the label, so the amber text stays readable
+   throughout. */
+.blacksky-hold {
+  background-image: linear-gradient(var(--blacksky-fill), var(--blacksky-fill));
+  background-repeat: no-repeat;
+  background-position: left;
+  background-size: 0% 100%;
+  transition: background-size 0.2s ease;
+}
+
 .blacksky-hold:active {
-  background: var(--blacksky-accent);
-  border-color: var(--blacksky-accent);
-  color: #000000;
+  background-size: 100% 100%;
+  transition: background-size 2s linear;
 }
 
 .blacksky-hold-hint {

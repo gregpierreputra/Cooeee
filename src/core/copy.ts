@@ -52,6 +52,13 @@ export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '�
 // Application shell
 export const APP_NAME = 'Cooeee';
 export const HOME_TITLE = 'Your packs';
+export const BACK = 'Back';
+
+// Connection notice. States what the browser reports, nothing more — this app
+// cannot detect phone signal, and never claims to.
+export const ONLINE_NOTICE = 'Online — connected to a network.';
+export const OFFLINE_NOTICE = 'Offline — saved packs still work.';
+export const DISMISS_NOTICE = 'Dismiss connection notice';
 
 export const NO_PACKS_YET = 'No packs saved yet.';
 export const NO_PACKS_HINT =
@@ -114,7 +121,7 @@ export const AREA_NOT_PUBLISHED =
 export const DTP_SAVED_DATE = (date: string) =>
   `Published by the Department of Transport and Planning, saved ${date}.`;
 export const OFFICIAL_INSTRUCTIONS_FIRST =
-  'Follow CFA and emergency service instructions first.';
+  'Follow Country Fire Authority and emergency service instructions first.';
 export const AREA_CHECK_COULD_NOT_RUN =
   'We could not check the bushfire area for this address right now.';
 export const AREA_NOT_SAVED =
@@ -174,6 +181,7 @@ export const PACK_OFFER_FAILED = 'We could not prepare this pack right now.';
 export const OPEN_SAVED_PACK = 'Open saved pack';
 
 export const BACK_TO_YOUR_PACKS = 'Back to Your packs';
+export const BACK_TO_HOME = 'Back to Home';
 
 export const PACK_NOT_FOUND = 'This saved pack is not available on this device.';
 export const NO_STORED_ITEMS = 'This pack has no stored information items to show.';
@@ -192,9 +200,9 @@ export const OFFLINE_BASEMAP = 'Offline basemap';
 export const DESTINATIONS_STEP_TITLE = 'Official places of last resort';
 export const NSP_KIND_LABEL = 'Bushfire place of last resort';
 export const NSP_COUNCIL_LABEL = (council: string) => `Responsible council: ${council}`;
-export const NSP_LIST_AS_AT = (date: string) => `CFA state-wide list as at ${date}`;
+export const NSP_LIST_AS_AT = (date: string) => `Country Fire Authority state-wide list as at ${date}`;
 export const NSP_UNLOCATED_HEADING =
-  'On the CFA list but not located to a point on the map';
+  'On the Country Fire Authority list but not located to a point on the map';
 export const OFFICIAL_LIST_UNAVAILABLE =
   'The official list could not be included for this area.';
 export const NSP_BUSHFIRE_ONLY =
@@ -278,7 +286,7 @@ export const GENERAL_GUIDANCE_TITLE = 'General official guidance';
 export const CALL_TRIPLE_ZERO = 'Call 000 (Triple Zero) for life-threatening emergencies.';
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 export const EMERGENCY_BROADCASTER =
-  'ABC local radio broadcasts official emergency information.';
+  'Australian Broadcasting Corporation local radio broadcasts official emergency information.';
 /** States what the app cannot detect — never a promise about the network. */
 export const PHONE_MAY_WORK =
   'Phone calls may work if your phone shows signal — this app cannot detect phone signal.';

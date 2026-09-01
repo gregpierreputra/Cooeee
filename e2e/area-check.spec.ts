@@ -23,7 +23,7 @@ test('AC5 shows designation, publisher/date and instruction priority in order', 
     'Published by the Department of Transport and Planning, saved 28 August 2026.',
   );
   await expect(state.locator('p').nth(1)).toHaveText(
-    'Follow CFA and emergency service instructions first.',
+    'Follow Country Fire Authority and emergency service instructions first.',
   );
   await expect(state).not.toContainText(/safe|protected|low risk|no risk|high risk|danger level/i);
 });
