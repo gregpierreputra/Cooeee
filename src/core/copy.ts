@@ -52,6 +52,7 @@ export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '�
 // Application shell
 export const APP_NAME = 'Cooeee';
 export const HOME_TITLE = 'Your packs';
+export const BACK = 'Back';
 
 export const NO_PACKS_YET = 'No packs saved yet.';
 export const NO_PACKS_HINT =

@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation, useParams } from 'react-rout
 import * as copy from './core/copy';
 import BlackSky from './ui/BlackSky';
 import Home from './ui/Home';
+import BackBar from './ui/components/BackBar';
 import PackDetail from './ui/PackDetail';
 import { Search } from './ui/PackNew/Search';
 
@@ -53,6 +54,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
     <BrowserRouter>
       <ModeSwitch />
       <UpdateBanner applyUpdate={applyUpdate} />
+      <BackBar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/packs/:packId" element={<PackDetailRoute />} />

@@ -1,4 +1,4 @@
-## Local configs and env files
+# Local configs and env files
 .c*
 .g*
 .env
@@ -7,16 +7,17 @@
 !.github/workflows/*.yml
 .DS_Store
 
-## Local documentations
+# Local doucmentation
 documentation/
+docs/*/
 
-## Prevention of environment files from being pushed
+# Prevention of environment files from being pushed
 pro*/
 
-## Node modules
+# Node modules
 node_modules/
 
-## Local development and testing
+# Local development and testing
 dist/
 dev-dist/
 

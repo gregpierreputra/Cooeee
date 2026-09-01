@@ -599,6 +599,29 @@ input {
 /* ── Update banner ─────────────────────────────────────────────────────────── */
 
 /* The service-worker banner. Stated in words, never an auto-reload. */
+/* ── Back bar ──────────────────────────────────────────────────────────────── */
+
+/* The persistent way back, pinned to the top of every screen except the pack
+   list. Same 560px column as the page; the solid base colour stops content
+   showing through as it scrolls under. */
+.back-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg);
+  padding: 0.75rem 0 0.5rem;
+}
+
+.back-bar button {
+  width: min(100% - 2.5rem, 560px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
 .banner {
   width: min(100% - 2.5rem, 560px);
   margin: 0.75rem auto 0;
