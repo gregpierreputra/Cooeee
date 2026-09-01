@@ -42,6 +42,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
       setPermission('denied');
       return;
     }
+    
     const watch = navigator.geolocation.watchPosition(
       (position) => {
         latestFix.current = {
@@ -53,6 +54,7 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
           // different clock. Mixing clock domains would break the 30 s rule.
           at: Date.now(),
         };
+        
         setPermission('granted');
         setMark(null); // a real fix always beats a marked-position estimate
         // Acquiring → showing a direction IS a meaningful change, so the very
@@ -66,7 +68,9 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
       // forcing a fresh sensor read. High accuracy stays on: without it, coarse
       // cell-tower fixes would keep the arrow permanently withheld by the
       // ACCURACY_MAX_M gate.
-      { enableHighAccuracy: true, maximumAge: TICK_MS },
+      { 
+        enableHighAccuracy: true, maximumAge: TICK_MS 
+      },
     );
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
@@ -79,7 +83,8 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
     const timer = setInterval(() => {
       setNow(Date.now());
       setFix(latestFix.current);
-    }, TICK_MS);
+    }, 
+    TICK_MS);
     return () => clearInterval(timer);
   }, []);
 

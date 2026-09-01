@@ -1,7 +1,9 @@
 import * as copy from './copy';
 import type { PackOffer, TextPackContent } from './types';
 
-type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+type JsonValue = null | boolean | number | string | JsonValue[] | { 
+  [key: string]: JsonValue 
+};
 
 function canonicalValue(value: unknown): JsonValue {
   if (value === null || typeof value === 'boolean' || typeof value === 'string') return value;

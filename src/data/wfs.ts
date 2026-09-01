@@ -40,8 +40,9 @@ function assertFiniteNumber(value: unknown, field: string): asserts value is num
   }
 }
 
-/** Convert one external GeoJSON feature at the data boundary. Coordinates use
- * GeoJSON [longitude, latitude]; bbox is deliberately ignored. */
+/** Convert one external GeoJSON feature at the data boundary. 
+ * Coordinates use GeoJSON [longitude, latitude].
+ * bbox is deliberately ignored */
 export function parseAddressFeature(value: unknown): AddressCandidate {
   assertRecord(value, 'feature');
   assertRecord(value.properties, 'feature.properties');
@@ -50,7 +51,7 @@ export function parseAddressFeature(value: unknown): AddressCandidate {
   if (value.geometry.type !== 'Point') {
     throw new TypeError('feature.geometry.type must be Point');
   }
-
+  
   const coordinates = value.geometry.coordinates;
   if (!Array.isArray(coordinates) || coordinates.length < 2) {
     throw new TypeError('feature.geometry.coordinates must contain longitude and latitude');

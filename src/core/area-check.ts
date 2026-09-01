@@ -2,8 +2,9 @@ import * as copy from './copy';
 import { formatSavedDate } from './provenance';
 import type { BushfireAreaResult, ExposureLayer, LayerPublicationStatus, LayerStatus } from './types';
 
-/** A positive point hit controls immediately. For zero hits, the live
- * existence probe controls; the snapshot is an independent drift check. */
+/** A positive point hit controls immediately.
+ * For zero hits, the live existence probe controls,
+ * the snapshot is an independent drift check. */
 export function resolveBushfireAreaStatus(
   pointHits: number,
   publication: LayerPublicationStatus,
@@ -22,7 +23,8 @@ export function extentSnapshotDisagrees(
 }
 
 /** Turns an already-fetched official area result into the one content row
- * EPIC 1 can honestly produce. No fetch; features stay empty because
+ * EPIC 1 can honestly produce. 
+ * No fetch; features stay empty because
  * fetchBushfireAreaResult validates plan_number/gazettal_date but does not
  * surface them — a genuine gap, not a fabricated value. */
 export function bpaExposureLayer(packId: string, result: BushfireAreaResult): ExposureLayer {
