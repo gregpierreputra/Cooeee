@@ -66,3 +66,12 @@ export const MS_PER_DAY = 86_400_000;
 /** Unit constant. The metres↔kilometres display cutoff and divisor for
  * destination.formatDistanceM — not a safety threshold. */
 export const METRES_PER_KM = 1_000;
+
+/** E1-US1-AC0. The first-open acknowledgement lives in ONE browser storage
+ * flag, not a database row: it is a fact about this browser profile, it must be
+ * readable before any store opens, and clearing site data is the documented way
+ * back to the first-open screen. The key is versioned so a future change to what
+ * is being acknowledged asks again rather than inheriting an old answer. The
+ * value is a marker and nothing else — no date, no identifier, no counter. */
+export const ACKNOWLEDGEMENT_KEY = 'cooeee.acknowledgement.v1';
+export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';

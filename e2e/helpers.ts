@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE } from '../src/core/constants';
 
 /** The isolated component harness (e2e/harness), served on its own port. */
 export const HARNESS = 'http://127.0.0.1:4174';
@@ -64,4 +65,21 @@ export async function storageCounts(page: Page) {
 /** Raw pack rows. Harness pages only. */
 export async function readPacks(page: Page) {
   return page.evaluate(() => window.__readPacks());
+}
+
+/** E1-US1-AC0. The first-open disclosure stands in front of every screen, so a
+ *  spec about anything else opens with the acknowledgement already recorded —
+ *  exactly as a returning device would. Runs before any script on the page, so
+ *  the flag is there when the app reads it on the first paint. */
+export async function acknowledgeFirstOpen(page: Page) {
+  await page.addInitScript(
+    ([key, value]) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        // A blocked storage shows the disclosure screen; the spec will say so.
+      }
+    },
+    [ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE] as const,
+  );
 }

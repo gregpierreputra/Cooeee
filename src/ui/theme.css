@@ -909,3 +909,145 @@ input {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── First open (E1-US1-AC0) ───────────────────────────────────────────────── */
+
+/* The four statements are the screen, and they are held in ONE card so the
+   whole disclosure fits a phone with little or no scrolling; the
+   bottom-anchored actions block keeps the checkbox and the button together at
+   the end of the reading order, where the decision is made. Spacing here is
+   the same rhythm as a pack row on the pack list — this screen is dense, not
+   sparse. */
+.first-open {
+  gap: 0.75rem;
+}
+
+.first-open-hero {
+  gap: 0.375rem;
+}
+
+/* The mark and the name are the hero title of this screen, so they are stacked
+   and centred rather than set as a header lockup on the left margin. Only these
+   two are centred; the line under them reads as body text and stays ranged
+   left. */
+.first-open-hero .mark,
+.first-open-hero h1 {
+  justify-self: center;
+  text-align: center;
+}
+
+.first-open-hero .mark {
+  color: var(--accent);
+}
+
+/* The heaviest pairing the scale defines — the same one h1 carries by default,
+   restored here in place of the smaller header-sized override. */
+.first-open-hero h1 {
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
+}
+
+/* One card, four rows. The card's own padding frames the block; the rows carry
+   their own rhythm and a hairline between them, so the list gap that separates
+   free-standing cards is switched off here. */
+.disclosure-list {
+  gap: 0;
+  padding: 0.25rem 1.25rem;
+}
+
+/* Icon, heading, statement: a fixed 20 px leading column with the text beside
+   it, the statement running under the heading in the same column. */
+.disclosure-row {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: start;
+  column-gap: 0.75rem;
+  row-gap: 0.25rem;
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--line);
+}
+
+/* The hairline separates rows; one above the first row would draw a divider
+   against the card's own edge. */
+.disclosure-row:first-child {
+  border-top: 0;
+}
+
+.disclosure-icon {
+  display: flex;
+  align-items: center;
+  /* Optically centred on the heading's first line rather than its box. */
+  min-height: 1.5rem;
+  color: var(--accent);
+}
+
+/* Heading and statement share a size — body text on this screen never goes
+   below the base step — and are told apart by weight and colour. */
+.disclosure-row h2 {
+  grid-column: 2;
+  font-size: var(--step-0);
+  font-weight: var(--w-bold);
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.disclosure-row p {
+  grid-column: 2;
+}
+
+/* The quieter note under the statements: its own small card, so the line that
+   points away from Cooeee is visibly not one of Cooeee's four statements. */
+.official-channels {
+  display: flex;
+  align-items: start;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--r-input);
+  background: var(--surface-2);
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+
+.official-channels svg {
+  flex: 0 0 auto;
+  /* Optically centred on the first line of the smaller type beside it. */
+  margin-top: 0.0625rem;
+}
+
+/* A row, not a stack: the label is the statement, and it is the label element
+   itself so a screen reader reads the whole sentence with the box. */
+.acknowledge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.acknowledge input[type='checkbox'] {
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+/* 44 px of tappable target around a 24 px box, without moving the box. */
+.acknowledge label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink);
+  font-weight: var(--w-med);
+  font-size: var(--step-0);
+  cursor: pointer;
+}
+
+/* Inactive until the box is ticked. The attribute does the work — this only
+   makes the state visible as well as announced. */
+.main-action:disabled {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--ink-2);
+  cursor: not-allowed;
+}

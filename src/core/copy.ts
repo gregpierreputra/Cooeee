@@ -318,3 +318,36 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
 export const HOLD_TO_LEAVE = 'Hold to leave — two seconds.';
 export const LEAVE_BLACKSKY = 'Leave BlackSky';
+
+// ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────
+// The four statements are the screen. They are literal on-screen text, never
+// behind a link or an accordion, and each one is asserted by exact match in
+// tests/core/copy.test.ts.
+
+export const FIRST_OPEN_PURPOSE =
+  'Get one address ready now — bushfire information that still opens when the signal drops.';
+
+export const DISCLOSURE_DOES_HEADING = 'What Cooeee does';
+export const DISCLOSURE_DOES =
+  'Saves a preparation pack for one address on this phone. It opens with no signal.';
+
+export const DISCLOSURE_DOES_NOT_HEADING = 'What Cooeee does not do';
+export const DISCLOSURE_DOES_NOT =
+  'Does not watch conditions, and will never contact you. Nothing here tells you when to act.';
+
+export const DISCLOSURE_ADDRESS_HEADING = 'Where your address goes';
+export const DISCLOSURE_ADDRESS =
+  'On this phone once saved. Checking your address uses Victorian Government data, and we run no server that could hold it.';
+
+export const DISCLOSURE_POSITION_HEADING = 'When Cooeee asks for your position';
+export const DISCLOSURE_POSITION =
+  'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device — you can refuse, and everything else still works.';
+
+/** The quieter line under the four statements: who to go to for what Cooeee
+ *  itself will never provide. */
+export const OFFICIAL_CHANNELS_LINE =
+  'During an incident, official updates come from VicEmergency. In an emergency, call Triple Zero (000).';
+
+export const ACKNOWLEDGE_CHECKBOX =
+  'I understand how Cooeee works, and what it does not do.';
+export const CONTINUE = 'Continue';
