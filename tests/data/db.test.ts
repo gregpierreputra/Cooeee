@@ -209,8 +209,8 @@ describe('deleteCompletePack', () => {
 });
 
 describe('schema', () => {
-  it('is version 3: the five pack stores plus the four Nearby-places stores', () => {
-    expect(db.verno).toBe(3);
+  it('is version 4: the five pack stores, the four Nearby-places stores and the snapshot store', () => {
+    expect(db.verno).toBe(4);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
       'destinations',
       'dynamicSnapshot',
@@ -218,6 +218,7 @@ describe('schema', () => {
       'packs',
       'postcodes',
       'programs',
+      'snapshots',
       'staticFacilities',
       'syncMeta',
       'tiles',

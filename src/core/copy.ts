@@ -320,6 +320,7 @@ export const PHONE_MAY_WORK =
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
+export const NEAREST_OFFICIAL_PLACES = 'Nearest official places of last resort';
 
 // Built-in static preparation guidance, readable on a fresh install that has
 // never been online since setup.
@@ -351,8 +352,8 @@ export const CHECKED_DAYS_AGO = (days: number) => `Checked ${days} days ago`;
 /** The header's home control. The mark is decorative; this names it. */
 export const HEADER_HOME_LABEL = 'Cooeee home';
 
-/** The connection dot carries no words on screen, so its whole meaning has to
- *  live in its accessible name. It reports what the browser reports and nothing
+/** The dismissed connection notice is a wordless strip, so its whole meaning
+ *  has to live in its accessible name. It reports what the browser reports and nothing
  *  more — this app cannot detect phone signal, and never claims to. */
 export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a network.';
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';

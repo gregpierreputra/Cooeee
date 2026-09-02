@@ -14,7 +14,7 @@ import ProvenanceLine from '../components/ProvenanceLine';
 import StateCard from '../components/StateCard';
 
 type DestinationsProps = {
-  /** NSP rows within the pack radius, ordered strictly ascending by distance
+  /** The nearest NSP rows to the saved place, ordered strictly ascending by distance
    *  (each carries `distanceM` and a zero-based `distanceOrder`). */
   ordered: Destination[];
   /** NSP rows the CFA lists for this council but could not place on the map. */

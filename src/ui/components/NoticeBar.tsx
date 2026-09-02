@@ -6,7 +6,9 @@ import { useOnline } from './useOnline';
  *  Green when the browser reports a network connection, red when it reports
  *  none — reported state only, never a probe: this component makes no network
  *  request. Dismissing it leaves a thin always-visible full-width strip in the
- *  same colour, which reopens the bar. */
+ *  same colour, which reopens the bar. That strip has no words on screen, so its
+ *  whole meaning lives in its accessible name — the one honest statement this
+ *  app can make about a connection, since it cannot detect phone signal. */
 export default function NoticeBar() {
   const online = useOnline();
   const [open, setOpen] = useState(true);
@@ -20,7 +22,7 @@ export default function NoticeBar() {
         type="button"
         className={`notice-sliver ${tone}`}
         onClick={() => setOpen(true)}
-        aria-label={line}
+        aria-label={online ? copy.CONNECTION_ONLINE_LABEL : copy.CONNECTION_OFFLINE_LABEL}
       />
     );
   }

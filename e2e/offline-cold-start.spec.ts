@@ -31,8 +31,8 @@ test('the shell cold-starts with the radios off, and nothing reaches for the net
   await expect(page.getByText(NO_PACKS_HINT)).toBeVisible();
 
   // E1-US2-AC6: the fixed header renders with the radios off, reporting no age
-  // because nothing is saved, and the dot reports what the browser reports.
-  await expect(page.locator('.connection-dot')).toBeVisible();
+  // because nothing is saved, and the notice reports what the browser reports.
+  await expect(page.locator('.notice-bar')).toBeVisible();
   await expect(page.locator('.app-header-age')).toHaveCount(0);
 
   // Every byte the offline page needed was already on the device.

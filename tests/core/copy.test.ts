@@ -226,7 +226,7 @@ describe('the fixed header', () => {
     expect(copy.CHECKED_DAYS_AGO(3)).not.toBe(copy.SAVED_DAYS_AGO(3));
   });
 
-  it('gives the wordless connection dot its whole meaning in its name', () => {
+  it('gives the wordless dismissed connection notice its whole meaning in its name', () => {
     expect(copy.CONNECTION_ONLINE_LABEL).toBe('Connection: your browser reports a network.');
     expect(copy.CONNECTION_OFFLINE_LABEL).toBe('Connection: your browser reports no network.');
   });

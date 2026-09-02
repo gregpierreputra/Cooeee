@@ -1,23 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { deriveState, estimateFix, type Mark as PositionMark, type Screen } from '../core/blacksky';
+import {
+  deriveState,
+  estimateFix,
+  type Mark as PositionMark,
+  type Placed,
+  type Screen,
+} from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { arrowGlyph, cardinalAbbr } from '../core/geo';
-import type { Destination, Fix, Pack, PackWithPlaces } from '../core/types';
-import { listCompletePacksWithPlaces } from '../data/db';
+import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
+import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import HoldButton from './components/HoldButton';
 
 type BlackSkyProps = {
   loadPacks?: () => Promise<PackWithPlaces[]>;
+  loadSites?: () => Promise<NspSnapshot | undefined>;
 };
 
-/** The BlackSky screen. Every word on it comes from the local pack store; the
- *  ONLY other input is the device's own position sensor, and that reading never
- *  leaves the device. ESLint bans fetch and every network module in this file,
- *  so the zero-network guarantee is enforced, not promised. */
-export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: BlackSkyProps) {
+/** The BlackSky screen. Every word on it comes from the local pack store and the
+ *  locally stored CFA site list; the ONLY other input is the device's own
+ *  position sensor, and that reading never leaves the device. ESLint bans fetch
+ *  and every network module in this file, so the zero-network guarantee is
+ *  enforced, not promised. */
+export default function BlackSky({
+  loadPacks = listCompletePacksWithPlaces,
+  loadSites = getNspSnapshot,
+}: BlackSkyProps) {
   const [packs, setPacks] = useState<PackWithPlaces[] | null>(null);
+  const [sites, setSites] = useState<NspSnapshot | null>(null);
   const [fix, setFix] = useState<Fix | null>(null);
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [mark, setMark] = useState<PositionMark | null>(null);
@@ -34,10 +46,13 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
     loadPacks().then((rows) => {
       if (live) setPacks(rows);
     });
+    loadSites().then((snapshot) => {
+      if (live && snapshot) setSites(snapshot);
+    });
     return () => {
       live = false;
     };
-  }, [loadPacks]);
+  }, [loadPacks, loadSites]);
 
   useEffect(() => {
     if (!('geolocation' in navigator)) {
@@ -96,8 +111,8 @@ export default function BlackSky({ loadPacks = listCompletePacksWithPlaces }: Bl
   // permission state no longer decides.
   const estimate = mark ? estimateFix(mark, now) : null;
   const screen = estimate
-    ? deriveState(now, packs, estimate, 'granted')
-    : deriveState(now, packs, fix, permission);
+    ? deriveState(now, packs, estimate, 'granted', sites)
+    : deriveState(now, packs, fix, permission, sites);
 
   return (
     <main className="page blacksky">
@@ -125,13 +140,15 @@ function ScreenBody({
   onMark: (mark: PositionMark) => void;
 }) {
   switch (screen.kind) {
-    // US2-AC2: no pack stored. Nothing is invented, borrowed or extrapolated —
-    // there is simply nothing to point at, so the screen says so, offers the
-    // built-in preparation guidance, and prompts a build for when next online.
+    // US2-AC2: no pack stored. Nothing is invented or borrowed: the nearest
+    // official places on the stored CFA list are pointed at when the fix
+    // allows, then the built-in preparation guidance and a prompt to build a
+    // pack for when next online.
     case 'NO_PACK':
       return (
         <>
           <p className="muted">{copy.NO_PACK_HERE}</p>
+          <NearbyList places={screen.nearby} accuracyM={screen.accuracyM} />
           <p className="muted">{copy.NO_PACKS_HINT}</p>
           <Link className="action" to="/packs/new">
             {copy.BUILD_A_PACK}
@@ -174,7 +191,8 @@ function ScreenBody({
       );
     // US2-AC1: outside every prepared area. The stored packs are offered by
     // name with the distance to their area's edge — informational rows, never
-    // a bearing to an out-of-area point — plus general official guidance.
+    // a bearing to an out-of-area point — then the nearest official places
+    // from here, plus general official guidance.
     case 'OUT_OF_AREA':
       return (
         <>
@@ -189,6 +207,7 @@ function ScreenBody({
               </li>
             ))}
           </ul>
+          <NearbyList places={screen.nearby} accuracyM={screen.accuracyM} />
           <section className="card blacksky-guidance">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
             <a href="tel:000">{copy.CALL_TRIPLE_ZERO}</a>
@@ -205,22 +224,10 @@ function ScreenBody({
           <p className="muted">{copy.SORTED_BY_DISTANCE}</p>
           <ul className="list">
             {screen.places.map((place) => (
-              <li key={place.d.id} className="blacksky-place">
-                <h2>{place.d.name}</h2>
-                {/* The mega figure: arrow and distance at arm's-length size,
-                    the compass point beneath. Same information as
-                    copy.BEARING_FIGURE, recomposed for scale. */}
-                <p className="figure blacksky-figure">
-                  <span className="blacksky-figure-main">
-                    <span aria-hidden="true">{arrowGlyph(place.bearingDeg)}</span>{' '}
-                    {copy.distanceLabel(place.distanceM)}
-                  </span>
-                  <span className="blacksky-figure-point">{cardinalAbbr(place.bearingDeg)}</span>
-                </p>
-                <p className="muted">{copy.PLACE_DESCRIPTOR(place.d.source.publisher)}</p>
-              </li>
+              <PlacedRow key={place.id} place={place} />
             ))}
           </ul>
+          <NearbyList places={screen.nearby} />
           <p className="muted figure">
             {estimating
               ? copy.ESTIMATE_READOUT(screen.accuracyM)
@@ -233,6 +240,46 @@ function ScreenBody({
         </>
       );
   }
+}
+
+/** One place with the mega figure: arrow and distance at arm's-length size,
+ *  the compass point beneath. Same information as copy.BEARING_FIGURE,
+ *  recomposed for scale. */
+function PlacedRow({ place }: { place: Placed }) {
+  return (
+    <li className="blacksky-place">
+      <h2>{place.name}</h2>
+      <p className="figure blacksky-figure">
+        <span className="blacksky-figure-main">
+          <span aria-hidden="true">{arrowGlyph(place.bearingDeg)}</span>{' '}
+          {copy.distanceLabel(place.distanceM)}
+        </span>
+        <span className="blacksky-figure-point">{cardinalAbbr(place.bearingDeg)}</span>
+      </p>
+      <p className="muted">{copy.PLACE_DESCRIPTOR(place.publisher)}</p>
+    </li>
+  );
+}
+
+/** The nearest official places on the state-wide list, from the live fix.
+ *  Nothing when there is no usable fix or no stored list. The accuracy readout
+ *  travels with it on the screens that have no other figure to hang it on. */
+function NearbyList({ places, accuracyM }: { places: Placed[]; accuracyM?: number }) {
+  if (places.length === 0) return null;
+  return (
+    <section className="blacksky-nearby">
+      <span className="kicker">{copy.NEAREST_OFFICIAL_PLACES}</span>
+      <p className="muted">{copy.SORTED_BY_DISTANCE}</p>
+      <ul className="list">
+        {places.map((place) => (
+          <PlacedRow key={place.id} place={place} />
+        ))}
+      </ul>
+      {typeof accuracyM === 'number' ? (
+        <p className="muted figure">{copy.ACCURACY_READOUT(accuracyM)}</p>
+      ) : null}
+    </section>
+  );
 }
 
 /** The degraded screen shared by US1-AC2 and US1-AC3: saved information as reference

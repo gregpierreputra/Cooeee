@@ -344,7 +344,7 @@ if (window.location.pathname === '/destinations') {
 
   try {
     const snapshot = await loadNspSnapshot(fetchImpl);
-    const selection = selectSitesForPack(snapshot.sites, centre, lgaName, 6, hazard);
+    const selection = selectSitesForPack(snapshot.sites, centre, lgaName, 5, hazard);
     const { ordered } = orderByDistance(
       selection.located.map((site) => toDestination(site, packId, snapshot)),
       centre,

@@ -1,4 +1,5 @@
 import type { NspSite, NspSnapshot, Source } from '../core/types';
+import { getNspSnapshot, putNspSnapshot } from './db';
 
 // The precached CFA Neighbourhood Safer Places snapshot. Same-origin static
 // asset, served from the service-worker precache after the first visit — this is
@@ -105,6 +106,16 @@ export function assertNspSnapshot(value: unknown): NspSnapshot {
     source: assertSource(raw.source),
     sites: raw.sites.map(assertSite),
   };
+}
+
+/** Copy the precached snapshot into IndexedDB for BlackSky, which cannot fetch.
+ *  Called on every app start; the file is precached, so this works offline after
+ *  the first visit, and a first visit with no network simply leaves no copy.
+ *  The copy is written only when the file is newer than what is stored. */
+export async function cacheNspSnapshot(): Promise<void> {
+  const snapshot = await loadNspSnapshot();
+  const stored = await getNspSnapshot();
+  if (stored?.retrievedAt !== snapshot.retrievedAt) await putNspSnapshot(snapshot);
 }
 
 /** Read and validate the precached CFA NSP snapshot. `fetchImpl` is injectable

@@ -13,7 +13,7 @@ import {
   ADDRESS_QUERY_DEBOUNCE_MS,
   ADDRESS_RESULT_LIMIT,
   PACK_HAZARD,
-  PACK_RADIUS_KM,
+  PLACES_OFFERED,
 } from '../../core/constants';
 import * as copy from '../../core/copy';
 import { chosenDestinations, orderByDistance } from '../../core/destination';
@@ -239,7 +239,7 @@ export function Search({
         snapshot.sites,
         place,
         result.lgaName,
-        PACK_RADIUS_KM,
+        PLACES_OFFERED,
         PACK_HAZARD,
       );
       const asRow = (site: NspSite) => toDestination(site, id, snapshot);

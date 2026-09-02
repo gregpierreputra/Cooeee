@@ -6,13 +6,14 @@ const ORIGIN = 'http://127.0.0.1:4174';
 const SAVE = 'Save last-resort places';
 
 // Declared out of distance order in the fixture; this is the by-distance order.
+// The five nearest are offered however far they are (Belgrave is ~11 km).
 const BY_DISTANCE = [
   'Kalorama Memorial Reserve',
   'Mount Dandenong Reserve',
   'Olinda Recreation Reserve',
   'Silvan Recreation Reserve',
+  'Belgrave Recreation Reserve',
 ];
-const OUT_OF_RANGE = 'Belgrave Recreation Reserve';
 const UNLOCATED_SAME_LGA = 'Wandin North Reserve';
 const UNLOCATED_OTHER_LGA = 'Alexandra Showgrounds';
 const CAVEAT = 'sorted by distance — not a safety ranking';
@@ -54,11 +55,8 @@ test('AC1 lists only the official in-range places, each with its council and the
   );
 });
 
-test('AC1 never mixes in a place beyond the radius or from a neighbouring council', async ({
-  page,
-}) => {
+test('AC1 never mixes in an un-located place from a neighbouring council', async ({ page }) => {
   await page.goto(URL);
-  await expect(page.getByText(OUT_OF_RANGE)).toHaveCount(0);
   await expect(page.getByText(UNLOCATED_OTHER_LGA)).toHaveCount(0);
 });
 

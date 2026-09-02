@@ -5,10 +5,12 @@ import type {
   CompletePackContent,
   Destination,
   ExposureLayer,
+  NspSnapshot,
   Pack,
   PackWithPlaces,
   RecoveryProgram,
   SnapshotActivation,
+  StoredSnapshot,
   SyncMetaRow,
   TileRow,
 } from '../core/types';
@@ -27,6 +29,8 @@ class CooeeeDb extends Dexie {
   postcodes!: Table<BundlePostcode, string>;
   dynamicSnapshot!: Table<SnapshotActivation, number>;
   syncMeta!: Table<SyncMetaRow, string>;
+  // The CFA site list, for BlackSky's nearest-places pointer.
+  snapshots!: Table<StoredSnapshot, string>;
 
   constructor() {
     super('cooeee');
@@ -62,6 +66,9 @@ class CooeeeDb extends Dexie {
       dynamicSnapshot: 'activation_id',
       syncMeta: 'key',
     });
+    // Version 4 adds the one-row store holding the CFA site list, so BlackSky
+    // can point at the nearest official places without a network path.
+    this.version(4).stores({ snapshots: 'name' });
   }
 }
 
@@ -74,6 +81,12 @@ export const db = new CooeeeDb();
 /** THE read API — complete packs only. */
 export const listCompletePacks = (): Promise<Pack[]> =>
   db.packs.where('status').equals('complete').toArray();
+
+/** The CFA site list for BlackSky: written whole, read whole. */
+export const putNspSnapshot = (snapshot: NspSnapshot): Promise<string> =>
+  db.snapshots.put({ ...snapshot, name: 'nsp' });
+
+export const getNspSnapshot = (): Promise<NspSnapshot | undefined> => db.snapshots.get('nsp');
 
 /** THE read API — one complete pack, or undefined. 
  * A building pack is indistinguishable from a pack that does not exist, which is the point. */

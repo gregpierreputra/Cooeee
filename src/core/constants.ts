@@ -8,6 +8,12 @@ export const PACK_RADIUS_KM = 6; // containment: distance <= radius, INCLUSIVE
 // Iteration 1 builds bushfire packs only. Neighbourhood Safer Places are gated
 // on this in core/nsp.ts, so a flood or heat pack can never be offered one.
 export const PACK_HAZARD: HazardType = 'bushfire';
+/** How many official places the pack wizard offers: the nearest, state-wide,
+ *  however far. Every published site is offered to whoever is nearest it. */
+export const PLACES_OFFERED = 5;
+/** How many of the nearest official places BlackSky points at from the live
+ *  fix, beyond the ones saved in the pack. */
+export const NEARBY_PLACES = 3;
 export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
 
 /** The number of last-resort places a pack holds. Two equal-status places, with

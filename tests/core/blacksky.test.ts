@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveState, estimateFix } from '../../src/core/blacksky';
+import { deriveState, estimateFix, nearestSites } from '../../src/core/blacksky';
 import {
   ACCURACY_MAX_M,
   FIX_STALE_MS,
@@ -8,7 +8,7 @@ import {
 } from '../../src/core/constants';
 import { distanceM } from '../../src/core/geo';
 import type { Destination, Fix, PackWithPlaces } from '../../src/core/types';
-import { KALORAMA, destination, pack, source } from '../fixtures';
+import { KALORAMA, destination, nspSite, nspSnapshot, pack, source } from '../fixtures';
 
 const NOW = 1_800_000_000_000;
 
@@ -38,7 +38,11 @@ const faraway: PackWithPlaces = {
 
 describe('precedence', () => {
   it('1 — NO_PACK wins over everything, even a perfect fix', () => {
-    expect(deriveState(NOW, [], fix(), 'granted')).toEqual({ kind: 'NO_PACK' });
+    expect(deriveState(NOW, [], fix(), 'granted')).toEqual({
+      kind: 'NO_PACK',
+      nearby: [],
+      accuracyM: 10,
+    });
   });
 
   it('2 — a denied permission is ACQUIRING, even when a fresh accurate fix exists', () => {
@@ -162,14 +166,14 @@ describe('IN_AREA', () => {
     const near = deriveState(NOW, [kalorama()], fix(km(1)), 'granted');
     const far = deriveState(NOW, [kalorama()], fix(km(-1)), 'granted');
     if (near.kind !== 'IN_AREA' || far.kind !== 'IN_AREA') throw new Error('expected IN_AREA');
-    expect(near.places.map((p) => p.d.id)).toEqual(['north', 'south']);
-    expect(far.places.map((p) => p.d.id)).toEqual(['south', 'north']);
+    expect(near.places.map((p) => p.id)).toEqual(['north', 'south']);
+    expect(far.places.map((p) => p.id)).toEqual(['south', 'north']);
   });
 
   it('shows only the chosen places', () => {
     const s = deriveState(NOW, [kalorama([north, unchosen])], fix(), 'granted');
     if (s.kind !== 'IN_AREA') throw new Error(s.kind);
-    expect(s.places.map((p) => p.d.id)).toEqual(['north']);
+    expect(s.places.map((p) => p.id)).toEqual(['north']);
   });
 
   it('picks the nearest pack when two contain the fix', () => {
@@ -179,6 +183,37 @@ describe('IN_AREA', () => {
     };
     const s = deriveState(NOW, [kalorama(), overlapping], fix(km(1)), 'granted');
     expect(s.kind === 'IN_AREA' && s.pack.id).toBe('pack-3');
+  });
+});
+
+describe('nearest official places from the state-wide list', () => {
+  const snapshot = nspSnapshot({
+    sites: [4, 1, 9, 2].map((n) => nspSite({ id: `site-${n}`, name: `Site ${n}`, ...km(n) })),
+  });
+
+  it('points at the three nearest sites, nearest first, with the list publisher', () => {
+    const nearby = nearestSites(fix(), snapshot);
+    expect(nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
+    expect(nearby[0].publisher).toBe('Country Fire Authority');
+    expect(nearby[0].distanceM).toBeCloseTo(1000, -2);
+  });
+
+  it('IN_AREA skips the sites the pack already carries; NO_PACK and OUT_OF_AREA list them all', () => {
+    const chosen = destination({ id: 'pack-1:site-1', name: 'Site 1', chosen: true, ...km(1) });
+    const inArea = deriveState(NOW, [kalorama([chosen])], fix(), 'granted', snapshot);
+    if (inArea.kind !== 'IN_AREA') throw new Error(inArea.kind);
+    expect(inArea.nearby.map((p) => p.id)).toEqual(['site-2', 'site-4', 'site-9']);
+
+    const noPack = deriveState(NOW, [], fix(), 'granted', snapshot);
+    expect(noPack.kind === 'NO_PACK' && noPack.nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
+
+    const outside = deriveState(NOW, [faraway], fix(), 'granted', snapshot);
+    expect(outside.kind === 'OUT_OF_AREA' && outside.nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
+  });
+
+  it('is never drawn from an unusable fix', () => {
+    const s = deriveState(NOW, [], fix({ accuracyM: 800 }), 'granted', snapshot);
+    expect(s).toEqual({ kind: 'NO_PACK', nearby: [] });
   });
 });
 

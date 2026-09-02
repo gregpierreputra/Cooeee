@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { distanceM } from '../../src/core/geo';
 import {
   destinationsForPack,
   formatIsoDateShort,
@@ -36,40 +35,34 @@ describe('selectSitesForPack', () => {
   const lga = 'YARRA RANGES';
   const near = { lat: KALORAMA.lat + 0.01, lon: KALORAMA.lon }; // ~1.1 km
   const far = { lat: KALORAMA.lat + 0.1, lon: KALORAMA.lon }; // ~11 km
+  const at = (km: number) => ({ lat: KALORAMA.lat + km / 111.195, lon: KALORAMA.lon });
 
-  it('includes a located site inside the radius and excludes one beyond it', () => {
-    const sites = [
-      nspSite({ id: 'in', ...near }),
-      nspSite({ id: 'out', ...far }),
-    ];
-    const { located } = selectSitesForPack(sites, KALORAMA, lga, 6);
-    expect(located.map((s) => s.id)).toEqual(['in']);
+  it('offers the `count` nearest located sites, nearest first, however far they are', () => {
+    const sites = [50, 5, 200, 1, 20, 80].map((km) => nspSite({ id: `s${km}`, ...at(km) }));
+    const { located } = selectSitesForPack(sites, KALORAMA, lga, 5);
+    expect(located.map((s) => s.id)).toEqual(['s1', 's5', 's20', 's50', 's80']);
   });
 
-  it('treats a site exactly on the radius as inside (inclusive)', () => {
-    const site = nspSite({ id: 'edge', lat: KALORAMA.lat + 0.04, lon: KALORAMA.lon + 0.02 });
-    const exactKm = distanceM(KALORAMA, { lat: site.lat!, lon: site.lon! }) / 1000;
-    expect(selectSitesForPack([site], KALORAMA, lga, exactKm).located.map((s) => s.id)).toEqual([
-      'edge',
-    ]);
-    expect(selectSitesForPack([site], KALORAMA, lga, exactKm - 1e-9).located).toEqual([]);
+  it('offers fewer when fewer are published, never inventing one', () => {
+    const { located } = selectSitesForPack([nspSite({ id: 'only', ...far })], KALORAMA, lga, 5);
+    expect(located.map((s) => s.id)).toEqual(['only']);
   });
 
   it("counts a 'township' geocode as located", () => {
     const site = nspSite({ id: 't', geocode: 'township', ...near });
-    expect(selectSitesForPack([site], KALORAMA, lga, 6).located.map((s) => s.id)).toEqual(['t']);
+    expect(selectSitesForPack([site], KALORAMA, lga, 5).located.map((s) => s.id)).toEqual(['t']);
   });
 
   it('does not count a site with a missing coordinate as located', () => {
     const site = nspSite({ id: 'nocoord', geocode: 'street', lat: undefined, lon: undefined });
-    const { located, unlocated } = selectSitesForPack([site], KALORAMA, lga, 6);
+    const { located, unlocated } = selectSitesForPack([site], KALORAMA, lga, 5);
     expect(located).toEqual([]);
     expect(unlocated.map((s) => s.id)).toEqual(['nocoord']); // same LGA, so still retained
   });
 
   it("retains an un-located site whose council is the pack's LGA", () => {
     const site = nspSite({ id: 'u', geocode: 'none', lat: undefined, lon: undefined });
-    const { located, unlocated } = selectSitesForPack([site], KALORAMA, lga, 6);
+    const { located, unlocated } = selectSitesForPack([site], KALORAMA, lga, 5);
     expect(located).toEqual([]);
     expect(unlocated.map((s) => s.id)).toEqual(['u']);
   });
@@ -82,26 +75,17 @@ describe('selectSitesForPack', () => {
       lat: undefined,
       lon: undefined,
     });
-    expect(selectSitesForPack([site], KALORAMA, lga, 6).unlocated).toEqual([]);
+    expect(selectSitesForPack([site], KALORAMA, lga, 5).unlocated).toEqual([]);
   });
 
-  it('returns empty arrays for no matches without inventing a row', () => {
-    expect(selectSitesForPack([], KALORAMA, lga, 6)).toEqual({ located: [], unlocated: [] });
-    expect(selectSitesForPack([nspSite({ ...far })], KALORAMA, lga, 6)).toEqual({
-      located: [],
-      unlocated: [],
-    });
-  });
-
-  it('does not widen the radius when the in-range result is empty', () => {
-    const site = nspSite({ id: 'just-out', lat: KALORAMA.lat + 0.07, lon: KALORAMA.lon }); // ~7.8 km
-    expect(selectSitesForPack([site], KALORAMA, lga, 6).located).toEqual([]);
+  it('returns empty arrays for an empty list without inventing a row', () => {
+    expect(selectSitesForPack([], KALORAMA, lga, 5)).toEqual({ located: [], unlocated: [] });
   });
 
   it('does not mutate its input', () => {
-    const sites = [nspSite({ id: 'a', ...near }), nspSite({ id: 'b', ...far })];
+    const sites = [nspSite({ id: 'a', ...far }), nspSite({ id: 'b', ...near })];
     const snapshot = JSON.stringify(sites);
-    selectSitesForPack(sites, KALORAMA, lga, 6);
+    selectSitesForPack(sites, KALORAMA, lga, 5);
     expect(JSON.stringify(sites)).toBe(snapshot);
   });
 });
@@ -240,10 +224,9 @@ describe('destinationsForPack', () => {
     expect(rows.map((r) => r.kind)).toEqual(['nsp-bushfire', 'nsp-bushfire']);
   });
 
-  it('only out-of-area sites: the selection is empty, so an absence is written, no neighbour substituted', () => {
+  it('only an un-located site from another council: nothing to choose, so an absence is written, no neighbour substituted', () => {
     const snapshot = nspSnapshot({
       sites: [
-        nspSite({ id: 'far', name: 'Far Reserve', lat: KALORAMA.lat + 0.1, lon: KALORAMA.lon }),
         nspSite({
           id: 'nbr',
           name: 'Alexandra Showgrounds',
@@ -252,8 +235,8 @@ describe('destinationsForPack', () => {
         }),
       ],
     });
-    const selection = selectSitesForPack(snapshot.sites, KALORAMA, 'YARRA RANGES', 6);
-    expect(selection.located).toEqual([]);
+    const selection = selectSitesForPack(snapshot.sites, KALORAMA, 'YARRA RANGES', 5);
+    expect(selection).toEqual({ located: [], unlocated: [] });
     const rows = destinationsForPack([], 'pack-9', snapshot, 'Yarra Ranges');
     expect(rows).toHaveLength(1);
     expect(rows[0].kind).toBe('absence');

@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation, useParams } from 'react-rout
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import * as copy from './core/copy';
 import { localFlagStore } from './data/acknowledgement';
+import { cacheNspSnapshot } from './data/nsp';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
 import Home from './ui/Home';
@@ -81,6 +82,12 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // which a route renders behind it. A store that cannot be read reads as "not
   // acknowledged", which shows the screen rather than blocking the app.
   const [screen, setScreen] = useState(() => openingScreen(localFlagStore()));
+
+  // The CFA site list into IndexedDB, so BlackSky can point at the nearest
+  // official places with the radios off. A failed copy costs nothing now.
+  useEffect(() => {
+    cacheNspSnapshot().catch(() => {});
+  }, []);
 
   if (screen === 'first-open') {
     return (

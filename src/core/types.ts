@@ -291,6 +291,10 @@ export type NspSnapshot = {
   sites: NspSite[];
 };
 
+/** The NSP snapshot as stored in IndexedDB for BlackSky, which may not fetch:
+ * one row, replaced whole whenever the precached file is read. */
+export type StoredSnapshot = NspSnapshot & { name: 'nsp' };
+
 // --- Nearby places ---
 // The wire shapes of the API server's two sync endpoints (server/api.ts). The
 // client stores them in IndexedDB exactly as received: snake_case IS the
