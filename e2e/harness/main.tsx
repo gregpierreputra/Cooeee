@@ -25,7 +25,7 @@ import { Confirm } from '../../src/ui/PackNew/Confirm';
 import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
 import { Size } from '../../src/ui/PackNew/Size';
-import nspFixture from '../../public/data/nsp.v2026-08-18.json';
+import nspFixture from './nsp-fixture.json';
 import '../../src/ui/theme.css';
 
 declare global {
@@ -366,7 +366,6 @@ if (window.location.pathname === '/destinations') {
         },
         layers: [],
         destinations: destinationsForPack(
-          selection,
           chosenDestinations(ordered, ids),
           packId,
           snapshot,
@@ -382,7 +381,6 @@ if (window.location.pathname === '/destinations') {
       <Destinations
         ordered={ordered}
         unlocated={selection.unlocated.map((site) => toDestination(site, packId, snapshot))}
-        listAsAt={snapshot.listAsAt}
         area={area}
         status={hazard === 'bushfire' ? undefined : 'not-bushfire'}
         save={selectable ? save : undefined}
@@ -394,7 +392,6 @@ if (window.location.pathname === '/destinations') {
       <Destinations
         ordered={[]}
         unlocated={[]}
-        listAsAt="2026-08-18"
         area={area}
         status="unavailable"
         now={destinationsNow}

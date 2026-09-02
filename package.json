@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:data:extent": "node scripts/build-extent.mjs",
+    "build:data:nsp": "node scripts/build-nsp.mjs",
     "preview": "vite preview",
     "server": "node server/index.ts",
     "test": "vitest",

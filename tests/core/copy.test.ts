@@ -6,7 +6,7 @@ import * as copy from '../../src/core/copy';
 // not a style discussion.
 describe('mandated literals', () => {
   it('destinations are never ranked by worth', () => {
-    expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance, not a safety ranking');
+    expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance — not a safety ranking');
   });
 
   // Exact match including punctuation. The literal is mandated with an em dash;

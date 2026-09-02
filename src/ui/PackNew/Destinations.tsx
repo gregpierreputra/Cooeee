@@ -8,7 +8,7 @@ import {
   ordinalLabel,
   savableCount,
 } from '../../core/destination';
-import { nspListDateLabel } from '../../core/nsp';
+import { formatIsoDateShort, nspListDateLabel } from '../../core/nsp';
 import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
 import StateCard from '../components/StateCard';
@@ -19,8 +19,6 @@ type DestinationsProps = {
   ordered: Destination[];
   /** NSP rows the CFA lists for this council but could not place on the map. */
   unlocated: Destination[];
-  /** The snapshot's own `listAsAt` (ISO date). Shown as the list's date. */
-  listAsAt: string;
   /** The area the list applies to, for the honest-absence line. */
   area: string;
   /** 'unavailable' when the cached list could not be read at all;
@@ -37,14 +35,29 @@ type DestinationsProps = {
 
 type RowSelection = { chosen: boolean; onToggle: () => void };
 
+/** What every official place states about itself, in the wizard list and in the
+ *  saved pack alike: its kind, address, council, the CFA's dates, and provenance. */
+export function PlaceFacts({ place, now }: { place: Destination; now: number }) {
+  return (
+    <>
+      <p>{copy.NSP_KIND_LABEL}</p>
+      {place.addressText ? <p className="muted">{place.addressText}</p> : null}
+      {place.council ? <p>{copy.NSP_COUNCIL_LABEL(place.council)}</p> : null}
+      {place.designatedAt ? (
+        <p className="figure">{copy.NSP_DESIGNATED_ON(formatIsoDateShort(place.designatedAt))}</p>
+      ) : null}
+      {place.listAsAt ? <p className="figure">{nspListDateLabel(place.listAsAt)}</p> : null}
+      <ProvenanceLine source={place.source} now={now} />
+    </>
+  );
+}
+
 function DestinationRow({
   place,
-  listLine,
   now,
   selection,
 }: {
   place: Destination;
-  listLine: string;
   now: number;
   selection?: RowSelection;
 }) {
@@ -70,11 +83,7 @@ function DestinationRow({
       </div>
       {ordinal ? <p>{ordinal}</p> : null}
       {distance ? <p className="figure">{distance}</p> : null}
-      <p>{copy.NSP_KIND_LABEL}</p>
-      {place.addressText ? <p className="muted">{place.addressText}</p> : null}
-      {place.council ? <p>{copy.NSP_COUNCIL_LABEL(place.council)}</p> : null}
-      <p className="figure">{listLine}</p>
-      <ProvenanceLine source={place.source} now={now} />
+      <PlaceFacts place={place} now={now} />
     </li>
   );
 }
@@ -87,7 +96,6 @@ function DestinationRow({
 export function Destinations({
   ordered,
   unlocated,
-  listAsAt,
   area,
   status = 'ok',
   save,
@@ -126,7 +134,6 @@ export function Destinations({
     );
   }
 
-  const listLine = nspListDateLabel(listAsAt);
   const nonePublished = ordered.length === 0 && unlocated.length === 0;
   const selectable = Boolean(save) && ordered.length > 0;
 
@@ -176,7 +183,6 @@ export function Destinations({
                   <DestinationRow
                     key={place.id}
                     place={place}
-                    listLine={listLine}
                     now={now}
                     selection={
                       selectable
@@ -194,7 +200,7 @@ export function Destinations({
               <h2>{copy.NSP_UNLOCATED_HEADING}</h2>
               <ul className="list destination-list" data-testid="unlocated-destinations">
                 {unlocated.map((place) => (
-                  <DestinationRow key={place.id} place={place} listLine={listLine} now={now} />
+                  <DestinationRow key={place.id} place={place} now={now} />
                 ))}
               </ul>
             </section>

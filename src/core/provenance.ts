@@ -2,6 +2,7 @@ import { MS_PER_DAY, OFFICIAL_DOMAINS, PACK_REFRESH_DAYS } from './constants';
 import * as copy from './copy';
 import type {
   CompletePackContent,
+  Destination,
   ExposureLayer,
   LayerCode,
   PackDetailItem,
@@ -145,6 +146,15 @@ function layerCitation(row: ExposureLayer, lgaName: string): string | undefined 
   );
 }
 
+/** The user's chosen places of last resort, in the order they were listed (by
+ * distance). Dexie returns rows by primary key, so the order is restored here.
+ * They render as their own equal pair, never as items in the general list. */
+export function packDetailPlaces(content: CompletePackContent): Destination[] {
+  return content.destinations
+    .filter((row) => row.kind === 'nsp-bushfire')
+    .sort((a, b) => (a.distanceOrder ?? 0) - (b.distanceOrder ?? 0));
+}
+
 export function packDetailItems(content: CompletePackContent): PackDetailItem[] {
   const items: PackDetailItem[] = [
     ...content.layers.map((row) => {
@@ -156,13 +166,6 @@ export function packDetailItems(content: CompletePackContent): PackDetailItem[] 
         ...(citation ? { citation } : {}),
       };
     }),
-    ...content.destinations
-      .filter((row) => row.kind !== 'absence')
-      .map((row) => ({
-        id: row.id,
-        name: row.name ?? copy.OFFICIAL_DESTINATION_INFORMATION,
-        source: row.source,
-      })),
     ...content.recovery.map((row) => ({ id: row.id, name: row.title, source: row.source })),
   ];
   // ponytail: unreachable for Iteration 1 packs, which are all built without a

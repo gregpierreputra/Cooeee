@@ -297,6 +297,15 @@ a {
   z-index: 1; /* above the pack-card stretched link */
 }
 
+/* The saved pack's two chosen places, side by side and equal: one grid rule, no
+   ordinal, no ranking between them (E2-US2). One column when the screen is too
+   narrow for two cards. */
+.saved-destinations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
 .card-confirm-actions {
   display: flex;
   gap: 0.75rem;

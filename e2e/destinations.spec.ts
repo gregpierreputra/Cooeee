@@ -15,7 +15,7 @@ const BY_DISTANCE = [
 const OUT_OF_RANGE = 'Belgrave Recreation Reserve';
 const UNLOCATED_SAME_LGA = 'Wandin North Reserve';
 const UNLOCATED_OTHER_LGA = 'Alexandra Showgrounds';
-const CAVEAT = 'sorted by distance, not a safety ranking';
+const CAVEAT = 'sorted by distance — not a safety ranking';
 const DISTANCE = /^\d+(\.\d+)?\s(m|km)$/;
 const ANY_ORDINAL = /^(nearest|second nearest|third nearest)$/;
 

@@ -2,5 +2,9 @@
   "layerExtent": {
     "file": "layer-extent.v2026-08-31.json",
     "retrievedAt": 1788177320583
+  },
+  "nsp": {
+    "file": "nsp.v2026-09-02.json",
+    "retrievedAt": 1788349289285
   }
 }

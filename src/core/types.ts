@@ -109,6 +109,7 @@ export type Destination = {
   addressText?: string;                                 // optional
   council?: string;                                     // optional
   listAsAt?: string;                                    // the CFA list's own date, e.g. '2026-08-18'
+  designatedAt?: string;                                // the CFA's designation date for the site, when recorded
   geocode?: 'exact' | 'street' | 'township' | 'none';   // optional, can be one of the different values
   lat?: number;                                         // optional, absent when geocode === 'none'
   lon?: number;                                         // optional, absent when geocode === 'none'
@@ -260,10 +261,12 @@ export type PackDetailItem = {
   // The stored citation for this item, when it has one — present only where the
   // saved row itself names what was matched.
   citation?: string;
+  // The readable page to continue to, when it is not the DTP dataset page.
+  pageUrl?: string;
 };
 
 /** One row of the CFA Neighbourhood Safer Places state-wide list, as produced by
- * scripts/build-nsp.ts. The raw snapshot shape — not an IndexedDB record.
+ * scripts/build-nsp.mjs. The raw snapshot shape — not an IndexedDB record.
  * `lat`/`lon` are present for every geocode except 'none'. */
 export type NspSite = {
   id: string; // stable across rebuilds: slug(municipality|township|name)
@@ -275,10 +278,11 @@ export type NspSite = {
   geocode: 'exact' | 'street' | 'township' | 'none';
   lat?: number; // absent only when geocode === 'none'
   lon?: number;
+  designatedAt?: string; // ISO date the CFA designated the site, when the list records one
 };
 
-/** The precached CFA NSP snapshot file. One state-wide `listAsAt` date; there is
- * no per-site date and no stated licence
+/** The precached CFA NSP snapshot file. One state-wide `listAsAt` date beside
+ * each site's own designation date; no stated licence
  * (see prompt-bank/datasets/licence-and-attribution.txt). */
 export type NspSnapshot = {
   listAsAt: string; // ISO date — the list's own date, shown as the list's date

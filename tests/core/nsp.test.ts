@@ -217,7 +217,7 @@ describe('destinationsForPack', () => {
   ];
 
   it('writes exactly one absence row when nothing is published for the area', () => {
-    const rows = destinationsForPack({ located: [], unlocated: [] }, [], 'pack-9', snap, 'Yarra Ranges');
+    const rows = destinationsForPack([], 'pack-9', snap, 'Yarra Ranges');
     expect(rows).toHaveLength(1);
     expect(rows[0].kind).toBe('absence');
     expect(rows[0].id).toBe('pack-9:absence');
@@ -227,7 +227,7 @@ describe('destinationsForPack', () => {
   });
 
   it('the absence row carries the snapshot Source and no coordinates', () => {
-    const [row] = destinationsForPack({ located: [], unlocated: [] }, [], 'pack-9', snap, 'Yarra Ranges');
+    const [row] = destinationsForPack([], 'pack-9', snap, 'Yarra Ranges');
     expect(row.source).toEqual(snap.source);
     expect(row.lat).toBeUndefined();
     expect(row.lon).toBeUndefined();
@@ -235,26 +235,9 @@ describe('destinationsForPack', () => {
   });
 
   it('returns exactly the chosen rows — never the whole list — when places are published', () => {
-    const rows = destinationsForPack(
-      { located: [nspSite({ id: 'a' }), nspSite({ id: 'b' }), nspSite({ id: 'c' })], unlocated: [] },
-      picks,
-      'pack-9',
-      snap,
-      'Yarra Ranges',
-    );
+    const rows = destinationsForPack(picks, 'pack-9', snap, 'Yarra Ranges');
     expect(rows).toBe(picks);
     expect(rows.map((r) => r.kind)).toEqual(['nsp-bushfire', 'nsp-bushfire']);
-  });
-
-  it('un-located sites alone still count as published — the chosen rows are returned', () => {
-    const rows = destinationsForPack(
-      { located: [], unlocated: [nspSite({ id: 'b', ...nowhere })] },
-      picks,
-      'pack-9',
-      snap,
-      'Yarra Ranges',
-    );
-    expect(rows).toBe(picks);
   });
 
   it('only out-of-area sites: the selection is empty, so an absence is written, no neighbour substituted', () => {
@@ -270,14 +253,14 @@ describe('destinationsForPack', () => {
       ],
     });
     const selection = selectSitesForPack(snapshot.sites, KALORAMA, 'YARRA RANGES', 6);
-    const rows = destinationsForPack(selection, [], 'pack-9', snapshot, 'Yarra Ranges');
+    expect(selection.located).toEqual([]);
+    const rows = destinationsForPack([], 'pack-9', snapshot, 'Yarra Ranges');
     expect(rows).toHaveLength(1);
     expect(rows[0].kind).toBe('absence');
   });
 
   it('a flood or heat pack gets no rows at all — not even an absence marker', () => {
-    const populated = { located: [nspSite({ id: 'a' })], unlocated: [] };
-    expect(destinationsForPack(populated, picks, 'pack-9', snap, 'Yarra Ranges', 'flood')).toEqual([]);
-    expect(destinationsForPack({ located: [], unlocated: [] }, [], 'pack-9', snap, 'Yarra Ranges', 'heat')).toEqual([]);
+    expect(destinationsForPack(picks, 'pack-9', snap, 'Yarra Ranges', 'flood')).toEqual([]);
+    expect(destinationsForPack([], 'pack-9', snap, 'Yarra Ranges', 'heat')).toEqual([]);
   });
 });

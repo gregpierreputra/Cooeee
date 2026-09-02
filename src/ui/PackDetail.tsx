@@ -2,12 +2,19 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 
 import { DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
-import { decideOriginalSourceAccess, packDetailAbsence, packDetailItems } from '../core/provenance';
+import { formatDistanceM } from '../core/destination';
+import {
+  decideOriginalSourceAccess,
+  packDetailAbsence,
+  packDetailItems,
+  packDetailPlaces,
+} from '../core/provenance';
 import type { CompletePackContent, PackDetailItem } from '../core/types';
 import { getCompletePackContent } from '../data/db';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
+import { PlaceFacts } from './PackNew/Destinations';
 
 type PackDetailProps = {
   packId: string;
@@ -53,6 +60,7 @@ export default function PackDetail({
   }
 
   const items = packDetailItems(content);
+  const places = packDetailPlaces(content);
   const absence = packDetailAbsence(content);
   const interceptSource = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
     event.preventDefault();
@@ -96,9 +104,44 @@ export default function PackDetail({
             </li>
           ))}
         </ul>
-      ) : absence ? null : (
+      ) : absence || places.length > 0 ? null : (
         <StateCard heading={copy.NO_STORED_ITEMS} />
       )}
+
+      {/* E2-US2: the two places the user chose, side by side with equal weight.
+          Distance is a fact about each; there is no ordinal and no ranking. */}
+      {places.length > 0 ? (
+        <section>
+          <span className="kicker">{copy.DESTINATIONS_STEP_TITLE}</span>
+          <ul className="list saved-destinations">
+            {places.map((place) => {
+              const item = {
+                id: place.id,
+                name: place.name ?? copy.OFFICIAL_DESTINATION_INFORMATION,
+                source: place.source,
+                pageUrl: place.source.url,
+              };
+              return (
+                <li key={place.id} className="card provenance-item">
+                  <h2>{item.name}</h2>
+                  {typeof place.distanceM === 'number' ? (
+                    <p className="figure">{formatDistanceM(place.distanceM)}</p>
+                  ) : null}
+                  <PlaceFacts place={place} now={now} />
+                  <a
+                    href={item.pageUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(event) => interceptSource(event, item)}
+                  >
+                    {copy.OPEN_ORIGINAL_SOURCE}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       {offlineSource ? (
         <div className="sheet-backdrop">
@@ -121,7 +164,7 @@ export default function PackDetail({
             ) : null}
             <a
               className={offlineSource.citation ? 'secondary-action' : undefined}
-              href={DTP_DATASET_URL}
+              href={offlineSource.pageUrl ?? DTP_DATASET_URL}
               target="_blank"
               rel="noreferrer"
             >

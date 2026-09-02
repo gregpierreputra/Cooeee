@@ -8,7 +8,7 @@
 import type { FacilityType, SourceStatus } from './types';
 
 // Core Mandated Literals
-export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
+export const SORTED_BY_DISTANCE = 'sorted by distance — not a safety ranking';
 
 export const NO_ADDRESS_MATCH =
   'No matching address found — check the spelling or try the nearest cross street.';
@@ -226,6 +226,7 @@ export const DESTINATIONS_STEP_TITLE = 'Official places of last resort';
 export const NSP_KIND_LABEL = 'Bushfire place of last resort';
 export const NSP_COUNCIL_LABEL = (council: string) => `Responsible council: ${council}`;
 export const NSP_LIST_AS_AT = (date: string) => `Country Fire Authority state-wide list as at ${date}`;
+export const NSP_DESIGNATED_ON = (date: string) => `Designated ${date}`;
 export const NSP_UNLOCATED_HEADING =
   'On the Country Fire Authority list but not located to a point on the map';
 export const OFFICIAL_LIST_UNAVAILABLE =

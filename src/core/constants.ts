@@ -2,7 +2,12 @@
 // retype them. A published constant that disagrees with the implementation is
 // a DoD Level 4 failure.
 
+import type { HazardType } from './types';
+
 export const PACK_RADIUS_KM = 6; // containment: distance <= radius, INCLUSIVE
+// Iteration 1 builds bushfire packs only. Neighbourhood Safer Places are gated
+// on this in core/nsp.ts, so a flood or heat pack can never be offered one.
+export const PACK_HAZARD: HazardType = 'bushfire';
 export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
 
 /** The number of last-resort places a pack holds. Two equal-status places, with
