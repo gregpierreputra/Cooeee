@@ -1,11 +1,15 @@
 import Dexie, { type Table } from 'dexie';
 import type {
+  BundleFacility,
+  BundlePostcode,
   CompletePackContent,
   Destination,
   ExposureLayer,
   Pack,
   PackWithPlaces,
   RecoveryProgram,
+  SnapshotActivation,
+  SyncMetaRow,
   TileRow,
 } from '../core/types';
 import { manifestGroup } from './integrity';
@@ -18,6 +22,11 @@ class CooeeeDb extends Dexie {
   destinations!: Table<Destination, string>;
   programs!: Table<RecoveryProgram, string>;
   tiles!: Table<TileRow, [string, number, number, number]>;
+  // Nearby places (spec §7.2): downloaded reference data, not user data.
+  staticFacilities!: Table<BundleFacility, number>;
+  postcodes!: Table<BundlePostcode, string>;
+  dynamicSnapshot!: Table<SnapshotActivation, number>;
+  syncMeta!: Table<SyncMetaRow, string>;
 
   constructor() {
     super('cooeee');
@@ -43,6 +52,15 @@ class CooeeeDb extends Dexie {
       queue: null,
       pending: null,
       kv: null,
+    });
+    // Version 3 adds the four Nearby-places stores: the downloaded static
+    // facilities and postcodes, the short-lived dynamic snapshot and the sync
+    // bookkeeping. Nothing existing changes shape.
+    this.version(3).stores({
+      staticFacilities: 'facility_id',
+      postcodes: 'postcode',
+      dynamicSnapshot: 'activation_id',
+      syncMeta: 'key',
     });
   }
 }

@@ -64,6 +64,9 @@
   --online-ink: #04211c;
   --offline: #f87171;
   --offline-ink: #2a0a0a;
+  /* Data-age tier from the mockups' freshness screen: marks a cached row, never a hazard. */
+  --stale: #fbbf24;
+  --stale-fill: #1f1809;
 }
 
 /* True black is a battery decision: on OLED a #000 pixel is switched off.
@@ -1244,4 +1247,107 @@ input {
   border-color: var(--line);
   color: var(--ink-2);
   cursor: not-allowed;
+}
+
+/* ── Nearby places ─────────────────────────────────────────────────────────── */
+
+/* The mockups' freshness tier (signalcheck_row2, "FRESHNESS"): a cached row
+   keeps the card geometry and swaps to the amber fill, an amber hairline and
+   an amber state word; live stays on the default card with the fixed green
+   dot; unavailable takes the fixed red. The second deliberate use of state
+   colour in this stylesheet, and it marks data age only — never hazard. */
+.nearby-locate {
+  gap: 0.75rem;
+}
+.nearby-postcode {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* never wider than the card, whatever the input wants */
+  gap: 0.5rem;
+}
+.postcode-row {
+  display: flex;
+  gap: 0.75rem;
+}
+.postcode-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.nearby-group {
+  display: grid;
+  gap: 0.75rem;
+}
+.nearby-group > h2 {
+  font-size: var(--step-1);
+}
+
+.nearby-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+.nearby-row-head h3 {
+  margin: 0;
+  font-size: var(--step-0);
+  font-weight: var(--w-bold);
+}
+
+.state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.state-dot {
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: var(--r-pill);
+  background: var(--ink-3);
+}
+.state-live .state-dot {
+  background: var(--online);
+}
+.state-cached {
+  color: var(--stale);
+}
+.state-cached .state-dot {
+  background: var(--stale);
+}
+.state-unavailable {
+  color: var(--offline);
+}
+.state-unavailable .state-dot {
+  background: var(--offline);
+}
+.card-stale {
+  background: var(--stale-fill);
+  border-color: var(--stale);
+}
+
+/* Name on the left, the distance as the bold right-aligned figure. */
+.nearby-place {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+.nearby-place-name {
+  font-weight: var(--w-bold);
+}
+.nearby-distance {
+  flex: none;
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+}
+
+.nearby-health {
+  display: grid;
+  gap: 0.25rem;
+  font-size: var(--step-s);
+  color: var(--ink-3);
 }

@@ -209,13 +209,17 @@ describe('deleteCompletePack', () => {
 });
 
 describe('schema', () => {
-  it('is version 2 with the five stores', () => {
-    expect(db.verno).toBe(2);
+  it('is version 3: the five pack stores plus the four Nearby-places stores', () => {
+    expect(db.verno).toBe(3);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
       'destinations',
+      'dynamicSnapshot',
       'layers',
       'packs',
+      'postcodes',
       'programs',
+      'staticFacilities',
+      'syncMeta',
       'tiles',
     ]);
   });

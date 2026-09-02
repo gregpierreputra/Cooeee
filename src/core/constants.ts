@@ -83,3 +83,12 @@ export const METRES_PER_KM = 1_000;
  * value is a marker and nothing else — no date, no identifier, no counter. */
 export const ACKNOWLEDGEMENT_KEY = 'cooeee.acknowledgement.v1';
 export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';
+
+/** Nearby places (spec §7). A dynamic snapshot whose feed is older than this is
+ *  no longer shown as a place to go — only the stale notice and the hotline stay. */
+export const DYNAMIC_SNAPSHOT_MAX_AGE_MS = 60 * 60_000;
+export const NEARBY_SYNC_TIMEOUT_MS = 15_000;
+export const NEARBY_RESYNC_MS = 5 * 60_000; // while the screen stays open and online
+export const NEARBY_CLOCK_MS = 60_000; // how often the age labels are re-read
+export const NEARBY_FIX_TIMEOUT_MS = 15_000;
+export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is fine

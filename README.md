@@ -147,6 +147,27 @@ At [vercel.com](https://vercel.com) → **Add New… → Project** → import th
 filesystem first, so `/ping.txt` and `/assets/*` still resolve as real files. Production deploys
 from `main`; every other branch gets its own preview URL.
 
+## The API server (Nearby places)
+
+`server/` is a small Node 24 + SQLite service behind the `/nearby` screen. It ingests the CFA
+Neighbourhood Safer Places layer, the five Community Fire Refuges, Vicmap postcode centroids and
+the live VicEmergency feed, and serves them read-only under `/api/v1` (`server/api.ts`). The
+schema is `server/db/schema.sql`; the database file lives in `server/data/` (git-ignored).
+
+```sh
+npm run server            # http://127.0.0.1:8787 — vite dev proxies /api to it
+DB_PATH=… PORT=… HOST=…   # optional overrides
+```
+
+- No new dependencies: `node:sqlite` and native TypeScript execution, so `.nvmrc` is 24.
+- The client never calls `/api/v1/safe-locations`; it syncs `/api/v1/sync/*` into IndexedDB and
+  answers every query on the device, online or offline. Nothing the user types leaves the phone.
+- Vercel cannot host the 60-second poller. Deploy the server on a persistent host and put its
+  origin in the `/api/(.*)` rewrite in `vercel.json` (currently a placeholder), so the browser
+  keeps talking to one origin and the CSP stays `connect-src 'self'`.
+- A daily `VACUUM INTO server/data/backups/` snapshot is kept for seven days. For production,
+  replicate the file continuously (Litestream to object storage) instead.
+
 ## Where this is up to
 
 Implemented and merged to `main`:

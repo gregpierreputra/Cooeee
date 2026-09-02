@@ -5,6 +5,8 @@
 // The exact text literal that will be used in all of the main pages.
 // Never reword them.
 
+import type { FacilityType, SourceStatus } from './types';
+
 // Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
 
@@ -430,3 +432,85 @@ export const OFFICIAL_CHANNELS_LINE =
 export const ACKNOWLEDGE_CHECKBOX =
   'I understand how Cooeee works, and what it does not do.';
 export const CONTINUE = 'Continue';
+
+// ── Nearby places: the nearest official place of each kind ──────────────────
+// Every row carries its own state (live / cached / unavailable) and its own
+// timestamp; the page as a whole is never labelled current.
+
+export const NAV_NEARBY = 'Nearby';
+export const NEARBY_KICKER = 'Nearby places';
+export const NEARBY_TITLE = 'Nearest official places';
+export const NEARBY_LEDE =
+  'The nearest Neighbourhood Safer Place, Community Fire Refuge, and any relief or recovery centre listed as open — from your position or a postcode. Each row says how current it is.';
+
+export const USE_MY_LOCATION = 'Use my location';
+export const LOCATING = 'Reading your position…';
+export const LOCATION_FAILED = 'Your position could not be read. Enter a postcode instead.';
+export const POSTCODE_LABEL = 'Or a Victorian postcode';
+export const FIND_POSTCODE = 'Find';
+export const POSTCODE_INVALID = 'Enter a four-digit postcode.';
+export const POSTCODE_UNKNOWN = (postcode: string) =>
+  `Postcode ${postcode} is not in the downloaded Victorian list.`;
+export const FROM_POSITION = (accuracy: string) => `From your position, ${accuracy}`;
+export const FROM_POSTCODE = (postcode: string) => `From the centre of postcode ${postcode}`;
+export const DISTANCES_NOTE = 'Straight-line distances. The nearest of each kind — not a ranking.';
+
+export const DOWNLOADING_PLACES = 'Downloading the official places…';
+export const FIRST_RUN_TITLE = 'Nothing downloaded yet';
+export const FIRST_RUN_LINE =
+  'Connect to the internet once to download the official places for your area. After that they open without signal.';
+
+export const GROUP_BUSHFIRE = 'Bushfire places of last resort';
+export const GROUP_BUSHFIRE_NOTE =
+  'Designated by the Country Fire Authority for their own township, and for bushfire only.';
+export const GROUP_RELIEF = 'Relief and recovery';
+export const GROUP_RELIEF_NOTE =
+  'Opened for a particular incident and listed by VicEmergency only while it runs.';
+
+export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
+  NSP: 'Neighbourhood Safer Place',
+  CFR: 'Community Fire Refuge',
+  ERC: 'Emergency Relief Centre',
+  RELIEF: 'Relief Centre',
+  RECOVERY: 'Recovery Centre',
+  ASSEMBLY: 'Assembly Area',
+};
+
+export const STATE_LIVE = 'Live';
+export const STATE_CACHED = (age: string) => `Cached · ${age}`;
+export const STATE_UNAVAILABLE = 'Unavailable';
+export const JUST_NOW = 'just now';
+export const MINUTES_AGO = (minutes: number) => `${minutes} min ago`;
+export const HOURS_AGO = (hours: number) => `${hours} h ago`;
+export const NEVER = 'never';
+
+export const VERIFIED_ON = (date: string) => `Verified ${date}`;
+export const AS_OF = (time: string) => `As of ${time}`;
+
+export const NONE_IN_LIST = (kind: string) => `No ${kind} is in the downloaded list.`;
+export const NONE_LISTED_OPEN = (kind: string) => `No ${kind} is listed as open by VicEmergency.`;
+export const NOT_DOWNLOADED_YET = (kind: string) => `${kind} information has not been downloaded yet.`;
+export const MAY_BE_OUTDATED = 'May be outdated — confirm by radio or on the hotline if you can.';
+export const TOO_OLD_TO_SHOW = 'This information is more than an hour old, so no place is shown.';
+export const SOURCE_UNCONFIRMED = (source: string) =>
+  `The ${source} could not be reached recently, so this could not be confirmed.`;
+export const SOURCE_NOT_READ = (source: string) =>
+  `The ${source} has not been read yet, so nothing can be confirmed.`;
+export const NEEDS_REVIEW_NOTE =
+  'Listed earlier by the CFA but missing from its latest list — check before relying on it.';
+
+export const DATA_SOURCES_LABEL = 'Data sources';
+export const SOURCE_NAMES: Record<string, string> = {
+  cfa_nsp_arcgis: 'CFA Neighbourhood Safer Places list',
+  cfr_static_list: 'Community Fire Refuge list',
+  vicmap_admin_postcodes: 'Vicmap postcode list',
+  vicemergency_feed: 'VicEmergency feed',
+};
+export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
+  healthy: 'reachable',
+  degraded: 'struggling',
+  down: 'unreachable',
+  unknown: 'not yet read',
+};
+export const HEALTH_LINE = (source: string, status: string, when: string) =>
+  `${source}: ${status}, last updated ${when}`;

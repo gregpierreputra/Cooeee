@@ -11,6 +11,7 @@
     "build": "vite build",
     "build:data:extent": "node scripts/build-extent.mjs",
     "preview": "vite preview",
+    "server": "node server/index.ts",
     "test": "vitest",
     "e2e": "playwright test",
     "verify": "eslint . && tsc --noEmit && vitest run --coverage && node scripts/banned-terms.mjs && node scripts/snapshot-age.mjs"
@@ -25,7 +26,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",
-    "@types/node": "^20.19.43",
+    "@types/node": "^24.13.3",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",

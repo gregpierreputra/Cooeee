@@ -9,6 +9,9 @@ const headers = Object.fromEntries(vercel.headers[0].headers.map(({ key, value }
 
 export default defineConfig({
   preview: { headers },
+  // Development only: the API server (npm run server) answers /api on 8787. In
+  // production vercel.json rewrites the same path, so the browser sees one origin.
+  server: { proxy: { '/api': 'http://127.0.0.1:8787' } },
   plugins: [
     react(),
     VitePWA({
@@ -19,6 +22,7 @@ export default defineConfig({
         // purpose: they version with the build, so an offline start has them.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest,woff2}'],
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//], // an API path is never the app shell
         runtimeCaching: [], // user data lives in IndexedDB; nothing else is cached at runtime
       },
       manifest: {

@@ -286,3 +286,54 @@ export type NspSnapshot = {
   source: Source;
   sites: NspSite[];
 };
+
+// --- Nearby places ---
+// The wire shapes of the API server's two sync endpoints (server/api.ts). The
+// client stores them in IndexedDB exactly as received: snake_case IS the
+// contract, so there is no mapping layer to drift from it.
+export type FacilityType = 'NSP' | 'CFR' | 'ERC' | 'RELIEF' | 'RECOVERY' | 'ASSEMBLY';
+export type StaticType = Extract<FacilityType, 'NSP' | 'CFR'>;
+export type DynamicType = Exclude<FacilityType, StaticType>;
+
+export type SourceStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
+export type SourceHealth = { status: SourceStatus; last_success_at: string | null };
+export type DataHealth = Record<string, SourceHealth>;
+
+export type BundleFacility = {
+  facility_id: number;
+  type: StaticType;
+  name: string;
+  address: string | null;
+  lat: number;
+  lon: number;
+  lga_name: string | null;
+  designation_status: 'designated' | 'needs_review'; // needs_review = missing from the latest upstream run
+  last_verified_at: string; // ISO-8601
+};
+export type BundlePostcode = { postcode: string; centroid_lat: number; centroid_lon: number };
+export type StaticBundle = {
+  version: string | null;
+  generated_at: string;
+  facilities: BundleFacility[];
+  postcodes: BundlePostcode[];
+  data_health: DataHealth;
+};
+
+export type SnapshotActivation = {
+  activation_id: number;
+  type: DynamicType;
+  name: string;
+  address: string | null;
+  lat: number;
+  lon: number;
+  source_updated_at: string;
+};
+export type DynamicSnapshot = {
+  generated_at: string;
+  source_status: SourceStatus;
+  source_last_success_at: string | null;
+  activations: SnapshotActivation[];
+};
+
+/** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */
+export type SyncMetaRow = { key: string; value: string };

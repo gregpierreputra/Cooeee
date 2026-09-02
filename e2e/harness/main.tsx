@@ -18,6 +18,7 @@ import { db } from '../../src/data/db';
 import { manifestGroup } from '../../src/data/integrity';
 import { loadNspSnapshot } from '../../src/data/nsp';
 import Home from '../../src/ui/Home';
+import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
 import AppHeader from '../../src/ui/components/AppHeader';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
@@ -402,6 +403,39 @@ if (window.location.pathname === '/destinations') {
   }
 }
 
+// Nearby places at a fixed instant (4:00 pm in Melbourne), seeded straight into
+// the four stores so the offline states of spec §9 AC4–AC6 are exact. The
+// harness has no API, so every sync fails exactly as it would with the radios off.
+const nearbyMode = new URLSearchParams(window.location.search).get('mode') ?? 'cached';
+const nearbyNow = Date.UTC(2026, 8, 2, 6);
+let nearbyFlow = confirmation;
+if (window.location.pathname === '/nearby') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  if (nearbyMode !== 'empty') {
+    const ago = (ms: number) => new Date(nearbyNow - ms).toISOString();
+    const feedAge = nearbyMode === 'stale' ? 3 * 3_600_000 : 10 * 60_000;
+    const verified = ago(2 * 86_400_000);
+    await db.staticFacilities.bulkAdd([
+      { facility_id: 1, type: 'NSP', name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', lat: -37.808, lon: 145.36, lga_name: 'Yarra Ranges', designation_status: 'designated', last_verified_at: verified },
+      { facility_id: 2, type: 'CFR', name: 'Ferny Creek Community Fire Refuge', address: 'School Road, Ferny Creek 3786', lat: -37.88323, lon: 145.333062, lga_name: 'Yarra Ranges', designation_status: 'designated', last_verified_at: verified },
+    ]);
+    await db.postcodes.bulkAdd([{ postcode: '3766', centroid_lat: -37.813, centroid_lon: 145.362 }]);
+    await db.dynamicSnapshot.bulkAdd([
+      { activation_id: 1, type: 'RELIEF', name: 'Lilydale Community Centre', address: 'Lilydale', lat: -37.756, lon: 145.35, source_updated_at: ago(feedAge) },
+    ]);
+    await db.syncMeta.bulkAdd([
+      { key: 'static_synced_at', value: ago(2 * 3_600_000) },
+      { key: 'static_version', value: '2026-09-01T02:00:00.000Z' },
+      { key: 'data_health', value: JSON.stringify({ cfa_nsp_arcgis: { status: 'healthy', last_success_at: ago(86_400_000) }, cfr_static_list: { status: 'healthy', last_success_at: ago(86_400_000) } }) },
+      { key: 'dynamic_synced_at', value: ago(feedAge) },
+      { key: 'dynamic_generated_at', value: ago(feedAge) },
+      { key: 'dynamic_source_status', value: 'healthy' },
+      { key: 'dynamic_source_last_success_at', value: ago(feedAge) },
+    ]);
+  }
+  nearbyFlow = <Nearby now={nearbyNow} fetcher={async () => { throw new Error('no network'); }} />;
+}
+
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
@@ -425,6 +459,7 @@ createRoot(root).render(
       : window.location.pathname === '/area' ? areaFlow
         : window.location.pathname === '/size' ? sizeFlow
         : window.location.pathname === '/destinations' ? destinationsFlow
+        : window.location.pathname === '/nearby' ? nearbyFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

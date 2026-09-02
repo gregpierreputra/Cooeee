@@ -166,7 +166,7 @@ test.describe('the returning-user home screen', () => {
     expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('the bottom navigation names two destinations, and BlackSky is not one', async ({
+  test('the bottom navigation names its destinations, and BlackSky is not one', async ({
     page,
   }) => {
     await page.goto(home('?days=3'));

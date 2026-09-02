@@ -6,6 +6,7 @@ import { localFlagStore } from './data/acknowledgement';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
 import Home from './ui/Home';
+import Nearby from './ui/Nearby';
 import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
 import NoticeBar from './ui/components/NoticeBar';
@@ -106,6 +107,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/" element={<Home />} />
         <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
+        <Route path="/nearby" element={<Nearby />} />
         <Route path="/blacksky" element={<BlackSky />} />
       </Routes>
     </BrowserRouter>

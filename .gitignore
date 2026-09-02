@@ -27,5 +27,8 @@ playwright-report/
 test-results/
 *.local
 
+# API server database and its daily snapshots
+server/data/
+
 # Vercel web application
 .vercel/
