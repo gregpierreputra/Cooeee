@@ -2,7 +2,18 @@
 // retype them. A published constant that disagrees with the implementation is
 // a DoD Level 4 failure.
 
+import type { HazardType } from './types';
+
 export const PACK_RADIUS_KM = 6; // containment: distance <= radius, INCLUSIVE
+// Iteration 1 builds bushfire packs only. Neighbourhood Safer Places are gated
+// on this in core/nsp.ts, so a flood or heat pack can never be offered one.
+export const PACK_HAZARD: HazardType = 'bushfire';
+/** How many official places the pack wizard offers: the nearest, state-wide,
+ *  however far. Every published site is offered to whoever is nearest it. */
+export const PLACES_OFFERED = 5;
+/** How many of the nearest official places BlackSky points at from the live
+ *  fix, beyond the ones saved in the pack. */
+export const NEARBY_PLACES = 3;
 export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
 
 /** The number of last-resort places a pack holds. Two equal-status places, with
@@ -43,6 +54,8 @@ export const DTP_LICENCE = 'CC BY 4.0';
 export const DTP_DATASET_URL =
   'https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa';
 
+// The arrows are drawn from any fix; these decide when the screen says the fix
+// is old or vague beside them, and when a marked-position estimate expires.
 export const FIX_STALE_MS = 30_000;
 export const ACCURACY_MAX_M = 100;
 
@@ -51,9 +64,9 @@ export const TICK_MS = 5_000;
 
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion
-// sensors, the holder may be walking the whole time. ACCURACY_MAX_M above stays
-// the ONE confidence threshold: an estimate is withheld at exactly the point a
-// GPS fix would be.
+// sensors, the holder may be walking the whole time. ACCURACY_MAX_M above is
+// the ONE confidence threshold: an estimate is withdrawn at exactly the point a
+// GPS fix would be called approximate.
 export const MARK_START_ACCURACY_M = 25;
 export const MARK_DRIFT_M_PER_S = 1.4;
 
@@ -83,3 +96,12 @@ export const METRES_PER_KM = 1_000;
  * value is a marker and nothing else — no date, no identifier, no counter. */
 export const ACKNOWLEDGEMENT_KEY = 'cooeee.acknowledgement.v1';
 export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';
+
+/** Nearby places (spec §7). A dynamic snapshot whose feed is older than this is
+ *  no longer shown as a place to go — only the stale notice and the hotline stay. */
+export const DYNAMIC_SNAPSHOT_MAX_AGE_MS = 60 * 60_000;
+export const NEARBY_SYNC_TIMEOUT_MS = 15_000;
+export const NEARBY_RESYNC_MS = 5 * 60_000; // while the screen stays open and online
+export const NEARBY_CLOCK_MS = 60_000; // how often the age labels are re-read
+export const NEARBY_FIX_TIMEOUT_MS = 15_000;
+export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is fine

@@ -6,7 +6,7 @@ import * as copy from '../../src/core/copy';
 // not a style discussion.
 describe('mandated literals', () => {
   it('destinations are never ranked by worth', () => {
-    expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance, not a safety ranking');
+    expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance — not a safety ranking');
   });
 
   // Exact match including punctuation. The literal is mandated with an em dash;
@@ -24,10 +24,11 @@ describe('mandated literals', () => {
     expect(copy.NO_GPS).toBe('No GPS fix — showing your saved information.');
   });
 
-  it('a vague fix reports its own error figure', () => {
-    expect(copy.GPS_TOO_INACCURATE(240)).toBe(
-      'GPS is too inaccurate here to trust a direction (± 240 m).',
+  it('a vague or old fix reports its own figure beside the arrow, never instead of it', () => {
+    expect(copy.GPS_APPROXIMATE(240)).toBe(
+      'GPS is only accurate to ± 240 m here — the direction is approximate and sharpens as the fix improves.',
     );
+    expect(copy.FIX_AGE(45)).toBe('Last GPS fix 45 s ago — the direction may have changed.');
   });
 
   it('being outside every prepared area is stated plainly', () => {
@@ -155,9 +156,8 @@ describe('BlackSky compass sectors', () => {
     expect(copy.CARDINAL_ABBR[8]).toBe('S');
   });
 
-  it('has one arrow glyph per 45-degree sector, north first', () => {
-    expect(copy.ARROW_GLYPHS).toHaveLength(8);
-    expect(copy.ARROW_GLYPHS[0]).toBe('↑');
+  it('has one arrow, drawn pointing up before CSS turns it', () => {
+    expect(copy.ARROW).toBe('↑');
   });
 });
 
@@ -226,7 +226,7 @@ describe('the fixed header', () => {
     expect(copy.CHECKED_DAYS_AGO(3)).not.toBe(copy.SAVED_DAYS_AGO(3));
   });
 
-  it('gives the wordless connection dot its whole meaning in its name', () => {
+  it('gives the wordless dismissed connection notice its whole meaning in its name', () => {
     expect(copy.CONNECTION_ONLINE_LABEL).toBe('Connection: your browser reports a network.');
     expect(copy.CONNECTION_OFFLINE_LABEL).toBe('Connection: your browser reports no network.');
   });

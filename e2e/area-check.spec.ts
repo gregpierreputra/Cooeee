@@ -60,9 +60,14 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
   expect(await deviceStorage(page)).toEqual({
     recordCounts: {
       destinations: 0,
+      dynamicSnapshot: 0,
       layers: 0,
       packs: 0,
+      postcodes: 0,
       programs: 0,
+      snapshots: 0,
+      staticFacilities: 0,
+      syncMeta: 0,
       tiles: 0,
     },
     localStorageLength: 0,

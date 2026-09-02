@@ -85,6 +85,12 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
   await expect(page.getByRole('heading', { name: 'Designated Bushfire Prone Area' })).toBeVisible();
   await expect(page.getByText(/Published by Department of Transport and Planning/)).toBeVisible();
+  // E2-US2: both chosen places are in the saved pack, each with its council.
+  const savedPlaces = page.locator('.saved-destinations .card');
+  await expect(savedPlaces).toHaveCount(2);
+  await expect(savedPlaces.getByText(/^Responsible council: /)).toHaveCount(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   // AC1 TC-1.1.1-B: a full close and reopen still shows the saved place.
   await page.reload();

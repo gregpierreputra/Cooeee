@@ -73,6 +73,12 @@ export default tseslint.config(
     },
   },
 
+  // The API server and its tests run on Node, not in a browser.
+  {
+    files: ['server/**', 'tests/server/**'],
+    languageOptions: { globals: { ...globals.node } },
+  },
+
   {
     files: ['scripts/**/*.mjs', '*.config.{js,ts}'],
     languageOptions: { globals: { ...globals.node } },

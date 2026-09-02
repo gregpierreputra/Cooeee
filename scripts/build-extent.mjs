@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const WFS_URL = 'https://opendata.maps.vic.gov.au/geoserver/wfs';
 // Safety margin above the current 76 features so the layer can grow.
@@ -65,9 +65,10 @@ const snapshot = {
 };
 
 writeFileSync(new URL(file, outputDir), `${JSON.stringify(snapshot, null, 2)}\n`);
-writeFileSync(
-  new URL('index.json', outputDir),
-  `${JSON.stringify({ layerExtent: { file, retrievedAt } }, null, 2)}\n`,
-);
+// index.json is shared with build-nsp.mjs: merge this script's key, keep the rest.
+const indexUrl = new URL('index.json', outputDir);
+const index = existsSync(indexUrl) ? JSON.parse(readFileSync(indexUrl, 'utf8')) : {};
+index.layerExtent = { file, retrievedAt };
+writeFileSync(indexUrl, `${JSON.stringify(index, null, 2)}\n`);
 
 console.log(`extent: wrote ${snapshot.layers.BPA.publishedIn.length} BPA LGAs to ${file}`);

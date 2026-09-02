@@ -9,7 +9,12 @@ import {
   type SettledSearch,
 } from '../../core/address-search';
 import { bpaExposureLayer } from '../../core/area-check';
-import { ADDRESS_QUERY_DEBOUNCE_MS, ADDRESS_RESULT_LIMIT, PACK_RADIUS_KM } from '../../core/constants';
+import {
+  ADDRESS_QUERY_DEBOUNCE_MS,
+  ADDRESS_RESULT_LIMIT,
+  PACK_HAZARD,
+  PLACES_OFFERED,
+} from '../../core/constants';
 import * as copy from '../../core/copy';
 import { chosenDestinations, orderByDistance } from '../../core/destination';
 import { titleCase } from '../../core/home';
@@ -230,7 +235,13 @@ export function Search({
     setPlacesState({ kind: 'loading' });
     try {
       const snapshot = await loadNsp();
-      const selection = selectSitesForPack(snapshot.sites, place, result.lgaName, PACK_RADIUS_KM);
+      const selection = selectSitesForPack(
+        snapshot.sites,
+        place,
+        result.lgaName,
+        PLACES_OFFERED,
+        PACK_HAZARD,
+      );
       const asRow = (site: NspSite) => toDestination(site, id, snapshot);
       const { ordered } = orderByDistance(selection.located.map(asRow), place);
       const unlocated = selection.unlocated.map(asRow);
@@ -420,20 +431,20 @@ export function Search({
 
     // The pack keeps exactly the places the user chose, or the absence row
     // when the CFA publishes none for this area (see destinationsForPack).
-    const { snapshot, selection, ordered, unlocated } = placesState;
+    const { snapshot, ordered, unlocated } = placesState;
     const area = titleCase(result.lgaName);
     const continueWith = (chosen: Destination[]) =>
       buildPackOfferForResult(
         pendingPlace,
         result,
-        destinationsForPack(selection, chosen, packId, snapshot, area),
+        destinationsForPack(chosen, packId, snapshot, area, PACK_HAZARD),
       );
     return (
       <Destinations
         ordered={ordered}
         unlocated={unlocated}
-        listAsAt={snapshot.listAsAt}
         area={area}
+        status={PACK_HAZARD === 'bushfire' ? 'ok' : 'not-bushfire'}
         save={(ids) => continueWith(chosenDestinations(ordered, ids))}
         onContinue={() => void continueWith([])}
       />
@@ -471,14 +482,18 @@ export function Search({
           <header className="hero">
             <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
             <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
+            <p className="muted">{copy.ADDRESS_SEARCH_DISCLOSURE}</p>
           </header>
           <label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>
+          <p id="address-hint" className="muted search-hint">
+            {copy.ADDRESS_FIELD_HINT}
+          </p>
           <input
             id="address-query"
             name="addressQuery"
             value={query}
             autoComplete="off"
-            aria-describedby="address-result"
+            aria-describedby="address-hint address-result"
             onChange={handleQueryChange}
           />
 

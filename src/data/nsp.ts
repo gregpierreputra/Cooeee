@@ -1,4 +1,5 @@
 import type { NspSite, NspSnapshot, Source } from '../core/types';
+import { getNspSnapshot, putNspSnapshot } from './db';
 
 // The precached CFA Neighbourhood Safer Places snapshot. Same-origin static
 // asset, served from the service-worker precache after the first visit — this is
@@ -6,9 +7,10 @@ import type { NspSite, NspSnapshot, Source } from '../core/types';
 //
 // ponytail: one hard-coded snapshot filename; read the current version from
 // public/data/index.json once a snapshot-seed layer exists.
-export const NSP_SNAPSHOT_PATH = '/data/nsp.v2026-08-18.json';
+export const NSP_SNAPSHOT_PATH = '/data/nsp.v2026-09-02.json';
 
 const GEOCODES = ['exact', 'street', 'township', 'none'] as const;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function fail(message: string): never {
   throw new TypeError(`nsp snapshot: ${message}`);
@@ -67,6 +69,12 @@ function assertSite(value: unknown, index: number): NspSite {
     street: assertString(raw.street, at('street')),
     geocode: geocode as NspSite['geocode'],
   };
+  if (raw.designatedAt !== undefined) {
+    if (!ISO_DATE.test(assertString(raw.designatedAt, at('designatedAt')))) {
+      fail(`${at('designatedAt')} must be an ISO date (YYYY-MM-DD)`);
+    }
+    site.designatedAt = raw.designatedAt as string;
+  }
 
   if (geocode === 'none') {
     if (raw.lat !== undefined || raw.lon !== undefined) {
@@ -88,7 +96,7 @@ export function assertNspSnapshot(value: unknown): NspSnapshot {
   const raw = value as Record<string, unknown>;
 
   const listAsAt = assertString(raw.listAsAt, 'listAsAt');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(listAsAt)) fail('listAsAt must be an ISO date (YYYY-MM-DD)');
+  if (!ISO_DATE.test(listAsAt)) fail('listAsAt must be an ISO date (YYYY-MM-DD)');
 
   if (!Array.isArray(raw.sites)) fail('sites must be an array');
 
@@ -98,6 +106,16 @@ export function assertNspSnapshot(value: unknown): NspSnapshot {
     source: assertSource(raw.source),
     sites: raw.sites.map(assertSite),
   };
+}
+
+/** Copy the precached snapshot into IndexedDB for BlackSky, which cannot fetch.
+ *  Called on every app start; the file is precached, so this works offline after
+ *  the first visit, and a first visit with no network simply leaves no copy.
+ *  The copy is written only when the file is newer than what is stored. */
+export async function cacheNspSnapshot(): Promise<void> {
+  const snapshot = await loadNspSnapshot();
+  const stored = await getNspSnapshot();
+  if (stored?.retrievedAt !== snapshot.retrievedAt) await putNspSnapshot(snapshot);
 }
 
 /** Read and validate the precached CFA NSP snapshot. `fetchImpl` is injectable

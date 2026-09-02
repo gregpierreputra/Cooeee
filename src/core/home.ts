@@ -60,14 +60,15 @@ export function preparationLine(seed: number): PreparationLine {
   };
 }
 
-export type NavItem = { key: 'home' | 'pack'; label: string; to: string };
+export type NavItem = { key: 'home' | 'nearby' | 'pack'; label: string; to: string };
 
-/** The bottom navigation. Two destinations, both of which exist in Iteration 1;
- *  nothing here is invented for a later epic. BlackSky is deliberately absent —
- *  it is entered by a deliberate hold, never by a tab. */
+/** The bottom navigation. Three destinations, all of which exist; nothing here
+ *  is invented for a later epic. BlackSky is deliberately absent — it is
+ *  entered by a deliberate hold, never by a tab. */
 export function navItems(packId: string | null): NavItem[] {
   return [
     { key: 'home', label: copy.NAV_HOME, to: '/' },
+    { key: 'nearby', label: copy.NAV_NEARBY, to: '/nearby' },
     packId === null
       ? { key: 'pack', label: copy.BUILD_A_PACK, to: '/packs/new' }
       : { key: 'pack', label: copy.NAV_MY_PACK, to: `/packs/${packId}` },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveState, estimateFix } from '../../src/core/blacksky';
+import { deriveState, estimateFix, nearestSites } from '../../src/core/blacksky';
 import {
   ACCURACY_MAX_M,
   FIX_STALE_MS,
@@ -8,7 +8,7 @@ import {
 } from '../../src/core/constants';
 import { distanceM } from '../../src/core/geo';
 import type { Destination, Fix, PackWithPlaces } from '../../src/core/types';
-import { KALORAMA, destination, pack, source } from '../fixtures';
+import { KALORAMA, destination, nspSite, nspSnapshot, pack, source } from '../fixtures';
 
 const NOW = 1_800_000_000_000;
 
@@ -38,7 +38,11 @@ const faraway: PackWithPlaces = {
 
 describe('precedence', () => {
   it('1 — NO_PACK wins over everything, even a perfect fix', () => {
-    expect(deriveState(NOW, [], fix(), 'granted')).toEqual({ kind: 'NO_PACK' });
+    expect(deriveState(NOW, [], fix(), 'granted')).toEqual({
+      kind: 'NO_PACK',
+      nearby: [],
+      confidence: { accuracyM: 10, ageS: 0, approximate: false, stale: false },
+    });
   });
 
   it('2 — a denied permission is ACQUIRING, even when a fresh accurate fix exists', () => {
@@ -51,62 +55,35 @@ describe('precedence', () => {
     const s = deriveState(NOW, [kalorama()], null, 'granted');
     expect(s.kind === 'ACQUIRING' && s.reason).toBe('no-fix');
   });
+});
 
-  it('3 — LOW_ACCURACY is decided BEFORE area membership, so a vague fix inside a pack never draws an arrow', () => {
+// The arrows are never withheld for a vague or old fix: the fix still places
+// and points, and the confidence figures say how far to trust it.
+describe('confidence', () => {
+  it('a vague fix still draws the arrows, flagged approximate', () => {
     const s = deriveState(NOW, [kalorama()], fix({ accuracyM: 800 }), 'granted');
-    expect(s.kind).toBe('LOW_ACCURACY');
-    expect(s.kind === 'LOW_ACCURACY' && s.accuracyM).toBe(800);
+    if (s.kind !== 'IN_AREA') throw new Error(s.kind);
+    expect(s.places).toHaveLength(2);
+    expect(s.confidence).toEqual({ accuracyM: 800, ageS: 0, approximate: true, stale: false });
   });
 
-  it('2 beats 3 — a stale fix is ACQUIRING even when it is also inaccurate', () => {
-    const s = deriveState(
-      NOW,
-      [kalorama()],
-      fix({ at: NOW - FIX_STALE_MS - 1, accuracyM: 800 }),
-      'granted',
-    );
-    expect(s.kind === 'ACQUIRING' && s.reason).toBe('stale');
-  });
-});
-
-describe('fix staleness boundary', () => {
-  it('29 s old is usable', () => {
-    expect(deriveState(NOW, [kalorama()], fix({ at: NOW - 29_000 }), 'granted').kind).toBe(
-      'IN_AREA',
-    );
-  });
-
-  it('exactly 30 s old is still usable — the rule is "older than", not "at"', () => {
-    expect(FIX_STALE_MS).toBe(30_000);
-    expect(deriveState(NOW, [kalorama()], fix({ at: NOW - 30_000 }), 'granted').kind).toBe(
-      'IN_AREA',
-    );
-  });
-
-  it('31 s old is ACQUIRING', () => {
-    const s = deriveState(NOW, [kalorama()], fix({ at: NOW - 31_000 }), 'granted');
-    expect(s.kind === 'ACQUIRING' && s.reason).toBe('stale');
-  });
-});
-
-describe('accuracy boundary', () => {
-  it('99 m shows the direction', () => {
-    expect(deriveState(NOW, [kalorama()], fix({ accuracyM: 99 }), 'granted').kind).toBe(
-      'IN_AREA',
-    );
-  });
-
-  it('exactly 100 m shows the direction — the threshold is inclusive', () => {
+  it('the approximate threshold is exclusive at ACCURACY_MAX_M', () => {
     expect(ACCURACY_MAX_M).toBe(100);
-    expect(deriveState(NOW, [kalorama()], fix({ accuracyM: 100 }), 'granted').kind).toBe(
-      'IN_AREA',
-    );
+    const at = deriveState(NOW, [kalorama()], fix({ accuracyM: 100 }), 'granted');
+    const over = deriveState(NOW, [kalorama()], fix({ accuracyM: 101 }), 'granted');
+    expect(at.kind === 'IN_AREA' && at.confidence.approximate).toBe(false);
+    expect(over.kind === 'IN_AREA' && over.confidence.approximate).toBe(true);
   });
 
-  it('101 m withholds the direction and reports the figure', () => {
-    const s = deriveState(NOW, [kalorama()], fix({ accuracyM: 101 }), 'granted');
-    expect(s.kind).toBe('LOW_ACCURACY');
-    expect(s.kind === 'LOW_ACCURACY' && s.accuracyM).toBe(101);
+  it('an old fix still draws the arrows, flagged stale past FIX_STALE_MS with its age', () => {
+    expect(FIX_STALE_MS).toBe(30_000);
+    const at = deriveState(NOW, [kalorama()], fix({ at: NOW - 30_000 }), 'granted');
+    const over = deriveState(NOW, [kalorama()], fix({ at: NOW - 31_000 }), 'granted');
+    expect(at.kind === 'IN_AREA' && at.confidence.stale).toBe(false);
+    if (over.kind !== 'IN_AREA') throw new Error(over.kind);
+    expect(over.places).toHaveLength(2);
+    expect(over.confidence.stale).toBe(true);
+    expect(over.confidence.ageS).toBe(31);
   });
 });
 
@@ -143,8 +120,9 @@ describe('OUT_OF_AREA', () => {
     expect(s.packs[1].distanceKm).toBeCloseTo(19, 0);
   });
 
-  it('carries no bearing to an out-of-area point — there is no arrow on this screen', () => {
+  it('carries no bearing to an out-of-area point — only the nearest official places get arrows', () => {
     expect(s).not.toHaveProperty('places');
+    expect(s.kind === 'OUT_OF_AREA' && s.confidence.accuracyM).toBe(10);
   });
 });
 
@@ -162,14 +140,14 @@ describe('IN_AREA', () => {
     const near = deriveState(NOW, [kalorama()], fix(km(1)), 'granted');
     const far = deriveState(NOW, [kalorama()], fix(km(-1)), 'granted');
     if (near.kind !== 'IN_AREA' || far.kind !== 'IN_AREA') throw new Error('expected IN_AREA');
-    expect(near.places.map((p) => p.d.id)).toEqual(['north', 'south']);
-    expect(far.places.map((p) => p.d.id)).toEqual(['south', 'north']);
+    expect(near.places.map((p) => p.id)).toEqual(['north', 'south']);
+    expect(far.places.map((p) => p.id)).toEqual(['south', 'north']);
   });
 
   it('shows only the chosen places', () => {
     const s = deriveState(NOW, [kalorama([north, unchosen])], fix(), 'granted');
     if (s.kind !== 'IN_AREA') throw new Error(s.kind);
-    expect(s.places.map((p) => p.d.id)).toEqual(['north']);
+    expect(s.places.map((p) => p.id)).toEqual(['north']);
   });
 
   it('picks the nearest pack when two contain the fix', () => {
@@ -179,6 +157,39 @@ describe('IN_AREA', () => {
     };
     const s = deriveState(NOW, [kalorama(), overlapping], fix(km(1)), 'granted');
     expect(s.kind === 'IN_AREA' && s.pack.id).toBe('pack-3');
+  });
+});
+
+describe('nearest official places from the state-wide list', () => {
+  const snapshot = nspSnapshot({
+    sites: [4, 1, 9, 2].map((n) => nspSite({ id: `site-${n}`, name: `Site ${n}`, ...km(n) })),
+  });
+
+  it('points at the three nearest sites, nearest first, with the list publisher', () => {
+    const nearby = nearestSites(fix(), snapshot);
+    expect(nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
+    expect(nearby[0].publisher).toBe('Country Fire Authority');
+    expect(nearby[0].distanceM).toBeCloseTo(1000, -2);
+  });
+
+  it('IN_AREA skips the sites the pack already carries; NO_PACK and OUT_OF_AREA list them all', () => {
+    const chosen = destination({ id: 'pack-1:site-1', name: 'Site 1', chosen: true, ...km(1) });
+    const inArea = deriveState(NOW, [kalorama([chosen])], fix(), 'granted', snapshot);
+    if (inArea.kind !== 'IN_AREA') throw new Error(inArea.kind);
+    expect(inArea.nearby.map((p) => p.id)).toEqual(['site-2', 'site-4', 'site-9']);
+
+    const noPack = deriveState(NOW, [], fix(), 'granted', snapshot);
+    expect(noPack.kind === 'NO_PACK' && noPack.nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
+
+    const outside = deriveState(NOW, [faraway], fix(), 'granted', snapshot);
+    expect(outside.kind === 'OUT_OF_AREA' && outside.nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
+  });
+
+  it('is drawn from a vague fix too, with the confidence stated, and never from a denied one', () => {
+    const vague = deriveState(NOW, [], fix({ accuracyM: 800 }), 'granted', snapshot);
+    expect(vague.kind === 'NO_PACK' && vague.nearby).toHaveLength(3);
+    expect(vague.kind === 'NO_PACK' && vague.confidence?.approximate).toBe(true);
+    expect(deriveState(NOW, [], fix(), 'denied', snapshot)).toEqual({ kind: 'NO_PACK', nearby: [] });
   });
 });
 

@@ -1,5 +1,5 @@
 import { absenceRow } from './destination';
-import { withinRadius } from './geo';
+import { distanceM } from './geo';
 import * as copy from './copy';
 import type { Destination, HazardType, LatLon, NspSite, NspSnapshot } from './types';
 
@@ -26,12 +26,13 @@ export const sameLga = (municipality: string, lgaName: string): boolean => {
 const isLocated = (site: NspSite): boolean =>
   site.geocode !== 'none' && typeof site.lat === 'number' && typeof site.lon === 'number';
 
-/** The CFA sites to show for one pack: those published within `radiusKm` of the
- *  pack centre, and separately those the CFA lists for the pack's council but
- *  could not place on the map.
+/** The CFA sites to show for one pack: the `count` nearest to the pack centre,
+ *  state-wide and however far, and separately those the CFA lists for the
+ *  pack's council but could not place on the map.
  *
- *  The radius is never widened when the result is empty, and the list is never
- *  joined to any other data — a park or hall from the basemap has no path in.
+ *  Distance is the only rule — no radius, no council line — and the list is
+ *  never joined to any other data: a park or hall from the basemap has no path
+ *  in. The sort is stable, so equal distances keep the list's own order.
  *
  *  Neighbourhood Safer Places are a bushfire concept: for a flood or heat pack
  *  this returns nothing at all, whatever the snapshot holds. */
@@ -39,15 +40,17 @@ export const selectSitesForPack = (
   sites: NspSite[],
   centre: LatLon,
   lgaName: string,
-  radiusKm: number,
+  count: number,
   hazard: HazardType = 'bushfire',
 ): { located: NspSite[]; unlocated: NspSite[] } => {
   if (hazard !== 'bushfire') return { located: [], unlocated: [] };
+  // Measure each site once, then sort on the stored figure.
+  const measured = sites
+    .filter(isLocated)
+    .map((site) => ({ site, metres: distanceM(centre, { lat: site.lat!, lon: site.lon! }) }))
+    .sort((a, b) => a.metres - b.metres);
   return {
-    located: sites.filter(
-      (site) =>
-        isLocated(site) && withinRadius(centre, { lat: site.lat!, lon: site.lon! }, radiusKm),
-    ),
+    located: measured.slice(0, count).map(({ site }) => site),
     unlocated: sites.filter((site) => !isLocated(site) && sameLga(site.municipality, lgaName)),
   };
 };
@@ -77,6 +80,7 @@ export const toDestination = (
   listAsAt: snapshot.listAsAt,
   geocode: site.geocode,
   ...(isLocated(site) ? { lat: site.lat, lon: site.lon } : {}),
+  ...(site.designatedAt ? { designatedAt: site.designatedAt } : {}),
   source: snapshot.source,
 });
 
@@ -97,7 +101,7 @@ export const formatIsoDateShort = (iso: string): string => {
 };
 
 /** The mandated per-entry date line: the list's own date, labelled as the list's
- *  date. A per-site date would be a provenance fabrication. */
+ *  date. A site's own designation date is shown separately, only when recorded. */
 export const nspListDateLabel = (listAsAt: string): string =>
   copy.NSP_LIST_AS_AT(formatIsoDateShort(listAsAt));
 
@@ -106,14 +110,14 @@ export const nspListDateLabel = (listAsAt: string): string =>
  *  A flood or heat pack gets NONE — no places and no absence marker, because an
  *  NSP-shaped absence row would itself be offering a bushfire-only concept.
  *
- *  For a bushfire pack: when the CFA list yields nothing for the area — no site
- *  in range and none listed for the council — the pack still carries ONE row,
- *  the absence marker, with its reason and the area it applies to. Absence is a
+ *  For a bushfire pack: when nothing was chosen — no located site on the
+ *  list, or only sites that could not be placed — the pack still carries ONE
+ *  row, the
+ *  absence marker, with its reason and the area it applies to. Absence is a
  *  row, never an empty array, so PackDetail and BlackSky read the same truth.
  *  Otherwise the pack carries exactly the places the user chose (`chosen`) —
  *  never the whole list, never a neighbouring council, never a widened radius. */
 export const destinationsForPack = (
-  selection: { located: NspSite[]; unlocated: NspSite[] },
   chosen: Destination[],
   packId: string,
   snapshot: Pick<NspSnapshot, 'listAsAt' | 'source'>,
@@ -121,7 +125,5 @@ export const destinationsForPack = (
   hazard: HazardType = 'bushfire',
 ): Destination[] => {
   if (hazard !== 'bushfire') return [];
-  return selection.located.length === 0 && selection.unlocated.length === 0
-    ? [absenceRow(packId, area, snapshot.source)]
-    : chosen;
+  return chosen.length === 0 ? [absenceRow(packId, area, snapshot.source)] : chosen;
 };

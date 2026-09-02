@@ -4,8 +4,8 @@ import {
   BLACKSKY_WORKS_WITHOUT_PACK,
   BUILD_A_PACK,
   CHECKED_DAYS_AGO,
-  CONNECTION_OFFLINE_LABEL,
   CONNECTION_ONLINE_LABEL,
+  DISMISS_NOTICE,
   HEADER_HOME_LABEL,
   HOLD_FOR_BLACKSKY,
   HOLD_TO_ENTER,
@@ -15,13 +15,15 @@ import {
   NO_PACK_SAVED,
   NOT_RECENTLY_VERIFIED_LABEL,
   OPEN_PACK,
+  OFFLINE_NOTICE,
+  ONLINE_NOTICE,
   OPENS_WITHOUT_SIGNAL,
   PREPARATION_LINES,
   PREPARATION_SOURCE,
   SAVED_DAYS_AGO,
 } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
-import { HARNESS } from './helpers';
+import { acknowledgeFirstOpen, HARNESS } from './helpers';
 
 // E1-US2-AC6. The harness mounts the real header and the real home screen over
 // a real IndexedDB, at a fixed instant, so the three header states are asserted
@@ -166,7 +168,7 @@ test.describe('the returning-user home screen', () => {
     expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('the bottom navigation names two destinations, and BlackSky is not one', async ({
+  test('the bottom navigation names its destinations, and BlackSky is not one', async ({
     page,
   }) => {
     await page.goto(home('?days=3'));
@@ -195,12 +197,26 @@ test.describe('the returning-user home screen', () => {
   });
 });
 
-test.describe('the connection dot', () => {
-  test('carries its whole meaning in its name, and no words on screen', async ({ page }) => {
-    await page.goto(home('?days=3'));
-    const dot = page.getByRole('img', { name: CONNECTION_ONLINE_LABEL });
-    await expect(dot).toBeVisible();
-    await expect(dot).toHaveText('');
+test.describe('the connection notice', () => {
+  // The notice bar is mounted by the application shell, not the harness, so
+  // this one runs against the real app.
+  test('reports what the browser reports, and keeps its whole meaning when dismissed to a wordless strip', async ({
+    page,
+    context,
+  }) => {
+    await acknowledgeFirstOpen(page);
+    await page.goto('/');
+    await expect(page.locator('.notice-bar')).toContainText(ONLINE_NOTICE);
+
+    await page.getByRole('button', { name: DISMISS_NOTICE }).click();
+    const strip = page.getByRole('button', { name: CONNECTION_ONLINE_LABEL });
+    await expect(strip).toBeVisible();
+    await expect(strip).toHaveText('');
+
+    await strip.click();
+    await context.setOffline(true);
+    await expect(page.locator('.notice-bar')).toContainText(OFFLINE_NOTICE);
+    await context.setOffline(false);
   });
 
   test('never offers a way into BlackSky when the connection is lost', async ({ page, context }) => {
@@ -209,7 +225,6 @@ test.describe('the connection dot', () => {
     await page.evaluate(() => window.dispatchEvent(new Event('offline')));
 
     const header = page.locator('.app-header');
-    await expect(page.getByRole('img', { name: CONNECTION_OFFLINE_LABEL })).toBeVisible();
     expect((await header.textContent()) ?? '').not.toContain('BlackSky');
     // The age still reads: it is stored on the device, and losing the network
     // changes nothing about it.

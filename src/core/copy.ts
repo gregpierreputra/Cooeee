@@ -5,16 +5,21 @@
 // The exact text literal that will be used in all of the main pages.
 // Never reword them.
 
+import type { FacilityType, SourceStatus } from './types';
+
 // Core Mandated Literals
-export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
+export const SORTED_BY_DISTANCE = 'sorted by distance — not a safety ranking';
 
 export const NO_ADDRESS_MATCH =
   'No matching address found — check the spelling or try the nearest cross street.';
 
 export const NO_GPS = 'No GPS fix — showing your saved information.';
 
-export const GPS_TOO_INACCURATE = (m: number) =>
-  `GPS is too inaccurate here to trust a direction (± ${m} m).`;
+/** Said beside the arrows, never instead of them: a vague or old fix still
+ *  points, with its error stated. */
+export const GPS_APPROXIMATE = (m: number) =>
+  `GPS is only accurate to ± ${m} m here — the direction is approximate and sharpens as the fix improves.`;
+export const FIX_AGE = (s: number) => `Last GPS fix ${s} s ago — the direction may have changed.`;
 
 export const OUTSIDE_AREAS = "You're outside the areas you've prepared";
 
@@ -44,10 +49,9 @@ export const CARDINAL_ABBR = [
   'NNW',
 ] as const;
 
-/** Arrow glyphs for the 8 primary directions, index 0 = north, one every 45
- *  degrees. Read by core/geo.ts arrowGlyph(). A screen-relative glyph, not a
- *  compass needle: it points where the bearing sits on a north-up dial. */
-export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'] as const;
+/** The one arrow, turned by CSS: with the phone's compass it points at the
+ *  place itself; without one it is drawn on a north-up dial. */
+export const ARROW = '↑';
 
 // Application shell
 export const APP_NAME = 'Cooeee';
@@ -84,6 +88,14 @@ export const SEARCH_AGAIN = 'Search again';
 export const BUILD_A_PACK = 'Build a pack';
 export const ADDRESS_SEARCH_TITLE = 'Search for your address';
 export const ADDRESS_FIELD_LABEL = 'Address';
+/** At the field itself: the street address is the point every official place
+ *  of last resort is measured from, so it has to be the right one. */
+export const ADDRESS_FIELD_HINT =
+  'Enter the street address of the place you are preparing for. Your official places of last resort are measured from it.';
+/** Said before the search, so an address with no official place close by is
+ *  never a surprise at the places step. */
+export const ADDRESS_SEARCH_DISCLOSURE =
+  'Not every address has an official place of last resort close by. Cooeee lists the nearest places the Country Fire Authority publishes — they may be some distance away, and for some areas there may be none.';
 export const SEARCH = 'Search';
 export const SEARCH_IN_PROGRESS = 'Searching for addresses.';
 export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
@@ -224,6 +236,7 @@ export const DESTINATIONS_STEP_TITLE = 'Official places of last resort';
 export const NSP_KIND_LABEL = 'Bushfire place of last resort';
 export const NSP_COUNCIL_LABEL = (council: string) => `Responsible council: ${council}`;
 export const NSP_LIST_AS_AT = (date: string) => `Country Fire Authority state-wide list as at ${date}`;
+export const NSP_DESIGNATED_ON = (date: string) => `Designated ${date}`;
 export const NSP_UNLOCATED_HEADING =
   'On the Country Fire Authority list but not located to a point on the map';
 export const OFFICIAL_LIST_UNAVAILABLE =
@@ -279,6 +292,12 @@ export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
 
 export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
 
+// The compass. Which way the arrow is to be read depends on whether the phone's
+// orientation sensor is feeding it, so the screen always says which.
+export const COMPASS_LIVE = 'The arrow turns with your phone.';
+export const COMPASS_NORTH_UP = 'The arrow is drawn with north at the top of the screen.';
+export const TURN_ON_COMPASS = 'Turn on the compass';
+
 /** "850 m" under a kilometre, "1.1 km" from there. The precision a person on
  *  foot can act on — never more. */
 export const distanceLabel = (m: number): string =>
@@ -317,6 +336,7 @@ export const PHONE_MAY_WORK =
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
+export const NEAREST_OFFICIAL_PLACES = 'Nearest official places of last resort';
 
 // Built-in static preparation guidance, readable on a fresh install that has
 // never been online since setup.
@@ -348,8 +368,8 @@ export const CHECKED_DAYS_AGO = (days: number) => `Checked ${days} days ago`;
 /** The header's home control. The mark is decorative; this names it. */
 export const HEADER_HOME_LABEL = 'Cooeee home';
 
-/** The connection dot carries no words on screen, so its whole meaning has to
- *  live in its accessible name. It reports what the browser reports and nothing
+/** The dismissed connection notice is a wordless strip, so its whole meaning
+ *  has to live in its accessible name. It reports what the browser reports and nothing
  *  more — this app cannot detect phone signal, and never claims to. */
 export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a network.';
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
@@ -430,3 +450,85 @@ export const OFFICIAL_CHANNELS_LINE =
 export const ACKNOWLEDGE_CHECKBOX =
   'I understand how Cooeee works, and what it does not do.';
 export const CONTINUE = 'Continue';
+
+// ── Nearby places: the nearest official place of each kind ──────────────────
+// Every row carries its own state (live / cached / unavailable) and its own
+// timestamp; the page as a whole is never labelled current.
+
+export const NAV_NEARBY = 'Nearby';
+export const NEARBY_KICKER = 'Nearby places';
+export const NEARBY_TITLE = 'Nearest official places';
+export const NEARBY_LEDE =
+  'The nearest Neighbourhood Safer Place, Community Fire Refuge, and any relief or recovery centre listed as open — from your position or a postcode. Each row says how current it is.';
+
+export const USE_MY_LOCATION = 'Use my location';
+export const LOCATING = 'Reading your position…';
+export const LOCATION_FAILED = 'Your position could not be read. Enter a postcode instead.';
+export const POSTCODE_LABEL = 'Or a Victorian postcode';
+export const FIND_POSTCODE = 'Find';
+export const POSTCODE_INVALID = 'Enter a four-digit postcode.';
+export const POSTCODE_UNKNOWN = (postcode: string) =>
+  `Postcode ${postcode} is not in the downloaded Victorian list.`;
+export const FROM_POSITION = (accuracy: string) => `From your position, ${accuracy}`;
+export const FROM_POSTCODE = (postcode: string) => `From the centre of postcode ${postcode}`;
+export const DISTANCES_NOTE = 'Straight-line distances. The nearest of each kind — not a ranking.';
+
+export const DOWNLOADING_PLACES = 'Downloading the official places…';
+export const FIRST_RUN_TITLE = 'Nothing downloaded yet';
+export const FIRST_RUN_LINE =
+  'Connect to the internet once to download the official places for your area. After that they open without signal.';
+
+export const GROUP_BUSHFIRE = 'Bushfire places of last resort';
+export const GROUP_BUSHFIRE_NOTE =
+  'Designated by the Country Fire Authority for their own township, and for bushfire only.';
+export const GROUP_RELIEF = 'Relief and recovery';
+export const GROUP_RELIEF_NOTE =
+  'Opened for a particular incident and listed by VicEmergency only while it runs.';
+
+export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
+  NSP: 'Neighbourhood Safer Place',
+  CFR: 'Community Fire Refuge',
+  ERC: 'Emergency Relief Centre',
+  RELIEF: 'Relief Centre',
+  RECOVERY: 'Recovery Centre',
+  ASSEMBLY: 'Assembly Area',
+};
+
+export const STATE_LIVE = 'Live';
+export const STATE_CACHED = (age: string) => `Cached · ${age}`;
+export const STATE_UNAVAILABLE = 'Unavailable';
+export const JUST_NOW = 'just now';
+export const MINUTES_AGO = (minutes: number) => `${minutes} min ago`;
+export const HOURS_AGO = (hours: number) => `${hours} h ago`;
+export const NEVER = 'never';
+
+export const VERIFIED_ON = (date: string) => `Verified ${date}`;
+export const AS_OF = (time: string) => `As of ${time}`;
+
+export const NONE_IN_LIST = (kind: string) => `No ${kind} is in the downloaded list.`;
+export const NONE_LISTED_OPEN = (kind: string) => `No ${kind} is listed as open by VicEmergency.`;
+export const NOT_DOWNLOADED_YET = (kind: string) => `${kind} information has not been downloaded yet.`;
+export const MAY_BE_OUTDATED = 'May be outdated — confirm by radio or on the hotline if you can.';
+export const TOO_OLD_TO_SHOW = 'This information is more than an hour old, so no place is shown.';
+export const SOURCE_UNCONFIRMED = (source: string) =>
+  `The ${source} could not be reached recently, so this could not be confirmed.`;
+export const SOURCE_NOT_READ = (source: string) =>
+  `The ${source} has not been read yet, so nothing can be confirmed.`;
+export const NEEDS_REVIEW_NOTE =
+  'Listed earlier by the CFA but missing from its latest list — check before relying on it.';
+
+export const DATA_SOURCES_LABEL = 'Data sources';
+export const SOURCE_NAMES: Record<string, string> = {
+  cfa_nsp_arcgis: 'CFA Neighbourhood Safer Places list',
+  cfr_static_list: 'Community Fire Refuge list',
+  vicmap_admin_postcodes: 'Vicmap postcode list',
+  vicemergency_feed: 'VicEmergency feed',
+};
+export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
+  healthy: 'reachable',
+  degraded: 'struggling',
+  down: 'unreachable',
+  unknown: 'not yet read',
+};
+export const HEALTH_LINE = (source: string, status: string, when: string) =>
+  `${source}: ${status}, last updated ${when}`;

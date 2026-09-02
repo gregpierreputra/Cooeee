@@ -109,6 +109,7 @@ export type Destination = {
   addressText?: string;                                 // optional
   council?: string;                                     // optional
   listAsAt?: string;                                    // the CFA list's own date, e.g. '2026-08-18'
+  designatedAt?: string;                                // the CFA's designation date for the site, when recorded
   geocode?: 'exact' | 'street' | 'township' | 'none';   // optional, can be one of the different values
   lat?: number;                                         // optional, absent when geocode === 'none'
   lon?: number;                                         // optional, absent when geocode === 'none'
@@ -260,13 +261,15 @@ export type PackDetailItem = {
   // The stored citation for this item, when it has one — present only where the
   // saved row itself names what was matched.
   citation?: string;
+  // The readable page to continue to, when it is not the DTP dataset page.
+  pageUrl?: string;
 };
 
 /** One row of the CFA Neighbourhood Safer Places state-wide list, as produced by
- * scripts/build-nsp.ts. The raw snapshot shape — not an IndexedDB record.
+ * scripts/build-nsp.mjs. The raw snapshot shape — not an IndexedDB record.
  * `lat`/`lon` are present for every geocode except 'none'. */
 export type NspSite = {
-  id: string; // stable across rebuilds: slug(municipality|township|name)
+  id: string; // stable across rebuilds: 'nsp-' + the CFA's own nsp_id
   municipality: string; // the responsible council, shown on every entry
   township: string;
   name: string; // the place name, shown on every entry
@@ -275,10 +278,11 @@ export type NspSite = {
   geocode: 'exact' | 'street' | 'township' | 'none';
   lat?: number; // absent only when geocode === 'none'
   lon?: number;
+  designatedAt?: string; // ISO date the CFA designated the site, when the list records one
 };
 
-/** The precached CFA NSP snapshot file. One state-wide `listAsAt` date; there is
- * no per-site date and no stated licence
+/** The precached CFA NSP snapshot file. One state-wide `listAsAt` date beside
+ * each site's own designation date; no stated licence
  * (see prompt-bank/datasets/licence-and-attribution.txt). */
 export type NspSnapshot = {
   listAsAt: string; // ISO date — the list's own date, shown as the list's date
@@ -286,3 +290,58 @@ export type NspSnapshot = {
   source: Source;
   sites: NspSite[];
 };
+
+/** The NSP snapshot as stored in IndexedDB for BlackSky, which may not fetch:
+ * one row, replaced whole whenever the precached file is read. */
+export type StoredSnapshot = NspSnapshot & { name: 'nsp' };
+
+// --- Nearby places ---
+// The wire shapes of the API server's two sync endpoints (server/api.ts). The
+// client stores them in IndexedDB exactly as received: snake_case IS the
+// contract, so there is no mapping layer to drift from it.
+export type FacilityType = 'NSP' | 'CFR' | 'ERC' | 'RELIEF' | 'RECOVERY' | 'ASSEMBLY';
+export type StaticType = Extract<FacilityType, 'NSP' | 'CFR'>;
+export type DynamicType = Exclude<FacilityType, StaticType>;
+
+export type SourceStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
+export type SourceHealth = { status: SourceStatus; last_success_at: string | null };
+export type DataHealth = Record<string, SourceHealth>;
+
+export type BundleFacility = {
+  facility_id: number;
+  type: StaticType;
+  name: string;
+  address: string | null;
+  lat: number;
+  lon: number;
+  lga_name: string | null;
+  designation_status: 'designated' | 'needs_review'; // needs_review = missing from the latest upstream run
+  last_verified_at: string; // ISO-8601
+};
+export type BundlePostcode = { postcode: string; centroid_lat: number; centroid_lon: number };
+export type StaticBundle = {
+  version: string | null;
+  generated_at: string;
+  facilities: BundleFacility[];
+  postcodes: BundlePostcode[];
+  data_health: DataHealth;
+};
+
+export type SnapshotActivation = {
+  activation_id: number;
+  type: DynamicType;
+  name: string;
+  address: string | null;
+  lat: number;
+  lon: number;
+  source_updated_at: string;
+};
+export type DynamicSnapshot = {
+  generated_at: string;
+  source_status: SourceStatus;
+  source_last_success_at: string | null;
+  activations: SnapshotActivation[];
+};
+
+/** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */
+export type SyncMetaRow = { key: string; value: string };

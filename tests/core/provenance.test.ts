@@ -12,6 +12,7 @@ import {
   formatGazettalDate,
   packDetailAbsence,
   packDetailItems,
+  packDetailPlaces,
   prepareProvenancedContent,
   provenanceView,
   savedAgeDays,
@@ -167,7 +168,6 @@ describe('E1-US2 pack item projection', () => {
 
     expect(packDetailItems(content).map(({ name }) => name)).toEqual([
       'Designated Bushfire Prone Area',
-      'Example Reserve',
       'Example payment',
       'Offline basemap',
     ]);
@@ -221,12 +221,11 @@ describe('E1-US2 pack item projection', () => {
     ['a row with no stored plan', { ...layer }],
     ['a plan with no gazettal date', { ...layer, features: [{ planNumber: 'LEGL./25-138' }] }],
     ['an absence that stored no feature', { ...layer, status: 'none-mapped-here' as const }],
-    ['a destination row', null],
   ])('cites nothing for %s', (_case, row) => {
     const content: CompletePackContent = {
       pack: pack(),
-      layers: row ? [row] : [],
-      destinations: row ? [] : [destination()],
+      layers: [row],
+      destinations: [],
       recovery: [], recoveryVerified: true,
     };
     expect(packDetailItems(content).map(({ citation }) => citation)).toEqual([undefined]);
@@ -250,23 +249,25 @@ describe('E2-US1-AC3 stored absence row', () => {
     recoveryVerified: true,
   });
 
-  it('is never projected as an information item — it has no content to open', () => {
+  it('is never projected as an information item or a place — it has no content to open', () => {
     const content = withAbsence();
     content.destinations.unshift(destination());
-    expect(packDetailItems(content).map(({ id }) => id)).toEqual(['pack-1:nsp-0001']);
+    expect(packDetailItems(content)).toEqual([]);
+    expect(packDetailPlaces(content).map(({ id }) => id)).toEqual(['pack-1:nsp-0001']);
   });
 
-  it('a present destination with no name of its own still gets the neutral label', () => {
+  it('packDetailPlaces restores the by-distance order the list was shown in', () => {
     const content: CompletePackContent = {
       pack: pack(),
       layers: [],
-      destinations: [destination({ id: 'pack-1:x', name: undefined })],
+      destinations: [
+        destination({ id: 'pack-1:b', distanceOrder: 1 }),
+        destination({ id: 'pack-1:a', distanceOrder: 0 }),
+      ],
       recovery: [],
       recoveryVerified: true,
     };
-    expect(packDetailItems(content).map(({ name }) => name)).toEqual([
-      'Official place of last resort information',
-    ]);
+    expect(packDetailPlaces(content).map(({ id }) => id)).toEqual(['pack-1:a', 'pack-1:b']);
   });
 
   it('packDetailAbsence returns its stored reason, verbatim', () => {

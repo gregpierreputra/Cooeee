@@ -139,16 +139,18 @@ describe('preparation line selection', () => {
 
 // BlackSky is entered by a deliberate hold. It is never a tab, in any state.
 describe('bottom navigation', () => {
-  it('offers home and the saved pack when a pack exists', () => {
+  it('offers home, nearby places and the saved pack when a pack exists', () => {
     expect(navItems('pack-1')).toEqual([
       { key: 'home', label: 'Home', to: '/' },
+      { key: 'nearby', label: 'Nearby', to: '/nearby' },
       { key: 'pack', label: 'My pack', to: '/packs/pack-1' },
     ]);
   });
 
-  it('offers home and the build entry when nothing is saved', () => {
+  it('offers home, nearby places and the build entry when nothing is saved', () => {
     expect(navItems(null)).toEqual([
       { key: 'home', label: 'Home', to: '/' },
+      { key: 'nearby', label: 'Nearby', to: '/nearby' },
       { key: 'pack', label: 'Build a pack', to: '/packs/new' },
     ]);
   });
@@ -167,7 +169,7 @@ describe('the home view', () => {
   it('offers to build, and reports no age, when nothing is saved', () => {
     const view = homeView(NOW, []);
     expect(view.kind).toBe('no-pack');
-    expect(view.nav[1]).toEqual({ key: 'pack', label: 'Build a pack', to: '/packs/new' });
+    expect(view.nav[2]).toEqual({ key: 'pack', label: 'Build a pack', to: '/packs/new' });
   });
 
   it('offers the saved pack, with the pack card wording for its age', () => {

@@ -47,7 +47,7 @@ export const BANNED = [
 export const ALLOWED = [
   'Neighbourhood Safer Place',
   'Neighbourhood Safer Places',
-  'sorted by distance, not a safety ranking',
+  'sorted by distance — not a safety ranking',
   'Cooeee issues no warnings',
   'the responsible organisation decides who is eligible',
 ];

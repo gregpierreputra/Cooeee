@@ -24,6 +24,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://cooeee-api.example.com/api/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

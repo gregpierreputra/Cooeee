@@ -30,7 +30,6 @@ const snapshot = nspSnapshot({
     nspSite({ id: 's-far', name: 'Far Reserve', lat: KALORAMA.lat + 0.045, lon: KALORAMA.lon }),
   ],
 });
-const selection = { located: snapshot.sites, unlocated: [] };
 const ordered = orderByDistance(
   snapshot.sites.map((site) => toDestination(site, 'pack-1', snapshot)),
   KALORAMA,
@@ -40,7 +39,6 @@ const contentWith = (ids: string[]): TextPackContent => ({
   pack: seed(),
   layers: [],
   destinations: destinationsForPack(
-    selection,
     chosenDestinations(ordered, ids),
     'pack-1',
     snapshot,
@@ -105,7 +103,6 @@ describe("E2-US2-AC1 saving the user's two picks", () => {
       pack: seed({ hazardType: 'flood' }),
       layers: [],
       destinations: destinationsForPack(
-        selection,
         chosenDestinations(ordered, ['pack-1:s-near', 'pack-1:s-mid']),
         'pack-1',
         snapshot,
