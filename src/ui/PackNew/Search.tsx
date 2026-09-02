@@ -485,12 +485,15 @@ export function Search({
             <p className="muted">{copy.ADDRESS_SEARCH_DISCLOSURE}</p>
           </header>
           <label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>
+          <p id="address-hint" className="muted search-hint">
+            {copy.ADDRESS_FIELD_HINT}
+          </p>
           <input
             id="address-query"
             name="addressQuery"
             value={query}
             autoComplete="off"
-            aria-describedby="address-result"
+            aria-describedby="address-hint address-result"
             onChange={handleQueryChange}
           />
 

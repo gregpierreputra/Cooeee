@@ -88,6 +88,10 @@ export const SEARCH_AGAIN = 'Search again';
 export const BUILD_A_PACK = 'Build a pack';
 export const ADDRESS_SEARCH_TITLE = 'Search for your address';
 export const ADDRESS_FIELD_LABEL = 'Address';
+/** At the field itself: the street address is the point every official place
+ *  of last resort is measured from, so it has to be the right one. */
+export const ADDRESS_FIELD_HINT =
+  'Enter the street address of the place you are preparing for. Your official places of last resort are measured from it.';
 /** Said before the search, so an address with no official place close by is
  *  never a surprise at the places step. */
 export const ADDRESS_SEARCH_DISCLOSURE =

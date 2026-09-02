@@ -434,6 +434,12 @@ input {
   gap: 1rem;
 }
 
+/* The field's own hint sits tight under its label, at meta size. */
+.search-hint {
+  margin-top: -0.5rem;
+  font-size: var(--step-s);
+}
+
 .search-result {
   display: grid;
   gap: 0.75rem;
