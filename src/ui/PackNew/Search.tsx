@@ -482,6 +482,7 @@ export function Search({
           <header className="hero">
             <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
             <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
+            <p className="muted">{copy.ADDRESS_SEARCH_DISCLOSURE}</p>
           </header>
           <label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>
           <input

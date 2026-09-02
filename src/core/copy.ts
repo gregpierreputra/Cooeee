@@ -86,6 +86,10 @@ export const SEARCH_AGAIN = 'Search again';
 export const BUILD_A_PACK = 'Build a pack';
 export const ADDRESS_SEARCH_TITLE = 'Search for your address';
 export const ADDRESS_FIELD_LABEL = 'Address';
+/** Said before the search, so an address with no official place close by is
+ *  never a surprise at the places step. */
+export const ADDRESS_SEARCH_DISCLOSURE =
+  'Not every address has an official place of last resort close by. Cooeee lists the nearest places the Country Fire Authority publishes — they may be some distance away, and for some areas there may be none.';
 export const SEARCH = 'Search';
 export const SEARCH_IN_PROGRESS = 'Searching for addresses.';
 export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
