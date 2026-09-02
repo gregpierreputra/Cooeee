@@ -269,7 +269,7 @@ export type PackDetailItem = {
  * scripts/build-nsp.mjs. The raw snapshot shape — not an IndexedDB record.
  * `lat`/`lon` are present for every geocode except 'none'. */
 export type NspSite = {
-  id: string; // stable across rebuilds: slug(municipality|township|name)
+  id: string; // stable across rebuilds: 'nsp-' + the CFA's own nsp_id
   municipality: string; // the responsible council, shown on every entry
   township: string;
   name: string; // the place name, shown on every entry

@@ -22,12 +22,18 @@ async function getJson(url) {
   return response.json();
 }
 
+/** The CFA address ends in the township and postcode ("Burdap Drive, Mount Evelyn
+ *  3796"); composeAddress in core/nsp.ts adds the township itself, so strip it. */
+const streetOf = (address, township) =>
+  address.replace(new RegExp(`,\\s*${township.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+\\d{4}$`, 'i'), '');
+
 /** One ArcGIS feature → one NspSite, or null when it lacks an id, a name or a point. */
 function toSite(feature) {
   const props = feature.properties ?? {};
   const id = text(props.nsp_id);
   const name = text(props.nsp_name);
   const municipality = text(props.lga);
+  const township = text(props.township);
   const coords = feature.geometry?.type === 'Point' ? feature.geometry.coordinates : null;
   if (!id || !name || !municipality || !Array.isArray(coords)) return null;
   const [lon, lat] = coords;
@@ -35,10 +41,10 @@ function toSite(feature) {
   return {
     id: `nsp-${id}`,
     municipality,
-    township: text(props.township),
+    township,
     name,
-    subLocation: text(props.location),
-    street: text(props.address),
+    subLocation: '', // the CFA name already carries the location in brackets
+    street: streetOf(text(props.address), township),
     geocode: 'exact',
     lat: Number(lat.toFixed(5)),
     lon: Number(lon.toFixed(5)),

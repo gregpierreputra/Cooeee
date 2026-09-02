@@ -106,6 +106,15 @@ export function Destinations({
   const [capReached, setCapReached] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
 
+  // The way on when there is nothing to choose, shared by every such state.
+  const continueAction = onContinue ? (
+    <div className="actions">
+      <button className="main-action" type="button" onClick={onContinue}>
+        {copy.CONTINUE}
+      </button>
+    </div>
+  ) : null;
+
   // One plain statement and nothing to choose.
   const statement =
     status === 'unavailable'
@@ -120,6 +129,7 @@ export function Destinations({
       <main className="page destinations-page">
         <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
         <StateCard heading={statement} />
+        {continueAction}
       </main>
     );
   }
@@ -165,13 +175,7 @@ export function Destinations({
       {nonePublished ? (
         <>
           <StateCard heading={copy.NO_DESTINATION_PUBLISHED_FOR(area)} />
-          {onContinue ? (
-            <div className="actions">
-              <button className="main-action" type="button" onClick={onContinue}>
-                {copy.CONTINUE}
-              </button>
-            </div>
-          ) : null}
+          {continueAction}
         </>
       ) : (
         <>
@@ -206,13 +210,7 @@ export function Destinations({
             </section>
           ) : null}
 
-          {onContinue && !selectable ? (
-            <div className="actions">
-              <button className="main-action" type="button" onClick={onContinue}>
-                {copy.CONTINUE}
-              </button>
-            </div>
-          ) : null}
+          {selectable ? null : continueAction}
 
           {selectable ? (
             <>

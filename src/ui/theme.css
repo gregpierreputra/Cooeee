@@ -298,11 +298,11 @@ a {
 }
 
 /* The saved pack's two chosen places, side by side and equal: one grid rule, no
-   ordinal, no ranking between them (E2-US2). One column when the screen is too
-   narrow for two cards. */
+   ordinal, no ranking between them (E2-US2). A phone stacks them — the CFA's
+   official names run long, and two 160 px columns wrap every second word. */
 .saved-destinations {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: 0.75rem;
 }
 
