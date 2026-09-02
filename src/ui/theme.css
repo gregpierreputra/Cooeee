@@ -818,6 +818,16 @@ input {
   font-size: var(--step-2);
 }
 
+/* The arrow turns by CSS from two numbers: its own bearing and the phone's
+   heading, which the compass hook writes onto the screen root once per frame.
+   No heading yet means north-up. No transition: rotate(-350deg) and
+   rotate(10deg) are the same picture, and an animated hop between them would
+   spin the long way round. */
+.blacksky-arrow {
+  display: inline-block;
+  transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
+}
+
 /* The distance, at arm's-length size. Bounded below so three digits and a unit
    still fit a 320 px viewport at doubled font size. */
 .blacksky-figure-main {

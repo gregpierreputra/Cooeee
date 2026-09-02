@@ -24,10 +24,11 @@ describe('mandated literals', () => {
     expect(copy.NO_GPS).toBe('No GPS fix — showing your saved information.');
   });
 
-  it('a vague fix reports its own error figure', () => {
-    expect(copy.GPS_TOO_INACCURATE(240)).toBe(
-      'GPS is too inaccurate here to trust a direction (± 240 m).',
+  it('a vague or old fix reports its own figure beside the arrow, never instead of it', () => {
+    expect(copy.GPS_APPROXIMATE(240)).toBe(
+      'GPS is only accurate to ± 240 m here — the direction is approximate and sharpens as the fix improves.',
     );
+    expect(copy.FIX_AGE(45)).toBe('Last GPS fix 45 s ago — the direction may have changed.');
   });
 
   it('being outside every prepared area is stated plainly', () => {
@@ -155,9 +156,8 @@ describe('BlackSky compass sectors', () => {
     expect(copy.CARDINAL_ABBR[8]).toBe('S');
   });
 
-  it('has one arrow glyph per 45-degree sector, north first', () => {
-    expect(copy.ARROW_GLYPHS).toHaveLength(8);
-    expect(copy.ARROW_GLYPHS[0]).toBe('↑');
+  it('has one arrow, drawn pointing up before CSS turns it', () => {
+    expect(copy.ARROW).toBe('↑');
   });
 });
 

@@ -34,6 +34,23 @@ const placeFrom = (
 
 const byDistance = (a: Placed, b: Placed) => a.distanceM - b.distanceM;
 
+/** How far to trust the fix the arrows are drawn from. The arrows are never
+ *  withheld on its account: a vague or old fix still points, and the screen
+ *  says so beside the figure. */
+export type Confidence = {
+  accuracyM: number;
+  ageS: number;
+  approximate: boolean; // accuracy worse than ACCURACY_MAX_M
+  stale: boolean; // older than FIX_STALE_MS
+};
+
+const confidenceOf = (now: number, fix: Fix): Confidence => ({
+  accuracyM: fix.accuracyM,
+  ageS: Math.max(0, Math.round((now - fix.at) / 1000)),
+  approximate: fix.accuracyM > ACCURACY_MAX_M,
+  stale: now - fix.at > FIX_STALE_MS,
+});
+
 /** A position the user marked themselves — a known point such as their front
  *  gate — and when they marked it. */
 export type Mark = { lat: number; lon: number; at: number };
@@ -57,26 +74,25 @@ export function estimateFix(mark: Mark, now: number): Fix | null {
 }
 
 export type Screen =
-  | { kind: 'NO_PACK'; nearby: Placed[]; accuracyM?: number }
+  | { kind: 'NO_PACK'; nearby: Placed[]; confidence?: Confidence }
   | {
       kind: 'ACQUIRING';
-      reason: 'no-fix' | 'stale' | 'denied';
+      reason: 'no-fix' | 'denied';
       pack: Pack;
       places: Destination[];
     }
-  | { kind: 'LOW_ACCURACY'; accuracyM: number; pack: Pack; places: Destination[] }
   | {
       kind: 'OUT_OF_AREA';
       packs: { pack: Pack; distanceKm: number }[];
       nearby: Placed[];
-      accuracyM: number;
+      confidence: Confidence;
     }
   | {
       kind: 'IN_AREA';
       pack: Pack;
       places: Placed[];
       nearby: Placed[];
-      accuracyM: number;
+      confidence: Confidence;
       absence?: Destination;
     };
 
@@ -84,17 +100,6 @@ export type Screen =
 // always be rendered.
 const shown = (places: Destination[]): Destination[] =>
   places.filter((d) => d.chosen === true || d.kind === 'absence');
-
-/** The fix, when it can be trusted: permitted, present, fresh and accurate
- *  enough. The same four checks decide ACQUIRING and LOW_ACCURACY below. */
-const usableFix = (
-  now: number,
-  fix: Fix | null,
-  permission: 'granted' | 'denied' | 'prompt',
-): Fix | null =>
-  permission === 'denied' || !fix || now - fix.at > FIX_STALE_MS || fix.accuracyM > ACCURACY_MAX_M
-    ? null
-    : fix;
 
 /** The NEARBY_PLACES closest sites on the state-wide CFA list, nearest first,
  *  skipping any the pack already carries. Every published site is reachable
@@ -129,13 +134,12 @@ export function nearestSites(
  * "the arrow returns automatically when a fix arrives" needs no code, because it
  * is simply what the next derivation returns.
  *
- * PRECEDENCE — first match wins, and THE ORDER IS A SAFETY PROPERTY:
- *   1 NO_PACK  2 ACQUIRING  3 LOW_ACCURACY  4 OUT_OF_AREA  5 IN_AREA
+ * PRECEDENCE — first match wins:
+ *   1 NO_PACK  2 ACQUIRING  3 OUT_OF_AREA  4 IN_AREA
  *
- * Accuracy is checked BEFORE area membership, so an inaccurate fix can never
- * place someone inside a pack area and draw a confident arrow from a position
- * that might be 800 m wrong. The same rule guards the nearest-sites list: it is
- * only ever drawn from a usable fix.
+ * Once any fix exists the arrows are drawn from it, however vague or old it
+ * is: a person in the field is better served by an approximate direction with
+ * its error stated than by no direction. `confidence` carries that statement.
  */
 export function deriveState(
   now: number,
@@ -144,52 +148,31 @@ export function deriveState(
   permission: 'granted' | 'denied' | 'prompt',
   snapshot: NspSnapshot | null = null,
 ): Screen {
+  // A denied sensor is treated as no fix, whatever a stale reading still holds.
+  const from = permission === 'denied' ? null : fix;
+
   if (packs.length === 0) {
-    const usable = usableFix(now, fix, permission);
-    return usable
-      ? { kind: 'NO_PACK', nearby: nearestSites(usable, snapshot), accuracyM: usable.accuracyM }
+    return from
+      ? { kind: 'NO_PACK', nearby: nearestSites(from, snapshot), confidence: confidenceOf(now, from) }
       : { kind: 'NO_PACK', nearby: [] };
   }
 
-  // ponytail: with no usable fix there is nothing to choose a pack by, so this
-  // is the caller's first pack — the packs are equals and carry no rank. Give
-  // the user a pack switcher here if two-pack users report picking the wrong one.
+  // ponytail: with no fix there is nothing to choose a pack by, so this is the
+  // caller's first pack — the packs are equals and carry no rank. Give the user
+  // a pack switcher here if two-pack users report picking the wrong one.
   const fallback = packs[0];
 
-  if (permission === 'denied')
+  if (!from)
     return {
       kind: 'ACQUIRING',
-      reason: 'denied',
+      reason: permission === 'denied' ? 'denied' : 'no-fix',
       pack: fallback.pack,
       places: shown(fallback.places),
     };
 
-  if (!fix)
-    return {
-      kind: 'ACQUIRING',
-      reason: 'no-fix',
-      pack: fallback.pack,
-      places: shown(fallback.places),
-    };
-
-  if (now - fix.at > FIX_STALE_MS)
-    return {
-      kind: 'ACQUIRING',
-      reason: 'stale',
-      pack: fallback.pack,
-      places: shown(fallback.places),
-    };
-
-  if (fix.accuracyM > ACCURACY_MAX_M)
-    return {
-      kind: 'LOW_ACCURACY',
-      accuracyM: fix.accuracyM,
-      pack: fallback.pack,
-      places: shown(fallback.places),
-    };
-
+  const confidence = confidenceOf(now, from);
   const byMetres = packs
-    .map((p) => ({ ...p, metres: distanceM(fix, p.pack) }))
+    .map((p) => ({ ...p, metres: distanceM(from, p.pack) }))
     .sort((a, b) => a.metres - b.metres);
 
   // Containment is INCLUSIVE: a point exactly on the radius is inside.
@@ -203,8 +186,8 @@ export function deriveState(
       packs: byMetres
         .map((p) => ({ pack: p.pack, distanceKm: (p.metres - p.pack.radiusKm * 1000) / 1000 }))
         .sort((a, b) => a.distanceKm - b.distanceKm),
-      nearby: nearestSites(fix, snapshot),
-      accuracyM: fix.accuracyM,
+      nearby: nearestSites(from, snapshot),
+      confidence,
     };
 
   const here = containing[0];
@@ -212,7 +195,7 @@ export function deriveState(
   const places = chosen
     .filter(isGeocoded)
     .map((d) =>
-      placeFrom(fix, {
+      placeFrom(from, {
         id: d.id,
         name: d.name ?? copy.OFFICIAL_DESTINATION_INFORMATION,
         lat: d.lat!,
@@ -230,8 +213,8 @@ export function deriveState(
     kind: 'IN_AREA',
     pack: here.pack,
     places,
-    nearby: nearestSites(fix, snapshot, chosenSiteIds),
-    accuracyM: fix.accuracyM,
+    nearby: nearestSites(from, snapshot, chosenSiteIds),
+    confidence,
     ...(absence ? { absence } : {}),
   };
 }

@@ -1,6 +1,6 @@
 import { bearing } from '@turf/bearing';
 import { distance } from '@turf/distance';
-import { ARROW_GLYPHS, CARDINAL_ABBR } from './copy';
+import { CARDINAL_ABBR } from './copy';
 import type { LatLon } from './types';
 
 // ONE haversine feeds both the ordering and the displayed figure, so an order and
@@ -29,6 +29,30 @@ const sector = (deg: number, n: number): number => {
 export const cardinalAbbr = (deg: number): (typeof CARDINAL_ABBR)[number] =>
   CARDINAL_ABBR[sector(deg, 16)];
 
-/** 8-direction arrow glyph. */
-export const arrowGlyph = (deg: number): (typeof ARROW_GLYPHS)[number] =>
-  ARROW_GLYPHS[sector(deg, 8)];
+/** Magnetic declination across Victoria, degrees EAST of true north: what to add
+ *  to a magnetic compass heading to get a true one. A plane fitted to the World
+ *  Magnetic Model for September 2026 at six towns from Mildura to Mallacoota,
+ *  within 0.1° of the model at each; the model drifts about 0.05° a year.
+ *  ponytail: a Victoria-only plane; swap in the full WMM if the app leaves the
+ *  state. */
+export const magneticDeclinationDeg = ({ lat, lon }: LatLon): number =>
+  -64.808 + 0.4397 * lon - 0.3426 * lat;
+
+/** The direction the top of the screen faces, MAGNETIC north, 0–360 — or null
+ *  when the sensor reading carries no compass heading. iOS reports the heading
+ *  itself; Android reports `alpha`, the device's rotation away from north, so
+ *  the heading is its complement and only trustworthy when `absolute`. The
+ *  screen's own rotation (landscape) is added so the reference stays the top of
+ *  the screen, which is where the arrows are drawn from. */
+export const compassHeading = (
+  reading: { alpha: number | null; absolute?: boolean; webkitCompassHeading?: number },
+  screenAngle = 0,
+): number | null => {
+  const heading =
+    typeof reading.webkitCompassHeading === 'number'
+      ? reading.webkitCompassHeading
+      : reading.absolute && typeof reading.alpha === 'number'
+        ? 360 - reading.alpha
+        : null;
+  return heading === null ? null : (((heading + screenAngle) % 360) + 360) % 360;
+};

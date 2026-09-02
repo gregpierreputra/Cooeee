@@ -41,7 +41,7 @@ describe('precedence', () => {
     expect(deriveState(NOW, [], fix(), 'granted')).toEqual({
       kind: 'NO_PACK',
       nearby: [],
-      accuracyM: 10,
+      confidence: { accuracyM: 10, ageS: 0, approximate: false, stale: false },
     });
   });
 
@@ -55,62 +55,35 @@ describe('precedence', () => {
     const s = deriveState(NOW, [kalorama()], null, 'granted');
     expect(s.kind === 'ACQUIRING' && s.reason).toBe('no-fix');
   });
+});
 
-  it('3 — LOW_ACCURACY is decided BEFORE area membership, so a vague fix inside a pack never draws an arrow', () => {
+// The arrows are never withheld for a vague or old fix: the fix still places
+// and points, and the confidence figures say how far to trust it.
+describe('confidence', () => {
+  it('a vague fix still draws the arrows, flagged approximate', () => {
     const s = deriveState(NOW, [kalorama()], fix({ accuracyM: 800 }), 'granted');
-    expect(s.kind).toBe('LOW_ACCURACY');
-    expect(s.kind === 'LOW_ACCURACY' && s.accuracyM).toBe(800);
+    if (s.kind !== 'IN_AREA') throw new Error(s.kind);
+    expect(s.places).toHaveLength(2);
+    expect(s.confidence).toEqual({ accuracyM: 800, ageS: 0, approximate: true, stale: false });
   });
 
-  it('2 beats 3 — a stale fix is ACQUIRING even when it is also inaccurate', () => {
-    const s = deriveState(
-      NOW,
-      [kalorama()],
-      fix({ at: NOW - FIX_STALE_MS - 1, accuracyM: 800 }),
-      'granted',
-    );
-    expect(s.kind === 'ACQUIRING' && s.reason).toBe('stale');
-  });
-});
-
-describe('fix staleness boundary', () => {
-  it('29 s old is usable', () => {
-    expect(deriveState(NOW, [kalorama()], fix({ at: NOW - 29_000 }), 'granted').kind).toBe(
-      'IN_AREA',
-    );
-  });
-
-  it('exactly 30 s old is still usable — the rule is "older than", not "at"', () => {
-    expect(FIX_STALE_MS).toBe(30_000);
-    expect(deriveState(NOW, [kalorama()], fix({ at: NOW - 30_000 }), 'granted').kind).toBe(
-      'IN_AREA',
-    );
-  });
-
-  it('31 s old is ACQUIRING', () => {
-    const s = deriveState(NOW, [kalorama()], fix({ at: NOW - 31_000 }), 'granted');
-    expect(s.kind === 'ACQUIRING' && s.reason).toBe('stale');
-  });
-});
-
-describe('accuracy boundary', () => {
-  it('99 m shows the direction', () => {
-    expect(deriveState(NOW, [kalorama()], fix({ accuracyM: 99 }), 'granted').kind).toBe(
-      'IN_AREA',
-    );
-  });
-
-  it('exactly 100 m shows the direction — the threshold is inclusive', () => {
+  it('the approximate threshold is exclusive at ACCURACY_MAX_M', () => {
     expect(ACCURACY_MAX_M).toBe(100);
-    expect(deriveState(NOW, [kalorama()], fix({ accuracyM: 100 }), 'granted').kind).toBe(
-      'IN_AREA',
-    );
+    const at = deriveState(NOW, [kalorama()], fix({ accuracyM: 100 }), 'granted');
+    const over = deriveState(NOW, [kalorama()], fix({ accuracyM: 101 }), 'granted');
+    expect(at.kind === 'IN_AREA' && at.confidence.approximate).toBe(false);
+    expect(over.kind === 'IN_AREA' && over.confidence.approximate).toBe(true);
   });
 
-  it('101 m withholds the direction and reports the figure', () => {
-    const s = deriveState(NOW, [kalorama()], fix({ accuracyM: 101 }), 'granted');
-    expect(s.kind).toBe('LOW_ACCURACY');
-    expect(s.kind === 'LOW_ACCURACY' && s.accuracyM).toBe(101);
+  it('an old fix still draws the arrows, flagged stale past FIX_STALE_MS with its age', () => {
+    expect(FIX_STALE_MS).toBe(30_000);
+    const at = deriveState(NOW, [kalorama()], fix({ at: NOW - 30_000 }), 'granted');
+    const over = deriveState(NOW, [kalorama()], fix({ at: NOW - 31_000 }), 'granted');
+    expect(at.kind === 'IN_AREA' && at.confidence.stale).toBe(false);
+    if (over.kind !== 'IN_AREA') throw new Error(over.kind);
+    expect(over.places).toHaveLength(2);
+    expect(over.confidence.stale).toBe(true);
+    expect(over.confidence.ageS).toBe(31);
   });
 });
 
@@ -147,8 +120,9 @@ describe('OUT_OF_AREA', () => {
     expect(s.packs[1].distanceKm).toBeCloseTo(19, 0);
   });
 
-  it('carries no bearing to an out-of-area point — there is no arrow on this screen', () => {
+  it('carries no bearing to an out-of-area point — only the nearest official places get arrows', () => {
     expect(s).not.toHaveProperty('places');
+    expect(s.kind === 'OUT_OF_AREA' && s.confidence.accuracyM).toBe(10);
   });
 });
 
@@ -211,9 +185,11 @@ describe('nearest official places from the state-wide list', () => {
     expect(outside.kind === 'OUT_OF_AREA' && outside.nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
   });
 
-  it('is never drawn from an unusable fix', () => {
-    const s = deriveState(NOW, [], fix({ accuracyM: 800 }), 'granted', snapshot);
-    expect(s).toEqual({ kind: 'NO_PACK', nearby: [] });
+  it('is drawn from a vague fix too, with the confidence stated, and never from a denied one', () => {
+    const vague = deriveState(NOW, [], fix({ accuracyM: 800 }), 'granted', snapshot);
+    expect(vague.kind === 'NO_PACK' && vague.nearby).toHaveLength(3);
+    expect(vague.kind === 'NO_PACK' && vague.confidence?.approximate).toBe(true);
+    expect(deriveState(NOW, [], fix(), 'denied', snapshot)).toEqual({ kind: 'NO_PACK', nearby: [] });
   });
 });
 

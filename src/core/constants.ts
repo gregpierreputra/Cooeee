@@ -54,6 +54,8 @@ export const DTP_LICENCE = 'CC BY 4.0';
 export const DTP_DATASET_URL =
   'https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa';
 
+// The arrows are drawn from any fix; these decide when the screen says the fix
+// is old or vague beside them, and when a marked-position estimate expires.
 export const FIX_STALE_MS = 30_000;
 export const ACCURACY_MAX_M = 100;
 
@@ -62,9 +64,9 @@ export const TICK_MS = 5_000;
 
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion
-// sensors, the holder may be walking the whole time. ACCURACY_MAX_M above stays
-// the ONE confidence threshold: an estimate is withheld at exactly the point a
-// GPS fix would be.
+// sensors, the holder may be walking the whole time. ACCURACY_MAX_M above is
+// the ONE confidence threshold: an estimate is withdrawn at exactly the point a
+// GPS fix would be called approximate.
 export const MARK_START_ACCURACY_M = 25;
 export const MARK_DRIFT_M_PER_S = 1.4;
 

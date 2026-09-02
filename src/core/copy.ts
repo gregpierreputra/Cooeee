@@ -15,8 +15,11 @@ export const NO_ADDRESS_MATCH =
 
 export const NO_GPS = 'No GPS fix — showing your saved information.';
 
-export const GPS_TOO_INACCURATE = (m: number) =>
-  `GPS is too inaccurate here to trust a direction (± ${m} m).`;
+/** Said beside the arrows, never instead of them: a vague or old fix still
+ *  points, with its error stated. */
+export const GPS_APPROXIMATE = (m: number) =>
+  `GPS is only accurate to ± ${m} m here — the direction is approximate and sharpens as the fix improves.`;
+export const FIX_AGE = (s: number) => `Last GPS fix ${s} s ago — the direction may have changed.`;
 
 export const OUTSIDE_AREAS = "You're outside the areas you've prepared";
 
@@ -46,10 +49,9 @@ export const CARDINAL_ABBR = [
   'NNW',
 ] as const;
 
-/** Arrow glyphs for the 8 primary directions, index 0 = north, one every 45
- *  degrees. Read by core/geo.ts arrowGlyph(). A screen-relative glyph, not a
- *  compass needle: it points where the bearing sits on a north-up dial. */
-export const ARROW_GLYPHS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'] as const;
+/** The one arrow, turned by CSS: with the phone's compass it points at the
+ *  place itself; without one it is drawn on a north-up dial. */
+export const ARROW = '↑';
 
 // Application shell
 export const APP_NAME = 'Cooeee';
@@ -285,6 +287,12 @@ export const BLACKSKY_TITLE = 'BlackSky';
 export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
 
 export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
+
+// The compass. Which way the arrow is to be read depends on whether the phone's
+// orientation sensor is feeding it, so the screen always says which.
+export const COMPASS_LIVE = 'The arrow turns with your phone.';
+export const COMPASS_NORTH_UP = 'The arrow is drawn with north at the top of the screen.';
+export const TURN_ON_COMPASS = 'Turn on the compass';
 
 /** "850 m" under a kilometre, "1.1 km" from there. The precision a person on
  *  foot can act on — never more. */

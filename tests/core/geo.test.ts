@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CARDINAL_ABBR } from '../../src/core/copy';
-import { arrowGlyph, bearingDeg, cardinalAbbr, distanceM } from '../../src/core/geo';
+import {
+  bearingDeg,
+  cardinalAbbr,
+  compassHeading,
+  distanceM,
+  magneticDeclinationDeg,
+} from '../../src/core/geo';
 import { CBD, KALORAMA } from '../fixtures';
 
 // Reference figures computed independently of Turf (haversine, R = 6 371 008.8 m)
@@ -63,11 +69,31 @@ describe('cardinalAbbr', () => {
   });
 });
 
-describe('arrowGlyph', () => {
-  it('points north at 0 and rotates one glyph per 45-degree sector', () => {
-    expect(arrowGlyph(0)).toBe('↑');
-    expect(arrowGlyph(45)).toBe('↗');
-    expect(arrowGlyph(180)).toBe('↓');
-    expect(arrowGlyph(315)).toBe('↖');
+describe('magneticDeclinationDeg', () => {
+  it('matches the World Magnetic Model across Victoria to within a tenth of a degree', () => {
+    expect(magneticDeclinationDeg({ lat: -37.81, lon: 144.96 })).toBeCloseTo(11.95, 0);
+    expect(magneticDeclinationDeg({ lat: -34.19, lon: 142.16 })).toBeCloseTo(9.44, 0);
+    expect(magneticDeclinationDeg({ lat: -37.56, lon: 149.76 })).toBeCloseTo(13.91, 0);
+  });
+});
+
+describe('compassHeading', () => {
+  it('takes the iOS heading as given', () => {
+    expect(compassHeading({ alpha: 123, webkitCompassHeading: 45 })).toBe(45);
+  });
+
+  it('complements an absolute Android alpha, and normalises', () => {
+    expect(compassHeading({ alpha: 90, absolute: true })).toBe(270);
+    expect(compassHeading({ alpha: 0, absolute: true })).toBe(0);
+  });
+
+  it('adds the screen rotation so landscape still reads from the top of the screen', () => {
+    expect(compassHeading({ alpha: 90, absolute: true }, 90)).toBe(0);
+    expect(compassHeading({ alpha: 350, absolute: true }, 270)).toBe(280);
+  });
+
+  it('is null for a relative reading or no reading at all', () => {
+    expect(compassHeading({ alpha: 90, absolute: false })).toBeNull();
+    expect(compassHeading({ alpha: null, absolute: true })).toBeNull();
   });
 });

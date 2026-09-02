@@ -1,18 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   deriveState,
   estimateFix,
+  type Confidence,
   type Mark as PositionMark,
   type Placed,
   type Screen,
 } from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
-import { arrowGlyph, cardinalAbbr } from '../core/geo';
+import { cardinalAbbr, magneticDeclinationDeg } from '../core/geo';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import HoldButton from './components/HoldButton';
+import { useCompass } from './components/useCompass';
 
 type BlackSkyProps = {
   loadPacks?: () => Promise<PackWithPlaces[]>;
@@ -20,10 +22,10 @@ type BlackSkyProps = {
 };
 
 /** The BlackSky screen. Every word on it comes from the local pack store and the
- *  locally stored CFA site list; the ONLY other input is the device's own
- *  position sensor, and that reading never leaves the device. ESLint bans fetch
- *  and every network module in this file, so the zero-network guarantee is
- *  enforced, not promised. */
+ *  locally stored CFA site list; the ONLY other inputs are the device's own
+ *  position and orientation sensors, and those readings never leave the device.
+ *  ESLint bans fetch and every network module in this file, so the zero-network
+ *  guarantee is enforced, not promised. */
 export default function BlackSky({
   loadPacks = listCompletePacksWithPlaces,
   loadSites = getNspSnapshot,
@@ -36,9 +38,21 @@ export default function BlackSky({
   const [now, setNow] = useState(() => Date.now());
   const navigate = useNavigate();
 
+  // US1-AC4: with no fix, a marked position stands in for one. estimateFix
+  // returns null once its growing uncertainty passes the confidence threshold,
+  // which drops the screen back to ACQUIRING — the AC2 reference state. While
+  // an estimate is active it substitutes the fix entirely, so the GPS
+  // permission state no longer decides.
+  const estimate = mark ? estimateFix(mark, now) : null;
+  const here = estimate ?? fix;
+  // The sensors give magnetic north; the bearings are true. The correction
+  // depends on where the phone is, which the fix supplies.
+  const compass = useCompass(here ? magneticDeclinationDeg(here) : 0);
+
   // US3-AC2, the power rule: GPS samples land in this ref (no render), and the
   // TICK_MS interval below is the ONE publisher to state — so the screen
-  // updates at most once per tick, however often the sensor chatters.
+  // updates at most once per tick, however often the sensor chatters. The
+  // arrows still turn with the phone between ticks: that is CSS, not a render.
   const latestFix = useRef<Fix | null>(null);
 
   useEffect(() => {
@@ -81,19 +95,16 @@ export default function BlackSky({
       (error) => {
         if (error.code === error.PERMISSION_DENIED) setPermission('denied');
       },
-      // maximumAge lets the OS hand back a recent cached position instead of
-      // forcing a fresh sensor read. High accuracy stays on: without it, coarse
-      // cell-tower fixes would keep the arrow permanently withheld by the
-      // ACCURACY_MAX_M gate.
-      { enableHighAccuracy: true, maximumAge: TICK_MS },
+      // The most accurate continuous watch the device offers: high accuracy on,
+      // and no cached position accepted in place of a fresh sensor read.
+      { enableHighAccuracy: true, maximumAge: 0 },
     );
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
   // The tick: publishes the clock AND the newest fix together, once per
-  // TICK_MS. Staleness needs the clock to move (a fix that stops arriving must
-  // stop being trusted), and publishing both in one place keeps renders to one
-  // per tick.
+  // TICK_MS. The fix's age needs the clock to move (an old fix must be called
+  // old), and publishing both in one place keeps renders to one per tick.
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(Date.now());
@@ -104,19 +115,26 @@ export default function BlackSky({
 
   if (packs === null) return null;
 
-  // US1-AC4: with no usable fix, a marked position stands in for one. estimateFix
-  // returns null once its growing uncertainty passes the confidence threshold,
-  // which drops the screen back to ACQUIRING — the AC2 reference state. While
-  // an estimate is active it substitutes the fix entirely, so the GPS
-  // permission state no longer decides.
-  const estimate = mark ? estimateFix(mark, now) : null;
   const screen = estimate
     ? deriveState(now, packs, estimate, 'granted', sites)
     : deriveState(now, packs, fix, permission, sites);
+  const hasArrows = screen.kind === 'IN_AREA' || ('nearby' in screen && screen.nearby.length > 0);
 
   return (
     <main className="page blacksky">
       <h1 className="kicker blacksky-title">{copy.BLACKSKY_TITLE}</h1>
+      {/* Which way the arrows are to be read, and (iOS) the one tap that lets
+          the orientation sensor turn them. Under the title, as the screen's mode. */}
+      {hasArrows ? (
+        <>
+          <p className="muted">{compass.live ? copy.COMPASS_LIVE : copy.COMPASS_NORTH_UP}</p>
+          {compass.needsPermission ? (
+            <button type="button" onClick={() => void compass.enable()}>
+              {copy.TURN_ON_COMPASS}
+            </button>
+          ) : null}
+        </>
+      ) : null}
       <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
       {/* US3-AC1: one plainly named exit, full-width at thumb reach. Leaving
           demands the same deliberate 2s hold as entering, so a pocket press
@@ -141,14 +159,14 @@ function ScreenBody({
 }) {
   switch (screen.kind) {
     // US2-AC2: no pack stored. Nothing is invented or borrowed: the nearest
-    // official places on the stored CFA list are pointed at when the fix
-    // allows, then the built-in preparation guidance and a prompt to build a
+    // official places on the stored CFA list are pointed at once there is a
+    // fix, then the built-in preparation guidance and a prompt to build a
     // pack for when next online.
     case 'NO_PACK':
       return (
         <>
           <p className="muted">{copy.NO_PACK_HERE}</p>
-          <NearbyList places={screen.nearby} accuracyM={screen.accuracyM} />
+          <NearbyList places={screen.nearby} confidence={screen.confidence} />
           <p className="muted">{copy.NO_PACKS_HINT}</p>
           <Link className="action" to="/packs/new">
             {copy.BUILD_A_PACK}
@@ -160,10 +178,10 @@ function ScreenBody({
           </section>
         </>
       );
-    // US1-AC2: no usable fix. US1-AC3: a fix too vague to trust. Both degrade
-    // to the same reference text — names, addresses and the reminder, WITHOUT an arrow
-    // or a distance — and the state line says why. A designed state, not an
-    // error: the next derivation with a good fix renders IN_AREA on its own.
+    // US1-AC2: no fix at all, so nothing to point from. The saved information
+    // stands as reference text — names, addresses and the reminder — and the
+    // state line says why. A designed state, not an error: the next derivation
+    // with a fix draws the arrows on its own.
     case 'ACQUIRING':
       return (
         <>
@@ -180,14 +198,6 @@ function ScreenBody({
             {copy.MARK_AT_SAVED_PLACE(screen.pack.address)}
           </button>
         </>
-      );
-    case 'LOW_ACCURACY':
-      return (
-        <ReferenceBody
-          line={copy.GPS_TOO_INACCURATE(screen.accuracyM)}
-          places={screen.places}
-          pack={screen.pack}
-        />
       );
     // US2-AC1: outside every prepared area. The stored packs are offered by
     // name with the distance to their area's edge — informational rows, never
@@ -207,7 +217,7 @@ function ScreenBody({
               </li>
             ))}
           </ul>
-          <NearbyList places={screen.nearby} accuracyM={screen.accuracyM} />
+          <NearbyList places={screen.nearby} confidence={screen.confidence} />
           <section className="card blacksky-guidance">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
             <a href="tel:000">{copy.CALL_TRIPLE_ZERO}</a>
@@ -228,11 +238,7 @@ function ScreenBody({
             ))}
           </ul>
           <NearbyList places={screen.nearby} />
-          <p className="muted figure">
-            {estimating
-              ? copy.ESTIMATE_READOUT(screen.accuracyM)
-              : copy.ACCURACY_READOUT(screen.accuracyM)}
-          </p>
+          <ConfidenceLines confidence={screen.confidence} estimating={estimating} />
           {screen.absence?.reason ? <p className="muted">{screen.absence.reason}</p> : null}
           {screen.pack.reminder ? (
             <p className="blacksky-reminder">{screen.pack.reminder}</p>
@@ -242,16 +248,22 @@ function ScreenBody({
   }
 }
 
-/** One place with the mega figure: arrow and distance at arm's-length size,
- *  the compass point beneath. Same information as copy.BEARING_FIGURE,
- *  recomposed for scale. */
+/** One place with the mega figure: the arrow and distance at arm's-length
+ *  size, the compass point beneath. The arrow carries its bearing as a CSS
+ *  variable; the stylesheet turns it against the phone's heading. */
 function PlacedRow({ place }: { place: Placed }) {
   return (
     <li className="blacksky-place">
       <h2>{place.name}</h2>
       <p className="figure blacksky-figure">
         <span className="blacksky-figure-main">
-          <span aria-hidden="true">{arrowGlyph(place.bearingDeg)}</span>{' '}
+          <span
+            className="blacksky-arrow"
+            aria-hidden="true"
+            style={{ '--bearing': place.bearingDeg } as CSSProperties}
+          >
+            {copy.ARROW}
+          </span>{' '}
           {copy.distanceLabel(place.distanceM)}
         </span>
         <span className="blacksky-figure-point">{cardinalAbbr(place.bearingDeg)}</span>
@@ -261,10 +273,36 @@ function PlacedRow({ place }: { place: Placed }) {
   );
 }
 
+/** The accuracy readout, and beside it — never instead of the arrows — the
+ *  plain statement when the fix is vague or old. */
+function ConfidenceLines({
+  confidence,
+  estimating,
+}: {
+  confidence: Confidence;
+  estimating: boolean;
+}) {
+  return (
+    <>
+      <p className="muted figure">
+        {estimating
+          ? copy.ESTIMATE_READOUT(confidence.accuracyM)
+          : copy.ACCURACY_READOUT(confidence.accuracyM)}
+      </p>
+      {!estimating && confidence.approximate ? (
+        <p className="muted">{copy.GPS_APPROXIMATE(confidence.accuracyM)}</p>
+      ) : null}
+      {!estimating && confidence.stale ? (
+        <p className="muted">{copy.FIX_AGE(confidence.ageS)}</p>
+      ) : null}
+    </>
+  );
+}
+
 /** The nearest official places on the state-wide list, from the live fix.
- *  Nothing when there is no usable fix or no stored list. The accuracy readout
- *  travels with it on the screens that have no other figure to hang it on. */
-function NearbyList({ places, accuracyM }: { places: Placed[]; accuracyM?: number }) {
+ *  Nothing when there is no fix or no stored list. The confidence lines travel
+ *  with it on the screens that have no other figure to hang them on. */
+function NearbyList({ places, confidence }: { places: Placed[]; confidence?: Confidence }) {
   if (places.length === 0) return null;
   return (
     <section className="blacksky-nearby">
@@ -275,15 +313,13 @@ function NearbyList({ places, accuracyM }: { places: Placed[]; accuracyM?: numbe
           <PlacedRow key={place.id} place={place} />
         ))}
       </ul>
-      {typeof accuracyM === 'number' ? (
-        <p className="muted figure">{copy.ACCURACY_READOUT(accuracyM)}</p>
-      ) : null}
+      {confidence ? <ConfidenceLines confidence={confidence} estimating={false} /> : null}
     </section>
   );
 }
 
-/** The degraded screen shared by US1-AC2 and US1-AC3: saved information as reference
- *  text, no bearing figures, with one line saying why. */
+/** The reference screen for US1-AC2: saved information as text, no bearing
+ *  figures, with one line saying why. */
 function ReferenceBody({
   line,
   places,
