@@ -1,4 +1,5 @@
 import { isInsideVictoria } from '../../src/core/constants.ts';
+import { readJsonBounded } from '../../src/data/bounded-body.ts';
 import type { Db } from '../db.ts';
 import { runSync } from '../sources.ts';
 import { type FacilityInput, rebuildNearestStatic, upsertFacilities } from './static.ts';
@@ -8,6 +9,7 @@ const QUERY_URL =
   'https://services-ap1.arcgis.com/vh59f3ZyAEAhnejO/ArcGIS/rest/services/MY_CFA_Data_Layers_V2/FeatureServer/2/query';
 const PAGE_SIZE = 1000;
 const FETCH_TIMEOUT_MS = 30_000;
+const MAX_BODY_BYTES = 10 * 1_048_576; // one page of 1000 features is about 170 KB
 
 type Feature = {
   geometry?: { type?: string; coordinates?: unknown } | null;
@@ -48,7 +50,7 @@ export async function fetchNspFacilities(
     });
     const response = await fetcher(`${QUERY_URL}?${params}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!response.ok) throw new Error(`CFA NSP layer returned HTTP ${response.status}`);
-    const page = (await response.json()) as {
+    const page = (await readJsonBounded(response, MAX_BODY_BYTES)) as {
       features?: unknown;
       properties?: { exceededTransferLimit?: boolean };
     };

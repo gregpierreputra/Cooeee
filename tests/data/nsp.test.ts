@@ -8,7 +8,7 @@ import { nspSite, nspSnapshot } from '../fixtures';
 const wire = (value: unknown): unknown => JSON.parse(JSON.stringify(value));
 
 const okResponse = (body: unknown): Response =>
-  ({ ok: true, status: 200, json: async () => body }) as unknown as Response;
+  new Response(JSON.stringify(body), { status: 200 });
 
 describe('assertNspSnapshot', () => {
   it('parses a well-formed snapshot', () => {

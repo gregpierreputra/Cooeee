@@ -84,6 +84,10 @@ export const isInsideVictoria = (lat: number, lon: number): boolean =>
 
 export const SNAPSHOT_MAX_AGE_DAYS = 60;
 
+/** The most the app will read from any one response. The largest reply today
+ *  is a 151 KB source PDF; a body past this is a fault or an attack, not data. */
+export const MAX_RESPONSE_BYTES = 10 * 1_048_576;
+
 export const OFFICIAL_DOMAINS = [
   'servicesaustralia.gov.au',
   'disasterassist.gov.au',

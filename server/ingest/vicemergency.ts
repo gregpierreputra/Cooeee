@@ -1,4 +1,5 @@
 import { isInsideVictoria } from '../../src/core/constants.ts';
+import { readJsonBounded } from '../../src/data/bounded-body.ts';
 import type { DynamicType } from '../../src/core/types.ts';
 import { type Db, nowIso, transaction } from '../db.ts';
 import { consecutiveFailures, runSync, type SyncCounts } from '../sources.ts';
@@ -6,6 +7,7 @@ import { consecutiveFailures, runSync, type SyncCounts } from '../sources.ts';
 export const SOURCE_ID = 'vicemergency_feed';
 const FEED_URL = 'https://emergency.vic.gov.au/public/osom-geojson.json';
 const FETCH_TIMEOUT_MS = 20_000;
+const MAX_BODY_BYTES = 50 * 1_048_576; // tens of KB on a quiet day; incident polygons during an event
 const POLL_MS = 60_000;
 const POLL_MAX_MS = 5 * 60_000;
 
@@ -54,7 +56,7 @@ export async function pollOnce(db: Db, fetcher: typeof fetch = fetch): Promise<S
     headers: { accept: 'application/json' },
   });
   if (!response.ok) throw new Error(`VicEmergency feed returned HTTP ${response.status}`);
-  const feed = (await response.json()) as { features?: unknown; properties?: { featureCount?: unknown } };
+  const feed = (await readJsonBounded(response, MAX_BODY_BYTES)) as { features?: unknown; properties?: { featureCount?: unknown } };
   if (!Array.isArray(feed.features)) throw new TypeError('VicEmergency feed: features must be an array');
   // The feed states its own count. A truncated body must never close every centre.
   const stated = feed.properties?.featureCount;

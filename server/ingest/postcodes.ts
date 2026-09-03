@@ -1,4 +1,5 @@
 import { isInsideVictoria } from '../../src/core/constants.ts';
+import { readJsonBounded } from '../../src/data/bounded-body.ts';
 import { type Db, nowIso, transaction } from '../db.ts';
 import { runSync, type SyncCounts } from '../sources.ts';
 import { rebuildNearestStatic } from './static.ts';
@@ -6,6 +7,7 @@ import { rebuildNearestStatic } from './static.ts';
 export const SOURCE_ID = 'vicmap_admin_postcodes';
 const WFS_URL = 'https://opendata.maps.vic.gov.au/geoserver/wfs';
 const FETCH_TIMEOUT_MS = 120_000;
+const MAX_BODY_BYTES = 20 * 1_048_576; // the full polygon layer is about 2 MB
 
 type Ring = [number, number][];
 type Feature = {
@@ -66,7 +68,7 @@ export async function fetchPostcodes(
   });
   const response = await fetcher(`${WFS_URL}?${params}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!response.ok) throw new Error(`Vicmap postcode layer returned HTTP ${response.status}`);
-  const payload = (await response.json()) as { features?: unknown };
+  const payload = (await readJsonBounded(response, MAX_BODY_BYTES)) as { features?: unknown };
   if (!Array.isArray(payload.features)) throw new TypeError('Vicmap postcode layer: features must be an array');
   const rows: PostcodeInput[] = [];
   let skipped = 0;
