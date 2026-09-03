@@ -174,7 +174,7 @@ export default function PackDetail({
               className={offlineSource.citation ? 'secondary-action' : undefined}
               href={offlineSource.pageUrl ?? DTP_DATASET_URL}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
             >
               {offlineSource.citation
                 ? copy.CONTINUE_TO_DATASET_PAGE
@@ -219,7 +219,7 @@ function SourceLinks({
       <a
         href={item.pageUrl ?? DTP_DATASET_URL}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         onClick={(event) => onWeb(event, item)}
       >
         {copy.OPEN_ORIGINAL_SOURCE}
