@@ -1,3 +1,4 @@
+import { isInsideVictoria } from '../../src/core/constants.ts';
 import type { Db } from '../db.ts';
 import { runSync } from '../sources.ts';
 import { type FacilityInput, rebuildNearestStatic, upsertFacilities } from './static.ts';
@@ -27,6 +28,7 @@ export function toFacility(feature: Feature): FacilityInput | null {
   if (typeof lat !== 'number' || typeof lon !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lon)) {
     return null;
   }
+  if (!isInsideVictoria(lat, lon)) return null; // a transposed or foreign point is not a place to go
   return { externalRef, typeCode: 'NSP', name, address: text(props.address), lat, lon, lgaName: text(props.lga) };
 }
 

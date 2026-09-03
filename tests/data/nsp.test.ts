@@ -95,3 +95,12 @@ describe('loadNspSnapshot', () => {
     await expect(loadNspSnapshot(fetchImpl)).rejects.toThrow(/request failed \(404\)/);
   });
 });
+
+describe('assertNspSnapshot coordinates', () => {
+  it('rejects a site whose point is outside Victoria', () => {
+    const sydney = nspSite({ lat: -33.87, lon: 151.21 });
+    expect(() => assertNspSnapshot(wire(nspSnapshot({ sites: [sydney] })))).toThrow(
+      /inside Victoria/,
+    );
+  });
+});

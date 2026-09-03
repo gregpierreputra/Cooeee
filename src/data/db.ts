@@ -168,15 +168,18 @@ export async function getCompletePackContent(id: string): Promise<CompletePackCo
     db.files.where('packId').equals(id).toArray(),
     listNotes(id),
   ]);
+  
   const expectedRecovery = pack.manifest.groups.recovery;
   if (expectedRecovery.count === 0) {
     return { pack, layers, destinations, recovery: [], files, notes, recoveryVerified: true };
   }
+
   const programs = await db.programs.toArray();
   const actualRecovery = await manifestGroup(programs);
   const recoveryVerified = actualRecovery.count === expectedRecovery.count
     && actualRecovery.sha256 === expectedRecovery.sha256;
-  return {
+  
+    return {
     pack,
     layers,
     destinations,

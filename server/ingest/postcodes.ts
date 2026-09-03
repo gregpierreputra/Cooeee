@@ -1,3 +1,4 @@
+import { isInsideVictoria } from '../../src/core/constants.ts';
 import { type Db, nowIso, transaction } from '../db.ts';
 import { runSync, type SyncCounts } from '../sources.ts';
 import { rebuildNearestStatic } from './static.ts';
@@ -5,8 +6,6 @@ import { rebuildNearestStatic } from './static.ts';
 export const SOURCE_ID = 'vicmap_admin_postcodes';
 const WFS_URL = 'https://opendata.maps.vic.gov.au/geoserver/wfs';
 const FETCH_TIMEOUT_MS = 120_000;
-// Victoria's extent. A centroid outside it is an axis-order mistake, not a place.
-const VIC = { minLat: -39.3, maxLat: -33.9, minLon: 140.9, maxLon: 150.1 };
 
 type Ring = [number, number][];
 type Feature = {
@@ -49,13 +48,8 @@ export function toPostcode(feature: Feature): PostcodeInput | null {
     const centroid = ringCentroid(polygon[0]); // the outer ring
     if (largest === null || centroid.area > largest.area) largest = centroid;
   }
-  if (
-    largest === null ||
-    largest.lat < VIC.minLat || largest.lat > VIC.maxLat ||
-    largest.lon < VIC.minLon || largest.lon > VIC.maxLon
-  ) {
-    return null;
-  }
+  // A centroid outside Victoria is an axis-order mistake, not a place.
+  if (largest === null || !isInsideVictoria(largest.lat, largest.lon)) return null;
   return { postcode, lat: largest.lat, lon: largest.lon };
 }
 

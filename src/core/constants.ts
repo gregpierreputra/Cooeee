@@ -73,6 +73,15 @@ export const TICK_MS = 5_000;
 export const MARK_START_ACCURACY_M = 25;
 export const MARK_DRIFT_M_PER_S = 1.4;
 
+/** Victoria's extent, with a margin. A coordinate outside it is an axis-order
+ *  mistake or a bad record, never a place to go. Shared by the client parsers
+ *  and the API server's ingest, so this file must stay a leaf module (no
+ *  runtime imports) — the server loads it directly under Node. */
+export const VIC_EXTENT = { minLat: -39.3, maxLat: -33.9, minLon: 140.9, maxLon: 150.1 };
+export const isInsideVictoria = (lat: number, lon: number): boolean =>
+  lat >= VIC_EXTENT.minLat && lat <= VIC_EXTENT.maxLat
+  && lon >= VIC_EXTENT.minLon && lon <= VIC_EXTENT.maxLon;
+
 export const SNAPSHOT_MAX_AGE_DAYS = 60;
 
 export const OFFICIAL_DOMAINS = [

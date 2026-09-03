@@ -10,6 +10,7 @@ import {
   AREA_CHECK_TIMEOUT_MS,
   DTP_LICENCE,
   DTP_PUBLISHER,
+  isInsideVictoria,
 } from '../core/constants';
 import type {
   AddressCandidate,
@@ -60,6 +61,9 @@ export function parseAddressFeature(value: unknown): AddressCandidate {
   const [lon, lat] = coordinates;
   assertFiniteNumber(lon, 'feature.geometry.coordinates[0]');
   assertFiniteNumber(lat, 'feature.geometry.coordinates[1]');
+  if (!isInsideVictoria(lat, lon)) {
+    throw new TypeError('feature.geometry.coordinates must be inside Victoria');
+  }
   assertString(value.properties.ezi_address, 'feature.properties.ezi_address');
   assertString(value.properties.locality_name, 'feature.properties.locality_name');
 

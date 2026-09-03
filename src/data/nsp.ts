@@ -1,3 +1,4 @@
+import { isInsideVictoria } from '../core/constants';
 import type { NspSite, NspSnapshot, Source } from '../core/types';
 import { getNspSnapshot, putNspSnapshot } from './db';
 
@@ -85,6 +86,7 @@ function assertSite(value: unknown, index: number): NspSite {
 
   site.lat = assertFiniteNumber(raw.lat, at('lat'));
   site.lon = assertFiniteNumber(raw.lon, at('lon'));
+  if (!isInsideVictoria(site.lat, site.lon)) fail(`${at('lat')}/${at('lon')} must be inside Victoria`);
   return site;
 }
 

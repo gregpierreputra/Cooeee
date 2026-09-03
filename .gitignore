@@ -7,9 +7,8 @@
 !.github/workflows/*.yml
 .DS_Store
 
-# Local doucmentation
-documentation/
-docs/*/
+# Local documentation
+docs/*
 
 # Prevention of environment files from being pushed
 pro*/

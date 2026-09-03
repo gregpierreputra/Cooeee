@@ -1,3 +1,4 @@
+import { isInsideVictoria } from '../../src/core/constants.ts';
 import type { DynamicType } from '../../src/core/types.ts';
 import { type Db, nowIso, transaction } from '../db.ts';
 import { consecutiveFailures, runSync, type SyncCounts } from '../sources.ts';
@@ -41,6 +42,7 @@ export function firstPoint(geometry: Geometry): { lat: number; lon: number } | n
   if (geometry.type !== 'Point' || !Array.isArray(geometry.coordinates)) return null;
   const [lon, lat] = geometry.coordinates as unknown[];
   return typeof lat === 'number' && typeof lon === 'number' && Number.isFinite(lat) && Number.isFinite(lon)
+    && isInsideVictoria(lat, lon)
     ? { lat, lon }
     : null;
 }
