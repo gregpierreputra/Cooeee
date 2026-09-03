@@ -140,6 +140,7 @@ describe('E1-US2 original source links', () => {
   it.each([
     'https://servicesaustralia.gov.au/example',
     'https://opendata.maps.vic.gov.au/example',
+    'https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa',
     'https://www.cfa.vic.gov.au/plan-prepare',
   ])('allows the reviewed HTTPS source %s', (url) => {
     expect(isAllowedSourceUrl(url)).toBe(true);
@@ -148,6 +149,8 @@ describe('E1-US2 original source links', () => {
   it.each([
     'http://servicesaustralia.gov.au/example',
     'https://vic.gov.au.attacker.example/',
+    'https://evil.vic.gov.au/plan-prepare', // an unlisted subdomain of the apex
+    'https://vic.gov.au/',
     'not a URL',
   ])('rejects an unreviewed or non-HTTPS source %s', (url) => {
     expect(isAllowedSourceUrl(url)).toBe(false);
@@ -181,7 +184,7 @@ describe('E1-US2 pack item projection', () => {
       layers: [layer],
       destinations: [destination()],
       recovery: [program()],
-      files: [], notes: [], recoveryVerified: true,
+      files: [], notes: [], recoveryVerified: true, contentVerified: true,
     };
 
     expect(packDetailItems(content).map(({ name }) => name)).toEqual([
@@ -201,7 +204,7 @@ describe('E1-US2 pack item projection', () => {
     const content: CompletePackContent = {
       pack: pack(),
       layers: [{ ...layer, status }],
-      destinations: [], recovery: [], files: [], notes: [], recoveryVerified: true,
+      destinations: [], recovery: [], files: [], notes: [], recoveryVerified: true, contentVerified: true,
     };
     expect(packDetailItems(content).map((item) => item.name)).toEqual([name]);
   });
@@ -210,7 +213,7 @@ describe('E1-US2 pack item projection', () => {
     const content: CompletePackContent = {
       pack: pack(),
       layers: [layer],
-      destinations: [], recovery: [], files: [], notes: [], recoveryVerified: true,
+      destinations: [], recovery: [], files: [], notes: [], recoveryVerified: true, contentVerified: true,
     };
     expect(packDetailItems(content).map((item) => item.name)).toEqual([
       copy.DESIGNATED_BUSHFIRE_PRONE_AREA,
@@ -227,7 +230,7 @@ describe('E1-US2 pack item projection', () => {
         ...layer,
         features: [{ planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' }],
       }],
-      destinations: [], recovery: [], files: [], notes: [], recoveryVerified: true,
+      destinations: [], recovery: [], files: [], notes: [], recoveryVerified: true, contentVerified: true,
     };
     expect(packDetailItems(content).map(({ citation }) => citation)).toEqual([
       'Bushfire Prone Area plan LEGL./25-138 · gazetted 10 July 2025 · YARRA RANGES'
@@ -244,7 +247,7 @@ describe('E1-US2 pack item projection', () => {
       pack: pack(),
       layers: [row],
       destinations: [],
-      recovery: [], files: [], notes: [], recoveryVerified: true,
+      recovery: [], files: [], notes: [], recoveryVerified: true, contentVerified: true,
     };
     expect(packDetailItems(content).map(({ citation }) => citation)).toEqual([undefined]);
   });
@@ -252,7 +255,7 @@ describe('E1-US2 pack item projection', () => {
   it('does not invent a basemap item when its attribution source is absent', () => {
     const content: CompletePackContent = {
       pack: pack({ builtWithTiles: true }),
-      layers: [], destinations: [], recovery: [], files: [], notes: [], recoveryVerified: true,
+      layers: [], destinations: [], recovery: [], files: [], notes: [], recoveryVerified: true, contentVerified: true,
     };
     expect(packDetailItems(content)).toEqual([]);
   });
@@ -264,7 +267,7 @@ describe('E2-US1-AC3 stored absence row', () => {
     layers: [],
     destinations: [absenceRow('pack-1', 'Yarra Ranges', source())],
     recovery: [],
-    files: [], notes: [], recoveryVerified: true,
+    files: [], notes: [], recoveryVerified: true, contentVerified: true,
   });
 
   it('is never projected as an information item or a place — it has no content to open', () => {
@@ -283,7 +286,7 @@ describe('E2-US1-AC3 stored absence row', () => {
         destination({ id: 'pack-1:a', distanceOrder: 0 }),
       ],
       recovery: [],
-      files: [], notes: [], recoveryVerified: true,
+      files: [], notes: [], recoveryVerified: true, contentVerified: true,
     };
     expect(packDetailPlaces(content).map(({ id }) => id)).toEqual(['pack-1:a', 'pack-1:b']);
   });
@@ -301,7 +304,7 @@ describe('E2-US1-AC3 stored absence row', () => {
         layers: [],
         destinations: [destination()],
         recovery: [],
-        files: [], notes: [], recoveryVerified: true,
+        files: [], notes: [], recoveryVerified: true, contentVerified: true,
       }),
     ).toBeNull();
   });
@@ -313,7 +316,7 @@ describe('E2-US1-AC3 stored absence row', () => {
         layers: [],
         destinations: [destination({ id: 'pack-1:absence', kind: 'absence', name: undefined })],
         recovery: [],
-        files: [], notes: [], recoveryVerified: true,
+        files: [], notes: [], recoveryVerified: true, contentVerified: true,
       }),
     ).toBeNull();
   });

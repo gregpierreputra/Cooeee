@@ -8,6 +8,11 @@ import { SOURCE_ID as POSTCODES, syncPostcodes } from './ingest/postcodes.ts';
 import { startPoller } from './ingest/vicemergency.ts';
 
 const DB_PATH = process.env.DB_PATH ?? 'server/data/cooeee.sqlite';
+// VACUUM INTO (in housekeeping below) takes no bound parameter, so the backup
+// path is interpolated into SQL there. Keep it to plain path characters up front.
+if (!/^[A-Za-z0-9._/:-]+$/.test(DB_PATH)) {
+  throw new Error('DB_PATH may only contain letters, digits and . _ / : -');
+}
 const PORT = Number(process.env.PORT ?? 8787);
 const HOST = process.env.HOST ?? '127.0.0.1';
 const HOUR_MS = 3_600_000;
@@ -47,6 +52,8 @@ function housekeeping(): void {
   const dir = join(dirname(DB_PATH), 'backups');
   mkdirSync(dir, { recursive: true });
   const target = join(dir, `cooeee-${new Date().toISOString().slice(0, 10)}.sqlite`);
+  // Interpolated, not bound: VACUUM INTO accepts no parameter. The path is
+  // built from DB_PATH, validated at startup, and today's date.
   if (!existsSync(target)) db.exec(`VACUUM INTO '${target.replaceAll("'", "''")}'`);
   const stale = readdirSync(dir).filter((name) => name.endsWith('.sqlite')).sort().slice(0, -BACKUPS_KEPT);
   for (const name of stale) unlinkSync(join(dir, name));

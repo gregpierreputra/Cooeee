@@ -136,6 +136,9 @@ export default function BlackSky({
           ) : null}
         </>
       ) : null}
+      {packs?.some((p) => !p.placesVerified) ? (
+        <p className="muted">{copy.PLACES_UNVERIFIED}</p>
+      ) : null}
       <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
       {/* The user's own notes, folded until asked for and read-only here: one
           tap opens them, each in its own ruled row at reading size. */}

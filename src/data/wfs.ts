@@ -10,7 +10,10 @@ import {
   AREA_CHECK_TIMEOUT_MS,
   DTP_LICENCE,
   DTP_PUBLISHER,
+  isInsideVictoria,
+  MAX_RESPONSE_BYTES,
 } from '../core/constants';
+import { readJsonBounded } from './bounded-body';
 import type {
   AddressCandidate,
   AddressRecord,
@@ -60,6 +63,9 @@ export function parseAddressFeature(value: unknown): AddressCandidate {
   const [lon, lat] = coordinates;
   assertFiniteNumber(lon, 'feature.geometry.coordinates[0]');
   assertFiniteNumber(lat, 'feature.geometry.coordinates[1]');
+  if (!isInsideVictoria(lat, lon)) {
+    throw new TypeError('feature.geometry.coordinates must be inside Victoria');
+  }
   assertString(value.properties.ezi_address, 'feature.properties.ezi_address');
   assertString(value.properties.locality_name, 'feature.properties.locality_name');
 
@@ -120,7 +126,7 @@ export async function fetchAddressCandidates(
     });
     if (!response.ok) throw new Error(`Vicmap address search returned HTTP ${response.status}`);
 
-    const payload: unknown = await response.json();
+    const payload: unknown = await readJsonBounded(response, MAX_RESPONSE_BYTES);
     assertRecord(payload, 'response');
     if (!Array.isArray(payload.features)) throw new TypeError('response.features must be an array');
     const resolution = resolveAddressCandidates(payload.features.map(parseAddressRecord));
@@ -276,7 +282,7 @@ async function fetchJson(
 ): Promise<unknown> {
   const response = await fetcher(url, { method: 'GET', signal });
   if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`);
-  return response.json() as Promise<unknown>;
+  return readJsonBounded(response, MAX_RESPONSE_BYTES);
 }
 
 /** E1-US1-AC5–AC7 official area check. It performs no device write. A positive

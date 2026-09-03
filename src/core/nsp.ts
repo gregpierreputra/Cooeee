@@ -1,3 +1,4 @@
+import { isInsideVictoria } from './constants';
 import { absenceRow } from './destination';
 import { distanceM } from './geo';
 import * as copy from './copy';
@@ -24,7 +25,8 @@ export const sameLga = (municipality: string, lgaName: string): boolean => {
 };
 
 const isLocated = (site: NspSite): boolean =>
-  site.geocode !== 'none' && typeof site.lat === 'number' && typeof site.lon === 'number';
+  site.geocode !== 'none' && typeof site.lat === 'number' && typeof site.lon === 'number'
+  && isInsideVictoria(site.lat, site.lon);
 
 /** The CFA sites to show for one pack: the `count` nearest to the pack centre,
  *  state-wide and however far, and separately those the CFA lists for the

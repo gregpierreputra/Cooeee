@@ -8,7 +8,7 @@ import { nspSite, nspSnapshot } from '../fixtures';
 const wire = (value: unknown): unknown => JSON.parse(JSON.stringify(value));
 
 const okResponse = (body: unknown): Response =>
-  ({ ok: true, status: 200, json: async () => body }) as unknown as Response;
+  new Response(JSON.stringify(body), { status: 200 });
 
 describe('assertNspSnapshot', () => {
   it('parses a well-formed snapshot', () => {
@@ -93,5 +93,14 @@ describe('loadNspSnapshot', () => {
       async () => ({ ok: false, status: 404 }) as unknown as Response,
     );
     await expect(loadNspSnapshot(fetchImpl)).rejects.toThrow(/request failed \(404\)/);
+  });
+});
+
+describe('assertNspSnapshot coordinates', () => {
+  it('rejects a site whose point is outside Victoria', () => {
+    const sydney = nspSite({ lat: -33.87, lon: 151.21 });
+    expect(() => assertNspSnapshot(wire(nspSnapshot({ sites: [sydney] })))).toThrow(
+      /inside Victoria/,
+    );
   });
 });

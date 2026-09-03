@@ -99,6 +99,9 @@ export default function PackDetail({
       {!content.recoveryVerified ? (
         <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />
       ) : null}
+      {!content.contentVerified ? (
+        <StateCard heading={copy.PACK_ITEMS_UNVERIFIED} />
+      ) : null}
 
       {/* A stored absence row: its own plain statement, never an item in the
           list and never a source to open. */}
@@ -171,7 +174,7 @@ export default function PackDetail({
               className={offlineSource.citation ? 'secondary-action' : undefined}
               href={offlineSource.pageUrl ?? DTP_DATASET_URL}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
             >
               {offlineSource.citation
                 ? copy.CONTINUE_TO_DATASET_PAGE
@@ -216,7 +219,7 @@ function SourceLinks({
       <a
         href={item.pageUrl ?? DTP_DATASET_URL}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         onClick={(event) => onWeb(event, item)}
       >
         {copy.OPEN_ORIGINAL_SOURCE}

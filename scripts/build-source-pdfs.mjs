@@ -6,6 +6,7 @@
 // npm run build:data:sources (whenever a source page changes, and after
 // build:data:nsp, whose snapshot names the CFA page).
 
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
@@ -36,7 +37,9 @@ for (const url of [nsp.source.url, dtpUrl]) {
   await page.close();
   const name = `${new URL(url).pathname.split('/').filter(Boolean).pop()}.v${date}.pdf`;
   writeFileSync(new URL(`sources/${name}`, dataDir), pdf);
-  sources.push({ url, name, retrievedAt });
+  // The fingerprint travels with the register, so the app can refuse a copy
+  // that is not the page this build rendered.
+  sources.push({ url, name, retrievedAt, sha256: createHash('sha256').update(pdf).digest('hex') });
   console.log(`sources: wrote ${name} (${pdf.length} bytes)`);
 }
 await browser.close();

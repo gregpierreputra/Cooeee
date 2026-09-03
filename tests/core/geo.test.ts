@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isInsideVictoria } from '../../src/core/constants';
 import { CARDINAL_ABBR } from '../../src/core/copy';
 import {
   bearingDeg,
@@ -95,5 +96,14 @@ describe('compassHeading', () => {
   it('is null for a relative reading or no reading at all', () => {
     expect(compassHeading({ alpha: 90, absolute: false })).toBeNull();
     expect(compassHeading({ alpha: null, absolute: true })).toBeNull();
+  });
+});
+
+describe('isInsideVictoria', () => {
+  it('accepts a Victorian point and refuses (0,0), a swapped lat/lon and Sydney', () => {
+    expect(isInsideVictoria(KALORAMA.lat, KALORAMA.lon)).toBe(true);
+    expect(isInsideVictoria(0, 0)).toBe(false);
+    expect(isInsideVictoria(KALORAMA.lon, KALORAMA.lat)).toBe(false); // transposed
+    expect(isInsideVictoria(-33.87, 151.21)).toBe(false); // Sydney
   });
 });

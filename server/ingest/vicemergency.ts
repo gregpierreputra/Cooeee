@@ -1,3 +1,5 @@
+import { isInsideVictoria } from '../../src/core/constants.ts';
+import { readJsonBounded } from '../../src/data/bounded-body.ts';
 import type { DynamicType } from '../../src/core/types.ts';
 import { type Db, nowIso, transaction } from '../db.ts';
 import { consecutiveFailures, runSync, type SyncCounts } from '../sources.ts';
@@ -5,6 +7,7 @@ import { consecutiveFailures, runSync, type SyncCounts } from '../sources.ts';
 export const SOURCE_ID = 'vicemergency_feed';
 const FEED_URL = 'https://emergency.vic.gov.au/public/osom-geojson.json';
 const FETCH_TIMEOUT_MS = 20_000;
+const MAX_BODY_BYTES = 50 * 1_048_576; // tens of KB on a quiet day; incident polygons during an event
 const POLL_MS = 60_000;
 const POLL_MAX_MS = 5 * 60_000;
 
@@ -32,15 +35,21 @@ export function classify(props: Props): DynamicType | null {
   return TYPE_BY_LABEL.find(([label]) => labels.includes(label))?.[1] ?? null;
 }
 
+// A GeometryCollection may nest. Past this depth the feature is skipped, so a
+// hostile or broken feed cannot exhaust the stack and stop the poll.
+const MAX_GEOMETRY_DEPTH = 8;
+
 /** The feature's point: its own, or the first inside a GeometryCollection. */
-export function firstPoint(geometry: Geometry): { lat: number; lon: number } | null {
-  if (!geometry) return null;
+export function firstPoint(geometry: Geometry, depth = 0): { lat: number; lon: number } | null {
+  if (!geometry || depth > MAX_GEOMETRY_DEPTH) return null;
   if (geometry.type === 'GeometryCollection') {
-    return geometry.geometries?.map(firstPoint).find((point) => point !== null) ?? null;
+    return geometry.geometries?.map((inner) => firstPoint(inner, depth + 1)).find((point) => point !== null)
+      ?? null;
   }
   if (geometry.type !== 'Point' || !Array.isArray(geometry.coordinates)) return null;
   const [lon, lat] = geometry.coordinates as unknown[];
   return typeof lat === 'number' && typeof lon === 'number' && Number.isFinite(lat) && Number.isFinite(lon)
+    && isInsideVictoria(lat, lon)
     ? { lat, lon }
     : null;
 }
@@ -52,7 +61,7 @@ export async function pollOnce(db: Db, fetcher: typeof fetch = fetch): Promise<S
     headers: { accept: 'application/json' },
   });
   if (!response.ok) throw new Error(`VicEmergency feed returned HTTP ${response.status}`);
-  const feed = (await response.json()) as { features?: unknown; properties?: { featureCount?: unknown } };
+  const feed = (await readJsonBounded(response, MAX_BODY_BYTES)) as { features?: unknown; properties?: { featureCount?: unknown } };
   if (!Array.isArray(feed.features)) throw new TypeError('VicEmergency feed: features must be an array');
   // The feed states its own count. A truncated body must never close every centre.
   const stated = feed.properties?.featureCount;

@@ -3,7 +3,6 @@ import { hasCompleteSource, prepareProvenancedContent, type OmittedItem } from '
 import type {
   Pack,
   PackFile,
-  PackFileMeta,
   PackManifest,
   PackNote,
   PackOffer,
@@ -11,7 +10,7 @@ import type {
   TextPackContent,
 } from '../core/types';
 import { checkedNoteText, db, deleteOwnedRows, ownedTables } from './db';
-import { manifestGroup } from './integrity';
+import { fileMeta, manifestGroup } from './integrity';
 
 function assertContent(content: TextPackContent): void {
   if (content.pack.sources.length === 0 || content.pack.sources.some((source) => !hasCompleteSource(source))) {
@@ -35,12 +34,6 @@ async function textManifest(content: TextPackContent): Promise<PackOffer['textMa
     recovery: await manifestGroup(content.recovery),
   };
 }
-
-/** What the offer states about a file: everything but the bytes themselves. */
-const fileMeta = ({ bytes, ...meta }: PackFile): PackFileMeta => {
-  void bytes;
-  return meta;
-};
 
 async function createPreparedPackOffer(
   content: TextPackContent,

@@ -1,4 +1,4 @@
-import { createServer, type Server } from 'node:http';
+import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { FACILITY_SOURCE } from '../src/core/facility-sources.ts';
 import type { DynamicSnapshot, FacilityType, SourceHealth, StaticBundle } from '../src/core/types.ts';
 import { type Db, nowIso } from './db.ts';
@@ -164,9 +164,17 @@ function dynamicSnapshot(db: Db): Route {
   return { status: 200, body };
 }
 
+// Status and timestamps only. last_error carries upstream-authored text and
+// endpoint_url the internal topology; both stay in the database for operators.
 const health = (db: Db): Route => ({
   status: 200,
-  body: { generated_at: nowIso(), sources: db.prepare('SELECT * FROM data_sources').all() },
+  body: {
+    generated_at: nowIso(),
+    sources: db.prepare(
+      `SELECT source_id, name, source_kind, status, last_attempt_at, last_success_at, consecutive_failures
+       FROM data_sources`,
+    ).all(),
+  },
 });
 
 /** The whole read-only API (spec §5), as a pure function of the request. */
@@ -186,12 +194,45 @@ export function route(db: Db, method: string, url: URL): Route {
   }
 }
 
+// A per-address request budget. The API is public and every query runs
+// synchronously on the one event loop, so one client must not be able to occupy
+// it. A fixed one-minute window is enough for a read-only, device-cached feature.
+const RATE_LIMIT_PER_MINUTE = 60;
+const WINDOW_MS = 60_000;
+const budgets = new Map<string, { count: number; windowStart: number }>();
+
+/** Whether a request from this address is within its budget. Exported so the
+ *  rule can be tested without binding a port. */
+export function allowRequest(ip: string, now: number): boolean {
+  // ponytail: clear every budget rather than expire each one; bounds memory under
+  // address spoofing. Swap for a per-entry sweep if the map churns in practice.
+  if (budgets.size > 10_000) budgets.clear();
+  const entry = budgets.get(ip);
+  if (!entry || now - entry.windowStart >= WINDOW_MS) {
+    budgets.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  entry.count += 1;
+  return entry.count <= RATE_LIMIT_PER_MINUTE;
+}
+
+/** The address a request came from. Vercel's rewrite and Railway's proxy both
+ *  put the real client first in x-forwarded-for; the socket itself is the proxy,
+ *  and keying on it would give every user one shared budget. */
+function clientAddress(request: IncomingMessage): string {
+  const forwarded = request.headers['x-forwarded-for'];
+  const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim();
+  return first || request.socket.remoteAddress || 'unknown';
+}
+
 export function createApi(db: Db): Server {
   return createServer((request, response) => {
     const method = request.method ?? 'GET';
     let result: Route;
     try {
-      result = route(db, method, new URL(request.url ?? '/', 'http://localhost'));
+      result = allowRequest(clientAddress(request), Date.now())
+        ? route(db, method, new URL(request.url ?? '/', 'http://localhost'))
+        : { status: 429, body: { error: 'too many requests' } };
     } catch (error) {
       console.error('[api]', error);
       result = { status: 500, body: { error: 'internal error' } };
@@ -203,6 +244,7 @@ export function createApi(db: Db): Server {
       'cache-control': 'no-store',
       'x-content-type-options': 'nosniff',
       ...(result.status === 405 ? { allow: 'GET, HEAD' } : {}),
+      ...(result.status === 429 ? { 'retry-after': String(WINDOW_MS / 1000) } : {}),
     });
     response.end(method === 'HEAD' ? undefined : payload);
   });

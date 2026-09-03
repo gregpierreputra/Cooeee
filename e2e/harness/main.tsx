@@ -2,21 +2,13 @@ import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 
-import type {
-  Destination,
-  ExposureLayer,
-  HazardType,
-  Pack,
-  PendingPlace,
-  RecoveryProgram,
-  TextPackContent,
-} from '../../src/core/types';
+import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
 import { DTP_DATASET_URL } from '../../src/core/constants';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../src/core/nsp';
 import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPack } from '../../src/data/pack-build';
 import { db } from '../../src/data/db';
-import { manifestGroup } from '../../src/data/integrity';
+import { fileMeta, manifestGroup, sha256Hex } from '../../src/data/integrity';
 import { loadNspSnapshot } from '../../src/data/nsp';
 import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
@@ -270,7 +262,13 @@ const detailRecovery: RecoveryProgram = {
 
 if (window.location.pathname === '/detail' || window.location.pathname === '/detail-launch') {
   await Promise.all(db.tables.map((table) => table.clear()));
-  const recoveryManifest = await manifestGroup([detailRecovery]);
+  // A synthetic PDF copy of the dataset page, so the file link renders here.
+  const bytes = new TextEncoder().encode('%PDF-1.7 synthetic').buffer;
+  const detailFile: PackFile = {
+    id: 'detail-pack:bpa.pdf', packId: 'detail-pack', url: DTP_DATASET_URL, name: 'bpa.pdf',
+    retrievedAt: detailSavedAt, sizeBytes: bytes.byteLength, sha256: await sha256Hex(bytes), bytes,
+  };
+  // Real hashes: the reads re-verify every group against the manifest.
   await db.packs.put({
     ...savedPack,
     id: 'detail-pack',
@@ -280,22 +278,18 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
     manifest: {
       version: 1,
       groups: {
-        layers: { count: 1, sha256: 'test-only' },
-        destinations: { count: 1, sha256: 'test-only' },
-        recovery: recoveryManifest,
+        layers: await manifestGroup([detailLayer]),
+        destinations: await manifestGroup([detailDestination]),
+        recovery: await manifestGroup([detailRecovery]),
         tiles: { count: 0, bytes: 0 },
+        files: await manifestGroup([fileMeta(detailFile)]),
       },
     },
   });
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
   await db.programs.put(detailRecovery);
-  // A synthetic PDF copy of the dataset page, so the file link renders here.
-  const bytes = new TextEncoder().encode('%PDF-1.7 synthetic').buffer;
-  await db.files.put({
-    id: 'detail-pack:bpa.pdf', packId: 'detail-pack', url: DTP_DATASET_URL, name: 'bpa.pdf',
-    retrievedAt: detailSavedAt, sizeBytes: bytes.byteLength, sha256: 'test-only', bytes,
-  });
+  await db.files.put(detailFile);
 }
 
 function DetailLauncher() {

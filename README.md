@@ -40,6 +40,11 @@ you with its deps option.
 The scripts under `scripts` rebuild the bundled data. One fetches the layer extent, one fetches
 the CFA safer places list and one renders the source PDFs. They write to `public/data`.
 
+The PDF script opens live third party pages in a headless browser, so run it on a machine that
+holds no repository write token. Read each PDF it produces before committing it. The file ships
+to users as a copy of an official page, and its fingerprint is recorded beside it so the app
+refuses any other copy.
+
 ## Rules that are enforced
 
 **Layer rule.** Decisions live in `src/core` and are pure. No DOM, no fetch, no React, no
@@ -128,8 +133,10 @@ It listens on localhost port 8787. The Vite dev server proxies `/api` to it. `PO
 
 * The client syncs the static and dynamic snapshots into IndexedDB and answers every query on
   the device. Nothing the user types leaves the phone.
-* Vercel cannot host the 60 second poller. Run the server on a persistent host and put its
-  origin in the `/api` rewrite in `vercel.json`. That entry is a placeholder today.
+* Vercel cannot host the 60 second poller. The server runs on Railway, and the `/api` rewrite in
+  `vercel.json` points at that origin. The hostname is one Railway allocates under its own domain.
+  If the project ever lapses, that name could be claimed by someone else while the rewrite still
+  points at it, so a custom domain the team owns at the registrar is the intended end state.
 * A daily SQLite snapshot is kept in `server/data/backups` for seven days.
 
 ## Where this is up to

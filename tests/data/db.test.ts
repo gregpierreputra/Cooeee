@@ -6,10 +6,11 @@ import {
   getCompletePack,
   getCompletePackContent,
   listCompletePacks,
+  listCompletePacksWithPlaces,
   putNote,
   sweepBuilding,
 } from '../../src/data/db';
-import { manifestGroup } from '../../src/data/integrity';
+import { fileMeta, manifestGroup, sha256Hex } from '../../src/data/integrity';
 import { destination, pack, program, source } from '../fixtures';
 
 const layer = (packId: string) => ({
@@ -38,6 +39,7 @@ beforeEach(async () => {
     db.layers.clear(),
     db.destinations.clear(),
     db.tiles.clear(),
+    db.files.clear(),
     db.notes.clear(),
     db.programs.clear(),
   ]);
@@ -66,7 +68,11 @@ describe('a pack is invisible until it is complete', () => {
     await db.packs.put(pack({
       manifest: {
         ...pack().manifest,
-        groups: { ...pack().manifest.groups, recovery: recoveryManifest },
+        groups: {
+          ...pack().manifest.groups,
+          destinations: await manifestGroup([destination()]),
+          recovery: recoveryManifest,
+        },
       },
     }));
     await db.destinations.put(destination());
@@ -251,5 +257,40 @@ describe('schema', () => {
   it('keys tiles by the compound [packId+z+x+y]', async () => {
     await db.tiles.put(tile('done'));
     expect(await db.tiles.get(['done', 12, 1, 2])).toBeDefined();
+  });
+});
+
+describe('read-time verification of every manifest group', () => {
+  const withManifest = async (groups: Partial<ReturnType<typeof pack>['manifest']['groups']>) =>
+    db.packs.put(pack({ manifest: { ...pack().manifest, groups: { ...pack().manifest.groups, ...groups } } }));
+
+  it('withholds destinations that no longer match the manifest, on both reads', async () => {
+    await withManifest({ destinations: await manifestGroup([destination()]) });
+    await db.destinations.put(destination({ name: 'Changed' })); // altered after the save
+
+    expect(await getCompletePackContent('pack-1')).toMatchObject({ destinations: [], contentVerified: false });
+    expect(await listCompletePacksWithPlaces()).toMatchObject([{ places: [], placesVerified: false }]);
+  });
+
+  it('withholds a stored file whose bytes changed but whose size and stated hash did not', async () => {
+    const bytes = new TextEncoder().encode('%PDF-1.7 test').buffer;
+    const file = {
+      id: 'pack-1:page.pdf', packId: 'pack-1', url: 'https://www.cfa.vic.gov.au/page', name: 'page.pdf',
+      retrievedAt: 5, sizeBytes: bytes.byteLength, sha256: await sha256Hex(bytes), bytes,
+    };
+    await withManifest({ files: await manifestGroup([fileMeta(file)]) });
+    await db.files.put({ ...file, bytes: new TextEncoder().encode('%PDF-1.7 tost').buffer }); // same length
+
+    expect(await getCompletePackContent('pack-1')).toMatchObject({ files: [], contentVerified: false });
+  });
+
+  it('keeps every group when the stored rows match the manifest', async () => {
+    await withManifest({ destinations: await manifestGroup([destination()]) });
+    await db.destinations.put(destination());
+
+    expect(await getCompletePackContent('pack-1')).toMatchObject({
+      destinations: [destination()], contentVerified: true, recoveryVerified: true,
+    });
+    expect(await listCompletePacksWithPlaces()).toMatchObject([{ places: [destination()], placesVerified: true }]);
   });
 });

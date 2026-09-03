@@ -216,6 +216,8 @@ export const PACK_NOT_FOUND = 'This saved pack is not available on this device.'
 export const NO_STORED_ITEMS = 'This pack has no stored information items to show.';
 export const RECOVERY_ITEMS_UNVERIFIED =
   'Saved recovery references could not be verified, so they are not shown.';
+export const PACK_ITEMS_UNVERIFIED = 'Saved items could not be verified, so they are not shown.';
+export const PLACES_UNVERIFIED = 'Saved places could not be verified, so they are not shown.';
 export const DESIGNATED_BUSHFIRE_PRONE_AREA = 'Designated Bushfire Prone Area';
 export const BUSHFIRE_MANAGEMENT_OVERLAY = 'Bushfire Management Overlay';
 export const LAND_SUBJECT_TO_INUNDATION_OVERLAY = 'Land Subject to Inundation Overlay';
@@ -269,7 +271,8 @@ export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
 
 export const NOTE_STEP_TITLE = 'Add a personal note';
 export const NOTE_DISCLOSURE =
-  'This note is stored in your offline pack on this phone. It opens without signal — in your pack and in BlackSky — when it matters most.';
+  'This note is stored in your offline pack on this phone. It opens without signal — in your pack and in BlackSky — when it matters most. '
+  + 'It is not protected by a passcode: anyone who can unlock this phone can read it.';
 export const NOTE_LABEL = 'Your note';
 /** The box is never blank: an example written for this place and, when one
  *  was chosen, its nearest official place of last resort. One point per

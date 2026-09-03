@@ -1,4 +1,6 @@
+import { MAX_RESPONSE_BYTES } from '../core/constants';
 import type { PackFile } from '../core/types';
+import { readBodyBounded } from './bounded-body';
 import { sha256Hex } from './integrity';
 import sources from './sources.json';
 
@@ -20,8 +22,12 @@ async function readSourceFile(packId: string, url: string): Promise<PackFile> {
   if (!entry) fail(`no rendered copy of ${url}`);
   const response = await fetch(`/data/sources/${entry.name}`, { cache: 'force-cache' });
   if (!response.ok) fail(`${entry.name} request failed (${response.status})`);
-  const bytes = await response.arrayBuffer();
+  const bytes = await readBodyBounded(response, MAX_RESPONSE_BYTES);
   if (new TextDecoder().decode(bytes.slice(0, 4)) !== '%PDF') fail(`${entry.name} is not a PDF`);
+  // The build recorded the fingerprint of the page it rendered. A copy that does
+  // not carry it is not that page, whatever this origin served.
+  const sha256 = await sha256Hex(bytes);
+  if (sha256 !== entry.sha256) fail(`${entry.name} does not match the copy the build recorded`);
   return {
     id: `${packId}:${entry.name}`,
     packId,
@@ -29,7 +35,7 @@ async function readSourceFile(packId: string, url: string): Promise<PackFile> {
     name: entry.name,
     retrievedAt: entry.retrievedAt,
     sizeBytes: bytes.byteLength,
-    sha256: await sha256Hex(bytes),
+    sha256,
     bytes,
   };
 }

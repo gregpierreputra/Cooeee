@@ -17,7 +17,7 @@ import type {
   SyncMetaRow,
   TileRow,
 } from '../core/types';
-import { manifestGroup } from './integrity';
+import { fileMeta, groupMatches, sha256Hex } from './integrity';
 
 // ONE database. All user data lives here and nowhere else — no server holds any
 // of it, because none of it is ever transmitted.
@@ -143,47 +143,57 @@ export const getCompletePack = async (id: string): Promise<Pack | undefined> => 
   return p?.status === 'complete' ? p : undefined;
 };
 
-/** Every complete pack with its destination rows, for BlackSky. 
- * Routes through listCompletePacks, so a building pack stays exactly as invisible here as it is everywhere else. 
- **/
+/** Every complete pack with its destination rows, for BlackSky. Routes through
+ *  listCompletePacks, so a building pack stays exactly as invisible here as it
+ *  is everywhere else. The places are re-hashed against the pack manifest and
+ *  withheld when they no longer match. */
 export async function listCompletePacksWithPlaces(): Promise<PackWithPlaces[]> {
   const packs = await listCompletePacks();
   return Promise.all(
-    packs.map(async (pack) => ({
-      pack,
-      places: await db.destinations.where('packId').equals(pack.id).toArray(),
-      notes: await listNotes(pack.id),
-    })),
+    packs.map(async (pack) => {
+      const places = await db.destinations.where('packId').equals(pack.id).toArray();
+      const placesVerified = await groupMatches(pack.manifest.groups.destinations, places);
+      return { pack, places: placesVerified ? places : [], notes: await listNotes(pack.id), placesVerified };
+    }),
   );
 }
 
-/** Load only children of an already sanctioned complete pack. Recovery rows are
- * returned only when the current local snapshot exactly matches its manifest. */
+/** Load only children of an already sanctioned complete pack. Every group the
+ *  manifest names is re-hashed here, the same way it was hashed when written;
+ *  a group that no longer matches is withheld and reported, never shown. */
 export async function getCompletePackContent(id: string): Promise<CompletePackContent | undefined> {
   const pack = await getCompletePack(id);
   if (!pack) return undefined;
+  const groups = pack.manifest.groups;
   const [layers, destinations, files, notes] = await Promise.all([
     db.layers.where('packId').equals(id).toArray(),
     db.destinations.where('packId').equals(id).toArray(),
     db.files.where('packId').equals(id).toArray(),
     listNotes(id),
   ]);
-  const expectedRecovery = pack.manifest.groups.recovery;
-  if (expectedRecovery.count === 0) {
-    return { pack, layers, destinations, recovery: [], files, notes, recoveryVerified: true };
-  }
-  const programs = await db.programs.toArray();
-  const actualRecovery = await manifestGroup(programs);
-  const recoveryVerified = actualRecovery.count === expectedRecovery.count
-    && actualRecovery.sha256 === expectedRecovery.sha256;
+  // The recovery snapshot is shared by every pack; only a pack that references it reads it.
+  const programs = groups.recovery.count === 0 ? [] : await db.programs.toArray();
+
+  const layersVerified = await groupMatches(groups.layers, layers);
+  const destinationsVerified = await groupMatches(groups.destinations, destinations);
+  const recoveryVerified = await groupMatches(groups.recovery, programs);
+  // The manifest hashes each file's stated size and hash, not its bytes, so the
+  // bytes are also checked against that hash: a same-length byte change is caught.
+  // A manifest with no files group belongs to a pack that owns no file rows.
+  const fileRows = files.map((file) => fileMeta({ ...file, sizeBytes: file.bytes.byteLength }));
+  const fileHashes = await Promise.all(files.map((file) => sha256Hex(file.bytes)));
+  const filesVerified = await groupMatches(groups.files ?? { count: 0, sha256: '' }, fileRows)
+    && fileHashes.every((hash, i) => hash === files[i].sha256);
+
   return {
     pack,
-    layers,
-    destinations,
+    layers: layersVerified ? layers : [],
+    destinations: destinationsVerified ? destinations : [],
     recovery: recoveryVerified ? programs : [],
-    files,
+    files: filesVerified ? files : [],
     notes,
     recoveryVerified,
+    contentVerified: layersVerified && destinationsVerified && filesVerified,
   };
 }
 

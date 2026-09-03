@@ -1,7 +1,8 @@
-import { NEARBY_SYNC_TIMEOUT_MS } from '../core/constants';
+import { isInsideVictoria, MAX_RESPONSE_BYTES, MAX_SYNC_ROWS, NEARBY_SYNC_TIMEOUT_MS } from '../core/constants';
 import { STATIC_TYPES, DYNAMIC_TYPES } from '../core/facility-sources';
 import type { NearbyCache, NearbySession } from '../core/nearby';
 import type { DataHealth, DynamicSnapshot, StaticBundle, SyncMetaRow } from '../core/types';
+import { readJsonBounded } from './bounded-body';
 import { db } from './db';
 
 // Same-origin paths: Vite proxies /api in development and Vercel rewrites it in
@@ -23,6 +24,8 @@ function record(value: unknown, field: string): Record<string, unknown> {
 }
 function list(value: unknown, field: string): unknown[] {
   if (!Array.isArray(value)) fail(`${field} must be an array`);
+  // Refusing the bundle keeps the previous cache, as for any malformed payload.
+  if (value.length > MAX_SYNC_ROWS) fail(`${field} has more than ${MAX_SYNC_ROWS} rows`);
   return value as unknown[];
 }
 function text(value: unknown, field: string): string {
@@ -36,6 +39,13 @@ function nullableText(value: unknown, field: string): string | null {
 function finite(value: unknown, field: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) fail(`${field} must be a number`);
   return value as number;
+}
+/** Two finite numbers that are also a place in Victoria. A transposed or
+ *  foreign coordinate is refused here, never stored as somewhere to go. */
+function point(lat: unknown, lon: unknown, latField: string, lonField: string) {
+  const p = { lat: finite(lat, latField), lon: finite(lon, lonField) };
+  if (!isInsideVictoria(p.lat, p.lon)) fail(`${latField}/${lonField} must be inside Victoria`);
+  return p;
 }
 function integer(value: unknown, field: string): number {
   const n = finite(value, field);
@@ -78,8 +88,7 @@ export function assertStaticBundle(value: unknown): StaticBundle {
         type: oneOf(r.type, STATIC_TYPES, at('type')),
         name: text(r.name, at('name')),
         address: nullableText(r.address, at('address')),
-        lat: finite(r.lat, at('lat')),
-        lon: finite(r.lon, at('lon')),
+        ...point(r.lat, r.lon, at('lat'), at('lon')),
         lga_name: nullableText(r.lga_name, at('lga_name')),
         designation_status: oneOf(r.designation_status, DESIGNATIONS, at('designation_status')),
         last_verified_at: text(r.last_verified_at, at('last_verified_at')),
@@ -89,11 +98,10 @@ export function assertStaticBundle(value: unknown): StaticBundle {
       const r = record(item, `postcodes[${i}]`);
       const postcode = text(r.postcode, `postcodes[${i}].postcode`);
       if (!/^\d{4}$/.test(postcode)) fail(`postcodes[${i}].postcode must be four digits`);
-      return {
-        postcode,
-        centroid_lat: finite(r.centroid_lat, `postcodes[${i}].centroid_lat`),
-        centroid_lon: finite(r.centroid_lon, `postcodes[${i}].centroid_lon`),
-      };
+      const centroid = point(
+        r.centroid_lat, r.centroid_lon, `postcodes[${i}].centroid_lat`, `postcodes[${i}].centroid_lon`,
+      );
+      return { postcode, centroid_lat: centroid.lat, centroid_lon: centroid.lon };
     }),
     data_health: assertHealth(raw.data_health),
   };
@@ -113,8 +121,7 @@ export function assertDynamicSnapshot(value: unknown): DynamicSnapshot {
         type: oneOf(r.type, DYNAMIC_TYPES, at('type')),
         name: text(r.name, at('name')),
         address: nullableText(r.address, at('address')),
-        lat: finite(r.lat, at('lat')),
-        lon: finite(r.lon, at('lon')),
+        ...point(r.lat, r.lon, at('lat'), at('lon')),
         source_updated_at: text(r.source_updated_at, at('source_updated_at')),
       };
     }),
@@ -145,7 +152,7 @@ async function getJson(fetcher: typeof fetch, path: string): Promise<unknown> {
     signal: AbortSignal.timeout(NEARBY_SYNC_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`${path} returned HTTP ${response.status}`);
-  return response.json();
+  return readJsonBounded(response, MAX_RESPONSE_BYTES);
 }
 
 async function syncStatic(fetcher: typeof fetch, since: string | undefined): Promise<void> {
