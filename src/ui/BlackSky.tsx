@@ -248,27 +248,30 @@ function ScreenBody({
   }
 }
 
-/** One place with the mega figure: the arrow and distance at arm's-length
- *  size, the compass point beneath. The arrow carries its bearing as a CSS
+/** One place: the compass on the left — the arrow at arm's-length size, the
+ *  distance and compass point beneath it — and the place it points at on the
+ *  right. The arrow is one solid shape (the mockups' triangle and stem) so its
+ *  size never depends on a font glyph. It carries its bearing as a CSS
  *  variable; the stylesheet turns it against the phone's heading. */
 function PlacedRow({ place }: { place: Placed }) {
   return (
-    <li className="blacksky-place">
-      <h2>{place.name}</h2>
-      <p className="figure blacksky-figure">
-        <span className="blacksky-figure-main">
-          <span
-            className="blacksky-arrow"
-            aria-hidden="true"
-            style={{ '--bearing': place.bearingDeg } as CSSProperties}
-          >
-            {copy.ARROW}
-          </span>{' '}
-          {copy.distanceLabel(place.distanceM)}
-        </span>
+    <li className="blacksky-place blacksky-pointed">
+      <div className="blacksky-compass">
+        <svg
+          className="blacksky-arrow"
+          viewBox="0 0 100 130"
+          aria-hidden="true"
+          style={{ '--bearing': place.bearingDeg } as CSSProperties}
+        >
+          <path d="M50 0 100 55 H70 V130 H30 V55 H0 Z" />
+        </svg>
+        <span className="blacksky-figure-main">{copy.distanceLabel(place.distanceM)}</span>
         <span className="blacksky-figure-point">{cardinalAbbr(place.bearingDeg)}</span>
-      </p>
-      <p className="muted">{copy.PLACE_DESCRIPTOR(place.publisher)}</p>
+      </div>
+      <div className="blacksky-target">
+        <h2>{place.name}</h2>
+        <p className="muted">{copy.PLACE_DESCRIPTOR(place.publisher)}</p>
+      </div>
     </li>
   );
 }

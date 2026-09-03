@@ -49,10 +49,6 @@ export const CARDINAL_ABBR = [
   'NNW',
 ] as const;
 
-/** The one arrow, turned by CSS: with the phone's compass it points at the
- *  place itself; without one it is drawn on a north-up dial. */
-export const ARROW = '↑';
-
 // Application shell
 export const APP_NAME = 'Cooeee';
 export const BACK = 'Back';

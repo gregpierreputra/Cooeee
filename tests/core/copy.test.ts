@@ -155,10 +155,6 @@ describe('BlackSky compass sectors', () => {
     expect(copy.CARDINAL_ABBR[2]).toBe('NE');
     expect(copy.CARDINAL_ABBR[8]).toBe('S');
   });
-
-  it('has one arrow, drawn pointing up before CSS turns it', () => {
-    expect(copy.ARROW).toBe('↑');
-  });
 });
 
 // E3-US1-AC4: a marked position must never read like a fix.

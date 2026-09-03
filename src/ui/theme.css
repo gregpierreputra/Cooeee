@@ -814,36 +814,49 @@ input {
   font-weight: var(--w-bold);
 }
 
-.blacksky-figure {
-  margin: 0;
+/* A pointed row: the compass on the left, the place it points at on the right.
+   The compass column takes what it needs; the name takes the rest. */
+.blacksky-pointed {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.blacksky-compass {
   display: grid;
+  justify-items: center;
   gap: 0.25rem;
   color: var(--accent);
   font-weight: var(--w-heavy);
-  letter-spacing: var(--track-tight);
-  font-size: var(--step-2);
 }
 
-/* The arrow turns by CSS from two numbers: its own bearing and the phone's
-   heading, which the compass hook writes onto the screen root once per frame.
-   No heading yet means north-up. No transition: rotate(-350deg) and
+/* The arrow is the biggest thing on screen — about a third of a phone's width,
+   as in the mockups. It turns by CSS from two numbers: its own bearing and the
+   phone's heading, which the compass hook writes onto the screen root once per
+   frame. No heading yet means north-up. No transition: rotate(-350deg) and
    rotate(10deg) are the same picture, and an animated hop between them would
    spin the long way round. */
 .blacksky-arrow {
-  display: inline-block;
+  width: clamp(6.5rem, 34vw, 9rem);
+  height: auto;
+  fill: currentColor;
   transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
 }
 
 /* The distance, at arm's-length size. Bounded below so three digits and a unit
-   still fit a 320 px viewport at doubled font size. */
+   still fit beside a name on a 320 px viewport at doubled font size. */
 .blacksky-figure-main {
-  font-size: clamp(3rem, 16vw, 4.5rem);
+  font-size: clamp(2.25rem, 11vw, 3rem);
   line-height: 0.95;
   letter-spacing: -0.04em;
 }
 
 /* The nearest-places rows sit under the saved places at a reading size, so
    three more directions do not triple the page. */
+.blacksky-nearby .blacksky-arrow {
+  width: 4.5rem;
+}
+
 .blacksky-nearby .blacksky-figure-main {
   font-size: var(--step-2);
 }
