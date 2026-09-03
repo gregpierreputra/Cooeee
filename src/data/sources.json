@@ -2,11 +2,13 @@
   {
     "url": "https://www.cfa.vic.gov.au/plan-prepare/your-local-area-info-and-advice/neighbourhood-safer-places",
     "name": "neighbourhood-safer-places.v2026-09-03.pdf",
-    "retrievedAt": 1788397018602
+    "retrievedAt": 1788397018602,
+    "sha256": "3632e2dbd6aa838dd7056410baa1022a55133ad3a797e1046609c9e494eb7575"
   },
   {
     "url": "https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa",
     "name": "designated-bushfire-prone-area-bpa.v2026-09-03.pdf",
-    "retrievedAt": 1788397018602
+    "retrievedAt": 1788397018602,
+    "sha256": "5f05d709a2de3f0805388b5efb64159f7ac91c8e9c470b2361eb1aefa0a37a85"
   }
 ]
