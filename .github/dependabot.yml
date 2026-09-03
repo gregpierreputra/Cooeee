@@ -1,0 +1,12 @@
+# Weekly update PRs for the two supply chains this repository pulls from:
+# the npm packages that ship to users or run in CI, and the pinned actions.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

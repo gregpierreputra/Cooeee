@@ -5,6 +5,7 @@
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml
+!.github/dependabot.yml
 .DS_Store
 
 # Local documentation
