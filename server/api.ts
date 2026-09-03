@@ -164,9 +164,17 @@ function dynamicSnapshot(db: Db): Route {
   return { status: 200, body };
 }
 
+// Status and timestamps only. last_error carries upstream-authored text and
+// endpoint_url the internal topology; both stay in the database for operators.
 const health = (db: Db): Route => ({
   status: 200,
-  body: { generated_at: nowIso(), sources: db.prepare('SELECT * FROM data_sources').all() },
+  body: {
+    generated_at: nowIso(),
+    sources: db.prepare(
+      `SELECT source_id, name, source_kind, status, last_attempt_at, last_success_at, consecutive_failures
+       FROM data_sources`,
+    ).all(),
+  },
 });
 
 /** The whole read-only API (spec §5), as a pure function of the request. */

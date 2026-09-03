@@ -133,3 +133,18 @@ describe('the live feed', () => {
     expect(classify({ category1: 'Fire', category2: 'Bushfire' })).toBeNull();
   });
 });
+
+describe('GET /api/v1/health', () => {
+  it('reports status and timestamps, never the upstream error text or the endpoint', () => {
+    const db = seeded();
+    recordFailure(db, 'vicemergency_feed', 'ECONNREFUSED 10.0.0.1:443');
+    const { body } = get(db, '/api/v1/health');
+    expect(body.sources).toHaveLength(4);
+    for (const source of body.sources) {
+      expect(source).not.toHaveProperty('last_error');
+      expect(source).not.toHaveProperty('endpoint_url');
+    }
+    expect(JSON.stringify(body)).not.toContain('10.0.0.1');
+    expect(JSON.stringify(body)).not.toContain('https://');
+  });
+});
