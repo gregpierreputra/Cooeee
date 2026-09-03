@@ -1,15 +1,17 @@
 // Renders each official source page a pack cites to a PDF, so the pack can
 // carry the page itself and open it with no signal. Writes
-// public/data/sources/<page>.v<date>.pdf and registers each under "sources" in
-// index.json. Run: npm run build:data:sources (whenever a source page changes,
-// and after build:data:nsp, whose snapshot names the CFA page).
+// public/data/sources/<page>.v<date>.pdf and registers each in
+// src/data/sources.json — under src, because the app imports that register
+// into its bundle (Vite will not bundle from public). Run:
+// npm run build:data:sources (whenever a source page changes, and after
+// build:data:nsp, whose snapshot names the CFA page).
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 const dataDir = new URL('../public/data/', import.meta.url);
-const indexUrl = new URL('index.json', dataDir);
-const index = JSON.parse(readFileSync(indexUrl, 'utf8'));
+const registerUrl = new URL('../src/data/sources.json', import.meta.url);
+const index = JSON.parse(readFileSync(new URL('index.json', dataDir), 'utf8'));
 
 // The pages: the CFA list page the NSP snapshot names, and the DTP dataset page
 // named in core/constants.ts — read from there, never retyped.
@@ -39,5 +41,4 @@ for (const url of [nsp.source.url, dtpUrl]) {
 }
 await browser.close();
 
-index.sources = sources;
-writeFileSync(indexUrl, `${JSON.stringify(index, null, 2)}\n`);
+writeFileSync(registerUrl, `${JSON.stringify(sources, null, 2)}\n`);

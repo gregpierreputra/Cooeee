@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,7 @@
     "build:data:nsp": "node scripts/build-nsp.mjs",
     "build:data:sources": "node scripts/build-source-pdfs.mjs",
     "preview": "vite preview",
+    "preserver": "node -e \"if (Number(process.versions.node.split('.')[0]) < 24) { console.error('The Cooeee server needs Node 24 or newer: run nvm use first.'); process.exit(1); }\"",
     "server": "node server/index.ts",
     "test": "vitest",
     "e2e": "playwright test",

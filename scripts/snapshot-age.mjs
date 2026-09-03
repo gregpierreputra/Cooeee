@@ -9,6 +9,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 const INDEX = 'public/data/index.json';
+const SOURCES = 'src/data/sources.json'; // the rendered source pages
 const CONSTANTS = 'src/core/constants.ts';
 
 if (!existsSync(INDEX)) {
@@ -37,6 +38,7 @@ const collect = (node) => {
   }
 };
 collect(JSON.parse(readFileSync(INDEX, 'utf8')));
+if (existsSync(SOURCES)) collect(JSON.parse(readFileSync(SOURCES, 'utf8')));
 
 if (stamps.length === 0) {
   console.error(`snapshot-age: ${INDEX} carries no retrievedAt — provenance is not optional`);

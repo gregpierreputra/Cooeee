@@ -379,6 +379,11 @@ textarea {
   resize: vertical;
 }
 
+/* The note step's box shows the whole pre-filled example without scrolling. */
+.note-page textarea {
+  min-height: 22rem;
+}
+
 /* The default control is a ghost pill, as the mockups' .btn.g. Screens whose
    two choices must carry identical visual weight (conflict, download) simply
    use it twice: one shared rule is the equal-weight guarantee. */

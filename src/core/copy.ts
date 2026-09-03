@@ -272,14 +272,17 @@ export const NOTE_DISCLOSURE =
   'This note is stored in your offline pack on this phone. It opens without signal — in your pack and in BlackSky — when it matters most.';
 export const NOTE_LABEL = 'Your note';
 /** The box is never blank: an example written for this place and, when one
- *  was chosen, its nearest official place of last resort. Every word is the
- *  user's to change. */
+ *  was chosen, its nearest official place of last resort. One point per
+ *  paragraph, so it reads at a glance. Every word is the user's to change. */
 export const NOTE_EXAMPLE = (placeName: string, chosen?: Destination) =>
-  `Leave ${placeName} early on a hot, windy day.`
-  + (chosen?.name
-    ? ` Place of last resort: ${chosen.name}${chosen.addressText ? `, ${chosen.addressText}` : ''}.`
-    : '')
-  + ' Take the medication box, water, phone chargers and the dog lead. Turn the gas off at the meter before leaving.';
+  [
+    `Leave ${placeName} early on a hot, windy day.`,
+    chosen?.name
+      ? `Place of last resort: ${chosen.name}${chosen.addressText ? `, ${chosen.addressText}` : ''}.`
+      : '',
+    'Take the medication box, water, phone chargers and the dog lead.',
+    'Turn the gas off at the meter before leaving.',
+  ].filter(Boolean).join('\n\n');
 export const KEEP_NOTE = 'Keep this note';
 export const SKIP_NOTE = 'Not now';
 
