@@ -35,11 +35,16 @@ export function classify(props: Props): DynamicType | null {
   return TYPE_BY_LABEL.find(([label]) => labels.includes(label))?.[1] ?? null;
 }
 
+// A GeometryCollection may nest. Past this depth the feature is skipped, so a
+// hostile or broken feed cannot exhaust the stack and stop the poll.
+const MAX_GEOMETRY_DEPTH = 8;
+
 /** The feature's point: its own, or the first inside a GeometryCollection. */
-export function firstPoint(geometry: Geometry): { lat: number; lon: number } | null {
-  if (!geometry) return null;
+export function firstPoint(geometry: Geometry, depth = 0): { lat: number; lon: number } | null {
+  if (!geometry || depth > MAX_GEOMETRY_DEPTH) return null;
   if (geometry.type === 'GeometryCollection') {
-    return geometry.geometries?.map(firstPoint).find((point) => point !== null) ?? null;
+    return geometry.geometries?.map((inner) => firstPoint(inner, depth + 1)).find((point) => point !== null)
+      ?? null;
   }
   if (geometry.type !== 'Point' || !Array.isArray(geometry.coordinates)) return null;
   const [lon, lat] = geometry.coordinates as unknown[];

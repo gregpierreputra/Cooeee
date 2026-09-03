@@ -24,4 +24,17 @@ describe('firstPoint', () => {
     expect(firstPoint({ type: 'Point', coordinates: [OLINDA.lon, OLINDA.lat] })).toEqual(OLINDA);
     expect(firstPoint({ type: 'Point', coordinates: [OLINDA.lat, OLINDA.lon] })).toBeNull();
   });
+
+  // A point wrapped in `depth` nested GeometryCollections.
+  const nested = (depth: number) => {
+    let geometry = { type: 'Point', coordinates: [OLINDA.lon, OLINDA.lat] } as Parameters<typeof firstPoint>[0];
+    for (let i = 0; i < depth; i += 1) geometry = { type: 'GeometryCollection', geometries: [geometry] };
+    return geometry;
+  };
+
+  it('reads a point inside a shallow collection and skips one nested past the depth limit', () => {
+    expect(firstPoint(nested(2))).toEqual(OLINDA);
+    expect(firstPoint(nested(20))).toBeNull();
+    expect(() => firstPoint(nested(10_000))).not.toThrow(); // no stack exhaustion, whatever the feed sends
+  });
 });
