@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { route } from '../../server/api';
+import { allowRequest, route } from '../../server/api';
 import { type Db, openDb } from '../../server/db';
 import { upsertPostcodes } from '../../server/ingest/postcodes';
 import { rebuildNearestStatic, upsertFacilities } from '../../server/ingest/static';
@@ -146,5 +146,16 @@ describe('GET /api/v1/health', () => {
     }
     expect(JSON.stringify(body)).not.toContain('10.0.0.1');
     expect(JSON.stringify(body)).not.toContain('https://');
+  });
+});
+
+describe('the per-address request budget', () => {
+  it('allows sixty requests a minute from one address, refuses the next, and resets after the window', () => {
+    const t = 1_000_000;
+    const ip = '203.0.113.9';
+    for (let i = 0; i < 60; i += 1) expect(allowRequest(ip, t + i)).toBe(true);
+    expect(allowRequest(ip, t + 60)).toBe(false);
+    expect(allowRequest('203.0.113.10', t + 60)).toBe(true); // another address has its own budget
+    expect(allowRequest(ip, t + 60_000)).toBe(true);
   });
 });
