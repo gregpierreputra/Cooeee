@@ -25,7 +25,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://cooeee-api.example.com/api/$1"
+      "destination": "https://cooeee-production.up.railway.app/api/$1"
     },
     {
       "source": "/(.*)",
