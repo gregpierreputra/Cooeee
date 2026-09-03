@@ -1,18 +1,13 @@
-# Local configs and env files
-.c*
-.g*
+# Local configs and env files. Named one by one, so a new dotfile or folder is
+# reviewed rather than silently untracked.
+.cache/
+.claude/
 .env
-!.github/
-!.github/workflows/
-!.github/workflows/*.yml
-!.github/dependabot.yml
+.env.*
 .DS_Store
 
 # Local documentation
 docs/*
-
-# Prevention of environment files from being pushed
-pro*/
 
 # Node modules
 node_modules/
