@@ -1,4 +1,4 @@
-import { isInsideVictoria } from '../../src/core/constants.ts';
+import { isInsideVictoria, MAX_SYNC_ROWS } from '../../src/core/constants.ts';
 import { readJsonBounded } from '../../src/data/bounded-body.ts';
 import type { Db } from '../db.ts';
 import { runSync } from '../sources.ts';
@@ -40,7 +40,8 @@ export async function fetchNspFacilities(
 ): Promise<{ rows: FacilityInput[]; skipped: number }> {
   const rows: FacilityInput[] = [];
   let skipped = 0;
-  for (let offset = 0; ; offset += PAGE_SIZE) {
+  // Bounded: an upstream that keeps reporting exceededTransferLimit cannot page forever.
+  for (let offset = 0; offset < MAX_SYNC_ROWS; offset += PAGE_SIZE) {
     const params = new URLSearchParams({
       f: 'geojson',
       where: '1=1',

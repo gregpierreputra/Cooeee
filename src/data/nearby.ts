@@ -1,4 +1,4 @@
-import { isInsideVictoria, MAX_RESPONSE_BYTES, NEARBY_SYNC_TIMEOUT_MS } from '../core/constants';
+import { isInsideVictoria, MAX_RESPONSE_BYTES, MAX_SYNC_ROWS, NEARBY_SYNC_TIMEOUT_MS } from '../core/constants';
 import { STATIC_TYPES, DYNAMIC_TYPES } from '../core/facility-sources';
 import type { NearbyCache, NearbySession } from '../core/nearby';
 import type { DataHealth, DynamicSnapshot, StaticBundle, SyncMetaRow } from '../core/types';
@@ -24,6 +24,8 @@ function record(value: unknown, field: string): Record<string, unknown> {
 }
 function list(value: unknown, field: string): unknown[] {
   if (!Array.isArray(value)) fail(`${field} must be an array`);
+  // Refusing the bundle keeps the previous cache, as for any malformed payload.
+  if (value.length > MAX_SYNC_ROWS) fail(`${field} has more than ${MAX_SYNC_ROWS} rows`);
   return value as unknown[];
 }
 function text(value: unknown, field: string): string {
