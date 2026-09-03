@@ -88,10 +88,14 @@ export const SNAPSHOT_MAX_AGE_DAYS = 60;
  *  is a 151 KB source PDF; a body past this is a fault or an attack, not data. */
 export const MAX_RESPONSE_BYTES = 10 * 1_048_576;
 
+// Exact publisher hosts, or an apex no wider than the publisher itself. The
+// bare vic.gov.au apex is deliberately absent: it would admit every subdomain
+// of a very large estate, and the app only ever stores these two of them.
 export const OFFICIAL_DOMAINS = [
   'servicesaustralia.gov.au',
   'disasterassist.gov.au',
-  'vic.gov.au',
+  'discover.data.vic.gov.au',
+  'opendata.maps.vic.gov.au',
   'cfa.vic.gov.au',
   'emergency.vic.gov.au',
   'redcross.org.au',

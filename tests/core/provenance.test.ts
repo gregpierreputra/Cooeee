@@ -140,6 +140,7 @@ describe('E1-US2 original source links', () => {
   it.each([
     'https://servicesaustralia.gov.au/example',
     'https://opendata.maps.vic.gov.au/example',
+    'https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa',
     'https://www.cfa.vic.gov.au/plan-prepare',
   ])('allows the reviewed HTTPS source %s', (url) => {
     expect(isAllowedSourceUrl(url)).toBe(true);
@@ -148,6 +149,8 @@ describe('E1-US2 original source links', () => {
   it.each([
     'http://servicesaustralia.gov.au/example',
     'https://vic.gov.au.attacker.example/',
+    'https://evil.vic.gov.au/plan-prepare', // an unlisted subdomain of the apex
+    'https://vic.gov.au/',
     'not a URL',
   ])('rejects an unreviewed or non-HTTPS source %s', (url) => {
     expect(isAllowedSourceUrl(url)).toBe(false);
