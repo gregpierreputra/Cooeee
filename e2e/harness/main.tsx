@@ -12,6 +12,7 @@ import type {
   TextPackContent,
 } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
+import { DTP_DATASET_URL } from '../../src/core/constants';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../src/core/nsp';
 import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPack } from '../../src/data/pack-build';
 import { db } from '../../src/data/db';
@@ -41,6 +42,9 @@ declare global {
     __storageCounts: () => Promise<Record<string, number>>;
   }
 }
+
+// The harness stays synthetic: no wizard here copies the real source PDFs.
+const noFiles = async () => [];
 
 window.__searchAgainCount = 0;
 window.__areaCheckCount = 0;
@@ -143,6 +147,7 @@ const conflictFlow = (
   <Search
     search={async () => ({ candidates: [testCandidate], unresolvedCount: 0, returnedCount: 1 })}
     checkArea={syntheticAreaCheck}
+    loadFiles={noFiles}
     loadPacks={conflictMode === 'unavailable'
       ? async () => { throw new Error('synthetic store failure'); }
       : conflictMode === 'multiple'
@@ -285,6 +290,12 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
   await db.programs.put(detailRecovery);
+  // A synthetic PDF copy of the dataset page, so the file link renders here.
+  const bytes = new TextEncoder().encode('%PDF-1.7 synthetic').buffer;
+  await db.files.put({
+    id: 'detail-pack:bpa.pdf', packId: 'detail-pack', url: DTP_DATASET_URL, name: 'bpa.pdf',
+    retrievedAt: detailSavedAt, sizeBytes: bytes.byteLength, sha256: 'test-only', bytes,
+  });
 }
 
 function DetailLauncher() {
@@ -438,6 +449,7 @@ const areaFlow = (
   <Search
     search={async () => ({ candidates: [testCandidate], unresolvedCount: 0, returnedCount: 1 })}
     checkArea={areaMode === 'offline' ? undefined : syntheticAreaCheck}
+    loadFiles={noFiles}
     buildOffer={offerShouldFail
       ? async () => { throw new Error('synthetic pack-offer failure'); }
       : undefined}
@@ -460,7 +472,7 @@ createRoot(root).render(
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (
-      <Search onPendingPlace={(place) => { window.__confirmedPlace = place; }} />
+      <Search loadFiles={noFiles} onPendingPlace={(place) => { window.__confirmedPlace = place; }} />
     ) : confirmation}
     </MemoryRouter>
   </StrictMode>,

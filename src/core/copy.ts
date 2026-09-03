@@ -5,7 +5,7 @@
 // The exact text literal that will be used in all of the main pages.
 // Never reword them.
 
-import type { FacilityType, SourceStatus } from './types';
+import type { Destination, FacilityType, SourceStatus } from './types';
 
 // Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance — not a safety ranking';
@@ -48,10 +48,6 @@ export const CARDINAL_ABBR = [
   'NW',
   'NNW',
 ] as const;
-
-/** The one arrow, turned by CSS: with the phone's compass it points at the
- *  place itself; without one it is drawn on a north-up dial. */
-export const ARROW = '↑';
 
 // Application shell
 export const APP_NAME = 'Cooeee';
@@ -185,6 +181,10 @@ export const PROVENANCE_STORAGE_RULE =
 export const SOURCE_IS_ON_WEB = 'This source is on the web.';
 export const STORED_PROVENANCE_REMAINS =
   'The publisher and the saved date below are stored on this device and stay readable.';
+/** The copy of the source page saved inside the pack: opens with no signal. */
+export const OPEN_SOURCE_FILE = 'Open original source as a file';
+export const SOURCE_FILE_LINE = (date: string) =>
+  `A PDF copy of the page as at ${date}, stored on this phone.`;
 export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
 export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';
@@ -262,6 +262,37 @@ export const NO_DESTINATION_PUBLISHED =
   'No official place of last resort is published for this area';
 export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
   `${NO_DESTINATION_PUBLISHED} — ${area}.`;
+
+// ── Personal note ─────────────────────────────────────────────────────────
+// The user's own words, in their pack. Asked for once, after the places step;
+// changed any time from the pack screen; read back in BlackSky.
+
+export const NOTE_STEP_TITLE = 'Add a personal note';
+export const NOTE_DISCLOSURE =
+  'This note is stored in your offline pack on this phone. It opens without signal — in your pack and in BlackSky — when it matters most.';
+export const NOTE_LABEL = 'Your note';
+/** The box is never blank: an example written for this place and, when one
+ *  was chosen, its nearest official place of last resort. One point per
+ *  paragraph, so it reads at a glance. Every word is the user's to change. */
+export const NOTE_EXAMPLE = (placeName: string, chosen?: Destination) =>
+  [
+    `Leave ${placeName} early on a hot, windy day.`,
+    chosen?.name
+      ? `Place of last resort: ${chosen.name}${chosen.addressText ? `, ${chosen.addressText}` : ''}.`
+      : '',
+    'Take the medication box, water, phone chargers and the dog lead.',
+    'Turn the gas off at the meter before leaving.',
+  ].filter(Boolean).join('\n\n');
+export const KEEP_NOTE = 'Keep this note';
+export const SKIP_NOTE = 'Not now';
+
+export const NOTES = 'Notes';
+export const ADD_NOTE = 'Add a note';
+export const SAVE_NOTE = 'Save';
+export const DELETE_NOTE = 'Delete';
+export const NOTE_SAVED = 'Note saved.';
+export const NOTE_EMPTY = 'Write something before saving.';
+export const NOTE_CHANGE_FAILED = 'That change was not saved. Try again.';
 
 /** Position words for the distance-ordered list; beyond the third there is no
  *  label, because there is no ranking to extend. */

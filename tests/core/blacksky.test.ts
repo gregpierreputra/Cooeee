@@ -29,11 +29,13 @@ const unchosen = destination({ id: 'other', name: 'Other', ...km(1) });
 const kalorama = (places: Destination[] = [north, south]): PackWithPlaces => ({
   pack: pack(),
   places,
+  notes: [],
 });
 
 const faraway: PackWithPlaces = {
   pack: pack({ id: 'pack-2', name: 'Elsewhere', ...km(40) }),
   places: [],
+  notes: [],
 };
 
 describe('precedence', () => {
@@ -92,7 +94,7 @@ describe('containment', () => {
   const exactRadiusKm = distanceM(KALORAMA, edge) / 1000;
 
   it('is INCLUSIVE at exactly the pack radius', () => {
-    const p: PackWithPlaces = { pack: pack({ radiusKm: exactRadiusKm }), places: [] };
+    const p: PackWithPlaces = { pack: pack({ radiusKm: exactRadiusKm }), places: [], notes: [] };
     expect(deriveState(NOW, [p], fix(edge), 'granted').kind).toBe('IN_AREA');
   });
 
@@ -100,6 +102,7 @@ describe('containment', () => {
     const p: PackWithPlaces = {
       pack: pack({ radiusKm: exactRadiusKm - 0.001 }),
       places: [],
+      notes: [],
     };
     expect(deriveState(NOW, [p], fix(edge), 'granted').kind).toBe('OUT_OF_AREA');
   });
@@ -154,6 +157,7 @@ describe('IN_AREA', () => {
     const overlapping: PackWithPlaces = {
       pack: pack({ id: 'pack-3', name: 'Overlapping', ...km(1) }),
       places: [],
+      notes: [],
     };
     const s = deriveState(NOW, [kalorama(), overlapping], fix(km(1)), 'granted');
     expect(s.kind === 'IN_AREA' && s.pack.id).toBe('pack-3');

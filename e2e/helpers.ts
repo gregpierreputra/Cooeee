@@ -75,6 +75,8 @@ export async function chooseLastResortPlaces(page: Page) {
   const count = Math.min(2, await boxes.count());
   for (let i = 0; i < count; i += 1) await boxes.nth(i).check();
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
+  // The note step follows the places: keep the pre-filled example.
+  await page.getByRole('button', { name: 'Keep this note' }).click();
 }
 
 /** E1-US1-AC0. The first-open disclosure stands in front of every screen, so a

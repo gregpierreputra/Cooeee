@@ -300,6 +300,24 @@ a {
 /* The saved pack's two chosen places, side by side and equal: one grid rule, no
    ordinal, no ranking between them (E2-US2). A phone stacks them — the CFA's
    official names run long, and two 160 px columns wrap every second word. */
+/* ── Pack notes ────────────────────────────────────────────────────────────── */
+
+.pack-notes,
+.note-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* Save and Delete at equal weight, side by side. */
+.note-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.note-actions button {
+  flex: 1;
+}
+
 .saved-destinations {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
@@ -345,7 +363,8 @@ label {
   color: var(--ink-2);
 }
 
-input {
+input,
+textarea {
   min-height: 56px;
   padding: 0.75rem 1rem;
   border: 1px solid var(--line);
@@ -353,6 +372,16 @@ input {
   background: var(--surface-2);
   color: var(--ink);
   font: inherit;
+}
+
+textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+/* The note step's box shows the whole pre-filled example without scrolling. */
+.note-page textarea {
+  min-height: 22rem;
 }
 
 /* The default control is a ghost pill, as the mockups' .btn.g. Screens whose
@@ -814,36 +843,49 @@ input {
   font-weight: var(--w-bold);
 }
 
-.blacksky-figure {
-  margin: 0;
+/* A pointed row: the compass on the left, the place it points at on the right.
+   The compass column takes what it needs; the name takes the rest. */
+.blacksky-pointed {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.blacksky-compass {
   display: grid;
+  justify-items: center;
   gap: 0.25rem;
   color: var(--accent);
   font-weight: var(--w-heavy);
-  letter-spacing: var(--track-tight);
-  font-size: var(--step-2);
 }
 
-/* The arrow turns by CSS from two numbers: its own bearing and the phone's
-   heading, which the compass hook writes onto the screen root once per frame.
-   No heading yet means north-up. No transition: rotate(-350deg) and
+/* The arrow is the biggest thing on screen — about a third of a phone's width,
+   as in the mockups. It turns by CSS from two numbers: its own bearing and the
+   phone's heading, which the compass hook writes onto the screen root once per
+   frame. No heading yet means north-up. No transition: rotate(-350deg) and
    rotate(10deg) are the same picture, and an animated hop between them would
    spin the long way round. */
 .blacksky-arrow {
-  display: inline-block;
+  width: clamp(6.5rem, 34vw, 9rem);
+  height: auto;
+  fill: currentColor;
   transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
 }
 
 /* The distance, at arm's-length size. Bounded below so three digits and a unit
-   still fit a 320 px viewport at doubled font size. */
+   still fit beside a name on a 320 px viewport at doubled font size. */
 .blacksky-figure-main {
-  font-size: clamp(3rem, 16vw, 4.5rem);
+  font-size: clamp(2.25rem, 11vw, 3rem);
   line-height: 0.95;
   letter-spacing: -0.04em;
 }
 
 /* The nearest-places rows sit under the saved places at a reading size, so
    three more directions do not triple the page. */
+.blacksky-nearby .blacksky-arrow {
+  width: 4.5rem;
+}
+
 .blacksky-nearby .blacksky-figure-main {
   font-size: var(--step-2);
 }
@@ -853,6 +895,44 @@ input {
   font-weight: var(--w-heavy);
   letter-spacing: 0.18em;
   color: var(--ink);
+}
+
+/* The notes fold: a native <details>, so no script and no re-render on the
+   tick. The summary is a ruled bar at reading size with its own open/closed
+   mark; each note is a ruled row like the places above it. */
+.blacksky-notes summary {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--accent);
+  cursor: pointer;
+  list-style: none;
+}
+
+.blacksky-notes summary::-webkit-details-marker {
+  display: none;
+}
+
+.blacksky-notes summary::after {
+  content: '+';
+}
+
+.blacksky-notes[open] summary::after {
+  content: '−';
+}
+
+.blacksky-note {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .blacksky-reminder {

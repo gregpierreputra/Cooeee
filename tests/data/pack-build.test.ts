@@ -9,7 +9,7 @@ import {
   stageTextOnlyPack,
   verifyAndFinalizeTextOnlyPack,
 } from '../../src/data/pack-build';
-import { db, listCompletePacks } from '../../src/data/db';
+import { db, getCompletePackContent, listCompletePacks } from '../../src/data/db';
 import { destination, pack, program, source } from '../fixtures';
 
 function seed(over: Partial<PackSeed> = {}): PackSeed {
@@ -110,6 +110,24 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
       manifest: { groups: { tiles: { count: 0, bytes: 0 } } },
     });
     expect(await db.tiles.count()).toBe(0);
+  });
+
+  it('stores the PDF copies of the source pages, counted in the size and the manifest', async () => {
+    const bytes = new TextEncoder().encode('%PDF-1.7 test').buffer;
+    const file = {
+      id: 'pack-1:page.pdf', packId: 'pack-1', url: 'https://www.cfa.vic.gov.au/page',
+      name: 'page.pdf', retrievedAt: 5, sizeBytes: bytes.byteLength, sha256: 'test-only', bytes,
+    };
+    const proposed = content();
+    const offer = await createPackOffer(proposed, [file]);
+    expect(offer.fileBytes).toBe(bytes.byteLength);
+    await saveTextOnlyPack(proposed, offer, 999, [file], '  Meet at the gate.  ');
+
+    const stored = (await getCompletePackContent('pack-1'))!;
+    expect(stored.notes.map(({ text, updatedAt }) => [text, updatedAt])).toEqual([['Meet at the gate.', 999]]);
+    expect(stored.pack.sizeBytes).toEqual({ text: offer.textBytes, files: bytes.byteLength, tiles: 0 });
+    expect(stored.pack.manifest.groups.files?.count).toBe(1);
+    expect(stored.files.map(({ name, bytes: b }) => [name, b.byteLength])).toEqual([['page.pdf', bytes.byteLength]]);
   });
 
   it('stage then cancel immediately removes every owned row', async () => {

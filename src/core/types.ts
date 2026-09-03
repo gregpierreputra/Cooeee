@@ -39,6 +39,12 @@ export type PackManifest = {
     tiles: { 
       count: number; 
       bytes: number }; // count 0 = the explicit text-only marker
+
+    // The PDF copies of the source pages. Absent on packs built before the
+    // copies existed; such a pack simply holds no files.
+    files?: {
+      count: number;
+      sha256: string };
   };
 };
 
@@ -64,13 +70,41 @@ export type Pack = {
   
   sizeBytes: { 
     text: number; 
-    tiles: number };
+    tiles: number;
+    files?: number };  // the PDF copies; absent on packs built before them
 
   reminder: string;                 // the one short BlackSky reminder
   manifest: PackManifest;
   sources: Source[];
   supersedes?: string;              // optional attribute, set by "update" the old pack lives until acknowledged
   hazardType?: HazardType;          // absent = 'bushfire' (Iteration 1 builds bushfire only)
+};
+
+/** A PDF copy of one official source page, saved inside the pack so the page
+ * itself opens with no signal. `bytes` is an ArrayBuffer: it structured-clones
+ * into IndexedDB in every engine, and becomes a Blob only when opened. */
+export type PackFile = {
+  id: string;             // `${packId}:${name}`
+  packId: string;
+  url: string;            // the page this is a copy of — the url a Source names
+  name: string;           // the file name the copy is offered under
+  retrievedAt: number;    // when the page was rendered to PDF
+  sizeBytes: number;
+  sha256: string;
+  bytes: ArrayBuffer;
+};
+
+/** The file without its bytes: what the offer states and the manifest hashes. */
+export type PackFileMeta = Omit<PackFile, 'bytes'>;
+
+/** A note the user wrote for their pack: their own words, kept beside the
+ * official content and editable at any time, online or off. Never part of the
+ * manifest or the stated size — nothing in it came from a source. */
+export type PackNote = {
+  id: string;
+  packId: string;
+  text: string;
+  updatedAt: number;
 };
 
 export type LayerCode = 'BPA' | 'BMO' | 'LSIO' | 'FO' | 'SBO';
@@ -172,7 +206,8 @@ export type LatLon = {
  *  including any absence row. Referenced by deriveState(). */
 export type PackWithPlaces = { 
   pack: Pack; 
-  places: Destination[] };
+  places: Destination[];
+  notes: PackNote[] };
 
 /** A single address candidate returned by the address service. 
  * It remains in memory until the user explicitly confirms it. */
@@ -220,6 +255,8 @@ export type BushfireAreaResult = {
 export type PackOffer = {
   version: 1;
   textBytes: number;
+  files: PackFileMeta[];
+  fileBytes: number;
   omittedItems: { 
     id: string; 
     missing: 'publisher' | 'saved-date' 
@@ -249,6 +286,8 @@ export type CompletePackContent = {
   layers: ExposureLayer[];
   destinations: Destination[];
   recovery: RecoveryProgram[];
+  files: PackFile[];
+  notes: PackNote[];
   recoveryVerified: boolean;
 };
 

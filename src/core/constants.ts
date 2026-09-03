@@ -15,6 +15,9 @@ export const PLACES_OFFERED = 5;
  *  fix, beyond the ones saved in the pack. */
 export const NEARBY_PLACES = 3;
 export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
+/** The longest personal note a pack takes. A bound on the user's own text,
+ *  enforced where it is written, not a limit on the official content. */
+export const NOTE_MAX_CHARS = 2000;
 
 /** The number of last-resort places a pack holds. Two equal-status places, with
  * no ordering of worth between them. A hard cap, not a target: an area may

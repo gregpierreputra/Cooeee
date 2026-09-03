@@ -6,6 +6,7 @@ import {
   getCompletePack,
   getCompletePackContent,
   listCompletePacks,
+  putNote,
   sweepBuilding,
 } from '../../src/data/db';
 import { manifestGroup } from '../../src/data/integrity';
@@ -37,6 +38,7 @@ beforeEach(async () => {
     db.layers.clear(),
     db.destinations.clear(),
     db.tiles.clear(),
+    db.notes.clear(),
     db.programs.clear(),
   ]);
 });
@@ -89,7 +91,7 @@ describe('a pack is invisible until it is complete', () => {
     await db.programs.put(program());
 
     expect(await getCompletePackContent('pack-1')).toMatchObject({
-      recovery: [], recoveryVerified: false,
+      recovery: [], files: [], notes: [], recoveryVerified: false,
     });
   });
 
@@ -208,13 +210,34 @@ describe('deleteCompletePack', () => {
   });
 });
 
+describe('putNote', () => {
+  const note = { id: 'n1', packId: 'done', text: ' Meet at the gate. ', updatedAt: 5 };
+
+  it('stores a trimmed note against a complete pack', async () => {
+    await stage('done', 'complete');
+    await putNote(note);
+    expect(await db.notes.get('n1')).toEqual({ ...note, text: 'Meet at the gate.' });
+  });
+
+  it('refuses a note for a building pack, an empty note and an over-long note', async () => {
+    await stage('half', 'building');
+    await expect(putNote({ ...note, packId: 'half' })).rejects.toThrow('complete');
+    await stage('done', 'complete');
+    await expect(putNote({ ...note, text: '   ' })).rejects.toThrow('empty');
+    await expect(putNote({ ...note, text: 'x'.repeat(2001) })).rejects.toThrow('too long');
+    expect(await db.notes.count()).toBe(0);
+  });
+});
+
 describe('schema', () => {
-  it('is version 4: the five pack stores, the four Nearby-places stores and the snapshot store', () => {
-    expect(db.verno).toBe(4);
+  it('is version 6: the pack stores, the Nearby-places stores, the snapshot, files and notes stores', () => {
+    expect(db.verno).toBe(6);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
       'destinations',
       'dynamicSnapshot',
+      'files',
       'layers',
+      'notes',
       'packs',
       'postcodes',
       'programs',

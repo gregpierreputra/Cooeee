@@ -1,5 +1,5 @@
 import * as copy from './copy';
-import type { PackOffer, TextPackContent } from './types';
+import type { Pack, PackOffer, TextPackContent } from './types';
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { 
   [key: string]: JsonValue 
@@ -38,15 +38,14 @@ export function formatPackBytes(bytes: number): string {
 }
 
 export function packOfferSizeLine(offer: PackOffer): string {
-  return copy.PACK_SIZE_LINE(formatPackBytes(offer.textBytes));
+  return copy.PACK_SIZE_LINE(formatPackBytes(offer.textBytes + offer.fileBytes));
 }
 
 /** The stated size and the stored size must be the same number. A stored pack
  * claiming tile bytes cannot match an offer, because nothing in this iteration
  * can produce them: that is a corrupted record, not a bigger pack. */
-export function offerMatchesStoredSize(
-  offer: PackOffer,
-  stored: { text: number; tiles: number },
-): boolean {
-  return stored.text === offer.textBytes && stored.tiles === 0;
+export function offerMatchesStoredSize(offer: PackOffer, stored: Pack['sizeBytes']): boolean {
+  return stored.text === offer.textBytes
+    && (stored.files ?? 0) === offer.fileBytes
+    && stored.tiles === 0;
 }
