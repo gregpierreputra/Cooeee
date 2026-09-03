@@ -65,10 +65,22 @@ export default tseslint.config(
   { files: ['src/ui/**'], rules: { 'no-restricted-imports': ['error', NO_RAW_DB] } },
 
   // RULE 2 — the offline surfaces import no network path and cannot call fetch.
+  // The two screens AND every component they render: a fetch in a child would
+  // run inside the offline screen just the same. A component that must fetch
+  // does not belong in this list, and so cannot be rendered by these screens.
   {
-    files: ['src/ui/BlackSky.tsx', 'src/ui/PackDetail.tsx'],
+    files: [
+      'src/ui/BlackSky.tsx',
+      'src/ui/PackDetail.tsx',
+      'src/ui/PackNotes.tsx',
+      'src/ui/PackNew/Destinations.tsx',
+      'src/ui/components/**',
+    ],
     rules: {
-      'no-restricted-imports': ['error', { ...NO_RAW_DB, patterns: ['**/wfs'] }],
+      'no-restricted-imports': [
+        'error',
+        { ...NO_RAW_DB, patterns: ['**/wfs', '**/nearby', '**/data/nsp', '**/source-files', '**/pack-build'] },
+      ],
       'no-restricted-globals': ['error', 'fetch'],
     },
   },
