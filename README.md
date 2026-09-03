@@ -1,188 +1,148 @@
 # Cooeee
 
-Cooeee assembles a location-specific pack of official bushfire information while a phone has
-signal, then keeps every part of it usable with the radios off. It issues no warnings, no live
-routes and no eligibility decisions.
+Cooeee builds a pack of official bushfire information for one address while the phone has
+signal. The pack then works with no connection at all. Cooeee gives no warnings, no live routes
+and no eligibility decisions.
 
-**Iteration 1 is mapless.** Address and official-context checks use the approved
-services while connected; the completed structured-data pack then opens with
-zero connectivity. No basemap or map-tile download is an Iteration 1 outcome.
-
----
+There are no maps. Every pack is text only.
 
 ## Setup
 
-Node 20 LTS, via nvm (user-local, no sudo):
+Use Node 24 through nvm. Install nvm first if you do not have it.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-exec $SHELL -l
-nvm install        # reads .nvmrc
+nvm install
 npm install
 ```
 
-For the end-to-end suite, Chromium and its system libraries:
+The browser tests need Chromium. Install it once.
 
 ```bash
 npx playwright install chromium
-sudo npx playwright install-deps chromium     # needs a password; one time only
 ```
+
+On a fresh Linux machine Chromium also needs system libraries. Playwright can install them for
+you with its deps option.
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Vite dev server |
-| `npm run build` | Production build to `dist/` |
-| `npm run preview` | Serve the production build locally |
-| `npm test` | Vitest in watch mode |
-| `npm run e2e` | Playwright against a real production build |
-| **`npm run verify`** | **The gate. ESLint → `tsc --noEmit` → Vitest with coverage → banned terms → snapshot age.** |
+* `npm run dev` starts the Vite dev server.
+* `npm run build` writes the production build to `dist`.
+* `npm run preview` serves that build locally.
+* `npm test` runs Vitest in watch mode.
+* `npm run e2e` runs Playwright against a real production build.
+* `npm run server` starts the Nearby places API server.
+* `npm run verify` is the gate. It runs ESLint, the TypeScript check, Vitest with coverage,
+  the banned terms scan and the snapshot age check.
 
-`npm run verify` must be green before anything is called Done (DoD Level 1, item 2). Attach its
-output to the board card; a claim is not evidence.
+`npm run verify` must pass before any work is called done.
 
----
+The scripts under `scripts` rebuild the bundled data. One fetches the layer extent, one fetches
+the CFA safer places list and one renders the source PDFs. They write to `public/data`.
 
-## The rules that are mechanically enforced
+## Rules that are enforced
 
-**The layer rule.** Decisions live in `src/core/` and are pure — no DOM, no `fetch`, no React, no
-Dexie, time always a parameter. I/O lives in `src/data/`. Rendering lives in `src/ui/`. An
-`if`-statement about a number inside a component is in the wrong file. ESLint enforces it; move the
-code rather than fighting it.
+**Layer rule.** Decisions live in `src/core` and are pure. No DOM, no fetch, no React, no
+Dexie. Time is always a parameter. I/O lives in `src/data`. Rendering lives in `src/ui`. ESLint
+enforces this, so move the code rather than fighting it.
 
-**The offline rule.** `ui/BlackSky.tsx` and `ui/Recovery.tsx` may import `src/core/*` and
-`src/data/db.ts` only (Recovery may also import `src/data/probe.ts`). Never `wfs`, `tiles`,
-`snapshots` or `fetch`. There are exactly four sanctioned Iteration 1 network-call categories in
-the product; if you are adding a fifth, stop and raise it.
+**Offline rule.** The BlackSky screen and the pack detail screen may not fetch anything. ESLint
+bans the fetch global and the network module in those files.
 
-**The atomicity rule.** A pack is written `status: 'building'` and flipped to `'complete'` in one
-single-row transaction. Never `await` a non-Dexie promise inside a Dexie transaction. Cancel leaves
-the store byte-identical. Nothing is replaced silently: new beside old, verify, diff, swap on
-acknowledgement.
+**Atomicity rule.** A pack is written as building and flipped to complete in one transaction.
+Never await anything other than Dexie inside a Dexie transaction. Cancel leaves the store
+unchanged. Nothing is replaced silently.
 
-**The wording rule.** Every user-facing string goes in `src/core/copy.ts`. No inline literals in
-components. Mandated lines are exact, em dashes included. `scripts/banned-terms.mjs` scans every
-string literal under `src/` and fails the build on a hit.
+**Wording rule.** Every user facing string lives in `src/core/copy.ts`. No inline text in
+components. Mandated lines are exact. The banned terms scan fails the build on a hit.
 
-**The dependency rule.** Do not add one without saying what it replaces and why a few lines of
-platform API could not do the job. Specifically not: a date library, a state manager, a form
-library, a UI kit, `@turf/turf`, or a point-in-polygon library.
+**Dependency rule.** Do not add a dependency without saying what it replaces and why a few lines
+of platform code could not do the job. No date library, no state manager, no form library, no UI
+kit and no point in polygon library.
 
-**The parallel-developer rule.** Other developers are on other stories on other branches. Touch only
-the files your story needs. Add to `copy.ts`, `constants.ts` and the Dexie schema by **appending**
-named keys — never renumber, reorder or rewrite what is there. A schema change is `db.version(2)`,
-never an edit of version 1.
+**Parallel developer rule.** Touch only the files your story needs. Add to copy, constants and
+the Dexie schema by appending named keys. Never renumber or rewrite what is there. A schema
+change is a new Dexie version, never an edit of an old one.
 
----
+## Branch and pull request flow
 
-## Branch and pull-request flow
+`main` is protected. Every change reaches it through a reviewed pull request.
 
-`main` is the protected production branch. Never push changes directly to it; every change reaches
-it through a reviewed pull request (PR).
+1. A `fix/<problem>` branch comes from `main` for one existing problem. Its pull request goes to
+   `main`. Delete the branch after merge.
+2. An `epic/<name>` branch comes from the latest verified `main`. It collects the accepted work
+   for one epic.
+3. A `feature/<criterion>` branch comes from its epic branch. Keep one acceptance criterion in
+   each. Its pull request goes to the epic branch, not `main`.
+4. When the whole epic passes review and testing, open one pull request from the epic branch
+   into `main`.
+5. If a fix merges into `main` while an epic is open, update the epic branch from `main` first.
 
-```text
-main
-├── fix/<problem>                 short-lived repair; PR → main; delete after merge
-└── epic/<epic-name>              temporary integration branch for one epic
-    ├── feature/<acceptance-criterion>   PR → epic branch
-    └── feature/<acceptance-criterion>   PR → epic branch
-```
-
-- Create a `fix/*` branch from `main` only for one existing production or baseline problem. After
-  testing and review, merge its PR into `main`, then delete the branch. A fix branch is not a
-  permanent collection branch.
-- Create an `epic/*` branch from the latest verified `main`. It temporarily collects the accepted
-  work for that epic.
-- Create each `feature/*` branch from its epic branch. Keep one acceptance criterion or similarly
-  reviewable feature in each branch, and target its PR at the epic branch—not `main`.
-- After every feature PR is accepted and the complete epic passes code-quality, security, UX,
-  accessibility and acceptance testing, open one final PR from the epic branch into `main`.
-- If a fix merges into `main` while an epic is active, update the epic branch from `main` before
-  continuing feature integration.
-
-Run `npm run verify`, `npm run build` and the applicable `npm run e2e` checks before requesting
-review. GitHub and Vercel checks must also pass before merge.
-
----
+Run `npm run verify`, `npm run build` and `npm run e2e` before asking for review. GitHub
+Actions runs the same checks on every pull request and on pushes to `main` and epic branches.
 
 ## Layout
 
 ```
 src/
-  main.tsx        boot; sweepBuilding() before render; registerSW({ onNeedRefresh })
-  app.tsx         routes; <html data-mode>; the update banner
-  core/           PURE — types, constants, copy, banned-terms, geo, pack,
-                  destination, blacksky, recovery, connectivity
-  data/           db.ts (Dexie v1 + the three sanctioned functions)
-  ui/             Home.tsx, theme.css, components/
+  main.tsx   boot. sweeps unfinished packs, then registers the service worker
+  app.tsx    routes, page mode and the update banner
+  core/      pure logic. types, constants, copy, geo, pack, blacksky, nearby
+  data/      Dexie database, network calls, snapshots and pack build
+  ui/        screens and components
 public/
-  ping.txt        "ok" — excluded from the precache on purpose
-  icons/          maskable PWA icons
-scripts/          banned-terms.mjs, snapshot-age.mjs
-tests/core/       unit tests, ≥90% coverage gate over src/core
-tests/data/       fake-indexeddb integration tests
-e2e/              Playwright, against the real production bundle
+  data/      bundled snapshots and source PDFs
+  icons/     PWA icons
+scripts/     snapshot builders, banned terms scan and snapshot age check
+server/      Nearby places API server
+tests/       Vitest unit and integration tests. core has a 90 percent coverage gate
+e2e/         Playwright against the real production bundle
 ```
 
-This mirrors `prompt-bank/architecture/module-map-and-import-rules.txt`, which every story prompt
-loads. Keep them in agreement.
+Screens are `/` for saved packs, `/packs/new` for the search and build flow, `/packs/<id>` for
+one pack, `/nearby` for the nearest official places and `/blacksky` for the offline compass.
 
 ## Deploying
 
-Static output from `vite build`. No functions, no database, no environment variables — there are no
-API keys, because there are no authenticated services.
+The web app is static output from `vite build`. No environment variables and no API keys.
 
-At [vercel.com](https://vercel.com) → **Add New… → Project** → import this repository:
+On vercel.com import this repository with the Vite preset, root directory `.`, build command
+`npm run build` and output directory `dist`.
 
-| Setting | Value |
-|---|---|
-| Framework preset | Vite |
-| Root directory | `.` |
-| Build command | `npm run build` |
-| Output directory | `dist` |
-| Environment variables | none |
+`vercel.json` sends every path to `index.html` for the router and sets the security headers.
+Production deploys from `main`. Every other branch gets a preview URL.
 
-`vercel.json` already rewrites every path to `/index.html` for the SPA router; Vercel checks the
-filesystem first, so `/ping.txt` and `/assets/*` still resolve as real files. Production deploys
-from `main`; every other branch gets its own preview URL.
+## The API server
 
-## The API server (Nearby places)
+`server` is a small Node 24 and SQLite service behind the Nearby screen. It uses the SQLite
+module built into Node, so it has no dependencies. It ingests the CFA Neighbourhood Safer Places
+layer, the five Community Fire Refuges, Vicmap postcode centroids and the live VicEmergency
+feed. It serves them read only under `/api/v1`.
 
-`server/` is a small Node 24 + SQLite service behind the `/nearby` screen. It ingests the CFA
-Neighbourhood Safer Places layer, the five Community Fire Refuges, Vicmap postcode centroids and
-the live VicEmergency feed, and serves them read-only under `/api/v1` (`server/api.ts`). The
-schema is `server/db/schema.sql`; the database file lives in `server/data/` (git-ignored).
-
-```sh
-npm run server            # http://127.0.0.1:8787 — vite dev proxies /api to it
-DB_PATH=… PORT=… HOST=…   # optional overrides
+```bash
+npm run server
 ```
 
-- No new dependencies: `node:sqlite` and native TypeScript execution, so `.nvmrc` is 24.
-- The client never calls `/api/v1/safe-locations`; it syncs `/api/v1/sync/*` into IndexedDB and
-  answers every query on the device, online or offline. Nothing the user types leaves the phone.
-- Vercel cannot host the 60-second poller. Deploy the server on a persistent host and put its
-  origin in the `/api/(.*)` rewrite in `vercel.json` (currently a placeholder), so the browser
-  keeps talking to one origin and the CSP stays `connect-src 'self'`.
-- A daily `VACUUM INTO server/data/backups/` snapshot is kept for seven days. For production,
-  replicate the file continuously (Litestream to object storage) instead.
+It listens on localhost port 8787. The Vite dev server proxies `/api` to it. `PORT`, `HOST` and
+`DB_PATH` override the defaults. The database file lives in `server/data` and is git ignored.
+
+* The client syncs the static and dynamic snapshots into IndexedDB and answers every query on
+  the device. Nothing the user types leaves the phone.
+* Vercel cannot host the 60 second poller. Run the server on a persistent host and put its
+  origin in the `/api` rewrite in `vercel.json`. That entry is a placeholder today.
+* A daily SQLite snapshot is kept in `server/data/backups` for seven days.
 
 ## Where this is up to
 
-Implemented and merged to `main`:
+Merged to `main`
 
-- **Epic 1 — Build a Prepared Local Pack**: the whole E1-US1 flow (address search with live
-  suggestions, confirmation, pack conflict, official bushfire-area check, pack offer and the
-  atomic text-only save) and E1-US2 provenance (publisher/date on every item, age labels,
-  offline reads, explained original-source access).
-- **Epic 3 — BlackSky**: the offline screen at `/blacksky` with prepared direction, honest
-  degradation without GPS, accuracy gating, the marked-position estimate, outside-area and
-  no-pack states, and deliberate hold-to-enter activation.
+* **Epic 1.** Build a prepared local pack. Address search, confirmation, conflict handling, the
+  official bushfire area check, the atomic text only save and provenance on every item.
+* **Epic 2.** Official last resort places. The nearest Neighbourhood Safer Places and refuges are
+  saved into the pack and shown on the Nearby screen from local data.
+* **Epic 3.** BlackSky. The offline screen with a compass, bearing and distance to each saved
+  place, honest degradation without GPS and hold to enter activation.
+* **Polish.** Personal notes on packs, offline reading of stored source PDFs, a connection
+  notice bar and the Nearby places server.
 
-Iteration 1 is **mapless** (`docs/decisions/iteration-1-mapless-scope.md`): no basemap, no
-tiles; every pack is text-only with the tile fields stored as their honest zeros. Epics 2, 4,
-5, 6 and 7 have no code yet.
-
-The full cross-epic explanation — architecture, every implemented acceptance criterion mapped
-to its module and test — is `docs/technical-overview.md`.
+Iteration 1 has no maps. Later epics have no code yet.
