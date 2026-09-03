@@ -16,6 +16,7 @@ import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
 import { PlaceFacts } from './PackNew/Destinations';
+import { PackNotes } from './PackNotes';
 
 type PackDetailProps = {
   packId: string;
@@ -144,6 +145,8 @@ export default function PackDetail({
           </ul>
         </section>
       ) : null}
+
+      <PackNotes packId={content.pack.id} notes={content.notes} />
 
       {offlineSource ? (
         <div className="sheet-backdrop">

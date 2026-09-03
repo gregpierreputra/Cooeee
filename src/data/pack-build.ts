@@ -5,11 +5,12 @@ import type {
   PackFile,
   PackFileMeta,
   PackManifest,
+  PackNote,
   PackOffer,
   RecoveryProgram,
   TextPackContent,
 } from '../core/types';
-import { db, deleteOwnedRows, ownedTables } from './db';
+import { checkedNoteText, db, deleteOwnedRows, ownedTables } from './db';
 import { manifestGroup } from './integrity';
 
 function assertContent(content: TextPackContent): void {
@@ -90,6 +91,7 @@ export async function stageTextOnlyPack(
   content: TextPackContent,
   offer: PackOffer,
   files: PackFile[] = [],
+  note?: PackNote,
 ): Promise<void> {
   const prepared = prepareProvenancedContent(content);
   assertContent(prepared.content);
@@ -112,12 +114,13 @@ export async function stageTextOnlyPack(
     manifest: await textOnlyManifest(offer),
   };
 
-  await db.transaction('rw', [db.packs, db.layers, db.destinations, db.files], async () => {
+  await db.transaction('rw', [db.packs, db.layers, db.destinations, db.files, db.notes], async () => {
     if (await db.packs.get(buildingPack.id)) throw new Error('pack id already exists');
     await db.packs.add(buildingPack);
     await db.layers.bulkAdd(prepared.content.layers);
     await db.destinations.bulkAdd(prepared.content.destinations);
     await db.files.bulkAdd(files);
+    if (note) await db.notes.add(note);
   });
 }
 
@@ -182,9 +185,18 @@ export async function saveTextOnlyPack(
   offer: PackOffer,
   verifiedAt: number,
   files: PackFile[] = [],
+  noteText?: string,
 ): Promise<void> {
+  // The first note is written with the pack itself, so it is exactly as
+  // atomic — and as invisible until the pack is complete — as the rest.
+  const note = noteText === undefined ? undefined : {
+    id: crypto.randomUUID(),
+    packId: content.pack.id,
+    text: checkedNoteText(noteText),
+    updatedAt: verifiedAt,
+  };
   try {
-    await stageTextOnlyPack(content, offer, files);
+    await stageTextOnlyPack(content, offer, files, note);
     await verifyAndFinalizeTextOnlyPack(content, offer, verifiedAt);
   } catch (error) {
     await discardBuildingPack(content.pack.id);

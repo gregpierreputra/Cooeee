@@ -44,6 +44,7 @@ import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
 import { Conflict, ConflictBlocked } from './Conflict';
 import { Destinations } from './Destinations';
+import { Note } from './Note';
 import { Size } from './Size';
 
 /** Module scope, so the default has one stable identity for the life of the
@@ -146,6 +147,10 @@ export function Search({
   const [supersedesId, setSupersedesId] = useState<string | undefined>(undefined);
   const [offerState, setOfferState] = useState<OfferState | null>(null);
   const [placesState, setPlacesState] = useState<PlacesState | null>(null);
+  // The places the user chose, held while the note step is on screen, and the
+  // note itself once it is past. Both in memory only until the pack save.
+  const [chosenPlaces, setChosenPlaces] = useState<Destination[] | null>(null);
+  const [note, setNote] = useState<string | undefined>(undefined);
   // Made once per confirmed place, before the places step: destination rows
   // carry the pack id, so the id must exist before the user chooses them.
   const [packId, setPackId] = useState('');
@@ -309,6 +314,8 @@ export function Search({
     setSupersedesId(undefined);
     setOfferState(null);
     setPlacesState(null);
+    setChosenPlaces(null);
+    setNote(undefined);
   }
 
   if (pendingPlace && conflictState?.kind === 'checking') {
@@ -394,9 +401,25 @@ export function Search({
         offer={offerState.offer}
         address={offerState.content.pack.address}
         download={async () => {
-          await savePack(offerState.content, offerState.offer, now(), offerState.files);
+          await savePack(offerState.content, offerState.offer, now(), offerState.files, note);
         }}
         onContinue={() => openSavedPack(offerState.content.pack.id)}
+      />
+    );
+  }
+
+  // The note step, after the places and before the size. The example names the
+  // nearest chosen place, so the note is about this pack from the first word.
+  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
+    const { result } = areaState;
+    const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
+    return (
+      <Note
+        example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
+        onContinue={(text) => {
+          setNote(text);
+          void buildPackOfferForResult(pendingPlace, result, chosenPlaces);
+        }}
       />
     );
   }
@@ -439,14 +462,11 @@ export function Search({
 
     // The pack keeps exactly the places the user chose, or the absence row
     // when the CFA publishes none for this area (see destinationsForPack).
+    // Holding them moves the wizard on to the note step above.
     const { snapshot, ordered, unlocated } = placesState;
     const area = titleCase(result.lgaName);
-    const continueWith = (chosen: Destination[]) =>
-      buildPackOfferForResult(
-        pendingPlace,
-        result,
-        destinationsForPack(chosen, packId, snapshot, area, PACK_HAZARD),
-      );
+    const continueWith = async (chosen: Destination[]) =>
+      setChosenPlaces(destinationsForPack(chosen, packId, snapshot, area, PACK_HAZARD));
     return (
       <Destinations
         ordered={ordered}

@@ -97,6 +97,16 @@ export type PackFile = {
 /** The file without its bytes: what the offer states and the manifest hashes. */
 export type PackFileMeta = Omit<PackFile, 'bytes'>;
 
+/** A note the user wrote for their pack: their own words, kept beside the
+ * official content and editable at any time, online or off. Never part of the
+ * manifest or the stated size — nothing in it came from a source. */
+export type PackNote = {
+  id: string;
+  packId: string;
+  text: string;
+  updatedAt: number;
+};
+
 export type LayerCode = 'BPA' | 'BMO' | 'LSIO' | 'FO' | 'SBO';
 
 // Publications
@@ -196,7 +206,8 @@ export type LatLon = {
  *  including any absence row. Referenced by deriveState(). */
 export type PackWithPlaces = { 
   pack: Pack; 
-  places: Destination[] };
+  places: Destination[];
+  notes: PackNote[] };
 
 /** A single address candidate returned by the address service. 
  * It remains in memory until the user explicitly confirms it. */
@@ -276,6 +287,7 @@ export type CompletePackContent = {
   destinations: Destination[];
   recovery: RecoveryProgram[];
   files: PackFile[];
+  notes: PackNote[];
   recoveryVerified: boolean;
 };
 

@@ -121,9 +121,10 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
     const proposed = content();
     const offer = await createPackOffer(proposed, [file]);
     expect(offer.fileBytes).toBe(bytes.byteLength);
-    await saveTextOnlyPack(proposed, offer, 999, [file]);
+    await saveTextOnlyPack(proposed, offer, 999, [file], '  Meet at the gate.  ');
 
     const stored = (await getCompletePackContent('pack-1'))!;
+    expect(stored.notes.map(({ text, updatedAt }) => [text, updatedAt])).toEqual([['Meet at the gate.', 999]]);
     expect(stored.pack.sizeBytes).toEqual({ text: offer.textBytes, files: bytes.byteLength, tiles: 0 });
     expect(stored.pack.manifest.groups.files?.count).toBe(1);
     expect(stored.files.map(({ name, bytes: b }) => [name, b.byteLength])).toEqual([['page.pdf', bytes.byteLength]]);

@@ -119,6 +119,7 @@ export default function BlackSky({
     ? deriveState(now, packs, estimate, 'granted', sites)
     : deriveState(now, packs, fix, permission, sites);
   const hasArrows = screen.kind === 'IN_AREA' || ('nearby' in screen && screen.nearby.length > 0);
+  const notes = packs.flatMap((pack) => pack.notes);
 
   return (
     <main className="page blacksky">
@@ -136,6 +137,20 @@ export default function BlackSky({
         </>
       ) : null}
       <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
+      {/* The user's own notes, folded until asked for and read-only here: one
+          tap opens them, each in its own ruled row at reading size. */}
+      {notes.length > 0 ? (
+        <details className="blacksky-notes">
+          <summary>{copy.NOTES}</summary>
+          <ul className="list">
+            {notes.map((note) => (
+              <li key={note.id} className="blacksky-place blacksky-note">
+                {note.text}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
       {/* US3-AC1: one plainly named exit, full-width at thumb reach. Leaving
           demands the same deliberate 2s hold as entering, so a pocket press
           cannot silently drop the emergency screen. */}

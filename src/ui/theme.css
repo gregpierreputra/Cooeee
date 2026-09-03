@@ -300,6 +300,24 @@ a {
 /* The saved pack's two chosen places, side by side and equal: one grid rule, no
    ordinal, no ranking between them (E2-US2). A phone stacks them — the CFA's
    official names run long, and two 160 px columns wrap every second word. */
+/* ── Pack notes ────────────────────────────────────────────────────────────── */
+
+.pack-notes,
+.note-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* Save and Delete at equal weight, side by side. */
+.note-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.note-actions button {
+  flex: 1;
+}
+
 .saved-destinations {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
@@ -345,7 +363,8 @@ label {
   color: var(--ink-2);
 }
 
-input {
+input,
+textarea {
   min-height: 56px;
   padding: 0.75rem 1rem;
   border: 1px solid var(--line);
@@ -353,6 +372,11 @@ input {
   background: var(--surface-2);
   color: var(--ink);
   font: inherit;
+}
+
+textarea {
+  min-height: 9rem;
+  resize: vertical;
 }
 
 /* The default control is a ghost pill, as the mockups' .btn.g. Screens whose
@@ -866,6 +890,44 @@ input {
   font-weight: var(--w-heavy);
   letter-spacing: 0.18em;
   color: var(--ink);
+}
+
+/* The notes fold: a native <details>, so no script and no re-render on the
+   tick. The summary is a ruled bar at reading size with its own open/closed
+   mark; each note is a ruled row like the places above it. */
+.blacksky-notes summary {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--accent);
+  cursor: pointer;
+  list-style: none;
+}
+
+.blacksky-notes summary::-webkit-details-marker {
+  display: none;
+}
+
+.blacksky-notes summary::after {
+  content: '+';
+}
+
+.blacksky-notes[open] summary::after {
+  content: '−';
+}
+
+.blacksky-note {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .blacksky-reminder {

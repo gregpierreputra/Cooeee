@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { NOTE_MAX_CHARS } from '../core/constants';
 import type {
   BundleFacility,
   BundlePostcode,
@@ -8,6 +9,7 @@ import type {
   NspSnapshot,
   Pack,
   PackFile,
+  PackNote,
   PackWithPlaces,
   RecoveryProgram,
   SnapshotActivation,
@@ -27,6 +29,8 @@ class CooeeeDb extends Dexie {
   tiles!: Table<TileRow, [string, number, number, number]>;
   // The PDF copies of a pack's source pages.
   files!: Table<PackFile, string>;
+  // The user's own notes for a pack.
+  notes!: Table<PackNote, string>;
   // Nearby places (spec §7.2): downloaded reference data, not user data.
   staticFacilities!: Table<BundleFacility, number>;
   postcodes!: Table<BundlePostcode, string>;
@@ -74,6 +78,8 @@ class CooeeeDb extends Dexie {
     this.version(4).stores({ snapshots: 'name' });
     // Version 5 adds the store for the PDF copies of a pack's source pages.
     this.version(5).stores({ files: 'id, packId' });
+    // Version 6 adds the store for the user's own notes on a pack.
+    this.version(6).stores({ notes: 'id, packId' });
   }
 }
 
@@ -84,7 +90,7 @@ class CooeeeDb extends Dexie {
 export const db = new CooeeeDb();
 
 /** The tables holding rows a pack owns, for every cascade. */
-export const ownedTables = () => [db.layers, db.destinations, db.tiles, db.files];
+export const ownedTables = () => [db.layers, db.destinations, db.tiles, db.files, db.notes];
 
 /** Remove every row the given packs own. Callers run this inside their own
  *  transaction, which must list ownedTables(). */
@@ -102,6 +108,34 @@ export const putNspSnapshot = (snapshot: NspSnapshot): Promise<string> =>
 
 export const getNspSnapshot = (): Promise<NspSnapshot | undefined> => db.snapshots.get('nsp');
 
+/** A pack's notes, oldest first. Only the complete-pack reads below call this. */
+const listNotes = (packId: string): Promise<PackNote[]> =>
+  db.notes.where('packId').equals(packId).sortBy('updatedAt');
+
+/** The one rule for note text, applied wherever a note is written: trimmed,
+ *  never empty, never past NOTE_MAX_CHARS. */
+export function checkedNoteText(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.length === 0 || trimmed.length > NOTE_MAX_CHARS) {
+    throw new RangeError('note text is empty or too long');
+  }
+  return trimmed;
+}
+
+/** Write one note, new or changed. Only a complete pack takes a note here — a
+ *  building pack gets its first note inside its own staging transaction. */
+export async function putNote(note: PackNote): Promise<void> {
+  const text = checkedNoteText(note.text);
+  await db.transaction('rw', db.packs, db.notes, async () => {
+    if ((await db.packs.get(note.packId))?.status !== 'complete') {
+      throw new Error('notes belong to a complete pack');
+    }
+    await db.notes.put({ ...note, text });
+  });
+}
+
+export const deleteNote = (id: string): Promise<void> => db.notes.delete(id);
+
 /** THE read API — one complete pack, or undefined. 
  * A building pack is indistinguishable from a pack that does not exist, which is the point. */
 export const getCompletePack = async (id: string): Promise<Pack | undefined> => {
@@ -118,6 +152,7 @@ export async function listCompletePacksWithPlaces(): Promise<PackWithPlaces[]> {
     packs.map(async (pack) => ({
       pack,
       places: await db.destinations.where('packId').equals(pack.id).toArray(),
+      notes: await listNotes(pack.id),
     })),
   );
 }
@@ -127,14 +162,15 @@ export async function listCompletePacksWithPlaces(): Promise<PackWithPlaces[]> {
 export async function getCompletePackContent(id: string): Promise<CompletePackContent | undefined> {
   const pack = await getCompletePack(id);
   if (!pack) return undefined;
-  const [layers, destinations, files] = await Promise.all([
+  const [layers, destinations, files, notes] = await Promise.all([
     db.layers.where('packId').equals(id).toArray(),
     db.destinations.where('packId').equals(id).toArray(),
     db.files.where('packId').equals(id).toArray(),
+    listNotes(id),
   ]);
   const expectedRecovery = pack.manifest.groups.recovery;
   if (expectedRecovery.count === 0) {
-    return { pack, layers, destinations, recovery: [], files, recoveryVerified: true };
+    return { pack, layers, destinations, recovery: [], files, notes, recoveryVerified: true };
   }
   const programs = await db.programs.toArray();
   const actualRecovery = await manifestGroup(programs);
@@ -146,6 +182,7 @@ export async function getCompletePackContent(id: string): Promise<CompletePackCo
     destinations,
     recovery: recoveryVerified ? programs : [],
     files,
+    notes,
     recoveryVerified,
   };
 }
