@@ -216,6 +216,8 @@ export const PACK_NOT_FOUND = 'This saved pack is not available on this device.'
 export const NO_STORED_ITEMS = 'This pack has no stored information items to show.';
 export const RECOVERY_ITEMS_UNVERIFIED =
   'Saved recovery references could not be verified, so they are not shown.';
+export const PACK_ITEMS_UNVERIFIED = 'Saved items could not be verified, so they are not shown.';
+export const PLACES_UNVERIFIED = 'Saved places could not be verified, so they are not shown.';
 export const DESIGNATED_BUSHFIRE_PRONE_AREA = 'Designated Bushfire Prone Area';
 export const BUSHFIRE_MANAGEMENT_OVERLAY = 'Bushfire Management Overlay';
 export const LAND_SUBJECT_TO_INUNDATION_OVERLAY = 'Land Subject to Inundation Overlay';

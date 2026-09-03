@@ -10,6 +10,7 @@ import {
   verifyAndFinalizeTextOnlyPack,
 } from '../../src/data/pack-build';
 import { db, getCompletePackContent, listCompletePacks } from '../../src/data/db';
+import { sha256Hex } from '../../src/data/integrity';
 import { destination, pack, program, source } from '../fixtures';
 
 function seed(over: Partial<PackSeed> = {}): PackSeed {
@@ -116,7 +117,7 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
     const bytes = new TextEncoder().encode('%PDF-1.7 test').buffer;
     const file = {
       id: 'pack-1:page.pdf', packId: 'pack-1', url: 'https://www.cfa.vic.gov.au/page',
-      name: 'page.pdf', retrievedAt: 5, sizeBytes: bytes.byteLength, sha256: 'test-only', bytes,
+      name: 'page.pdf', retrievedAt: 5, sizeBytes: bytes.byteLength, sha256: await sha256Hex(bytes), bytes,
     };
     const proposed = content();
     const offer = await createPackOffer(proposed, [file]);

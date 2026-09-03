@@ -204,10 +204,12 @@ export type LatLon = {
 
 /** A complete pack together with the destination rows stored against it —
  *  including any absence row. Referenced by deriveState(). */
-export type PackWithPlaces = { 
-  pack: Pack; 
-  places: Destination[];
-  notes: PackNote[] };
+export type PackWithPlaces = {
+  pack: Pack;
+  places: Destination[];           // empty when placesVerified is false
+  notes: PackNote[];
+  placesVerified: boolean;         // the rows still match the pack manifest
+};
 
 /** A single address candidate returned by the address service. 
  * It remains in memory until the user explicitly confirms it. */
@@ -288,7 +290,8 @@ export type CompletePackContent = {
   recovery: RecoveryProgram[];
   files: PackFile[];
   notes: PackNote[];
-  recoveryVerified: boolean;
+  recoveryVerified: boolean;       // the shared recovery snapshot matches this pack's manifest
+  contentVerified: boolean;        // layers, destinations and files all match the manifest
 };
 
 /** A local item ready for the shared provenance renderer. This is a view model,

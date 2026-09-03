@@ -99,6 +99,9 @@ export default function PackDetail({
       {!content.recoveryVerified ? (
         <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />
       ) : null}
+      {!content.contentVerified ? (
+        <StateCard heading={copy.PACK_ITEMS_UNVERIFIED} />
+      ) : null}
 
       {/* A stored absence row: its own plain statement, never an item in the
           list and never a source to open. */}
