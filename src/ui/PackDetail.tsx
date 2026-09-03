@@ -5,11 +5,12 @@ import * as copy from '../core/copy';
 import { formatDistanceM } from '../core/destination';
 import {
   decideOriginalSourceAccess,
+  formatSavedDate,
   packDetailAbsence,
   packDetailItems,
   packDetailPlaces,
 } from '../core/provenance';
-import type { CompletePackContent, PackDetailItem } from '../core/types';
+import type { CompletePackContent, PackDetailItem, PackFile } from '../core/types';
 import { getCompletePackContent } from '../data/db';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
@@ -32,15 +33,27 @@ export default function PackDetail({
 }: PackDetailProps) {
   const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
   const [offlineSource, setOfflineSource] = useState<PackDetailItem | null>(null);
+  // One object URL per stored PDF, made from the bytes already on the device
+  // and released with the screen. No request is involved.
+  const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let live = true;
+    let urls: Record<string, string> = {};
     loadContent(packId).then((value) => {
-      if (live) setContent(value);
+      if (!live) return;
+      urls = Object.fromEntries((value?.files ?? []).map((file) => [
+        file.id,
+        URL.createObjectURL(new Blob([file.bytes], { type: 'application/pdf' })),
+      ]));
+      // Both land in the one render, so the file links are never a frame late.
+      setFileUrls(urls);
+      setContent(value);
     });
     return () => {
       live = false;
+      Object.values(urls).forEach((url) => URL.revokeObjectURL(url));
     };
   }, [loadContent, packId]);
 
@@ -66,6 +79,12 @@ export default function PackDetail({
     event.preventDefault();
     setOfflineSource(decideOriginalSourceAccess(item).item);
   };
+  const sourceLinks = (item: PackDetailItem) => {
+    const file = content.files.find((stored) => stored.url === (item.pageUrl ?? DTP_DATASET_URL));
+    return (
+      <SourceLinks item={item} file={file} href={file && fileUrls[file.id]} onWeb={interceptSource} />
+    );
+  };
 
   return (
     <main className="page pack-detail">
@@ -90,17 +109,7 @@ export default function PackDetail({
             <li key={item.id} className="card provenance-item">
               <h2>{item.name}</h2>
               <ProvenanceLine source={item.source} now={now} />
-              {/* The publisher's page for the dataset, not the stored query URL:
-                  that URL is a WFS endpoint answering in raw JSON, never a page,
-                  whether the query hit or missed. */}
-              <a
-                href={DTP_DATASET_URL}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(event) => interceptSource(event, item)}
-              >
-                {copy.OPEN_ORIGINAL_SOURCE}
-              </a>
+              {sourceLinks(item)}
             </li>
           ))}
         </ul>
@@ -128,14 +137,7 @@ export default function PackDetail({
                     <p className="figure">{formatDistanceM(place.distanceM)}</p>
                   ) : null}
                   <PlaceFacts place={place} now={now} />
-                  <a
-                    href={item.pageUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(event) => interceptSource(event, item)}
-                  >
-                    {copy.OPEN_ORIGINAL_SOURCE}
-                  </a>
+                  {sourceLinks(item)}
                 </li>
               );
             })}
@@ -179,5 +181,43 @@ export default function PackDetail({
         </div>
       ) : null}
     </main>
+  );
+}
+
+/** How an item's original source opens: the copy saved in the pack first — a
+ *  PDF of the page, handed to the phone as a file, no signal needed — then the
+ *  live page on the web behind the explanation sheet. For a layer the page is
+ *  the publisher's dataset page, not the stored query URL: that URL is a WFS
+ *  endpoint answering in raw JSON, never a page. */
+function SourceLinks({
+  item,
+  file,
+  href,
+  onWeb,
+}: {
+  item: PackDetailItem;
+  file?: PackFile;
+  href?: string;
+  onWeb: (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => void;
+}) {
+  return (
+    <>
+      {file && href ? (
+        <>
+          <a className="action" href={href} download={file.name}>
+            {copy.OPEN_SOURCE_FILE}
+          </a>
+          <p className="muted">{copy.SOURCE_FILE_LINE(formatSavedDate(file.retrievedAt))}</p>
+        </>
+      ) : null}
+      <a
+        href={item.pageUrl ?? DTP_DATASET_URL}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(event) => onWeb(event, item)}
+      >
+        {copy.OPEN_ORIGINAL_SOURCE}
+      </a>
+    </>
   );
 }

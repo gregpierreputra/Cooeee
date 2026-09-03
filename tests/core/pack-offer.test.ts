@@ -31,6 +31,8 @@ const content: TextPackContent = {
 const offer: PackOffer = {
   version: 1,
   textBytes: 421_888,
+  files: [],
+  fileBytes: 0,
   omittedItems: [],
   textManifest: {
     layers: { count: 0, sha256: 'a' },
@@ -90,5 +92,12 @@ describe('E1-US1-AC9 size display and verification', () => {
 
   it('rejects a stored pack claiming tile bytes nothing can produce', () => {
     expect(offerMatchesStoredSize(offer, { text: 421_888, tiles: 1 })).toBe(false);
+  });
+
+  it('counts the stored PDF copies in the one stated size', () => {
+    const withFile = { ...offer, fileBytes: 100 };
+    expect(packOfferSizeLine(withFile)).toBe('This pack is 413 KB');
+    expect(offerMatchesStoredSize(withFile, { text: 421_888, files: 100, tiles: 0 })).toBe(true);
+    expect(offerMatchesStoredSize(withFile, { text: 421_888, tiles: 0 })).toBe(false);
   });
 });

@@ -27,13 +27,16 @@ import type {
   NspSite,
   NspSnapshot,
   Pack,
+  PackFile,
   PackOffer,
   PendingPlace,
   TextPackContent,
 } from '../../core/types';
+import { sourcePageUrls } from '../../core/provenance';
 import { listCompletePacks } from '../../data/db';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
+import { loadSourceFiles } from '../../data/source-files';
 import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
 import StatusPage from '../components/StatusPage';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
@@ -58,7 +61,7 @@ type ConflictState =
 
 type OfferState =
   | { kind: 'building' }
-  | { kind: 'ready'; offer: PackOffer; content: TextPackContent }
+  | { kind: 'ready'; offer: PackOffer; content: TextPackContent; files: PackFile[] }
   | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[] };
 
 /** E2-US1/US2: the official places of last resort for the confirmed place,
@@ -80,6 +83,7 @@ type SearchProps = {
   checkArea?: typeof fetchBushfireAreaResult;
   loadPacks?: () => Promise<Pack[]>;
   loadNsp?: () => Promise<NspSnapshot>;
+  loadFiles?: typeof loadSourceFiles;
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
   savePack?: typeof saveTextOnlyPack;
@@ -109,6 +113,7 @@ export function Search({
   checkArea = fetchBushfireAreaResult,
   loadPacks = listCompletePacks,
   loadNsp = loadNspSnapshot,
+  loadFiles = loadSourceFiles,
   onKeepSavedPlace,
   buildOffer = createPackOffer,
   savePack = saveTextOnlyPack,
@@ -265,8 +270,11 @@ export function Search({
         destinations,
         recovery: [],
       };
-      const offer = await buildOffer(content);
-      setOfferState({ kind: 'ready', offer, content });
+      // The PDF copies of the source pages travel with the pack, so their
+      // bytes are part of the one size stated before anything is written.
+      const files = await loadFiles(seed.id, sourcePageUrls(content));
+      const offer = await buildOffer(content, files);
+      setOfferState({ kind: 'ready', offer, content, files });
     } catch {
       setOfferState({ kind: 'failed', result, destinations });
     }
@@ -386,7 +394,7 @@ export function Search({
         offer={offerState.offer}
         address={offerState.content.pack.address}
         download={async () => {
-          await savePack(offerState.content, offerState.offer, now());
+          await savePack(offerState.content, offerState.offer, now(), offerState.files);
         }}
         onContinue={() => openSavedPack(offerState.content.pack.id)}
       />

@@ -7,6 +7,7 @@ import type {
   ExposureLayer,
   NspSnapshot,
   Pack,
+  PackFile,
   PackWithPlaces,
   RecoveryProgram,
   SnapshotActivation,
@@ -24,6 +25,8 @@ class CooeeeDb extends Dexie {
   destinations!: Table<Destination, string>;
   programs!: Table<RecoveryProgram, string>;
   tiles!: Table<TileRow, [string, number, number, number]>;
+  // The PDF copies of a pack's source pages.
+  files!: Table<PackFile, string>;
   // Nearby places (spec §7.2): downloaded reference data, not user data.
   staticFacilities!: Table<BundleFacility, number>;
   postcodes!: Table<BundlePostcode, string>;
@@ -69,6 +72,8 @@ class CooeeeDb extends Dexie {
     // Version 4 adds the one-row store holding the CFA site list, so BlackSky
     // can point at the nearest official places without a network path.
     this.version(4).stores({ snapshots: 'name' });
+    // Version 5 adds the store for the PDF copies of a pack's source pages.
+    this.version(5).stores({ files: 'id, packId' });
   }
 }
 
@@ -77,6 +82,15 @@ class CooeeeDb extends Dexie {
  * because a raw table read from a component is how a half-built pack becomes visible. 
  * UI loaders must enter through the complete-pack guards below. */
 export const db = new CooeeeDb();
+
+/** The tables holding rows a pack owns, for every cascade. */
+export const ownedTables = () => [db.layers, db.destinations, db.tiles, db.files];
+
+/** Remove every row the given packs own. Callers run this inside their own
+ *  transaction, which must list ownedTables(). */
+export async function deleteOwnedRows(packIds: string[]): Promise<void> {
+  await Promise.all(ownedTables().map((table) => table.where('packId').anyOf(packIds).delete()));
+}
 
 /** THE read API — complete packs only. */
 export const listCompletePacks = (): Promise<Pack[]> =>
@@ -113,13 +127,14 @@ export async function listCompletePacksWithPlaces(): Promise<PackWithPlaces[]> {
 export async function getCompletePackContent(id: string): Promise<CompletePackContent | undefined> {
   const pack = await getCompletePack(id);
   if (!pack) return undefined;
-  const [layers, destinations] = await Promise.all([
+  const [layers, destinations, files] = await Promise.all([
     db.layers.where('packId').equals(id).toArray(),
     db.destinations.where('packId').equals(id).toArray(),
+    db.files.where('packId').equals(id).toArray(),
   ]);
   const expectedRecovery = pack.manifest.groups.recovery;
   if (expectedRecovery.count === 0) {
-    return { pack, layers, destinations, recovery: [], recoveryVerified: true };
+    return { pack, layers, destinations, recovery: [], files, recoveryVerified: true };
   }
   const programs = await db.programs.toArray();
   const actualRecovery = await manifestGroup(programs);
@@ -130,6 +145,7 @@ export async function getCompletePackContent(id: string): Promise<CompletePackCo
     layers,
     destinations,
     recovery: recoveryVerified ? programs : [],
+    files,
     recoveryVerified,
   };
 }
@@ -138,13 +154,11 @@ export async function getCompletePackContent(id: string): Promise<CompletePackCo
  *  render and immediately on every build cancel, so an interrupted download
  *  leaves orphaned rows only until the next start — and never a complete pack. */
 export async function sweepBuilding(): Promise<void> {
-  await db.transaction('rw', db.packs, db.layers, db.destinations, db.tiles, async () => {
+  await db.transaction('rw', [db.packs, ...ownedTables()], async () => {
     const ids = await db.packs.where('status').equals('building').primaryKeys();
     if (ids.length === 0) return;
     await db.packs.bulkDelete(ids);
-    await db.layers.where('packId').anyOf(ids).delete();
-    await db.destinations.where('packId').anyOf(ids).delete();
-    await db.tiles.where('packId').anyOf(ids).delete();
+    await deleteOwnedRows(ids);
   });
 }
 
@@ -153,26 +167,16 @@ export async function sweepBuilding(): Promise<void> {
  *  references recovery — it is one snapshot shared by every pack manifest,
  *  so it may only go when the last referencing pack goes. */
 export async function deleteCompletePack(id: string): Promise<void> {
-  await db.transaction(
-    'rw',
-    db.packs,
-    db.layers,
-    db.destinations,
-    db.tiles,
-    db.programs,
-    async () => {
-      const target = await db.packs.get(id);
-      if (target?.status !== 'complete') return;
-      await db.layers.where('packId').equals(id).delete();
-      await db.destinations.where('packId').equals(id).delete();
-      await db.tiles.where('packId').equals(id).delete();
-      await db.packs.delete(id);
-      const stillReferenced = await db.packs
-        .filter((p) => p.manifest.groups.recovery.count > 0)
-        .count();
-      if (stillReferenced === 0) await db.programs.clear();
-    },
-  );
+  await db.transaction('rw', [db.packs, db.programs, ...ownedTables()], async () => {
+    const target = await db.packs.get(id);
+    if (target?.status !== 'complete') return;
+    await deleteOwnedRows([id]);
+    await db.packs.delete(id);
+    const stillReferenced = await db.packs
+      .filter((p) => p.manifest.groups.recovery.count > 0)
+      .count();
+    if (stillReferenced === 0) await db.programs.clear();
+  });
 }
 
 // Every read of `packs` that leaves this file goes through the complete-only

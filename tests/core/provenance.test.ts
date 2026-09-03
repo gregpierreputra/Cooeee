@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MS_PER_DAY } from '../../src/core/constants';
+import { DTP_DATASET_URL, MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 import { absenceRow } from '../../src/core/destination';
 import {
@@ -16,6 +16,7 @@ import {
   prepareProvenancedContent,
   provenanceView,
   savedAgeDays,
+  sourcePageUrls,
 } from '../../src/core/provenance';
 import type { CompletePackContent, PackSeed, TextPackContent } from '../../src/core/types';
 import { destination, pack, program, source } from '../fixtures';
@@ -153,6 +154,23 @@ describe('E1-US2 original source links', () => {
   });
 });
 
+describe('source pages carried as PDF copies', () => {
+  it('lists the dataset page and each chosen place page once', () => {
+    const cfa = 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places';
+    const content: TextPackContent = {
+      pack: seed(),
+      layers: [layer],
+      destinations: [
+        destination({ id: 'pack-1:a', source: source({ url: cfa }) }),
+        destination({ id: 'pack-1:b', source: source({ url: cfa }) }),
+        absenceRow('pack-1', 'Yarra Ranges', source()),
+      ],
+      recovery: [],
+    };
+    expect(sourcePageUrls(content)).toEqual([DTP_DATASET_URL, cfa]);
+  });
+});
+
 describe('E1-US2 pack item projection', () => {
   it('maps every stored row and an attributed basemap without ranking or dropping items', () => {
     const content: CompletePackContent = {
@@ -163,7 +181,7 @@ describe('E1-US2 pack item projection', () => {
       layers: [layer],
       destinations: [destination()],
       recovery: [program()],
-      recoveryVerified: true,
+      files: [], recoveryVerified: true,
     };
 
     expect(packDetailItems(content).map(({ name }) => name)).toEqual([
@@ -183,7 +201,7 @@ describe('E1-US2 pack item projection', () => {
     const content: CompletePackContent = {
       pack: pack(),
       layers: [{ ...layer, status }],
-      destinations: [], recovery: [], recoveryVerified: true,
+      destinations: [], recovery: [], files: [], recoveryVerified: true,
     };
     expect(packDetailItems(content).map((item) => item.name)).toEqual([name]);
   });
@@ -192,7 +210,7 @@ describe('E1-US2 pack item projection', () => {
     const content: CompletePackContent = {
       pack: pack(),
       layers: [layer],
-      destinations: [], recovery: [], recoveryVerified: true,
+      destinations: [], recovery: [], files: [], recoveryVerified: true,
     };
     expect(packDetailItems(content).map((item) => item.name)).toEqual([
       copy.DESIGNATED_BUSHFIRE_PRONE_AREA,
@@ -209,7 +227,7 @@ describe('E1-US2 pack item projection', () => {
         ...layer,
         features: [{ planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' }],
       }],
-      destinations: [], recovery: [], recoveryVerified: true,
+      destinations: [], recovery: [], files: [], recoveryVerified: true,
     };
     expect(packDetailItems(content).map(({ citation }) => citation)).toEqual([
       'Bushfire Prone Area plan LEGL./25-138 · gazetted 10 July 2025 · YARRA RANGES'
@@ -226,7 +244,7 @@ describe('E1-US2 pack item projection', () => {
       pack: pack(),
       layers: [row],
       destinations: [],
-      recovery: [], recoveryVerified: true,
+      recovery: [], files: [], recoveryVerified: true,
     };
     expect(packDetailItems(content).map(({ citation }) => citation)).toEqual([undefined]);
   });
@@ -234,7 +252,7 @@ describe('E1-US2 pack item projection', () => {
   it('does not invent a basemap item when its attribution source is absent', () => {
     const content: CompletePackContent = {
       pack: pack({ builtWithTiles: true }),
-      layers: [], destinations: [], recovery: [], recoveryVerified: true,
+      layers: [], destinations: [], recovery: [], files: [], recoveryVerified: true,
     };
     expect(packDetailItems(content)).toEqual([]);
   });
@@ -246,7 +264,7 @@ describe('E2-US1-AC3 stored absence row', () => {
     layers: [],
     destinations: [absenceRow('pack-1', 'Yarra Ranges', source())],
     recovery: [],
-    recoveryVerified: true,
+    files: [], recoveryVerified: true,
   });
 
   it('is never projected as an information item or a place — it has no content to open', () => {
@@ -265,7 +283,7 @@ describe('E2-US1-AC3 stored absence row', () => {
         destination({ id: 'pack-1:a', distanceOrder: 0 }),
       ],
       recovery: [],
-      recoveryVerified: true,
+      files: [], recoveryVerified: true,
     };
     expect(packDetailPlaces(content).map(({ id }) => id)).toEqual(['pack-1:a', 'pack-1:b']);
   });
@@ -283,7 +301,7 @@ describe('E2-US1-AC3 stored absence row', () => {
         layers: [],
         destinations: [destination()],
         recovery: [],
-        recoveryVerified: true,
+        files: [], recoveryVerified: true,
       }),
     ).toBeNull();
   });
@@ -295,7 +313,7 @@ describe('E2-US1-AC3 stored absence row', () => {
         layers: [],
         destinations: [destination({ id: 'pack-1:absence', kind: 'absence', name: undefined })],
         recovery: [],
-        recoveryVerified: true,
+        files: [], recoveryVerified: true,
       }),
     ).toBeNull();
   });

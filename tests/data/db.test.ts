@@ -89,7 +89,7 @@ describe('a pack is invisible until it is complete', () => {
     await db.programs.put(program());
 
     expect(await getCompletePackContent('pack-1')).toMatchObject({
-      recovery: [], recoveryVerified: false,
+      recovery: [], files: [], recoveryVerified: false,
     });
   });
 
@@ -209,11 +209,12 @@ describe('deleteCompletePack', () => {
 });
 
 describe('schema', () => {
-  it('is version 4: the five pack stores, the four Nearby-places stores and the snapshot store', () => {
-    expect(db.verno).toBe(4);
+  it('is version 5: the five pack stores, the four Nearby-places stores, the snapshot store and the files store', () => {
+    expect(db.verno).toBe(5);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
       'destinations',
       'dynamicSnapshot',
+      'files',
       'layers',
       'packs',
       'postcodes',

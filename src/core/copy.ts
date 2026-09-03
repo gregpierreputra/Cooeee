@@ -181,6 +181,10 @@ export const PROVENANCE_STORAGE_RULE =
 export const SOURCE_IS_ON_WEB = 'This source is on the web.';
 export const STORED_PROVENANCE_REMAINS =
   'The publisher and the saved date below are stored on this device and stay readable.';
+/** The copy of the source page saved inside the pack: opens with no signal. */
+export const OPEN_SOURCE_FILE = 'Open original source as a file';
+export const SOURCE_FILE_LINE = (date: string) =>
+  `A PDF copy of the page as at ${date}, stored on this phone.`;
 export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
 export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';

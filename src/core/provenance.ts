@@ -1,4 +1,4 @@
-import { MS_PER_DAY, OFFICIAL_DOMAINS, PACK_REFRESH_DAYS } from './constants';
+import { DTP_DATASET_URL, MS_PER_DAY, OFFICIAL_DOMAINS, PACK_REFRESH_DAYS } from './constants';
 import * as copy from './copy';
 import type {
   CompletePackContent,
@@ -176,6 +176,16 @@ export function packDetailItems(content: CompletePackContent): PackDetailItem[] 
     if (source) items.push({ id: `${content.pack.id}:basemap`, name: copy.OFFLINE_BASEMAP, source });
   }
   return items;
+}
+
+/** The readable page behind each stored item, each listed once: the DTP dataset
+ * page for the layer (its stored url is a WFS query, not a page) and each chosen
+ * place's own source page. These are the pages a pack carries copies of. */
+export function sourcePageUrls(content: TextPackContent): string[] {
+  const placePages = content.destinations
+    .filter((row) => row.kind === 'nsp-bushfire')
+    .map((row) => row.source.url);
+  return [...new Set([DTP_DATASET_URL, ...placePages])];
 }
 
 type OriginalSourceDecision = {
