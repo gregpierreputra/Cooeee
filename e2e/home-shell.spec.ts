@@ -118,7 +118,8 @@ test.describe('the returning-user home screen', () => {
 
     // Exactly one of the eight, never none and never two.
     const text = (await preparation.textContent()) ?? '';
-    expect(PREPARATION_LINES.filter((line) => text.includes(line))).toHaveLength(1);
+    expect(PREPARATION_LINES.filter((line) => text.includes(line.text))).toHaveLength(1);
+    expect(PREPARATION_LINES.filter((line) => text.includes(line.context))).toHaveLength(1);
   });
 
   test('the preparation line does not change while the screen is open', async ({ page }) => {

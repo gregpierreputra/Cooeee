@@ -245,7 +245,9 @@ describe('the returning-user home', () => {
 
   it('says nothing about conditions, incidents or being prepared enough', () => {
     for (const line of copy.PREPARATION_LINES) {
-      expect(line).not.toMatch(/today|right now|currently|well done|you should have/i);
+      expect(`${line.text} ${line.context}`).not.toMatch(
+        /today|right now|currently|well done|you should have/i,
+      );
     }
   });
 });

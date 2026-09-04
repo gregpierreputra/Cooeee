@@ -127,13 +127,14 @@ describe('preparation line selection', () => {
 
   it('names its source alongside the line it chose', () => {
     const line = preparationLine(NOW);
-    expect(copy.PREPARATION_LINES).toContain(line.text);
+    expect(copy.PREPARATION_LINES.map((row) => row.text)).toContain(line.text);
     expect(line.source).toBe('Based on Country Fire Authority guidance.');
   });
 
   it('offers eight lines, none of them about a place or about conditions', () => {
     expect(copy.PREPARATION_LINES).toHaveLength(8);
-    expect(new Set(copy.PREPARATION_LINES).size).toBe(8);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.text)).size).toBe(8);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.context)).size).toBe(8);
   });
 });
 
@@ -179,7 +180,8 @@ describe('the home view', () => {
 
   it('carries one preparation line and its source in every state', () => {
     for (const view of [homeView(NOW, []), homeView(NOW, [pack()])]) {
-      expect(copy.PREPARATION_LINES).toContain(view.preparation.text);
+      expect(copy.PREPARATION_LINES.map((row) => row.text)).toContain(view.preparation.text);
+      expect(view.preparation.context).not.toBe('');
       expect(view.preparation.source).toBe(copy.PREPARATION_SOURCE);
     }
   });

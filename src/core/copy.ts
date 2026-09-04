@@ -423,16 +423,42 @@ export const PREPARATION_LABEL = "Today's reminder";
 /** Eight preparation lines, each grounded in Country Fire Authority plan-and-
  *  prepare guidance. One is shown per day and named with its source on screen;
  *  none of them is advice about a particular place, and none of them says
- *  anything about what is happening outside. */
+ *  anything about what is happening outside. Each carries a second line for
+ *  the reader the first was not written for: someone without a car, a garden,
+ *  animals, tools or a household of their own. */
 export const PREPARATION_LINES = [
-  'Write your household bushfire plan down, and decide who does what.',
-  'Decide what would make you leave, and leave early on a hot, windy day.',
-  'Clear the leaves from your gutters and cut long grass near the house.',
-  'Move woodpiles, mulch and outdoor furniture away from walls and windows.',
-  'Put together a fire-ready kit: water, medications, a torch and a battery radio.',
-  'Decide now what you would take — identity documents, medicines, phone chargers.',
-  'Plan how you would move pets, horses and other animals, and where they would go.',
-  'Talk the plan through with everyone in the house before the fire season starts.',
+  {
+    text: 'Write your household bushfire plan down, and decide who does what.',
+    context: 'If you live alone, the plan is still worth writing. Decide who you would call and where you would go.',
+  },
+  {
+    text: 'Decide what would make you leave, and leave early on a hot, windy day.',
+    context: 'Without a car, leaving early matters even more. Arrange a lift or check the public transport times the day before.',
+  },
+  {
+    text: 'Clear the leaves from your gutters and cut long grass near the house.',
+    context: 'If you rent or live in a unit, ask the owner or body corporate who does this. Without the tools, or if you cannot climb steadily, ask for help rather than doing it yourself.',
+  },
+  {
+    text: 'Move woodpiles, mulch and outdoor furniture away from walls and windows.',
+    context: 'On a balcony or in a courtyard, the same goes for doormats, pot plants and anything else that burns.',
+  },
+  {
+    text: 'Put together a fire-ready kit: water, medications, a torch and a battery radio.',
+    context: 'A charged phone can stand in for the radio. Add anything you cannot do without for a day, such as glasses or hearing aid batteries.',
+  },
+  {
+    text: 'Decide now what you would take — identity documents, medicines, phone chargers.',
+    context: 'Photograph the documents onto your phone as well, in case the originals are out of reach.',
+  },
+  {
+    text: 'Plan how you would move pets, horses and other animals, and where they would go.',
+    context: 'With no animals of your own, ask a neighbour who has them whether they have a plan.',
+  },
+  {
+    text: 'Talk the plan through with everyone in the house before the fire season starts.',
+    context: 'Include anyone who visits or cares for you regularly, and the neighbours you would check on.',
+  },
 ] as const;
 
 /** Attribution, not citation: the lines above are Cooeee's own wording of

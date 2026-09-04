@@ -51,13 +51,11 @@ export function preparationLineIndex(seed: number, count: number): number {
   return (((Math.floor(seed / MS_PER_DAY) % count) + count) % count);
 }
 
-type PreparationLine = { text: string; source: string };
+type PreparationLine = { text: string; context: string; source: string };
 
 export function preparationLine(seed: number): PreparationLine {
-  return {
-    text: copy.PREPARATION_LINES[preparationLineIndex(seed, copy.PREPARATION_LINES.length)],
-    source: copy.PREPARATION_SOURCE,
-  };
+  const line = copy.PREPARATION_LINES[preparationLineIndex(seed, copy.PREPARATION_LINES.length)];
+  return { ...line, source: copy.PREPARATION_SOURCE };
 }
 
 export type NavItem = { key: 'home' | 'nearby'; label: string; to: string };
