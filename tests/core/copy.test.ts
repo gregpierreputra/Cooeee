@@ -6,29 +6,29 @@ import * as copy from '../../src/core/copy';
 // not a style discussion.
 describe('mandated literals', () => {
   it('destinations are never ranked by worth', () => {
-    expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance — not a safety ranking');
+    expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance, not a safety ranking');
   });
 
   // Exact match including punctuation. The literal is mandated with an em dash;
   // a hyphen-minus in its place is a different sentence, and it stood in this
   // file undetected because the assertion carried the same typo.
-  it('an unmatched address says what to try next, with the mandated em dash', () => {
+  it('an unmatched address says what to try next, with no dash of any kind', () => {
     expect(copy.NO_ADDRESS_MATCH).toBe(
-      'No matching address found — check the spelling or try the nearest cross street.',
+      'No matching address found. Check the spelling or try the nearest cross street.',
     );
-    expect([...copy.NO_ADDRESS_MATCH].filter((c) => c === '\u2014')).toHaveLength(1);
+    expect(copy.NO_ADDRESS_MATCH).not.toContain('\u2014');
     expect(copy.NO_ADDRESS_MATCH).not.toContain('-');
   });
 
   it('no fix falls back to saved information, in words', () => {
-    expect(copy.NO_GPS).toBe('No GPS fix — showing your saved information.');
+    expect(copy.NO_GPS).toBe('No GPS fix. Showing your saved information.');
   });
 
   it('a vague or old fix reports its own figure beside the arrow, never instead of it', () => {
     expect(copy.GPS_APPROXIMATE(240)).toBe(
-      'GPS is only accurate to ± 240 m here — the direction is approximate and sharpens as the fix improves.',
+      'GPS is only accurate to ± 240 m here. The direction is approximate and sharpens as the fix improves.',
     );
-    expect(copy.FIX_AGE(45)).toBe('Last GPS fix 45 s ago — the direction may have changed.');
+    expect(copy.FIX_AGE(45)).toBe('Last GPS fix 45 s ago. The direction may have changed.');
   });
 
   it('being outside every prepared area is stated plainly', () => {
@@ -36,12 +36,12 @@ describe('mandated literals', () => {
   });
 
   it('a stale pack is labelled without being disabled', () => {
-    expect(copy.NOT_RECENTLY_VERIFIED(96)).toBe('Saved 96 days ago — not recently verified');
+    expect(copy.NOT_RECENTLY_VERIFIED(96)).toBe('Saved 96 days ago, not recently verified');
   });
 
   it('the app states what it cannot detect', () => {
     expect(copy.PHONE_MAY_WORK).toBe(
-      'Phone calls may work if your phone shows signal — this app cannot detect phone signal.',
+      'Phone calls may work if your phone shows signal. This app cannot detect phone signal.',
     );
   });
 });
@@ -59,7 +59,7 @@ describe('composed lines', () => {
 
 describe('shell copy', () => {
   it('states an update is waiting and that nothing changes until the user chooses', () => {
-    expect(copy.NEW_VERSION_READY).toContain('nothing changes until then');
+    expect(copy.NEW_VERSION_READY).toContain('Nothing changes until then');
   });
 
   it('says a pack is missing without implying anything about the place', () => {
@@ -161,7 +161,7 @@ describe('BlackSky compass sectors', () => {
 describe('marked-position estimate copy', () => {
   it('is labelled ESTIMATE with the uncertainty stated as growing', () => {
     expect(copy.ESTIMATE_READOUT(53)).toBe(
-      'ESTIMATE from your marked position — ± 53 m and growing',
+      'ESTIMATE from your marked position, ± 53 m and growing',
     );
   });
 });
@@ -197,7 +197,7 @@ describe('place descriptor', () => {
 // E3-US3-AC1: deliberate activation — the stray-tap hint and the one exit.
 describe('deliberate activation', () => {
   it('a stray tap earns only the hold hint', () => {
-    expect(copy.HOLD_TO_ENTER).toBe('Hold to enter — two seconds.');
+    expect(copy.HOLD_TO_ENTER).toBe('Hold to enter. Two seconds.');
   });
 
   it('leaving the mode is one plainly named action', () => {
@@ -258,7 +258,7 @@ describe('the returning-user home', () => {
 describe('first-open disclosure', () => {
   it('states the purpose in one line', () => {
     expect(copy.FIRST_OPEN_PURPOSE).toBe(
-      'Get one address ready now — bushfire information that still opens when the signal drops.',
+      'Get one address ready now, for bushfire information that still opens when the signal drops.',
     );
   });
 
@@ -282,7 +282,7 @@ describe('first-open disclosure', () => {
 
   it('states when the position is asked for and that it is never sent', () => {
     expect(copy.DISCLOSURE_POSITION).toBe(
-      'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device — you can refuse, and everything else still works.',
+      'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device. You can refuse, and everything else still works.',
     );
   });
 

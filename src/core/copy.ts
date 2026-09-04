@@ -1,31 +1,31 @@
-// EVERY user-facing string in the product. 
+// EVERY user-facing string in the product.
 // Components contain no inline literals.
-// The mandated lines below are exact, punctuation, and em dashes included — and
-// tests/core/copy.test.ts asserts each one by exact match.
-// The exact text literal that will be used in all of the main pages.
-// Never reword them.
+// The mandated lines below are exact, punctuation included, and
+// tests/core/copy.test.ts asserts each one by exact match. No user-facing
+// string carries an em dash: scripts/banned-terms.mjs fails the build on one.
+// Never reword them without updating the tests.
 
 import { PACK_RADIUS_KM } from './constants';
 import type { Destination, FacilityType, SourceStatus } from './types';
 
 // Core Mandated Literals
-export const SORTED_BY_DISTANCE = 'sorted by distance — not a safety ranking';
+export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
 
 export const NO_ADDRESS_MATCH =
-  'No matching address found — check the spelling or try the nearest cross street.';
+  'No matching address found. Check the spelling or try the nearest cross street.';
 
-export const NO_GPS = 'No GPS fix — showing your saved information.';
+export const NO_GPS = 'No GPS fix. Showing your saved information.';
 
 /** Said beside the arrows, never instead of them: a vague or old fix still
  *  points, with its error stated. */
 export const GPS_APPROXIMATE = (m: number) =>
-  `GPS is only accurate to ± ${m} m here — the direction is approximate and sharpens as the fix improves.`;
-export const FIX_AGE = (s: number) => `Last GPS fix ${s} s ago — the direction may have changed.`;
+  `GPS is only accurate to ± ${m} m here. The direction is approximate and sharpens as the fix improves.`;
+export const FIX_AGE = (s: number) => `Last GPS fix ${s} s ago. The direction may have changed.`;
 
 export const OUTSIDE_AREAS = "You're outside the areas you've prepared";
 
 export const NOT_RECENTLY_VERIFIED = (days: number) =>
-  `Saved ${days} days ago — not recently verified`;
+  `Saved ${days} days ago, not recently verified`;
 
 // Shared vocabulary
 /** The eight compass points by name, index 0 = north, one every 45 degrees.
@@ -48,8 +48,8 @@ export const BACK = 'Back';
 
 // Connection notice. States what the browser reports, nothing more — this app
 // cannot detect phone signal, and never claims to.
-export const ONLINE_NOTICE = 'Online — connected to a network.';
-export const OFFLINE_NOTICE = 'Offline — saved packs still work.';
+export const ONLINE_NOTICE = 'Online. Connected to a network.';
+export const OFFLINE_NOTICE = 'Offline. Saved packs still work.';
 export const DISMISS_NOTICE = 'Dismiss connection notice';
 
 export const NO_PACKS_HINT =
@@ -64,7 +64,7 @@ export const KEEP_THIS_PACK = 'Keep this pack';
 export const CONFIRM_DELETE_PACK = 'Yes, delete this pack';
 
 export const NEW_VERSION_READY =
-  'A new version is ready. It is applied when you choose to reload — nothing changes until then.';
+  'A new version is ready. It is applied when you choose to reload. Nothing changes until then.';
 export const RELOAD_NOW = 'Reload now';
 
 // E1-US1-AC1 address confirmation
@@ -84,7 +84,7 @@ export const ADDRESS_FIELD_HINT =
 /** Said before the search, so an address with no official place close by is
  *  never a surprise at the places step. */
 export const ADDRESS_SEARCH_DISCLOSURE =
-  'Not every address has an official place of last resort close by. Cooeee lists the nearest places the Country Fire Authority publishes — they may be some distance away, and for some areas there may be none.';
+  'Not every address has an official place of last resort close by. Cooeee lists the nearest places the Country Fire Authority publishes. They may be some distance away, and for some areas there may be none.';
 export const SEARCH = 'Search';
 export const SEARCH_IN_PROGRESS = 'Searching for addresses.';
 export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
@@ -123,7 +123,7 @@ export const INSIDE_BUSHFIRE_AREA =
 export const NOTHING_MAPPED_AT_ADDRESS =
   'No Designated Bushfire Prone Area is mapped at this address in the current planning scheme.';
 export const AREA_NOT_PUBLISHED =
-  'The Designated Bushfire Prone Area is not published for this area — Department of Transport and Planning.';
+  'The Designated Bushfire Prone Area is not published for this area (Department of Transport and Planning).';
 export const DTP_SAVED_DATE = (date: string) =>
   `Published by the Department of Transport and Planning, saved ${date}.`;
 export const OFFICIAL_INSTRUCTIONS_FIRST =
@@ -131,7 +131,7 @@ export const OFFICIAL_INSTRUCTIONS_FIRST =
 export const AREA_CHECK_COULD_NOT_RUN =
   'We could not check the bushfire area for this address right now.';
 export const AREA_NOT_SAVED =
-  'Nothing has been saved. Your address is still here — try again when you have a connection.';
+  'Nothing has been saved. Your address is still here. Try again when you have a connection.';
 
 // E1-US1-AC8 pack conflict
 export const CHECKING_SAVED_PLACE = 'Checking the saved place on this device.';
@@ -199,7 +199,7 @@ export const BPA_PLAN_CITATION = (
   gazettedDate: string,
   lgaName: string,
   publisher: string,
-) => `Bushfire Prone Area plan ${planNumber} · gazetted ${gazettedDate} · ${lgaName} — ${publisher}`;
+) => `Bushfire Prone Area plan ${planNumber} · gazetted ${gazettedDate} · ${lgaName} · ${publisher}`;
 /** Used in place of CONTINUE_TO_ORIGINAL_SOURCE once the citation above is on
  * screen: what is on the far end is the publisher's page for the dataset as a
  * whole, not the only readable statement of this result. */
@@ -227,9 +227,9 @@ export const SPECIAL_BUILDING_OVERLAY = 'Special Building Overlay';
 // A saved layer row states its stored result, not just the layer's name. The
 // name alone read as a designation even when the stored status was an absence.
 export const LAYER_NONE_MAPPED_HERE = (layer: string) =>
-  `${layer} — none mapped at this address`;
+  `${layer}, none mapped at this address`;
 export const LAYER_NOT_PUBLISHED = (layer: string) =>
-  `${layer} — not published for this area`;
+  `${layer}, not published for this area`;
 export const OFFICIAL_DESTINATION_INFORMATION = 'Official place of last resort information';
 export const OFFLINE_BASEMAP = 'Offline basemap';
 
@@ -258,13 +258,13 @@ export const SAVING_LAST_RESORT_PLACES = 'Saving your last-resort places.';
 export const LOADING_LAST_RESORT_PLACES = 'Reading the official list of places of last resort.';
 export const LAST_RESORT_PLACES_SAVED = 'Last-resort places saved';
 export const LAST_RESORT_SAVE_FAILED =
-  'Your places were not saved. Your selection is still here — try again.';
+  'Your places were not saved. Your selection is still here. Try again.';
 
 /** The mandated absence line, plus the area it applies to. */
 export const NO_DESTINATION_PUBLISHED =
   'No official place of last resort is published for this area';
 export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
-  `${NO_DESTINATION_PUBLISHED} — ${area}.`;
+  `${NO_DESTINATION_PUBLISHED}, ${area}.`;
 
 // ── Personal note ─────────────────────────────────────────────────────────
 // The user's own words, in their pack. Asked for once, after the places step;
@@ -272,7 +272,7 @@ export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
 
 export const NOTE_STEP_TITLE = 'Add a personal note';
 export const NOTE_DISCLOSURE =
-  'This note is stored in your offline pack on this phone. It opens without signal — in your pack and in BlackSky — when it matters most. '
+  'This note is stored in your offline pack on this phone. It opens without signal, in your pack and in BlackSky, when it matters most. '
   + 'It is not protected by a passcode: anyone who can unlock this phone can read it.';
 export const NOTE_LABEL = 'Your note';
 /** The box is never blank: an example written for this place and, when one
@@ -345,14 +345,14 @@ export const BEARING_FIGURE = (point: string, glyph: string, distance: string) =
 
 // E3-US1-AC4 marked-position estimate
 export const MARK_HINT =
-  'If you are standing at your saved place, mark it — bearings can be estimated from there. This is not GPS.';
+  'If you are standing at your saved place, mark it. Bearings can be estimated from there. This is not GPS.';
 
 export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${address}`;
 
 /** Always the word ESTIMATE, and the uncertainty stated as growing — a marked
  *  position must never read like a fix. */
 export const ESTIMATE_READOUT = (m: number) =>
-  `ESTIMATE from your marked position — ± ${m} m and growing`;
+  `ESTIMATE from your marked position, ± ${m} m and growing`;
 
 // E3-US2-AC1 outside every pack area
 /** Distance to a pack area's EDGE — never presented as a direction. */
@@ -367,7 +367,7 @@ export const EMERGENCY_BROADCASTER =
   'Australian Broadcasting Corporation local radio broadcasts official emergency information.';
 /** States what the app cannot detect — never a promise about the network. */
 export const PHONE_MAY_WORK =
-  'Phone calls may work if your phone shows signal — this app cannot detect phone signal.';
+  'Phone calls may work if your phone shows signal. This app cannot detect phone signal.';
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
@@ -388,8 +388,8 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 
 // E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
-export const HOLD_TO_ENTER = 'Hold to enter — two seconds.';
-export const HOLD_TO_LEAVE = 'Hold to leave — two seconds.';
+export const HOLD_TO_ENTER = 'Hold to enter. Two seconds.';
+export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
 export const LEAVE_BLACKSKY = 'Leave BlackSky';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
@@ -448,7 +448,7 @@ export const PREPARATION_LINES = [
     context: 'A charged phone can stand in for the radio. Add anything you cannot do without for a day, such as glasses or hearing aid batteries.',
   },
   {
-    text: 'Decide now what you would take — identity documents, medicines, phone chargers.',
+    text: 'Decide now what you would take, such as identity documents, medicines and phone chargers.',
     context: 'Photograph the documents onto your phone as well, in case the originals are out of reach.',
   },
   {
@@ -484,7 +484,7 @@ export const BLACKSKY_WORKS_WITHOUT_PACK = 'WORKS WITHOUT A SAVED PACK';
 // tests/core/copy.test.ts.
 
 export const FIRST_OPEN_PURPOSE =
-  'Get one address ready now — bushfire information that still opens when the signal drops.';
+  'Get one address ready now, for bushfire information that still opens when the signal drops.';
 
 export const DISCLOSURE_DOES_HEADING = 'What Cooeee does';
 export const DISCLOSURE_DOES =
@@ -500,7 +500,7 @@ export const DISCLOSURE_ADDRESS =
 
 export const DISCLOSURE_POSITION_HEADING = 'When Cooeee asks for your position';
 export const DISCLOSURE_POSITION =
-  'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device — you can refuse, and everything else still works.';
+  'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device. You can refuse, and everything else still works.';
 
 /** The quieter line under the four statements: who to go to for what Cooeee
  *  itself will never provide. */
@@ -519,7 +519,7 @@ export const NAV_NEARBY = 'Nearby';
 export const NEARBY_KICKER = 'Nearby places';
 export const NEARBY_TITLE = 'Nearest official places';
 export const NEARBY_LEDE =
-  'The nearest Neighbourhood Safer Place, Community Fire Refuge, and any relief or recovery centre listed as open — from your position or a postcode. Each row says how current it is.';
+  'The nearest Neighbourhood Safer Place, Community Fire Refuge, and any relief or recovery centre listed as open, from your position or a postcode. Each row says how current it is.';
 
 export const USE_MY_LOCATION = 'Use my location';
 export const LOCATING = 'Reading your position…';
@@ -531,7 +531,7 @@ export const POSTCODE_UNKNOWN = (postcode: string) =>
   `Postcode ${postcode} is not in the downloaded Victorian list.`;
 export const FROM_POSITION = (accuracy: string) => `From your position, ${accuracy}`;
 export const FROM_POSTCODE = (postcode: string) => `From the centre of postcode ${postcode}`;
-export const DISTANCES_NOTE = 'Straight-line distances. The nearest of each kind — not a ranking.';
+export const DISTANCES_NOTE = 'Straight-line distances. The nearest of each kind, not a ranking.';
 
 export const DOWNLOADING_PLACES = 'Downloading the official places…';
 export const FIRST_RUN_TITLE = 'Nothing downloaded yet';
@@ -568,7 +568,7 @@ export const AS_OF = (time: string) => `As of ${time}`;
 export const NONE_IN_LIST = (kind: string) => `No ${kind} is in the downloaded list.`;
 export const NONE_LISTED_OPEN = (kind: string) => `No ${kind} is listed as open by VicEmergency.`;
 export const NOT_DOWNLOADED_YET = (kind: string) => `${kind} information has not been downloaded yet.`;
-export const MAY_BE_OUTDATED = 'May be outdated — confirm by radio or on the hotline if you can.';
+export const MAY_BE_OUTDATED = 'May be outdated. Confirm by radio or on the hotline if you can.';
 export const TOO_OLD_TO_SHOW = 'This information is more than an hour old, so no place is shown.';
 export const SOURCE_UNCONFIRMED = (source: string) =>
   `The ${source} could not be reached recently, so this could not be confirmed.`;

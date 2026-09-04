@@ -173,7 +173,7 @@ describe('the home view', () => {
   // card reports when the pack was written, the header when it was last checked.
   it('keeps the card wording and the header wording distinct past the window', () => {
     const view = homeView(NOW, [pack({ verifiedAt: daysAgo(44) })]);
-    expect(view.kind === 'pack' && view.ageLine).toBe('Saved 44 days ago — not recently verified');
+    expect(view.kind === 'pack' && view.ageLine).toBe('Saved 44 days ago, not recently verified');
     const age = headerAge(NOW, daysAgo(44));
     expect(age.kind === 'not-recently-verified' && age.text).toBe('Not recently verified');
   });

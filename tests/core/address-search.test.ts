@@ -245,11 +245,11 @@ describe('E1-US1-AC2–AC4 copy', () => {
 
   // Character for character, including the em dash. The hyphen that stood here
   // until now was a different sentence from the one the baseline mandates.
-  it('uses the baseline R2 no-match literal exactly, em dash included', () => {
+  it('uses the baseline R2 no-match literal exactly, with no dash of any kind', () => {
     expect(copy.NO_ADDRESS_MATCH).toBe(
-      'No matching address found — check the spelling or try the nearest cross street.',
+      'No matching address found. Check the spelling or try the nearest cross street.',
     );
-    expect(copy.NO_ADDRESS_MATCH).toContain('\u2014');
+    expect(copy.NO_ADDRESS_MATCH).not.toContain('\u2014');
     expect(copy.NO_ADDRESS_MATCH).not.toContain('-');
   });
 

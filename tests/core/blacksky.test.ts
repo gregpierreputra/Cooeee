@@ -204,7 +204,7 @@ describe('absence', () => {
     name: undefined,
     lat: undefined,
     lon: undefined,
-    reason: 'No official place of last resort is published for this area — Yarra Ranges.',
+    reason: 'No official place of last resort is published for this area, Yarra Ranges.',
     source: source(),
   });
 

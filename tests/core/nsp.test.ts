@@ -206,7 +206,7 @@ describe('destinationsForPack', () => {
     expect(rows[0].kind).toBe('absence');
     expect(rows[0].id).toBe('pack-9:absence');
     expect(rows[0].reason).toBe(
-      'No official place of last resort is published for this area — Yarra Ranges.',
+      'No official place of last resort is published for this area, Yarra Ranges.',
     );
   });
 

@@ -87,7 +87,7 @@ test('AC3 distinguishes a valid empty response and retains the typed text', asyn
   await search(page, 'NOT A REGISTER ADDRESS');
 
   await expect(page.getByRole('status')).toHaveText(
-    'No matching address found — check the spelling or try the nearest cross street.',
+    'No matching address found. Check the spelling or try the nearest cross street.',
   );
   await expect(page.getByLabel('Address')).toHaveValue('NOT A REGISTER ADDRESS');
   await expect(page.getByRole('button', { name: 'Search again' })).toBeVisible();
@@ -291,7 +291,7 @@ test('AC2 counts more than one unresolved address without ranking them', async (
 // exist while it is still asking.
 
 const NO_MATCH_SENTENCE =
-  'No matching address found — check the spelling or try the nearest cross street.';
+  'No matching address found. Check the spelling or try the nearest cross street.';
 
 test('AC2 searches while typing, with no submit', async ({ page }) => {
   const requests = await countAddressRequests(page, [

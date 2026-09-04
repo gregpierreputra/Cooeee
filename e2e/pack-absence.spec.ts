@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const URL = 'http://127.0.0.1:4174/detail?mode=absence';
 const ORIGIN = 'http://127.0.0.1:4174';
-const ABSENCE_LINE = 'No official place of last resort is published for this area — Yarra Ranges.';
+const ABSENCE_LINE = 'No official place of last resort is published for this area, Yarra Ranges.';
 
 test('AC3 a saved pack with no published places states so plainly', async ({ page }) => {
   await page.goto(URL);

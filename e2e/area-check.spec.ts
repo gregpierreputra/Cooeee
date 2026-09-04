@@ -42,7 +42,7 @@ test('AC6 shows the not-published state separately and reflows at 320px', async 
   await page.setViewportSize({ width: 320, height: 800 });
   await reachAreaCheck(page, 'unpublished');
   await expect(page.getByRole('heading')).toHaveText(
-    'The Designated Bushfire Prone Area is not published for this area — Department of Transport and Planning.',
+    'The Designated Bushfire Prone Area is not published for this area (Department of Transport and Planning).',
   );
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= 320)).toBe(true);
 });
@@ -54,7 +54,7 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
     'We could not check the bushfire area for this address right now.',
   );
   await expect(state).toContainText(
-    'Nothing has been saved. Your address is still here — try again when you have a connection.',
+    'Nothing has been saved. Your address is still here. Try again when you have a connection.',
   );
   await expect(page.getByTestId('pending-address')).toHaveText(ADDRESS);
   expect(await deviceStorage(page)).toEqual({

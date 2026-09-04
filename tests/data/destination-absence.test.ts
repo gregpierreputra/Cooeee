@@ -65,7 +65,7 @@ describe('E2-US1-AC3 a pack with no published places still saves', () => {
     const readBack = await getCompletePackContent('pack-1');
     expect(readBack).toBeDefined();
     expect(packDetailAbsence(readBack!)).toBe(
-      'No official place of last resort is published for this area — Yarra Ranges.',
+      'No official place of last resort is published for this area, Yarra Ranges.',
     );
     expect(packDetailItems(readBack!).some((item) => item.id === 'pack-1:absence')).toBe(false);
   });
