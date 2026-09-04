@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { isInsideVictoria } from '../../src/core/constants';
-import { CARDINAL_ABBR } from '../../src/core/copy';
+import { CARDINAL_POINTS } from '../../src/core/copy';
 import {
   bearingDeg,
-  cardinalAbbr,
+  cardinalPoint,
   compassHeading,
   distanceM,
   magneticDeclinationDeg,
@@ -51,22 +51,22 @@ describe('bearingDeg', () => {
   });
 });
 
-describe('cardinalAbbr', () => {
-  it('names every one of the 16 sectors at its 22.5 degree centre', () => {
-    CARDINAL_ABBR.forEach((name, i) => {
-      expect(cardinalAbbr(i * 22.5)).toBe(name);
+describe('cardinalPoint', () => {
+  it('names every one of the 8 sectors at its 45 degree centre', () => {
+    CARDINAL_POINTS.forEach((name, i) => {
+      expect(cardinalPoint(i * 45)).toBe(name);
     });
   });
 
   it('wraps at and beyond 360', () => {
-    expect(cardinalAbbr(360)).toBe('N');
-    expect(cardinalAbbr(720)).toBe('N');
-    expect(cardinalAbbr(382.5)).toBe('NNE');
+    expect(cardinalPoint(360)).toBe('North');
+    expect(cardinalPoint(720)).toBe('North');
+    expect(cardinalPoint(405)).toBe('North-east');
   });
 
   it('handles a negative bearing', () => {
-    expect(cardinalAbbr(-22.5)).toBe('NNW');
-    expect(cardinalAbbr(-90)).toBe('W');
+    expect(cardinalPoint(-45)).toBe('North-west');
+    expect(cardinalPoint(-90)).toBe('West');
   });
 });
 

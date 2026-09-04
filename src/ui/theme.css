@@ -890,11 +890,17 @@ input {
   font-size: var(--step-2);
 }
 
+/* The point by name, in capitals as in the mockups: NORTH-EAST, never NE. */
 .blacksky-figure-point {
   font-size: var(--step-0);
   font-weight: var(--w-heavy);
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink);
+}
+
+.blacksky-nearby .blacksky-figure-point {
+  font-size: var(--step-xs);
 }
 
 /* The notes fold: a native <details>, so no script and no re-render on the

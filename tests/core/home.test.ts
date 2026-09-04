@@ -128,7 +128,7 @@ describe('preparation line selection', () => {
   it('names its source alongside the line it chose', () => {
     const line = preparationLine(NOW);
     expect(copy.PREPARATION_LINES).toContain(line.text);
-    expect(line.source).toBe('Based on CFA guidance.');
+    expect(line.source).toBe('Based on Country Fire Authority guidance.');
   });
 
   it('offers eight lines, none of them about a place or about conditions', () => {

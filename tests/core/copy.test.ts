@@ -149,11 +149,11 @@ describe('BlackSky bearing and distance figures', () => {
 });
 
 describe('BlackSky compass sectors', () => {
-  it('has 16 abbreviations, one per 22.5-degree sector, north first', () => {
-    expect(copy.CARDINAL_ABBR).toHaveLength(16);
-    expect(copy.CARDINAL_ABBR[0]).toBe('N');
-    expect(copy.CARDINAL_ABBR[2]).toBe('NE');
-    expect(copy.CARDINAL_ABBR[8]).toBe('S');
+  it('has 8 named points, one per 45-degree sector, north first', () => {
+    expect(copy.CARDINAL_POINTS).toHaveLength(8);
+    expect(copy.CARDINAL_POINTS[0]).toBe('North');
+    expect(copy.CARDINAL_POINTS[1]).toBe('North-east');
+    expect(copy.CARDINAL_POINTS[4]).toBe('South');
   });
 });
 
@@ -239,7 +239,7 @@ describe('the returning-user home', () => {
   });
 
   it('credits the guidance behind the preparation line, without quoting it', () => {
-    expect(copy.PREPARATION_SOURCE).toBe('Based on CFA guidance.');
+    expect(copy.PREPARATION_SOURCE).toBe('Based on Country Fire Authority guidance.');
     expect(copy.PREPARATION_SOURCE).not.toMatch(/["“”]/);
   });
 

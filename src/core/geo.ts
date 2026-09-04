@@ -1,6 +1,6 @@
 import { bearing } from '@turf/bearing';
 import { distance } from '@turf/distance';
-import { CARDINAL_ABBR } from './copy';
+import { CARDINAL_POINTS } from './copy';
 import type { LatLon } from './types';
 
 // ONE haversine feeds both the ordering and the displayed figure, so an order and
@@ -25,9 +25,9 @@ const sector = (deg: number, n: number): number => {
   return Math.round(normalised / (360 / n)) % n;
 };
 
-/** 16-point compass abbreviation. */
-export const cardinalAbbr = (deg: number): (typeof CARDINAL_ABBR)[number] =>
-  CARDINAL_ABBR[sector(deg, 16)];
+/** The named compass point a bearing falls in, one of eight. */
+export const cardinalPoint = (deg: number): (typeof CARDINAL_POINTS)[number] =>
+  CARDINAL_POINTS[sector(deg, 8)];
 
 /** Magnetic declination across Victoria, degrees EAST of true north: what to add
  *  to a magnetic compass heading to get a true one. A plane fitted to the World

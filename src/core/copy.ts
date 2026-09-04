@@ -27,26 +27,18 @@ export const NOT_RECENTLY_VERIFIED = (days: number) =>
   `Saved ${days} days ago — not recently verified`;
 
 // Shared vocabulary
-/** 16-point compass abbreviations, 
- * index 0 = north, one entry every 22.5 degrees. 
- * Read by core/geo.ts cardinalAbbr(). */
-export const CARDINAL_ABBR = [
-  'N',
-  'NNE',
-  'NE',
-  'ENE',
-  'E',
-  'ESE',
-  'SE',
-  'SSE',
-  'S',
-  'SSW',
-  'SW',
-  'WSW',
-  'W',
-  'WNW',
-  'NW',
-  'NNW',
+/** The eight compass points by name, index 0 = north, one every 45 degrees.
+ *  Read by core/geo.ts cardinalPoint(). Names, not letters: the point is read
+ *  under the arrow at arm's length, and "NE" is an abbreviation. */
+export const CARDINAL_POINTS = [
+  'North',
+  'North-east',
+  'East',
+  'South-east',
+  'South',
+  'South-west',
+  'West',
+  'North-west',
 ] as const;
 
 // Application shell
@@ -438,7 +430,7 @@ export const PREPARATION_LINES = [
 /** Attribution, not citation: the lines above are Cooeee's own wording of
  *  Country Fire Authority plan-and-prepare guidance, so the byline credits the
  *  guidance rather than quoting it. Nothing here is ever shown in quotes. */
-export const PREPARATION_SOURCE = 'Based on CFA guidance.';
+export const PREPARATION_SOURCE = 'Based on Country Fire Authority guidance.';
 
 /** The pack card's footer line. Appended to the card's own age wording rather
  *  than written into it: the age is a fact about the pack, and this is a fact
@@ -549,11 +541,11 @@ export const SOURCE_UNCONFIRMED = (source: string) =>
 export const SOURCE_NOT_READ = (source: string) =>
   `The ${source} has not been read yet, so nothing can be confirmed.`;
 export const NEEDS_REVIEW_NOTE =
-  'Listed earlier by the CFA but missing from its latest list — check before relying on it.';
+  'Listed earlier by the Country Fire Authority but missing from its latest list, check before relying on it.';
 
 export const DATA_SOURCES_LABEL = 'Data sources';
 export const SOURCE_NAMES: Record<string, string> = {
-  cfa_nsp_arcgis: 'CFA Neighbourhood Safer Places list',
+  cfa_nsp_arcgis: 'Country Fire Authority Neighbourhood Safer Places list',
   cfr_static_list: 'Community Fire Refuge list',
   vicmap_admin_postcodes: 'Vicmap postcode list',
   vicemergency_feed: 'VicEmergency feed',

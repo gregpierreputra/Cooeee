@@ -151,7 +151,7 @@ describe('nearbyView', () => {
     expect(row(view, 'RELIEF').note).toContain(copy.SOURCE_UNCONFIRMED('VicEmergency feed'));
     expect(row(view, 'RELIEF').note).toContain('1800 226 226');
     expect(row(view, 'NSP').state).toBe('cached');
-    expect(row(view, 'NSP').note).toContain(copy.SOURCE_UNCONFIRMED('CFA Neighbourhood Safer Places list'));
+    expect(row(view, 'NSP').note).toContain(copy.SOURCE_UNCONFIRMED('Country Fire Authority Neighbourhood Safer Places list'));
     // The CFR source is absent from that health block, so it reads as never read.
     expect(row(view, 'CFR').note).toContain(copy.SOURCE_NOT_READ('Community Fire Refuge list'));
   });
@@ -178,12 +178,12 @@ describe('nearbyView', () => {
     delete meta.dynamic_source_last_success_at;
     const view = nearbyView(NOW, KALORAMA, cache({ meta }), OFFLINE);
     expect(row(view, 'RELIEF').timestamp).toBe(copy.AS_OF('3:50 pm, 2 September'));
-    expect(row(view, 'NSP').note).toContain(copy.SOURCE_NOT_READ('CFA Neighbourhood Safer Places list'));
+    expect(row(view, 'NSP').note).toContain(copy.SOURCE_NOT_READ('Country Fire Authority Neighbourhood Safer Places list'));
   });
 
   it('lists every source with its status and age; the snapshot reading of the feed wins', () => {
     const view = nearbyView(NOW, KALORAMA, cache(), OFFLINE);
-    expect(view.health).toContain(copy.HEALTH_LINE('CFA Neighbourhood Safer Places list', 'reachable', copy.ITEM_DAYS_AGO(1)));
+    expect(view.health).toContain(copy.HEALTH_LINE('Country Fire Authority Neighbourhood Safer Places list', 'reachable', copy.ITEM_DAYS_AGO(1)));
     expect(view.health).toContain(copy.HEALTH_LINE('VicEmergency feed', 'reachable', copy.MINUTES_AGO(10)));
     expect(view.health).toContain(copy.HEALTH_LINE('other', 'reachable', copy.HOURS_AGO(1)));
     const never = nearbyView(NOW, KALORAMA, cache({ meta: { static_synced_at: ago(0), data_health: JSON.stringify({ vicemergency_feed: { status: 'unknown', last_success_at: null } }) } }), OFFLINE);

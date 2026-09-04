@@ -10,7 +10,7 @@ import {
 } from '../core/blacksky';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
-import { cardinalAbbr, magneticDeclinationDeg } from '../core/geo';
+import { cardinalPoint, magneticDeclinationDeg } from '../core/geo';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import HoldButton from './components/HoldButton';
@@ -322,7 +322,7 @@ function PlacedRow({ place }: { place: Placed }) {
           <path d="M50 0 100 55 H70 V130 H30 V55 H0 Z" />
         </svg>
         <span className="blacksky-figure-main">{copy.distanceLabel(place.distanceM)}</span>
-        <span className="blacksky-figure-point">{cardinalAbbr(place.bearingDeg)}</span>
+        <span className="blacksky-figure-point">{cardinalPoint(place.bearingDeg)}</span>
       </div>
       <div className="blacksky-target">
         <h2>{place.name}</h2>
