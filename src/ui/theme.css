@@ -125,12 +125,15 @@ body {
 /* Single column, max 560 px, centred on desktop. There is no second layout:
    the product's centre of gravity is a phone in someone's hand. The sticky
    chrome above the page (notice bar 2.25rem, header 3rem + 1px, back bar
-   3.25rem) is outside .page, so the minimum height leaves room for it. */
+   3.25rem) is outside .page, so the minimum height leaves room for it. The
+   bottom padding leaves room under the last element for the fixed bottom bar
+   (56 px + hairline, plus a gap), so nothing sits beneath it. */
 .page {
   max-width: 560px;
   margin: 0 auto;
   padding: 1.5rem max(1.75rem, env(safe-area-inset-right))
-    max(1.75rem, env(safe-area-inset-bottom)) max(1.75rem, env(safe-area-inset-left));
+    calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom))
+    max(1.75rem, env(safe-area-inset-left));
   min-height: calc(100dvh - 8.5rem - 1px);
   display: flex;
   flex-direction: column;
@@ -1187,8 +1190,8 @@ input {
 }
 
 /* A fixed bar on the panel colour, inside the safe area, so it stays within
-   thumb reach whatever the page above it does. Two equal destinations: neither
-   is weighted, and BlackSky is not among them. */
+   thumb reach whatever the page above it does. On every screen but BlackSky.
+   Two equal destinations: neither is weighted, and BlackSky is not among them. */
 .bottom-nav {
   position: fixed;
   inset-inline: 0;
@@ -1231,13 +1234,17 @@ input {
   letter-spacing: 0.01em;
 }
 
-/* Room under the last action for the fixed bar (56 px + hairline), so nothing
-   sits beneath it — and a column short enough to leave that room: the notice
-   and header above the page and the bar below it all take height the viewport
-   unit does not know about. */
+/* The home screen has no back bar above it, so its column is taller by that
+   much: the notice and header above the page take height the viewport unit
+   does not know about. */
 .home {
   min-height: calc(100dvh - 5.25rem - 1px);
-  padding-bottom: calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom));
+}
+
+/* BlackSky has no bar: its only way out is its own Leave control, so the page
+   keeps the plain bottom padding. */
+.blacksky {
+  padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
 }
 
 /* ── First open (E1-US1-AC0) ───────────────────────────────────────────────── */

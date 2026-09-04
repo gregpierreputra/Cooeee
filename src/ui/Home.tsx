@@ -4,7 +4,6 @@ import * as copy from '../core/copy';
 import { homeView, titleCase, type HomeView } from '../core/home';
 import type { Pack } from '../core/types';
 import { deleteCompletePack, listCompletePacks } from '../data/db';
-import BottomNav from './components/BottomNav';
 import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
 
@@ -140,8 +139,6 @@ export default function Home({ now }: { now?: number }) {
           </span>
         </HoldButton>
       </div>
-
-      <BottomNav />
     </main>
   );
 }

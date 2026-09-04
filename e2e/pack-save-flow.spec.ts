@@ -90,6 +90,7 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
   await page.getByRole('button', { name: 'Open saved pack' }).click();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible(); // the bar follows to every page
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
   await expect(page.getByRole('heading', { name: 'Designated Bushfire Prone Area' })).toBeVisible();
   await expect(page.getByText(/Published by Department of Transport and Planning/)).toBeVisible();

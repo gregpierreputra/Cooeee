@@ -14,6 +14,7 @@ import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
 import AppHeader from '../../src/ui/components/AppHeader';
+import BottomNav from '../../src/ui/components/BottomNav';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
 import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
@@ -319,6 +320,7 @@ if (window.location.pathname === '/home') {
     <>
       <AppHeader now={homeNow} />
       <Home now={homeNow} />
+      <BottomNav />
     </>
   );
 }

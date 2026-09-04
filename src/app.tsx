@@ -10,6 +10,7 @@ import Home from './ui/Home';
 import Nearby from './ui/Nearby';
 import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
+import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
 import PackDetail from './ui/PackDetail';
 import { Search } from './ui/PackNew/Search';
@@ -49,6 +50,16 @@ function HeaderHost() {
   const { pathname } = useLocation();
   if (pathname.startsWith('/blacksky')) return null;
   return <AppHeader />;
+}
+
+/** The bottom bar is ONE component too, mounted here for every screen but
+ *  BlackSky, for the same reason as the header: that mode has a single
+ *  deliberate way out, and a bar of destinations across the bottom of it
+ *  would be another. */
+function BottomNavHost() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/blacksky')) return null;
+  return <BottomNav />;
 }
 
 function UpdateBanner({ applyUpdate }: { applyUpdate: () => void }) {
@@ -117,6 +128,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/nearby" element={<Nearby />} />
         <Route path="/blacksky" element={<BlackSky />} />
       </Routes>
+      <BottomNavHost />
     </BrowserRouter>
   );
 }

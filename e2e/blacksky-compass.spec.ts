@@ -15,6 +15,8 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   await page.goto('/blacksky');
 
   await expect(page.getByText('Nearest official places of last resort')).toBeVisible();
+  // The bottom bar is on every other screen; BlackSky's only exit is its own.
+  await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
   await expect(page.getByText(/GPS is only accurate to ± 350 m/)).toBeVisible();
   await expect(page.getByText('The arrow is drawn with north at the top of the screen.')).toBeVisible();
 
