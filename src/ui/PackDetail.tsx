@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 
-import { DTP_DATASET_URL } from '../core/constants';
+import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
 import { formatDistanceM } from '../core/destination';
 import {
@@ -34,8 +34,9 @@ export default function PackDetail({
 }: PackDetailProps) {
   const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
   const [offlineSource, setOfflineSource] = useState<PackDetailItem | null>(null);
-  // One object URL per stored PDF, made from the bytes already on the device
-  // and released with the screen. No request is involved.
+  // One object URL per stored file (the PDF copies and the area map), made
+  // from the bytes already on the device and released with the screen. No
+  // request is involved.
   const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -46,7 +47,7 @@ export default function PackDetail({
       if (!live) return;
       urls = Object.fromEntries((value?.files ?? []).map((file) => [
         file.id,
-        URL.createObjectURL(new Blob([file.bytes], { type: 'application/pdf' })),
+        URL.createObjectURL(new Blob([file.bytes], { type: mediaType(file.name) })),
       ]));
       // Both land in the one render, so the file links are never a frame late.
       setFileUrls(urls);
@@ -76,6 +77,7 @@ export default function PackDetail({
   const items = packDetailItems(content);
   const places = packDetailPlaces(content);
   const absence = packDetailAbsence(content);
+  const areaMap = content.files.find((file) => file.name === AREA_MAP_NAME);
   const interceptSource = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
     event.preventDefault();
     setOfflineSource(decideOriginalSourceAccess(item).item);
@@ -95,6 +97,25 @@ export default function PackDetail({
       </header>
 
       <StateCard heading={content.pack.name} detail={content.pack.address} />
+
+      {/* The map of the pack's own area, from the bytes stored with the pack.
+          The saved place is the centre of the picture by construction, so the
+          ring is drawn at the middle rather than computed. Absent on packs
+          built before the map was stored. */}
+      {areaMap && fileUrls[areaMap.id] ? (
+        <section>
+          <span className="kicker">{copy.AREA_MAP_LABEL}</span>
+          <figure className="area-map">
+            <div className="area-map-frame">
+              <img src={fileUrls[areaMap.id]} alt={copy.AREA_MAP_ALT} />
+              <span className="area-map-pin" aria-hidden="true" />
+            </div>
+            <figcaption className="muted">
+              {copy.AREA_MAP_LINE(formatSavedDate(areaMap.retrievedAt))}
+            </figcaption>
+          </figure>
+        </section>
+      ) : null}
 
       {!content.recoveryVerified ? (
         <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />
@@ -189,6 +210,9 @@ export default function PackDetail({
     </main>
   );
 }
+
+/** The stored bytes become a Blob of their own kind when opened. */
+const mediaType = (name: string) => (name.endsWith('.png') ? 'image/png' : 'application/pdf');
 
 /** How an item's original source opens: the copy saved in the pack first — a
  *  PDF of the page, handed to the phone as a file, no signal needed — then the

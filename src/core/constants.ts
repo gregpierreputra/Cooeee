@@ -56,6 +56,10 @@ export const DTP_LICENCE = 'CC BY 4.0';
  * machine, in raw JSON, and is not a page to read. */
 export const DTP_DATASET_URL =
   'https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa';
+/** The file name of the Web Map Service picture of a pack's area, stored with
+ *  the pack's source copies. Named here so the pack page can find it without
+ *  importing the module that fetches it. */
+export const AREA_MAP_NAME = 'bushfire-prone-area-map.png';
 
 // The arrows are drawn from any fix; these decide when the screen says the fix
 // is old or vague beside them, and when a marked-position estimate expires.
@@ -84,8 +88,9 @@ export const isInsideVictoria = (lat: number, lon: number): boolean =>
 
 export const SNAPSHOT_MAX_AGE_DAYS = 60;
 
-/** The most the app will read from any one response. The largest reply today
- *  is a 151 KB source PDF; a body past this is a fault or an attack, not data. */
+/** The most the app will read from any one response. The largest replies
+ *  today are a source PDF and the area map, a few hundred kilobytes each; a
+ *  body past this is a fault or an attack, not data. */
 export const MAX_RESPONSE_BYTES = 10 * 1_048_576;
 
 /** The most rows one synced collection may hold. Victoria has about 315

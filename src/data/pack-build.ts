@@ -44,7 +44,9 @@ async function createPreparedPackOffer(
   return {
     version: 1,
     textBytes: exactTextBytes(content),
-    files: files.map(fileMeta),
+    // In id order, which is the order the store hands them back in, so the
+    // verification re-derives the same offer whatever order they arrived in.
+    files: files.map(fileMeta).sort((left, right) => left.id.localeCompare(right.id)),
     fileBytes: files.reduce((sum, file) => sum + file.sizeBytes, 0),
     omittedItems,
     textManifest: await textManifest(content),

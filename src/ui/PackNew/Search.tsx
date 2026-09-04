@@ -32,11 +32,10 @@ import type {
   PendingPlace,
   TextPackContent,
 } from '../../core/types';
-import { sourcePageUrls } from '../../core/provenance';
 import { listCompletePacks } from '../../data/db';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
-import { loadSourceFiles } from '../../data/source-files';
+import { loadPackFiles } from '../../data/source-files';
 import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
 import StatusPage from '../components/StatusPage';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
@@ -84,7 +83,7 @@ type SearchProps = {
   checkArea?: typeof fetchBushfireAreaResult;
   loadPacks?: () => Promise<Pack[]>;
   loadNsp?: () => Promise<NspSnapshot>;
-  loadFiles?: typeof loadSourceFiles;
+  loadFiles?: typeof loadPackFiles;
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
   savePack?: typeof saveTextOnlyPack;
@@ -114,7 +113,7 @@ export function Search({
   checkArea = fetchBushfireAreaResult,
   loadPacks = listCompletePacks,
   loadNsp = loadNspSnapshot,
-  loadFiles = loadSourceFiles,
+  loadFiles = loadPackFiles,
   onKeepSavedPlace,
   buildOffer = createPackOffer,
   savePack = saveTextOnlyPack,
@@ -275,9 +274,10 @@ export function Search({
         destinations,
         recovery: [],
       };
-      // The PDF copies of the source pages travel with the pack, so their
-      // bytes are part of the one size stated before anything is written.
-      const files = await loadFiles(seed.id, sourcePageUrls(content));
+      // The PDF copies of the source pages and the map of the area travel with
+      // the pack, so their bytes are part of the one size stated before
+      // anything is written.
+      const files = await loadFiles(seed.id, content);
       const offer = await buildOffer(content, files);
       setOfferState({ kind: 'ready', offer, content, files });
     } catch {

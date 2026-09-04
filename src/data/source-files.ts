@@ -1,5 +1,7 @@
 import { MAX_RESPONSE_BYTES } from '../core/constants';
-import type { PackFile } from '../core/types';
+import { sourcePageUrls } from '../core/provenance';
+import type { PackFile, TextPackContent } from '../core/types';
+import { loadAreaMap } from './area-map';
 import { readBodyBounded } from './bounded-body';
 import { sha256Hex } from './integrity';
 import sources from './sources.json';
@@ -44,3 +46,14 @@ async function readSourceFile(packId: string, url: string): Promise<PackFile> {
  *  is written to the device here. */
 export const loadSourceFiles = (packId: string, urls: string[]): Promise<PackFile[]> =>
   Promise.all(urls.map((url) => readSourceFile(packId, url)));
+
+/** Everything a pack carries as a file: the copies of its source pages and
+ *  the map of its area. Their bytes are part of the one size stated before
+ *  anything is written. */
+export async function loadPackFiles(packId: string, content: TextPackContent): Promise<PackFile[]> {
+  const [pages, map] = await Promise.all([
+    loadSourceFiles(packId, sourcePageUrls(content)),
+    loadAreaMap(packId, content.pack),
+  ]);
+  return [...pages, map];
+}

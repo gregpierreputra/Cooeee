@@ -79,7 +79,7 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': [
         'error',
-        { ...NO_RAW_DB, patterns: ['**/wfs', '**/nearby', '**/data/nsp', '**/source-files', '**/pack-build'] },
+        { ...NO_RAW_DB, patterns: ['**/wfs', '**/nearby', '**/data/nsp', '**/source-files', '**/area-map', '**/pack-build'] },
       ],
       'no-restricted-globals': ['error', 'fetch'],
     },

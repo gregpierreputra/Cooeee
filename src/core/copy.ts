@@ -5,6 +5,7 @@
 // The exact text literal that will be used in all of the main pages.
 // Never reword them.
 
+import { PACK_RADIUS_KM } from './constants';
 import type { Destination, FacilityType, SourceStatus } from './types';
 
 // Core Mandated Literals
@@ -178,6 +179,14 @@ export const OPEN_SOURCE_FILE = 'Open original source as a file';
 export const SOURCE_FILE_LINE = (date: string) =>
   `A PDF copy of the page as at ${date}, stored on this phone.`;
 export const OPEN_ORIGINAL_SOURCE = 'Open original source (web)';
+
+/** The map of the pack's area stored with it: the Department's own drawing of
+ *  its designation layer, and one line on how to read the picture. */
+export const AREA_MAP_LABEL = 'Map of the area';
+export const AREA_MAP_ALT =
+  'Map of the area around the saved place, with the Designated Bushfire Prone Area shaded';
+export const AREA_MAP_LINE = (date: string) =>
+  `Yellow is the Designated Bushfire Prone Area. White is outside it. The ring marks your saved place, and the picture is ${PACK_RADIUS_KM * 2} km across. Department of Transport and Planning Web Map Service, saved ${date}.`;
 export const EXTERNAL_SOURCE_NOTICE =
   'Opening it may use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to original source (web)';

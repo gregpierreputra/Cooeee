@@ -318,6 +318,42 @@ a {
   flex: 1;
 }
 
+/* The stored picture of the pack's area: square, with the saved place marked
+   at its centre by a ring in the accent colour, so it reads over any ground. */
+.area-map {
+  margin: 0;
+}
+
+.area-map-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+
+.area-map-frame img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.area-map-pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1rem;
+  height: 1rem;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.6);
+  box-shadow: 0 0 0 2px #fff;
+  transform: translate(-50%, -50%);
+}
+
+.area-map figcaption {
+  margin-top: 0.5rem;
+}
+
 .saved-destinations {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));

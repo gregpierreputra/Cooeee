@@ -7,6 +7,7 @@ import {
   chooseLastResortPlaces,
   waitForController,
   WFS_PATTERN,
+  WMS_PATTERN,
 } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
@@ -36,6 +37,13 @@ async function mockOfficialServices(page: Page, opts: {
     }
     return route.continue();
   });
+  // The area map from the same host's Web Map Service: the smallest PNG that
+  // decodes, so the journey never depends on the live map server.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  await page.route(WMS_PATTERN, (route: Route) => route.fulfill({ body: png, contentType: 'image/png' }));
 }
 
 function bpaHitFeature(lgaName: string) {
@@ -88,6 +96,8 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   // E2-US2: both chosen places are in the saved pack, each with its council.
   const savedPlaces = page.locator('.saved-destinations .card');
   await expect(savedPlaces).toHaveCount(2);
+  // The map of the area, from the bytes stored with the pack.
+  await expect(page.locator('.area-map img')).toBeVisible();
   await expect(savedPlaces.getByText(/^Responsible council: /)).toHaveCount(2);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
