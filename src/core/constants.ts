@@ -46,6 +46,9 @@ export const ADDRESS_QUERY_DEBOUNCE_MS = 250;
 
 /** Official area checks share one bounded request sequence. */
 export const AREA_CHECK_TIMEOUT_MS = 10_000;
+/** The map of a pack's area is drawn on request by the Web Map Service, which
+ *  takes a few seconds; past this the pack is built without it. */
+export const AREA_MAP_TIMEOUT_MS = 20_000;
 export const DTP_PUBLISHER = 'Department of Transport and Planning';
 export const DTP_LICENCE = 'CC BY 4.0';
 /** The publisher's own human-readable page for the designation dataset: title,

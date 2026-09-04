@@ -49,11 +49,13 @@ export const loadSourceFiles = (packId: string, urls: string[]): Promise<PackFil
 
 /** Everything a pack carries as a file: the copies of its source pages and
  *  the map of its area. Their bytes are part of the one size stated before
- *  anything is written. */
+ *  anything is written. The map is the one file a pack can do without: a map
+ *  server that is down or slow must not stop the pack, so the pack is built
+ *  without it and its page simply shows no map. */
 export async function loadPackFiles(packId: string, content: TextPackContent): Promise<PackFile[]> {
   const [pages, map] = await Promise.all([
     loadSourceFiles(packId, sourcePageUrls(content)),
-    loadAreaMap(packId, content.pack),
+    loadAreaMap(packId, content.pack).catch(() => null),
   ]);
-  return [...pages, map];
+  return map ? [...pages, map] : pages;
 }

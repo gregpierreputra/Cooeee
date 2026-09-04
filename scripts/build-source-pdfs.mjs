@@ -17,12 +17,12 @@ const index = JSON.parse(readFileSync(new URL('index.json', dataDir), 'utf8'));
 const nsp = JSON.parse(readFileSync(new URL(index.nsp.file, dataDir), 'utf8'));
 
 // The pages: the Country Fire Authority list page the site snapshot names, and
-// the Department of Transport and Planning dataset page. `expect` is a phrase
+// the Department of Transport and Planning dataset page. `mustContain` is a phrase
 // the rendered page must carry: a block page, a sign-in wall or an error
 // document is not the page, and is never hashed and shipped.
 const pages = [
-  { url: nsp.source.url, name: 'neighbourhood-safer-places', expect: 'Neighbourhood Safer Places' },
-  { url: DTP_DATASET_URL, name: 'designated-bushfire-prone-area', expect: 'Designated Bushfire Prone Area' },
+  { url: nsp.source.url, name: 'neighbourhood-safer-places', mustContain: 'Neighbourhood Safer Places' },
+  { url: DTP_DATASET_URL, name: 'designated-bushfire-prone-area', mustContain: 'Designated Bushfire Prone Area' },
 ];
 
 // The dataset page previews its map in a Digital Twin Victoria frame, which
@@ -51,7 +51,7 @@ mkdirSync(new URL('sources/', dataDir), { recursive: true });
 
 const browser = await chromium.launch();
 const sources = [];
-for (const { url, name, expect } of pages) {
+for (const { url, name, mustContain } of pages) {
   // A desktop-width layout, printed to A4 at three quarters, so the copy is the
   // page a reader sees on a computer rather than a narrow tablet cut of it. The
   // page's own content security policy is set aside for this render only: it
@@ -87,7 +87,7 @@ for (const { url, name, expect } of pages) {
   const map = page.locator('#state-map');
   if (await map.count()) await map.evaluate((img) => img.decode()); // a map that did not load fails the build
   const text = await page.innerText('body');
-  if (!text.includes(expect)) throw new Error(`${name}: the rendered page does not read as "${expect}"`);
+  if (!text.includes(mustContain)) throw new Error(`${name}: the rendered page does not read as "${mustContain}"`);
   if (/\b403\b|Request blocked/.test(text)) throw new Error(`${name}: the rendered page carries a block page`);
   const pdf = await page.pdf({ format: 'A4', scale: 0.75, printBackground: true });
   await page.close();

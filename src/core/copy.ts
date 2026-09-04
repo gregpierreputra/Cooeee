@@ -338,11 +338,6 @@ export const TURN_ON_COMPASS = 'Turn on the compass';
 export const distanceLabel = (m: number): string =>
   m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
 
-/** The whole bearing-and-distance figure: "NE ↗ · 1.1 km". This is the display
- *  in full — never a route, an ETA or an arrival promise. */
-export const BEARING_FIGURE = (point: string, glyph: string, distance: string) =>
-  `${point} ${glyph} · ${distance}`;
-
 // E3-US1-AC4 marked-position estimate
 export const MARK_HINT =
   'If you are standing at your saved place, mark it. Bearings can be estimated from there. This is not GPS.';

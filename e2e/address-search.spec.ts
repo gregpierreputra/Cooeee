@@ -137,10 +137,13 @@ test('AC4 maps genuine browser offline mode to the same state', async ({ page, c
 });
 
 test('AC4 retry is explicit and issues exactly one new request', async ({ page }) => {
+  // A search gets one automatic second attempt (a single dropped request is
+  // not the register being down), so both attempts fail here before the
+  // explicit control appears.
   let requests = 0;
   await page.route(WFS_PATTERN, (route) => {
     requests += 1;
-    return requests === 1
+    return requests <= 2
       ? route.abort('failed')
       : route.fulfill({ json: { type: 'FeatureCollection', features: [] } });
   });
@@ -148,10 +151,10 @@ test('AC4 retry is explicit and issues exactly one new request', async ({ page }
   await search(page);
   const tryAgain = page.getByRole('button', { name: 'Try again' });
   await expect(tryAgain).toBeVisible();
-  expect(requests).toBe(1);
+  expect(requests).toBe(2);
   await tryAgain.click();
   await expect(page.getByRole('status')).toContainText('No matching address found');
-  expect(requests).toBe(2);
+  expect(requests).toBe(3);
 });
 
 // ── E1-US1-AC2 duplicate visible candidates ─────────────────────────────────

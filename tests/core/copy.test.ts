@@ -142,10 +142,6 @@ describe('BlackSky bearing and distance figures', () => {
     expect(copy.distanceLabel(1120)).toBe('1.1 km');
     expect(copy.distanceLabel(2700)).toBe('2.7 km');
   });
-
-  it('composes the scenario figure exactly', () => {
-    expect(copy.BEARING_FIGURE('NE', '↗', '1.1 km')).toBe('NE ↗ · 1.1 km');
-  });
 });
 
 describe('BlackSky compass sectors', () => {

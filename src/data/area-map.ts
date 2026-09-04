@@ -1,4 +1,9 @@
-import { AREA_MAP_NAME, MAX_RESPONSE_BYTES, PACK_RADIUS_KM } from '../core/constants';
+import {
+  AREA_MAP_NAME,
+  AREA_MAP_TIMEOUT_MS,
+  MAX_RESPONSE_BYTES,
+  PACK_RADIUS_KM,
+} from '../core/constants';
 import type { LatLon, PackFile } from '../core/types';
 import { readBodyBounded } from './bounded-body';
 import { sha256Hex } from './integrity';
@@ -46,7 +51,7 @@ export function areaMapUrl({ lat, lon }: LatLon): string {
  *  pack. Nothing is written to the device here. */
 export async function loadAreaMap(packId: string, centre: LatLon): Promise<PackFile> {
   const url = areaMapUrl(centre);
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(AREA_MAP_TIMEOUT_MS) });
   if (!response.ok) throw new TypeError(`area map: request failed (${response.status})`);
   const bytes = await readBodyBounded(response, MAX_RESPONSE_BYTES);
   // The service answers a bad request with an XML message and status 200, so
