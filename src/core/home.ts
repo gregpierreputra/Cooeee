@@ -60,20 +60,16 @@ export function preparationLine(seed: number): PreparationLine {
   };
 }
 
-export type NavItem = { key: 'home' | 'nearby' | 'pack'; label: string; to: string };
+export type NavItem = { key: 'home' | 'nearby'; label: string; to: string };
 
-/** The bottom navigation. Home and the nearby places, plus the way to build a
- *  pack while nothing is saved. A saved pack is opened from the home screen's
- *  own card, so there is no pack tab. BlackSky is deliberately absent — it is
- *  entered by a deliberate hold, never by a tab. */
-export function navItems(packId: string | null): NavItem[] {
-  const items: NavItem[] = [
-    { key: 'home', label: copy.NAV_HOME, to: '/' },
-    { key: 'nearby', label: copy.NAV_NEARBY, to: '/nearby' },
-  ];
-  if (packId === null) items.push({ key: 'pack', label: copy.BUILD_A_PACK, to: '/packs/new' });
-  return items;
-}
+/** The bottom navigation: home and the nearby places, the same on every screen.
+ *  Building and opening a pack are actions on the home screen itself, so
+ *  neither is a tab. BlackSky is deliberately absent — it is entered by a
+ *  deliberate hold, never by a tab. */
+export const NAV_ITEMS: readonly NavItem[] = [
+  { key: 'home', label: copy.NAV_HOME, to: '/' },
+  { key: 'nearby', label: copy.NAV_NEARBY, to: '/nearby' },
+];
 
 /** Everything the home screen renders, decided in one place.
  *
@@ -81,20 +77,13 @@ export function navItems(packId: string | null): NavItem[] {
  *  when there is nothing saved, so this screen can never be the way a second
  *  complete pack comes to exist. */
 export type HomeView =
-  | { kind: 'no-pack'; preparation: PreparationLine; nav: NavItem[] }
-  | {
-      kind: 'pack';
-      pack: Pack;
-      ageLine: string;
-      preparation: PreparationLine;
-      nav: NavItem[];
-    };
+  | { kind: 'no-pack'; preparation: PreparationLine }
+  | { kind: 'pack'; pack: Pack; ageLine: string; preparation: PreparationLine };
 
 export function homeView(now: number, packs: Pack[]): HomeView {
   const pack = oldestPack(packs);
   const preparation = preparationLine(now);
-  const nav = navItems(pack?.id ?? null);
-  if (pack === null) return { kind: 'no-pack', preparation, nav };
+  if (pack === null) return { kind: 'no-pack', preparation };
   return {
     kind: 'pack',
     pack,
@@ -102,7 +91,6 @@ export function homeView(now: number, packs: Pack[]): HomeView {
     // window the mandated 'Saved N days ago — not recently verified'.
     ageLine: freshness(now, pack.verifiedAt).label,
     preparation,
-    nav,
   };
 }
 

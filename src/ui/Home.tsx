@@ -141,7 +141,7 @@ export default function Home({ now }: { now?: number }) {
         </HoldButton>
       </div>
 
-      {view === null ? null : <BottomNav items={view.nav} />}
+      <BottomNav />
     </main>
   );
 }

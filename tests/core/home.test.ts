@@ -4,7 +4,7 @@ import * as copy from '../../src/core/copy';
 import {
   headerAge,
   homeView,
-  navItems,
+  NAV_ITEMS,
   oldestPack,
   preparationLine,
   preparationLineIndex,
@@ -139,26 +139,16 @@ describe('preparation line selection', () => {
 
 // BlackSky is entered by a deliberate hold. It is never a tab, in any state.
 describe('bottom navigation', () => {
-  it('offers home and nearby places when a pack exists; the pack opens from the home card', () => {
-    expect(navItems('pack-1')).toEqual([
+  it('offers home and nearby places, the same whether or not a pack is saved', () => {
+    expect(NAV_ITEMS).toEqual([
       { key: 'home', label: 'Home', to: '/' },
       { key: 'nearby', label: 'Nearby', to: '/nearby' },
     ]);
   });
 
-  it('offers home, nearby places and the build entry when nothing is saved', () => {
-    expect(navItems(null)).toEqual([
-      { key: 'home', label: 'Home', to: '/' },
-      { key: 'nearby', label: 'Nearby', to: '/nearby' },
-      { key: 'pack', label: 'Build a pack', to: '/packs/new' },
-    ]);
-  });
-
-  it('never offers BlackSky as a tab, in either state', () => {
-    for (const items of [navItems(null), navItems('pack-1')]) {
-      expect(items.map((item) => item.to)).not.toContain('/blacksky');
-      expect(items.map((item) => item.label)).not.toContain(copy.HOLD_FOR_BLACKSKY);
-    }
+  it('never offers BlackSky as a tab', () => {
+    expect(NAV_ITEMS.map((item) => item.to)).not.toContain('/blacksky');
+    expect(NAV_ITEMS.map((item) => item.label)).not.toContain(copy.HOLD_FOR_BLACKSKY);
   });
 });
 
@@ -168,7 +158,6 @@ describe('the home view', () => {
   it('offers to build, and reports no age, when nothing is saved', () => {
     const view = homeView(NOW, []);
     expect(view.kind).toBe('no-pack');
-    expect(view.nav[2]).toEqual({ key: 'pack', label: 'Build a pack', to: '/packs/new' });
   });
 
   it('offers the saved pack, with the pack card wording for its age', () => {
