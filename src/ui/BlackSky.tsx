@@ -68,38 +68,76 @@ export default function BlackSky({
     };
   }, [loadPacks, loadSites]);
 
+  // The position watch and the screen wake lock, together. Browsers stop
+  // delivering positions while the screen is locked or the app is in the
+  // background, and some phones never resume a watch they paused: that is how
+  // the distance figure froze during walking tests. So both are dropped when
+  // the screen is hidden (no GPS and no lit screen for a page nobody is looking
+  // at) and started fresh the moment it returns. The wake lock keeps the phone
+  // from locking mid-walk, as a navigation app would; a phone that refuses it
+  // (power saving mode, or no such API) still gets the restart.
   useEffect(() => {
     if (!('geolocation' in navigator)) {
       setPermission('denied');
       return;
     }
+    let watch: number | null = null;
+    let lock: WakeLockSentinel | null = null;
 
-    const watch = navigator.geolocation.watchPosition(
-      (position) => {
-        latestFix.current = {
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-          accuracyM: Math.round(position.coords.accuracy),
-          // Receipt time, NOT position.timestamp: staleness is measured against
-          // Date.now(), and some mobile engines report GPS timestamps from a
-          // different clock. Mixing clock domains would break the 30 s rule.
-          at: Date.now(),
-        };
+    const onPosition = (position: GeolocationPosition) => {
+      latestFix.current = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+        accuracyM: Math.round(position.coords.accuracy),
+        // Receipt time, NOT position.timestamp: staleness is measured against
+        // Date.now(), and some mobile engines report GPS timestamps from a
+        // different clock. Mixing clock domains would break the 30 s rule.
+        at: Date.now(),
+      };
+      setPermission('granted');
+      setMark(null); // a real fix always beats a marked-position estimate
+      // Acquiring → showing a direction IS a meaningful change, so the very
+      // first fix renders immediately. Every later sample waits for the tick.
+      setFix((previous) => previous ?? latestFix.current);
+    };
+    const onError = (error: GeolocationPositionError) => {
+      if (error.code === error.PERMISSION_DENIED) setPermission('denied');
+    };
 
-        setPermission('granted');
-        setMark(null); // a real fix always beats a marked-position estimate
-        // Acquiring → showing a direction IS a meaningful change, so the very
-        // first fix renders immediately. Every later sample waits for the tick.
-        setFix((previous) => previous ?? latestFix.current);
-      },
-      (error) => {
-        if (error.code === error.PERMISSION_DENIED) setPermission('denied');
-      },
+    const wake = () => {
+      if (watch !== null) return;
       // The most accurate continuous watch the device offers: high accuracy on,
       // and no cached position accepted in place of a fresh sensor read.
-      { enableHighAccuracy: true, maximumAge: 0 },
-    );
-    return () => navigator.geolocation.clearWatch(watch);
+      watch = navigator.geolocation.watchPosition(onPosition, onError, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+      });
+      if (!('wakeLock' in navigator)) return;
+      navigator.wakeLock.request('screen').then(
+        (held) => {
+          if (watch === null) void held.release(); // granted after sleep(): let it go
+          else lock = held;
+        },
+        () => {},
+      );
+    };
+    const sleep = () => {
+      if (watch !== null) navigator.geolocation.clearWatch(watch);
+      watch = null;
+      void lock?.release();
+      lock = null;
+    };
+    const onVisibility = () => {
+      if (document.hidden) sleep();
+      else wake();
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    wake();
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      sleep();
+    };
   }, []);
 
   // The tick: publishes the clock AND the newest fix together, once per

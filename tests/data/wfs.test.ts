@@ -132,6 +132,51 @@ describe('address search request', () => {
     await expect(fetchAddressCandidates('ridge', fetcher)).rejects.toThrow('HTTP 503');
   });
 
+  // The public register occasionally drops a single request; one retry
+  // recovers from that without the user ever seeing the failed state.
+  it('retries once after a failed attempt and succeeds on the second', async () => {
+    let calls = 0;
+    const fetcher = async () => {
+      calls += 1;
+      if (calls === 1) return new Response('', { status: 503 });
+      return new Response(JSON.stringify({ type: 'FeatureCollection', features: [feature()] }), {
+        status: 200,
+      });
+    };
+    await expect(fetchAddressCandidates('ridge', fetcher)).resolves.toMatchObject({
+      candidates: [{ address: '6 RIDGE ROAD KALORAMA 3766' }],
+    });
+    expect(calls).toBe(2);
+  });
+
+  // Two failures in a row is the register actually being unavailable, not a
+  // dropped request, so the second failure is the one the caller sees.
+  it('gives up after a second failed attempt', async () => {
+    let calls = 0;
+    const fetcher = async () => {
+      calls += 1;
+      return new Response('', { status: 503 });
+    };
+    await expect(fetchAddressCandidates('ridge', fetcher)).rejects.toThrow('HTTP 503');
+    expect(calls).toBe(2);
+  });
+
+  // A cancelled or superseded query is never retried: retrying would send a
+  // second request for text the user has already moved past.
+  it('never retries a request the caller cancelled', async () => {
+    const caller = new AbortController();
+    let calls = 0;
+    const fetcher = async (_input: RequestInfo | URL, init?: RequestInit) => {
+      calls += 1;
+      caller.abort();
+      expect(init?.signal?.aborted).toBe(true);
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    };
+    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+      .rejects.toThrow('aborted');
+    expect(calls).toBe(1);
+  });
+
   it('rejects a drifted feature-collection shape', async () => {
     const fetcher = async () => new Response(JSON.stringify({ features: null }), { status: 200 });
     await expect(fetchAddressCandidates('ridge', fetcher)).rejects.toThrow(TypeError);

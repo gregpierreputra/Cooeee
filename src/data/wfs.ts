@@ -103,16 +103,15 @@ export function buildAddressSearchUrl(query: string): string {
   return `${WFS_BASE_URL}?${params.toString()}`;
 }
 
-/** The search runs while the user types, so a caller may supersede its own
- * request. `signal` is the caller's cancellation, chained into the request's own
- * timeout controller: when the typed query changes, the earlier request is
- * aborted on the wire rather than left running and ignored. */
-export async function fetchAddressCandidates(
+/** One attempt against the register. `signal` is the caller's cancellation,
+ * chained into this attempt's own timeout controller: when the typed query
+ * changes, the earlier request is aborted on the wire rather than left
+ * running and ignored. */
+async function requestAddressRecords(
   query: string,
-  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
-  onUnresolvedDuplicates: (message: string) => void = console.error,
-  signal?: AbortSignal,
-): Promise<AddressCandidateResolution> {
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  signal: AbortSignal | undefined,
+): Promise<AddressRecord[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ADDRESS_SEARCH_TIMEOUT_MS);
   const abortWithCaller = () => controller.abort(signal?.reason);
@@ -129,19 +128,41 @@ export async function fetchAddressCandidates(
     const payload: unknown = await readJsonBounded(response, MAX_RESPONSE_BYTES);
     assertRecord(payload, 'response');
     if (!Array.isArray(payload.features)) throw new TypeError('response.features must be an array');
-    const resolution = resolveAddressCandidates(payload.features.map(parseAddressRecord));
-    // A bare count. The searched text, the returned addresses and their points
-    // are the user's business and none of them belongs in a diagnostic.
-    if (resolution.unresolvedCount > 0) {
-      onUnresolvedDuplicates(
-        `Vicmap address search left ${resolution.unresolvedCount} group(s) unresolved`,
-      );
-    }
-    return resolution;
+    return payload.features.map(parseAddressRecord);
   } finally {
     clearTimeout(timeout);
     signal?.removeEventListener('abort', abortWithCaller);
   }
+}
+
+/** The search runs while the user types, so a caller may supersede its own
+ * request; a superseded or genuinely cancelled attempt is never retried. A
+ * live but momentarily flaky register (the public WFS occasionally drops one
+ * request) gets one immediate second attempt before this surfaces as failed,
+ * since a single dropped request is not the same as the register being down. */
+export async function fetchAddressCandidates(
+  query: string,
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
+  onUnresolvedDuplicates: (message: string) => void = console.error,
+  signal?: AbortSignal,
+): Promise<AddressCandidateResolution> {
+  let records: AddressRecord[];
+  try {
+    records = await requestAddressRecords(query, fetcher, signal);
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    records = await requestAddressRecords(query, fetcher, signal);
+  }
+
+  const resolution = resolveAddressCandidates(records);
+  // A bare count. The searched text, the returned addresses and their points
+  // are the user's business and none of them belongs in a diagnostic.
+  if (resolution.unresolvedCount > 0) {
+    onUnresolvedDuplicates(
+      `Vicmap address search left ${resolution.unresolvedCount} group(s) unresolved`,
+    );
+  }
+  return resolution;
 }
 
 function pointFilter({ lat, lon }: Pick<PendingPlace, 'lat' | 'lon'>): string {
