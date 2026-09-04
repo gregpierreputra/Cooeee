@@ -1241,9 +1241,11 @@ input {
   min-height: calc(100dvh - 5.25rem - 1px);
 }
 
-/* BlackSky has no bar: its only way out is its own Leave control, so the page
-   keeps the plain bottom padding. */
-.blacksky {
+/* Two screens have no bar: BlackSky, whose only way out is its own Leave
+   control, and the first-open disclosure, which stands before the router. Both
+   keep the plain bottom padding. */
+.blacksky,
+.first-open {
   padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
 }
 

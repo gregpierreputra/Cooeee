@@ -243,8 +243,8 @@ describe('E1-US1-AC2–AC4 copy', () => {
     expect(copy.NONE_OF_THESE).toBe('None of these is my address');
   });
 
-  // Character for character, including the em dash. The hyphen that stood here
-  // until now was a different sentence from the one the baseline mandates.
+  // Character for character, with no dash of any kind: the em dash is gone,
+  // and a hyphen in its place would be a different sentence.
   it('uses the baseline R2 no-match literal exactly, with no dash of any kind', () => {
     expect(copy.NO_ADDRESS_MATCH).toBe(
       'No matching address found. Check the spelling or try the nearest cross street.',

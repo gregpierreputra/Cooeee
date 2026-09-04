@@ -150,7 +150,11 @@ export async function fetchAddressCandidates(
   try {
     records = await requestAddressRecords(query, fetcher, signal);
   } catch (error) {
-    if (signal?.aborted) throw error;
+    // Neither a caller's cancellation nor the attempt's own timeout is retried:
+    // the first is a query the user moved past, and the second would double
+    // the ADDRESS_SEARCH_TIMEOUT_MS bound the screen promises.
+    const aborted = signal?.aborted || (error instanceof Error && error.name === 'AbortError');
+    if (aborted) throw error;
     records = await requestAddressRecords(query, fetcher, signal);
   }
 

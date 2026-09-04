@@ -9,9 +9,9 @@ describe('mandated literals', () => {
     expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance, not a safety ranking');
   });
 
-  // Exact match including punctuation. The literal is mandated with an em dash;
-  // a hyphen-minus in its place is a different sentence, and it stood in this
-  // file undetected because the assertion carried the same typo.
+  // Exact match including punctuation. The literal carries no dash of any
+  // kind: the em dash it once had is gone, and a hyphen-minus in its place
+  // would be a different sentence.
   it('an unmatched address says what to try next, with no dash of any kind', () => {
     expect(copy.NO_ADDRESS_MATCH).toBe(
       'No matching address found. Check the spelling or try the nearest cross street.',

@@ -80,15 +80,16 @@ export type Pack = {
   hazardType?: HazardType;          // absent = 'bushfire' (Iteration 1 builds bushfire only)
 };
 
-/** A PDF copy of one official source page, saved inside the pack so the page
- * itself opens with no signal. `bytes` is an ArrayBuffer: it structured-clones
- * into IndexedDB in every engine, and becomes a Blob only when opened. */
+/** A file saved inside the pack so it opens with no signal: a PDF copy of one
+ * official source page, or the map of the pack's area. `bytes` is an
+ * ArrayBuffer: it structured-clones into IndexedDB in every engine, and becomes
+ * a Blob only when opened. */
 export type PackFile = {
   id: string;             // `${packId}:${name}`
   packId: string;
-  url: string;            // the page this is a copy of — the url a Source names
-  name: string;           // the file name the copy is offered under
-  retrievedAt: number;    // when the page was rendered to PDF
+  url: string;            // the page this is a copy of, or the map request that drew it
+  name: string;           // the file name; a page copy is offered for download under it
+  retrievedAt: number;    // when the page was rendered to PDF, or the map was drawn
   sizeBytes: number;
   sha256: string;
   bytes: ArrayBuffer;

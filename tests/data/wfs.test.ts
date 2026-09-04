@@ -161,6 +161,18 @@ describe('address search request', () => {
     expect(calls).toBe(2);
   });
 
+  // An attempt that hit its own timeout is not retried either: a second
+  // attempt would double the bound the search promises.
+  it('never retries an attempt that timed out', async () => {
+    let calls = 0;
+    const fetcher = async () => {
+      calls += 1;
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    };
+    await expect(fetchAddressCandidates('ridge', fetcher)).rejects.toThrow('aborted');
+    expect(calls).toBe(1);
+  });
+
   // A cancelled or superseded query is never retried: retrying would send a
   // second request for text the user has already moved past.
   it('never retries a request the caller cancelled', async () => {

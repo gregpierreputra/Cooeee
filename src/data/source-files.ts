@@ -10,8 +10,8 @@ import sources from './sources.json';
 // scripts/build-source-pdfs.mjs. Their names come from the register bundled
 // with this code, never from a runtime read: an older service worker or HTTP
 // cache can hand back an older register, and a pack must never be built
-// against one. The files themselves are read from this origin only — the content
-// security policy permits nothing else.
+// against one. The copies themselves are read from this origin only; the one
+// file from elsewhere is the map of the pack's area, in area-map.ts.
 
 function fail(message: string): never {
   throw new TypeError(`source files: ${message}`);
