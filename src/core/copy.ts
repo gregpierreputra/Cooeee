@@ -415,7 +415,6 @@ export const SAVED_PLACE_LABEL = 'Saved place';
 
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
-export const NAV_MY_PACK = 'My pack';
 
 /** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
  *  is written here in sentence case and read out as words, not as letters. */

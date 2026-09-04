@@ -2,8 +2,8 @@ import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import type { NavItem } from '../../core/home';
 
-/** The bottom navigation. Three destinations, all of which exist; what they
- *  are is decided in core/home.ts navItems(), not here.
+/** The bottom navigation. Two or three destinations, all of which exist; what
+ *  they are is decided in core/home.ts navItems(), not here.
  *
  *  A fixed bar on the panel colour, so it stays within thumb reach whatever the
  *  page above it does. Each item is an icon over its label — the label is

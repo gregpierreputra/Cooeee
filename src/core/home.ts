@@ -62,17 +62,17 @@ export function preparationLine(seed: number): PreparationLine {
 
 export type NavItem = { key: 'home' | 'nearby' | 'pack'; label: string; to: string };
 
-/** The bottom navigation. Three destinations, all of which exist; nothing here
- *  is invented for a later epic. BlackSky is deliberately absent — it is
+/** The bottom navigation. Home and the nearby places, plus the way to build a
+ *  pack while nothing is saved. A saved pack is opened from the home screen's
+ *  own card, so there is no pack tab. BlackSky is deliberately absent — it is
  *  entered by a deliberate hold, never by a tab. */
 export function navItems(packId: string | null): NavItem[] {
-  return [
+  const items: NavItem[] = [
     { key: 'home', label: copy.NAV_HOME, to: '/' },
     { key: 'nearby', label: copy.NAV_NEARBY, to: '/nearby' },
-    packId === null
-      ? { key: 'pack', label: copy.BUILD_A_PACK, to: '/packs/new' }
-      : { key: 'pack', label: copy.NAV_MY_PACK, to: `/packs/${packId}` },
   ];
+  if (packId === null) items.push({ key: 'pack', label: copy.BUILD_A_PACK, to: '/packs/new' });
+  return items;
 }
 
 /** Everything the home screen renders, decided in one place.

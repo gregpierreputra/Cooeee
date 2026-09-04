@@ -11,7 +11,7 @@ import {
   HOLD_TO_ENTER,
   NAV_HOME,
   NAV_LABEL,
-  NAV_MY_PACK,
+  NAV_NEARBY,
   NO_PACK_SAVED,
   NOT_RECENTLY_VERIFIED_LABEL,
   OPEN_PACK,
@@ -174,7 +174,7 @@ test.describe('the returning-user home screen', () => {
     await page.goto(home('?days=3'));
     const nav = page.getByRole('navigation', { name: NAV_LABEL });
     await expect(nav.getByRole('link', { name: NAV_HOME })).toBeVisible();
-    await expect(nav.getByRole('link', { name: NAV_MY_PACK })).toBeVisible();
+    await expect(nav.getByRole('link', { name: NAV_NEARBY })).toBeVisible();
     await expect(nav.getByRole('link', { name: HOLD_FOR_BLACKSKY })).toHaveCount(0);
     expect((await nav.textContent()) ?? '').not.toContain('BlackSky');
   });
