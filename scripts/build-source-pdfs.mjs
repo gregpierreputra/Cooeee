@@ -39,8 +39,11 @@ const STATE_MAP_URL = `https://opendata.maps.vic.gov.au/geoserver/wms?${new URLS
   srs: 'EPSG:4326',
   layers: 'open-data-platform:vmlite_victoria_polygon,open-data-platform:bushfire_prone_area,open-data-platform:vmlite_lga',
   bbox: `${VIC_EXTENT.minLon},${VIC_EXTENT.minLat},${VIC_EXTENT.maxLon},${VIC_EXTENT.maxLat}`,
-  width: '1600',
-  height: '1000',
+  // The largest picture the service draws; the dpi option keeps council names
+  // and lines at their size, so the bigger picture is simply sharper.
+  format_options: 'dpi:180',
+  width: '2048',
+  height: '1280',
 })}`;
 const STATE_MAP_CAPTION =
   'Map: the Designated Bushfire Prone Area, in yellow, over council boundaries, drawn from the Department of Transport and Planning Web Map Service when this copy was made.';

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AREA_MAP_NAME, PACK_RADIUS_KM } from '../../src/core/constants';
+import { AREA_MAP_HALF_KM, AREA_MAP_NAME } from '../../src/core/constants';
 import { areaMapUrl, loadAreaMap } from '../../src/data/area-map';
 
 const centre = { lat: -37.8, lon: 145.3 };
@@ -8,12 +8,12 @@ const serve = (body: BodyInit) =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe('areaMapUrl', () => {
-  it('asks for a square PACK_RADIUS_KM each way from the centre', () => {
+  it('asks for a square AREA_MAP_HALF_KM each way from the centre', () => {
     const bbox = new URL(areaMapUrl(centre)).searchParams.get('bbox') ?? '';
     const [west, south, east, north] = bbox.split(',').map(Number);
     const eastWestKm = (east - west) * 111 * Math.cos((centre.lat * Math.PI) / 180);
-    expect((north - south) * 111).toBeCloseTo(PACK_RADIUS_KM * 2, 6);
-    expect(eastWestKm).toBeCloseTo(PACK_RADIUS_KM * 2, 6);
+    expect((north - south) * 111).toBeCloseTo(AREA_MAP_HALF_KM * 2, 6);
+    expect(eastWestKm).toBeCloseTo(AREA_MAP_HALF_KM * 2, 6);
     expect((north + south) / 2).toBeCloseTo(centre.lat, 9);
     expect((east + west) / 2).toBeCloseTo(centre.lon, 9);
   });
