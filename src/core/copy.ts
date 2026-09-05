@@ -295,6 +295,7 @@ export const ADD_NOTE = 'Add a note';
 export const SAVE_NOTE = 'Save';
 export const DELETE_NOTE = 'Delete';
 export const NOTE_SAVED = 'Note saved.';
+export const NOTE_DELETED = 'Note deleted.';
 export const NOTE_EMPTY = 'Write something before saving.';
 export const NOTE_CHANGE_FAILED = 'That change was not saved. Try again.';
 
