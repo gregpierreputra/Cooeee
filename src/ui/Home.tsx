@@ -107,7 +107,15 @@ export default function Home({ now }: { now?: number }) {
               aria-label={copy.DELETE_PACK}
               onClick={() => setConfirming(true)}
             >
-              ×
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path
+                  d="M7 7l10 10M17 7 7 17"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
             </button>
           </div>
           {/* Title-cased for reading only. The pack still stores the address

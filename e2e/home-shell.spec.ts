@@ -4,7 +4,9 @@ import {
   BLACKSKY_WORKS_WITHOUT_PACK,
   BUILD_A_PACK,
   CHECKED_DAYS_AGO,
+  CONFIRM_DELETE_PACK,
   CONNECTION_ONLINE_LABEL,
+  DELETE_PACK,
   DISMISS_NOTICE,
   HEADER_HOME_LABEL,
   HOLD_FOR_BLACKSKY,
@@ -23,7 +25,7 @@ import {
   SAVED_DAYS_AGO,
 } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
-import { acknowledgeFirstOpen, HARNESS } from './helpers';
+import { acknowledgeFirstOpen, HARNESS, storageCounts } from './helpers';
 
 // E1-US2-AC6. The harness mounts the real header and the real home screen over
 // a real IndexedDB, at a fixed instant, so the three header states are asserted
@@ -234,3 +236,16 @@ test.describe('the connection notice', () => {
     await context.setOffline(false);
   });
 });
+
+// Deleting the pack takes two taps, and the second removes it from the device
+// entirely: the card gives way to the no-pack state and the store holds nothing.
+test('delete removes the pack from the device after the confirmation', async ({ page }) => {
+  await page.goto(home('?days=3'));
+  await page.getByRole('button', { name: DELETE_PACK }).click();
+  await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
+  await expect(page.getByText(NO_PACK_SAVED)).toBeVisible();
+  expect(await storageCounts(page)).toMatchObject({
+    packs: 0, layers: 0, destinations: 0, files: 0, notes: 0,
+  });
+});
+

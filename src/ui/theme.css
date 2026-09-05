@@ -283,21 +283,33 @@ a {
   }
 }
 
-/* Delete-a-pack: the name row carries the ×, the confirm state swaps the card
-   body for the question and an equal-weight keep/delete pair (see the
-   exception note at the top of this section). */
+/* Delete-a-pack: the name row closes with a fingertip-sized ring, the cross
+   drawn inside it, in the fixed red (see the exception note at the top of this
+   section): a half-strength ring at rest, solid with a faint fill on touch. The
+   confirm state swaps the card body for the question and an equal-weight
+   keep/delete pair. */
 .card-delete {
+  width: 44px;
+  height: 44px;
   min-height: 44px;
   min-width: 44px;
   padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: var(--r-pill);
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--offline) 50%, transparent);
+  border-radius: 50%;
+  background: var(--surface-2);
   color: var(--offline);
-  font-size: var(--step-1);
-  line-height: 1;
   position: relative;
   z-index: 1; /* above the pack-card stretched link */
+}
+
+/* Named through the card so it outranks the shared accent hover on buttons. */
+.pack-card .card-delete:hover,
+.pack-card .card-delete:focus-visible,
+.pack-card .card-delete:active {
+  border-color: var(--offline);
+  background: color-mix(in srgb, var(--offline) 14%, transparent);
 }
 
 /* The saved pack's two chosen places, side by side and equal: one grid rule, no
