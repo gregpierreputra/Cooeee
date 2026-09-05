@@ -129,6 +129,13 @@ export const METRES_PER_KM = 1_000;
 export const ACKNOWLEDGEMENT_KEY = 'cooeee.acknowledgement.v1';
 export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';
 
+/** Which screen was open last. BlackSky sets this flag when it opens and only
+ * the hold on Leave BlackSky clears it, so a visit that starts anywhere else is
+ * sent back there. Same rules as the acknowledgement: one browser flag, a
+ * versioned key, a bare marker for a value. */
+export const BLACKSKY_LATCH_KEY = 'cooeee.blacksky.v1';
+export const BLACKSKY_LATCH_VALUE = 'latched';
+
 /** Nearby places (spec §7). A dynamic snapshot whose feed is older than this is
  *  no longer shown as a place to go — only the stale notice and the hotline stay. */
 export const DYNAMIC_SNAPSHOT_MAX_AGE_MS = 60 * 60_000;

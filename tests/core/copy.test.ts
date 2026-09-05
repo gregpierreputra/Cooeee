@@ -199,6 +199,15 @@ describe('deliberate activation', () => {
   it('leaving the mode is one plainly named action', () => {
     expect(copy.LEAVE_BLACKSKY).toBe('Leave BlackSky');
   });
+
+  it('a back press and a return both name the one way out', () => {
+    expect(copy.BACK_PRESSED).toBe(
+      'You pressed back. BlackSky stays until you hold Leave BlackSky for two seconds.',
+    );
+    expect(copy.BLACKSKY_RESUMED).toBe(
+      'BlackSky was open when you last left Cooeee, so it opened again. To leave, hold Leave BlackSky for two seconds.',
+    );
+  });
 });
 
 // E1-US2-AC6: the header's three age states are exact strings, and the two

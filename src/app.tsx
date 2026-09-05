@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes, useLocation, useParams } from 'react-router';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
+import { isBlackSkyLatched } from './core/blacksky-latch';
 import * as copy from './core/copy';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
@@ -27,6 +28,21 @@ let updateReady = false;
 export function markUpdateReady() {
   updateReady = true;
   window.dispatchEvent(new Event(SW_UPDATE_EVENT));
+}
+
+/** A visit that starts anywhere else while BlackSky was the last screen open
+ *  goes straight back to it: an installed app relaunches at '/', and a reload
+ *  or a return from another site must not drop the person on the home screen.
+ *  Checked once, on start; the hold on Leave BlackSky clears the latch. */
+function BlackSkyResume() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (isBlackSkyLatched(localFlagStore()) && !pathname.startsWith('/blacksky')) {
+      navigate('/blacksky', { replace: true });
+    }
+  }, []);
+  return null;
 }
 
 // Route prefix to <html data-mode>. Routing configuration, not a threshold —
@@ -116,6 +132,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
 
   return (
     <BrowserRouter>
+      <BlackSkyResume />
       <ModeSwitch />
       <NoticeBar />
       <HeaderHost />

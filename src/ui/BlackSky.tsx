@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import {
   deriveState,
   estimateFix,
@@ -8,10 +8,12 @@ import {
   type Placed,
   type Screen,
 } from '../core/blacksky';
+import { isBlackSkyLatched, latchBlackSky, unlatchBlackSky } from '../core/blacksky-latch';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { cardinalPoint, magneticDeclinationDeg } from '../core/geo';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
+import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import HoldButton from './components/HoldButton';
 import { useCompass } from './components/useCompass';
@@ -37,6 +39,11 @@ export default function BlackSky({
   const [mark, setMark] = useState<PositionMark | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const navigate = useNavigate();
+  // Latched before this mount means the app brought the person back here (a
+  // relaunch, a reload, or a return from another site), which is worth saying.
+  const [notice, setNotice] = useState(() =>
+    isBlackSkyLatched(localFlagStore()) ? copy.BLACKSKY_RESUMED : null,
+  );
 
   // US1-AC4: with no fix, a marked position stands in for one. estimateFix
   // returns null once its growing uncertainty passes the confidence threshold,
@@ -140,6 +147,23 @@ export default function BlackSky({
     };
   }, []);
 
+  // One way out: the hold on Leave below. The phone's back button pops a
+  // history entry, so this screen adds one spare entry on arrival and, on
+  // every pop, puts itself straight back and says so. The latch in browser
+  // storage remembers that BlackSky was the last screen open, so a later visit
+  // to the app returns here (BlackSkyResume in app.tsx) until the hold clears
+  // it. Absolute paths only, so the navigate captured at mount stays valid.
+  useEffect(() => {
+    latchBlackSky(localFlagStore());
+    navigate('/blacksky');
+    const onBack = () => {
+      navigate('/blacksky');
+      setNotice(copy.BACK_PRESSED);
+    };
+    window.addEventListener('popstate', onBack);
+    return () => window.removeEventListener('popstate', onBack);
+  }, []);
+
   // The tick: publishes the clock AND the newest fix together, once per
   // TICK_MS. The fix's age needs the clock to move (an old fix must be called
   // old), and publishing both in one place keeps renders to one per tick.
@@ -196,7 +220,18 @@ export default function BlackSky({
           demands the same deliberate 2s hold as entering, so a pocket press
           cannot silently drop the emergency screen. */}
       <div className="actions">
-        <HoldButton onHold={() => navigate('/')} hint={copy.HOLD_TO_LEAVE}>
+        {notice ? (
+          <p className="muted blacksky-hold-hint" role="status">
+            {notice}
+          </p>
+        ) : null}
+        <HoldButton
+          onHold={() => {
+            unlatchBlackSky(localFlagStore());
+            navigate('/', { replace: true });
+          }}
+          hint={copy.HOLD_TO_LEAVE}
+        >
           {copy.LEAVE_BLACKSKY}
         </HoldButton>
       </div>
@@ -216,17 +251,14 @@ function ScreenBody({
   switch (screen.kind) {
     // US2-AC2: no pack stored. Nothing is invented or borrowed: the nearest
     // official places on the stored CFA list are pointed at once there is a
-    // fix, then the built-in preparation guidance and a prompt to build a
-    // pack for when next online.
+    // fix, then the built-in preparation guidance and a reminder to build a
+    // pack when next online (from the home screen, after the hold to leave).
     case 'NO_PACK':
       return (
         <>
           <p className="muted">{copy.NO_PACK_HERE}</p>
           <NearbyList places={screen.nearby} confidence={screen.confidence} />
           <p className="muted">{copy.NO_PACKS_HINT}</p>
-          <Link className="action" to="/packs/new">
-            {copy.BUILD_A_PACK}
-          </Link>
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
             <p>{copy.PREP_KIT_LINE}</p>

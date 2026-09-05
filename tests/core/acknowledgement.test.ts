@@ -16,6 +16,9 @@ function memoryStore(seed?: Record<string, string>): FlagStore {
     setItem: (key, value) => {
       values.set(key, value);
     },
+    removeItem: (key) => {
+      values.delete(key);
+    },
   };
 }
 
@@ -24,6 +27,9 @@ const throwingStore: FlagStore = {
     throw new DOMException('site data is blocked');
   },
   setItem: () => {
+    throw new DOMException('site data is blocked');
+  },
+  removeItem: () => {
     throw new DOMException('site data is blocked');
   },
 };
@@ -65,6 +71,7 @@ describe('writing the acknowledgement flag', () => {
       setItem: (key, value) => {
         written.push([key, value]);
       },
+      removeItem: () => {},
     };
     writeAcknowledgement(store);
     expect(written).toEqual([[ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE]]);
@@ -83,7 +90,7 @@ describe('writing the acknowledgement flag', () => {
   it('reports false when the write is silently dropped', () => {
     // Private-mode storages that accept setItem and forget it: the user is
     // still let through, but the screen is shown again next open.
-    const forgetful: FlagStore = { getItem: () => null, setItem: () => {} };
+    const forgetful: FlagStore = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
     expect(writeAcknowledgement(forgetful)).toBe(false);
   });
 
