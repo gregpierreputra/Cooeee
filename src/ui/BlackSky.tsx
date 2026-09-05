@@ -64,9 +64,16 @@ export default function BlackSky({
 
   useEffect(() => {
     let live = true;
-    loadPacks().then((rows) => {
-      if (live) setPacks(rows);
-    });
+    loadPacks().then(
+      (rows) => {
+        if (live) setPacks(rows);
+      },
+      // A store that cannot be read must not leave a blank screen with no way
+      // out: the screen renders as if nothing were saved, Leave included.
+      () => {
+        if (live) setPacks([]);
+      },
+    );
     loadSites().then((snapshot) => {
       if (live && snapshot) setSites(snapshot);
     });

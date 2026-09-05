@@ -36,7 +36,7 @@ export default function Home({ now }: { now?: number }) {
     };
   }, [seed]);
 
-  // Deleting the pack takes two taps: the × swaps the card for a question, and
+  // Deleting the pack takes two taps: the delete control swaps the card for a question, and
   // only the second destroys data. Keep restores the card untouched.
   const [confirming, setConfirming] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -97,7 +97,7 @@ export default function Home({ now }: { now?: number }) {
                 read alike: the name defaults to the locality the geocoder
                 returned, and arrives in the same capitals. Storage keeps the
                 name exactly as it was saved. The link stretches over the whole
-                card (see .pack-card); the × sits above it. */}
+                card (see .pack-card); the delete control sits above it. */}
             <h2>
               <Link to={`/packs/${view.pack.id}`}>{titleCase(view.pack.name)}</Link>
             </h2>

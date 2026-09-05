@@ -24,6 +24,11 @@ test('the back button and a fresh visit both keep BlackSky until the hold', asyn
   await expect(page).toHaveURL('/blacksky');
   await expect(page.getByText(BACK_PRESSED)).toBeVisible();
 
+  // A jump of several entries at once (the long-press back list) unmounts
+  // BlackSky before its own handler runs; the app shell brings it back.
+  await page.evaluate(() => window.history.go(-window.history.state.idx));
+  await expect(page).toHaveURL('/blacksky');
+
   // A fresh visit to the app opens BlackSky again while it was the last screen.
   await page.goto('/');
   await expect(page).toHaveURL('/blacksky');

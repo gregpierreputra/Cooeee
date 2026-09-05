@@ -84,7 +84,7 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
                 className="card note-card note-card-gone"
                 onAnimationEnd={() => drop(note.id)}
               >
-                <p className="note-mark" role="status">{copy.NOTE_DELETED}</p>
+                <p className="note-mark" role="status">{MARK_TEXT.deleted}</p>
               </li>
             );
           }

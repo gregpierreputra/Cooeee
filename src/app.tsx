@@ -30,10 +30,13 @@ export function markUpdateReady() {
   window.dispatchEvent(new Event(SW_UPDATE_EVENT));
 }
 
-/** A visit that starts anywhere else while BlackSky was the last screen open
- *  goes straight back to it: an installed app relaunches at '/', and a reload
- *  or a return from another site must not drop the person on the home screen.
- *  Checked once, on start; the hold on Leave BlackSky clears the latch. */
+/** While BlackSky was the last screen open, every arrival anywhere else goes
+ *  straight back to it: an installed app relaunches at '/', a reload or a
+ *  return from another site lands wherever it lands, and a jump of several
+ *  history entries at once (the long-press back list) unmounts BlackSky before
+ *  its own back handler can run. Checked on start and on every change of
+ *  screen; the hold on Leave BlackSky clears the latch first, so leaving is
+ *  never bounced. */
 function BlackSkyResume() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -41,7 +44,7 @@ function BlackSkyResume() {
     if (isBlackSkyLatched(localFlagStore()) && !pathname.startsWith('/blacksky')) {
       navigate('/blacksky', { replace: true });
     }
-  }, []);
+  }, [pathname]);
   return null;
 }
 
