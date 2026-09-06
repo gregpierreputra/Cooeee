@@ -1,5 +1,5 @@
 import type { FlagStore } from './acknowledgement';
-import { BLACKSKY_LATCH_KEY, BLACKSKY_LATCH_VALUE } from './constants';
+import { BLACKSKY_LATCH_KEY, BLACKSKY_LATCH_VALUE, BLACKSKY_PACK_KEY } from './constants';
 
 /** Whether BlackSky was the last screen open in this browser. Set when the
  *  screen opens and cleared only by the hold on Leave BlackSky, so a visit that
@@ -27,5 +27,24 @@ export function unlatchBlackSky(store: FlagStore | null): void {
     store?.removeItem(BLACKSKY_LATCH_KEY);
   } catch {
     // As above: the worst case is one more return to BlackSky.
+  }
+}
+
+/** The pack the person chose to load in BlackSky, so a reload or relaunch opens
+ *  on the same one. Null when nothing was chosen or the store cannot be read.
+ *  The screen only ever compares the value against its saved packs' ids. */
+export function readChosenPack(store: FlagStore | null): string | null {
+  try {
+    return store?.getItem(BLACKSKY_PACK_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberChosenPack(store: FlagStore | null, id: string): void {
+  try {
+    store?.setItem(BLACKSKY_PACK_KEY, id);
+  } catch {
+    // A browser that refuses the write asks again next visit.
   }
 }

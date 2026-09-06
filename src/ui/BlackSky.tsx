@@ -8,10 +8,17 @@ import {
   type Placed,
   type Screen,
 } from '../core/blacksky';
-import { isBlackSkyLatched, latchBlackSky, unlatchBlackSky } from '../core/blacksky-latch';
+import {
+  isBlackSkyLatched,
+  latchBlackSky,
+  readChosenPack,
+  rememberChosenPack,
+  unlatchBlackSky,
+} from '../core/blacksky-latch';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
-import { cardinalPoint, magneticDeclinationDeg } from '../core/geo';
+import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
+import { titleCase } from '../core/home';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
@@ -38,6 +45,13 @@ export default function BlackSky({
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [mark, setMark] = useState<PositionMark | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // Which pack to load when several are saved: chosen at the top of the screen
+  // and remembered, so a reload or relaunch opens on the same one.
+  const [chosenId, setChosenId] = useState(() => readChosenPack(localFlagStore()));
+  const choosePack = (id: string) => {
+    setChosenId(id);
+    rememberChosenPack(localFlagStore(), id);
+  };
   const navigate = useNavigate();
   // Latched before this mount means the app brought the person back here (a
   // relaunch, a reload, or a return from another site), which is worth saying.
@@ -184,15 +198,50 @@ export default function BlackSky({
 
   if (packs === null) return null;
 
+  // One pack needs no choosing. With several, only the chosen one is loaded,
+  // and a remembered id that matches no saved pack loads nothing.
+  const chosen =
+    packs.length === 1 ? packs[0] : (packs.find((p) => p.pack.id === chosenId) ?? null);
+  const loaded = chosen ? [chosen] : [];
   const screen = estimate
-    ? deriveState(now, packs, estimate, 'granted', sites)
-    : deriveState(now, packs, fix, permission, sites);
+    ? deriveState(now, loaded, estimate, 'granted', sites)
+    : deriveState(now, loaded, fix, permission, sites);
   const hasArrows = screen.kind === 'IN_AREA' || ('nearby' in screen && screen.nearby.length > 0);
-  const notes = packs.flatMap((pack) => pack.notes);
+  const notes = chosen?.notes ?? [];
+  // The position the arrows are drawn from (the same rule as deriveState), so
+  // the picker can say which packs' areas contain it.
+  const from = estimate ?? (permission === 'denied' ? null : fix);
 
   return (
     <main className="page blacksky">
       <h1 className="kicker blacksky-title">{copy.BLACKSKY_TITLE}</h1>
+      {/* Several packs: which one to load, asked at the top of the screen and
+          left there so the choice can be changed. Full-width targets for wet
+          hands; the chosen one is filled. */}
+      {packs.length > 1 ? (
+        <section className="blacksky-picker">
+          <span className="kicker">{copy.CHOOSE_PACK}</span>
+          <p className="muted">{copy.CHOOSE_PACK_HINT}</p>
+          <ul className="list">
+            {packs.map(({ pack }) => (
+              <li key={pack.id}>
+                <button
+                  type="button"
+                  className="blacksky-pack"
+                  aria-pressed={pack.id === chosen?.pack.id}
+                  onClick={() => choosePack(pack.id)}
+                >
+                  <span>{titleCase(pack.name)}</span>
+                  <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
+                  {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
+                    <span className="blacksky-pack-here">{copy.PACK_COVERS_HERE}</span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {/* Which way the arrows are to be read, and (iOS) the one tap that lets
           the orientation sensor turn them. Under the title, as the screen's mode. */}
       {hasArrows ? (
@@ -205,10 +254,20 @@ export default function BlackSky({
           ) : null}
         </>
       ) : null}
-      {packs?.some((p) => !p.placesVerified) ? (
+      {chosen && !chosen.placesVerified ? (
         <p className="muted">{copy.PLACES_UNVERIFIED}</p>
       ) : null}
-      <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
+      {screen.kind === 'NO_PACK' && packs.length > 0 ? (
+        // Several packs and none chosen yet: only the live pointer to the
+        // nearest official places, from the fix, until one is chosen.
+        screen.nearby.length > 0 ? (
+          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+        ) : (
+          <p className="muted">{copy.NO_GPS_YET}</p>
+        )
+      ) : (
+        <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
+      )}
       {/* The user's own notes, folded until asked for and read-only here: one
           tap opens them, each in its own ruled row at reading size. */}
       {notes.length > 0 ? (

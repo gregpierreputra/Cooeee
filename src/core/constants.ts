@@ -139,6 +139,10 @@ export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';
  * versioned key, a bare marker for a value. */
 export const BLACKSKY_LATCH_KEY = 'cooeee.blacksky.v1';
 export const BLACKSKY_LATCH_VALUE = 'latched';
+/** Which pack BlackSky loads when several are saved. Written when the person
+ * chooses one, read on the next visit, and only ever compared against the
+ * packs in the store, so a stale or foreign value simply matches nothing. */
+export const BLACKSKY_PACK_KEY = 'cooeee.blacksky-pack.v1';
 
 /** Nearby places (spec §7). A dynamic snapshot whose feed is older than this is
  *  no longer shown as a place to go — only the stale notice and the hotline stay. */

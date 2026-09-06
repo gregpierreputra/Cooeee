@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { FlagStore } from '../../src/core/acknowledgement';
-import { isBlackSkyLatched, latchBlackSky, unlatchBlackSky } from '../../src/core/blacksky-latch';
+import {
+  isBlackSkyLatched,
+  latchBlackSky,
+  readChosenPack,
+  rememberChosenPack,
+  unlatchBlackSky,
+} from '../../src/core/blacksky-latch';
 
 function memoryStore(): FlagStore {
   const values = new Map<string, string>();
@@ -41,5 +47,20 @@ describe('the BlackSky latch', () => {
     expect(isBlackSkyLatched(null)).toBe(false);
     latchBlackSky(throwingStore);
     expect(isBlackSkyLatched(throwingStore)).toBe(false);
+  });
+});
+
+describe('the remembered BlackSky pack', () => {
+  it('reads nothing until a pack is chosen, then the chosen id', () => {
+    const store = memoryStore();
+    expect(readChosenPack(store)).toBeNull();
+    rememberChosenPack(store, 'pack-1');
+    expect(readChosenPack(store)).toBe('pack-1');
+  });
+
+  it('reads nothing when storage is missing or blocked', () => {
+    expect(readChosenPack(null)).toBeNull();
+    rememberChosenPack(throwingStore, 'pack-1');
+    expect(readChosenPack(throwingStore)).toBeNull();
   });
 });

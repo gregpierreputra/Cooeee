@@ -909,6 +909,40 @@ input {
   border-bottom: 1px solid var(--line);
 }
 
+/* Which pack to load, when several are saved: asked under the title and left
+   there. Full-width choices for wet hands, the chosen one filled in the mode's
+   amber. */
+.blacksky-picker {
+  display: grid;
+  gap: 0.75rem;
+  padding-bottom: 1.125rem;
+  border-bottom: 1px solid var(--line);
+}
+.blacksky-pack {
+  width: 100%;
+  display: grid;
+  gap: 0.125rem;
+  text-align: left;
+  padding: 0.875rem 1.25rem;
+}
+.blacksky-pack[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+}
+.blacksky-pack-address {
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  opacity: 0.8;
+}
+.blacksky-pack-here {
+  margin-top: 0.25rem;
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+}
+
 .blacksky-place {
   padding: 1.125rem 0;
   display: grid;

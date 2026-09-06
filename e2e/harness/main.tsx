@@ -10,6 +10,7 @@ import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPa
 import { db } from '../../src/data/db';
 import { fileMeta, manifestGroup, sha256Hex } from '../../src/data/integrity';
 import { loadNspSnapshot } from '../../src/data/nsp';
+import BlackSky from '../../src/ui/BlackSky';
 import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
@@ -131,8 +132,10 @@ const savedPack: Pack = {
   }],
 };
 
+// The saved pack carries the one candidate's own address: confirming that
+// address is what reaches the keep-or-replace step.
 if (window.location.pathname === '/conflict' && await db.packs.count() === 0) {
-  await db.packs.put(savedPack);
+  await db.packs.put({ ...savedPack, address: testCandidate.address });
 }
 
 const conflictMode = new URLSearchParams(window.location.search).get('mode');
@@ -143,9 +146,7 @@ const conflictFlow = (
     loadFiles={noFiles}
     loadPacks={conflictMode === 'unavailable'
       ? async () => { throw new Error('synthetic store failure'); }
-      : conflictMode === 'multiple'
-        ? async () => [savedPack, { ...savedPack, id: 'second-pack' }]
-        : undefined}
+      : undefined}
     onKeepSavedPlace={() => { window.__keptSavedPlace = true; }}
     onPendingPlace={(place) => { window.__confirmedPlace = place; }}
   />
@@ -310,11 +311,24 @@ const detailFlow =
 const homeNow = Date.UTC(2026, 8, 1, 9);
 const homeMode = new URLSearchParams(window.location.search).get('mode') ?? 'pack';
 const homeDays = Number(new URLSearchParams(window.location.search).get('days') ?? '3');
+const homePacks = Number(new URLSearchParams(window.location.search).get('packs') ?? '1');
 let homeFlow = confirmation;
 if (window.location.pathname === '/home') {
   await Promise.all(db.tables.map((table) => table.clear()));
   if (homeMode !== 'none') {
     await db.packs.put({ ...savedPack, verifiedAt: homeNow - homeDays * 86_400_000 });
+  }
+  // A second, one-day-fresher pack, so the list has an order to assert.
+  if (homePacks > 1) {
+    await db.packs.put({
+      ...savedPack,
+      id: 'second-pack',
+      name: 'Kalorama',
+      address: testCandidate.address,
+      lat: testCandidate.lat,
+      lon: testCandidate.lon,
+      verifiedAt: homeNow - (homeDays - 1) * 86_400_000,
+    });
   }
   homeFlow = (
     <>
@@ -323,6 +337,27 @@ if (window.location.pathname === '/home') {
       <BottomNav />
     </>
   );
+}
+
+// The BlackSky pack picker: two complete packs, in the mode's own colours.
+// Headless Chromium denies geolocation, so the chosen pack shows as reference
+// text with its mark control.
+let blackSkyFlow = confirmation;
+if (window.location.pathname === '/blacksky') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  await db.packs.bulkPut([
+    savedPack,
+    {
+      ...savedPack,
+      id: 'second-pack',
+      name: 'Kalorama',
+      address: testCandidate.address,
+      lat: testCandidate.lat,
+      lon: testCandidate.lon,
+    },
+  ]);
+  document.documentElement.dataset.mode = 'blacksky';
+  blackSkyFlow = <BlackSky />;
 }
 
 const destinationsMode = new URLSearchParams(window.location.search).get('mode') ?? 'sites';
@@ -460,6 +495,7 @@ createRoot(root).render(
   <StrictMode>
     <MemoryRouter>
     {window.location.pathname === '/home' ? homeFlow
+      : window.location.pathname === '/blacksky' ? blackSkyFlow
       : window.location.pathname === '/conflict' ? conflictFlow
       : window.location.pathname === '/area' ? areaFlow
         : window.location.pathname === '/size' ? sizeFlow

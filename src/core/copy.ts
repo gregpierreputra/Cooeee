@@ -22,7 +22,9 @@ export const GPS_APPROXIMATE = (m: number) =>
   `GPS is only accurate to ± ${m} m here. The direction is approximate and sharpens as the fix improves.`;
 export const FIX_AGE = (s: number) => `Last GPS fix ${s} s ago. The direction may have changed.`;
 
-export const OUTSIDE_AREAS = "You're outside the areas you've prepared";
+/** Said of the pack that is loaded, never of every pack: another saved pack
+ *  may well cover this place, and the picker says so beside it. */
+export const OUTSIDE_AREAS = "You're outside this pack's area";
 
 export const NOT_RECENTLY_VERIFIED = (days: number) =>
   `Saved ${days} days ago, not recently verified`;
@@ -74,7 +76,7 @@ export const SAVE_THIS_PLACE = 'Save this place';
 export const SEARCH_AGAIN = 'Search again';
 
 // E1-US1-AC2–AC4 address search
-export const BUILD_A_PACK = 'Build a pack';
+export const BUILD_A_PACK = 'Build an offline pack';
 export const ADDRESS_SEARCH_TITLE = 'Search for your address';
 export const ADDRESS_FIELD_LABEL = 'Address';
 /** At the field itself: the street address is the point every official place
@@ -133,17 +135,14 @@ export const AREA_CHECK_COULD_NOT_RUN =
 export const AREA_NOT_SAVED =
   'Nothing has been saved. Your address is still here. Try again when you have a connection.';
 
-// E1-US1-AC8 pack conflict
+// E1-US1-AC8 pack conflict: the confirmed address already has a saved pack
 export const CHECKING_SAVED_PLACE = 'Checking the saved place on this device.';
-export const PLACE_ALREADY_SAVED = 'You already have a saved place.';
+export const PLACE_ALREADY_SAVED = 'You already have a pack for this address.';
 export const SAVED_ADDRESS_LABEL = 'Saved address';
-export const NEW_ADDRESS_LABEL = 'New address';
-export const KEEP_SAVED_PLACE = 'Keep the saved place';
-export const REPLACE_WITH_THIS_ONE = 'Replace it with this one';
+export const KEEP_SAVED_PACK = 'Keep the saved pack';
+export const REPLACE_SAVED_PACK = 'Replace it with a new one';
 export const SAVED_PLACE_CHECK_FAILED =
   'We could not check the saved place on this device.';
-export const MULTIPLE_SAVED_PACKS =
-  'More than one saved pack was found on this device.';
 export const NOTHING_CHANGED = 'Nothing has been changed.';
 
 // E1-US1-AC9 pack offer and download
@@ -369,6 +368,15 @@ export const PHONE_MAY_WORK =
 export const NO_PACK_HERE = 'No saved pack covers this place.';
 export const NEAREST_OFFICIAL_PLACES = 'Nearest official places of last resort';
 
+// Several saved packs: which one to load, asked at the top of the screen.
+export const CHOOSE_PACK = 'Choose a pack to load';
+export const CHOOSE_PACK_HINT =
+  'Its places, notes and reminder load once it is chosen. The nearest official places of last resort are pointed at from your position regardless.';
+/** Beside a pack whose area contains the position the arrows are drawn from. */
+export const PACK_COVERS_HERE = 'Covers where you are';
+/** With several packs, none chosen and no fix: the one thing the screen can say. */
+export const NO_GPS_YET = 'No GPS fix yet.';
+
 // Built-in static preparation guidance, readable on a fresh install that has
 // never been online since setup.
 export const PREPARATION_GUIDANCE_TITLE = 'Preparing for an emergency';
@@ -413,7 +421,6 @@ export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a netwo
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
 
 export const NO_PACK_SAVED = 'No pack is saved on this device.';
-export const OPEN_PACK = 'Open';
 export const SAVED_PLACE_LABEL = 'Saved place';
 
 export const NAV_LABEL = 'Main';
@@ -505,7 +512,7 @@ export const FIRST_OPEN_PURPOSE =
 
 export const DISCLOSURE_DOES_HEADING = 'What Cooeee does';
 export const DISCLOSURE_DOES =
-  'Saves a preparation pack for one address on this phone. It opens with no signal.';
+  'Saves preparation packs for the addresses you choose, on this phone. They open with no signal.';
 
 export const DISCLOSURE_DOES_NOT_HEADING = 'What Cooeee does not do';
 export const DISCLOSURE_DOES_NOT =

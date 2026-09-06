@@ -32,7 +32,7 @@ describe('mandated literals', () => {
   });
 
   it('being outside every prepared area is stated plainly', () => {
-    expect(copy.OUTSIDE_AREAS).toBe("You're outside the areas you've prepared");
+    expect(copy.OUTSIDE_AREAS).toBe("You're outside this pack's area");
   });
 
   it('a stale pack is labelled without being disabled', () => {
@@ -175,6 +175,17 @@ describe('general official guidance', () => {
   });
 });
 
+describe('several packs stored', () => {
+  it('asks which pack to load, and says the nearest places are pointed at regardless', () => {
+    expect(copy.CHOOSE_PACK).toBe('Choose a pack to load');
+    expect(copy.CHOOSE_PACK_HINT).toBe(
+      'Its places, notes and reminder load once it is chosen. The nearest official places of last resort are pointed at from your position regardless.',
+    );
+    expect(copy.PACK_COVERS_HERE).toBe('Covers where you are');
+    expect(copy.NO_GPS_YET).toBe('No GPS fix yet.');
+  });
+});
+
 // E3-US2-AC2: the no-pack statement — absence stated plainly, nothing invented.
 describe('no pack stored', () => {
   it('states that no saved pack covers this place', () => {
@@ -236,7 +247,7 @@ describe('the fixed header', () => {
 describe('the returning-user home', () => {
   it('states that no pack is saved, and offers to build one', () => {
     expect(copy.NO_PACK_SAVED).toBe('No pack is saved on this device.');
-    expect(copy.BUILD_A_PACK).toBe('Build a pack');
+    expect(copy.BUILD_A_PACK).toBe('Build an offline pack');
   });
 
   it('labels the preparation line as a daily reminder', () => {
@@ -280,7 +291,7 @@ describe('first-open disclosure', () => {
 
   it('states what Cooeee does', () => {
     expect(copy.DISCLOSURE_DOES).toBe(
-      'Saves a preparation pack for one address on this phone. It opens with no signal.',
+      'Saves preparation packs for the addresses you choose, on this phone. They open with no signal.',
     );
   });
 

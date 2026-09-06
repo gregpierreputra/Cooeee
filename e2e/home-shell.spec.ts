@@ -17,7 +17,6 @@ import {
   NAV_NEARBY,
   NO_PACK_SAVED,
   NOT_RECENTLY_VERIFIED_LABEL,
-  OPEN_PACK,
   OFFLINE_NOTICE,
   ONLINE_NOTICE,
   OPENS_WITHOUT_SIGNAL,
@@ -55,14 +54,14 @@ test.describe('the header reports the saved pack age', () => {
 
     // Past the window the pack is labelled, never disabled: the way in is still
     // there and still tappable.
-    await expect(page.getByRole('link', { name: OPEN_PACK })).toBeEnabled();
+    await expect(page.getByRole('link', { name: 'Ferny Creek' })).toBeEnabled();
   });
 
   // TC-1.2.6-D
   test('shows no age at all when no pack is saved, and offers to build one', async ({ page }) => {
     await page.goto(home('?mode=none'));
     await expect(page.getByText(NO_PACK_SAVED)).toBeVisible();
-    await expect(page.getByRole('link', { name: BUILD_A_PACK }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
 
     // No dash, no zero, no placeholder standing in for an age that does not exist.
     const header = page.locator('.app-header');
@@ -97,7 +96,7 @@ test.describe('the returning-user home screen', () => {
     await expect(
       page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
     ).toBeVisible();
-    await expect(page.getByRole('link', { name: OPEN_PACK })).toBeVisible();
+    await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
 
     // Everything above is inside the viewport, with the page unscrolled.
@@ -106,12 +105,31 @@ test.describe('the returning-user home screen', () => {
       [
         page.getByRole('heading', { name: 'Ferny Creek' }),
         page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
-        page.getByRole('link', { name: OPEN_PACK }),
+        page.getByRole('link', { name: BUILD_A_PACK }),
         page.getByRole('button', { name: HOLD_FOR_BLACKSKY }),
       ].map((locator) => locator.boundingBox()),
     )) {
       expect(box!.y + box!.height).toBeLessThanOrEqual(844);
     }
+  });
+
+  // Several saved packs: every one is a card, newest first, under one Build
+  // control; deleting one leaves the other and its rows untouched.
+  test('lists every saved pack newest first, and deletes one without touching the other', async ({
+    page,
+  }) => {
+    await page.goto(home('?days=3&packs=2'));
+    const cards = page.locator('.pack-card');
+    await expect(cards).toHaveCount(2);
+    await expect(cards.first()).toContainText('Kalorama');
+    await expect(cards.last()).toContainText('Ferny Creek');
+    await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
+
+    await cards.first().getByRole('button', { name: DELETE_PACK }).click();
+    await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
+    await expect(cards).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
+    expect((await storageCounts(page)).packs).toBe(1);
   });
 
   test('shows one preparation line with its source named beside it', async ({ page }) => {
@@ -170,11 +188,14 @@ test.describe('the returning-user home screen', () => {
     await expect(ring).toHaveAttribute('aria-expanded', 'false');
     await expect(panel).toHaveCount(0);
 
+    const ringBox = (await ring.boundingBox())!;
     await ring.hover();
     await expect(ring).toHaveAttribute('aria-expanded', 'true');
     await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
     await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].lead);
-    await page.waitForTimeout(300); // long enough for a flicker to show as a close
+    // A nudge from where the pointer landed: if the row shifted up to make
+    // room, the pointer now rests on the panel, and that must not end the hover.
+    await page.mouse.move(ringBox.x + ringBox.width / 2 + 1, ringBox.y + ringBox.height / 2 + 1);
     await expect(ring).toHaveAttribute('aria-expanded', 'true');
     const holdBox = await hold.boundingBox();
     const panelBox = await panel.boundingBox();

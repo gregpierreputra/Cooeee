@@ -157,9 +157,9 @@ export function deriveState(
       : { kind: 'NO_PACK', nearby: [] };
   }
 
-  // ponytail: with no fix there is nothing to choose a pack by, so this is the
-  // caller's first pack — the packs are equals and carry no rank. Give the user
-  // a pack switcher here if two-pack users report picking the wrong one.
+  // With no fix there is nothing to place a pack by, so this is the caller's
+  // first pack. The screen passes the one pack the person chose to load (or the
+  // only pack saved), so the first pack is the chosen one.
   const fallback = packs[0];
 
   if (!from)

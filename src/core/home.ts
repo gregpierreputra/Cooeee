@@ -19,9 +19,8 @@ export type HeaderAge =
   | { kind: 'checked'; days: number; text: string }
   | { kind: 'not-recently-verified'; days: number; text: string };
 
-/** The header reports the OLDEST complete pack. Iteration 1 stores exactly one,
- *  so this is the same pack the screen shows; if a later epic ever allows a
- *  second, the oldest is the honest figure to report rather than the newest. */
+/** The header reports the OLDEST complete pack: with several saved, the oldest
+ *  is the honest figure to report rather than the newest. */
 export function oldestPack(packs: Pack[]): Pack | null {
   return packs.reduce<Pack | null>(
     (oldest, pack) => (oldest === null || pack.verifiedAt < oldest.verifiedAt ? pack : oldest),
@@ -69,26 +68,22 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'nearby', label: copy.NAV_NEARBY, to: '/nearby' },
 ];
 
-/** Everything the home screen renders, decided in one place.
- *
- *  One pack or none — the Open-or-Build rule. The screen offers to build only
- *  when there is nothing saved, so this screen can never be the way a second
- *  complete pack comes to exist. */
-export type HomeView =
-  | { kind: 'no-pack'; preparation: PreparationLine }
-  | { kind: 'pack'; pack: Pack; ageLine: string; preparation: PreparationLine };
+/** Everything the home screen renders, decided in one place: every saved pack,
+ *  newest first, each with the pack card's own age wording, and the day's
+ *  preparation line. Building is offered in every state, so the list can grow. */
+export type HomeView = {
+  packs: { pack: Pack; ageLine: string }[];
+  preparation: PreparationLine;
+};
 
 export function homeView(now: number, packs: Pack[]): HomeView {
-  const pack = oldestPack(packs);
-  const preparation = preparationLine(now);
-  if (pack === null) return { kind: 'no-pack', preparation };
   return {
-    kind: 'pack',
-    pack,
-    // The pack card's own wording, unchanged: 'Saved N days ago', and past the
-    // window the mandated 'Saved N days ago — not recently verified'.
-    ageLine: freshness(now, pack.verifiedAt).label,
-    preparation,
+    packs: [...packs]
+      .sort((a, b) => b.verifiedAt - a.verifiedAt)
+      // The pack card's own wording, unchanged: 'Saved N days ago', and past the
+      // window the mandated 'Saved N days ago, not recently verified'.
+      .map((pack) => ({ pack, ageLine: freshness(now, pack.verifiedAt).label })),
+    preparation: preparationLine(now),
   };
 }
 
