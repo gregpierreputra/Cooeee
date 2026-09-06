@@ -1159,7 +1159,9 @@ input {
    rule is named through the row so it outranks the shared accent hover on
    buttons; it keeps the ring amber and nothing more. Only an open panel fills
    the ring. */
-.blacksky-info {
+/* Named with the shape class so it outranks .info-ring's accent, whatever
+   order the two rules sit in. */
+.info-ring.blacksky-info {
   border-color: var(--blacksky-accent);
   color: var(--blacksky-accent);
 }
@@ -1414,7 +1416,7 @@ input {
 
 /* A fixed bar on the panel colour, inside the safe area, so it stays within
    thumb reach whatever the page above it does. On every screen but BlackSky.
-   Two equal destinations: neither is weighted, and BlackSky is not among them. */
+   Three equal destinations: none is weighted, and BlackSky is not among them. */
 .bottom-nav {
   position: fixed;
   inset-inline: 0;

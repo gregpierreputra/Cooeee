@@ -46,12 +46,18 @@ export default function Tour() {
   // rather than push, so the tour leaves no history entries behind it.
   useEffect(() => {
     if (step === null) return;
+    // BlackSky is entered by a hold the overlay cannot stop from a keyboard,
+    // and its latch would bounce every hop back: the tour simply ends there.
+    if (pathname.startsWith('/blacksky')) {
+      setStep(null);
+      return;
+    }
+    setRect(null);
     const { path, target } = STEPS[step];
     if (pathname !== path) {
       navigate(path, { replace: true });
       return;
     }
-    setRect(null);
     const measure = () => {
       const found = document.querySelectorAll(target);
       if (found.length === 0) return false;
@@ -75,19 +81,26 @@ export default function Tour() {
 
   const end = () => {
     setStep(null);
-    setRect(null);
     navigate('/', { replace: true });
   };
 
-  // The page beneath must not scroll, and Escape is one more way to skip.
+  // The page beneath must not scroll, focus must not wander onto the greyed
+  // controls, and Escape is one more way to skip.
   useEffect(() => {
     document.documentElement.classList.toggle('tour-open', step !== null);
     if (step === null) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') end();
     };
+    const onFocus = (event: FocusEvent) => {
+      if (!card.current?.contains(event.target as Node)) card.current?.focus();
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocus);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocus);
+    };
   }, [step]);
 
   if (step === null || pathname.startsWith('/blacksky')) return null;
