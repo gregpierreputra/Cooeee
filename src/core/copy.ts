@@ -486,10 +486,19 @@ export const OPENS_WITHOUT_SIGNAL = ' · opens without signal';
  *  with no pack, which is the one thing a new user would not expect. */
 export const BLACKSKY_WORKS_WITHOUT_PACK = 'WORKS WITHOUT A SAVED PACK';
 
-/** The information ring beside the hold control, and the panel it opens: what
- *  BlackSky is, in four short lines, each led by the one fact that matters. */
+/** The information ring beside the hold control, and the panel a tap on it
+ *  opens: what BlackSky is, why it exists, and three facts about using it,
+ *  each line led by the one thing that matters. */
 export const ABOUT_BLACKSKY = 'About BlackSky';
 export const BLACKSKY_INFO_LINES = [
+  {
+    lead: 'What it is.',
+    text: 'A separate screen for when the power and the signal are gone. It carries your saved pack and points to the nearest official places of last resort.',
+  },
+  {
+    lead: 'Why it exists.',
+    text: 'In a bushfire the phone may be the last tool left, used in the dark with wet hands and a dying battery. Black and amber spare the battery and your night vision, and everything works with one thumb.',
+  },
   { lead: 'Works with no signal.', text: 'Everything it shows is already on this phone.' },
   {
     lead: 'Points the way.',
@@ -499,7 +508,6 @@ export const BLACKSKY_INFO_LINES = [
     lead: 'Two seconds to enter, two to leave.',
     text: 'Hold the control. A tap does nothing, and the back button does not leave it.',
   },
-  { lead: 'Cooeee issues no warnings.', text: OFFICIAL_INSTRUCTIONS_FIRST },
 ] as const;
 
 // ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────

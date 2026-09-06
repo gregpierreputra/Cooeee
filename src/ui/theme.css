@@ -1155,8 +1155,10 @@ input {
   grid-column: 1 / -1;
 }
 
-/* The ring: the delete control's shape in the hold control's amber. Named
-   through the row so it outranks the shared accent hover on buttons. */
+/* The ring: the delete control's shape in the hold control's amber. The hover
+   rule is named through the row so it outranks the shared accent hover on
+   buttons; it keeps the ring amber and nothing more. Only an open panel fills
+   the ring. */
 .blacksky-info {
   width: 44px;
   height: 44px;
@@ -1169,9 +1171,10 @@ input {
   border-color: var(--blacksky-accent);
   color: var(--blacksky-accent);
 }
-.blacksky-hold-row .blacksky-info:hover,
-.blacksky-hold-row .blacksky-info[aria-expanded='true'] {
+.blacksky-hold-row .blacksky-info:hover {
   border-color: var(--blacksky-accent);
+}
+.blacksky-info[aria-expanded='true'] {
   background: var(--blacksky-fill);
 }
 

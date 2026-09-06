@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
 import { homeView, titleCase, type HomeView } from '../core/home';
@@ -153,31 +153,22 @@ export default function Home({ now }: { now?: number }) {
   );
 }
 
-/** The hold control with the information ring to its left and, while the ring
- *  is hovered with a mouse or after a tap on it, the panel that says what
- *  BlackSky is. The panel opens in flow beneath the pair (see
- *  .blacksky-hold-row), so it covers nothing. The bottom-anchored actions block
- *  can shift up by the panel's height when the screen has room to spare, so the
- *  hover ends only when the pointer leaves the whole row: the shift lands the
- *  pointer on the panel, never outside. A tap pins the panel open; hover is
- *  mouse only, so a phone tap cannot count twice. */
+/** The hold control with the information ring to its left and, after a tap
+ *  or click on the ring, the panel that says what BlackSky is. The panel opens
+ *  in flow beneath the pair (see .blacksky-hold-row), so it covers nothing; a
+ *  second tap closes it. Never on hover: a pointer passing over the ring must
+ *  not open it, on a phone or a PC alike. */
 function BlackSkyHoldRow({ children }: { children: ReactNode }) {
-  const [pinned, setPinned] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  const open = pinned || hovered;
-  const hover = (event: PointerEvent<HTMLElement>, value: boolean) => {
-    if (event.pointerType === 'mouse') setHovered(value);
-  };
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="blacksky-hold-row" onPointerLeave={(event) => hover(event, false)}>
+    <div className="blacksky-hold-row">
       <button
         type="button"
         className="blacksky-info"
         aria-label={copy.ABOUT_BLACKSKY}
         aria-expanded={open}
-        onClick={() => setPinned((value) => !value)}
-        onPointerEnter={(event) => hover(event, true)}
+        onClick={() => setOpen((value) => !value)}
       >
         <svg
           viewBox="0 0 24 24"

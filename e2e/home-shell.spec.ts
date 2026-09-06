@@ -173,12 +173,9 @@ test.describe('the returning-user home screen', () => {
     );
   });
 
-  // The ring beside the hold control: a mouse over it shows the four lines
-  // beneath the row and leaving the row hides them; a click pins them until the
-  // next click. The panel is in flow beneath the hold control, and the hover
-  // holds steady while the pointer rests on the ring even where the
-  // bottom-anchored row shifts up to make room.
-  test('the information ring shows the About BlackSky panel on hover, and a click pins it', async ({
+  // The ring beside the hold control: hovering it does nothing; a click opens
+  // the lines beneath the hold control, in flow, and a second click closes them.
+  test('the information ring opens the About BlackSky panel on a click, never on hover', async ({
     page,
   }) => {
     await page.goto(home('?days=3'));
@@ -188,26 +185,19 @@ test.describe('the returning-user home screen', () => {
     await expect(ring).toHaveAttribute('aria-expanded', 'false');
     await expect(panel).toHaveCount(0);
 
-    const ringBox = (await ring.boundingBox())!;
     await ring.hover();
-    await expect(ring).toHaveAttribute('aria-expanded', 'true');
-    await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
-    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].lead);
-    // A nudge from where the pointer landed: if the row shifted up to make
-    // room, the pointer now rests on the panel, and that must not end the hover.
-    await page.mouse.move(ringBox.x + ringBox.width / 2 + 1, ringBox.y + ringBox.height / 2 + 1);
-    await expect(ring).toHaveAttribute('aria-expanded', 'true');
-    const holdBox = await hold.boundingBox();
-    const panelBox = await panel.boundingBox();
-    expect(panelBox!.y).toBeGreaterThanOrEqual(holdBox!.y + holdBox!.height);
-    await page.mouse.move(0, 0);
+    await expect(ring).toHaveAttribute('aria-expanded', 'false');
     await expect(panel).toHaveCount(0);
 
     await ring.click();
-    await page.mouse.move(0, 0);
-    await expect(panel).toBeVisible();
+    await expect(ring).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
+    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].lead);
+    const holdBox = await hold.boundingBox();
+    const panelBox = await panel.boundingBox();
+    expect(panelBox!.y).toBeGreaterThanOrEqual(holdBox!.y + holdBox!.height);
+
     await ring.click();
-    await page.mouse.move(0, 0);
     await expect(panel).toHaveCount(0);
   });
 
