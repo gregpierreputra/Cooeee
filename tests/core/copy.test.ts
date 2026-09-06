@@ -254,6 +254,25 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
+  it('tours nine features across every screen, three led lines each', () => {
+    expect(copy.TOUR_STEPS.map((step) => step.title)).toEqual([
+      "Today's reminder",
+      'Your saved packs',
+      'Build an offline pack',
+      'Hold for BlackSky',
+      'The header',
+      'The bottom bar',
+      'The address search',
+      'Nearby official places',
+      'About Cooeee',
+    ]);
+    for (const step of copy.TOUR_STEPS) {
+      expect(step.path.startsWith('/')).toBe(true);
+      expect(step.lines).toHaveLength(copy.TOUR_LEADS.length);
+    }
+    expect(copy.SKIP_TOUR).toBe('Skip tour');
+  });
+
   it('says what Cooeee is on the About page, in plain sentences with no colon, semicolon or dash', () => {
     expect(copy.ABOUT_COOEEE).toBe('About Cooeee');
     expect(copy.COOEEE_INFO_LINES.map((line) => line.lead)).toEqual([

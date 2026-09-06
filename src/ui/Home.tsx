@@ -6,6 +6,7 @@ import type { Pack } from '../core/types';
 import { deleteCompletePack, listCompletePacks } from '../data/db';
 import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
+import { startTour } from './components/Tour';
 
 /** E1-US2-AC6 — where someone who set up a place some time ago lands when they
  *  open Cooeee again.
@@ -60,7 +61,13 @@ export default function Home({ now }: { now?: number }) {
           what is happening outside. */}
       {view === null ? null : (
         <section className="preparation">
-          <span className="kicker">{copy.PREPARATION_LABEL}</span>
+          {/* The ring beside the label starts the guided tour of every screen. */}
+          <div className="preparation-head">
+            <span className="kicker">{copy.PREPARATION_LABEL}</span>
+            <button type="button" className="info-ring" aria-label={copy.TOUR_HINT} onClick={startTour}>
+              <InfoGlyph />
+            </button>
+          </div>
           <p>{view.preparation.text}</p>
           <p className="muted">{view.preparation.context}</p>
           <p className="muted preparation-source">{view.preparation.source}</p>
@@ -165,26 +172,12 @@ function BlackSkyHoldRow({ children }: { children: ReactNode }) {
     <div className="blacksky-hold-row">
       <button
         type="button"
-        className="blacksky-info"
+        className="info-ring blacksky-info"
         aria-label={copy.ABOUT_BLACKSKY}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="20"
-          height="20"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <circle cx="12" cy="12" r="8.5" />
-          <path d="M12 11v5.5" />
-          <circle cx="12" cy="7.75" r="1" fill="currentColor" stroke="none" />
-        </svg>
+        <InfoGlyph />
       </button>
       {children}
       {open ? (
@@ -200,5 +193,26 @@ function BlackSkyHoldRow({ children }: { children: ReactNode }) {
         </section>
       ) : null}
     </div>
+  );
+}
+
+/** The "i" inside both rings. Decorative: each ring carries its own name. */
+function InfoGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11v5.5" />
+      <circle cx="12" cy="7.75" r="1" fill="currentColor" stroke="none" />
+    </svg>
   );
 }

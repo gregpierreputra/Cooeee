@@ -14,6 +14,7 @@ import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
 import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
+import Tour, { startTour } from './ui/components/Tour';
 import PackDetail from './ui/PackDetail';
 import { Search } from './ui/PackNew/Search';
 
@@ -128,6 +129,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           // reason to ask again on the next open, never a reason to trap
           // someone on this screen.
           writeAcknowledgement(localFlagStore());
+          // The one time the tour starts on its own: the first landing.
+          startTour();
           setScreen('prepared');
         }}
       />
@@ -150,6 +153,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/about" element={<About />} />
         <Route path="/blacksky" element={<BlackSky />} />
       </Routes>
+      <Tour />
       <BottomNavHost />
     </BrowserRouter>
   );

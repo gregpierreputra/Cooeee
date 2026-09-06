@@ -1160,14 +1160,6 @@ input {
    buttons; it keeps the ring amber and nothing more. Only an open panel fills
    the ring. */
 .blacksky-info {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 50%;
   border-color: var(--blacksky-accent);
   color: var(--blacksky-accent);
 }
@@ -1176,6 +1168,79 @@ input {
 }
 .blacksky-info[aria-expanded='true'] {
   background: var(--blacksky-fill);
+}
+
+/* An information ring: the delete control's shape in the accent. The tour ring
+   beside the daily reminder is the plain one; the BlackSky ring recolours it. */
+.info-ring {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.preparation-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── The guided tour ──────────────────────────────────────────────────────── */
+
+/* One fixed layer over everything, catching every touch. The spotlight is a
+   box around the feature whose enormous shadow is the grey-out; the card sits
+   at the bottom, or at the top when the feature is down there. */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  touch-action: none;
+}
+.tour-spot {
+  position: absolute;
+  border-radius: var(--r-card);
+  outline: 2px solid var(--accent);
+  box-shadow: 0 0 0 4000px rgb(2 6 10 / 78%);
+  pointer-events: none;
+}
+.tour-card {
+  position: absolute;
+  inset-inline: 1rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  margin: 0 auto;
+  max-width: 560px;
+  gap: 0.75rem;
+}
+.tour-card-top {
+  bottom: auto;
+  top: max(1rem, env(safe-area-inset-top));
+}
+.tour-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tour-head .figure {
+  color: var(--ink-2);
+  font-size: var(--step-s);
+}
+.tour-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.tour-actions button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.5rem 0.5rem;
+  font-size: var(--step-s);
+}
+.tour-open {
+  overflow: hidden;
 }
 
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a

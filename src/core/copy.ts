@@ -514,6 +514,110 @@ export const COOEEE_INFO_LINES = [
   },
 ] as const;
 
+// ── The guided tour ─────────────────────────────────────────────────────────
+// One overlay, nine stops across every screen. Each stop names a feature and
+// says what it is, why it exists and what it does, in that order. The path is
+// the screen the stop lives on; the target is what the spotlight surrounds.
+export const TOUR_KICKER = 'Guided tour';
+export const TOUR_HINT = 'Take the tour';
+export const TOUR_BACK = 'Back';
+export const TOUR_NEXT = 'Next';
+export const TOUR_FINISH = 'Finish';
+export const SKIP_TOUR = 'Skip tour';
+export const TOUR_LEADS = ['What it is.', 'Why it exists.', 'What it does.'] as const;
+export const TOUR_STEPS = [
+  {
+    path: '/',
+    target: '.preparation',
+    title: "Today's reminder",
+    lines: [
+      'One line of preparation advice, drawn from Country Fire Authority guidance.',
+      'Preparation happens on ordinary days. A small reminder each day is easier to act on than a long list once.',
+      'Shows a different line each day, with the reasoning beneath it. It never reports conditions.',
+    ],
+  },
+  {
+    path: '/',
+    target: '.home .card',
+    title: 'Your saved packs',
+    lines: [
+      'One card for each address you have prepared, or a note that none is saved yet.',
+      'A pack is the information you will need when the signal is gone, gathered while you still have one.',
+      'Tap a card to open its pack. The ring on the card deletes it after a second confirming tap.',
+    ],
+  },
+  {
+    path: '/',
+    target: '.home .main-action',
+    title: 'Build an offline pack',
+    lines: [
+      'The way to add a pack for another address.',
+      'Home, work, the school and a relative can all need one. Each pack stands on its own.',
+      'Starts a short flow. Search the address, confirm it, choose the nearest official places, add a note, then save.',
+    ],
+  },
+  {
+    path: '/',
+    target: '.blacksky-hold-row',
+    title: 'Hold for BlackSky',
+    lines: [
+      'The door into BlackSky, the dark screen for when the power and the signal are gone, with a ring beside it that explains the mode.',
+      'A pocket press must never flip the phone into an emergency screen, so entering takes a deliberate two second hold.',
+      'Hold to enter. Inside, arrows and distances point to the nearest official places of last resort from your GPS, and only a two second hold on Leave brings you back.',
+    ],
+  },
+  {
+    path: '/',
+    target: '.app-header-inner',
+    title: 'The header',
+    lines: [
+      'The Cooeee mark and, on the right, how long ago your oldest pack was checked.',
+      'A pack ages. Knowing when it was last verified tells you whether to refresh it while you are online.',
+      'Tap the name to return home from anywhere. The age pill reports and never blocks.',
+    ],
+  },
+  {
+    path: '/',
+    target: '.bottom-nav-inner',
+    title: 'The bottom bar',
+    lines: [
+      'Three places to go from any screen. Home, Nearby and About.',
+      'A phone is used with one thumb, so the way around the app stays at the bottom, within reach.',
+      'Home lists your packs. Nearby finds official places from where you are. About says what Cooeee is. BlackSky is deliberately not here.',
+    ],
+  },
+  {
+    path: '/packs/new',
+    target: '.search-form',
+    title: 'The address search',
+    lines: [
+      'The first step of building a pack. Type a street address in Victoria and pick it from the matches.',
+      'Official information is published for exact places, so a pack starts from an exact address.',
+      'Looks the address up in the Victorian Government register while you type. The address stays on this phone once saved.',
+    ],
+  },
+  {
+    path: '/nearby',
+    target: '.nearby .hero',
+    title: 'Nearby official places',
+    lines: [
+      'The nearest official places, from your position or a postcode, while you have a connection.',
+      'Before a pack exists, or away from home, you still need to know where the official places are.',
+      'Lists relief centres and places of last resort with their distance, sorted by distance, not a safety ranking.',
+    ],
+  },
+  {
+    path: '/about',
+    target: '.about .card',
+    title: 'About Cooeee',
+    lines: [
+      'One page that says what Cooeee is, why it exists, and what it does and does not do.',
+      'Anyone can land here without knowing the app. The answer should be one tap away, always.',
+      'Reached from the bottom bar on every screen. This tour can be started again from the ring beside the daily reminder.',
+    ],
+  },
+] as const;
+
 /** The information ring beside the hold control, and the panel a tap on it
  *  opens: what BlackSky is, why it exists, and three facts about using it,
  *  each line led by the one thing that matters. */
