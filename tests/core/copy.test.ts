@@ -31,7 +31,7 @@ describe('mandated literals', () => {
     expect(copy.FIX_AGE(45)).toBe('Last GPS fix 45 s ago. The direction may have changed.');
   });
 
-  it('being outside every prepared area is stated plainly', () => {
+  it("being outside the loaded pack's area is stated plainly", () => {
     expect(copy.OUTSIDE_AREAS).toBe("You're outside this pack's area");
   });
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import {
   deriveState,
   estimateFix,
+  positionFrom,
   type Confidence,
   type Mark as PositionMark,
   type Placed,
@@ -208,9 +209,9 @@ export default function BlackSky({
     : deriveState(now, loaded, fix, permission, sites);
   const hasArrows = screen.kind === 'IN_AREA' || ('nearby' in screen && screen.nearby.length > 0);
   const notes = chosen?.notes ?? [];
-  // The position the arrows are drawn from (the same rule as deriveState), so
-  // the picker can say which packs' areas contain it.
-  const from = estimate ?? (permission === 'denied' ? null : fix);
+  // The position the arrows are drawn from, so the picker can say which
+  // packs' areas contain it.
+  const from = estimate ?? positionFrom(fix, permission);
 
   return (
     <main className="page blacksky">
@@ -259,8 +260,8 @@ export default function BlackSky({
       ) : null}
       {screen.kind === 'NO_PACK' && packs.length > 0 ? (
         // Several packs and none chosen yet: only the live pointer to the
-        // nearest official places, from the fix, until one is chosen.
-        screen.nearby.length > 0 ? (
+        // nearest official places, from the position, until one is chosen.
+        from ? (
           <NearbyList places={screen.nearby} confidence={screen.confidence} />
         ) : (
           <p className="muted">{copy.NO_GPS_YET}</p>
@@ -349,14 +350,14 @@ function ScreenBody({
               onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
             }
           >
-            {copy.MARK_AT_SAVED_PLACE(screen.pack.address)}
+            {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
           </button>
         </>
       );
-    // US2-AC1: outside every prepared area. The stored packs are offered by
-    // name with the distance to their area's edge — informational rows, never
-    // a bearing to an out-of-area point — then the nearest official places
-    // from here, plus general official guidance.
+    // US2-AC1: outside the loaded pack's area. The pack is named with the
+    // distance to its area's edge — an informational row, never a bearing to
+    // an out-of-area point — then the nearest official places from here, plus
+    // general official guidance.
     case 'OUT_OF_AREA':
       return (
         <>
@@ -364,7 +365,7 @@ function ScreenBody({
           <ul className="list">
             {screen.packs.map(({ pack, distanceKm }) => (
               <li key={pack.id} className="blacksky-place">
-                <h2>{pack.name}</h2>
+                <h2>{titleCase(pack.name)}</h2>
                 <p className="muted figure">
                   {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
                 </p>

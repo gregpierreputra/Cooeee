@@ -1,14 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { BLACKSKY_PACK_KEY } from '../src/core/constants';
 import { CHOOSE_PACK, MARK_AT_SAVED_PLACE, NO_GPS_YET, PACK_COVERS_HERE } from '../src/core/copy';
+import { titleCase } from '../src/core/home';
 import { HARNESS } from './helpers';
 
 // Two saved packs: BlackSky asks which to load at the top of the screen, loads
 // nothing of either until one is chosen, remembers the choice across a reload,
 // and swaps when the other is chosen. Headless Chromium denies geolocation, so
 // a loaded pack shows as reference text with its mark control.
-const FERNY = '10 OLD ROAD FERNY CREEK 3786';
-const KALORAMA = '6 RIDGE ROAD KALORAMA 3766';
+// The mark control names the address as the screen displays it, title-cased.
+const MARK_FERNY = MARK_AT_SAVED_PLACE(titleCase('10 OLD ROAD FERNY CREEK 3786'));
+const MARK_KALORAMA = MARK_AT_SAVED_PLACE(titleCase('6 RIDGE ROAD KALORAMA 3766'));
 
 test('the picker loads only the chosen pack and remembers it', async ({ page }) => {
   await page.goto(`${HARNESS}/blacksky`);
@@ -16,8 +18,8 @@ test('the picker loads only the chosen pack and remembers it', async ({ page }) 
   const choices = page.locator('.blacksky-pack');
   const ferny = choices.filter({ hasText: 'Ferny Creek' });
   const kalorama = choices.filter({ hasText: 'Kalorama' });
-  const markFerny = page.getByRole('button', { name: MARK_AT_SAVED_PLACE(FERNY) });
-  const markKalorama = page.getByRole('button', { name: MARK_AT_SAVED_PLACE(KALORAMA) });
+  const markFerny = page.getByRole('button', { name: MARK_FERNY });
+  const markKalorama = page.getByRole('button', { name: MARK_KALORAMA });
   await expect(choices).toHaveCount(2);
   await expect(page.locator('.blacksky-pack[aria-pressed="true"]')).toHaveCount(0);
   await expect(markFerny).toHaveCount(0);
@@ -46,7 +48,8 @@ test('a remembered id for a pack that no longer exists loads nothing', async ({ 
   await page.goto(`${HARNESS}/blacksky`);
   await expect(page.locator('.blacksky-pack')).toHaveCount(2);
   await expect(page.locator('.blacksky-pack[aria-pressed="true"]')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^I'm standing at/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: MARK_FERNY })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: MARK_KALORAMA })).toHaveCount(0);
 });
 
 // With a fix, the picker says which pack's area contains it, chosen or not.

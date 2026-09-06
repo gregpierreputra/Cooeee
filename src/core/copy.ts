@@ -349,7 +349,7 @@ export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${addre
 export const ESTIMATE_READOUT = (m: number) =>
   `ESTIMATE from your marked position, ± ${m} m and growing`;
 
-// E3-US2-AC1 outside every pack area
+// E3-US2-AC1 outside the loaded pack's area
 /** Distance to a pack area's EDGE — never presented as a direction. */
 export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area`;
 

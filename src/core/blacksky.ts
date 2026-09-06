@@ -141,6 +141,13 @@ export function nearestSites(
  * is: a person in the field is better served by an approximate direction with
  * its error stated than by no direction. `confidence` carries that statement.
  */
+/** The position the arrows are drawn from: a denied sensor is treated as no
+ *  fix, whatever a stale reading still holds. */
+export const positionFrom = (
+  fix: Fix | null,
+  permission: 'granted' | 'denied' | 'prompt',
+): Fix | null => (permission === 'denied' ? null : fix);
+
 export function deriveState(
   now: number,
   packs: PackWithPlaces[],
@@ -148,8 +155,7 @@ export function deriveState(
   permission: 'granted' | 'denied' | 'prompt',
   snapshot: NspSnapshot | null = null,
 ): Screen {
-  // A denied sensor is treated as no fix, whatever a stale reading still holds.
-  const from = permission === 'denied' ? null : fix;
+  const from = positionFrom(fix, permission);
 
   if (packs.length === 0) {
     return from

@@ -924,6 +924,7 @@ input {
   gap: 0.125rem;
   text-align: left;
   padding: 0.875rem 1.25rem;
+  border-radius: var(--r-card); /* three lines of text: the card's corner, not the pill's */
 }
 .blacksky-pack[aria-pressed='true'] {
   background: var(--accent);
