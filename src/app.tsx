@@ -5,6 +5,7 @@ import { isBlackSkyLatched } from './core/blacksky-latch';
 import * as copy from './core/copy';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
+import About from './ui/About';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
 import Home from './ui/Home';
@@ -146,6 +147,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
         <Route path="/nearby" element={<Nearby />} />
+        <Route path="/about" element={<About />} />
         <Route path="/blacksky" element={<BlackSky />} />
       </Routes>
       <BottomNavHost />

@@ -144,6 +144,7 @@ describe('bottom navigation', () => {
     expect(NAV_ITEMS).toEqual([
       { key: 'home', label: 'Home', to: '/' },
       { key: 'nearby', label: 'Nearby', to: '/nearby' },
+      { key: 'about', label: 'About', to: '/about' },
     ]);
   });
 

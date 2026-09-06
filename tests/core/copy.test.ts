@@ -254,6 +254,20 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
+  it('says what Cooeee is on the About page, in plain sentences with no colon, semicolon or dash', () => {
+    expect(copy.ABOUT_COOEEE).toBe('About Cooeee');
+    expect(copy.COOEEE_INFO_LINES.map((line) => line.lead)).toEqual([
+      'What it is.',
+      'Why it exists.',
+      'What it does.',
+      'What it does not do.',
+      'Where your information stays.',
+    ]);
+    for (const line of copy.COOEEE_INFO_LINES) {
+      expect(`${line.lead} ${line.text}`).not.toMatch(/[:;\u2013\u2014-]/);
+    }
+  });
+
   it('says what BlackSky is and why, then three facts about using it', () => {
     expect(copy.ABOUT_BLACKSKY).toBe('About BlackSky');
     expect(copy.BLACKSKY_INFO_LINES.map((line) => line.lead)).toEqual([

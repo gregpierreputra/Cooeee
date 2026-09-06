@@ -190,7 +190,7 @@ function BlackSkyHoldRow({ children }: { children: ReactNode }) {
       {open ? (
         <section className="blacksky-info-panel">
           <span className="kicker">{copy.ABOUT_BLACKSKY}</span>
-          <ul>
+          <ul className="info-lines">
             {copy.BLACKSKY_INFO_LINES.map((line) => (
               <li key={line.lead}>
                 <b>{line.lead}</b> {line.text}

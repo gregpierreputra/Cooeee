@@ -12,6 +12,7 @@ import {
   HEADER_HOME_LABEL,
   HOLD_FOR_BLACKSKY,
   HOLD_TO_ENTER,
+  NAV_ABOUT,
   NAV_HOME,
   NAV_LABEL,
   NAV_NEARBY,
@@ -223,6 +224,7 @@ test.describe('the returning-user home screen', () => {
     const nav = page.getByRole('navigation', { name: NAV_LABEL });
     await expect(nav.getByRole('link', { name: NAV_HOME })).toBeVisible();
     await expect(nav.getByRole('link', { name: NAV_NEARBY })).toBeVisible();
+    await expect(nav.getByRole('link', { name: NAV_ABOUT })).toBeVisible();
     await expect(nav.getByRole('link', { name: HOLD_FOR_BLACKSKY })).toHaveCount(0);
     expect((await nav.textContent()) ?? '').not.toContain('BlackSky');
   });

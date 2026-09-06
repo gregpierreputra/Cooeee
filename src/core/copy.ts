@@ -425,6 +425,7 @@ export const SAVED_PLACE_LABEL = 'Saved place';
 
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
+export const NAV_ABOUT = 'About';
 
 /** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
  *  is written here in sentence case and read out as words, not as letters. */
@@ -485,6 +486,33 @@ export const OPENS_WITHOUT_SIGNAL = ' · opens without signal';
 /** Under the hold control only while nothing is saved: the mode is reachable
  *  with no pack, which is the one thing a new user would not expect. */
 export const BLACKSKY_WORKS_WITHOUT_PACK = 'WORKS WITHOUT A SAVED PACK';
+
+/** The About page, in the same shape as the BlackSky panel below: what Cooeee
+ *  is, why it exists, what it does and does not do, and where the information
+ *  stays. Plain sentences, with no colon, semicolon or dash anywhere. */
+export const ABOUT_COOEEE = 'About Cooeee';
+export const COOEEE_INFO_LINES = [
+  {
+    lead: 'What it is.',
+    text: 'Cooeee is a small app for people who live where bushfires happen. It gathers official information about the places you choose and keeps it on your phone.',
+  },
+  {
+    lead: 'Why it exists.',
+    text: 'When a fire comes, the power and the signal often go first. Information that was only online is gone at the moment it matters most.',
+  },
+  {
+    lead: 'What it does.',
+    text: 'Build an offline pack for an address. Find the nearest official places from where you stand. Hold for BlackSky, the dark screen that points the way when nothing else works.',
+  },
+  {
+    lead: 'What it does not do.',
+    text: 'It does not watch conditions and it never contacts you. VicEmergency and emergency services tell you when to act.',
+  },
+  {
+    lead: 'Where your information stays.',
+    text: 'On this phone. Your address is checked against Victorian Government data and Cooeee runs no server that could keep it.',
+  },
+] as const;
 
 /** The information ring beside the hold control, and the panel a tap on it
  *  opens: what BlackSky is, why it exists, and three facts about using it,
