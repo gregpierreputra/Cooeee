@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
-  BLACKSKY_SEPARATE_FROM_EVERYDAY,
+  ABOUT_BLACKSKY,
+  BLACKSKY_INFO_LINES,
   BLACKSKY_WORKS_WITHOUT_PACK,
   BUILD_A_PACK,
   CHECKED_DAYS_AGO,
@@ -143,17 +144,50 @@ test.describe('the returning-user home screen', () => {
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
   });
 
-  test('the hold control names what the mode is, and changes the line with no pack', async ({
-    page,
-  }) => {
+  test('the hold control carries a sub-line only while nothing is saved', async ({ page }) => {
     await page.goto(home('?days=3'));
     const hold = page.getByRole('button', { name: HOLD_FOR_BLACKSKY });
-    await expect(hold).toContainText(BLACKSKY_SEPARATE_FROM_EVERYDAY);
+    await expect(hold).toHaveText(HOLD_FOR_BLACKSKY);
 
     await page.goto(home('?mode=none'));
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toContainText(
       BLACKSKY_WORKS_WITHOUT_PACK,
     );
+  });
+
+  // The ring beside the hold control: a mouse over it shows the four lines
+  // beneath the row and leaving the row hides them; a click pins them until the
+  // next click. The panel is in flow beneath the hold control, and the hover
+  // holds steady while the pointer rests on the ring even where the
+  // bottom-anchored row shifts up to make room.
+  test('the information ring shows the About BlackSky panel on hover, and a click pins it', async ({
+    page,
+  }) => {
+    await page.goto(home('?days=3'));
+    const ring = page.getByRole('button', { name: ABOUT_BLACKSKY });
+    const hold = page.getByRole('button', { name: HOLD_FOR_BLACKSKY });
+    const panel = page.locator('.blacksky-info-panel');
+    await expect(ring).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel).toHaveCount(0);
+
+    await ring.hover();
+    await expect(ring).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
+    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].lead);
+    await page.waitForTimeout(300); // long enough for a flicker to show as a close
+    await expect(ring).toHaveAttribute('aria-expanded', 'true');
+    const holdBox = await hold.boundingBox();
+    const panelBox = await panel.boundingBox();
+    expect(panelBox!.y).toBeGreaterThanOrEqual(holdBox!.y + holdBox!.height);
+    await page.mouse.move(0, 0);
+    await expect(panel).toHaveCount(0);
+
+    await ring.click();
+    await page.mouse.move(0, 0);
+    await expect(panel).toBeVisible();
+    await ring.click();
+    await page.mouse.move(0, 0);
+    await expect(panel).toHaveCount(0);
   });
 
   test('the pack card carries the offline fact under the age, not in place of it', async ({

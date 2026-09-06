@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
 import { homeView, titleCase, type HomeView } from '../core/home';
@@ -12,8 +12,9 @@ import StateCard from './components/StateCard';
  *
  *  One pack or none: it is opened, or it is built, and never both. Without
  *  scrolling or tapping the screen carries the saved place, its age, the way
- *  into the pack and the BlackSky control. It reads IndexedDB and nothing else:
- *  no request is made here in any state, and no position is asked for. */
+ *  into the pack, the BlackSky control and the ring that says what BlackSky is.
+ *  It reads IndexedDB and nothing else: no request is made here in any state,
+ *  and no position is asked for. */
 export default function Home({ now }: { now?: number }) {
   // null = the store has not answered yet.
   // It answers in a frame or two from local IndexedDB, and
@@ -139,16 +140,77 @@ export default function Home({ now }: { now?: number }) {
             {copy.OPEN_PACK}
           </Link>
         ) : null}
-        {/* Reachable in both states, including with no pack saved. */}
-        <HoldButton onHold={() => navigate('/blacksky')} hint={copy.HOLD_TO_ENTER}>
-          <span className="blacksky-hold-label">{copy.HOLD_FOR_BLACKSKY}</span>
-          <span className="blacksky-hold-sub">
-            {view !== null && view.kind === 'pack'
-              ? copy.BLACKSKY_SEPARATE_FROM_EVERYDAY
-              : copy.BLACKSKY_WORKS_WITHOUT_PACK}
-          </span>
-        </HoldButton>
+        {/* Reachable in both states, including with no pack saved. The ring to
+            its left opens the lines that say what the mode is. */}
+        <BlackSkyHoldRow>
+          <HoldButton onHold={() => navigate('/blacksky')} hint={copy.HOLD_TO_ENTER}>
+            <span className="blacksky-hold-label">{copy.HOLD_FOR_BLACKSKY}</span>
+            {view !== null && view.kind === 'no-pack' ? (
+              <span className="blacksky-hold-sub">{copy.BLACKSKY_WORKS_WITHOUT_PACK}</span>
+            ) : null}
+          </HoldButton>
+        </BlackSkyHoldRow>
       </div>
     </main>
+  );
+}
+
+/** The hold control with the information ring to its left and, while the ring
+ *  is hovered with a mouse or after a tap on it, the panel that says what
+ *  BlackSky is. The panel opens in flow beneath the pair (see
+ *  .blacksky-hold-row), so it covers nothing. The bottom-anchored actions block
+ *  can shift up by the panel's height when the screen has room to spare, so the
+ *  hover ends only when the pointer leaves the whole row: the shift lands the
+ *  pointer on the panel, never outside. A tap pins the panel open; hover is
+ *  mouse only, so a phone tap cannot count twice. */
+function BlackSkyHoldRow({ children }: { children: ReactNode }) {
+  const [pinned, setPinned] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const open = pinned || hovered;
+  const hover = (event: PointerEvent<HTMLElement>, value: boolean) => {
+    if (event.pointerType === 'mouse') setHovered(value);
+  };
+
+  return (
+    <div className="blacksky-hold-row" onPointerLeave={(event) => hover(event, false)}>
+      <button
+        type="button"
+        className="blacksky-info"
+        aria-label={copy.ABOUT_BLACKSKY}
+        aria-expanded={open}
+        aria-controls="blacksky-info-panel"
+        onClick={() => setPinned((value) => !value)}
+        onPointerEnter={(event) => hover(event, true)}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 11v5.5" />
+          <circle cx="12" cy="7.75" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </button>
+      {children}
+      {open ? (
+        <section id="blacksky-info-panel" className="blacksky-info-panel">
+          <span className="kicker">{copy.ABOUT_BLACKSKY}</span>
+          <ul>
+            {copy.BLACKSKY_INFO_LINES.map((line) => (
+              <li key={line.lead}>
+                <b>{line.lead}</b> {line.text}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
   );
 }

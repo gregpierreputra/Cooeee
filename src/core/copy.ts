@@ -475,11 +475,25 @@ export const PREPARATION_SOURCE = 'Based on Country Fire Authority guidance.';
  *  radios off. It states what the pack does, never what it protects you from. */
 export const OPENS_WITHOUT_SIGNAL = ' · opens without signal';
 
-/** Under the hold control. Two lines, chosen by whether a pack is saved, both
- *  saying what BlackSky IS rather than urging anyone into it: it is a separate
- *  mode entered on purpose, and it is reachable with nothing saved. */
-export const BLACKSKY_SEPARATE_FROM_EVERYDAY = 'SEPARATE FROM EVERYDAY USE';
+/** Under the hold control only while nothing is saved: the mode is reachable
+ *  with no pack, which is the one thing a new user would not expect. */
 export const BLACKSKY_WORKS_WITHOUT_PACK = 'WORKS WITHOUT A SAVED PACK';
+
+/** The information ring beside the hold control, and the panel it opens: what
+ *  BlackSky is, in four short lines, each led by the one fact that matters. */
+export const ABOUT_BLACKSKY = 'About BlackSky';
+export const BLACKSKY_INFO_LINES = [
+  { lead: 'Works with no signal.', text: 'Everything it shows is already on this phone.' },
+  {
+    lead: 'Points the way.',
+    text: "Arrows and distances to the nearest official places of last resort, from this phone's GPS, updated as you move.",
+  },
+  {
+    lead: 'Two seconds to enter, two to leave.',
+    text: 'Hold the control. A tap does nothing, and the back button does not leave it.',
+  },
+  { lead: 'Cooeee issues no warnings.', text: OFFICIAL_INSTRUCTIONS_FIRST },
+] as const;
 
 // ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────
 // The four statements are the screen. They are literal on-screen text, never

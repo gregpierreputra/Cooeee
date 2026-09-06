@@ -243,6 +243,17 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
+  it('says what BlackSky is in four led lines, ending on the official-instructions rule', () => {
+    expect(copy.ABOUT_BLACKSKY).toBe('About BlackSky');
+    expect(copy.BLACKSKY_INFO_LINES.map((line) => line.lead)).toEqual([
+      'Works with no signal.',
+      'Points the way.',
+      'Two seconds to enter, two to leave.',
+      'Cooeee issues no warnings.',
+    ]);
+    expect(copy.BLACKSKY_INFO_LINES[3].text).toBe(copy.OFFICIAL_INSTRUCTIONS_FIRST);
+  });
+
   it('credits the guidance behind the preparation line, without quoting it', () => {
     expect(copy.PREPARATION_SOURCE).toBe('Based on Country Fire Authority guidance.');
     expect(copy.PREPARATION_SOURCE).not.toMatch(/["“”]/);
