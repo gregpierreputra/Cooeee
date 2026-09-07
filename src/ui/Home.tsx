@@ -63,10 +63,10 @@ export default function Home({ now }: { now?: number }) {
         <section className="preparation">
           {/* The ring beside the label starts the guided tour of every screen. */}
           <div className="preparation-head">
-            <span className="kicker">{copy.PREPARATION_LABEL}</span>
             <button type="button" className="info-ring" aria-label={copy.TOUR_HINT} onClick={startTour}>
               <InfoGlyph />
             </button>
+            <span className="kicker">{copy.PREPARATION_LABEL}</span>
           </div>
           <p>{view.preparation.text}</p>
           <p className="muted">{view.preparation.context}</p>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 
@@ -16,12 +16,16 @@ export function startTour() {
 const STEPS = copy.TOUR_STEPS;
 const PAD = 8; // px of breathing room around the spotlit feature
 const TRIES = 30; // a screen has 3 s to render its target before the card shows alone
+const CHROME = 112; // px of notice, header and back bar fixed above the page
 
 /** The guided tour: one overlay that greys the screen, surrounds one feature
  *  at a time and explains it, across every screen. A stop whose screen is not
- *  open first moves there, then waits for its target to render. The tour
- *  keeps nothing in storage: it starts only from a fresh acknowledgement or
- *  the ring, and a reload simply ends it. It never visits BlackSky. */
+ *  open first moves there, then waits for its target to render. The grey never
+ *  lifts between stops, and the page beneath still scrolls with the box
+ *  following, so a feature taller than the room beside the card can be brought
+ *  into the clear. The tour keeps nothing in storage: it starts only from a
+ *  fresh acknowledgement or the ring, and a reload simply ends it. It never
+ *  visits BlackSky. */
 export default function Tour() {
   const [step, setStep] = useState<number | null>(() => {
     const start = pending;
@@ -29,6 +33,8 @@ export default function Tour() {
     return start ? 0 : null;
   });
   const [rect, setRect] = useState<DOMRect | null>(null);
+  // Which edge the card sits on, decided once per stop: the far side from the feature.
+  const [side, setSide] = useState<'bottom' | 'top'>('bottom');
   const card = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -42,9 +48,10 @@ export default function Tour() {
     return () => window.removeEventListener(TOUR_EVENT, onStart);
   }, []);
 
-  // Each stop: go to its screen, then find and measure its target. Replace
-  // rather than push, so the tour leaves no history entries behind it.
-  useEffect(() => {
+  // Each stop: go to its screen, then find and measure its target, before the
+  // browser paints, so the box is never a frame behind. Replace rather than
+  // push, so the tour leaves no history entries behind it.
+  useLayoutEffect(() => {
     if (step === null) return;
     // BlackSky is entered by a hold the overlay cannot stop from a keyboard,
     // and its latch would bounce every hop back: the tour simply ends there.
@@ -52,30 +59,44 @@ export default function Tour() {
       setStep(null);
       return;
     }
-    setRect(null);
     const { path, target } = STEPS[step];
     if (pathname !== path) {
+      setRect(null); // the layer itself dims the new screen until its target is found
       navigate(path, { replace: true });
       return;
     }
+    // The first sighting picks the card's side and scrolls the feature to the
+    // other one; later sightings (scroll, resize) only move the box.
+    let placed = false;
     const measure = () => {
       const found = document.querySelectorAll(target);
       if (found.length === 0) return false;
-      found[0].scrollIntoView({ block: 'center' });
+      if (!placed) {
+        placed = true;
+        const box = union(found);
+        const atBottom = box.top + box.height / 2 <= window.innerHeight / 2;
+        setSide(atBottom ? 'bottom' : 'top');
+        found[0].scrollIntoView({ block: atBottom ? 'start' : 'end' });
+        if (atBottom) window.scrollBy(0, -CHROME);
+        card.current?.focus();
+      }
       setRect(union(found));
-      card.current?.focus();
       return true;
     };
     let tries = 0;
-    const timer = window.setInterval(() => {
-      tries += 1;
-      if (measure() || tries === TRIES) window.clearInterval(timer);
-    }, 100);
-    const onResize = () => void measure();
-    window.addEventListener('resize', onResize);
+    const timer = measure()
+      ? 0
+      : window.setInterval(() => {
+          tries += 1;
+          if (measure() || tries === TRIES) window.clearInterval(timer);
+        }, 100);
+    const follow = () => void measure();
+    window.addEventListener('resize', follow);
+    window.addEventListener('scroll', follow, { passive: true });
     return () => {
       window.clearInterval(timer);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', follow);
+      window.removeEventListener('scroll', follow);
     };
   }, [step, pathname]);
 
@@ -84,10 +105,9 @@ export default function Tour() {
     navigate('/', { replace: true });
   };
 
-  // The page beneath must not scroll, focus must not wander onto the greyed
-  // controls, and Escape is one more way to skip.
+  // Focus must not wander onto the greyed controls, and Escape is one more
+  // way to skip.
   useEffect(() => {
-    document.documentElement.classList.toggle('tour-open', step !== null);
     if (step === null) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') end();
@@ -107,11 +127,9 @@ export default function Tour() {
 
   const { title, lines } = STEPS[step];
   const last = step === STEPS.length - 1;
-  // The card sits at the bottom, unless the feature is there: then at the top.
-  const lower = rect !== null && rect.top + rect.height / 2 > window.innerHeight / 2;
 
   return (
-    <div className="tour">
+    <div className={rect ? 'tour' : 'tour tour-dim'}>
       {rect ? (
         <div
           className="tour-spot"
@@ -126,7 +144,7 @@ export default function Tour() {
       <section
         ref={card}
         tabIndex={-1}
-        className={lower ? 'card tour-card tour-card-top' : 'card tour-card'}
+        className={side === 'top' ? 'card tour-card tour-card-top' : 'card tour-card'}
         role="dialog"
         aria-modal="true"
         aria-labelledby="tour-title"

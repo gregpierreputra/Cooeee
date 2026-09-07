@@ -7,6 +7,10 @@ import { acknowledgeFirstOpen } from './helpers';
 // returning user starts it from the ring and can leave it with Escape.
 const N = TOUR_STEPS.length;
 const count = (n: number) => `${n}/${N}`;
+// The grey never lifts: at every moment the layer either dims the screen
+// itself or holds the spotlight whose shadow dims it.
+const dimmed = (page: import('@playwright/test').Page) =>
+  expect(page.locator('.tour.tour-dim, .tour:has(.tour-spot)')).toHaveCount(1);
 
 test('starts after the acknowledgement, steps across screens, and skips', async ({ page }) => {
   await page.goto('/');
@@ -19,15 +23,27 @@ test('starts after the acknowledgement, steps across screens, and skips', async 
   await expect(page.locator('.tour-spot')).toBeVisible();
 
   await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  await dimmed(page);
   await expect(dialog).toContainText(count(2));
   await dialog.getByRole('button', { name: TOUR_BACK }).click();
+  await dimmed(page);
   await expect(dialog).toContainText(count(1));
 
   // Stop seven lives on the address search: the tour moves there itself.
-  for (let i = 1; i < 7; i += 1) await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  for (let i = 1; i < 7; i += 1) {
+    await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+    await dimmed(page);
+  }
   await expect(dialog).toContainText(count(7));
   await expect(page).toHaveURL(/\/packs\/new$/);
   await expect(page.locator('.tour-spot')).toBeVisible();
+
+  // The page still scrolls beneath the tour, and the spotlight follows it.
+  const before = (await page.locator('.tour-spot').boundingBox())!;
+  await page.mouse.wheel(0, 200);
+  await expect
+    .poll(async () => (await page.locator('.tour-spot').boundingBox())!.y)
+    .toBeLessThan(before.y);
 
   await dialog.getByRole('button', { name: SKIP_TOUR }).click();
   await expect(dialog).toHaveCount(0);

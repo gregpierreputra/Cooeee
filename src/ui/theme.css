@@ -1186,22 +1186,28 @@ input {
   border-color: var(--accent);
   color: var(--accent);
 }
+/* The ring leads the label, as the BlackSky ring leads its hold control. */
 .preparation-head {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
   align-items: center;
 }
 
 /* ── The guided tour ──────────────────────────────────────────────────────── */
 
-/* One fixed layer over everything, catching every touch. The spotlight is a
-   box around the feature whose enormous shadow is the grey-out; the card sits
-   at the bottom, or at the top when the feature is down there. */
+/* One fixed layer over everything, catching every tap while wheel and touch
+   scrolling still reach the page beneath. The spotlight is a box around the
+   feature whose enormous shadow is the grey-out; until a feature is found the
+   layer greys the screen itself, so the grey never lifts between stops. The
+   card sits at the bottom, or at the top when the feature is down there. */
 .tour {
   position: fixed;
   inset: 0;
   z-index: 20;
-  touch-action: none;
+}
+.tour-dim {
+  background: rgb(2 6 10 / 78%);
 }
 .tour-spot {
   position: absolute;
@@ -1209,6 +1215,11 @@ input {
   outline: 2px solid var(--accent);
   box-shadow: 0 0 0 4000px rgb(2 6 10 / 78%);
   pointer-events: none;
+  transition:
+    top 0.2s ease,
+    left 0.2s ease,
+    width 0.2s ease,
+    height 0.2s ease;
 }
 .tour-card {
   position: absolute;
@@ -1241,9 +1252,6 @@ input {
   padding: 0.5rem 0.5rem;
   font-size: var(--step-s);
 }
-.tour-open {
-  overflow: hidden;
-}
 
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a
    glimpse of the mode rather than one more card on the screen. */
@@ -1275,7 +1283,7 @@ input {
   line-height: 1.5;
   color: var(--ink-2);
 }
-.about .card b {
+.info-lines b {
   color: var(--accent);
 }
 
