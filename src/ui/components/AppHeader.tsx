@@ -8,7 +8,7 @@ import { listCompletePacks } from '../../data/db';
 /** The fixed header — ONE component, mounted once by the application shell, so
  *  every screen carries the same header rather than its own copy of it.
  *
- *  Left: the mark and the name, which return home. Right: the saved pack's age
+ *  Left: the mark and the name, which return home. Right: the oldest saved pack's age
  *  as real text. Connection state lives in the notice bar above, not here. It
  *  reads IndexedDB and nothing else: no request is made from here in any state,
  *  and nothing in it suggests entering BlackSky, whatever the connection reports. */

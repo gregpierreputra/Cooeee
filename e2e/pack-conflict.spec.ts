@@ -1,39 +1,40 @@
 import { expect, test, type Page } from '@playwright/test';
+import {
+  KEEP_SAVED_PACK,
+  NOTHING_CHANGED,
+  PLACE_ALREADY_SAVED,
+  REPLACE_SAVED_PACK,
+  SAVED_PLACE_CHECK_FAILED,
+} from '../src/core/copy';
 import { HARNESS, readPacks as packs } from './helpers';
 
 const CONFLICT_URL = `${HARNESS}/conflict`;
-const SAVED_ADDRESS = '10 OLD ROAD FERNY CREEK 3786';
-const NEW_ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
+// The harness saves a pack at the one candidate address: confirming that same
+// address is what reaches the keep-or-replace step. Any other address goes
+// straight to the area check (pack-save-flow.spec.ts).
+const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 
 async function reachConflict(page: Page, suffix = '') {
   await page.goto(`${CONFLICT_URL}${suffix}`);
   await page.getByLabel('Address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
-  await page.getByRole('button', { name: NEW_ADDRESS }).click();
+  await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
-  await expect(page.getByRole('heading', { name: 'You already have a saved place.' }))
-    .toBeVisible();
+  await expect(page.getByRole('heading', { name: PLACE_ALREADY_SAVED })).toBeVisible();
 }
 
-test('AC8 shows both unchanged addresses and equal unselected choices before network', async ({ page }) => {
+test('AC8 shows the saved address and equal unselected choices before network', async ({ page }) => {
   await reachConflict(page);
-  await expect(page.getByTestId('saved-address')).toHaveText(SAVED_ADDRESS);
-  await expect(page.getByTestId('new-address')).toHaveText(NEW_ADDRESS);
+  await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
   await expect(page.locator('main').locator(
-    'h1, [data-testid="saved-address"], [data-testid="new-address"], button',
-  )).toHaveText([
-    'You already have a saved place.',
-    SAVED_ADDRESS,
-    NEW_ADDRESS,
-    'Keep the saved place',
-    'Replace it with this one',
-  ]);
+    'h1, [data-testid="saved-address"], button',
+  )).toHaveText([PLACE_ALREADY_SAVED, ADDRESS, KEEP_SAVED_PACK, REPLACE_SAVED_PACK]);
   await expect(page.locator('main')).not.toContainText(
     /Updating|We have updated your place|Automatically replaced/i,
   );
 
-  const keep = page.getByRole('button', { name: 'Keep the saved place' });
-  const replace = page.getByRole('button', { name: 'Replace it with this one' });
+  const keep = page.getByRole('button', { name: KEEP_SAVED_PACK });
+  const replace = page.getByRole('button', { name: REPLACE_SAVED_PACK });
   await expect(keep).not.toBeFocused();
   await expect(replace).not.toBeFocused();
   await expect(keep).toHaveCSS('background-color', await replace.evaluate(
@@ -53,7 +54,7 @@ test('AC8 shows both unchanged addresses and equal unselected choices before net
 test('AC8 keep leaves the original complete pack byte-identical', async ({ page }) => {
   await reachConflict(page);
   const before = await packs(page);
-  await page.getByRole('button', { name: 'Keep the saved place' }).click();
+  await page.getByRole('button', { name: KEEP_SAVED_PACK }).click();
 
   expect(await page.evaluate(() => window.__keptSavedPlace)).toBe(true);
   expect(await packs(page)).toEqual(before);
@@ -72,7 +73,7 @@ test('AC8 leaving without a choice leaves the original complete pack byte-identi
 test('AC8 replace explicitly starts the next stage while the original remains current', async ({ page }) => {
   await reachConflict(page);
   const before = await packs(page);
-  await page.getByRole('button', { name: 'Replace it with this one' }).click();
+  await page.getByRole('button', { name: REPLACE_SAVED_PACK }).click();
 
   await expect(page.getByRole('heading')).toHaveText(
     'This address is inside a Designated Bushfire Prone Area.',
@@ -85,26 +86,10 @@ test('AC8 store failure stops before network and states that nothing changed', a
   await page.goto(`${CONFLICT_URL}?mode=unavailable`);
   await page.getByLabel('Address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
-  await page.getByRole('button', { name: NEW_ADDRESS }).click();
+  await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
 
-  await expect(page.getByRole('heading')).toHaveText(
-    'We could not check the saved place on this device.',
-  );
-  await expect(page.getByRole('status')).toContainText('Nothing has been changed.');
-  expect(await page.evaluate(() => window.__areaCheckCount)).toBe(0);
-});
-
-test('AC8 stops rather than selecting a pack when the one-pack invariant is broken', async ({ page }) => {
-  await page.goto(`${CONFLICT_URL}?mode=multiple`);
-  await page.getByLabel('Address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
-  await page.getByRole('button', { name: NEW_ADDRESS }).click();
-  await page.getByRole('button', { name: 'Save this place' }).click();
-
-  await expect(page.getByRole('heading')).toHaveText(
-    'More than one saved pack was found on this device.',
-  );
-  await expect(page.getByRole('status')).toContainText('Nothing has been changed.');
+  await expect(page.getByRole('heading')).toHaveText(SAVED_PLACE_CHECK_FAILED);
+  await expect(page.getByRole('status')).toContainText(NOTHING_CHANGED);
   expect(await page.evaluate(() => window.__areaCheckCount)).toBe(0);
 });

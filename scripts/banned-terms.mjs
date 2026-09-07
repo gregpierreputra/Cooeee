@@ -71,6 +71,8 @@ const hits = [];
 for (const file of walk(SRC)) {
   if (relative('.', file) === relative('.', LISTS)) continue; // it IS the list
   for (const { text, line } of literalsIn(file)) {
+    // An em dash is never user-facing wording here; a comma or a full stop is.
+    if (text.includes('—')) hits.push({ file, line, term: 'em dash', text });
     const stripped = allowed.reduce((acc, re) => acc.replace(re, ' '), text);
     for (const { term, re } of banned) {
       if (re.test(stripped)) hits.push({ file, line, term, text });

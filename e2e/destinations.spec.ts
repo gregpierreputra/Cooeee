@@ -16,7 +16,7 @@ const BY_DISTANCE = [
 ];
 const UNLOCATED_SAME_LGA = 'Wandin North Reserve';
 const UNLOCATED_OTHER_LGA = 'Alexandra Showgrounds';
-const CAVEAT = 'sorted by distance — not a safety ranking';
+const CAVEAT = 'sorted by distance, not a safety ranking';
 const DISTANCE = /^\d+(\.\d+)?\s(m|km)$/;
 const ANY_ORDINAL = /^(nearest|second nearest|third nearest)$/;
 
@@ -124,7 +124,7 @@ test('AC1 states plainly when nothing is published, without a blank screen', asy
   await page.goto(`${URL}?mode=empty`);
 
   await expect(
-    page.getByText('No official place of last resort is published for this area — Yarra Ranges.'),
+    page.getByText('No official place of last resort is published for this area, Yarra Ranges.'),
   ).toBeVisible();
   await expect(page.locator('.destination-item')).toHaveCount(0);
   await expect(page.getByText(CAVEAT)).toHaveCount(0);

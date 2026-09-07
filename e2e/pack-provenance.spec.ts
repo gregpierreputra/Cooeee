@@ -109,7 +109,7 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
   // only way to read what was checked.
   await expect(dialog).toContainText(
     'Bushfire Prone Area plan LEGL./25-138 · gazetted 10 July 2025 · YARRA RANGES'
-    + ' — Department of Transport and Planning',
+    + ' · Department of Transport and Planning',
   );
   // The publisher's readable page for the dataset, not the stored WFS query URL,
   // which answers in raw JSON and is never a page.

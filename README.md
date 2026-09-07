@@ -1,8 +1,8 @@
 # Cooeee
 
-Cooeee builds a pack of official bushfire information for one address while the phone has
-signal. The pack then works with no connection at all. Cooeee gives no warnings, no live routes
-and no eligibility decisions.
+Cooeee builds packs of official bushfire information for the addresses you choose while the
+phone has signal. Each pack then works with no connection at all. Cooeee gives no warnings, no
+live routes and no eligibility decisions.
 
 There are no maps. Every pack is text only.
 

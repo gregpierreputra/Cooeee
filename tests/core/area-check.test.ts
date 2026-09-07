@@ -117,7 +117,7 @@ describe('E1-US1-AC5–AC7 exact copy', () => {
       'No Designated Bushfire Prone Area is mapped at this address in the current planning scheme.',
     );
     expect(copy.AREA_NOT_PUBLISHED).toBe(
-      'The Designated Bushfire Prone Area is not published for this area — Department of Transport and Planning.',
+      'The Designated Bushfire Prone Area is not published for this area (Department of Transport and Planning).',
     );
   });
 
@@ -126,7 +126,7 @@ describe('E1-US1-AC5–AC7 exact copy', () => {
       'We could not check the bushfire area for this address right now.',
     );
     expect(copy.AREA_NOT_SAVED).toBe(
-      'Nothing has been saved. Your address is still here — try again when you have a connection.',
+      'Nothing has been saved. Your address is still here. Try again when you have a connection.',
     );
   });
 });

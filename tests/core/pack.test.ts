@@ -22,11 +22,11 @@ describe('freshness', () => {
       stale: true,
       label: NOT_RECENTLY_VERIFIED(31),
     });
-    expect(freshness(NOW, daysAgo(31)).label).toBe('Saved 31 days ago — not recently verified');
+    expect(freshness(NOW, daysAgo(31)).label).toBe('Saved 31 days ago, not recently verified');
   });
 
   it('labels a long-stale pack without ever suggesting it has expired', () => {
-    expect(freshness(NOW, daysAgo(96)).label).toBe('Saved 96 days ago — not recently verified');
+    expect(freshness(NOW, daysAgo(96)).label).toBe('Saved 96 days ago, not recently verified');
   });
 });
 

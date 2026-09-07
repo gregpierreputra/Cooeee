@@ -1,5 +1,7 @@
 import { MAX_RESPONSE_BYTES } from '../core/constants';
-import type { PackFile } from '../core/types';
+import { sourcePageUrls } from '../core/provenance';
+import type { PackFile, TextPackContent } from '../core/types';
+import { loadAreaMap } from './area-map';
 import { readBodyBounded } from './bounded-body';
 import { sha256Hex } from './integrity';
 import sources from './sources.json';
@@ -8,8 +10,8 @@ import sources from './sources.json';
 // scripts/build-source-pdfs.mjs. Their names come from the register bundled
 // with this code, never from a runtime read: an older service worker or HTTP
 // cache can hand back an older register, and a pack must never be built
-// against one. The files themselves are read from this origin only — the content
-// security policy permits nothing else.
+// against one. The copies themselves are read from this origin only; the one
+// file from elsewhere is the map of the pack's area, in area-map.ts.
 
 function fail(message: string): never {
   throw new TypeError(`source files: ${message}`);
@@ -44,3 +46,16 @@ async function readSourceFile(packId: string, url: string): Promise<PackFile> {
  *  is written to the device here. */
 export const loadSourceFiles = (packId: string, urls: string[]): Promise<PackFile[]> =>
   Promise.all(urls.map((url) => readSourceFile(packId, url)));
+
+/** Everything a pack carries as a file: the copies of its source pages and
+ *  the map of its area. Their bytes are part of the one size stated before
+ *  anything is written. The map is the one file a pack can do without: a map
+ *  server that is down or slow must not stop the pack, so the pack is built
+ *  without it and its page simply shows no map. */
+export async function loadPackFiles(packId: string, content: TextPackContent): Promise<PackFile[]> {
+  const [pages, map] = await Promise.all([
+    loadSourceFiles(packId, sourcePageUrls(content)),
+    loadAreaMap(packId, content.pack).catch(() => null),
+  ]);
+  return map ? [...pages, map] : pages;
+}

@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes, useLocation, useParams } from 'react-router';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
+import { isBlackSkyLatched } from './core/blacksky-latch';
 import * as copy from './core/copy';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
+import About from './ui/About';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
 import Home from './ui/Home';
 import Nearby from './ui/Nearby';
 import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
+import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
+import Tour, { startTour } from './ui/components/Tour';
 import PackDetail from './ui/PackDetail';
 import { Search } from './ui/PackNew/Search';
 
@@ -26,6 +30,24 @@ let updateReady = false;
 export function markUpdateReady() {
   updateReady = true;
   window.dispatchEvent(new Event(SW_UPDATE_EVENT));
+}
+
+/** While BlackSky was the last screen open, every arrival anywhere else goes
+ *  straight back to it: an installed app relaunches at '/', a reload or a
+ *  return from another site lands wherever it lands, and a jump of several
+ *  history entries at once (the long-press back list) unmounts BlackSky before
+ *  its own back handler can run. Checked on start and on every change of
+ *  screen; the hold on Leave BlackSky clears the latch first, so leaving is
+ *  never bounced. */
+function BlackSkyResume() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (isBlackSkyLatched(localFlagStore()) && !pathname.startsWith('/blacksky')) {
+      navigate('/blacksky', { replace: true });
+    }
+  }, [pathname]);
+  return null;
 }
 
 // Route prefix to <html data-mode>. Routing configuration, not a threshold —
@@ -49,6 +71,16 @@ function HeaderHost() {
   const { pathname } = useLocation();
   if (pathname.startsWith('/blacksky')) return null;
   return <AppHeader />;
+}
+
+/** The bottom bar is ONE component too, mounted here for every screen but
+ *  BlackSky, for the same reason as the header: that mode has a single
+ *  deliberate way out, and a bar of destinations across the bottom of it
+ *  would be another. */
+function BottomNavHost() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/blacksky')) return null;
+  return <BottomNav />;
 }
 
 function UpdateBanner({ applyUpdate }: { applyUpdate: () => void }) {
@@ -97,6 +129,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           // reason to ask again on the next open, never a reason to trap
           // someone on this screen.
           writeAcknowledgement(localFlagStore());
+          // The one time the tour starts on its own: the first landing.
+          startTour();
           setScreen('prepared');
         }}
       />
@@ -105,6 +139,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
 
   return (
     <BrowserRouter>
+      <BlackSkyResume />
       <ModeSwitch />
       <NoticeBar />
       <HeaderHost />
@@ -115,8 +150,11 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
         <Route path="/nearby" element={<Nearby />} />
+        <Route path="/about" element={<About />} />
         <Route path="/blacksky" element={<BlackSky />} />
       </Routes>
+      <Tour />
+      <BottomNavHost />
     </BrowserRouter>
   );
 }

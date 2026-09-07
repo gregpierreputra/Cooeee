@@ -198,8 +198,8 @@ describe('E1-US2 pack item projection', () => {
   // rendered as "Designated Bushfire Prone Area", so its stored point query —
   // which correctly returns no feature — looked like it contradicted the row.
   it.each([
-    ['none-mapped-here', 'Designated Bushfire Prone Area — none mapped at this address'],
-    ['not-published', 'Designated Bushfire Prone Area — not published for this area'],
+    ['none-mapped-here', 'Designated Bushfire Prone Area, none mapped at this address'],
+    ['not-published', 'Designated Bushfire Prone Area, not published for this area'],
   ] as const)('names a stored %s layer row by its status, never as a designation', (status, name) => {
     const content: CompletePackContent = {
       pack: pack(),
@@ -234,7 +234,7 @@ describe('E1-US2 pack item projection', () => {
     };
     expect(packDetailItems(content).map(({ citation }) => citation)).toEqual([
       'Bushfire Prone Area plan LEGL./25-138 · gazetted 10 July 2025 · YARRA RANGES'
-      + ' — Department of Transport and Planning',
+      + ' · Department of Transport and Planning',
     ]);
   });
 
@@ -293,7 +293,7 @@ describe('E2-US1-AC3 stored absence row', () => {
 
   it('packDetailAbsence returns its stored reason, verbatim', () => {
     expect(packDetailAbsence(withAbsence())).toBe(
-      'No official place of last resort is published for this area — Yarra Ranges.',
+      'No official place of last resort is published for this area, Yarra Ranges.',
     );
   });
 

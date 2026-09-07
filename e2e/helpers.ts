@@ -6,6 +6,7 @@ export const HARNESS = 'http://127.0.0.1:4174';
 
 /** The one official endpoint the app may call; specs intercept it here. */
 export const WFS_PATTERN = 'https://opendata.maps.vic.gov.au/geoserver/wfs**';
+export const WMS_PATTERN = 'https://opendata.maps.vic.gov.au/geoserver/wms**';
 
 /** A Vicmap address feature shaped exactly as the register returns it. */
 export function addressFeature(

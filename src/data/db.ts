@@ -27,7 +27,8 @@ class CooeeeDb extends Dexie {
   destinations!: Table<Destination, string>;
   programs!: Table<RecoveryProgram, string>;
   tiles!: Table<TileRow, [string, number, number, number]>;
-  // The PDF copies of a pack's source pages.
+  // The files saved with a pack: the PDF copies of its source pages and the
+  // map of its area.
   files!: Table<PackFile, string>;
   // The user's own notes for a pack.
   notes!: Table<PackNote, string>;

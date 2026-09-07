@@ -177,6 +177,10 @@ describe('deleteCompletePack', () => {
   it('deletes the pack and every row it owns, leaving another pack untouched', async () => {
     await stage('gone', 'complete');
     await stage('kept', 'complete');
+    // The two tables added later, one row each, so the cascade is seen to reach them.
+    const file = { url: 'https://example.test/page', name: 'page.pdf', retrievedAt: 0, sizeBytes: 4, sha256: 'f', bytes: new ArrayBuffer(4) };
+    await db.files.bulkPut([{ ...file, id: 'gone:f', packId: 'gone' }, { ...file, id: 'kept:f', packId: 'kept' }]);
+    await db.notes.bulkPut([{ id: 'gone:n', packId: 'gone', text: 'x', updatedAt: 1 }, { id: 'kept:n', packId: 'kept', text: 'x', updatedAt: 1 }]);
     const before = await db.packs.get('kept');
 
     await deleteCompletePack('gone');
@@ -185,8 +189,12 @@ describe('deleteCompletePack', () => {
     expect(await db.layers.where('packId').equals('gone').count()).toBe(0);
     expect(await db.destinations.where('packId').equals('gone').count()).toBe(0);
     expect(await db.tiles.where('packId').equals('gone').count()).toBe(0);
+    expect(await db.files.where('packId').equals('gone').count()).toBe(0);
+    expect(await db.notes.where('packId').equals('gone').count()).toBe(0);
     expect(await db.packs.get('kept')).toEqual(before);
     expect(await db.layers.where('packId').equals('kept').count()).toBe(1);
+    expect(await db.files.where('packId').equals('kept').count()).toBe(1);
+    expect(await db.notes.where('packId').equals('kept').count()).toBe(1);
   });
 
   it('refuses a building pack — only sweepBuilding removes those', async () => {

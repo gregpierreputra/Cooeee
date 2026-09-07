@@ -6,42 +6,42 @@ import * as copy from '../../src/core/copy';
 // not a style discussion.
 describe('mandated literals', () => {
   it('destinations are never ranked by worth', () => {
-    expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance — not a safety ranking');
+    expect(copy.SORTED_BY_DISTANCE).toBe('sorted by distance, not a safety ranking');
   });
 
-  // Exact match including punctuation. The literal is mandated with an em dash;
-  // a hyphen-minus in its place is a different sentence, and it stood in this
-  // file undetected because the assertion carried the same typo.
-  it('an unmatched address says what to try next, with the mandated em dash', () => {
+  // Exact match including punctuation. The literal carries no dash of any
+  // kind: the em dash it once had is gone, and a hyphen-minus in its place
+  // would be a different sentence.
+  it('an unmatched address says what to try next, with no dash of any kind', () => {
     expect(copy.NO_ADDRESS_MATCH).toBe(
-      'No matching address found — check the spelling or try the nearest cross street.',
+      'No matching address found. Check the spelling or try the nearest cross street.',
     );
-    expect([...copy.NO_ADDRESS_MATCH].filter((c) => c === '\u2014')).toHaveLength(1);
+    expect(copy.NO_ADDRESS_MATCH).not.toContain('\u2014');
     expect(copy.NO_ADDRESS_MATCH).not.toContain('-');
   });
 
   it('no fix falls back to saved information, in words', () => {
-    expect(copy.NO_GPS).toBe('No GPS fix — showing your saved information.');
+    expect(copy.NO_GPS).toBe('No GPS fix. Showing your saved information.');
   });
 
   it('a vague or old fix reports its own figure beside the arrow, never instead of it', () => {
     expect(copy.GPS_APPROXIMATE(240)).toBe(
-      'GPS is only accurate to ± 240 m here — the direction is approximate and sharpens as the fix improves.',
+      'GPS is only accurate to ± 240 m here. The direction is approximate and sharpens as the fix improves.',
     );
-    expect(copy.FIX_AGE(45)).toBe('Last GPS fix 45 s ago — the direction may have changed.');
+    expect(copy.FIX_AGE(45)).toBe('Last GPS fix 45 s ago. The direction may have changed.');
   });
 
-  it('being outside every prepared area is stated plainly', () => {
-    expect(copy.OUTSIDE_AREAS).toBe("You're outside the areas you've prepared");
+  it("being outside the loaded pack's area is stated plainly", () => {
+    expect(copy.OUTSIDE_AREAS).toBe("You're outside this pack's area");
   });
 
   it('a stale pack is labelled without being disabled', () => {
-    expect(copy.NOT_RECENTLY_VERIFIED(96)).toBe('Saved 96 days ago — not recently verified');
+    expect(copy.NOT_RECENTLY_VERIFIED(96)).toBe('Saved 96 days ago, not recently verified');
   });
 
   it('the app states what it cannot detect', () => {
     expect(copy.PHONE_MAY_WORK).toBe(
-      'Phone calls may work if your phone shows signal — this app cannot detect phone signal.',
+      'Phone calls may work if your phone shows signal. This app cannot detect phone signal.',
     );
   });
 });
@@ -59,7 +59,7 @@ describe('composed lines', () => {
 
 describe('shell copy', () => {
   it('states an update is waiting and that nothing changes until the user chooses', () => {
-    expect(copy.NEW_VERSION_READY).toContain('nothing changes until then');
+    expect(copy.NEW_VERSION_READY).toContain('Nothing changes until then');
   });
 
   it('says a pack is missing without implying anything about the place', () => {
@@ -142,18 +142,14 @@ describe('BlackSky bearing and distance figures', () => {
     expect(copy.distanceLabel(1120)).toBe('1.1 km');
     expect(copy.distanceLabel(2700)).toBe('2.7 km');
   });
-
-  it('composes the scenario figure exactly', () => {
-    expect(copy.BEARING_FIGURE('NE', '↗', '1.1 km')).toBe('NE ↗ · 1.1 km');
-  });
 });
 
 describe('BlackSky compass sectors', () => {
-  it('has 16 abbreviations, one per 22.5-degree sector, north first', () => {
-    expect(copy.CARDINAL_ABBR).toHaveLength(16);
-    expect(copy.CARDINAL_ABBR[0]).toBe('N');
-    expect(copy.CARDINAL_ABBR[2]).toBe('NE');
-    expect(copy.CARDINAL_ABBR[8]).toBe('S');
+  it('has 8 named points, one per 45-degree sector, north first', () => {
+    expect(copy.CARDINAL_POINTS).toHaveLength(8);
+    expect(copy.CARDINAL_POINTS[0]).toBe('North');
+    expect(copy.CARDINAL_POINTS[1]).toBe('North-east');
+    expect(copy.CARDINAL_POINTS[4]).toBe('South');
   });
 });
 
@@ -161,7 +157,7 @@ describe('BlackSky compass sectors', () => {
 describe('marked-position estimate copy', () => {
   it('is labelled ESTIMATE with the uncertainty stated as growing', () => {
     expect(copy.ESTIMATE_READOUT(53)).toBe(
-      'ESTIMATE from your marked position — ± 53 m and growing',
+      'ESTIMATE from your marked position, ± 53 m and growing',
     );
   });
 });
@@ -176,6 +172,17 @@ describe('general official guidance', () => {
 
   it('states the area distance without implying a direction', () => {
     expect(copy.AREA_DISTANCE_LINE('9.2 km')).toBe('9.2 km to its area');
+  });
+});
+
+describe('several packs stored', () => {
+  it('asks which pack to load, and says the nearest places are pointed at regardless', () => {
+    expect(copy.CHOOSE_PACK).toBe('Choose a pack to load');
+    expect(copy.CHOOSE_PACK_HINT).toBe(
+      'Its places, notes and reminder load once it is chosen. The nearest official places of last resort are pointed at from your position regardless.',
+    );
+    expect(copy.PACK_COVERS_HERE).toBe('Covers where you are');
+    expect(copy.NO_GPS_YET).toBe('No GPS fix yet.');
   });
 });
 
@@ -197,11 +204,20 @@ describe('place descriptor', () => {
 // E3-US3-AC1: deliberate activation — the stray-tap hint and the one exit.
 describe('deliberate activation', () => {
   it('a stray tap earns only the hold hint', () => {
-    expect(copy.HOLD_TO_ENTER).toBe('Hold to enter — two seconds.');
+    expect(copy.HOLD_TO_ENTER).toBe('Hold to enter. Two seconds.');
   });
 
   it('leaving the mode is one plainly named action', () => {
     expect(copy.LEAVE_BLACKSKY).toBe('Leave BlackSky');
+  });
+
+  it('a back press and a return both name the one way out', () => {
+    expect(copy.BACK_PRESSED).toBe(
+      'You pressed back. BlackSky stays until you hold Leave BlackSky for two seconds.',
+    );
+    expect(copy.BLACKSKY_RESUMED).toBe(
+      'BlackSky was open when you last left Cooeee, so it opened again. To leave, hold Leave BlackSky for two seconds.',
+    );
   });
 });
 
@@ -231,21 +247,67 @@ describe('the fixed header', () => {
 describe('the returning-user home', () => {
   it('states that no pack is saved, and offers to build one', () => {
     expect(copy.NO_PACK_SAVED).toBe('No pack is saved on this device.');
-    expect(copy.BUILD_A_PACK).toBe('Build a pack');
+    expect(copy.BUILD_A_PACK).toBe('Build an offline pack');
   });
 
   it('labels the preparation line as a daily reminder', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
+  it('tours nine features across every screen, three led lines each', () => {
+    expect(copy.TOUR_STEPS.map((step) => step.title)).toEqual([
+      "Today's reminder",
+      'Your saved packs',
+      'Build an offline pack',
+      'Hold for BlackSky',
+      'The header',
+      'The bottom bar',
+      'The address search',
+      'Nearby official places',
+      'About Cooeee',
+    ]);
+    for (const step of copy.TOUR_STEPS) {
+      expect(step.path.startsWith('/')).toBe(true);
+      expect(step.lines).toHaveLength(copy.TOUR_LEADS.length);
+    }
+    expect(copy.SKIP_TOUR).toBe('Skip tour');
+  });
+
+  it('says what Cooeee is on the About page, in plain sentences with no colon, semicolon or dash', () => {
+    expect(copy.ABOUT_COOEEE).toBe('About Cooeee');
+    expect(copy.COOEEE_INFO_LINES.map((line) => line.lead)).toEqual([
+      'What it is.',
+      'Why it exists.',
+      'What it does.',
+      'What it does not do.',
+      'Where your information stays.',
+    ]);
+    for (const line of copy.COOEEE_INFO_LINES) {
+      expect(`${line.lead} ${line.text}`).not.toMatch(/[:;\u2013\u2014-]/);
+    }
+  });
+
+  it('says what BlackSky is and why, then three facts about using it', () => {
+    expect(copy.ABOUT_BLACKSKY).toBe('About BlackSky');
+    expect(copy.BLACKSKY_INFO_LINES.map((line) => line.lead)).toEqual([
+      'What it is.',
+      'Why it exists.',
+      'Works with no signal.',
+      'Points the way.',
+      'Two seconds to enter, two to leave.',
+    ]);
+  });
+
   it('credits the guidance behind the preparation line, without quoting it', () => {
-    expect(copy.PREPARATION_SOURCE).toBe('Based on CFA guidance.');
+    expect(copy.PREPARATION_SOURCE).toBe('Based on Country Fire Authority guidance.');
     expect(copy.PREPARATION_SOURCE).not.toMatch(/["“”]/);
   });
 
   it('says nothing about conditions, incidents or being prepared enough', () => {
     for (const line of copy.PREPARATION_LINES) {
-      expect(line).not.toMatch(/today|right now|currently|well done|you should have/i);
+      expect(`${line.text} ${line.context}`).not.toMatch(
+        /today|right now|currently|well done|you should have/i,
+      );
     }
   });
 });
@@ -256,13 +318,13 @@ describe('the returning-user home', () => {
 describe('first-open disclosure', () => {
   it('states the purpose in one line', () => {
     expect(copy.FIRST_OPEN_PURPOSE).toBe(
-      'Get one address ready now — bushfire information that still opens when the signal drops.',
+      'Get one address ready now, for bushfire information that still opens when the signal drops.',
     );
   });
 
   it('states what Cooeee does', () => {
     expect(copy.DISCLOSURE_DOES).toBe(
-      'Saves a preparation pack for one address on this phone. It opens with no signal.',
+      'Saves preparation packs for the addresses you choose, on this phone. They open with no signal.',
     );
   });
 
@@ -280,7 +342,7 @@ describe('first-open disclosure', () => {
 
   it('states when the position is asked for and that it is never sent', () => {
     expect(copy.DISCLOSURE_POSITION).toBe(
-      'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device — you can refuse, and everything else still works.',
+      'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device. You can refuse, and everything else still works.',
     );
   });
 

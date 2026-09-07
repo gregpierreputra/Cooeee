@@ -1,20 +1,23 @@
 import { expect, test } from '@playwright/test';
 import {
-  BLACKSKY_SEPARATE_FROM_EVERYDAY,
+  ABOUT_BLACKSKY,
+  BLACKSKY_INFO_LINES,
   BLACKSKY_WORKS_WITHOUT_PACK,
   BUILD_A_PACK,
   CHECKED_DAYS_AGO,
+  CONFIRM_DELETE_PACK,
   CONNECTION_ONLINE_LABEL,
+  DELETE_PACK,
   DISMISS_NOTICE,
   HEADER_HOME_LABEL,
   HOLD_FOR_BLACKSKY,
   HOLD_TO_ENTER,
+  NAV_ABOUT,
   NAV_HOME,
   NAV_LABEL,
-  NAV_MY_PACK,
+  NAV_NEARBY,
   NO_PACK_SAVED,
   NOT_RECENTLY_VERIFIED_LABEL,
-  OPEN_PACK,
   OFFLINE_NOTICE,
   ONLINE_NOTICE,
   OPENS_WITHOUT_SIGNAL,
@@ -23,7 +26,7 @@ import {
   SAVED_DAYS_AGO,
 } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
-import { acknowledgeFirstOpen, HARNESS } from './helpers';
+import { acknowledgeFirstOpen, HARNESS, storageCounts } from './helpers';
 
 // E1-US2-AC6. The harness mounts the real header and the real home screen over
 // a real IndexedDB, at a fixed instant, so the three header states are asserted
@@ -52,14 +55,14 @@ test.describe('the header reports the saved pack age', () => {
 
     // Past the window the pack is labelled, never disabled: the way in is still
     // there and still tappable.
-    await expect(page.getByRole('link', { name: OPEN_PACK })).toBeEnabled();
+    await expect(page.getByRole('link', { name: 'Ferny Creek' })).toBeEnabled();
   });
 
   // TC-1.2.6-D
   test('shows no age at all when no pack is saved, and offers to build one', async ({ page }) => {
     await page.goto(home('?mode=none'));
     await expect(page.getByText(NO_PACK_SAVED)).toBeVisible();
-    await expect(page.getByRole('link', { name: BUILD_A_PACK }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
 
     // No dash, no zero, no placeholder standing in for an age that does not exist.
     const header = page.locator('.app-header');
@@ -94,7 +97,7 @@ test.describe('the returning-user home screen', () => {
     await expect(
       page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
     ).toBeVisible();
-    await expect(page.getByRole('link', { name: OPEN_PACK })).toBeVisible();
+    await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
 
     // Everything above is inside the viewport, with the page unscrolled.
@@ -103,12 +106,31 @@ test.describe('the returning-user home screen', () => {
       [
         page.getByRole('heading', { name: 'Ferny Creek' }),
         page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
-        page.getByRole('link', { name: OPEN_PACK }),
+        page.getByRole('link', { name: BUILD_A_PACK }),
         page.getByRole('button', { name: HOLD_FOR_BLACKSKY }),
       ].map((locator) => locator.boundingBox()),
     )) {
       expect(box!.y + box!.height).toBeLessThanOrEqual(844);
     }
+  });
+
+  // Several saved packs: every one is a card, newest first, under one Build
+  // control; deleting one leaves the other and its rows untouched.
+  test('lists every saved pack newest first, and deletes one without touching the other', async ({
+    page,
+  }) => {
+    await page.goto(home('?days=3&packs=2'));
+    const cards = page.locator('.pack-card');
+    await expect(cards).toHaveCount(2);
+    await expect(cards.first()).toContainText('Kalorama');
+    await expect(cards.last()).toContainText('Ferny Creek');
+    await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
+
+    await cards.first().getByRole('button', { name: DELETE_PACK }).click();
+    await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
+    await expect(cards).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
+    expect((await storageCounts(page)).packs).toBe(1);
   });
 
   test('shows one preparation line with its source named beside it', async ({ page }) => {
@@ -118,7 +140,8 @@ test.describe('the returning-user home screen', () => {
 
     // Exactly one of the eight, never none and never two.
     const text = (await preparation.textContent()) ?? '';
-    expect(PREPARATION_LINES.filter((line) => text.includes(line))).toHaveLength(1);
+    expect(PREPARATION_LINES.filter((line) => text.includes(line.text))).toHaveLength(1);
+    expect(PREPARATION_LINES.filter((line) => text.includes(line.context))).toHaveLength(1);
   });
 
   test('the preparation line does not change while the screen is open', async ({ page }) => {
@@ -140,17 +163,43 @@ test.describe('the returning-user home screen', () => {
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
   });
 
-  test('the hold control names what the mode is, and changes the line with no pack', async ({
-    page,
-  }) => {
+  test('the hold control carries a sub-line only while nothing is saved', async ({ page }) => {
     await page.goto(home('?days=3'));
     const hold = page.getByRole('button', { name: HOLD_FOR_BLACKSKY });
-    await expect(hold).toContainText(BLACKSKY_SEPARATE_FROM_EVERYDAY);
+    await expect(hold).toHaveText(HOLD_FOR_BLACKSKY);
 
     await page.goto(home('?mode=none'));
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toContainText(
       BLACKSKY_WORKS_WITHOUT_PACK,
     );
+  });
+
+  // The ring beside the hold control: hovering it does nothing; a click opens
+  // the lines beneath the hold control, in flow, and a second click closes them.
+  test('the information ring opens the About BlackSky panel on a click, never on hover', async ({
+    page,
+  }) => {
+    await page.goto(home('?days=3'));
+    const ring = page.getByRole('button', { name: ABOUT_BLACKSKY });
+    const hold = page.getByRole('button', { name: HOLD_FOR_BLACKSKY });
+    const panel = page.locator('.blacksky-info-panel');
+    await expect(ring).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel).toHaveCount(0);
+
+    await ring.hover();
+    await expect(ring).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel).toHaveCount(0);
+
+    await ring.click();
+    await expect(ring).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
+    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].lead);
+    const holdBox = await hold.boundingBox();
+    const panelBox = await panel.boundingBox();
+    expect(panelBox!.y).toBeGreaterThanOrEqual(holdBox!.y + holdBox!.height);
+
+    await ring.click();
+    await expect(panel).toHaveCount(0);
   });
 
   test('the pack card carries the offline fact under the age, not in place of it', async ({
@@ -174,7 +223,8 @@ test.describe('the returning-user home screen', () => {
     await page.goto(home('?days=3'));
     const nav = page.getByRole('navigation', { name: NAV_LABEL });
     await expect(nav.getByRole('link', { name: NAV_HOME })).toBeVisible();
-    await expect(nav.getByRole('link', { name: NAV_MY_PACK })).toBeVisible();
+    await expect(nav.getByRole('link', { name: NAV_NEARBY })).toBeVisible();
+    await expect(nav.getByRole('link', { name: NAV_ABOUT })).toBeVisible();
     await expect(nav.getByRole('link', { name: HOLD_FOR_BLACKSKY })).toHaveCount(0);
     expect((await nav.textContent()) ?? '').not.toContain('BlackSky');
   });
@@ -233,3 +283,16 @@ test.describe('the connection notice', () => {
     await context.setOffline(false);
   });
 });
+
+// Deleting the pack takes two taps, and the second removes it from the device
+// entirely: the card gives way to the no-pack state and the store holds nothing.
+test('delete removes the pack from the device after the confirmation', async ({ page }) => {
+  await page.goto(home('?days=3'));
+  await page.getByRole('button', { name: DELETE_PACK }).click();
+  await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
+  await expect(page.getByText(NO_PACK_SAVED)).toBeVisible();
+  expect(await storageCounts(page)).toMatchObject({
+    packs: 0, layers: 0, destinations: 0, files: 0, notes: 0,
+  });
+});
+

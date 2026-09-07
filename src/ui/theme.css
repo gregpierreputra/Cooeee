@@ -57,6 +57,7 @@
      the hold progress sweeps under it. */
   --blacksky-accent: #ffb020;
   --blacksky-fill: #3a2808;
+  --blacksky-ink-2: #b87a12;
 
   /* Connection notice. Fixed green/red by requirement, in every mode: the
      state colour IS the information, so it never rebinds per mode. */
@@ -125,12 +126,15 @@ body {
 /* Single column, max 560 px, centred on desktop. There is no second layout:
    the product's centre of gravity is a phone in someone's hand. The sticky
    chrome above the page (notice bar 2.25rem, header 3rem + 1px, back bar
-   3.25rem) is outside .page, so the minimum height leaves room for it. */
+   3.25rem) is outside .page, so the minimum height leaves room for it. The
+   bottom padding leaves room under the last element for the fixed bottom bar
+   (56 px + hairline, plus a gap), so nothing sits beneath it. */
 .page {
   max-width: 560px;
   margin: 0 auto;
   padding: 1.5rem max(1.75rem, env(safe-area-inset-right))
-    max(1.75rem, env(safe-area-inset-bottom)) max(1.75rem, env(safe-area-inset-left));
+    calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom))
+    max(1.75rem, env(safe-area-inset-left));
   min-height: calc(100dvh - 8.5rem - 1px);
   display: flex;
   flex-direction: column;
@@ -280,21 +284,33 @@ a {
   }
 }
 
-/* Delete-a-pack: the name row carries the ×, the confirm state swaps the card
-   body for the question and an equal-weight keep/delete pair (see the
-   exception note at the top of this section). */
+/* Delete-a-pack: the name row closes with a fingertip-sized ring, the cross
+   drawn inside it, in the fixed red (see the exception note at the top of this
+   section): a half-strength ring at rest, solid with a faint fill on touch. The
+   confirm state swaps the card body for the question and an equal-weight
+   keep/delete pair. */
 .card-delete {
+  width: 44px;
+  height: 44px;
   min-height: 44px;
   min-width: 44px;
   padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: var(--r-pill);
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--offline) 50%, transparent);
+  border-radius: 50%;
+  background: var(--surface-2);
   color: var(--offline);
-  font-size: var(--step-1);
-  line-height: 1;
   position: relative;
   z-index: 1; /* above the pack-card stretched link */
+}
+
+/* Named through the card so it outranks the shared accent hover on buttons. */
+.pack-card .card-delete:hover,
+.pack-card .card-delete:focus-visible,
+.pack-card .card-delete:active {
+  border-color: var(--offline);
+  background: color-mix(in srgb, var(--offline) 14%, transparent);
 }
 
 /* The saved pack's two chosen places, side by side and equal: one grid rule, no
@@ -308,6 +324,38 @@ a {
   gap: 0.75rem;
 }
 
+/* Each card answers for its own last action on a quiet line under the text,
+   always present so nothing jumps: "Note saved." in the accent, the card's
+   edge to match, fading after two seconds; a deleted note's card says so and
+   fades out before it goes. The reduced-motion reset below shortens the
+   fades, not the pauses before them. */
+.note-mark {
+  margin: 0;
+  min-height: 1.25rem;
+  justify-self: end;
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+
+.note-mark-saved {
+  color: var(--accent);
+  animation: note-fade 0.4s ease 2s forwards;
+}
+
+.note-card-saved {
+  border-color: var(--accent);
+}
+
+.note-card-gone {
+  animation: note-fade 0.4s ease 1.2s forwards;
+}
+
+@keyframes note-fade {
+  to {
+    opacity: 0;
+  }
+}
+
 /* Save and Delete at equal weight, side by side. */
 .note-actions {
   display: flex;
@@ -316,6 +364,42 @@ a {
 
 .note-actions button {
   flex: 1;
+}
+
+/* The stored picture of the pack's area: square, with the saved place marked
+   at its centre by a ring in the accent colour, so it reads over any ground. */
+.area-map {
+  margin: 0;
+}
+
+.area-map-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+
+.area-map-frame img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.area-map-pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1rem;
+  height: 1rem;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.6);
+  box-shadow: 0 0 0 2px #fff;
+  transform: translate(-50%, -50%);
+}
+
+.area-map figcaption {
+  margin-top: 0.5rem;
 }
 
 .saved-destinations {
@@ -825,6 +909,41 @@ input {
   border-bottom: 1px solid var(--line);
 }
 
+/* Which pack to load, when several are saved: asked under the title and left
+   there. Full-width choices for wet hands, the chosen one filled in the mode's
+   amber. */
+.blacksky-picker {
+  display: grid;
+  gap: 0.75rem;
+  padding-bottom: 1.125rem;
+  border-bottom: 1px solid var(--line);
+}
+.blacksky-pack {
+  width: 100%;
+  display: grid;
+  gap: 0.125rem;
+  text-align: left;
+  padding: 0.875rem 1.25rem;
+  border-radius: var(--r-card); /* three lines of text: the card's corner, not the pill's */
+}
+.blacksky-pack[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+}
+.blacksky-pack-address {
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  opacity: 0.8;
+}
+.blacksky-pack-here {
+  margin-top: 0.25rem;
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+}
+
 .blacksky-place {
   padding: 1.125rem 0;
   display: grid;
@@ -890,11 +1009,17 @@ input {
   font-size: var(--step-2);
 }
 
+/* The point by name, in capitals as in the mockups: NORTH-EAST, never NE. */
 .blacksky-figure-point {
   font-size: var(--step-0);
   font-weight: var(--w-heavy);
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink);
+}
+
+.blacksky-nearby .blacksky-figure-point {
+  font-size: var(--step-xs);
 }
 
 /* The notes fold: a native <details>, so no script and no re-render on the
@@ -1007,6 +1132,159 @@ input {
   margin: 0;
   text-align: center;
   font-size: var(--step-s);
+}
+
+/* The hold control with the information ring to its left. A two-column grid:
+   the ring and the hold share the first row; the hold's own hint and the
+   information panel take full rows beneath, so the panel opens in flow and
+   covers nothing. */
+.blacksky-hold-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+.blacksky-hold-row > .blacksky-info {
+  grid-area: 1 / 1;
+}
+.blacksky-hold-row > .blacksky-hold {
+  grid-area: 1 / 2;
+}
+.blacksky-hold-row > .blacksky-hold-hint,
+.blacksky-hold-row > .blacksky-info-panel {
+  grid-column: 1 / -1;
+}
+
+/* The ring: the delete control's shape in the hold control's amber. The hover
+   rule is named through the row so it outranks the shared accent hover on
+   buttons; it keeps the ring amber and nothing more. Only an open panel fills
+   the ring. */
+/* Named with the shape class so it outranks .info-ring's accent, whatever
+   order the two rules sit in. */
+.info-ring.blacksky-info {
+  border-color: var(--blacksky-accent);
+  color: var(--blacksky-accent);
+}
+.blacksky-hold-row .blacksky-info:hover {
+  border-color: var(--blacksky-accent);
+}
+.blacksky-info[aria-expanded='true'] {
+  background: var(--blacksky-fill);
+}
+
+/* An information ring: the delete control's shape in the accent. The tour ring
+   beside the daily reminder is the plain one; the BlackSky ring recolours it. */
+.info-ring {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* The ring leads the label, as the BlackSky ring leads its hold control. */
+.preparation-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* ── The guided tour ──────────────────────────────────────────────────────── */
+
+/* One fixed layer over everything, catching every tap while wheel and touch
+   scrolling still reach the page beneath. The spotlight is a box around the
+   feature whose enormous shadow is the grey-out; until a feature is found the
+   layer greys the screen itself, so the grey never lifts between stops. The
+   card sits at the bottom, or at the top when the feature is down there. */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+.tour-dim {
+  background: rgb(2 6 10 / 78%);
+}
+.tour-spot {
+  position: absolute;
+  border-radius: var(--r-card);
+  outline: 2px solid var(--accent);
+  box-shadow: 0 0 0 4000px rgb(2 6 10 / 78%);
+  pointer-events: none;
+  transition:
+    top 0.2s ease,
+    left 0.2s ease,
+    width 0.2s ease,
+    height 0.2s ease;
+}
+.tour-card {
+  position: absolute;
+  inset-inline: 1rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  margin: 0 auto;
+  max-width: 560px;
+  gap: 0.75rem;
+}
+.tour-card-top {
+  bottom: auto;
+  top: max(1rem, env(safe-area-inset-top));
+}
+.tour-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tour-head .figure {
+  color: var(--ink-2);
+  font-size: var(--step-s);
+}
+.tour-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.tour-actions button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.5rem 0.5rem;
+  font-size: var(--step-s);
+}
+
+/* The panel: BlackSky's own colours, true black under amber, so it reads as a
+   glimpse of the mode rather than one more card on the screen. */
+.blacksky-info-panel {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.125rem 1.25rem;
+  border: 1px solid var(--blacksky-fill);
+  border-radius: var(--r-card);
+  background: #000000;
+}
+.blacksky-info-panel .kicker,
+.blacksky-info-panel b {
+  color: var(--blacksky-accent);
+}
+.blacksky-info-panel .info-lines {
+  color: var(--blacksky-ink-2);
+}
+
+/* Led lines: a bold lead, then the sentence. The BlackSky panel above and the
+   About page share the shape; each sets its own colours. */
+.info-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.625rem;
+  font-size: var(--step-s);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.info-lines b {
+  color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1133,7 +1411,7 @@ input {
   gap: 0.75rem;
 }
 .saved-place-title h2 {
-  min-width: 0; /* a long name wraps rather than pushing the × out of the card */
+  min-width: 0; /* a long name wraps rather than pushing the delete control out */
 }
 
 /* The freshness line sits below a hairline, as a footer to the card rather than
@@ -1145,8 +1423,8 @@ input {
 }
 
 /* A fixed bar on the panel colour, inside the safe area, so it stays within
-   thumb reach whatever the page above it does. Two equal destinations: neither
-   is weighted, and BlackSky is not among them. */
+   thumb reach whatever the page above it does. On every screen but BlackSky.
+   Three equal destinations: none is weighted, and BlackSky is not among them. */
 .bottom-nav {
   position: fixed;
   inset-inline: 0;
@@ -1189,13 +1467,19 @@ input {
   letter-spacing: 0.01em;
 }
 
-/* Room under the last action for the fixed bar (56 px + hairline), so nothing
-   sits beneath it — and a column short enough to leave that room: the notice
-   and header above the page and the bar below it all take height the viewport
-   unit does not know about. */
+/* The home screen has no back bar above it, so its column is taller by that
+   much: the notice and header above the page take height the viewport unit
+   does not know about. */
 .home {
   min-height: calc(100dvh - 5.25rem - 1px);
-  padding-bottom: calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom));
+}
+
+/* Two screens have no bar: BlackSky, whose only way out is its own Leave
+   control, and the first-open disclosure, which stands before the router. Both
+   keep the plain bottom padding. */
+.blacksky,
+.first-open {
+  padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
 }
 
 /* ── First open (E1-US1-AC0) ───────────────────────────────────────────────── */

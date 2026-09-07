@@ -11,7 +11,7 @@ type Params = URLSearchParams;
 const HOTLINE = 'Call the VicEmergency Hotline on 1800 226 226.';
 
 const SOURCE_NAME: Record<string, string> = {
-  cfa_nsp_arcgis: 'CFA Neighbourhood Safer Places list',
+  cfa_nsp_arcgis: 'Country Fire Authority Neighbourhood Safer Places list',
   cfr_static_list: 'Community Fire Refuge list',
   vicmap_admin_postcodes: 'Vicmap postcode list',
   vicemergency_feed: 'VicEmergency feed',

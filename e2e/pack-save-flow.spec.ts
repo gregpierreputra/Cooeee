@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { OPEN_PACK, SAVED_PLACE_LABEL } from '../src/core/copy';
+import { PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK, SAVED_PLACE_LABEL } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import {
   acknowledgeFirstOpen,
@@ -7,6 +7,7 @@ import {
   chooseLastResortPlaces,
   waitForController,
   WFS_PATTERN,
+  WMS_PATTERN,
 } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
@@ -36,6 +37,13 @@ async function mockOfficialServices(page: Page, opts: {
     }
     return route.continue();
   });
+  // The area map from the same host's Web Map Service: the smallest PNG that
+  // decodes, so the journey never depends on the live map server.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  await page.route(WMS_PATTERN, (route: Route) => route.fulfill({ body: png, contentType: 'image/png' }));
 }
 
 function bpaHitFeature(lgaName: string) {
@@ -82,12 +90,15 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
   await page.getByRole('button', { name: 'Open saved pack' }).click();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible(); // the bar follows to every page
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
   await expect(page.getByRole('heading', { name: 'Designated Bushfire Prone Area' })).toBeVisible();
   await expect(page.getByText(/Published by Department of Transport and Planning/)).toBeVisible();
   // E2-US2: both chosen places are in the saved pack, each with its council.
   const savedPlaces = page.locator('.saved-destinations .card');
   await expect(savedPlaces).toHaveCount(2);
+  // The map of the area, from the bytes stored with the pack.
+  await expect(page.locator('.area-map img')).toBeVisible();
   await expect(savedPlaces.getByText(/^Responsible council: /)).toHaveCount(2);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -101,7 +112,7 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
 });
 
-test('AC8 replace atomically supersedes the previous pack', async ({ page }) => {
+test('AC8 the same address asks, and replace atomically supersedes the previous pack', async ({ page }) => {
   await mockOfficialServices(page, {
     candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
     lgaName: LGA_NAME,
@@ -111,6 +122,40 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
   const firstPackUrl = page.url();
+
+  await page.goto('/packs/new');
+  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByRole('button', { name: ADDRESS }).click();
+  await page.getByRole('button', { name: 'Save this place' }).click();
+
+  await expect(page.getByRole('heading', { name: PLACE_ALREADY_SAVED })).toBeVisible();
+  await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
+  await page.getByRole('button', { name: REPLACE_SAVED_PACK }).click();
+
+  await expect(page.getByRole('heading')).toHaveText(
+    'This address is inside a Designated Bushfire Prone Area.',
+  );
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await chooseLastResortPlaces(page);
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
+
+  expect(page.url()).not.toBe(firstPackUrl);
+  await page.goto('/');
+  await expect(page.locator('.pack-card')).toHaveCount(1);
+  await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
+});
+
+test('a second address becomes a second pack beside the first, with no question asked', async ({ page }) => {
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await searchConfirmAndReachOffer(page);
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
 
   const NEW_ADDRESS = '8 RIDGE ROAD KALORAMA 3766';
   await mockOfficialServices(page, {
@@ -124,11 +169,6 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
   await page.getByRole('button', { name: NEW_ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
 
-  await expect(page.getByRole('heading', { name: 'You already have a saved place.' })).toBeVisible();
-  await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
-  await expect(page.getByTestId('new-address')).toHaveText(NEW_ADDRESS);
-  await page.getByRole('button', { name: 'Replace it with this one' }).click();
-
   await expect(page.getByRole('heading')).toHaveText(
     'This address is inside a Designated Bushfire Prone Area.',
   );
@@ -136,13 +176,12 @@ test('AC8 replace atomically supersedes the previous pack', async ({ page }) => 
   await chooseLastResortPlaces(page);
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
-
-  expect(page.url()).not.toBe(firstPackUrl);
   await expect(page.locator('.pack-detail')).toContainText(NEW_ADDRESS);
 
   await page.goto('/');
+  await expect(page.locator('.pack-card')).toHaveCount(2);
   await expect(page.getByText(displayAddress(NEW_ADDRESS))).toBeVisible();
-  await expect(page.getByText(displayAddress(ADDRESS), { exact: true })).toHaveCount(0);
+  await expect(page.getByText(displayAddress(ADDRESS), { exact: true })).toBeVisible();
 });
 
 // ── E1-US2 pack-detail return path ──────────────────────────────────────────
@@ -190,9 +229,8 @@ test('US2 the pack reopens unchanged after returning to the pack list', async ({
   await page.goto('/');
   await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
 
-  // E1-US2-AC6 replaced the pack list with the one-pack Open-or-Build home:
-  // the saved place carries one way in, named 'Open'.
-  await page.getByRole('link', { name: OPEN_PACK, exact: true }).click();
+  // The pack card is the way in: its name link stretches over the whole card.
+  await page.locator('.pack-card h2 a').click();
   await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
   expect(await page.locator('.pack-detail').innerText()).toBe(before);
 

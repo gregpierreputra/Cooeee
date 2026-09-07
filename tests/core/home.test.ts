@@ -4,7 +4,7 @@ import * as copy from '../../src/core/copy';
 import {
   headerAge,
   homeView,
-  navItems,
+  NAV_ITEMS,
   oldestPack,
   preparationLine,
   preparationLineIndex,
@@ -127,71 +127,67 @@ describe('preparation line selection', () => {
 
   it('names its source alongside the line it chose', () => {
     const line = preparationLine(NOW);
-    expect(copy.PREPARATION_LINES).toContain(line.text);
-    expect(line.source).toBe('Based on CFA guidance.');
+    expect(copy.PREPARATION_LINES.map((row) => row.text)).toContain(line.text);
+    expect(line.source).toBe('Based on Country Fire Authority guidance.');
   });
 
   it('offers eight lines, none of them about a place or about conditions', () => {
     expect(copy.PREPARATION_LINES).toHaveLength(8);
-    expect(new Set(copy.PREPARATION_LINES).size).toBe(8);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.text)).size).toBe(8);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.context)).size).toBe(8);
   });
 });
 
 // BlackSky is entered by a deliberate hold. It is never a tab, in any state.
 describe('bottom navigation', () => {
-  it('offers home, nearby places and the saved pack when a pack exists', () => {
-    expect(navItems('pack-1')).toEqual([
+  it('offers home and nearby places, the same whether or not a pack is saved', () => {
+    expect(NAV_ITEMS).toEqual([
       { key: 'home', label: 'Home', to: '/' },
       { key: 'nearby', label: 'Nearby', to: '/nearby' },
-      { key: 'pack', label: 'My pack', to: '/packs/pack-1' },
+      { key: 'about', label: 'About', to: '/about' },
     ]);
   });
 
-  it('offers home, nearby places and the build entry when nothing is saved', () => {
-    expect(navItems(null)).toEqual([
-      { key: 'home', label: 'Home', to: '/' },
-      { key: 'nearby', label: 'Nearby', to: '/nearby' },
-      { key: 'pack', label: 'Build a pack', to: '/packs/new' },
-    ]);
-  });
-
-  it('never offers BlackSky as a tab, in either state', () => {
-    for (const items of [navItems(null), navItems('pack-1')]) {
-      expect(items.map((item) => item.to)).not.toContain('/blacksky');
-      expect(items.map((item) => item.label)).not.toContain(copy.HOLD_FOR_BLACKSKY);
-    }
+  it('never offers BlackSky as a tab', () => {
+    expect(NAV_ITEMS.map((item) => item.to)).not.toContain('/blacksky');
+    expect(NAV_ITEMS.map((item) => item.label)).not.toContain(copy.HOLD_FOR_BLACKSKY);
   });
 });
 
-// TC-1.2.6-D and the Open-or-Build rule: one pack is opened, no pack is built,
-// and the screen never offers both.
+// TC-1.2.6-D and the pack list: every saved pack is offered, newest first, each
+// with the pack card's own age wording; building is offered in every state.
 describe('the home view', () => {
-  it('offers to build, and reports no age, when nothing is saved', () => {
-    const view = homeView(NOW, []);
-    expect(view.kind).toBe('no-pack');
-    expect(view.nav[2]).toEqual({ key: 'pack', label: 'Build a pack', to: '/packs/new' });
+  it('lists nothing when nothing is saved', () => {
+    expect(homeView(NOW, []).packs).toEqual([]);
   });
 
   it('offers the saved pack, with the pack card wording for its age', () => {
     const saved = pack({ verifiedAt: daysAgo(3) });
-    const view = homeView(NOW, [saved]);
-    expect(view.kind).toBe('pack');
-    expect(view.kind === 'pack' && view.pack).toBe(saved);
-    expect(view.kind === 'pack' && view.ageLine).toBe('Saved 3 days ago');
+    expect(homeView(NOW, [saved]).packs).toEqual([{ pack: saved, ageLine: 'Saved 3 days ago' }]);
+  });
+
+  it('lists several packs newest first, whatever order the store returns them in', () => {
+    const older = pack({ id: 'older', verifiedAt: daysAgo(10) });
+    const newer = pack({ id: 'newer', verifiedAt: daysAgo(1) });
+    expect(homeView(NOW, [older, newer]).packs.map((row) => row.pack.id)).toEqual([
+      'newer',
+      'older',
+    ]);
   });
 
   // The two wordings are deliberately different, and mean different things: the
   // card reports when the pack was written, the header when it was last checked.
   it('keeps the card wording and the header wording distinct past the window', () => {
     const view = homeView(NOW, [pack({ verifiedAt: daysAgo(44) })]);
-    expect(view.kind === 'pack' && view.ageLine).toBe('Saved 44 days ago — not recently verified');
+    expect(view.packs[0].ageLine).toBe('Saved 44 days ago, not recently verified');
     const age = headerAge(NOW, daysAgo(44));
     expect(age.kind === 'not-recently-verified' && age.text).toBe('Not recently verified');
   });
 
   it('carries one preparation line and its source in every state', () => {
     for (const view of [homeView(NOW, []), homeView(NOW, [pack()])]) {
-      expect(copy.PREPARATION_LINES).toContain(view.preparation.text);
+      expect(copy.PREPARATION_LINES.map((row) => row.text)).toContain(view.preparation.text);
+      expect(view.preparation.context).not.toBe('');
       expect(view.preparation.source).toBe(copy.PREPARATION_SOURCE);
     }
   });

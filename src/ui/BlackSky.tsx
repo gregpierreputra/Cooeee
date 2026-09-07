@@ -1,17 +1,27 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import {
   deriveState,
   estimateFix,
+  positionFrom,
   type Confidence,
   type Mark as PositionMark,
   type Placed,
   type Screen,
 } from '../core/blacksky';
+import {
+  isBlackSkyLatched,
+  latchBlackSky,
+  readChosenPack,
+  rememberChosenPack,
+  unlatchBlackSky,
+} from '../core/blacksky-latch';
 import { TICK_MS } from '../core/constants';
 import * as copy from '../core/copy';
-import { cardinalAbbr, magneticDeclinationDeg } from '../core/geo';
+import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
+import { titleCase } from '../core/home';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
+import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import HoldButton from './components/HoldButton';
 import { useCompass } from './components/useCompass';
@@ -36,7 +46,19 @@ export default function BlackSky({
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [mark, setMark] = useState<PositionMark | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // Which pack to load when several are saved: chosen at the top of the screen
+  // and remembered, so a reload or relaunch opens on the same one.
+  const [chosenId, setChosenId] = useState(() => readChosenPack(localFlagStore()));
+  const choosePack = (id: string) => {
+    setChosenId(id);
+    rememberChosenPack(localFlagStore(), id);
+  };
   const navigate = useNavigate();
+  // Latched before this mount means the app brought the person back here (a
+  // relaunch, a reload, or a return from another site), which is worth saying.
+  const [notice, setNotice] = useState(() =>
+    isBlackSkyLatched(localFlagStore()) ? copy.BLACKSKY_RESUMED : null,
+  );
 
   // US1-AC4: with no fix, a marked position stands in for one. estimateFix
   // returns null once its growing uncertainty passes the confidence threshold,
@@ -57,9 +79,16 @@ export default function BlackSky({
 
   useEffect(() => {
     let live = true;
-    loadPacks().then((rows) => {
-      if (live) setPacks(rows);
-    });
+    loadPacks().then(
+      (rows) => {
+        if (live) setPacks(rows);
+      },
+      // A store that cannot be read must not leave a blank screen with no way
+      // out: the screen renders as if nothing were saved, Leave included.
+      () => {
+        if (live) setPacks([]);
+      },
+    );
     loadSites().then((snapshot) => {
       if (live && snapshot) setSites(snapshot);
     });
@@ -68,38 +97,93 @@ export default function BlackSky({
     };
   }, [loadPacks, loadSites]);
 
+  // The position watch and the screen wake lock, together. Browsers stop
+  // delivering positions while the screen is locked or the app is in the
+  // background, and some phones never resume a watch they paused: that is how
+  // the distance figure froze during walking tests. So both are dropped when
+  // the screen is hidden (no GPS and no lit screen for a page nobody is looking
+  // at) and started fresh the moment it returns. The wake lock keeps the phone
+  // from locking mid-walk, as a navigation app would; a phone that refuses it
+  // (power saving mode, or no such API) still gets the restart.
   useEffect(() => {
     if (!('geolocation' in navigator)) {
       setPermission('denied');
       return;
     }
+    let watch: number | null = null;
+    let lock: WakeLockSentinel | null = null;
 
-    const watch = navigator.geolocation.watchPosition(
-      (position) => {
-        latestFix.current = {
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-          accuracyM: Math.round(position.coords.accuracy),
-          // Receipt time, NOT position.timestamp: staleness is measured against
-          // Date.now(), and some mobile engines report GPS timestamps from a
-          // different clock. Mixing clock domains would break the 30 s rule.
-          at: Date.now(),
-        };
+    const onPosition = (position: GeolocationPosition) => {
+      latestFix.current = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+        accuracyM: Math.round(position.coords.accuracy),
+        // Receipt time, NOT position.timestamp: staleness is measured against
+        // Date.now(), and some mobile engines report GPS timestamps from a
+        // different clock. Mixing clock domains would break the 30 s rule.
+        at: Date.now(),
+      };
+      setPermission('granted');
+      setMark(null); // a real fix always beats a marked-position estimate
+      // Acquiring → showing a direction IS a meaningful change, so the very
+      // first fix renders immediately. Every later sample waits for the tick.
+      setFix((previous) => previous ?? latestFix.current);
+    };
+    const onError = (error: GeolocationPositionError) => {
+      if (error.code === error.PERMISSION_DENIED) setPermission('denied');
+    };
 
-        setPermission('granted');
-        setMark(null); // a real fix always beats a marked-position estimate
-        // Acquiring → showing a direction IS a meaningful change, so the very
-        // first fix renders immediately. Every later sample waits for the tick.
-        setFix((previous) => previous ?? latestFix.current);
-      },
-      (error) => {
-        if (error.code === error.PERMISSION_DENIED) setPermission('denied');
-      },
+    const wake = () => {
+      if (watch !== null) return;
       // The most accurate continuous watch the device offers: high accuracy on,
       // and no cached position accepted in place of a fresh sensor read.
-      { enableHighAccuracy: true, maximumAge: 0 },
-    );
-    return () => navigator.geolocation.clearWatch(watch);
+      watch = navigator.geolocation.watchPosition(onPosition, onError, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+      });
+      if (!('wakeLock' in navigator)) return;
+      navigator.wakeLock.request('screen').then(
+        (held) => {
+          if (watch === null) void held.release(); // granted after sleep(): let it go
+          else lock = held;
+        },
+        () => {},
+      );
+    };
+    const sleep = () => {
+      if (watch !== null) navigator.geolocation.clearWatch(watch);
+      watch = null;
+      void lock?.release();
+      lock = null;
+    };
+    const onVisibility = () => {
+      if (document.hidden) sleep();
+      else wake();
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    wake();
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      sleep();
+    };
+  }, []);
+
+  // One way out: the hold on Leave below. The phone's back button pops a
+  // history entry, so this screen adds one spare entry on arrival and, on
+  // every pop, puts itself straight back and says so. The latch in browser
+  // storage remembers that BlackSky was the last screen open, so a later visit
+  // to the app returns here (BlackSkyResume in app.tsx) until the hold clears
+  // it. Absolute paths only, so the navigate captured at mount stays valid.
+  useEffect(() => {
+    latchBlackSky(localFlagStore());
+    navigate('/blacksky');
+    const onBack = () => {
+      navigate('/blacksky');
+      setNotice(copy.BACK_PRESSED);
+    };
+    window.addEventListener('popstate', onBack);
+    return () => window.removeEventListener('popstate', onBack);
   }, []);
 
   // The tick: publishes the clock AND the newest fix together, once per
@@ -115,15 +199,50 @@ export default function BlackSky({
 
   if (packs === null) return null;
 
+  // One pack needs no choosing. With several, only the chosen one is loaded,
+  // and a remembered id that matches no saved pack loads nothing.
+  const chosen =
+    packs.length === 1 ? packs[0] : (packs.find((p) => p.pack.id === chosenId) ?? null);
+  const loaded = chosen ? [chosen] : [];
   const screen = estimate
-    ? deriveState(now, packs, estimate, 'granted', sites)
-    : deriveState(now, packs, fix, permission, sites);
+    ? deriveState(now, loaded, estimate, 'granted', sites)
+    : deriveState(now, loaded, fix, permission, sites);
   const hasArrows = screen.kind === 'IN_AREA' || ('nearby' in screen && screen.nearby.length > 0);
-  const notes = packs.flatMap((pack) => pack.notes);
+  const notes = chosen?.notes ?? [];
+  // The position the arrows are drawn from, so the picker can say which
+  // packs' areas contain it.
+  const from = estimate ?? positionFrom(fix, permission);
 
   return (
     <main className="page blacksky">
       <h1 className="kicker blacksky-title">{copy.BLACKSKY_TITLE}</h1>
+      {/* Several packs: which one to load, asked at the top of the screen and
+          left there so the choice can be changed. Full-width targets for wet
+          hands; the chosen one is filled. */}
+      {packs.length > 1 ? (
+        <section className="blacksky-picker">
+          <span className="kicker">{copy.CHOOSE_PACK}</span>
+          <p className="muted">{copy.CHOOSE_PACK_HINT}</p>
+          <ul className="list">
+            {packs.map(({ pack }) => (
+              <li key={pack.id}>
+                <button
+                  type="button"
+                  className="blacksky-pack"
+                  aria-pressed={pack.id === chosen?.pack.id}
+                  onClick={() => choosePack(pack.id)}
+                >
+                  <span>{titleCase(pack.name)}</span>
+                  <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
+                  {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
+                    <span className="blacksky-pack-here">{copy.PACK_COVERS_HERE}</span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {/* Which way the arrows are to be read, and (iOS) the one tap that lets
           the orientation sensor turn them. Under the title, as the screen's mode. */}
       {hasArrows ? (
@@ -136,10 +255,20 @@ export default function BlackSky({
           ) : null}
         </>
       ) : null}
-      {packs?.some((p) => !p.placesVerified) ? (
+      {chosen && !chosen.placesVerified ? (
         <p className="muted">{copy.PLACES_UNVERIFIED}</p>
       ) : null}
-      <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
+      {screen.kind === 'NO_PACK' && packs.length > 0 ? (
+        // Several packs and none chosen yet: only the live pointer to the
+        // nearest official places, from the position, until one is chosen.
+        from ? (
+          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+        ) : (
+          <p className="muted">{copy.NO_GPS_YET}</p>
+        )
+      ) : (
+        <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
+      )}
       {/* The user's own notes, folded until asked for and read-only here: one
           tap opens them, each in its own ruled row at reading size. */}
       {notes.length > 0 ? (
@@ -158,7 +287,18 @@ export default function BlackSky({
           demands the same deliberate 2s hold as entering, so a pocket press
           cannot silently drop the emergency screen. */}
       <div className="actions">
-        <HoldButton onHold={() => navigate('/')} hint={copy.HOLD_TO_LEAVE}>
+        {notice ? (
+          <p className="muted blacksky-hold-hint" role="status">
+            {notice}
+          </p>
+        ) : null}
+        <HoldButton
+          onHold={() => {
+            unlatchBlackSky(localFlagStore());
+            navigate('/', { replace: true });
+          }}
+          hint={copy.HOLD_TO_LEAVE}
+        >
           {copy.LEAVE_BLACKSKY}
         </HoldButton>
       </div>
@@ -178,17 +318,14 @@ function ScreenBody({
   switch (screen.kind) {
     // US2-AC2: no pack stored. Nothing is invented or borrowed: the nearest
     // official places on the stored CFA list are pointed at once there is a
-    // fix, then the built-in preparation guidance and a prompt to build a
-    // pack for when next online.
+    // fix, then the built-in preparation guidance and a reminder to build a
+    // pack when next online (from the home screen, after the hold to leave).
     case 'NO_PACK':
       return (
         <>
           <p className="muted">{copy.NO_PACK_HERE}</p>
           <NearbyList places={screen.nearby} confidence={screen.confidence} />
           <p className="muted">{copy.NO_PACKS_HINT}</p>
-          <Link className="action" to="/packs/new">
-            {copy.BUILD_A_PACK}
-          </Link>
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
             <p>{copy.PREP_KIT_LINE}</p>
@@ -213,14 +350,14 @@ function ScreenBody({
               onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
             }
           >
-            {copy.MARK_AT_SAVED_PLACE(screen.pack.address)}
+            {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
           </button>
         </>
       );
-    // US2-AC1: outside every prepared area. The stored packs are offered by
-    // name with the distance to their area's edge — informational rows, never
-    // a bearing to an out-of-area point — then the nearest official places
-    // from here, plus general official guidance.
+    // US2-AC1: outside the loaded pack's area. The pack is named with the
+    // distance to its area's edge — an informational row, never a bearing to
+    // an out-of-area point — then the nearest official places from here, plus
+    // general official guidance.
     case 'OUT_OF_AREA':
       return (
         <>
@@ -228,7 +365,7 @@ function ScreenBody({
           <ul className="list">
             {screen.packs.map(({ pack, distanceKm }) => (
               <li key={pack.id} className="blacksky-place">
-                <h2>{pack.name}</h2>
+                <h2>{titleCase(pack.name)}</h2>
                 <p className="muted figure">
                   {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
                 </p>
@@ -284,7 +421,7 @@ function PlacedRow({ place }: { place: Placed }) {
           <path d="M50 0 100 55 H70 V130 H30 V55 H0 Z" />
         </svg>
         <span className="blacksky-figure-main">{copy.distanceLabel(place.distanceM)}</span>
-        <span className="blacksky-figure-point">{cardinalAbbr(place.bearingDeg)}</span>
+        <span className="blacksky-figure-point">{cardinalPoint(place.bearingDeg)}</span>
       </div>
       <div className="blacksky-target">
         <h2>{place.name}</h2>

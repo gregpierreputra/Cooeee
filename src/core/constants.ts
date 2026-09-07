@@ -46,6 +46,9 @@ export const ADDRESS_QUERY_DEBOUNCE_MS = 250;
 
 /** Official area checks share one bounded request sequence. */
 export const AREA_CHECK_TIMEOUT_MS = 10_000;
+/** The map of a pack's area is drawn on request by the Web Map Service, which
+ *  takes a few seconds; past this the pack is built without it. */
+export const AREA_MAP_TIMEOUT_MS = 20_000;
 export const DTP_PUBLISHER = 'Department of Transport and Planning';
 export const DTP_LICENCE = 'CC BY 4.0';
 /** The publisher's own human-readable page for the designation dataset: title,
@@ -56,6 +59,14 @@ export const DTP_LICENCE = 'CC BY 4.0';
  * machine, in raw JSON, and is not a page to read. */
 export const DTP_DATASET_URL =
   'https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa';
+/** The file name of the Web Map Service picture of a pack's area, stored with
+ *  the pack's source copies. Named here so the pack page can find it without
+ *  importing the module that fetches it. */
+export const AREA_MAP_NAME = 'bushfire-prone-area-map.png';
+/** How far that picture reaches each way from the saved place, in
+ *  kilometres: 8 km across, close enough to read roads, creeks and place names.
+ *  A picture size only; the pack's 6 km area rule is PACK_RADIUS_KM. */
+export const AREA_MAP_HALF_KM = 4;
 
 // The arrows are drawn from any fix; these decide when the screen says the fix
 // is old or vague beside them, and when a marked-position estimate expires.
@@ -84,8 +95,9 @@ export const isInsideVictoria = (lat: number, lon: number): boolean =>
 
 export const SNAPSHOT_MAX_AGE_DAYS = 60;
 
-/** The most the app will read from any one response. The largest reply today
- *  is a 151 KB source PDF; a body past this is a fault or an attack, not data. */
+/** The most the app will read from any one response. The largest replies
+ *  today are a source PDF and the area map, a few hundred kilobytes each; a
+ *  body past this is a fault or an attack, not data. */
 export const MAX_RESPONSE_BYTES = 10 * 1_048_576;
 
 /** The most rows one synced collection may hold. Victoria has about 315
@@ -120,6 +132,17 @@ export const METRES_PER_KM = 1_000;
  * value is a marker and nothing else — no date, no identifier, no counter. */
 export const ACKNOWLEDGEMENT_KEY = 'cooeee.acknowledgement.v1';
 export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';
+
+/** Which screen was open last. BlackSky sets this flag when it opens and only
+ * the hold on Leave BlackSky clears it, so a visit that starts anywhere else is
+ * sent back there. Same rules as the acknowledgement: one browser flag, a
+ * versioned key, a bare marker for a value. */
+export const BLACKSKY_LATCH_KEY = 'cooeee.blacksky.v1';
+export const BLACKSKY_LATCH_VALUE = 'latched';
+/** Which pack BlackSky loads when several are saved. Written when the person
+ * chooses one, read on the next visit, and only ever compared against the
+ * packs in the store, so a stale or foreign value simply matches nothing. */
+export const BLACKSKY_PACK_KEY = 'cooeee.blacksky-pack.v1';
 
 /** Nearby places (spec §7). A dynamic snapshot whose feed is older than this is
  *  no longer shown as a place to go — only the stale notice and the hotline stay. */

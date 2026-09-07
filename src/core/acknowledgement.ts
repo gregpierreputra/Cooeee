@@ -6,6 +6,7 @@ import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE } from './constants';
 export type FlagStore = {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
 };
 
 /** Which screen the app opens on. Derived from the stored flag every time it is

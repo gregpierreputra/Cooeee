@@ -32,17 +32,16 @@ import type {
   PendingPlace,
   TextPackContent,
 } from '../../core/types';
-import { sourcePageUrls } from '../../core/provenance';
 import { listCompletePacks } from '../../data/db';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
-import { loadSourceFiles } from '../../data/source-files';
+import { loadPackFiles } from '../../data/source-files';
 import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
 import StatusPage from '../components/StatusPage';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
-import { Conflict, ConflictBlocked } from './Conflict';
+import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
 import { Note } from './Note';
 import { Size } from './Size';
@@ -57,8 +56,7 @@ const searchAddressRegister = (query: string, signal: AbortSignal) =>
 type ConflictState =
   | { kind: 'checking' }
   | { kind: 'conflict'; savedPack: Pack }
-  | { kind: 'unavailable' }
-  | { kind: 'invalid-multiple' };
+  | { kind: 'unavailable' };
 
 type OfferState =
   | { kind: 'building' }
@@ -84,7 +82,7 @@ type SearchProps = {
   checkArea?: typeof fetchBushfireAreaResult;
   loadPacks?: () => Promise<Pack[]>;
   loadNsp?: () => Promise<NspSnapshot>;
-  loadFiles?: typeof loadSourceFiles;
+  loadFiles?: typeof loadPackFiles;
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
   savePack?: typeof saveTextOnlyPack;
@@ -114,7 +112,7 @@ export function Search({
   checkArea = fetchBushfireAreaResult,
   loadPacks = listCompletePacks,
   loadNsp = loadNspSnapshot,
-  loadFiles = loadSourceFiles,
+  loadFiles = loadPackFiles,
   onKeepSavedPlace,
   buildOffer = createPackOffer,
   savePack = saveTextOnlyPack,
@@ -275,9 +273,10 @@ export function Search({
         destinations,
         recovery: [],
       };
-      // The PDF copies of the source pages travel with the pack, so their
-      // bytes are part of the one size stated before anything is written.
-      const files = await loadFiles(seed.id, sourcePageUrls(content));
+      // The PDF copies of the source pages and the map of the area travel with
+      // the pack, so their bytes are part of the one size stated before
+      // anything is written.
+      const files = await loadFiles(seed.id, content);
       const offer = await buildOffer(content, files);
       setOfferState({ kind: 'ready', offer, content, files });
     } catch {
@@ -290,16 +289,16 @@ export function Search({
     setPendingPlace(place);
     setConflictState({ kind: 'checking' });
     try {
-      // EPIC 1 permits one complete pack. Any existing complete pack requires
-      // an explicit keep-or-replace decision before the next network call.
+      // Several packs may be saved, one per address. A pack already saved for
+      // this same address requires an explicit keep-or-replace decision before
+      // the next network call; any other address goes straight on.
       const packs = await loadPacks();
-      if (packs.length === 0) {
+      const same = packs.find((pack) => pack.address === place.address);
+      if (same) {
+        setConflictState({ kind: 'conflict', savedPack: same });
+      } else {
         setConflictState(null);
         await runAreaCheck(place);
-      } else if (packs.length === 1) {
-        setConflictState({ kind: 'conflict', savedPack: packs[0] });
-      } else {
-        setConflictState({ kind: 'invalid-multiple' });
       }
     } catch {
       setConflictState({ kind: 'unavailable' });
@@ -332,7 +331,6 @@ export function Search({
     return (
       <Conflict
         savedAddress={conflictState.savedPack.address}
-        newAddress={pendingPlace.address}
         onKeep={() => {
           keepSavedPlace();
           resetToSearch();
@@ -346,11 +344,23 @@ export function Search({
     );
   }
 
-  if (conflictState?.kind === 'unavailable' || conflictState?.kind === 'invalid-multiple') {
+  if (conflictState?.kind === 'unavailable') {
     return (
-      <ConflictBlocked
-        multiple={conflictState.kind === 'invalid-multiple'}
-        onSearchAgain={resetToSearch}
+      <StatusPage
+        page="conflict-page"
+        kicker={copy.EYEBROW_SET_UP_YOUR_PLACE}
+        cardClass="conflict-content"
+        card={
+          <>
+            <h1>{copy.SAVED_PLACE_CHECK_FAILED}</h1>
+            <p>{copy.NOTHING_CHANGED}</p>
+          </>
+        }
+        actions={
+          <button type="button" onClick={resetToSearch}>
+            {copy.SEARCH_AGAIN}
+          </button>
+        }
       />
     );
   }

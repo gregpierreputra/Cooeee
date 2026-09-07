@@ -87,7 +87,7 @@ test('AC3 distinguishes a valid empty response and retains the typed text', asyn
   await search(page, 'NOT A REGISTER ADDRESS');
 
   await expect(page.getByRole('status')).toHaveText(
-    'No matching address found — check the spelling or try the nearest cross street.',
+    'No matching address found. Check the spelling or try the nearest cross street.',
   );
   await expect(page.getByLabel('Address')).toHaveValue('NOT A REGISTER ADDRESS');
   await expect(page.getByRole('button', { name: 'Search again' })).toBeVisible();
@@ -137,10 +137,13 @@ test('AC4 maps genuine browser offline mode to the same state', async ({ page, c
 });
 
 test('AC4 retry is explicit and issues exactly one new request', async ({ page }) => {
+  // A search gets one automatic second attempt (a single dropped request is
+  // not the register being down), so both attempts fail here before the
+  // explicit control appears.
   let requests = 0;
   await page.route(WFS_PATTERN, (route) => {
     requests += 1;
-    return requests === 1
+    return requests <= 2
       ? route.abort('failed')
       : route.fulfill({ json: { type: 'FeatureCollection', features: [] } });
   });
@@ -148,10 +151,10 @@ test('AC4 retry is explicit and issues exactly one new request', async ({ page }
   await search(page);
   const tryAgain = page.getByRole('button', { name: 'Try again' });
   await expect(tryAgain).toBeVisible();
-  expect(requests).toBe(1);
+  expect(requests).toBe(2);
   await tryAgain.click();
   await expect(page.getByRole('status')).toContainText('No matching address found');
-  expect(requests).toBe(2);
+  expect(requests).toBe(3);
 });
 
 // ── E1-US1-AC2 duplicate visible candidates ─────────────────────────────────
@@ -291,7 +294,7 @@ test('AC2 counts more than one unresolved address without ranking them', async (
 // exist while it is still asking.
 
 const NO_MATCH_SENTENCE =
-  'No matching address found — check the spelling or try the nearest cross street.';
+  'No matching address found. Check the spelling or try the nearest cross street.';
 
 test('AC2 searches while typing, with no submit', async ({ page }) => {
   const requests = await countAddressRequests(page, [

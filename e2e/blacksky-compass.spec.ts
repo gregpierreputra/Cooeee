@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { TICK_MS } from '../src/core/constants';
 import { magneticDeclinationDeg } from '../src/core/geo';
 import { acknowledgeFirstOpen } from './helpers';
 
@@ -14,6 +15,8 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   await page.goto('/blacksky');
 
   await expect(page.getByText('Nearest official places of last resort')).toBeVisible();
+  // The bottom bar is on every other screen; BlackSky's only exit is its own.
+  await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
   await expect(page.getByText(/GPS is only accurate to ± 350 m/)).toBeVisible();
   await expect(page.getByText('The arrow is drawn with north at the top of the screen.')).toBeVisible();
 
@@ -38,4 +41,11 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   await expect(page.getByText('The arrow turns with your phone.')).toBeVisible();
   const declination = magneticDeclinationDeg({ lat: -37.817939, lon: 145.36594 });
   expect(norm(await rotation())).toBe(norm(bearing - 90 - declination));
+
+  // The figure follows the phone: a fix from two kilometres further north
+  // changes the distance within one tick.
+  const figure = page.locator('.blacksky-figure-main').first();
+  const before = (await figure.textContent()) ?? '';
+  await context.setGeolocation({ latitude: -37.8, longitude: 145.36594, accuracy: 350 });
+  await expect(figure).not.toHaveText(before, { timeout: TICK_MS + 5_000 });
 });
