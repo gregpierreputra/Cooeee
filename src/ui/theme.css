@@ -1263,8 +1263,10 @@ input {
   border-radius: var(--r-card);
   background: #000000;
 }
+/* Named through the list so the amber outranks the shared accent lead colour
+   in .info-lines b below, whatever order the two rules sit in. */
 .blacksky-info-panel .kicker,
-.blacksky-info-panel b {
+.blacksky-info-panel .info-lines b {
   color: var(--blacksky-accent);
 }
 .blacksky-info-panel .info-lines {
