@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { createApi } from './api.ts';
 import { openDb } from './db.ts';
 import { SOURCE_ID as CFR, syncCfr } from './ingest/cfr.ts';
+import { SOURCE_ID as COOL, syncCool } from './ingest/cool.ts';
 import { SOURCE_ID as NSP, syncNsp } from './ingest/nsp.ts';
 import { SOURCE_ID as POSTCODES, syncPostcodes } from './ingest/postcodes.ts';
 import { startPoller } from './ingest/vicemergency.ts';
@@ -30,6 +31,7 @@ const STATIC_JOBS: [sourceId: string, run: () => Promise<boolean>][] = [
   [POSTCODES, () => syncPostcodes(db)],
   [NSP, () => syncNsp(db)],
   [CFR, () => syncCfr(db)],
+  [COOL, () => syncCool(db)],
 ];
 
 function isDue(sourceId: string): boolean {
@@ -49,6 +51,7 @@ function housekeeping(): void {
   const cutoff = (days: number): string => new Date(Date.now() - days * DAY_MS).toISOString();
   db.prepare('DELETE FROM sync_log WHERE run_started_at < ?').run(cutoff(SYNC_LOG_DAYS));
   db.prepare("DELETE FROM activations WHERE status = 'closed' AND closed_at < ?").run(cutoff(CLOSED_ACTIVATION_DAYS));
+  db.prepare("DELETE FROM conditions WHERE status = 'closed' AND closed_at < ?").run(cutoff(CLOSED_ACTIVATION_DAYS));
   db.exec('PRAGMA incremental_vacuum');
   if (DB_PATH === ':memory:') return;
   const dir = join(dirname(DB_PATH), 'backups');

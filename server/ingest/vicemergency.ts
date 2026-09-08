@@ -1,6 +1,6 @@
-import { isInsideVictoria } from '../../src/core/constants.ts';
+import { isInsideVictoria, OFFICIAL_DOMAINS } from '../../src/core/constants.ts';
 import { readJsonBounded } from '../../src/data/bounded-body.ts';
-import type { DynamicType } from '../../src/core/types.ts';
+import type { ConditionHazard, DynamicType, LatLon } from '../../src/core/types.ts';
 import { type Db, nowIso, transaction } from '../db.ts';
 import { consecutiveFailures, runSync, type SyncCounts } from '../sources.ts';
 
@@ -23,6 +23,25 @@ const TYPE_BY_LABEL: [label: string, type: DynamicType][] = [
 ];
 const LABEL_FIELDS = ['feedType', 'category1', 'category2', 'sourceTitle', 'name', 'sourceFeed'];
 
+// How a feed feature is recognised as a heat or severe weather notice, matched
+// the same way over the same fields plus the CAP event. ponytail: not yet
+// verified against a live heat item (none in September) — adjust this table only.
+const HAZARD_BY_LABEL: [label: string, hazard: ConditionHazard][] = [
+  ['heat', 'heat'],
+  ['severe weather', 'storm'],
+  ['thunderstorm', 'storm'],
+];
+// Who issued the notice, from the feed's own organisation code.
+const PUBLISHER_BY_ORG: Record<string, string> = {
+  'AU/BOM': 'Bureau of Meteorology',
+  'VIC/DH': 'Department of Health',
+};
+const DEFAULT_PUBLISHER = 'Emergency Management Victoria';
+// A notice past this many ring points keeps no rings at all, so one enormous
+// polygon set cannot bloat every phone's snapshot. ponytail: the cap drops the
+// area rather than simplifying it; add ring simplification if a real notice trips it.
+const MAX_RING_POINTS = 20_000;
+
 type Props = Record<string, unknown>;
 type Geometry = { type?: string; coordinates?: unknown; geometries?: Geometry[] } | null | undefined;
 type Feature = { geometry?: Geometry; properties?: Props | null };
@@ -30,9 +49,63 @@ type Feature = { geometry?: Geometry; properties?: Props | null };
 const text = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value.trim() : null;
 
+const labelsOf = (props: Props): string =>
+  LABEL_FIELDS.map((field) => text(props[field]) ?? '').join(' | ').toLowerCase();
+
 export function classify(props: Props): DynamicType | null {
-  const labels = LABEL_FIELDS.map((field) => text(props[field]) ?? '').join(' | ').toLowerCase();
+  const labels = labelsOf(props);
   return TYPE_BY_LABEL.find(([label]) => labels.includes(label))?.[1] ?? null;
+}
+
+export function classifyHazard(props: Props): ConditionHazard | null {
+  const cap = props.cap as Props | null | undefined;
+  const labels = `${labelsOf(props)} | ${text(cap?.event) ?? ''}`.toLowerCase();
+  return HAZARD_BY_LABEL.find(([label]) => labels.includes(label))?.[1] ?? null;
+}
+
+const publisherOf = (props: Props): string => {
+  const org = text(props.sourceOrg) ?? '';
+  return PUBLISHER_BY_ORG[org] ?? (labelsOf(props).includes('health') ? 'Department of Health' : DEFAULT_PUBLISHER);
+};
+
+/** A link is kept only when it points at a publisher the app already trusts. */
+const officialUrl = (value: unknown): string | null => {
+  const url = text(value);
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname;
+    return OFFICIAL_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`)) ? url : null;
+  } catch {
+    return null;
+  }
+};
+
+const round4 = (n: number): number => Math.round(n * 10_000) / 10_000;
+
+/** The outer ring of every polygon in the geometry, as named points rounded to
+ *  about ten metres. Empty when there are none, or when the total passes the cap. */
+export function rings(geometry: Geometry, depth = 0): LatLon[][] {
+  if (!geometry || depth > MAX_GEOMETRY_DEPTH) return [];
+  if (geometry.type === 'GeometryCollection') {
+    return (geometry.geometries ?? []).flatMap((inner) => rings(inner, depth + 1));
+  }
+  const polygons =
+    geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.type === 'MultiPolygon' ? geometry.coordinates : [];
+  const found: LatLon[][] = [];
+  for (const polygon of (Array.isArray(polygons) ? polygons : []) as unknown[]) {
+    const outer = Array.isArray(polygon) ? (polygon[0] as unknown) : null;
+    if (!Array.isArray(outer)) continue;
+    const ring: LatLon[] = [];
+    for (const pair of outer as unknown[]) {
+      const [lon, lat] = Array.isArray(pair) ? (pair as unknown[]) : [];
+      if (typeof lat === 'number' && typeof lon === 'number' && Number.isFinite(lat) && Number.isFinite(lon)) {
+        ring.push({ lat: round4(lat), lon: round4(lon) });
+      }
+    }
+    if (ring.length >= 3) found.push(ring);
+  }
+  const points = found.reduce((sum, ring) => sum + ring.length, 0);
+  return points > MAX_RING_POINTS ? [] : found;
 }
 
 // A GeometryCollection may nest. Past this depth the feature is skipped, so a
@@ -95,6 +168,18 @@ export function applyFeed(db: Db, features: Feature[]): SyncCounts {
     "SELECT activation_id, external_ref FROM activations WHERE source_id = ? AND status = 'active'",
   );
   const close = db.prepare("UPDATE activations SET status = 'closed', closed_at = ? WHERE activation_id = ?");
+  const conditionExists = db.prepare('SELECT 1 FROM conditions WHERE condition_id = ?');
+  const upsertCondition = db.prepare(
+    `INSERT INTO conditions
+       (condition_id, hazard, title, publisher, level, url, statewide, rings_json, status, source_updated_at, ingested_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+     ON CONFLICT(condition_id) DO UPDATE SET hazard = excluded.hazard, title = excluded.title,
+       publisher = excluded.publisher, level = excluded.level, url = excluded.url, statewide = excluded.statewide,
+       rings_json = excluded.rings_json, status = 'active', closed_at = NULL,
+       source_updated_at = excluded.source_updated_at, ingested_at = excluded.ingested_at`,
+  );
+  const activeConditions = db.prepare("SELECT condition_id FROM conditions WHERE status = 'active'");
+  const closeCondition = db.prepare("UPDATE conditions SET status = 'closed', closed_at = ? WHERE condition_id = ?");
 
   // Only the incident an activation points at is kept (no geometry): the
   // database stays small and the foreign key stays satisfiable.
@@ -113,8 +198,38 @@ export function applyFeed(db: Db, features: Feature[]): SyncCounts {
     let updated = 0;
     let skipped = 0;
     const refsSeen = new Set<string>();
+    const conditionsSeen = new Set<string>();
     for (const feature of features) {
       const props = feature.properties ?? {};
+      const hazard = classifyHazard(props);
+      if (hazard) {
+        const id = text(props.sourceId) ?? text(props.id);
+        const title = text(props.sourceTitle) ?? text(props.name) ?? text(props.webHeadline);
+        const area = rings(feature.geometry);
+        const statewide = props.statewide === 'Y';
+        if (!id || !title || (area.length === 0 && !statewide)) {
+          skipped += 1;
+          continue;
+        }
+        seen += 1;
+        const isNew = conditionExists.get(id) === undefined;
+        upsertCondition.run(
+          id,
+          hazard,
+          title,
+          publisherOf(props),
+          text(props.category1) ?? text(props.status),
+          officialUrl(props.url),
+          statewide ? 1 : 0,
+          JSON.stringify(area),
+          text(props.updated) ?? text(props.created) ?? now,
+          now,
+        );
+        if (isNew) added += 1;
+        else updated += 1;
+        conditionsSeen.add(id);
+        continue;
+      }
       const type = classify(props);
       if (!type) continue;
       seen += 1;
@@ -148,6 +263,10 @@ export function applyFeed(db: Db, features: Feature[]): SyncCounts {
     );
     for (const row of gone) close.run(now, row.activation_id);
     if (gone.length > 0) console.info(`[poll] ${gone.length} activation(s) left the feed — marked closed`);
+    const ended = (activeConditions.all() as { condition_id: string }[]).filter(
+      (row) => !conditionsSeen.has(row.condition_id),
+    );
+    for (const row of ended) closeCondition.run(now, row.condition_id);
     return { seen, added, updated, skipped };
   });
 }

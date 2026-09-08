@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { FACILITY_SOURCE } from '../src/core/facility-sources.ts';
-import type { DynamicSnapshot, FacilityType, SourceHealth, StaticBundle } from '../src/core/types.ts';
+import type { Condition, DynamicSnapshot, FacilityType, SourceHealth, StaticBundle } from '../src/core/types.ts';
 import { type Db, nowIso } from './db.ts';
 import { findNearest, type Point } from './geo.ts';
 import { checkGate, readJson } from './gate.ts';
@@ -14,6 +14,7 @@ const HOTLINE = 'Call the VicEmergency Hotline on 1800 226 226.';
 const SOURCE_NAME: Record<string, string> = {
   cfa_nsp_arcgis: 'Country Fire Authority Neighbourhood Safer Places list',
   cfr_static_list: 'Community Fire Refuge list',
+  vicmap_foi_cool: 'Vicmap Features of Interest',
   vicmap_admin_postcodes: 'Vicmap postcode list',
   vicemergency_feed: 'VicEmergency feed',
 };
@@ -161,6 +162,12 @@ function dynamicSnapshot(db: Db): Route {
       `SELECT activation_id, type_code AS type, name, address, ROUND(lat, 5) AS lat, ROUND(lon, 5) AS lon, source_updated_at
        FROM activations WHERE status = 'active' ORDER BY activation_id`,
     ).all() as unknown as DynamicSnapshot['activations'],
+    conditions: (db.prepare(
+      `SELECT condition_id, hazard, title, publisher, level, url, statewide, rings_json, source_updated_at
+       FROM conditions WHERE status = 'active' ORDER BY condition_id`,
+    ).all() as (Omit<Condition, 'statewide' | 'rings'> & { statewide: number; rings_json: string })[]).map(
+      ({ statewide, rings_json, ...row }) => ({ ...row, statewide: statewide === 1, rings: JSON.parse(rings_json) }),
+    ),
   };
   return { status: 200, body };
 }

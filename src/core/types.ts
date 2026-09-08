@@ -342,8 +342,8 @@ export type StoredSnapshot = NspSnapshot & { name: 'nsp' };
 // The wire shapes of the API server's two sync endpoints (server/api.ts). The
 // client stores them in IndexedDB exactly as received: snake_case IS the
 // contract, so there is no mapping layer to drift from it.
-export type FacilityType = 'NSP' | 'CFR' | 'ERC' | 'RELIEF' | 'RECOVERY' | 'ASSEMBLY';
-export type StaticType = Extract<FacilityType, 'NSP' | 'CFR'>;
+export type FacilityType = 'NSP' | 'CFR' | 'COOL' | 'ERC' | 'RELIEF' | 'RECOVERY' | 'ASSEMBLY';
+export type StaticType = Extract<FacilityType, 'NSP' | 'CFR' | 'COOL'>;
 export type DynamicType = Exclude<FacilityType, StaticType>;
 
 export type SourceStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
@@ -379,11 +379,27 @@ export type SnapshotActivation = {
   lon: number;
   source_updated_at: string;
 };
+/** A current heat or severe weather notice from the VicEmergency feed, with
+ *  the outer rings of the area it names so the phone can match its own point.
+ *  A statewide notice carries no rings and applies to every Victorian point. */
+export type ConditionHazard = 'heat' | 'storm';
+export type Condition = {
+  condition_id: string;
+  hazard: ConditionHazard;
+  title: string;
+  publisher: string;
+  level: string | null;
+  url: string | null;
+  statewide: boolean;
+  rings: LatLon[][];
+  source_updated_at: string;
+};
 export type DynamicSnapshot = {
   generated_at: string;
   source_status: SourceStatus;
   source_last_success_at: string | null;
   activations: SnapshotActivation[];
+  conditions: Condition[];
 };
 
 /** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */

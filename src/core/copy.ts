@@ -693,7 +693,7 @@ export const NAV_NEARBY = 'Nearby';
 export const NEARBY_KICKER = 'Nearby places';
 export const NEARBY_TITLE = 'Nearest official places';
 export const NEARBY_LEDE =
-  'The nearest Neighbourhood Safer Place, Community Fire Refuge, and any relief or recovery centre listed as open, from your position or a postcode. Each row says how current it is.';
+  'The nearest Neighbourhood Safer Place, Community Fire Refuge, cool place, and any relief or recovery centre listed as open, from your position or a postcode. Each row says how current it is.';
 
 export const USE_MY_LOCATION = 'Use my location';
 export const LOCATING = 'Reading your position…';
@@ -715,6 +715,9 @@ export const FIRST_RUN_LINE =
 export const GROUP_BUSHFIRE = 'Bushfire places of last resort';
 export const GROUP_BUSHFIRE_NOTE =
   'Designated by the Country Fire Authority for their own township, and for bushfire only.';
+export const GROUP_HEAT = 'Cool places';
+export const GROUP_HEAT_NOTE =
+  'Libraries, community centres and pools listed by the Department of Transport and Planning. Opening hours are not known here.';
 export const GROUP_RELIEF = 'Relief and recovery';
 export const GROUP_RELIEF_NOTE =
   'Opened for a particular incident and listed by VicEmergency only while it runs.';
@@ -722,6 +725,7 @@ export const GROUP_RELIEF_NOTE =
 export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
   NSP: 'Neighbourhood Safer Place',
   CFR: 'Community Fire Refuge',
+  COOL: 'Cool place',
   ERC: 'Emergency Relief Centre',
   RELIEF: 'Relief Centre',
   RECOVERY: 'Recovery Centre',
@@ -755,6 +759,7 @@ export const DATA_SOURCES_LABEL = 'Data sources';
 export const SOURCE_NAMES: Record<string, string> = {
   cfa_nsp_arcgis: 'Country Fire Authority Neighbourhood Safer Places list',
   cfr_static_list: 'Community Fire Refuge list',
+  vicmap_foi_cool: 'Vicmap Features of Interest',
   vicmap_admin_postcodes: 'Vicmap postcode list',
   vicemergency_feed: 'VicEmergency feed',
 };

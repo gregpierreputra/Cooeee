@@ -1,7 +1,7 @@
 import { DYNAMIC_SNAPSHOT_MAX_AGE_MS } from './constants';
 import * as copy from './copy';
 import { formatDistanceM } from './destination';
-import { DYNAMIC_TYPES, FACILITY_SOURCE, STATIC_TYPES } from './facility-sources';
+import { BUSHFIRE_TYPES, DYNAMIC_TYPES, FACILITY_SOURCE, HEAT_TYPES } from './facility-sources';
 import { distanceM } from './geo';
 import { formatSavedDate } from './provenance';
 import type {
@@ -227,7 +227,12 @@ export function nearbyView(
       {
         heading: copy.GROUP_BUSHFIRE,
         note: copy.GROUP_BUSHFIRE_NOTE,
-        rows: STATIC_TYPES.map((type) => staticRow(now, origin, cache, session, type)),
+        rows: BUSHFIRE_TYPES.map((type) => staticRow(now, origin, cache, session, type)),
+      },
+      {
+        heading: copy.GROUP_HEAT,
+        note: copy.GROUP_HEAT_NOTE,
+        rows: HEAT_TYPES.map((type) => staticRow(now, origin, cache, session, type)),
       },
       {
         heading: copy.GROUP_RELIEF,

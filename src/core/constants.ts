@@ -114,6 +114,7 @@ export const OFFICIAL_DOMAINS = [
   'opendata.maps.vic.gov.au',
   'cfa.vic.gov.au',
   'emergency.vic.gov.au',
+  'bom.gov.au',
   'redcross.org.au',
   'ses.vic.gov.au',
 ] as const;

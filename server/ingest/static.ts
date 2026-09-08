@@ -1,10 +1,12 @@
+import { STATIC_TYPES } from '../../src/core/facility-sources.ts';
+import type { StaticType } from '../../src/core/types.ts';
 import { type Db, nowIso, transaction } from '../db.ts';
 import { findNearest } from '../geo.ts';
 import type { SyncCounts } from '../sources.ts';
 
 export type FacilityInput = {
   externalRef: string;
-  typeCode: 'NSP' | 'CFR';
+  typeCode: StaticType;
   name: string;
   address: string | null;
   lat: number;
@@ -78,7 +80,7 @@ export function rebuildNearestStatic(db: Db): void {
   transaction(db, () => {
     db.exec('DELETE FROM postcode_nearest_static');
     for (const postcode of postcodes) {
-      for (const typeCode of ['NSP', 'CFR']) {
+      for (const typeCode of STATIC_TYPES) {
         const nearest = findNearest<{ facility_id: number; lat: number; lon: number }>(db, 'facilities', postcode, typeCode);
         insert.run(postcode.postcode, typeCode, nearest?.row.facility_id ?? null, nearest?.distanceKm ?? null, now);
       }

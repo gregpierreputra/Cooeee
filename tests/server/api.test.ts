@@ -33,7 +33,7 @@ describe('GET /api/v1/safe-locations', () => {
     rebuildNearestStatic(db);
     const { status, body } = get(db, '/api/v1/safe-locations?postcode=3000');
     expect(status).toBe(200);
-    expect(body.results.map((r: Result) => r.type).sort()).toEqual(['ASSEMBLY', 'CFR', 'ERC', 'NSP', 'RECOVERY', 'RELIEF']);
+    expect(body.results.map((r: Result) => r.type).sort()).toEqual(['ASSEMBLY', 'CFR', 'COOL', 'ERC', 'NSP', 'RECOVERY', 'RELIEF']);
     for (const r of body.results as Result[]) {
       expect(r.facility).toBeNull();
       expect(r.message).toEqual(expect.any(String));
@@ -126,6 +126,25 @@ describe('the live feed', () => {
     expect(db.prepare("SELECT status FROM activations WHERE external_ref = 'r1'").get()).toEqual({ status: 'closed' });
   });
 
+  it('keeps a heat notice as a condition with its rings and closes it when it leaves the feed', () => {
+    const db = seeded();
+    const ring = [[145.0, -37.0], [145.2, -37.0], [145.2, -37.2], [145.0, -37.0]];
+    const heat = {
+      geometry: { type: 'GeometryCollection', geometries: [{ type: 'Point', coordinates: [145.1, -37.1] }, { type: 'Polygon', coordinates: [ring] }] },
+      properties: { id: 'h1', feedType: 'warning', category1: 'Advice', sourceOrg: 'AU/BOM', sourceTitle: 'Heatwave Warning', url: 'https://www.bom.gov.au/vic/warnings/heatwave.shtml' },
+    };
+    applyFeed(db, [heat]);
+    const snapshot = get(db, '/api/v1/sync/dynamic-snapshot').body;
+    expect(snapshot.conditions).toEqual([
+      expect.objectContaining({ condition_id: 'h1', hazard: 'heat', publisher: 'Bureau of Meteorology', level: 'Advice', statewide: false }),
+    ]);
+    expect(snapshot.conditions[0].rings[0]).toHaveLength(4);
+    expect(snapshot.conditions[0].url).toContain('bom.gov.au');
+
+    applyFeed(db, []);
+    expect(get(db, '/api/v1/sync/dynamic-snapshot').body.conditions).toEqual([]);
+  });
+
   it('classifies by any of the label fields, most specific first', () => {
     expect(classify({ sourceTitle: 'Emergency Relief Centre' })).toBe('ERC');
     expect(classify({ category2: 'Recovery Centre' })).toBe('RECOVERY');
@@ -139,7 +158,7 @@ describe('GET /api/v1/health', () => {
     const db = seeded();
     recordFailure(db, 'vicemergency_feed', 'ECONNREFUSED 10.0.0.1:443');
     const { body } = get(db, '/api/v1/health');
-    expect(body.sources).toHaveLength(4);
+    expect(body.sources).toHaveLength(5);
     for (const source of body.sources) {
       expect(source).not.toHaveProperty('last_error');
       expect(source).not.toHaveProperty('endpoint_url');

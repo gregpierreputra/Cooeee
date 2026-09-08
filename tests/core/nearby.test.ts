@@ -94,10 +94,17 @@ describe('the cache helpers', () => {
 });
 
 describe('nearbyView', () => {
-  it('always lists all six types, in two groups', () => {
+  it('lists the nearest cool place in its own group, from the static bundle', () => {
+    const cool = facility({ facility_id: 9, type: 'COOL', name: 'Belgrave Library', lat: -37.909, lon: 145.354 });
+    const view = nearbyView(NOW, KALORAMA, cache({ facilities: [facility(), cool] }), OFFLINE);
+    expect(view.groups.map((g) => g.heading)).toEqual([copy.GROUP_BUSHFIRE, copy.GROUP_HEAT, copy.GROUP_RELIEF]);
+    expect(row(view, 'COOL').place?.name).toBe('Belgrave Library');
+  });
+
+  it('always lists all seven types, in three groups', () => {
     const view = nearbyView(NOW, KALORAMA, cache(), OFFLINE);
-    expect(view.groups.map((g) => g.heading)).toEqual([copy.GROUP_BUSHFIRE, copy.GROUP_RELIEF]);
-    expect(rows(view).map((r) => r.type)).toEqual(['NSP', 'CFR', 'ERC', 'RELIEF', 'RECOVERY', 'ASSEMBLY']);
+    expect(view.groups.map((g) => g.heading)).toEqual([copy.GROUP_BUSHFIRE, copy.GROUP_HEAT, copy.GROUP_RELIEF]);
+    expect(rows(view).map((r) => r.type)).toEqual(['NSP', 'CFR', 'COOL', 'ERC', 'RELIEF', 'RECOVERY', 'ASSEMBLY']);
   });
 
   it('AC4: offline, static rows come from the cache labelled cached, with their age and verified date', () => {

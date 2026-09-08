@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_SYNC_ROWS } from '../../src/core/constants';
 import { fetchNspFacilities, toFacility } from '../../server/ingest/nsp';
-import { firstPoint } from '../../server/ingest/vicemergency';
+import { toFacility as toCoolFacility } from '../../server/ingest/cool';
+import { classifyHazard, firstPoint, rings } from '../../server/ingest/vicemergency';
 
 // The ingest boundary: a coordinate that is not a place in Victoria never
 // becomes a facility, whatever else the record says.
@@ -37,6 +38,32 @@ describe('firstPoint', () => {
     expect(firstPoint(nested(2))).toEqual(OLINDA);
     expect(firstPoint(nested(20))).toBeNull();
     expect(() => firstPoint(nested(10_000))).not.toThrow(); // no stack exhaustion, whatever the feed sends
+  });
+});
+
+describe('cool toFacility', () => {
+  it('reads the layer\'s one-member MultiPoint and refuses a point outside Victoria', () => {
+    const props = { pfi: 981492, name_label: 'Brookside Community Centre' };
+    const row = toCoolFacility({ geometry: { type: 'MultiPoint', coordinates: [[OLINDA.lon, OLINDA.lat]] }, properties: props });
+    expect(row).toMatchObject({ externalRef: '981492', typeCode: 'COOL', name: 'Brookside Community Centre', lat: OLINDA.lat });
+    expect(toCoolFacility({ geometry: { type: 'MultiPoint', coordinates: [[151.21, -33.87]] }, properties: props })).toBeNull();
+  });
+});
+
+describe('classifyHazard and rings', () => {
+  it('names heat and severe weather notices and nothing else', () => {
+    expect(classifyHazard({ sourceTitle: 'Heat Health Warning' })).toBe('heat');
+    expect(classifyHazard({ cap: { event: 'Severe Thunderstorm' } })).toBe('storm');
+    expect(classifyHazard({ category1: 'Fire', category2: 'Bushfire' })).toBeNull();
+  });
+
+  it('keeps every outer ring, rounded, and drops the lot past the point cap', () => {
+    const square = [[145.00001, -37.0], [145.2, -37.0], [145.2, -37.2], [145.00001, -37.0]];
+    const found = rings({ type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', coordinates: [[square], [square, square]] }] });
+    expect(found).toHaveLength(2);
+    expect(found[0][0]).toEqual({ lat: -37, lon: 145 });
+    const huge = Array.from({ length: 20_001 }, (_, i) => [145 + i / 1e6, -37]);
+    expect(rings({ type: 'Polygon', coordinates: [huge] })).toEqual([]);
   });
 });
 

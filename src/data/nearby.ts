@@ -1,7 +1,7 @@
 import { isInsideVictoria, MAX_RESPONSE_BYTES, MAX_SYNC_ROWS, NEARBY_SYNC_TIMEOUT_MS } from '../core/constants';
 import { STATIC_TYPES, DYNAMIC_TYPES } from '../core/facility-sources';
 import type { NearbyCache, NearbySession } from '../core/nearby';
-import type { DataHealth, DynamicSnapshot, StaticBundle, SyncMetaRow } from '../core/types';
+import type { Condition, DataHealth, DynamicSnapshot, StaticBundle, SyncMetaRow } from '../core/types';
 import { readJsonBounded } from './bounded-body';
 import { db } from './db';
 
@@ -11,6 +11,7 @@ export const STATIC_BUNDLE_PATH = '/api/v1/sync/static-bundle';
 export const DYNAMIC_SNAPSHOT_PATH = '/api/v1/sync/dynamic-snapshot';
 
 const STATUSES = ['healthy', 'degraded', 'down', 'unknown'] as const;
+const HAZARDS = ['heat', 'storm'] as const;
 const DESIGNATIONS = ['designated', 'needs_review'] as const;
 
 // ── Asserting parsers. Anything the server sends is checked before it is stored;
@@ -125,6 +126,34 @@ export function assertDynamicSnapshot(value: unknown): DynamicSnapshot {
         source_updated_at: text(r.source_updated_at, at('source_updated_at')),
       };
     }),
+    conditions: list(raw.conditions, 'conditions').map((item, i) => assertCondition(item, `conditions[${i}]`)),
+  };
+}
+
+/** A notice's rings are checked for shape and finite numbers only: a weather
+ *  district reaches past the state box, and no ring point is a place to go. */
+function assertCondition(value: unknown, field: string): Condition {
+  const r = record(value, field);
+  const at = (key: string) => `${field}.${key}`;
+  let points = 0;
+  const rings = list(r.rings, at('rings')).map((ring, i) =>
+    list(ring, at(`rings[${i}]`)).map((p, j) => {
+      const point = record(p, at(`rings[${i}][${j}]`));
+      points += 1;
+      if (points > MAX_SYNC_ROWS) fail(`${at('rings')} has more than ${MAX_SYNC_ROWS} points`);
+      return { lat: finite(point.lat, at('lat')), lon: finite(point.lon, at('lon')) };
+    }),
+  );
+  return {
+    condition_id: text(r.condition_id, at('condition_id')),
+    hazard: oneOf(r.hazard, HAZARDS, at('hazard')),
+    title: text(r.title, at('title')),
+    publisher: text(r.publisher, at('publisher')),
+    level: nullableText(r.level, at('level')),
+    url: nullableText(r.url, at('url')),
+    statewide: r.statewide === true,
+    rings,
+    source_updated_at: text(r.source_updated_at, at('source_updated_at')),
   };
 }
 

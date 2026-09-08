@@ -8,6 +8,7 @@ export type Db = DatabaseSync;
 export const nowIso = (): string => new Date().toISOString();
 
 const SCHEMA_URL = new URL('./db/schema.sql', import.meta.url);
+const UPGRADE_URL = new URL('./db/upgrade.sql', import.meta.url);
 
 // The upstream sources this server ingests (spec §2). Inserted once; afterwards
 // only the sync wrapper in sources.ts updates these rows.
@@ -32,6 +33,13 @@ const SOURCES: [id: string, name: string, kind: 'static' | 'dynamic', url: strin
     'static',
     'https://opendata.maps.vic.gov.au/geoserver/wfs',
     90 * 24 * 3600,
+  ],
+  [
+    'vicmap_foi_cool',
+    'Vicmap Features of Interest, cool places (WFS)',
+    'static',
+    'https://opendata.maps.vic.gov.au/geoserver/wfs',
+    30 * 24 * 3600,
   ],
   [
     'vicemergency_feed',
@@ -64,6 +72,7 @@ export function openDb(path: string): Db {
      VALUES (?, ?, ?, ?, ?)`,
   );
   for (const row of SOURCES) seed.run(...row);
+  db.exec(readFileSync(UPGRADE_URL, 'utf8'));
   return db;
 }
 
