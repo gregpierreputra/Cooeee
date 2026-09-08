@@ -506,7 +506,7 @@ export const COOEEE_INFO_LINES = [
   },
   {
     lead: 'What it does not do.',
-    text: 'It does not watch conditions and it never contacts you. VicEmergency and emergency services tell you when to act.',
+    text: 'It issues no notices of its own and never contacts you. VicEmergency tells you when to act.',
   },
   {
     lead: 'Where your information stays.',
@@ -656,7 +656,7 @@ export const DISCLOSURE_DOES =
 
 export const DISCLOSURE_DOES_NOT_HEADING = 'What Cooeee does not do';
 export const DISCLOSURE_DOES_NOT =
-  'Does not watch conditions, and will never contact you. Nothing here tells you when to act.';
+  'Issues no notices of its own, and will never contact you.';
 
 export const DISCLOSURE_ADDRESS_HEADING = 'Where your address goes';
 export const DISCLOSURE_ADDRESS =
@@ -715,6 +715,12 @@ export const FIRST_RUN_LINE =
 export const GROUP_BUSHFIRE = 'Bushfire places of last resort';
 export const GROUP_BUSHFIRE_NOTE =
   'Designated by the Country Fire Authority for their own township, and for bushfire only.';
+// Current heat and severe weather notices from the feed, matched to the point on
+// the phone. Shown as received, with the publisher and the feed's own time.
+export const NOTICES_LABEL = 'Current notices here';
+export const NOTICE_LINE = (title: string, publisher: string) => `${title}, ${publisher}`;
+export const NO_NOTICES_HERE = 'None in the VicEmergency feed for this position.';
+
 export const GROUP_HEAT = 'Cool places';
 export const GROUP_HEAT_NOTE =
   'Libraries, community centres and pools listed by the Department of Transport and Planning. Opening hours are not known here.';

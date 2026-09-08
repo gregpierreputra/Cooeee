@@ -5,6 +5,8 @@ import {
   HOURS_AGO,
   MAY_BE_OUTDATED,
   MINUTES_AGO,
+  NOTICE_LINE,
+  NOTICES_LABEL,
   STATE_CACHED,
   TOO_OLD_TO_SHOW,
 } from '../src/core/copy';
@@ -40,6 +42,10 @@ test('AC4 offline, static places come from IndexedDB labelled cached with their 
   await expect(relief).toContainText('Lilydale Community Centre');
   await expect(relief).toContainText(STATE_CACHED(MINUTES_AGO(10)));
   await expect(relief).toContainText(MAY_BE_OUTDATED);
+
+  // The seeded heat notice names the postcode's point, so it reads here, offline.
+  const notices = page.locator('section.card', { has: page.getByRole('heading', { name: NOTICES_LABEL }) });
+  await expect(notices).toContainText(NOTICE_LINE('Heat Health Warning', 'Department of Health'));
 });
 
 test('AC5 offline with a snapshot past the threshold, no relief centre is shown — only the stale line and the hotline', async ({ page, context }) => {

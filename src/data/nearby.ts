@@ -161,16 +161,18 @@ function assertCondition(value: unknown, field: string): Condition {
 
 /** Everything the screen renders from, in one read. */
 export async function readNearbyCache(): Promise<NearbyCache> {
-  const [facilities, postcodes, activations, meta] = await Promise.all([
+  const [facilities, postcodes, activations, conditions, meta] = await Promise.all([
     db.staticFacilities.toArray(),
     db.postcodes.toArray(),
     db.dynamicSnapshot.toArray(),
+    db.conditions.toArray(),
     db.syncMeta.toArray(),
   ]);
   return {
     facilities,
     postcodes,
     activations,
+    conditions,
     meta: Object.fromEntries(meta.map((row) => [row.key, row.value])),
   };
 }
@@ -208,10 +210,12 @@ async function syncStatic(fetcher: typeof fetch, since: string | undefined): Pro
 
 async function syncDynamic(fetcher: typeof fetch): Promise<void> {
   const snapshot = assertDynamicSnapshot(await getJson(fetcher, DYNAMIC_SNAPSHOT_PATH));
-  await db.transaction('rw', db.dynamicSnapshot, db.syncMeta, async () => {
-    // Replaced wholesale, never merged (spec §7.2): a centre that left the feed leaves the device.
+  await db.transaction('rw', db.dynamicSnapshot, db.conditions, db.syncMeta, async () => {
+    // Replaced wholesale, never merged (spec §7.2): a centre or notice that left the feed leaves the device.
     await db.dynamicSnapshot.clear();
     await db.dynamicSnapshot.bulkAdd(snapshot.activations);
+    await db.conditions.clear();
+    await db.conditions.bulkAdd(snapshot.conditions);
     await db.syncMeta.bulkPut([
       { key: 'dynamic_synced_at', value: new Date().toISOString() },
       { key: 'dynamic_generated_at', value: snapshot.generated_at },

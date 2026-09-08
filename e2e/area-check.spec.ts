@@ -59,6 +59,7 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
   await expect(page.getByTestId('pending-address')).toHaveText(ADDRESS);
   expect(await deviceStorage(page)).toEqual({
     recordCounts: {
+      conditions: 0,
       destinations: 0,
       dynamicSnapshot: 0,
       files: 0,

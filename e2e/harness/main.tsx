@@ -462,6 +462,9 @@ if (window.location.pathname === '/nearby') {
     await db.dynamicSnapshot.bulkAdd([
       { activation_id: 1, type: 'RELIEF', name: 'Lilydale Community Centre', address: 'Lilydale', lat: -37.756, lon: 145.35, source_updated_at: ago(feedAge) },
     ]);
+    await db.conditions.bulkAdd([
+      { condition_id: 'h1', hazard: 'heat', title: 'Heat Health Warning', publisher: 'Department of Health', level: 'Advice', url: null, statewide: false, rings: [[{ lat: -37.7, lon: 145.3 }, { lat: -37.7, lon: 145.4 }, { lat: -37.9, lon: 145.4 }, { lat: -37.9, lon: 145.3 }]], source_updated_at: ago(feedAge) },
+    ]);
     await db.syncMeta.bulkAdd([
       { key: 'static_synced_at', value: ago(2 * 3_600_000) },
       { key: 'static_version', value: '2026-09-01T02:00:00.000Z' },

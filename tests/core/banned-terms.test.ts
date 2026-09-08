@@ -109,6 +109,9 @@ describe('the lists themselves', () => {
       'Neighbourhood Safer Places',
       'sorted by distance, not a safety ranking',
       'Cooeee issues no warnings',
+      'Heat Health Warning',
+      'Heatwave Warning',
+      'Severe Weather Warning',
       'the responsible organisation decides who is eligible',
     ]);
   });

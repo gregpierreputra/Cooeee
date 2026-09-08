@@ -7,6 +7,7 @@ import { formatSavedDate } from './provenance';
 import type {
   BundleFacility,
   BundlePostcode,
+  Condition,
   DataHealth,
   FacilityType,
   LatLon,
@@ -29,6 +30,7 @@ export type NearbyCache = {
   facilities: BundleFacility[];
   postcodes: BundlePostcode[];
   activations: SnapshotActivation[];
+  conditions: Condition[];
   meta: Partial<Record<MetaKey, string>>;
 };
 

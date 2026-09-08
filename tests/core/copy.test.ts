@@ -328,10 +328,8 @@ describe('first-open disclosure', () => {
     );
   });
 
-  it('states what Cooeee does not do, including that it issues no warnings', () => {
-    expect(copy.DISCLOSURE_DOES_NOT).toBe(
-      'Does not watch conditions, and will never contact you. Nothing here tells you when to act.',
-    );
+  it('states what Cooeee does not do, including that it issues no notices of its own', () => {
+    expect(copy.DISCLOSURE_DOES_NOT).toBe('Issues no notices of its own, and will never contact you.');
   });
 
   it('states where the address goes and what stays on the device', () => {
@@ -371,6 +369,6 @@ describe('first-open disclosure', () => {
       copy.ACKNOWLEDGE_CHECKBOX,
     ].join(' ');
     expect(statements).not.toMatch(/\bmonitors\b|\bnotifies\b|\bkeeps you informed\b/i);
-    expect(statements).toMatch(/[Dd]oes not watch conditions/);
+    expect(statements).toMatch(/[Ii]ssues no notices of its own/);
   });
 });

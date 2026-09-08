@@ -45,6 +45,7 @@ const cache = (over: Partial<NearbyCache> = {}, feedAgeMs = 10 * 60_000): Nearby
   facilities: [facility(), facility({ facility_id: 2, type: 'CFR', name: 'Ferny Creek Community Fire Refuge', lat: -37.883, lon: 145.333 })],
   postcodes: [{ postcode: '3766', centroid_lat: KALORAMA.lat, centroid_lon: KALORAMA.lon }],
   activations: [activation()],
+  conditions: [],
   meta: {
     static_synced_at: ago(2 * HOUR),
     static_version: '2026-09-01T02:00:00.000Z',

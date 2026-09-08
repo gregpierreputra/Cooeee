@@ -244,9 +244,10 @@ describe('putNote', () => {
 });
 
 describe('schema', () => {
-  it('is version 6: the pack stores, the Nearby-places stores, the snapshot, files and notes stores', () => {
-    expect(db.verno).toBe(6);
+  it('is version 7: the pack stores, the Nearby-places stores, the snapshot, files, notes and notices stores', () => {
+    expect(db.verno).toBe(7);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
+      'conditions',
       'destinations',
       'dynamicSnapshot',
       'files',

@@ -4,6 +4,7 @@ import type {
   BundleFacility,
   BundlePostcode,
   CompletePackContent,
+  Condition,
   Destination,
   ExposureLayer,
   NspSnapshot,
@@ -36,6 +37,7 @@ class CooeeeDb extends Dexie {
   staticFacilities!: Table<BundleFacility, number>;
   postcodes!: Table<BundlePostcode, string>;
   dynamicSnapshot!: Table<SnapshotActivation, number>;
+  conditions!: Table<Condition, string>;
   syncMeta!: Table<SyncMetaRow, string>;
   // The CFA site list, for BlackSky's nearest-places pointer.
   snapshots!: Table<StoredSnapshot, string>;
@@ -81,6 +83,8 @@ class CooeeeDb extends Dexie {
     this.version(5).stores({ files: 'id, packId' });
     // Version 6 adds the store for the user's own notes on a pack.
     this.version(6).stores({ notes: 'id, packId' });
+    // Version 7 adds the current heat and severe weather notices from the feed.
+    this.version(7).stores({ conditions: 'condition_id' });
   }
 }
 
@@ -97,6 +101,13 @@ export const ownedTables = () => [db.layers, db.destinations, db.tiles, db.files
  *  transaction, which must list ownedTables(). */
 export async function deleteOwnedRows(packIds: string[]): Promise<void> {
   await Promise.all(ownedTables().map((table) => table.where('packId').anyOf(packIds).delete()));
+}
+
+/** The synced notices and their bookkeeping, for screens that may not import
+ *  the network module: what the phone last received, however old. */
+export async function readConditionCache(): Promise<{ conditions: Condition[]; meta: Record<string, string> }> {
+  const [conditions, meta] = await Promise.all([db.conditions.toArray(), db.syncMeta.toArray()]);
+  return { conditions, meta: Object.fromEntries(meta.map((row) => [row.key, row.value])) };
 }
 
 /** THE read API — complete packs only. */

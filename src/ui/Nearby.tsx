@@ -5,6 +5,7 @@ import {
   NEARBY_FIX_TIMEOUT_MS,
   NEARBY_RESYNC_MS,
 } from '../core/constants';
+import { noticeView } from '../core/conditions';
 import * as copy from '../core/copy';
 import {
   hasNearbyData,
@@ -121,6 +122,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
 
   const ready = cache !== null && hasNearbyData(cache);
   const view = ready && origin ? nearbyView(clock, origin, cache, session) : null;
+  const notices = ready && origin ? noticeView(clock, cache, origin) : null;
 
   return (
     <main className="page nearby">
@@ -168,6 +170,15 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
           {view && origin ? (
             <>
               <p className="caveat">{origin.label}</p>
+              {notices ? (
+                <StateCard heading={copy.NOTICES_LABEL} detail={notices.asOf}>
+                  {notices.lines.length === 0 ? (
+                    <p className="muted">{copy.NO_NOTICES_HERE}</p>
+                  ) : (
+                    notices.lines.map((line) => <p key={line}>{line}</p>)
+                  )}
+                </StateCard>
+              ) : null}
               <p className="muted">{copy.DISTANCES_NOTE}</p>
               {view.groups.map((group) => (
                 <section key={group.heading} className="nearby-group">
