@@ -2,8 +2,10 @@
 // fixed header. Everything here is pure: the screen renders what these
 // functions return and decides nothing of its own.
 
+import { noticeView } from './conditions';
 import { MS_PER_DAY, PACK_REFRESH_DAYS } from './constants';
 import * as copy from './copy';
+import type { NearbyCache } from './nearby';
 import { freshness } from './pack';
 import { savedAgeDays } from './provenance';
 import type { Pack } from './types';
@@ -52,9 +54,10 @@ export function preparationLineIndex(seed: number, count: number): number {
 
 type PreparationLine = { text: string; context: string; source: string };
 
+/** A line credits its own guidance when it names one; the rest are the CFA's. */
 export function preparationLine(seed: number): PreparationLine {
   const line = copy.PREPARATION_LINES[preparationLineIndex(seed, copy.PREPARATION_LINES.length)];
-  return { ...line, source: copy.PREPARATION_SOURCE };
+  return { text: line.text, context: line.context, source: 'source' in line ? line.source : copy.PREPARATION_SOURCE };
 }
 
 export type NavItem = { key: 'home' | 'nearby' | 'about'; label: string; to: string };
@@ -73,17 +76,29 @@ export const NAV_ITEMS: readonly NavItem[] = [
  *  newest first, each with the pack card's own age wording, and the day's
  *  preparation line. Building is offered in every state, so the list can grow. */
 export type HomeView = {
-  packs: { pack: Pack; ageLine: string }[];
+  packs: { pack: Pack; ageLine: string; notice: string | null }[];
   preparation: PreparationLine;
 };
 
-export function homeView(now: number, packs: Pack[]): HomeView {
+/** The one line a card carries about the present: the current notices that
+ *  name the saved place, from the last synced feed. Null when none do, or when
+ *  the snapshot is missing or too old to repeat. */
+const packNotice = (now: number, cache: Pick<NearbyCache, 'conditions' | 'meta'>, pack: Pack): string | null => {
+  const view = noticeView(now, cache, pack);
+  return view && view.lines.length > 0 ? copy.PACK_NOTICE_LINE(view.lines, view.asOf) : null;
+};
+
+export function homeView(
+  now: number,
+  packs: Pack[],
+  cache: Pick<NearbyCache, 'conditions' | 'meta'> = { conditions: [], meta: {} },
+): HomeView {
   return {
     packs: [...packs]
       .sort((a, b) => b.verifiedAt - a.verifiedAt)
       // The pack card's own wording, unchanged: 'Saved N days ago', and past the
       // window the mandated 'Saved N days ago, not recently verified'.
-      .map((pack) => ({ pack, ageLine: freshness(now, pack.verifiedAt).label })),
+      .map((pack) => ({ pack, ageLine: freshness(now, pack.verifiedAt).label, notice: packNotice(now, cache, pack) })),
     preparation: preparationLine(now),
   };
 }

@@ -437,6 +437,10 @@ export const PREPARATION_LABEL = "Today's reminder";
  *  anything about what is happening outside. Each carries a second line for
  *  the reader the first was not written for: someone without a car, a garden,
  *  animals, tools or a household of their own. */
+/** The heat lines below are Cooeee's own wording of Department of Health
+ *  extreme heat guidance, credited the same way as the bushfire lines. */
+export const PREPARATION_SOURCE_HEAT = 'Based on Department of Health guidance.';
+
 export const PREPARATION_LINES = [
   {
     text: 'Write your household bushfire plan down, and decide who does what.',
@@ -469,6 +473,21 @@ export const PREPARATION_LINES = [
   {
     text: 'Talk the plan through with everyone in the house before the fire season starts.',
     context: 'Include anyone who visits or cares for you regularly, and the neighbours you would check on.',
+  },
+  {
+    text: 'Decide where you would spend the hottest hours of a heat day, such as a library, a pool or a shopping centre.',
+    context: 'Without a car, check the bus or train times the day before. The Nearby screen lists the closest cool place.',
+    source: PREPARATION_SOURCE_HEAT,
+  },
+  {
+    text: 'On a heat day, check on older neighbours and anyone who is unwell or lives alone.',
+    context: 'A phone call counts. Ask whether they have water, a cool room and their medicines within reach.',
+    source: PREPARATION_SOURCE_HEAT,
+  },
+  {
+    text: 'Keep water in the fridge, and never leave a person or a pet in a parked car.',
+    context: 'A car heats up within minutes even with the windows down. Fill bottles the night before a hot day.',
+    source: PREPARATION_SOURCE_HEAT,
   },
 ] as const;
 
@@ -720,6 +739,8 @@ export const GROUP_BUSHFIRE_NOTE =
 export const NOTICES_LABEL = 'Current notices here';
 export const NOTICE_LINE = (title: string, publisher: string) => `${title}, ${publisher}`;
 export const NO_NOTICES_HERE = 'None in the VicEmergency feed for this position.';
+/** The pack card's notice line: every current notice for the saved place, then the feed's time. */
+export const PACK_NOTICE_LINE = (lines: string[], asOf: string) => `${lines.join('. ')}. ${asOf}`;
 
 export const GROUP_HEAT = 'Cool places';
 export const GROUP_HEAT_NOTE =

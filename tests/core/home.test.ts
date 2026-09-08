@@ -128,13 +128,18 @@ describe('preparation line selection', () => {
   it('names its source alongside the line it chose', () => {
     const line = preparationLine(NOW);
     expect(copy.PREPARATION_LINES.map((row) => row.text)).toContain(line.text);
-    expect(line.source).toBe('Based on Country Fire Authority guidance.');
+    expect([copy.PREPARATION_SOURCE, copy.PREPARATION_SOURCE_HEAT]).toContain(line.source);
   });
 
-  it('offers eight lines, none of them about a place or about conditions', () => {
-    expect(copy.PREPARATION_LINES).toHaveLength(8);
-    expect(new Set(copy.PREPARATION_LINES.map((row) => row.text)).size).toBe(8);
-    expect(new Set(copy.PREPARATION_LINES.map((row) => row.context)).size).toBe(8);
+  it('credits a heat line to the Department of Health and a bushfire line to the CFA', () => {
+    expect(preparationLine(0).source).toBe('Based on Country Fire Authority guidance.');
+    expect(preparationLine(8 * MS_PER_DAY).source).toBe('Based on Department of Health guidance.');
+  });
+
+  it('offers eleven lines, none of them about a place or about conditions', () => {
+    expect(copy.PREPARATION_LINES).toHaveLength(11);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.text)).size).toBe(11);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.context)).size).toBe(11);
   });
 });
 
@@ -163,7 +168,7 @@ describe('the home view', () => {
 
   it('offers the saved pack, with the pack card wording for its age', () => {
     const saved = pack({ verifiedAt: daysAgo(3) });
-    expect(homeView(NOW, [saved]).packs).toEqual([{ pack: saved, ageLine: 'Saved 3 days ago' }]);
+    expect(homeView(NOW, [saved]).packs).toEqual([{ pack: saved, ageLine: 'Saved 3 days ago', notice: null }]);
   });
 
   it('lists several packs newest first, whatever order the store returns them in', () => {
@@ -188,8 +193,20 @@ describe('the home view', () => {
     for (const view of [homeView(NOW, []), homeView(NOW, [pack()])]) {
       expect(copy.PREPARATION_LINES.map((row) => row.text)).toContain(view.preparation.text);
       expect(view.preparation.context).not.toBe('');
-      expect(view.preparation.source).toBe(copy.PREPARATION_SOURCE);
+      expect([copy.PREPARATION_SOURCE, copy.PREPARATION_SOURCE_HEAT]).toContain(view.preparation.source);
     }
+  });
+
+  it('carries the current notices for a saved place, and nothing when none name it', () => {
+    const statewide = {
+      condition_id: 's', hazard: 'heat' as const, title: 'Heatwave Warning', publisher: 'Bureau of Meteorology',
+      level: null, url: null, statewide: true, rings: [], source_updated_at: new Date(NOW).toISOString(),
+    };
+    const meta = { dynamic_source_last_success_at: new Date(NOW - 60_000).toISOString() };
+    const view = homeView(NOW, [pack()], { conditions: [statewide], meta });
+    expect(view.packs[0].notice).toMatch(/^Heatwave Warning, Bureau of Meteorology\. As of /);
+    expect(homeView(NOW, [pack()], { conditions: [], meta }).packs[0].notice).toBeNull();
+    expect(homeView(NOW, [pack()]).packs[0].notice).toBeNull();
   });
 });
 

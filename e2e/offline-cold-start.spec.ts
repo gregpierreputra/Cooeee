@@ -19,8 +19,14 @@ test('the shell cold-starts with the radios off, and nothing reaches for the net
   await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
   await waitForController(page);
 
+  // The home screen refreshes the feed snapshot when the browser says it is
+  // online, and Chromium keeps saying so on a worker-served offline reload, so
+  // that one same-origin refresh is the only request allowed to fail here. The
+  // shell itself asks for nothing.
   const failed: string[] = [];
-  page.on('requestfailed', (r) => failed.push(`${r.method()} ${r.url()}`));
+  page.on('requestfailed', (r) => {
+    if (!r.url().includes('/api/')) failed.push(`${r.method()} ${r.url()}`);
+  });
 
   await context.setOffline(true);
   await page.reload();

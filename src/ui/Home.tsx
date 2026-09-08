@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
 import { homeView, titleCase, type HomeView } from '../core/home';
 import type { Pack } from '../core/types';
-import { deleteCompletePack, listCompletePacks } from '../data/db';
+import { deleteCompletePack, listCompletePacks, readConditionCache } from '../data/db';
+import { syncNearby } from '../data/nearby';
 import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
 import { startTour } from './components/Tour';
@@ -13,8 +14,9 @@ import { startTour } from './components/Tour';
  *
  *  Every saved pack, newest first, each card the way into its pack; then the
  *  control that builds one more, and the BlackSky control with the ring that
- *  says what BlackSky is. It reads IndexedDB and nothing else: no request is
- *  made here in any state, and no position is asked for. */
+ *  says what BlackSky is. It renders from IndexedDB, then refreshes the feed
+ *  snapshot once when online so each card can carry the current notice for its
+ *  place. No position is asked for. */
 export default function Home({ now }: { now?: number }) {
   // null = the store has not answered yet.
   // It answers in a frame or two from local IndexedDB, and
@@ -27,14 +29,18 @@ export default function Home({ now }: { now?: number }) {
   // navigates away and comes back.
   const [seed] = useState(() => now ?? Date.now());
 
+  const load = async () => {
+    const [rows, cache]: [Pack[], Awaited<ReturnType<typeof readConditionCache>>] = await Promise.all([
+      listCompletePacks(),
+      readConditionCache(),
+    ]);
+    setView(homeView(seed, rows, cache));
+  };
+
   useEffect(() => {
-    let live = true;
-    listCompletePacks().then((rows: Pack[]) => {
-      if (live) setView(homeView(seed, rows));
-    });
-    return () => {
-      live = false;
-    };
+    void load();
+    // A failed refresh leaves the last snapshot in place; the cards say its age.
+    if (navigator.onLine) syncNearby().then(load, () => {});
   }, [seed]);
 
   // Deleting a pack takes two taps: the delete control swaps that pack's card
@@ -48,7 +54,7 @@ export default function Home({ now }: { now?: number }) {
 
   const removePack = async (id: string) => {
     await deleteCompletePack(id);
-    setView(homeView(seed, await listCompletePacks()));
+    await load();
     setConfirming(null);
   };
 
@@ -77,7 +83,7 @@ export default function Home({ now }: { now?: number }) {
       {view === null ? null : view.packs.length === 0 ? (
         <StateCard heading={copy.NO_PACK_SAVED} detail={copy.NO_PACKS_HINT} />
       ) : (
-        view.packs.map(({ pack, ageLine }) =>
+        view.packs.map(({ pack, ageLine, notice }) =>
           confirming === pack.id ? (
             <section key={pack.id} className="card">
               <p>{copy.DELETE_PACK_QUESTION}</p>
@@ -131,6 +137,7 @@ export default function Home({ now }: { now?: number }) {
               {/* Title-cased for reading only. The pack still stores the address
                   exactly as the custodian returned it. */}
               <p className="muted">{titleCase(pack.address)}</p>
+              {notice ? <p className="muted">{notice}</p> : null}
               <p className="muted figure saved-place-footer">
                 {ageLine}
                 {copy.OPENS_WITHOUT_SIGNAL}
