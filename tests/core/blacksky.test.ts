@@ -43,6 +43,7 @@ describe('precedence', () => {
     expect(deriveState(NOW, [], fix(), 'granted')).toEqual({
       kind: 'NO_PACK',
       nearby: [],
+      heat: false,
       confidence: { accuracyM: 10, ageS: 0, approximate: false, stale: false },
     });
   });
@@ -193,7 +194,31 @@ describe('nearest official places from the state-wide list', () => {
     const vague = deriveState(NOW, [], fix({ accuracyM: 800 }), 'granted', snapshot);
     expect(vague.kind === 'NO_PACK' && vague.nearby).toHaveLength(3);
     expect(vague.kind === 'NO_PACK' && vague.confidence?.approximate).toBe(true);
-    expect(deriveState(NOW, [], fix(), 'denied', snapshot)).toEqual({ kind: 'NO_PACK', nearby: [] });
+    expect(deriveState(NOW, [], fix(), 'denied', snapshot)).toEqual({ kind: 'NO_PACK', nearby: [], heat: false });
+  });
+
+  it('points at the nearest cool places instead while a fresh heat notice names the fix', () => {
+    const cool = [3, 1, 7].map((n) => ({
+      facility_id: n, type: 'COOL' as const, name: `Library ${n}`, address: null, ...km(n),
+      lga_name: null, designation_status: 'designated' as const, last_verified_at: new Date(NOW).toISOString(),
+    }));
+    const notice = {
+      condition_id: 'h', hazard: 'heat' as const, title: 'Heatwave Warning', publisher: 'Bureau of Meteorology',
+      level: null, url: null, statewide: true, rings: [], source_updated_at: new Date(NOW).toISOString(),
+    };
+    const meta = (ageMs: number) => ({ dynamic_source_last_success_at: new Date(NOW - ageMs).toISOString() });
+
+    const hot = deriveState(NOW, [], fix(), 'granted', snapshot, { cool, conditions: [notice], meta: meta(60_000) });
+    expect(hot.kind === 'NO_PACK' && hot.heat).toBe(true);
+    expect(hot.kind === 'NO_PACK' && hot.nearby.map((p) => p.id)).toEqual(['1', '3', '7']);
+    expect(hot.kind === 'NO_PACK' && hot.nearby[0].publisher).toBe('Department of Transport and Planning');
+
+    const stale = deriveState(NOW, [], fix(), 'granted', snapshot, { cool, conditions: [notice], meta: meta(2 * 3_600_000) });
+    expect(stale.kind === 'NO_PACK' && stale.heat).toBe(false);
+    expect(stale.kind === 'NO_PACK' && stale.nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
+
+    const nothingDownloaded = deriveState(NOW, [], fix(), 'granted', snapshot, { cool: [], conditions: [notice], meta: meta(60_000) });
+    expect(nothingDownloaded.kind === 'NO_PACK' && nothingDownloaded.heat).toBe(false);
   });
 });
 

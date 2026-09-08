@@ -1,5 +1,7 @@
+import { heatNoticeAt } from './conditions';
 import {
   ACCURACY_MAX_M,
+  DTP_PUBLISHER,
   FIX_STALE_MS,
   MARK_DRIFT_M_PER_S,
   MARK_START_ACCURACY_M,
@@ -8,7 +10,13 @@ import {
 import * as copy from './copy';
 import { isGeocoded } from './destination';
 import { bearingDeg, distanceM } from './geo';
-import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from './types';
+import type { NearbyCache } from './nearby';
+import type { BundleFacility, Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from './types';
+
+/** What the screen has on the device for a heat day: the downloaded cool places
+ *  and the last synced notices. Empty on a phone that has never opened Nearby. */
+export type HeatSources = Pick<NearbyCache, 'conditions' | 'meta'> & { cool: BundleFacility[] };
+export const NO_HEAT_SOURCES: HeatSources = { cool: [], conditions: [], meta: {} };
 
 /** One place to point at: a live bearing and distance from the fix. Built the
  *  same way for a place chosen into a pack and for a site on the state-wide
@@ -73,8 +81,10 @@ export function estimateFix(mark: Mark, now: number): Fix | null {
   return { lat: mark.lat, lon: mark.lon, accuracyM, at: now };
 }
 
+// `heat` says what the nearby list holds: true, the nearest cool places under a
+// current heat notice at the fix; false, the nearest bushfire places of last resort.
 export type Screen =
-  | { kind: 'NO_PACK'; nearby: Placed[]; confidence?: Confidence }
+  | { kind: 'NO_PACK'; nearby: Placed[]; heat: boolean; confidence?: Confidence }
   | {
       kind: 'ACQUIRING';
       reason: 'no-fix' | 'denied';
@@ -85,6 +95,7 @@ export type Screen =
       kind: 'OUT_OF_AREA';
       packs: { pack: Pack; distanceKm: number }[];
       nearby: Placed[];
+      heat: boolean;
       confidence: Confidence;
     }
   | {
@@ -92,6 +103,7 @@ export type Screen =
       pack: Pack;
       places: Placed[];
       nearby: Placed[];
+      heat: boolean;
       confidence: Confidence;
       absence?: Destination;
     };
@@ -101,32 +113,36 @@ export type Screen =
 const shown = (places: Destination[]): Destination[] =>
   places.filter((d) => d.chosen === true || d.kind === 'absence');
 
-/** The NEARBY_PLACES closest sites on the state-wide CFA list, nearest first,
- *  skipping any the pack already carries. Every published site is reachable
- *  from here: the list is never cut by a radius. */
+/** The NEARBY_PLACES closest of the given places, nearest first. Every row is
+ *  reachable from here: the list is never cut by a radius. This runs on every
+ *  tick, so the whole list gets one distance each and only the few that are
+ *  kept get a bearing. */
+function nearestPlaces(fix: LatLon, rows: (LatLon & { id: string; name: string; publisher: string })[]): Placed[] {
+  return rows
+    .map((row) => ({ row, metres: distanceM(fix, row) }))
+    .sort((a, b) => a.metres - b.metres)
+    .slice(0, NEARBY_PLACES)
+    .map(({ row }) => placeFrom(fix, row));
+}
+
+/** The nearest sites on the state-wide CFA list, skipping any the pack already carries. */
 export function nearestSites(
   fix: LatLon,
   snapshot: NspSnapshot | null,
   excludeSiteIds: Set<string> = new Set(),
 ): Placed[] {
   if (!snapshot) return [];
-  // This runs on every tick, so the whole list gets one distance each and only
-  // the few that are kept get a bearing.
-  return snapshot.sites
-    .filter((site) => isGeocoded(site) && !excludeSiteIds.has(site.id))
-    .map((site) => ({ site, metres: distanceM(fix, { lat: site.lat!, lon: site.lon! }) }))
-    .sort((a, b) => a.metres - b.metres)
-    .slice(0, NEARBY_PLACES)
-    .map(({ site }) =>
-      placeFrom(fix, {
-        id: site.id,
-        name: site.name,
-        lat: site.lat!,
-        lon: site.lon!,
-        publisher: snapshot.source.publisher,
-      }),
-    );
+  return nearestPlaces(
+    fix,
+    snapshot.sites
+      .filter((site) => isGeocoded(site) && !excludeSiteIds.has(site.id))
+      .map((site) => ({ id: site.id, name: site.name, lat: site.lat!, lon: site.lon!, publisher: snapshot.source.publisher })),
+  );
 }
+
+/** The nearest downloaded cool places, listed by the Department of Transport and Planning. */
+const nearestCool = (fix: LatLon, cool: BundleFacility[]): Placed[] =>
+  nearestPlaces(fix, cool.map((f) => ({ id: String(f.facility_id), name: f.name, lat: f.lat, lon: f.lon, publisher: DTP_PUBLISHER })));
 
 /**
  * The whole BlackSky screen, derived from scratch on every fix and every
@@ -154,13 +170,19 @@ export function deriveState(
   fix: Fix | null,
   permission: 'granted' | 'denied' | 'prompt',
   snapshot: NspSnapshot | null = null,
+  heatSources: HeatSources = NO_HEAT_SOURCES,
 ): Screen {
   const from = positionFrom(fix, permission);
+  // Under a current heat notice the nearby list points at cool places instead
+  // of bushfire places: the hazard at the fix decides which list is drawn.
+  const heat = from !== null && heatSources.cool.length > 0 && heatNoticeAt(now, heatSources, from);
+  const nearby = (fix: LatLon, exclude?: Set<string>): Placed[] =>
+    heat ? nearestCool(fix, heatSources.cool) : nearestSites(fix, snapshot, exclude);
 
   if (packs.length === 0) {
     return from
-      ? { kind: 'NO_PACK', nearby: nearestSites(from, snapshot), confidence: confidenceOf(now, from) }
-      : { kind: 'NO_PACK', nearby: [] };
+      ? { kind: 'NO_PACK', nearby: nearby(from), heat, confidence: confidenceOf(now, from) }
+      : { kind: 'NO_PACK', nearby: [], heat };
   }
 
   // With no fix there is nothing to place a pack by, so this is the caller's
@@ -192,7 +214,8 @@ export function deriveState(
       packs: byMetres
         .map((p) => ({ pack: p.pack, distanceKm: (p.metres - p.pack.radiusKm * 1000) / 1000 }))
         .sort((a, b) => a.distanceKm - b.distanceKm),
-      nearby: nearestSites(from, snapshot),
+      nearby: nearby(from),
+      heat,
       confidence,
     };
 
@@ -219,7 +242,8 @@ export function deriveState(
     kind: 'IN_AREA',
     pack: here.pack,
     places,
-    nearby: nearestSites(from, snapshot, chosenSiteIds),
+    nearby: nearby(from, chosenSiteIds),
+    heat,
     confidence,
     ...(absence ? { absence } : {}),
   };

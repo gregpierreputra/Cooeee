@@ -110,6 +110,13 @@ export async function readConditionCache(): Promise<{ conditions: Condition[]; m
   return { conditions, meta: Object.fromEntries(meta.map((row) => [row.key, row.value])) };
 }
 
+/** What BlackSky needs for a heat day, all from the device: the downloaded
+ *  cool places and the last synced notices with their bookkeeping. */
+export async function readHeatSources(): Promise<{ cool: BundleFacility[]; conditions: Condition[]; meta: Record<string, string> }> {
+  const [cool, cache] = await Promise.all([db.staticFacilities.filter((row) => row.type === 'COOL').toArray(), readConditionCache()]);
+  return { cool, ...cache };
+}
+
 /** THE read API — complete packs only. */
 export const listCompletePacks = (): Promise<Pack[]> =>
   db.packs.where('status').equals('complete').toArray();

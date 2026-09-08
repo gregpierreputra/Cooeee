@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { BLACKSKY_PACK_KEY } from '../src/core/constants';
-import { CHOOSE_PACK, MARK_AT_SAVED_PLACE, NO_GPS_YET, PACK_COVERS_HERE } from '../src/core/copy';
+import { CHOOSE_PACK, MARK_AT_SAVED_PLACE, NEAREST_COOL_PLACES, NO_GPS_YET, PACK_COVERS_HERE } from '../src/core/copy';
 import { titleCase } from '../src/core/home';
 import { HARNESS } from './helpers';
 
@@ -63,4 +63,15 @@ test('the picker says which pack covers the position the arrows are drawn from',
   const tagged = page.locator('.blacksky-pack', { hasText: PACK_COVERS_HERE });
   await expect(tagged).toHaveCount(1);
   await expect(tagged).toContainText('Ferny Creek');
+});
+
+// Under a fresh heat notice at the marked position, the nearby list points at
+// the downloaded cool places, and says so; with no notice it points at the
+// bushfire places of last resort as before.
+test('a current heat notice turns the nearby list into cool places', async ({ page }) => {
+  await page.goto(`${HARNESS}/blacksky?heat=1`);
+  await page.locator('.blacksky-pack').filter({ hasText: 'Kalorama' }).click();
+  await page.getByRole('button', { name: MARK_KALORAMA }).click();
+  await expect(page.getByText(NEAREST_COOL_PLACES)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Belgrave Library' })).toBeVisible();
 });

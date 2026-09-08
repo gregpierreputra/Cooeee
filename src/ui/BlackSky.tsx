@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router';
 import {
   deriveState,
   estimateFix,
+  NO_HEAT_SOURCES,
   positionFrom,
   type Confidence,
+  type HeatSources,
   type Mark as PositionMark,
   type Placed,
   type Screen,
@@ -22,13 +24,14 @@ import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { titleCase } from '../core/home';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
-import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
+import { getNspSnapshot, listCompletePacksWithPlaces, readHeatSources } from '../data/db';
 import HoldButton from './components/HoldButton';
 import { useCompass } from './components/useCompass';
 
 type BlackSkyProps = {
   loadPacks?: () => Promise<PackWithPlaces[]>;
   loadSites?: () => Promise<NspSnapshot | undefined>;
+  loadHeat?: () => Promise<HeatSources>;
 };
 
 /** The BlackSky screen. Every word on it comes from the local pack store and the
@@ -39,9 +42,11 @@ type BlackSkyProps = {
 export default function BlackSky({
   loadPacks = listCompletePacksWithPlaces,
   loadSites = getNspSnapshot,
+  loadHeat = readHeatSources,
 }: BlackSkyProps) {
   const [packs, setPacks] = useState<PackWithPlaces[] | null>(null);
   const [sites, setSites] = useState<NspSnapshot | null>(null);
+  const [heat, setHeat] = useState<HeatSources>(NO_HEAT_SOURCES);
   const [fix, setFix] = useState<Fix | null>(null);
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [mark, setMark] = useState<PositionMark | null>(null);
@@ -92,10 +97,14 @@ export default function BlackSky({
     loadSites().then((snapshot) => {
       if (live && snapshot) setSites(snapshot);
     });
+    // A store that cannot be read leaves the bushfire list in place.
+    loadHeat().then((sources) => {
+      if (live) setHeat(sources);
+    }, () => {});
     return () => {
       live = false;
     };
-  }, [loadPacks, loadSites]);
+  }, [loadPacks, loadSites, loadHeat]);
 
   // The position watch and the screen wake lock, together. Browsers stop
   // delivering positions while the screen is locked or the app is in the
@@ -205,8 +214,8 @@ export default function BlackSky({
     packs.length === 1 ? packs[0] : (packs.find((p) => p.pack.id === chosenId) ?? null);
   const loaded = chosen ? [chosen] : [];
   const screen = estimate
-    ? deriveState(now, loaded, estimate, 'granted', sites)
-    : deriveState(now, loaded, fix, permission, sites);
+    ? deriveState(now, loaded, estimate, 'granted', sites, heat)
+    : deriveState(now, loaded, fix, permission, sites, heat);
   const hasArrows = screen.kind === 'IN_AREA' || ('nearby' in screen && screen.nearby.length > 0);
   const notes = chosen?.notes ?? [];
   // The position the arrows are drawn from, so the picker can say which
@@ -262,7 +271,7 @@ export default function BlackSky({
         // Several packs and none chosen yet: only the live pointer to the
         // nearest official places, from the position, until one is chosen.
         from ? (
-          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+          <NearbyList places={screen.nearby} heat={screen.heat} confidence={screen.confidence} />
         ) : (
           <p className="muted">{copy.NO_GPS_YET}</p>
         )
@@ -324,7 +333,7 @@ function ScreenBody({
       return (
         <>
           <p className="muted">{copy.NO_PACK_HERE}</p>
-          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+          <NearbyList places={screen.nearby} heat={screen.heat} confidence={screen.confidence} />
           <p className="muted">{copy.NO_PACKS_HINT}</p>
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
@@ -372,7 +381,7 @@ function ScreenBody({
               </li>
             ))}
           </ul>
-          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+          <NearbyList places={screen.nearby} heat={screen.heat} confidence={screen.confidence} />
           <section className="card blacksky-guidance">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
             <a href="tel:000">{copy.CALL_TRIPLE_ZERO}</a>
@@ -392,7 +401,7 @@ function ScreenBody({
               <PlacedRow key={place.id} place={place} />
             ))}
           </ul>
-          <NearbyList places={screen.nearby} />
+          <NearbyList places={screen.nearby} heat={screen.heat} />
           <ConfidenceLines confidence={screen.confidence} estimating={estimating} />
           {screen.absence?.reason ? <p className="muted">{screen.absence.reason}</p> : null}
           {screen.pack.reminder ? (
@@ -460,11 +469,11 @@ function ConfidenceLines({
 /** The nearest official places on the state-wide list, from the live fix.
  *  Nothing when there is no fix or no stored list. The confidence lines travel
  *  with it on the screens that have no other figure to hang them on. */
-function NearbyList({ places, confidence }: { places: Placed[]; confidence?: Confidence }) {
+function NearbyList({ places, heat, confidence }: { places: Placed[]; heat: boolean; confidence?: Confidence }) {
   if (places.length === 0) return null;
   return (
     <section className="blacksky-nearby">
-      <span className="kicker">{copy.NEAREST_OFFICIAL_PLACES}</span>
+      <span className="kicker">{heat ? copy.NEAREST_COOL_PLACES : copy.NEAREST_OFFICIAL_PLACES}</span>
       <p className="muted">{copy.SORTED_BY_DISTANCE}</p>
       <ul className="list">
         {places.map((place) => (

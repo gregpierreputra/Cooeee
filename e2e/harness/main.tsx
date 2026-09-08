@@ -356,6 +356,12 @@ if (window.location.pathname === '/blacksky') {
       lon: testCandidate.lon,
     },
   ]);
+  if (new URLSearchParams(window.location.search).get('heat') === '1') {
+    const fresh = new Date().toISOString();
+    await db.staticFacilities.put({ facility_id: 7, type: 'COOL', name: 'Belgrave Library', address: null, lat: -37.909, lon: 145.354, lga_name: null, designation_status: 'designated', last_verified_at: fresh });
+    await db.conditions.put({ condition_id: 'h1', hazard: 'heat', title: 'Heatwave Warning', publisher: 'Bureau of Meteorology', level: null, url: null, statewide: true, rings: [], source_updated_at: fresh });
+    await db.syncMeta.put({ key: 'dynamic_source_last_success_at', value: fresh });
+  }
   document.documentElement.dataset.mode = 'blacksky';
   blackSkyFlow = <BlackSky />;
 }

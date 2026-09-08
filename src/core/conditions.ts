@@ -21,6 +21,10 @@ export function pointInRing(point: LatLon, ring: LatLon[]): boolean {
 export const conditionsAt = (point: LatLon, conditions: Condition[]): Condition[] =>
   conditions.filter((c) => c.statewide || c.rings.some((ring) => pointInRing(point, ring)));
 
+/** Whether a heat notice, fresh by the rule below, names the point right now. */
+export const heatNoticeAt = (now: number, cache: Pick<NearbyCache, 'conditions' | 'meta'>, point: LatLon): boolean =>
+  noticeView(now, cache, point) !== null && conditionsAt(point, cache.conditions).some((c) => c.hazard === 'heat');
+
 export type NoticeView = { lines: string[]; asOf: string };
 
 /** What the screen says about current notices at a point, or null when there is

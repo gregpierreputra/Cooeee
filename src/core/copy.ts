@@ -367,6 +367,8 @@ export const PHONE_MAY_WORK =
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
 export const NEAREST_OFFICIAL_PLACES = 'Nearest official places of last resort';
+// Under a current heat notice at the fix, the same list points at cool places.
+export const NEAREST_COOL_PLACES = 'Heat notice current here. Nearest cool places';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack to load';
