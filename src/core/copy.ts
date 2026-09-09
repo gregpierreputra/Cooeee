@@ -877,6 +877,10 @@ export const PACK_NOT_FINISHED_DETAIL = (count: number) =>
   count > 1
     ? `${count} packs were started on this device and their builds did not finish, so nothing was stored for them.`
     : 'One pack was started on this device and its build did not finish, so nothing was stored for it.';
+/** [DRAFT] pending Sharon's copy review. This is the only line across the four
+ *  stopped states that tells the reader to do something rather than stating a
+ *  fact about the pack, and it is the only one whose sentence does not use the
+ *  action's own words the way the unreadable state's does. Shipped as-is. */
 export const PACK_NOT_FINISHED_NEXT =
   'Building it again while you have a connection is what would make a rehearsal possible.';
 
@@ -924,7 +928,27 @@ export const NO_PACK_OTHERS_DETAIL = (count: number) =>
     ? `${count} other packs are saved here. Open one from Home to rehearse it.`
     : 'One other pack is saved here. Open it from Home to rehearse it.';
 
-// The pack is finished, readable and holds hazard content. The rehearsal
-// itself is a later acceptance criterion, so this screen stops here.
-export const REHEARSAL_READY_PLACEHOLDER = (name: string) =>
-  `${name} holds what a rehearsal runs from. Rehearsals are not open yet.`;
+
+// ── E5-US1-AC1 the disruption a rehearsal runs under ──────────────────────
+// Two conditions, the same two whatever the pack holds. Written as the reader
+// would say them, not as the state a developer would name: what is missing,
+// then what that means when it is.
+
+/** [DRAFT] pending Sharon's copy review (task UX-1 on the E5-US1-AC1 card).
+ *  Two things are hers to settle and are shipped as defaults meanwhile: the
+ *  question form, where EPIC 1's own list instructs instead ("Choose your
+ *  address from the list."), which is likely why a list under a question reads
+ *  less like something to choose from; and the "we", which is the only place in
+ *  the product where the app speaks of itself in the first person. */
+export const CHOOSE_CONDITION_HEADING = 'What are we rehearsing without?';
+export const CONDITION_NO_DATA = 'No mobile data';
+export const CONDITION_NO_DATA_DETAIL =
+  'Nothing loads. Anything the phone did not already have is not there.';
+export const CONDITION_NO_FIX = 'No location fix';
+/** Says what the phone cannot do, without naming the thing it would otherwise
+ *  give you: the obvious phrasing uses words the wording scan forbids, and the
+ *  plainer sentence is the better one anyway. */
+export const CONDITION_NO_FIX_DETAIL = 'The phone cannot work out where it is.';
+/** What the next screen states, so the chosen condition is carried in words the
+ *  user can check against what they just tapped. */
+export const REHEARSING_WITHOUT = (label: string) => `Rehearsing without: ${label}`;

@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../core/rehearsal-entry';
 import { readRehearsalSource } from '../../data/db';
+import Condition from './Condition';
 import StatusPage from '../components/StatusPage';
 
 type EntryProps = {
@@ -48,15 +49,11 @@ export default function RehearsalEntry({
 
   if (gate === null) return null;
 
-  if (gate.state === 'ready') {
-    return (
-      <StatusPage
-        page="rehearsal-entry"
-        kicker={copy.REHEARSAL_LABEL}
-        card={<p>{copy.REHEARSAL_READY_PLACEHOLDER(gate.packName)}</p>}
-      />
-    );
-  }
+  // E5-US1-AC1 — a pack that CAN be rehearsed goes straight to the choice of
+  // condition. The gate decides first and this is its only readable outcome, so
+  // a pack that cannot be rehearsed never reaches an empty choice: it gets one
+  // of the four stated screens below instead.
+  if (gate.state === 'ready') return <Condition packId={gate.packId} />;
 
   // The pack the user came from, offered only where the gate actually read one.
   // A store that could not be opened knows of no pack, so it offers no way back

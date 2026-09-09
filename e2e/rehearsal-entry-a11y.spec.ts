@@ -173,7 +173,8 @@ const contrastRows = (page: import('@playwright/test').Page) =>
       }
       return [255, 255, 255];
     };
-    return [...document.querySelectorAll<HTMLElement>('.kicker, .card h2, .card p, .actions a')].map(
+    const selector = '.kicker, .card h2, .card p, .actions a, h2, .condition-action span';
+    return [...document.querySelectorAll<HTMLElement>(selector)].map(
       (el) => {
         const style = getComputedStyle(el);
         const foreground = relativeLuminance(channels(style.color));
@@ -228,4 +229,156 @@ test('AC4 nothing to rehearse fills no action, because none of them fixes it', a
     'Build an offline pack',
     'Back to Home',
   ]);
+});
+
+// E5-US1-AC1 — the choice of condition, held to the same four checks. It is a
+// different shape from the four stopped states (a heading and two rows rather
+// than a heading and paragraphs), so it is measured on its own terms rather
+// than folded into the loops above.
+const CONDITION = `${ORIGIN}/rehearse?mode=rehearsable`;
+const CHOOSE_HEADING = 'What are we rehearsing without?';
+
+test('AC1 the choice survives 200% text with no clipping or overlap', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto(CONDITION);
+  await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
+
+  const rowHeight = async () =>
+    Math.round((await page.locator('.condition-action').first().boundingBox())!.height);
+  const before = await rowHeight();
+
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect
+    .poll(async () => (await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)))
+    .toBe('32px');
+
+  // The check has to bite: the rows must actually have reflowed.
+  expect(await rowHeight()).toBeGreaterThan(before);
+
+  const report = await page.evaluate(() => {
+    const doc = document.documentElement;
+    const overflowing: string[] = [];
+    const clipped: string[] = [];
+    document.querySelectorAll<HTMLElement>('main *').forEach((el) => {
+      const box = el.getBoundingClientRect();
+      if (box.right > doc.clientWidth + 1 || box.left < -1) overflowing.push(el.tagName + '.' + el.className);
+      if (el.scrollHeight > el.clientHeight + 1 && getComputedStyle(el).overflowY === 'hidden') {
+        clipped.push(el.tagName + '.' + el.className);
+      }
+    });
+    // The two rows must not collide with each other or with the heading.
+    const blocks = [...document.querySelectorAll<HTMLElement>('h2, .condition-action')].map((el) => {
+      const box = el.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom, text: (el.textContent ?? '').slice(0, 30) };
+    });
+    const overlaps: string[] = [];
+    for (let i = 1; i < blocks.length; i += 1) {
+      if (blocks[i].top < blocks[i - 1].bottom - 1) overlaps.push(blocks[i - 1].text + ' / ' + blocks[i].text);
+    }
+    return {
+      overflowing,
+      clipped,
+      overlaps,
+      horizontalScroll: document.body.scrollWidth > doc.clientWidth + 1,
+      rows: document.querySelectorAll('.condition-action').length,
+    };
+  });
+
+  expect(report.overlaps).toEqual([]);
+  expect(report.clipped).toEqual([]);
+  expect(report.overflowing).toEqual([]);
+  expect(report.horizontalScroll).toBe(false);
+  // Both conditions are still readable, not one pushed out of the layout.
+  expect(report.rows).toBe(2);
+});
+
+test('AC1 every row and the action meet the minimum target size', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto(CONDITION);
+  await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
+
+  const targets = await page.locator('.condition-action, .actions a').all();
+  expect(targets).toHaveLength(3);
+  for (const target of targets) {
+    const box = await target.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(24);
+    expect(box!.height).toBeGreaterThanOrEqual(24);
+  }
+});
+
+test('AC1 the choice meets the contrast minimum on every element', async ({ page }) => {
+  await page.goto(CONDITION);
+  await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
+
+  const rows = await contrastRows(page);
+  // Kicker, heading, both condition rows and the action.
+  expect(rows.length).toBeGreaterThanOrEqual(5);
+  const failing = rows.filter((row) => row.ratio < row.required);
+  expect(failing, JSON.stringify(failing)).toEqual([]);
+});
+
+test('AC1 kicker, heading, rows and action are in reading order', async ({ page }) => {
+  await page.goto(CONDITION);
+  await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
+
+  const order = await page.evaluate(() =>
+    [...document.querySelectorAll('.kicker, h2, .condition-action, .actions a')].map((el) => ({
+      tag: el.tagName,
+      className: el.className,
+      text: el.textContent ?? '',
+    })),
+  );
+
+  const kicker = order.findIndex((entry) => entry.className.includes('kicker'));
+  const head = order.findIndex((entry) => entry.tag === 'H2');
+  const firstRow = order.findIndex((entry) => entry.className.includes('condition-action'));
+  const action = order.findIndex((entry) => entry.tag === 'A');
+
+  expect(kicker).toBeGreaterThanOrEqual(0);
+  expect(head).toBeGreaterThan(kicker);
+  expect(firstRow).toBeGreaterThan(head);
+  expect(action).toBeGreaterThan(firstRow);
+});
+
+// E5-US1-AC1 — the two conditions must read as equals, so they are shown as
+// equals: the rows are held level by the grid, not left to follow sentence
+// length. Asserted at normal type and at 200%, because a fixed minimum height
+// would hold at one and fail at the other, and because a future wording change
+// is exactly what would reintroduce the difference silently.
+test('AC1 the condition rows are the same height, at normal type and at 200%', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto(CONDITION);
+  await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
+
+  const heights = async () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('.condition-action')].map((el) =>
+        Math.round(el.getBoundingClientRect().height),
+      ),
+    );
+
+  const atNormal = await heights();
+  expect(atNormal).toHaveLength(2);
+  expect(atNormal[0]).toBe(atNormal[1]);
+
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect
+    .poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize))
+    .toBe('32px');
+
+  const atDouble = await heights();
+  expect(atDouble).toHaveLength(2);
+  expect(atDouble[0]).toBe(atDouble[1]);
+  // The check has to bite: the rows must actually have grown.
+  expect(atDouble[0]).toBeGreaterThan(atNormal[0]);
+
+  // The taller sentence is what sets the height; the shorter row matches it
+  // rather than the other way round, so neither row is cropped to fit.
+  const detailHeights = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('.condition-detail')].map((el) =>
+      Math.round(el.getBoundingClientRect().height),
+    ),
+  );
+  expect(Math.max(...detailHeights)).toBeLessThanOrEqual(atDouble[0]);
 });

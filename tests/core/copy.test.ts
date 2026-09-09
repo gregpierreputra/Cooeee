@@ -495,21 +495,35 @@ describe('the rehearsal entry gate', () => {
     expect(copy.UNREADABLE_PART_NAMES['the-whole-pack']).toBe('the whole pack');
   });
 
-  // A user-facing screen says nothing about branches, changes or releases.
-  it('the ready placeholder is readable by someone who has never seen the code', () => {
-    expect(copy.REHEARSAL_READY_PLACEHOLDER('Kalorama')).toBe(
-      'Kalorama holds what a rehearsal runs from. Rehearsals are not open yet.',
-    );
-    expect(copy.REHEARSAL_READY_PLACEHOLDER('Kalorama')).not.toMatch(
-      /\bchange\b|\bbranch\b|\brelease\b|\bbuilt in\b|\bimplement/i,
-    );
-  });
-
   it('a device with no pack is offered one, and is never told it has none when it has one', () => {
     expect(copy.NO_PACK_TO_REHEARSE).toBe('No pack is stored on this device');
     expect(copy.NO_PACK_ELSEWHERE).toBe('That pack is not on this device');
     expect(copy.NO_PACK_TO_REHEARSE_DETAIL).toBe(
       'A rehearsal runs from a saved pack: the official information for one address, kept on this phone so it opens without signal.',
+    );
+  });
+});
+
+// E5-US1-AC1 — the two conditions a rehearsal can run under. Both are stated as
+// what is missing, then what that means when it is, and neither is ranked.
+describe('the choice of condition', () => {
+  it('asks what the rehearsal is run without', () => {
+    expect(copy.CHOOSE_CONDITION_HEADING).toBe('What are we rehearsing without?');
+  });
+
+  it('states each condition in plain words rather than as a technical state', () => {
+    expect(copy.CONDITION_NO_DATA).toBe('No mobile data');
+    expect(copy.CONDITION_NO_DATA_DETAIL).toBe(
+      'Nothing loads. Anything the phone did not already have is not there.',
+    );
+    expect(copy.CONDITION_NO_FIX).toBe('No location fix');
+    expect(copy.CONDITION_NO_FIX_DETAIL).toBe('The phone cannot work out where it is.');
+  });
+
+  it('carries exactly the chosen condition to the next screen', () => {
+    expect(copy.REHEARSING_WITHOUT('No mobile data')).toBe('Rehearsing without: No mobile data');
+    expect(copy.REHEARSING_WITHOUT('No location fix')).toBe(
+      'Rehearsing without: No location fix',
     );
   });
 });

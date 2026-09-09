@@ -274,7 +274,6 @@ describe('what each stopped state says', () => {
     copy.NO_PACK_OTHERS_DETAIL(0),
     copy.NO_PACK_OTHERS_DETAIL(1),
     copy.NO_PACK_OTHERS_DETAIL(4),
-    copy.REHEARSAL_READY_PLACEHOLDER('Kalorama'),
     ...Object.values(copy.UNREADABLE_PART_NAMES),
   ];
 
@@ -288,7 +287,7 @@ describe('what each stopped state says', () => {
     );
     expect(named).toEqual([]);
     // The list itself must not quietly shrink to nothing and pass on emptiness.
-    expect(EVERY_REHEARSAL_STRING.length).toBeGreaterThanOrEqual(25);
+    expect(EVERY_REHEARSAL_STRING.length).toBeGreaterThanOrEqual(24);
     EVERY_REHEARSAL_STRING.forEach((line) => expect(line.length).toBeGreaterThan(0));
   });
 
@@ -311,7 +310,6 @@ describe('what each stopped state says', () => {
       copy.NO_PACK_TO_REHEARSE_DETAIL,
       copy.NO_PACK_OTHERS_DETAIL(1),
       copy.NO_PACK_OTHERS_DETAIL(4),
-      copy.REHEARSAL_READY_PLACEHOLDER('Kalorama'),
       copy.REHEARSE_THIS_PACK,
       copy.REHEARSAL_LABEL,
     ].join(' ');
@@ -360,8 +358,7 @@ describe('what each stopped state says', () => {
     expect(copy.NO_PACK_OTHERS_DETAIL(4)).toContain('4 other packs are saved');
   });
 
-  it('the ready state promises no rehearsal it does not yet run', () => {
-    expect(copy.REHEARSAL_READY_PLACEHOLDER('Kalorama')).toContain('Kalorama');
+  it('the empty-pack line carries the saved date in the product format', () => {
     expect(copy.NOTHING_TO_REHEARSE_DETAIL('Kalorama', '3 March 2026')).toContain('3 March 2026');
   });
 });

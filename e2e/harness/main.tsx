@@ -546,12 +546,18 @@ if (window.location.pathname === '/rehearse') {
   // A pack of absences: the layer is published and maps nothing at the
   // address, and the CFA list publishes no place for the area. Both are real
   // stored rows, and neither is something to rehearse.
+  //
+  // 'rehearsable' is the one mode whose layer records a designation PRESENT at
+  // the address. The status is chosen HERE, before the manifest is built, so
+  // the stored row still hashes to what the pack recorded: a row altered after
+  // the manifest would be withheld, and the gate would report the pack
+  // unreadable rather than rehearsable.
   const rehearseLayer: ExposureLayer = {
     id: 'rehearse-pack:BPA',
     packId: 'rehearse-pack',
     group: 'designation',
     code: 'BPA',
-    status: 'none-mapped-here',
+    status: rehearseMode === 'rehearsable' ? 'present' : 'none-mapped-here',
     features: [],
     checkedAt: rehearseSavedAt,
     source: { ...packSource, retrievedAt: rehearseSavedAt },

@@ -1995,3 +1995,69 @@ input {
     color: #000;
   }
 }
+/* E5-US1-AC1 — the two conditions a rehearsal can run under. IDENTICAL rows:
+   same treatment, same weight, same target, in a fixed order that is
+   presentation only. Nothing here may make one read as likelier, more realistic
+   or more serious than the other, so there is no first-row rule, no accent and
+   no icon. The screen carries no filled control at all: the filled control
+   means "this is what would fix it", and choosing a disruption fixes nothing.
+
+   The row treatment itself is .candidate-action, the address list's own rule,
+   worn as a second class rather than copied: the two tappable-row lists in this
+   product are then literally the same row, and cannot drift. Everything below
+   adds only the second line. */
+/* The rows are made equal in height, deliberately. Two conditions that must
+   read as equals are shown as equals, the same position this stylesheet already
+   takes where absence cards are given the presence card's treatment, and the
+   same one EPIC 2 takes in sorting official places by distance rather than by
+   worth. Left to itself the taller sentence would make its row a fifth taller
+   than its neighbour, and a reader cannot tell a longer sentence from a heavier
+   option.
+
+   A grid rather than a min-height: grid-auto-rows: 1fr holds the rows level at
+   any type size, where a fixed minimum would be overrun the moment the text
+   grew.
+
+   The content stays top-aligned, so the shorter row carries space beneath its
+   text. Centring it would pull that row's label off the line its neighbour's
+   label sits on, and two labels starting on the same line does more for "these
+   are equals" than a filled card does. The space below is the honest
+   consequence of one sentence being shorter, inside a card the same size as its
+   neighbour. */
+.condition-list {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 0.75rem;
+}
+
+.condition-list li {
+  display: grid;
+}
+
+.condition-action {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  height: 100%;
+}
+
+.condition-label {
+  font-weight: var(--w-heavy);
+}
+
+/* NOT .muted. Muted is this product's convention for passive explanatory prose,
+   and a control whose second line is muted reads as a card of text rather than
+   as something to tap. Every line of an address candidate row is full-strength
+   control text, and so is every line of this one.
+
+   The second line is subordinated by SIZE instead, which is how this product
+   already quiets a supporting line on a card (.saved-place .muted,
+   .nearby-health, label). Colour would put the row back to reading as prose,
+   and weight alone leaves the detail twice the label's height and still
+   outweighing it. At --step-s the line is below the large-text threshold, so it
+   is held to the full 4.5:1 rather than 3:1, and the standing contrast spec
+   measures it. */
+.condition-detail {
+  color: var(--ink);
+  font-size: var(--step-s);
+}
