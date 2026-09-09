@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import * as copy from '../core/copy';
 import { postGate } from '../data/gate';
+import Mark from './components/Mark';
 import { useOnline } from './components/useOnline';
 
 const LOCK_FALLBACK_S = 60;
@@ -44,13 +45,14 @@ export default function Gate({ onPass }: { onPass: () => void }) {
   }
 
   return (
-    <main className="page first-open gate">
+    <main className="page gate">
       <header className="hero first-open-hero">
-        <h1>{copy.GATE_TITLE}</h1>
+        <Mark className="mark" size={44} />
+        <h1>{copy.APP_NAME}</h1>
         <p className="muted">{copy.GATE_LINE}</p>
       </header>
 
-      <form id="gate-form" className="card" onSubmit={submit}>
+      <form id="gate-form" className="gate-form" onSubmit={submit}>
         <label htmlFor="gate-password">{copy.GATE_TITLE}</label>
         <input
           id="gate-password"
@@ -61,7 +63,7 @@ export default function Gate({ onPass }: { onPass: () => void }) {
           disabled={locked || !online}
           onChange={(e) => setPassword(e.currentTarget.value)}
         />
-        <p className="muted" role="status" aria-live="polite">
+        <p className="muted gate-status" role="status" aria-live="polite">
           {status}
         </p>
       </form>

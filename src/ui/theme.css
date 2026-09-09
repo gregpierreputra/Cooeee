@@ -1480,17 +1480,37 @@ input {
    control, and the first-open disclosure, which stands before the router. Both
    keep the plain bottom padding. */
 .blacksky,
-.first-open {
+.first-open,
+.gate {
   padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
 }
 
-/* ── Development gate (feature 1): a true black page, one field, one button ── */
-body:has(.gate) {
-  background: #000;
+/* ── Development gate (feature 1) ──────────────────────────────────────────── */
+
+/* One short block, so it sits at the optical centre of the screen rather than
+   leaving the button stranded at the bottom. Same hero as the first-open
+   screen; the field stands on the page with no card around it. */
+.gate {
+  justify-content: center;
 }
-.gate form {
+
+.gate .actions {
+  margin-top: 0;
+}
+
+.gate-form {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.5rem;
+}
+
+.gate-form input {
+  letter-spacing: 0.12em;
+}
+
+/* Holds its line while empty, so the field and button do not jump when a
+   message arrives. */
+.gate-status {
+  min-height: 1.5em;
 }
 
 /* ── First open (E1-US1-AC0) ───────────────────────────────────────────────── */
