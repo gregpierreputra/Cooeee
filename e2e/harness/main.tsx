@@ -15,6 +15,7 @@ import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
 import Recover from '../../src/ui/Recover';
+import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BottomNav from '../../src/ui/components/BottomNav';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
@@ -530,6 +531,64 @@ if (window.location.pathname === '/nearby') {
   nearbyFlow = <Nearby now={nearbyNow} fetcher={async () => { throw new Error('no network'); }} />;
 }
 
+// E5-US1-AC4. The rehearsal entry gate, at a fixed instant, over a pack seeded
+// straight into IndexedDB so the two demonstrable states are exact rather than
+// clock- or build-dependent. The gate reads the device through the real
+// readRehearsalSource, so what is asserted is the real path.
+const rehearseMode = new URLSearchParams(window.location.search).get('mode') ?? 'empty';
+const rehearseNow = Date.UTC(2026, 8, 3, 2);
+let rehearseFlow = confirmation;
+if (window.location.pathname === '/rehearse') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  // 3 March 2026 in Melbourne, so the saved date on screen is the exact
+  // day, full month, year form.
+  const rehearseSavedAt = Date.UTC(2026, 2, 3);
+  // A pack of absences: the layer is published and maps nothing at the
+  // address, and the CFA list publishes no place for the area. Both are real
+  // stored rows, and neither is something to rehearse.
+  const rehearseLayer: ExposureLayer = {
+    id: 'rehearse-pack:BPA',
+    packId: 'rehearse-pack',
+    group: 'designation',
+    code: 'BPA',
+    status: 'none-mapped-here',
+    features: [],
+    checkedAt: rehearseSavedAt,
+    source: { ...packSource, retrievedAt: rehearseSavedAt },
+  };
+  const rehearseAbsence = absenceRow('rehearse-pack', 'Yarra Ranges', {
+    ...cfaSource,
+    retrievedAt: rehearseSavedAt,
+  });
+  await db.packs.put({
+    ...savedPack,
+    id: 'rehearse-pack',
+    name: 'Kalorama',
+    address: testCandidate.address,
+    verifiedAt: rehearseSavedAt,
+    manifest: {
+      version: 1,
+      groups: {
+        layers: await manifestGroup([rehearseLayer]),
+        destinations: await manifestGroup([rehearseAbsence]),
+        recovery: { count: 0, sha256: '' },
+        tiles: { count: 0, bytes: 0 },
+      },
+    },
+  });
+  await db.layers.put(rehearseLayer);
+  // 'empty' stores exactly the row the manifest hashed. 'unreadable' stores a
+  // row altered after the save, so the group no longer matches its own hash
+  // and the read withholds it — the real "could not be read" path, not a
+  // simulated one.
+  await db.destinations.put(
+    rehearseMode === 'unreadable'
+      ? { ...rehearseAbsence, reason: 'Altered on the device after the pack was saved.' }
+      : rehearseAbsence,
+  );
+  rehearseFlow = <RehearsalEntry packId="rehearse-pack" now={rehearseNow} />;
+}
+
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
@@ -557,6 +616,7 @@ createRoot(root).render(
         : window.location.pathname === '/destinations' ? destinationsFlow
         : window.location.pathname === '/nearby' ? nearbyFlow
         : window.location.pathname === '/recover' ? recoverFlow
+        : window.location.pathname === '/rehearse' ? rehearseFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

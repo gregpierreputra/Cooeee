@@ -8,6 +8,7 @@ import {
   listCompletePacks,
   listCompletePacksWithPlaces,
   putNote,
+  readRehearsalSource,
   sweepBuilding,
 } from '../../src/data/db';
 import { fileMeta, manifestGroup, sha256Hex } from '../../src/data/integrity';
@@ -292,5 +293,87 @@ describe('read-time verification of every manifest group', () => {
       destinations: [destination()], contentVerified: true, recoveryVerified: true,
     });
     expect(await listCompletePacksWithPlaces()).toMatchObject([{ places: [destination()], placesVerified: true }]);
+  });
+});
+
+// E5-US1-AC4 — the one read behind the rehearsal entry gate. It exists because
+// the complete-pack read API deliberately cannot tell a pack that was never
+// finished from no pack at all, and the gate has to.
+describe('the rehearsal entry gate reads the device', () => {
+  /** Every table the gate could conceivably reach, as it stands right now. */
+  const snapshotStores = async () => ({
+    packs: await db.packs.toArray(),
+    layers: await db.layers.toArray(),
+    destinations: await db.destinations.toArray(),
+    files: await db.files.toArray(),
+    notes: await db.notes.toArray(),
+    programs: await db.programs.toArray(),
+  });
+
+  it('counts an unfinished build without returning any of its rows', async () => {
+    await stage('half', 'building');
+
+    const read = await readRehearsalSource('half');
+    expect(read).toEqual({ completeCount: 0, unfinishedCount: 1, content: null });
+  });
+
+  it('reports no pack at all as a different reading from an unfinished build', async () => {
+    expect(await readRehearsalSource('nothing')).toEqual({
+      completeCount: 0,
+      unfinishedCount: 0,
+      content: null,
+    });
+  });
+
+  it('counts the complete packs that are stored, so an empty device is never claimed', async () => {
+    await db.packs.put(pack({ id: 'other' }));
+
+    expect(await readRehearsalSource('missing')).toMatchObject({
+      completeCount: 1,
+      unfinishedCount: 0,
+      content: null,
+    });
+  });
+
+  it('returns a complete pack with its rows', async () => {
+    await db.packs.put(pack());
+    await db.layers.put(layer('pack-1'));
+
+    const read = await readRehearsalSource('pack-1');
+    expect(read).toMatchObject({ completeCount: 1, unfinishedCount: 0 });
+    expect(read.content).toMatchObject({ pack: { id: 'pack-1' } });
+  });
+
+  it('reports a store that cannot be read rather than throwing at the screen', async () => {
+    const broken = new Error('the store could not be opened');
+    const original = db.packs.where;
+    db.packs.where = (() => {
+      throw broken;
+    }) as typeof db.packs.where;
+    try {
+      expect(await readRehearsalSource('pack-1')).toEqual({
+        completeCount: 0,
+        unfinishedCount: 0,
+        content: 'unreadable',
+      });
+    } finally {
+      db.packs.where = original;
+    }
+  });
+
+  // The criterion: no rehearsal record is created in any state. There is no
+  // rehearsal store yet, so what is asserted is that nothing at all changed on
+  // the device in any of the four readings, and in the fifth.
+  it('writes nothing, in any state the gate can reach', async () => {
+    await db.packs.put(pack());
+    await db.layers.put(layer('pack-1'));
+    await stage('half', 'building');
+    const before = await snapshotStores();
+
+    for (const id of ['pack-1', 'half', 'never-existed']) {
+      await readRehearsalSource(id);
+    }
+
+    expect(await snapshotStores()).toEqual(before);
   });
 });

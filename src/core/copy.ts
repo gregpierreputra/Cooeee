@@ -855,3 +855,76 @@ export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
 };
 export const HEALTH_LINE = (source: string, status: string, when: string) =>
   `${source}: ${status}, last updated ${when}`;
+
+// ── E5-US1-AC4 the rehearsal entry gate ───────────────────────────────────
+// Four states, four screens. Each names what is missing from the PACK. None of
+// them says anything about the reader: a pack that is not finished is a
+// statement about a download, not about the person holding the phone.
+
+export const REHEARSAL_LABEL = 'Rehearsal';
+export const REHEARSE_THIS_PACK = 'Rehearse this pack';
+/** The way back to the pack the user came from, offered only where there is a
+ *  readable pack to go back to. */
+export const BACK_TO_THIS_PACK = 'Back to this pack';
+
+// The pack exists and its build never finished.
+export const PACK_NOT_FINISHED = 'This pack was not finished';
+/** Defensive at zero rather than trusting every caller to have checked. The
+ *  gate only reaches this state with at least one unfinished build, but a
+ *  sentence beginning "0 packs" is the kind of line that reaches a screen once
+ *  a later caller forgets, so the singular wording covers it instead. */
+export const PACK_NOT_FINISHED_DETAIL = (count: number) =>
+  count > 1
+    ? `${count} packs were started on this device and their builds did not finish, so nothing was stored for them.`
+    : 'One pack was started on this device and its build did not finish, so nothing was stored for it.';
+export const PACK_NOT_FINISHED_NEXT =
+  'Building it again while you have a connection is what would make a rehearsal possible.';
+
+// The pack is finished and readable, and holds nothing a rehearsal runs from.
+export const NOTHING_TO_REHEARSE = 'This pack holds nothing to rehearse';
+/** Names no single hazard. One pack carries more than one, so a sentence that
+ *  named bushfire alone would be wrong for the rest of what the pack holds. */
+export const NOTHING_TO_REHEARSE_DETAIL = (name: string, savedOn: string) =>
+  `${name}, saved ${savedOn}, holds no designation recorded for its address, and no official place saved with it.`;
+export const NOTHING_TO_REHEARSE_NEXT =
+  'A rehearsal runs from one of those two. Building this pack again, once the official information covers this address, is what would add them.';
+
+// The pack could not be read back from the device.
+export const PACK_COULD_NOT_BE_READ = 'This pack could not be read';
+export const UNREADABLE_PART_NAMES: Record<string, string> = {
+  'stored-items': 'the stored information items',
+  'saved-places': 'the saved places',
+  'the-whole-pack': 'the whole pack',
+};
+/** Joins the named parts into one readable phrase. */
+export const AND_LIST = (items: string[]): string =>
+  items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+export const PACK_COULD_NOT_BE_READ_DETAIL = (parts: string) =>
+  `Cooeee read this pack from the device, and ${parts} did not match what the pack recorded, so they were not used.`;
+export const PACK_STORE_UNREADABLE_DETAIL =
+  'The pack store on this device could not be opened, so nothing about this pack could be read.';
+/** Says what would restore the pack in the words the action itself uses. It
+ *  does NOT say "build this pack again": the build flow starts from an address
+ *  search and does not carry this pack's address into it, so a sentence or a
+ *  button promising to rebuild THIS pack would be a promise the next screen
+ *  breaks. */
+export const PACK_COULD_NOT_BE_READ_NEXT =
+  'An offline pack built for this address again would restore it.';
+
+// Nothing is stored at all.
+export const NO_PACK_TO_REHEARSE = 'No pack is stored on this device';
+export const NO_PACK_ELSEWHERE = 'That pack is not on this device';
+export const NO_PACK_TO_REHEARSE_DETAIL =
+  'A rehearsal runs from a saved pack: the official information for one address, kept on this phone so it opens without signal.';
+/** Defensive at zero for the same reason: the screen only asks for this line
+ *  when another pack is saved, and "0 other packs are saved here" would be a
+ *  false statement if that ever stopped being true. */
+export const NO_PACK_OTHERS_DETAIL = (count: number) =>
+  count > 1
+    ? `${count} other packs are saved here. Open one from Home to rehearse it.`
+    : 'One other pack is saved here. Open it from Home to rehearse it.';
+
+// The pack is finished, readable and holds hazard content. The rehearsal
+// itself is a later acceptance criterion, so this screen stops here.
+export const REHEARSAL_READY_PLACEHOLDER = (name: string) =>
+  `${name} holds what a rehearsal runs from. Rehearsals are not open yet.`;

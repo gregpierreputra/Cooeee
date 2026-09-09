@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { NOTE_MAX_CHARS } from '../core/constants';
+import type { RehearsalInput } from '../core/rehearsal-entry';
 import type {
   BundleFacility,
   BundlePostcode,
@@ -107,6 +108,30 @@ export async function deleteOwnedRows(packIds: string[]): Promise<void> {
 /** THE read API — complete packs only. */
 export const listCompletePacks = (): Promise<Pack[]> =>
   db.packs.where('status').equals('complete').toArray();
+
+/** E5-US1-AC4 — everything the rehearsal entry gate needs, in one read.
+ *
+ *  The gate has to tell a pack that was never finished apart from no pack at
+ *  all, and the complete-pack read API deliberately cannot: a building pack is
+ *  invisible through it. So the two statuses are COUNTED here. Counts only, so
+ *  no row of a half-built pack leaves this file, which is the rule the whole
+ *  file is written to. A store that cannot be opened is reported as such
+ *  rather than thrown, because "could not be read" is one of the four states
+ *  the gate states and not an error the screen has to invent.
+ *
+ *  This function reads. It writes nothing, and nothing it calls writes. */
+export async function readRehearsalSource(packId: string): Promise<Omit<RehearsalInput, 'now'>> {
+  try {
+    const [completeCount, unfinishedCount, content] = await Promise.all([
+      db.packs.where('status').equals('complete').count(),
+      db.packs.where('status').equals('building').count(),
+      getCompletePackContent(packId),
+    ]);
+    return { completeCount, unfinishedCount, content: content ?? null };
+  } catch {
+    return { completeCount: 0, unfinishedCount: 0, content: 'unreadable' };
+  }
+}
 
 /** The CFA site list for BlackSky: written whole, read whole. */
 export const putNspSnapshot = (snapshot: NspSnapshot): Promise<string> =>

@@ -211,6 +211,15 @@ export default function PackDetail({
         <PackNotes packId={content.pack.id} notes={content.notes} />
       </Section>
 
+      {/* E5-US1-AC4 — the only way into a rehearsal. It always leads to the
+          gate, never straight into a rehearsal: whether one can start at all
+          is decided there, from what this pack actually holds. */}
+      <div className="actions">
+        <Link className="action" to={`/rehearse/${content.pack.id}`}>
+          {copy.REHEARSE_THIS_PACK}
+        </Link>
+      </div>
+
       {offlineSource ? (
         <div className="sheet-backdrop">
           <section
