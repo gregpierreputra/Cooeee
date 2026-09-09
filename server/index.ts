@@ -15,6 +15,8 @@ if (!/^[A-Za-z0-9._/:-]+$/.test(DB_PATH)) {
 }
 const PORT = Number(process.env.PORT ?? 8787);
 const HOST = process.env.HOST ?? '127.0.0.1';
+const GATE_PASSWORD = process.env.GATE_PASSWORD;
+if (!GATE_PASSWORD) console.error('[gate] GATE_PASSWORD is not set; the gate answers 503');
 const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 const BACKUPS_KEPT = 7;
@@ -65,7 +67,7 @@ void runDueStaticJobs();
 setInterval(() => void runDueStaticJobs(), HOUR_MS);
 startPoller(db);
 
-createApi(db).listen(PORT, HOST, () => {
+createApi(db, GATE_PASSWORD).listen(PORT, HOST, () => {
   console.info(`[api] listening on http://${HOST}:${PORT} (database ${DB_PATH})`);
 });
 

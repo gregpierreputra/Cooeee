@@ -130,6 +130,9 @@ npm run server
 
 It listens on localhost port 8787. The Vite dev server proxies `/api` to it. `PORT`, `HOST` and
 `DB_PATH` override the defaults. The database file lives in `server/data` and is git ignored.
+`GATE_PASSWORD` is the development password that `/api/v1/gate` checks before anyone reaches the
+app. It is read from the git ignored `.env` file locally and from a service variable on Railway,
+so it is never in the repository.
 
 * The client syncs the static and dynamic snapshots into IndexedDB and answers every query on
   the device. Nothing the user types leaves the phone.

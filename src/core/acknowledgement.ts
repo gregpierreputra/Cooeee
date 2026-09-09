@@ -13,31 +13,39 @@ export type FlagStore = {
  *  asked, never held as a second copy of the same fact. */
 type OpeningScreen = 'first-open' | 'prepared';
 
-/** True only for the exact marker this version of the screen writes. Anything
- *  else — absent, empty, a stale value, a value from another origin's key, or a
- *  store that throws on read — is "not acknowledged", so the screen is shown
- *  again rather than the app being blocked or silently skipped. */
-export function readAcknowledgement(store: FlagStore | null): boolean {
+/** True only for the exact marker written under this key. Anything else — absent,
+ *  empty, a stale value, a value from another origin's key, or a store that
+ *  throws on read — reads as false, so the screen is shown again rather than
+ *  the app being blocked or silently skipped. */
+export function readFlag(store: FlagStore | null, key: string, value: string): boolean {
   if (!store) return false;
   try {
-    return store.getItem(ACKNOWLEDGEMENT_KEY) === ACKNOWLEDGEMENT_VALUE;
+    return store.getItem(key) === value;
   } catch {
     return false;
   }
 }
 
-/** Records the acknowledgement and reports whether it will survive to the next
- *  open. A store that refuses the write returns false; the caller still moves
- *  the user on, because a browser that cannot keep the flag is a reason to ask
- *  again next time, not a reason to trap someone on this screen. */
-export function writeAcknowledgement(store: FlagStore | null): boolean {
+/** Records the marker and reports whether it will survive to the next open. A
+ *  store that refuses the write returns false; the caller still moves the user
+ *  on, because a browser that cannot keep the flag is a reason to ask again
+ *  next time, not a reason to trap someone on this screen. */
+export function writeFlag(store: FlagStore | null, key: string, value: string): boolean {
   if (!store) return false;
   try {
-    store.setItem(ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE);
+    store.setItem(key, value);
   } catch {
     return false;
   }
-  return readAcknowledgement(store);
+  return readFlag(store, key, value);
+}
+
+export function readAcknowledgement(store: FlagStore | null): boolean {
+  return readFlag(store, ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE);
+}
+
+export function writeAcknowledgement(store: FlagStore | null): boolean {
+  return writeFlag(store, ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE);
 }
 
 export function openingScreen(store: FlagStore | null): OpeningScreen {

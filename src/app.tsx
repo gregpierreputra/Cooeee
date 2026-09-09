@@ -3,11 +3,13 @@ import { BrowserRouter, Route, Routes, useLocation, useNavigate, useParams } fro
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
 import * as copy from './core/copy';
+import { readGate, writeGate } from './core/gate';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
 import About from './ui/About';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
+import Gate from './ui/Gate';
 import Home from './ui/Home';
 import Nearby from './ui/Nearby';
 import AppHeader from './ui/components/AppHeader';
@@ -114,12 +116,25 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // which a route renders behind it. A store that cannot be read reads as "not
   // acknowledged", which shows the screen rather than blocking the app.
   const [screen, setScreen] = useState(() => openingScreen(localFlagStore()));
+  // Feature 1: the development gate stands in front of the disclosure itself.
+  const [passed, setPassed] = useState(() => readGate(localFlagStore()));
 
   // The CFA site list into IndexedDB, so BlackSky can point at the nearest
   // official places with the radios off. A failed copy costs nothing now.
   useEffect(() => {
     cacheNspSnapshot().catch(() => {});
   }, []);
+
+  if (!passed) {
+    return (
+      <Gate
+        onPass={() => {
+          writeGate(localFlagStore());
+          setPassed(true);
+        }}
+      />
+    );
+  }
 
   if (screen === 'first-open') {
     return (

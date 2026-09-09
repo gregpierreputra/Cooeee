@@ -3,9 +3,10 @@ import { FACILITY_SOURCE } from '../src/core/facility-sources.ts';
 import type { DynamicSnapshot, FacilityType, SourceHealth, StaticBundle } from '../src/core/types.ts';
 import { type Db, nowIso } from './db.ts';
 import { findNearest, type Point } from './geo.ts';
+import { checkGate, readJson } from './gate.ts';
 import { dataHealth } from './sources.ts';
 
-type Route = { status: number; body: unknown };
+export type Route = { status: number; body: unknown };
 type Params = URLSearchParams;
 
 const HOTLINE = 'Call the VicEmergency Hotline on 1800 226 226.';
@@ -225,14 +226,32 @@ function clientAddress(request: IncomingMessage): string {
   return first || request.socket.remoteAddress || 'unknown';
 }
 
-export function createApi(db: Db): Server {
-  return createServer((request, response) => {
+/** The one POST: the development gate. Read here, not in route(), so route()
+ *  stays a pure function of the URL. */
+async function gate(request: IncomingMessage, gatePassword: string | undefined): Promise<Route> {
+  let body: unknown;
+  try {
+    body = await readJson(request);
+  } catch {
+    return { status: 400, body: { error: 'bad request' } };
+  }
+  const password = typeof body === 'object' && body !== null ? (body as { password?: unknown }).password : undefined;
+  return checkGate(gatePassword, clientAddress(request), password, Date.now());
+}
+
+export function createApi(db: Db, gatePassword: string | undefined): Server {
+  return createServer(async (request, response) => {
     const method = request.method ?? 'GET';
+    const url = new URL(request.url ?? '/', 'http://localhost');
     let result: Route;
     try {
-      result = allowRequest(clientAddress(request), Date.now())
-        ? route(db, method, new URL(request.url ?? '/', 'http://localhost'))
-        : { status: 429, body: { error: 'too many requests' } };
+      if (!allowRequest(clientAddress(request), Date.now())) {
+        result = { status: 429, body: { error: 'too many requests' } };
+      } else if (method === 'POST' && url.pathname === '/api/v1/gate') {
+        result = await gate(request, gatePassword);
+      } else {
+        result = route(db, method, url);
+      }
     } catch (error) {
       console.error('[api]', error);
       result = { status: 500, body: { error: 'internal error' } };
@@ -244,9 +263,13 @@ export function createApi(db: Db): Server {
       'cache-control': 'no-store',
       'x-content-type-options': 'nosniff',
       ...(result.status === 405 ? { allow: 'GET, HEAD' } : {}),
-      ...(result.status === 429 ? { 'retry-after': String(WINDOW_MS / 1000) } : {}),
+      ...(result.status === 429 ? { 'retry-after': String(retryAfter(result.body)) } : {}),
     });
     response.end(method === 'HEAD' ? undefined : payload);
   });
 }
 
+function retryAfter(body: unknown): number {
+  const seconds = (body as { retryAfterSeconds?: unknown }).retryAfterSeconds;
+  return typeof seconds === 'number' ? seconds : WINDOW_MS / 1000;
+}

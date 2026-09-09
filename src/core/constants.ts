@@ -133,6 +133,12 @@ export const METRES_PER_KM = 1_000;
 export const ACKNOWLEDGEMENT_KEY = 'cooeee.acknowledgement.v1';
 export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';
 
+/** Feature 1: the development password gate. Same rules as the acknowledgement,
+ * one browser flag holding one marker, written only after the server has
+ * accepted the password. */
+export const GATE_KEY = 'cooeee.gate.v1';
+export const GATE_VALUE = 'passed';
+
 /** Which screen was open last. BlackSky sets this flag when it opens and only
  * the hold on Leave BlackSky clears it, so a visit that starts anywhere else is
  * sent back there. Same rules as the acknowledgement: one browser flag, a

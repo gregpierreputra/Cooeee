@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE } from '../src/core/constants';
+import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE, GATE_KEY, GATE_VALUE } from '../src/core/constants';
+import { passGate } from './helpers';
 import {
   ACKNOWLEDGE_CHECKBOX,
   APP_NAME,
@@ -16,6 +17,9 @@ import {
 // E1-US1-AC0, against the real production bundle. Every test here starts from a
 // device with no acknowledgement stored, which is what a fresh install — and a
 // browser whose site data has just been cleared — actually looks like.
+
+// Feature 1: the development gate stands before this screen; e2e/gate.spec.ts covers it.
+test.beforeEach(({ page }) => passGate(page));
 
 const continueButton = (page: Page) => page.getByRole('button', { name: CONTINUE });
 const checkbox = (page: Page) => page.getByRole('checkbox', { name: ACKNOWLEDGE_CHECKBOX });
@@ -185,5 +189,5 @@ test('the acknowledgement is one flag holding one marker', async ({ page }) => {
         }),
       ),
     ),
-  ).toEqual({ [ACKNOWLEDGEMENT_KEY]: ACKNOWLEDGEMENT_VALUE });
+  ).toEqual({ [GATE_KEY]: GATE_VALUE, [ACKNOWLEDGEMENT_KEY]: ACKNOWLEDGEMENT_VALUE });
 });

@@ -675,6 +675,16 @@ export const ACKNOWLEDGE_CHECKBOX =
   'I understand how Cooeee works, and what it does not do.';
 export const CONTINUE = 'Continue';
 
+// ── Development gate (feature 1) ────────────────────────────────────────────
+export const GATE_TITLE = 'Password';
+export const GATE_LINE = 'Cooeee is in development. Enter the password to continue.';
+export const GATE_SUBMIT = 'Enter';
+export const GATE_INCORRECT = (left: number) =>
+  `Incorrect password. ${left} ${left === 1 ? 'try' : 'tries'} left.`;
+export const GATE_LOCKED = (seconds: number) => `Try again in ${seconds} seconds.`;
+export const GATE_OFFLINE = 'A connection is needed to check the password.';
+export const GATE_UNAVAILABLE = 'The password cannot be checked right now.';
+
 // ── Nearby places: the nearest official place of each kind ──────────────────
 // Every row carries its own state (live / cached / unavailable) and its own
 // timestamp; the page as a whole is never labelled current.

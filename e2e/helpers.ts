@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE } from '../src/core/constants';
+import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE, GATE_KEY, GATE_VALUE } from '../src/core/constants';
 
 /** The isolated component harness (e2e/harness), served on its own port. */
 export const HARNESS = 'http://127.0.0.1:4174';
@@ -80,19 +80,29 @@ export async function chooseLastResortPlaces(page: Page) {
   await page.getByRole('button', { name: 'Keep this note' }).click();
 }
 
+/** Seeds browser flags before any script on the page runs, so they are there
+ *  when the app reads them on the first paint. */
+async function seedFlags(page: Page, flags: [key: string, value: string][]) {
+  await page.addInitScript((entries) => {
+    try {
+      for (const [key, value] of entries) localStorage.setItem(key, value);
+    } catch {
+      // A blocked storage shows the gate or disclosure screen; the spec will say so.
+    }
+  }, flags);
+}
+
+/** Feature 1. The development gate stands in front of the disclosure. */
+export async function passGate(page: Page) {
+  await seedFlags(page, [[GATE_KEY, GATE_VALUE]]);
+}
+
 /** E1-US1-AC0. The first-open disclosure stands in front of every screen, so a
- *  spec about anything else opens with the acknowledgement already recorded —
- *  exactly as a returning device would. Runs before any script on the page, so
- *  the flag is there when the app reads it on the first paint. */
+ *  spec about anything else opens with the gate passed and the acknowledgement
+ *  already recorded — exactly as a returning device would. */
 export async function acknowledgeFirstOpen(page: Page) {
-  await page.addInitScript(
-    ([key, value]) => {
-      try {
-        localStorage.setItem(key, value);
-      } catch {
-        // A blocked storage shows the disclosure screen; the spec will say so.
-      }
-    },
-    [ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE] as const,
-  );
+  await seedFlags(page, [
+    [GATE_KEY, GATE_VALUE],
+    [ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE],
+  ]);
 }

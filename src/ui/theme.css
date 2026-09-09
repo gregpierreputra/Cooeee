@@ -1484,6 +1484,15 @@ input {
   padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
 }
 
+/* ── Development gate (feature 1): a true black page, one field, one button ── */
+body:has(.gate) {
+  background: #000;
+}
+.gate form {
+  display: grid;
+  gap: 0.75rem;
+}
+
 /* ── First open (E1-US1-AC0) ───────────────────────────────────────────────── */
 
 /* The four statements are the screen, and they are held in ONE card so the
