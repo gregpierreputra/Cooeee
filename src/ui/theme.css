@@ -2061,3 +2061,39 @@ input {
   color: var(--ink);
   font-size: var(--step-s);
 }
+
+/* E5-US1-AC2 — the bar that marks a running rehearsal. Sticky at the top of the
+   run, so it is on screen without scrolling from the first screen to the last.
+
+   It carries the word and the condition as TEXT, and nothing about it depends
+   on hue: strip every colour and both facts are still written on it. The rule
+   below is a border and a surface, not a tint — there is no coloured band here
+   for a greyscale screen, a sun-washed screen or a reader who cannot see it to
+   lose. The dotted underline on the marker is a second non-colour cue that
+   survives the same treatment. */
+.rehearsal-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.75rem max(1.75rem, env(safe-area-inset-left));
+  background: var(--surface-2);
+  border-bottom: 2px solid var(--ink);
+  color: var(--ink);
+  font-size: var(--step-s);
+}
+
+.rehearsal-bar-marker {
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.25em;
+}
+
+.rehearsal-bar-condition {
+  font-weight: var(--w-med);
+}

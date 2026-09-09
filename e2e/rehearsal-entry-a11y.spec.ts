@@ -382,3 +382,113 @@ test('AC1 the condition rows are the same height, at normal type and at 200%', a
   );
   expect(Math.max(...detailHeights)).toBeLessThanOrEqual(atDouble[0]);
 });
+
+// E5-US1-AC2 — the bar, held to the same checks as every other surface, plus
+// WCAG 1.4.1: it must not depend on colour. The greyscale reading itself lives
+// in rehearsal-run.spec.ts beside the rest of the bar's behaviour; what is
+// measured here is contrast, reflow at 200% and the target size of the one
+// control the run offers.
+const startRunFor = async (page: import('@playwright/test').Page, condition: string) => {
+  await page.goto(`${ORIGIN}/rehearse?mode=rehearsable`);
+  await page.getByRole('heading', { name: 'What are we rehearsing without?' }).waitFor();
+  await page.getByRole('button', { name: new RegExp(condition) }).click();
+  await page.locator('.rehearsal-bar').waitFor();
+};
+
+test('AC2 the bar and the run meet the contrast minimum on every element', async ({ page }) => {
+  await startRunFor(page, 'No mobile data');
+
+  const rows = await page.evaluate(() => {
+    const relativeLuminance = (channels: number[]) => {
+      const [r, g, b] = channels.map((value) => {
+        const s = value / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const channels = (colour: string) => colour.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+    const painted = (el: HTMLElement): number[] => {
+      let node: HTMLElement | null = el;
+      while (node) {
+        const background = getComputedStyle(node).backgroundColor;
+        if (background && !background.includes('rgba(0, 0, 0, 0)')) return channels(background);
+        node = node.parentElement;
+      }
+      return [255, 255, 255];
+    };
+    const selector = '.rehearsal-bar-marker, .rehearsal-bar-condition, .page.rehearsal-run p, .actions button';
+    return [...document.querySelectorAll<HTMLElement>(selector)].map((el) => {
+      const style = getComputedStyle(el);
+      const foreground = relativeLuminance(channels(style.color));
+      const background = relativeLuminance(painted(el));
+      const ratio =
+        (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+      const px = Number.parseFloat(style.fontSize);
+      const large = px >= 24 || (px >= 18.66 && Number(style.fontWeight) >= 700);
+      return {
+        text: (el.textContent ?? '').slice(0, 34),
+        ratio: Math.round(ratio * 100) / 100,
+        required: large ? 3 : 4.5,
+      };
+    });
+  });
+
+  // The marker, the condition, the line about what a rehearsal does not do, and
+  // the way out.
+  expect(rows.length).toBeGreaterThanOrEqual(4);
+  const failing = rows.filter((row) => row.ratio < row.required);
+  expect(failing, JSON.stringify(failing)).toEqual([]);
+});
+
+test('AC2 the bar survives 200% text and stays on screen', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await startRunFor(page, 'No mobile data');
+
+  const barHeight = async () =>
+    Math.round((await page.locator('.rehearsal-bar').boundingBox())!.height);
+  const before = await barHeight();
+
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect
+    .poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize))
+    .toBe('32px');
+  expect(await barHeight()).toBeGreaterThan(before);
+
+  const report = await page.evaluate(() => {
+    const doc = document.documentElement;
+    const bar = document.querySelector('.rehearsal-bar') as HTMLElement;
+    const box = bar.getBoundingClientRect();
+    const overflowing: string[] = [];
+    document.querySelectorAll<HTMLElement>('.rehearsal-bar *, main *').forEach((el) => {
+      const b = el.getBoundingClientRect();
+      if (b.right > doc.clientWidth + 1 || b.left < -1) overflowing.push(el.tagName + '.' + el.className);
+    });
+    return {
+      overflowing,
+      hScroll: document.body.scrollWidth > doc.clientWidth + 1,
+      barTop: Math.round(box.top),
+      barHeight: Math.round(box.height),
+      viewport: window.innerHeight,
+      barTextPresent: (bar.textContent ?? '').includes('Rehearsal'),
+    };
+  });
+
+  expect(report.overflowing).toEqual([]);
+  expect(report.hScroll).toBe(false);
+  expect(report.barTextPresent).toBe(true);
+  expect(report.barTop).toBeGreaterThanOrEqual(0);
+  // Reported rather than asserted tightly: a sticky bar at 200% takes real
+  // estate, and the figure belongs in the record.
+  expect(report.barHeight).toBeLessThan(report.viewport);
+  console.log(`BAR AT 200%: ${report.barHeight}px of a ${report.viewport}px viewport`);
+});
+
+test('AC2 the one control in a run meets the minimum target size', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await startRunFor(page, 'No location fix');
+
+  const leave = page.getByRole('button', { name: 'Leave the rehearsal' });
+  const box = await leave.boundingBox();
+  expect(box!.width).toBeGreaterThanOrEqual(24);
+  expect(box!.height).toBeGreaterThanOrEqual(24);
+});

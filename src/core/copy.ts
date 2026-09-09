@@ -949,6 +949,16 @@ export const CONDITION_NO_FIX = 'No location fix';
  *  give you: the obvious phrasing uses words the wording scan forbids, and the
  *  plainer sentence is the better one anyway. */
 export const CONDITION_NO_FIX_DETAIL = 'The phone cannot work out where it is.';
-/** What the next screen states, so the chosen condition is carried in words the
- *  user can check against what they just tapped. */
-export const REHEARSING_WITHOUT = (label: string) => `Rehearsing without: ${label}`;
+// ── E5-US1-AC2 a rehearsal is never mistaken for the real thing ───────────
+// The bar carries the word and the condition, on every screen of a run. Both
+// are words: a colour or an icon says nothing in greyscale, and nothing at all
+// to a reader who cannot see it.
+
+/** Said once, plainly, on the run itself. [DRAFT] pending Sharon's copy review:
+ *  the criterion forbids any wording implying something WAS sent, and says
+ *  nothing about stating the opposite. Shipped as a default because a rehearsal
+ *  of an emergency is exactly where a reader would wonder, and silence answers
+ *  them less well than a sentence does. */
+export const NOTHING_IS_SENT = 'Nothing is sent from this rehearsal. Nothing leaves this phone.';
+/** Ends the run. Leaving is the only way out, and it is always available. */
+export const LEAVE_REHEARSAL = 'Leave the rehearsal';

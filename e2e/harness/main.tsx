@@ -592,7 +592,62 @@ if (window.location.pathname === '/rehearse') {
       ? { ...rehearseAbsence, reason: 'Altered on the device after the pack was saved.' }
       : rehearseAbsence,
   );
-  rehearseFlow = <RehearsalEntry packId="rehearse-pack" now={rehearseNow} />;
+  // E5-US1-AC3. Leaving the rehearsal screen and coming back within the same
+  // session must keep the run. In the running app that is a route change; here
+  // it is an unmount and a remount of the same component, which is the same
+  // thing from the run's point of view and needs no second application shell.
+  // A reload is what a cold start looks like, and needs no control at all.
+  rehearseFlow = <RehearsalHarness />;
+}
+
+// The remount control is HARNESS FURNITURE, not product UI. It is rendered
+// after the screen under test and outside its .page container, so it can never
+// sit above the rehearsal bar: in the product the bar is the topmost thing on a
+// run, and a harness control above it would make "visible without scrolling"
+// read as passing for the wrong reason. Its styling is deliberately unlike
+// anything in the product, and it says what it is.
+const harnessStyle = {
+  margin: '2rem 0 0',
+  padding: '0.5rem',
+  borderTop: '1px dashed #888',
+  font: '12px ui-monospace, SFMono-Regular, Menlo, monospace',
+  color: '#888',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+} as const;
+
+const harnessButtonStyle = {
+  appearance: 'none',
+  background: 'transparent',
+  border: '1px dashed currentColor',
+  borderRadius: 0,
+  color: 'inherit',
+  font: 'inherit',
+  minHeight: 'auto',
+  minWidth: 'auto',
+  padding: '2px 6px',
+  cursor: 'pointer',
+} as const;
+
+function RehearsalHarness() {
+  const [mounted, setMounted] = useState(true);
+  return (
+    <>
+      {mounted ? <RehearsalEntry packId="rehearse-pack" now={rehearseNow} /> : null}
+      <div style={harnessStyle} data-harness="true">
+        <span>test harness</span>
+        <button
+          type="button"
+          data-testid="remount"
+          style={harnessButtonStyle}
+          onClick={() => setMounted((on) => !on)}
+        >
+          {mounted ? 'unmount the screen' : 'mount it again'}
+        </button>
+      </div>
+    </>
+  );
 }
 
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';

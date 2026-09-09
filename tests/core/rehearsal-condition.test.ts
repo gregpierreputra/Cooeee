@@ -65,12 +65,6 @@ describe('the supported conditions', () => {
     conditionRows().forEach((row) => {
       expect(conditionLabel(row.condition)).toBe(row.label);
     });
-    expect(copy.REHEARSING_WITHOUT(conditionLabel('no-data'))).toBe(
-      'Rehearsing without: No mobile data',
-    );
-    expect(copy.REHEARSING_WITHOUT(conditionLabel('no-location-fix'))).toBe(
-      'Rehearsing without: No location fix',
-    );
   });
 });
 
@@ -118,9 +112,8 @@ describe('the chosen condition', () => {
 
   it('names one condition only, whichever was chosen', () => {
     REHEARSAL_CONDITIONS.forEach((condition) => {
-      const line = copy.REHEARSING_WITHOUT(conditionLabel(condition));
       const others = REHEARSAL_CONDITIONS.filter((other) => other !== condition);
-      others.forEach((other) => expect(line).not.toContain(conditionLabel(other)));
+      others.forEach((other) => expect(conditionLabel(condition)).not.toContain(conditionLabel(other)));
     });
   });
 });
@@ -137,12 +130,11 @@ describe('the wording of this screen', () => {
       copy.CONDITION_NO_DATA_DETAIL,
       copy.CONDITION_NO_FIX,
       copy.CONDITION_NO_FIX_DETAIL,
-      copy.REHEARSING_WITHOUT('No mobile data'),
     ];
     everyString.forEach((line) => {
       expect(line).not.toMatch(/\b(bushfire|fire|heat|hot|flood|flooding|storm|smoke|ember)\b/i);
     });
-    expect(everyString.length).toBeGreaterThanOrEqual(6);
+    expect(everyString.length).toBeGreaterThanOrEqual(5);
   });
 
   it('says nothing about the reader being unprepared', () => {

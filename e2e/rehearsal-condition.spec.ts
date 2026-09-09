@@ -41,8 +41,8 @@ test.describe('AC1 both conditions are offered, and neither is chosen for the us
     await expect(page.locator('.condition-list [aria-checked="true"]')).toHaveCount(0);
     await expect(page.locator('.condition-list input')).toHaveCount(0);
     await expect(page.locator('.condition-list :checked')).toHaveCount(0);
-    // No rehearsal has begun: nothing on screen says one is running.
-    await expect(page.locator('main')).not.toContainText('Rehearsing without');
+    // No rehearsal has begun: the bar that marks a run is not there.
+    await expect(page.locator('.rehearsal-bar')).toHaveCount(0);
   });
 
   test('neither condition is ranked, marked or weighted above the other', async ({ page }) => {
@@ -77,11 +77,13 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
       await page.goto(REHEARSABLE);
       await page.getByRole('button', { name: new RegExp(label) }).click();
 
-      await expect(page.getByText(`Rehearsing without: ${label}`)).toBeVisible();
-      // The condition that was not chosen is nowhere: not beside it, not under
-      // it, not as a second line.
+      // The chosen condition is carried onto the run, on the bar that marks it.
+      await expect(page.locator('.rehearsal-bar-condition')).toHaveText(label);
+      // The condition that was not chosen is nowhere: not on the bar, not
+      // beside it, not as a second line.
+      await expect(page.locator('.rehearsal-bar')).not.toContainText(other);
       await expect(page.locator('main')).not.toContainText(other);
-      await expect(page.getByText(/^Rehearsing without:/)).toHaveCount(1);
+      await expect(page.locator('.rehearsal-bar-condition')).toHaveCount(1);
       // The choice is made, so the choice is no longer being asked.
       await expect(page.getByRole('heading', { name: HEADING })).toHaveCount(0);
       await expect(page.locator('.condition-list')).toHaveCount(0);
@@ -97,7 +99,7 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     const before = await deviceStorage(page);
 
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
-    await expect(page.getByText(`Rehearsing without: ${NO_DATA}`)).toBeVisible();
+    await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_DATA);
 
     expect(await deviceStorage(page)).toEqual(before);
   });
@@ -126,7 +128,7 @@ test('AC1 the choice renders with zero off-origin requests', async ({ page }) =>
   await page.goto(REHEARSABLE);
   await expect(page.getByRole('heading', { name: HEADING })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
-  await expect(page.getByText(`Rehearsing without: ${NO_FIX}`)).toBeVisible();
+  await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_FIX);
 
   expect(offOrigin).toEqual([]);
 });

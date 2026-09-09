@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../core/rehearsal-entry';
+import { isRunFor } from '../../core/rehearsal-run';
 import { readRehearsalSource } from '../../data/db';
 import Condition from './Condition';
+import Run from './Run';
+import { useRehearsalRun } from './run-state';
 import StatusPage from '../components/StatusPage';
 
 type EntryProps = {
@@ -36,6 +39,9 @@ export default function RehearsalEntry({
   // null = the store has not answered yet. It answers in a frame or two from
   // local IndexedDB, so nothing is drawn for the wait.
   const [gate, setGate] = useState<RehearsalGate | null>(null);
+  // A run in progress, if there is one. Dies with the page, so a cold start
+  // finds none.
+  const run = useRehearsalRun();
 
   useEffect(() => {
     let live = true;
@@ -49,11 +55,21 @@ export default function RehearsalEntry({
 
   if (gate === null) return null;
 
-  // E5-US1-AC1 — a pack that CAN be rehearsed goes straight to the choice of
-  // condition. The gate decides first and this is its only readable outcome, so
-  // a pack that cannot be rehearsed never reaches an empty choice: it gets one
-  // of the four stated screens below instead.
-  if (gate.state === 'ready') return <Condition packId={gate.packId} />;
+  // E5-US1-AC1 — a pack that CAN be rehearsed goes to the choice of condition.
+  // The gate decides first and this is its only readable outcome, so a pack
+  // that cannot be rehearsed never reaches an empty choice: it gets one of the
+  // four stated screens below instead.
+  //
+  // E5-US1-AC3 — unless a rehearsal for THIS pack is already running, in which
+  // case the user is coming back to it and it continues, bar and condition
+  // intact. Leaving the screen never asked the rehearsal to end, so it did not.
+  if (gate.state === 'ready') {
+    return isRunFor(run, gate.packId) && run !== null ? (
+      <Run run={run} />
+    ) : (
+      <Condition packId={gate.packId} />
+    );
+  }
 
   // The pack the user came from, offered only where the gate actually read one.
   // A store that could not be opened knows of no pack, so it offers no way back

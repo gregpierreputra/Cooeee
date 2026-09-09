@@ -520,10 +520,10 @@ describe('the choice of condition', () => {
     expect(copy.CONDITION_NO_FIX_DETAIL).toBe('The phone cannot work out where it is.');
   });
 
-  it('carries exactly the chosen condition to the next screen', () => {
-    expect(copy.REHEARSING_WITHOUT('No mobile data')).toBe('Rehearsing without: No mobile data');
-    expect(copy.REHEARSING_WITHOUT('No location fix')).toBe(
-      'Rehearsing without: No location fix',
+  it('states plainly that a rehearsal reaches nothing outside the phone', () => {
+    expect(copy.NOTHING_IS_SENT).toBe(
+      'Nothing is sent from this rehearsal. Nothing leaves this phone.',
     );
+    expect(copy.LEAVE_REHEARSAL).toBe('Leave the rehearsal');
   });
 });
