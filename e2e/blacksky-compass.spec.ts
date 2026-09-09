@@ -40,7 +40,9 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   );
   await expect(page.getByText('The arrow turns with your phone.')).toBeVisible();
   const declination = magneticDeclinationDeg({ lat: -37.817939, lon: 145.36594 });
-  expect(norm(await rotation())).toBe(norm(bearing - 90 - declination));
+  // The text renders on the reading; the heading lands on the next display
+  // frame, so wait for the frame rather than sample the transform at once.
+  await expect.poll(async () => norm(await rotation())).toBe(norm(bearing - 90 - declination));
 
   // The figure follows the phone: a fix from two kilometres further north
   // changes the distance within one tick.
