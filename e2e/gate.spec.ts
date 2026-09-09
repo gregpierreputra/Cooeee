@@ -31,6 +31,7 @@ test('a wrong password stays on the gate, and the third miss locks it', async ({
   await expect(field).toHaveValue('');
   await field.fill('wrong');
   await enter.click();
+  await expect(page.getByRole('status')).toHaveText(GATE_INCORRECT(1));
   await field.fill('wrong');
   await enter.click();
   await expect(page.getByRole('status')).toHaveText(GATE_LOCKED(45));

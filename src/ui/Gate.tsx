@@ -34,8 +34,10 @@ export default function Gate({ onPass }: { onPass: () => void }) {
       const { status, body } = await postGate(password);
       if (status === 200) return onPass();
       if (status === 401) setMessage(copy.GATE_INCORRECT(body.attemptsLeft ?? 0));
-      else if (status === 429) setSecondsLeft(body.retryAfterSeconds ?? LOCK_FALLBACK_S);
-      else setMessage(copy.GATE_UNAVAILABLE);
+      else if (status === 429) {
+        setMessage('');
+        setSecondsLeft(body.retryAfterSeconds ?? LOCK_FALLBACK_S);
+      } else setMessage(copy.GATE_UNAVAILABLE);
     } catch {
       setMessage(copy.GATE_UNAVAILABLE);
     } finally {
@@ -60,7 +62,7 @@ export default function Gate({ onPass }: { onPass: () => void }) {
           autoComplete="current-password"
           maxLength={128}
           value={password}
-          disabled={locked || !online}
+          disabled={busy || locked || !online}
           onChange={(e) => setPassword(e.currentTarget.value)}
         />
         <p className="muted gate-status" role="status" aria-live="polite">
