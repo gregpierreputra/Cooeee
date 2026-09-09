@@ -137,9 +137,9 @@ export type ExposureLayer = {
 };
 
 export type Destination = {
-  id: string;                                           // `${packId}:${nspId}` | `${packId}:absence`
+  id: string;                                           // `${packId}:${nspId}` | `${packId}:${facilityId}` | `${packId}:absence`
   packId: string;
-  kind: 'nsp-bushfire' | 'absence';                     // absence is a REAL row
+  kind: 'nsp-bushfire' | 'cool-heat' | 'absence';       // absence is a REAL row
   name?: string;                                        // optional
   addressText?: string;                                 // optional
   council?: string;                                     // optional
@@ -150,7 +150,7 @@ export type Destination = {
   lon?: number;                                         // optional, absent when geocode === 'none'
   distanceM?: number;                                   // optional, absent when no lat/lon
   distanceOrder?: number;                               // display order ONLY, zero-based
-  chosen?: boolean;                                     // at most two true per pack; equal status
+  chosen?: boolean;                                     // at most two true per kind; equal status
   reason?: string;                                      // absence rows: why, and the area it covers
   source: Source;
   
@@ -388,8 +388,6 @@ export type Condition = {
   hazard: ConditionHazard;
   title: string;
   publisher: string;
-  level: string | null;
-  url: string | null;
   statewide: boolean;
   rings: LatLon[][];
   source_updated_at: string;

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { DYNAMIC_SNAPSHOT_PATH, STATIC_BUNDLE_PATH } from '../src/data/nearby';
 import { acknowledgeFirstOpen, waitForController } from './helpers';
 import {
   BLACKSKY_TITLE,
@@ -25,8 +26,13 @@ test('BlackSky cold-starts offline on a fresh install: the designed no-pack stat
   await page.goto('/');
   await waitForController(page);
 
+  // The home screen's one feed refresh may still be in flight when the radios
+  // go off; those two same-origin paths are the only requests allowed to fail.
   const failed: string[] = [];
-  page.on('requestfailed', (r) => failed.push(`${r.method()} ${r.url()}`));
+  page.on('requestfailed', (r) => {
+    const path = new URL(r.url()).pathname;
+    if (path !== STATIC_BUNDLE_PATH && path !== DYNAMIC_SNAPSHOT_PATH) failed.push(`${r.method()} ${r.url()}`);
+  });
 
   await context.setOffline(true);
   // A direct URL load, not a client-side hop: this exercises the service

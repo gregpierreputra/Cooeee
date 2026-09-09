@@ -199,8 +199,7 @@ describe('the home view', () => {
 
   it('carries the current notices for a saved place, and nothing when none name it', () => {
     const statewide = {
-      condition_id: 's', hazard: 'heat' as const, title: 'Heatwave Warning', publisher: 'Bureau of Meteorology',
-      level: null, url: null, statewide: true, rings: [], source_updated_at: new Date(NOW).toISOString(),
+      condition_id: 's', hazard: 'heat' as const, title: 'Heatwave Warning', publisher: 'Bureau of Meteorology', statewide: true, rings: [], source_updated_at: new Date(NOW).toISOString(),
     };
     const meta = { dynamic_source_last_success_at: new Date(NOW - 60_000).toISOString() };
     const view = homeView(NOW, [pack()], { conditions: [statewide], meta });

@@ -220,6 +220,21 @@ test('US2-AC1 saves exactly the two picks; they persist across a reload', async 
   });
 });
 
+test('the cool places step saves two cool-heat rows with the dataset page as their source', async ({ page }) => {
+  await page.goto(`${SELECT_URL}&cool=1`);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Cool places for a heat day');
+  const boxes = page.locator('[data-testid=ordered-destinations] input[type=checkbox]');
+  await boxes.nth(0).check();
+  await boxes.nth(1).check();
+  await page.getByRole('button', { name: 'Save cool places' }).click();
+  await expect(page.getByRole('heading', { name: 'Cool places saved' })).toBeVisible();
+  const saved = await page.evaluate(() => window.__readDestinations());
+  expect(saved.map((d) => [d.kind, d.chosen, d.source.publisher])).toEqual([
+    ['cool-heat', true, 'Department of Transport and Planning'],
+    ['cool-heat', true, 'Department of Transport and Planning'],
+  ]);
+});
+
 test('US2-AC1 the un-located group is never selectable', async ({ page }) => {
   await page.goto(SELECT_URL);
   await expect(

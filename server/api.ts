@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
-import { FACILITY_SOURCE } from '../src/core/facility-sources.ts';
+import { FACILITY_SOURCE, SOURCE_NAMES } from '../src/core/facility-sources.ts';
 import type { Condition, DynamicSnapshot, FacilityType, SourceHealth, StaticBundle } from '../src/core/types.ts';
 import { type Db, nowIso } from './db.ts';
 import { findNearest, type Point } from './geo.ts';
@@ -11,15 +11,7 @@ type Params = URLSearchParams;
 
 const HOTLINE = 'Call the VicEmergency Hotline on 1800 226 226.';
 
-const SOURCE_NAME: Record<string, string> = {
-  cfa_nsp_arcgis: 'Country Fire Authority Neighbourhood Safer Places list',
-  cfr_static_list: 'Community Fire Refuge list',
-  vicmap_foi_cool: 'Vicmap Features of Interest',
-  vicmap_admin_postcodes: 'Vicmap postcode list',
-  vicemergency_feed: 'VicEmergency feed',
-};
-
-type TypeRow = { type_code: FacilityType; description: string; is_dynamic: number };
+type TypeRow = { type_code: FacilityType; description: string; is_dynamic: number; hazard_scope: string };
 type FacilityRow = Point & {
   facility_id: number;
   name: string;
@@ -63,15 +55,15 @@ function parseQuery(db: Db, params: Params): { query: Query } | { error: Route }
 /** Spec §5/§6: why a result is null, or why it cannot be trusted as current.
  *  A missing designation and an unreachable source are different sentences. */
 function message(type: TypeRow, found: boolean, source: SourceHealth): string | null {
-  const name = SOURCE_NAME[FACILITY_SOURCE[type.type_code]];
+  const name = SOURCE_NAMES[FACILITY_SOURCE[type.type_code]];
   if (source.status === 'degraded' || source.status === 'down') {
     return `Live data could not be confirmed: the ${name} is ${source.status} (last successful update: ${source.last_success_at ?? 'never'}). ${HOTLINE}`;
   }
   if (found) return null;
   if (source.status === 'unknown') return `The ${name} has not been loaded yet. ${HOTLINE}`;
-  return type.is_dynamic
-    ? `No ${type.description} is currently open according to the VicEmergency feed.`
-    : `No ${type.description} is designated near this location. ${type.description}s apply to bushfire risk only.`;
+  if (type.is_dynamic) return `No ${type.description} is currently open according to the VicEmergency feed.`;
+  const scope = type.hazard_scope === 'bushfire_only' ? ` ${type.description}s apply to bushfire risk only.` : '';
+  return `No ${type.description} is designated near this location.${scope}`;
 }
 
 function safeLocations(db: Db, params: Params): Route {
@@ -79,7 +71,7 @@ function safeLocations(db: Db, params: Params): Route {
   if ('error' in parsed) return parsed.error;
   const { query } = parsed;
   const health = dataHealth(db);
-  const types = db.prepare('SELECT type_code, description, is_dynamic FROM facility_types').all() as unknown as TypeRow[];
+  const types = db.prepare('SELECT type_code, description, is_dynamic, hazard_scope FROM facility_types').all() as unknown as TypeRow[];
   const precomputed = db.prepare(
     `SELECT n.distance_km, f.facility_id, f.name, f.address, f.lat, f.lon, f.designation_status, f.last_verified_at
      FROM postcode_nearest_static n LEFT JOIN facilities f ON f.facility_id = n.facility_id
@@ -163,7 +155,7 @@ function dynamicSnapshot(db: Db): Route {
        FROM activations WHERE status = 'active' ORDER BY activation_id`,
     ).all() as unknown as DynamicSnapshot['activations'],
     conditions: (db.prepare(
-      `SELECT condition_id, hazard, title, publisher, level, url, statewide, rings_json, source_updated_at
+      `SELECT condition_id, hazard, title, publisher, statewide, rings_json, source_updated_at
        FROM conditions WHERE status = 'active' ORDER BY condition_id`,
     ).all() as (Omit<Condition, 'statewide' | 'rings'> & { statewide: number; rings_json: string })[]).map(
       ({ statewide, rings_json, ...row }) => ({ ...row, statewide: statewide === 1, rings: JSON.parse(rings_json) }),

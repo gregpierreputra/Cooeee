@@ -1,7 +1,7 @@
-import { isInsideVictoria, MAX_RESPONSE_BYTES, MAX_SYNC_ROWS, NEARBY_SYNC_TIMEOUT_MS } from '../core/constants';
+import { isInsideVictoria, MAX_RESPONSE_BYTES, MAX_SYNC_ROWS, MAX_TEXT_CHARS, NEARBY_SYNC_TIMEOUT_MS } from '../core/constants';
 import { STATIC_TYPES, DYNAMIC_TYPES } from '../core/facility-sources';
 import type { NearbyCache, NearbySession } from '../core/nearby';
-import type { Condition, DataHealth, DynamicSnapshot, StaticBundle, SyncMetaRow } from '../core/types';
+import type { BundleFacility, Condition, DataHealth, DynamicSnapshot, StaticBundle, SyncMetaRow } from '../core/types';
 import { readJsonBounded } from './bounded-body';
 import { db } from './db';
 
@@ -31,7 +31,7 @@ function list(value: unknown, field: string): unknown[] {
 }
 function text(value: unknown, field: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) fail(`${field} must be a non-empty string`);
-  return value as string;
+  return (value as string).slice(0, MAX_TEXT_CHARS);
 }
 function nullableText(value: unknown, field: string): string | null {
   if (value === null || value === undefined) return null;
@@ -149,8 +149,6 @@ function assertCondition(value: unknown, field: string): Condition {
     hazard: oneOf(r.hazard, HAZARDS, at('hazard')),
     title: text(r.title, at('title')),
     publisher: text(r.publisher, at('publisher')),
-    level: nullableText(r.level, at('level')),
-    url: nullableText(r.url, at('url')),
     statewide: r.statewide === true,
     rings,
     source_updated_at: text(r.source_updated_at, at('source_updated_at')),
@@ -224,6 +222,19 @@ async function syncDynamic(fetcher: typeof fetch): Promise<void> {
     if (snapshot.source_last_success_at === null) await db.syncMeta.delete('dynamic_source_last_success_at');
     else await db.syncMeta.put({ key: 'dynamic_source_last_success_at', value: snapshot.source_last_success_at });
   });
+}
+
+/** The downloaded cool places for the pack wizard, dated by the bundle's own
+ *  arrival. Read from the device only: the home screen refreshes the bundle
+ *  when online, and the wizard writes nothing before the pack is consented to.
+ *  With no bundle at all the wizard says the list could not be included. */
+export async function loadCoolPlaces(): Promise<{ rows: BundleFacility[]; retrievedAt: number }> {
+  const syncedAt = (await db.syncMeta.get('static_synced_at'))?.value;
+  if (syncedAt === undefined) throw new Error('cool places: the bundle has not landed');
+  return {
+    rows: await db.staticFacilities.filter((row) => row.type === 'COOL').toArray(),
+    retrievedAt: Date.parse(syncedAt),
+  };
 }
 
 /** Both endpoints, independently: one failing never blocks the other (spec §7.4).

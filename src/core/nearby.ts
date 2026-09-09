@@ -63,7 +63,7 @@ export const postcodeOrigin = (cache: NearbyCache, postcode: string): LatLon | n
   return row ? { lat: row.centroid_lat, lon: row.centroid_lon } : null;
 };
 
-/** A linear scan — the cached list is a few hundred rows (spec §7.3). */
+/** A linear scan — the cached list is under a thousand rows, once per render. */
 export function nearestOfType<T extends LatLon & { type: FacilityType }>(
   rows: T[],
   origin: LatLon,

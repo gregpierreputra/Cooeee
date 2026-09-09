@@ -136,10 +136,10 @@ describe('the live feed', () => {
     applyFeed(db, [heat]);
     const snapshot = get(db, '/api/v1/sync/dynamic-snapshot').body;
     expect(snapshot.conditions).toEqual([
-      expect.objectContaining({ condition_id: 'h1', hazard: 'heat', publisher: 'Bureau of Meteorology', level: 'Advice', statewide: false }),
+      expect.objectContaining({ condition_id: 'h1', hazard: 'heat', publisher: 'Bureau of Meteorology', statewide: false }),
     ]);
     expect(snapshot.conditions[0].rings[0]).toHaveLength(4);
-    expect(snapshot.conditions[0].url).toContain('bom.gov.au');
+    expect(db.prepare("SELECT level, url FROM conditions WHERE condition_id = 'h1'").get()).toEqual({ level: 'Advice', url: 'https://www.bom.gov.au/vic/warnings/heatwave.shtml' });
 
     applyFeed(db, []);
     expect(get(db, '/api/v1/sync/dynamic-snapshot').body.conditions).toEqual([]);

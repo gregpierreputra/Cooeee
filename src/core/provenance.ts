@@ -149,10 +149,13 @@ function layerCitation(row: ExposureLayer, lgaName: string): string | undefined 
 /** The user's chosen places of last resort, in the order they were listed (by
  * distance). Dexie returns rows by primary key, so the order is restored here.
  * They render as their own equal pair, never as items in the general list. */
+/** The saved places, bushfire first then cool, each kind in its own distance order. */
 export function packDetailPlaces(content: CompletePackContent): Destination[] {
-  return content.destinations
-    .filter((row) => row.kind === 'nsp-bushfire')
-    .sort((a, b) => (a.distanceOrder ?? 0) - (b.distanceOrder ?? 0));
+  const ofKind = (kind: Destination['kind']) =>
+    content.destinations
+      .filter((row) => row.kind === kind)
+      .sort((a, b) => (a.distanceOrder ?? 0) - (b.distanceOrder ?? 0));
+  return [...ofKind('nsp-bushfire'), ...ofKind('cool-heat')];
 }
 
 export function packDetailItems(content: CompletePackContent): PackDetailItem[] {

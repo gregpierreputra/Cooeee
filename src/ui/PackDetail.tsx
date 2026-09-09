@@ -76,6 +76,10 @@ export default function PackDetail({
 
   const items = packDetailItems(content);
   const places = packDetailPlaces(content);
+  const placeSections = [
+    { title: copy.DESTINATIONS_STEP_TITLE, rows: places.filter((place) => place.kind === 'nsp-bushfire') },
+    { title: copy.COOL_LABELS.title, rows: places.filter((place) => place.kind === 'cool-heat') },
+  ].filter(({ rows }) => rows.length > 0);
   const absence = packDetailAbsence(content);
   const areaMap = content.files.find((file) => file.name === AREA_MAP_NAME);
   const interceptSource = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
@@ -142,13 +146,14 @@ export default function PackDetail({
         <StateCard heading={copy.NO_STORED_ITEMS} />
       )}
 
-      {/* E2-US2: the two places the user chose, side by side with equal weight.
-          Distance is a fact about each; there is no ordinal and no ranking. */}
-      {places.length > 0 ? (
-        <section>
-          <span className="kicker">{copy.DESTINATIONS_STEP_TITLE}</span>
+      {/* E2-US2: the places the user chose, side by side with equal weight,
+          the bushfire places under their own title and the cool places under
+          theirs. Distance is a fact about each; there is no ordinal and no ranking. */}
+      {placeSections.map(({ title, rows }) => (
+        <section key={title}>
+          <span className="kicker">{title}</span>
           <ul className="list saved-destinations">
-            {places.map((place) => {
+            {rows.map((place) => {
               const item = {
                 id: place.id,
                 name: place.name ?? copy.OFFICIAL_DESTINATION_INFORMATION,
@@ -168,7 +173,7 @@ export default function PackDetail({
             })}
           </ul>
         </section>
-      ) : null}
+      ))}
 
       <PackNotes packId={content.pack.id} notes={content.notes} />
 

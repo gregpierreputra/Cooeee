@@ -43,18 +43,22 @@ describe('firstPoint', () => {
 
 describe('cool toFacility', () => {
   it('reads the layer\'s one-member MultiPoint and refuses a point outside Victoria', () => {
-    const props = { pfi: 981492, name_label: 'Brookside Community Centre' };
+    const props = { pfi: 981492, name_label: 'Brookside Community Centre', feature_subtype: 'community centre' };
     const row = toCoolFacility({ geometry: { type: 'MultiPoint', coordinates: [[OLINDA.lon, OLINDA.lat]] }, properties: props });
     expect(row).toMatchObject({ externalRef: '981492', typeCode: 'COOL', name: 'Brookside Community Centre', lat: OLINDA.lat });
     expect(toCoolFacility({ geometry: { type: 'MultiPoint', coordinates: [[151.21, -33.87]] }, properties: props })).toBeNull();
+    expect(toCoolFacility({ geometry: { type: 'MultiPoint', coordinates: [[OLINDA.lon, OLINDA.lat]] }, properties: { ...props, feature_subtype: 'hall' } })).toBeNull();
   });
 });
 
 describe('classifyHazard and rings', () => {
   it('names heat and severe weather notices and nothing else', () => {
     expect(classifyHazard({ sourceTitle: 'Heat Health Warning' })).toBe('heat');
+    expect(classifyHazard({ sourceTitle: 'Heatwave Warning' })).toBe('heat');
     expect(classifyHazard({ cap: { event: 'Severe Thunderstorm' } })).toBe('storm');
     expect(classifyHazard({ category1: 'Fire', category2: 'Bushfire' })).toBeNull();
+    expect(classifyHazard({ category1: 'Fire', name: 'Grass fire, Wheatsheaf Road' })).toBeNull();
+    expect(classifyHazard({ name: 'Heathcote Relief Centre' })).toBeNull();
   });
 
   it('keeps every outer ring, rounded, and drops the lot past the point cap', () => {
@@ -62,7 +66,7 @@ describe('classifyHazard and rings', () => {
     const found = rings({ type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', coordinates: [[square], [square, square]] }] });
     expect(found).toHaveLength(2);
     expect(found[0][0]).toEqual({ lat: -37, lon: 145 });
-    const huge = Array.from({ length: 20_001 }, (_, i) => [145 + i / 1e6, -37]);
+    const huge = Array.from({ length: 10_001 }, (_, i) => [145 + i / 1e6, -37]);
     expect(rings({ type: 'Polygon', coordinates: [huge] })).toEqual([]);
   });
 });

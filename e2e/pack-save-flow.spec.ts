@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK, SAVED_PLACE_LABEL } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
+import { DYNAMIC_SNAPSHOT_PATH, STATIC_BUNDLE_PATH } from '../src/data/nearby';
 import {
   acknowledgeFirstOpen,
   addressFeature,
@@ -53,7 +54,27 @@ function bpaHitFeature(lgaName: string) {
   };
 }
 
-async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
+/** A static bundle already on the device, as the home screen would have left
+ *  it: two cool places near Kalorama. Served to the wizard's one same-origin read. */
+async function seedCoolBundle(page: Page) {
+  const fresh = new Date().toISOString();
+  const cool = (facility_id: number, name: string, lat: number, lon: number) => ({
+    facility_id, type: 'COOL', name, address: null, lat, lon, lga_name: null, designation_status: 'designated', last_verified_at: fresh,
+  });
+  await page.route(`**${STATIC_BUNDLE_PATH}*`, (route: Route) =>
+    route.fulfill({
+      json: {
+        version: fresh, generated_at: fresh, postcodes: [], data_health: {},
+        facilities: [cool(7, 'Belgrave Library', -37.909, 145.354), cool(8, 'Monbulk Aquatic Centre', -37.874, 145.418)],
+      },
+    }),
+  );
+  await page.goto('/');
+  await page.waitForFunction(() => indexedDB.databases().then((list) => list.some((d) => d.name === 'cooeee')));
+  await page.waitForTimeout(500); // the home screen's one refresh lands the bundle
+}
+
+async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama', cool: 'choose' | 'skip' = 'skip') {
   await page.goto('/packs/new');
   await page.getByLabel('Address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
@@ -64,7 +85,7 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
     'This address is inside a Designated Bushfire Prone Area.',
   );
   await page.getByRole('button', { name: 'Continue' }).click();
-  await chooseLastResortPlaces(page);
+  await chooseLastResortPlaces(page, cool);
   await expect(page.getByRole('heading')).toHaveText('Ready to download');
 }
 
@@ -83,7 +104,8 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
     bpaHits: [bpaHitFeature(LGA_NAME)],
   });
 
-  await searchConfirmAndReachOffer(page);
+  await seedCoolBundle(page);
+  await searchConfirmAndReachOffer(page, 'Kalorama', 'choose');
   await expect(page.locator('.pack-size')).toContainText('This pack is');
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
@@ -93,10 +115,13 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible(); // the bar follows to every page
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
   await expect(page.getByRole('heading', { name: 'Designated Bushfire Prone Area' })).toBeVisible();
-  await expect(page.getByText(/Published by Department of Transport and Planning/)).toBeVisible();
-  // E2-US2: both chosen places are in the saved pack, each with its council.
+  await expect(page.getByText(/Published by Department of Transport and Planning/).first()).toBeVisible();
+  // E2-US2: both chosen bushfire places are in the saved pack, each with its
+  // council, and the two cool places under their own title.
   const savedPlaces = page.locator('.saved-destinations .card');
-  await expect(savedPlaces).toHaveCount(2);
+  await expect(savedPlaces).toHaveCount(4);
+  await expect(page.getByText('Cool places for a heat day')).toBeVisible();
+  await expect(savedPlaces.getByText('Belgrave Library')).toBeVisible();
   // The map of the area, from the bytes stored with the pack.
   await expect(page.locator('.area-map img')).toBeVisible();
   await expect(savedPlaces.getByText(/^Responsible council: /)).toHaveCount(2);
@@ -206,11 +231,12 @@ test('US2 the global Back bar works offline and the stored pack survives it', as
 
   // The home screen refreshes the feed snapshot when the browser says it is
   // online, and Chromium keeps saying so on a worker-served offline reload, so
-  // that one same-origin refresh is the only request allowed to fail here. The
-  // shell itself asks for nothing.
+  // those two same-origin paths are the only requests allowed to fail here.
+  // The shell itself asks for nothing.
   const failed: string[] = [];
   page.on('requestfailed', (r) => {
-    if (!r.url().includes('/api/')) failed.push(`${r.method()} ${r.url()}`);
+    const path = new URL(r.url()).pathname;
+    if (path !== STATIC_BUNDLE_PATH && path !== DYNAMIC_SNAPSHOT_PATH) failed.push(`${r.method()} ${r.url()}`);
   });
   await context.setOffline(true);
 

@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 
 import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
+import { coolSource, selectCoolForPack, toCoolDestination } from '../../src/core/cool';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
 import { DTP_DATASET_URL } from '../../src/core/constants';
+import { COOL_LABELS } from '../../src/core/copy';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../src/core/nsp';
 import { createPackOffer, discardBuildingPack, saveTextOnlyPack, stageTextOnlyPack } from '../../src/data/pack-build';
 import { db } from '../../src/data/db';
@@ -359,7 +361,7 @@ if (window.location.pathname === '/blacksky') {
   if (new URLSearchParams(window.location.search).get('heat') === '1') {
     const fresh = new Date().toISOString();
     await db.staticFacilities.put({ facility_id: 7, type: 'COOL', name: 'Belgrave Library', address: null, lat: -37.909, lon: 145.354, lga_name: null, designation_status: 'designated', last_verified_at: fresh });
-    await db.conditions.put({ condition_id: 'h1', hazard: 'heat', title: 'Heatwave Warning', publisher: 'Bureau of Meteorology', level: null, url: null, statewide: true, rings: [], source_updated_at: fresh });
+    await db.conditions.put({ condition_id: 'h1', hazard: 'heat', title: 'Heatwave Warning', publisher: 'Bureau of Meteorology', statewide: true, rings: [], source_updated_at: fresh });
     await db.syncMeta.put({ key: 'dynamic_source_last_success_at', value: fresh });
   }
   document.documentElement.dataset.mode = 'blacksky';
@@ -387,6 +389,7 @@ if (window.location.pathname === '/destinations') {
       : async () => jsonResponse(nspFixture);
 
   const selectable = new URLSearchParams(window.location.search).get('select') === '1';
+  const coolStep = new URLSearchParams(window.location.search).get('cool') === '1';
   const hazard =
     (new URLSearchParams(window.location.search).get('hazard') as HazardType | null) ?? 'bushfire';
 
@@ -397,6 +400,15 @@ if (window.location.pathname === '/destinations') {
       selection.located.map((site) => toDestination(site, packId, snapshot)),
       centre,
     );
+    // The cool places step, from two downloaded rows, saved the same way.
+    const coolRows = [
+      { facility_id: 7, type: 'COOL' as const, name: 'Belgrave Library', address: null, lat: -37.909, lon: 145.354, lga_name: null, designation_status: 'designated' as const, last_verified_at: '2026-09-09T00:00:00.000Z' },
+      { facility_id: 8, type: 'COOL' as const, name: 'Monbulk Aquatic Centre', address: null, lat: -37.874, lon: 145.418, lga_name: null, designation_status: 'designated' as const, last_verified_at: '2026-09-09T00:00:00.000Z' },
+    ];
+    const coolOrdered = orderByDistance(
+      selectCoolForPack(coolRows, centre, 5).map((row) => toCoolDestination(row, packId, coolSource(destinationsNow))),
+      centre,
+    ).ordered;
     const save = async (ids: string[]) => {
       const content = {
         pack: {
@@ -413,19 +425,17 @@ if (window.location.pathname === '/destinations') {
           ...(hazard === 'bushfire' ? {} : { hazardType: hazard }),
         },
         layers: [],
-        destinations: destinationsForPack(
-          chosenDestinations(ordered, ids),
-          packId,
-          snapshot,
-          area,
-          hazard,
-        ),
+        destinations: coolStep
+          ? chosenDestinations(coolOrdered, ids)
+          : destinationsForPack(chosenDestinations(ordered, ids), packId, snapshot, area, hazard),
         recovery: [],
       };
       const offer = await createPackOffer(content);
       await saveTextOnlyPack(content, offer, destinationsNow);
     };
-    destinationsFlow = (
+    destinationsFlow = coolStep ? (
+      <Destinations ordered={coolOrdered} unlocated={[]} area={area} labels={COOL_LABELS} save={save} now={destinationsNow} />
+    ) : (
       <Destinations
         ordered={ordered}
         unlocated={selection.unlocated.map((site) => toDestination(site, packId, snapshot))}
@@ -469,7 +479,7 @@ if (window.location.pathname === '/nearby') {
       { activation_id: 1, type: 'RELIEF', name: 'Lilydale Community Centre', address: 'Lilydale', lat: -37.756, lon: 145.35, source_updated_at: ago(feedAge) },
     ]);
     await db.conditions.bulkAdd([
-      { condition_id: 'h1', hazard: 'heat', title: 'Heat Health Warning', publisher: 'Department of Health', level: 'Advice', url: null, statewide: false, rings: [[{ lat: -37.7, lon: 145.3 }, { lat: -37.7, lon: 145.4 }, { lat: -37.9, lon: 145.4 }, { lat: -37.9, lon: 145.3 }]], source_updated_at: ago(feedAge) },
+      { condition_id: 'h1', hazard: 'heat', title: 'Heat Health Warning', publisher: 'Department of Health', statewide: false, rings: [[{ lat: -37.7, lon: 145.3 }, { lat: -37.7, lon: 145.4 }, { lat: -37.9, lon: 145.4 }, { lat: -37.9, lon: 145.3 }]], source_updated_at: ago(feedAge) },
     ]);
     await db.syncMeta.bulkAdd([
       { key: 'static_synced_at', value: ago(2 * 3_600_000) },

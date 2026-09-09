@@ -30,6 +30,8 @@ type DestinationsProps = {
   /** The way on when there is nothing to choose: no place published, or only
    *  places the CFA could not put on the map. */
   onContinue?: () => void;
+  /** The words for this kind of place: the bushfire set unless told otherwise. */
+  labels?: copy.DestinationLabels;
   now?: number;
 };
 
@@ -40,7 +42,7 @@ type RowSelection = { chosen: boolean; onToggle: () => void };
 export function PlaceFacts({ place, now }: { place: Destination; now: number }) {
   return (
     <>
-      <p>{copy.NSP_KIND_LABEL}</p>
+      {place.kind !== 'absence' ? <p>{copy.KIND_LABEL[place.kind]}</p> : null}
       {place.addressText ? <p className="muted">{place.addressText}</p> : null}
       {place.council ? <p>{copy.NSP_COUNCIL_LABEL(place.council)}</p> : null}
       {place.designatedAt ? (
@@ -100,6 +102,7 @@ export function Destinations({
   status = 'ok',
   save,
   onContinue,
+  labels = copy.BUSHFIRE_LABELS,
   now = Date.now(),
 }: DestinationsProps) {
   const [chosen, setChosen] = useState<string[]>([]);
@@ -122,12 +125,12 @@ export function Destinations({
       : status === 'not-bushfire'
         ? copy.NSP_BUSHFIRE_ONLY
         : saveState === 'saved'
-          ? copy.LAST_RESORT_PLACES_SAVED
+          ? labels.saved
           : null;
   if (statement) {
     return (
       <main className="page destinations-page">
-        <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+        <h1>{labels.title}</h1>
         <StateCard heading={statement} />
         {continueAction}
       </main>
@@ -138,7 +141,7 @@ export function Destinations({
     return (
       <main className="page destinations-page">
         <div role="status" aria-live="polite">
-          <p>{copy.SAVING_LAST_RESORT_PLACES}</p>
+          <p>{labels.saving}</p>
         </div>
       </main>
     );
@@ -170,11 +173,11 @@ export function Destinations({
 
   return (
     <main className="page destinations-page">
-      <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+      <h1>{labels.title}</h1>
 
       {nonePublished ? (
         <>
-          <StateCard heading={copy.NO_DESTINATION_PUBLISHED_FOR(area)} />
+          <StateCard heading={labels.none(area)} />
           {continueAction}
         </>
       ) : (
@@ -215,7 +218,7 @@ export function Destinations({
           {selectable ? (
             <>
               <p className="destination-choose-hint">
-                {copy.CHOOSE_PLACES_HINT(savableCount(ordered.length))}
+                {labels.hint(savableCount(ordered.length))}
               </p>
               <div role="status" aria-live="polite">
                 {capReached ? <p>{copy.TWO_PLACES_ALREADY_CHOSEN}</p> : null}
@@ -228,7 +231,7 @@ export function Destinations({
                   disabled={!canSaveDestinations(ordered.length, chosen.length)}
                   onClick={() => void runSave()}
                 >
-                  {copy.SAVE_LAST_RESORT_PLACES}
+                  {labels.save}
                 </button>
               </div>
             </>

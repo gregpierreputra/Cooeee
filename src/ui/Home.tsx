@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { NEARBY_RESYNC_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { homeView, titleCase, type HomeView } from '../core/home';
 import type { Pack } from '../core/types';
@@ -35,12 +36,23 @@ export default function Home({ now }: { now?: number }) {
       readConditionCache(),
     ]);
     setView(homeView(seed, rows, cache));
+    return cache;
   };
 
   useEffect(() => {
-    void load();
-    // A failed refresh leaves the last snapshot in place; the cards say its age.
-    if (navigator.onLine) syncNearby().then(load, () => {});
+    let live = true;
+    void load().then((cache) => {
+      // Refresh the feed snapshot when online, no more often than Nearby does.
+      // A failed refresh leaves the last snapshot in place; the cards say its age.
+      const syncedAt = Date.parse(cache.meta.dynamic_synced_at ?? '');
+      if (!live || !navigator.onLine || Date.now() - syncedAt < NEARBY_RESYNC_MS) return;
+      syncNearby().then(() => {
+        if (live) void load();
+      }, () => {});
+    });
+    return () => {
+      live = false;
+    };
   }, [seed]);
 
   // Deleting a pack takes two taps: the delete control swaps that pack's card

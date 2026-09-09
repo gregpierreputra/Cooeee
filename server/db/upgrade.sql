@@ -19,3 +19,4 @@ CREATE TABLE IF NOT EXISTS conditions (
     ingested_at         TEXT NOT NULL,
     closed_at           TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_conditions_status ON conditions(status);

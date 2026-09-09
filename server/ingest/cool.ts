@@ -1,4 +1,4 @@
-import { isInsideVictoria } from '../../src/core/constants.ts';
+import { isInsideVictoria, MAX_TEXT_CHARS } from '../../src/core/constants.ts';
 import { readJsonBounded } from '../../src/data/bounded-body.ts';
 import type { Db } from '../db.ts';
 import { runSync } from '../sources.ts';
@@ -21,9 +21,11 @@ type Feature = {
 /** One FOI point → one COOL facility, or null when it is not a usable place. */
 export function toFacility(feature: Feature): FacilityInput | null {
   const props = feature.properties ?? {};
-  const name = typeof props.name_label === 'string' ? props.name_label.trim() : '';
+  const name = typeof props.name_label === 'string' ? props.name_label.trim().slice(0, MAX_TEXT_CHARS) : '';
   const ref = props.pfi;
   if (!name || (typeof ref !== 'number' && typeof ref !== 'string')) return null;
+  // The filter is in the request, and checked again here: only the three kinds asked for.
+  if (!SUBTYPES.includes(String(props.feature_subtype).toLowerCase())) return null;
   // The layer answers with a one-member MultiPoint; a plain Point is taken too.
   const geometry = feature.geometry;
   const coordinates =
@@ -53,8 +55,12 @@ export async function fetchCoolPlaces(
   });
   const response = await fetcher(`${WFS_URL}?${params}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!response.ok) throw new Error(`Vicmap FOI layer returned HTTP ${response.status}`);
-  const payload = (await readJsonBounded(response, MAX_BODY_BYTES)) as { features?: unknown };
+  const payload = (await readJsonBounded(response, MAX_BODY_BYTES)) as { features?: unknown; numberMatched?: unknown };
   if (!Array.isArray(payload.features)) throw new TypeError('Vicmap FOI layer: features must be an array');
+  // A cut-off page would flag every row past the cut for review on the next run.
+  if (typeof payload.numberMatched === 'number' && payload.numberMatched > payload.features.length) {
+    throw new Error('Vicmap FOI layer: more rows matched than were returned');
+  }
   const rows: FacilityInput[] = [];
   let skipped = 0;
   for (const feature of payload.features as Feature[]) {

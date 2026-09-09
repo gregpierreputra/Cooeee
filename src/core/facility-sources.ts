@@ -17,3 +17,12 @@ export const FACILITY_SOURCE: Record<FacilityType, string> = {
   RECOVERY: 'vicemergency_feed',
   ASSEMBLY: 'vicemergency_feed',
 };
+
+/** How each upstream is named on screen and in the API's sentences. */
+export const SOURCE_NAMES: Record<string, string> = {
+  cfa_nsp_arcgis: 'Country Fire Authority Neighbourhood Safer Places list',
+  cfr_static_list: 'Community Fire Refuge list',
+  vicmap_foi_cool: 'Vicmap Features of Interest',
+  vicmap_admin_postcodes: 'Vicmap postcode list',
+  vicemergency_feed: 'VicEmergency feed',
+};

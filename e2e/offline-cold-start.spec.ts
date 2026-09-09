@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { HEADER_HOME_LABEL, NO_PACK_SAVED, NO_PACKS_HINT } from '../src/core/copy';
+import { DYNAMIC_SNAPSHOT_PATH, STATIC_BUNDLE_PATH } from '../src/data/nearby';
 import { acknowledgeFirstOpen, waitForController } from './helpers';
 
 // The offline claim is the product. It is asserted against the real production
@@ -21,11 +22,12 @@ test('the shell cold-starts with the radios off, and nothing reaches for the net
 
   // The home screen refreshes the feed snapshot when the browser says it is
   // online, and Chromium keeps saying so on a worker-served offline reload, so
-  // that one same-origin refresh is the only request allowed to fail here. The
-  // shell itself asks for nothing.
+  // those two same-origin paths are the only requests allowed to fail here.
+  // The shell itself asks for nothing.
   const failed: string[] = [];
   page.on('requestfailed', (r) => {
-    if (!r.url().includes('/api/')) failed.push(`${r.method()} ${r.url()}`);
+    const path = new URL(r.url()).pathname;
+    if (path !== STATIC_BUNDLE_PATH && path !== DYNAMIC_SNAPSHOT_PATH) failed.push(`${r.method()} ${r.url()}`);
   });
 
   await context.setOffline(true);

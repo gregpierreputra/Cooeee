@@ -59,6 +59,8 @@ export const DTP_LICENCE = 'CC BY 4.0';
  * machine, in raw JSON, and is not a page to read. */
 export const DTP_DATASET_URL =
   'https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa';
+/** The dataset page behind the cool places, Vicmap Features of Interest. */
+export const COOL_DATASET_URL = 'https://discover.data.vic.gov.au/dataset/vicmap-features-of-interest';
 /** The file name of the Web Map Service picture of a pack's area, stored with
  *  the pack's source copies. Named here so the pack page can find it without
  *  importing the module that fetches it. */
@@ -100,9 +102,11 @@ export const SNAPSHOT_MAX_AGE_DAYS = 60;
  *  body past this is a fault or an attack, not data. */
 export const MAX_RESPONSE_BYTES = 10 * 1_048_576;
 
-/** The most rows one synced collection may hold. Victoria has about 315
+/** The most rows one synced collection may hold. Victoria has about 1,200
  *  facilities and 694 postcodes; a list past this is a fault, not data. */
 export const MAX_SYNC_ROWS = 10_000;
+/** The longest name, title or address kept from any upstream, in characters. */
+export const MAX_TEXT_CHARS = 300;
 
 // Exact publisher hosts, or an apex no wider than the publisher itself. The
 // bare vic.gov.au apex is deliberately absent: it would admit every subdomain

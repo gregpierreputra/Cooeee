@@ -259,6 +259,40 @@ export const LAST_RESORT_PLACES_SAVED = 'Last-resort places saved';
 export const LAST_RESORT_SAVE_FAILED =
   'Your places were not saved. Your selection is still here. Try again.';
 
+/** The words the places step uses for one kind of place. The bushfire set is
+ *  the mandated wording above, unchanged; the cool set names a heat day. */
+export type DestinationLabels = {
+  title: string;
+  hint: (n: number) => string;
+  save: string;
+  saving: string;
+  saved: string;
+  none: (area: string) => string;
+};
+export const BUSHFIRE_LABELS: DestinationLabels = {
+  title: DESTINATIONS_STEP_TITLE,
+  hint: CHOOSE_PLACES_HINT,
+  save: SAVE_LAST_RESORT_PLACES,
+  saving: SAVING_LAST_RESORT_PLACES,
+  saved: LAST_RESORT_PLACES_SAVED,
+  none: (area) => NO_DESTINATION_PUBLISHED_FOR(area),
+};
+export const COOL_LABELS: DestinationLabels = {
+  title: 'Cool places for a heat day',
+  hint: (n) => (n === 1 ? 'Choose the cool place to save.' : 'Choose two cool places to save.'),
+  save: 'Save cool places',
+  saving: 'Saving your cool places.',
+  saved: 'Cool places saved',
+  none: (area) => `No cool place is in the downloaded list for ${area}.`,
+};
+export const LOADING_COOL_PLACES = 'Reading the downloaded list of cool places.';
+export const COOL_KIND_LABEL = 'Cool place: library, community centre or pool';
+/** What a saved place calls itself, by the kind of row it is. */
+export const KIND_LABEL: Record<Exclude<Destination['kind'], 'absence'>, string> = {
+  'nsp-bushfire': NSP_KIND_LABEL,
+  'cool-heat': COOL_KIND_LABEL,
+};
+
 /** The mandated absence line, plus the area it applies to. */
 export const NO_DESTINATION_PUBLISHED =
   'No official place of last resort is published for this area';
@@ -785,13 +819,10 @@ export const NEEDS_REVIEW_NOTE =
   'Listed earlier by the Country Fire Authority but missing from its latest list, check before relying on it.';
 
 export const DATA_SOURCES_LABEL = 'Data sources';
-export const SOURCE_NAMES: Record<string, string> = {
-  cfa_nsp_arcgis: 'Country Fire Authority Neighbourhood Safer Places list',
-  cfr_static_list: 'Community Fire Refuge list',
-  vicmap_foi_cool: 'Vicmap Features of Interest',
-  vicmap_admin_postcodes: 'Vicmap postcode list',
-  vicemergency_feed: 'VicEmergency feed',
-};
+// The source names sit in facility-sources.ts, the leaf module the API server
+// also loads under plain Node; they are re-exported here so every string still
+// has one import for the screens.
+export { SOURCE_NAMES } from './facility-sources';
 export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
   healthy: 'reachable',
   degraded: 'struggling',

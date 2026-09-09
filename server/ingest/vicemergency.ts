@@ -1,4 +1,4 @@
-import { isInsideVictoria, OFFICIAL_DOMAINS } from '../../src/core/constants.ts';
+import { isInsideVictoria, MAX_SYNC_ROWS, MAX_TEXT_CHARS, OFFICIAL_DOMAINS } from '../../src/core/constants.ts';
 import { readJsonBounded } from '../../src/data/bounded-body.ts';
 import type { ConditionHazard, DynamicType, LatLon } from '../../src/core/types.ts';
 import { type Db, nowIso, transaction } from '../db.ts';
@@ -27,7 +27,9 @@ const LABEL_FIELDS = ['feedType', 'category1', 'category2', 'sourceTitle', 'name
 // the same way over the same fields plus the CAP event. ponytail: not yet
 // verified against a live heat item (none in September) — adjust this table only.
 const HAZARD_BY_LABEL: [label: string, hazard: ConditionHazard][] = [
-  ['heat', 'heat'],
+  ['heatwave', 'heat'],
+  ['heat health', 'heat'],
+  ['extreme heat', 'heat'],
   ['severe weather', 'storm'],
   ['thunderstorm', 'storm'],
 ];
@@ -37,17 +39,17 @@ const PUBLISHER_BY_ORG: Record<string, string> = {
   'VIC/DH': 'Department of Health',
 };
 const DEFAULT_PUBLISHER = 'Emergency Management Victoria';
-// A notice past this many ring points keeps no rings at all, so one enormous
+// A notice past the phone's own row cap keeps no rings at all, so one enormous
 // polygon set cannot bloat every phone's snapshot. ponytail: the cap drops the
 // area rather than simplifying it; add ring simplification if a real notice trips it.
-const MAX_RING_POINTS = 20_000;
+const MAX_RING_POINTS = MAX_SYNC_ROWS;
 
 type Props = Record<string, unknown>;
 type Geometry = { type?: string; coordinates?: unknown; geometries?: Geometry[] } | null | undefined;
 type Feature = { geometry?: Geometry; properties?: Props | null };
 
 const text = (value: unknown): string | null =>
-  typeof value === 'string' && value.trim() ? value.trim() : null;
+  typeof value === 'string' && value.trim() ? value.trim().slice(0, MAX_TEXT_CHARS) : null;
 
 const labelsOf = (props: Props): string =>
   LABEL_FIELDS.map((field) => text(props[field]) ?? '').join(' | ').toLowerCase();
@@ -68,12 +70,13 @@ const publisherOf = (props: Props): string => {
   return PUBLISHER_BY_ORG[org] ?? (labelsOf(props).includes('health') ? 'Department of Health' : DEFAULT_PUBLISHER);
 };
 
-/** A link is kept only when it points at a publisher the app already trusts. */
+/** A link is kept only when it is https and points at a publisher the app already trusts. */
 const officialUrl = (value: unknown): string | null => {
   const url = text(value);
   if (!url) return null;
   try {
-    const host = new URL(url).hostname;
+    const { protocol, hostname: host } = new URL(url);
+    if (protocol !== 'https:') return null;
     return OFFICIAL_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`)) ? url : null;
   } catch {
     return null;
@@ -201,7 +204,9 @@ export function applyFeed(db: Db, features: Feature[]): SyncCounts {
     const conditionsSeen = new Set<string>();
     for (const feature of features) {
       const props = feature.properties ?? {};
-      const hazard = classifyHazard(props);
+      // A relief facility is a place, never a notice, whatever its name contains.
+      const type = classify(props);
+      const hazard = type ? null : classifyHazard(props);
       if (hazard) {
         const id = text(props.sourceId) ?? text(props.id);
         const title = text(props.sourceTitle) ?? text(props.name) ?? text(props.webHeadline);
@@ -230,7 +235,6 @@ export function applyFeed(db: Db, features: Feature[]): SyncCounts {
         conditionsSeen.add(id);
         continue;
       }
-      const type = classify(props);
       if (!type) continue;
       seen += 1;
       const externalRef = text(props.sourceId) ?? text(props.id);

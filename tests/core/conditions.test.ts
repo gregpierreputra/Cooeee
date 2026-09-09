@@ -18,8 +18,6 @@ const condition = (over: Partial<Condition> = {}): Condition => ({
   hazard: 'heat',
   title: 'Heatwave Warning',
   publisher: 'Bureau of Meteorology',
-  level: 'Advice',
-  url: null,
   statewide: false,
   rings: [SQUARE],
   source_updated_at: ago(60_000),

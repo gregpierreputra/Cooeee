@@ -203,22 +203,33 @@ describe('nearest official places from the state-wide list', () => {
       lga_name: null, designation_status: 'designated' as const, last_verified_at: new Date(NOW).toISOString(),
     }));
     const notice = {
-      condition_id: 'h', hazard: 'heat' as const, title: 'Heatwave Warning', publisher: 'Bureau of Meteorology',
-      level: null, url: null, statewide: true, rings: [], source_updated_at: new Date(NOW).toISOString(),
+      condition_id: 'h', hazard: 'heat' as const, title: 'Heatwave Warning', publisher: 'Bureau of Meteorology', statewide: true, rings: [], source_updated_at: new Date(NOW).toISOString(),
     };
     const meta = (ageMs: number) => ({ dynamic_source_last_success_at: new Date(NOW - ageMs).toISOString() });
+    const readAt = NOW;
 
-    const hot = deriveState(NOW, [], fix(), 'granted', snapshot, { cool, conditions: [notice], meta: meta(60_000) });
+    const hot = deriveState(NOW, [], fix(), 'granted', snapshot, { cool, conditions: [notice], meta: meta(60_000), readAt });
     expect(hot.kind === 'NO_PACK' && hot.heat).toBe(true);
     expect(hot.kind === 'NO_PACK' && hot.nearby.map((p) => p.id)).toEqual(['1', '3', '7']);
     expect(hot.kind === 'NO_PACK' && hot.nearby[0].publisher).toBe('Department of Transport and Planning');
 
-    const stale = deriveState(NOW, [], fix(), 'granted', snapshot, { cool, conditions: [notice], meta: meta(2 * 3_600_000) });
+    const stale = deriveState(NOW, [], fix(), 'granted', snapshot, { cool, conditions: [notice], meta: meta(2 * 3_600_000), readAt });
     expect(stale.kind === 'NO_PACK' && stale.heat).toBe(false);
     expect(stale.kind === 'NO_PACK' && stale.nearby.map((p) => p.id)).toEqual(['site-1', 'site-2', 'site-4']);
 
-    const nothingDownloaded = deriveState(NOW, [], fix(), 'granted', snapshot, { cool: [], conditions: [notice], meta: meta(60_000) });
+    const nothingDownloaded = deriveState(NOW, [], fix(), 'granted', snapshot, { cool: [], conditions: [notice], meta: meta(60_000), readAt });
     expect(nothingDownloaded.kind === 'NO_PACK' && nothingDownloaded.heat).toBe(false);
+
+    // In a pack's area the chosen cool places are the pointed ones, not the bushfire ones.
+    const pool = destination({ id: 'pack-1:9', name: 'Pool', kind: 'cool-heat', chosen: true, ...km(-1) });
+    const inArea = deriveState(NOW, [kalorama([north, south, pool])], fix(), 'granted', snapshot, { cool, conditions: [notice], meta: meta(60_000), readAt });
+    expect(inArea.kind === 'IN_AREA' && inArea.places.map((p) => p.name)).toEqual(['Pool']);
+    // The pool is pack-1:9 and cool row 9 is the same place: pointed once, never listed again.
+    const chosenPool = destination({ id: 'pack-1:3', name: 'Library 3', kind: 'cool-heat', chosen: true, ...km(3) });
+    const once = deriveState(NOW, [kalorama([chosenPool])], fix(), 'granted', snapshot, { cool, conditions: [notice], meta: meta(60_000), readAt });
+    expect(once.kind === 'IN_AREA' && once.nearby.map((p) => p.id)).toEqual(['1', '7']);
+    const calm = deriveState(NOW, [kalorama([north, south, pool])], fix(), 'granted', snapshot);
+    expect(calm.kind === 'IN_AREA' && calm.places.map((p) => p.name)).toEqual(['North', 'South']);
   });
 });
 

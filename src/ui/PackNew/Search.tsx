@@ -15,6 +15,7 @@ import {
   PACK_HAZARD,
   PLACES_OFFERED,
 } from '../../core/constants';
+import { coolSource, selectCoolForPack, toCoolDestination } from '../../core/cool';
 import * as copy from '../../core/copy';
 import { chosenDestinations, orderByDistance } from '../../core/destination';
 import { titleCase } from '../../core/home';
@@ -33,6 +34,7 @@ import type {
   TextPackContent,
 } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
+import { loadCoolPlaces } from '../../data/nearby';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
 import { loadPackFiles } from '../../data/source-files';
@@ -65,6 +67,9 @@ type OfferState =
 
 /** E2-US1/US2: the official places of last resort for the confirmed place,
  * read from the precached CFA snapshot. Nothing here is written to the device. */
+// The cool places step, after the bushfire places: the downloaded list, ordered.
+type CoolState = { kind: 'loading' } | { kind: 'unavailable' } | { kind: 'ready'; ordered: Destination[] };
+
 type PlacesState =
   | { kind: 'loading' }
   | { kind: 'unavailable' }
@@ -82,6 +87,7 @@ type SearchProps = {
   checkArea?: typeof fetchBushfireAreaResult;
   loadPacks?: () => Promise<Pack[]>;
   loadNsp?: () => Promise<NspSnapshot>;
+  loadCool?: typeof loadCoolPlaces;
   loadFiles?: typeof loadPackFiles;
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
@@ -112,6 +118,7 @@ export function Search({
   checkArea = fetchBushfireAreaResult,
   loadPacks = listCompletePacks,
   loadNsp = loadNspSnapshot,
+  loadCool = loadCoolPlaces,
   loadFiles = loadPackFiles,
   onKeepSavedPlace,
   buildOffer = createPackOffer,
@@ -148,6 +155,8 @@ export function Search({
   // The places the user chose, held while the note step is on screen, and the
   // note itself once it is past. Both in memory only until the pack save.
   const [chosenPlaces, setChosenPlaces] = useState<Destination[] | null>(null);
+  const [coolState, setCoolState] = useState<CoolState | null>(null);
+  const [chosenCool, setChosenCool] = useState<Destination[] | null>(null);
   const [note, setNote] = useState<string | undefined>(undefined);
   // Made once per confirmed place, before the places step: destination rows
   // carry the pack id, so the id must exist before the user chooses them.
@@ -259,6 +268,19 @@ export function Search({
     }
   }
 
+  async function runCool(place: PendingPlace) {
+    setCoolState({ kind: 'loading' });
+    try {
+      const { rows, retrievedAt } = await loadCool();
+      const source = coolSource(retrievedAt);
+      const nearest = selectCoolForPack(rows, place, PLACES_OFFERED);
+      const { ordered } = orderByDistance(nearest.map((row) => toCoolDestination(row, packId, source)), place);
+      setCoolState({ kind: 'ready', ordered });
+    } catch {
+      setCoolState({ kind: 'unavailable' });
+    }
+  }
+
   async function buildPackOfferForResult(
     place: PendingPlace,
     result: BushfireAreaResult,
@@ -314,6 +336,8 @@ export function Search({
     setOfferState(null);
     setPlacesState(null);
     setChosenPlaces(null);
+    setCoolState(null);
+    setChosenCool(null);
     setNote(undefined);
   }
 
@@ -418,18 +442,59 @@ export function Search({
     );
   }
 
-  // The note step, after the places and before the size. The example names the
-  // nearest chosen place, so the note is about this pack from the first word.
-  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
+  // The note step, after both places steps and before the size. The example
+  // names the nearest chosen bushfire place, so the note is about this pack
+  // from the first word.
+  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces && chosenCool) {
     const { result } = areaState;
+    const destinations = [...chosenPlaces, ...chosenCool];
     const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
     return (
       <Note
         example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
         onContinue={(text) => {
           setNote(text);
-          void buildPackOfferForResult(pendingPlace, result, chosenPlaces);
+          void buildPackOfferForResult(pendingPlace, result, destinations);
         }}
+      />
+    );
+  }
+
+  // The cool places step: two from the downloaded list, for a heat day. A list
+  // that cannot be read is said so, and the pack can go on without it.
+  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces && coolState) {
+    if (coolState.kind === 'loading') {
+      return (
+        <StatusPage page="places-page" kicker={copy.COOL_LABELS.title} card={<p>{copy.LOADING_COOL_PLACES}</p>} />
+      );
+    }
+    if (coolState.kind === 'unavailable') {
+      return (
+        <StatusPage
+          page="places-page"
+          kicker={copy.COOL_LABELS.title}
+          card={<p>{copy.OFFICIAL_LIST_UNAVAILABLE}</p>}
+          actions={
+            <>
+              <button className="main-action" type="button" onClick={() => void runCool(pendingPlace)}>
+                {copy.TRY_AGAIN}
+              </button>
+              <button type="button" onClick={() => setChosenCool([])}>
+                {copy.CONTINUE}
+              </button>
+            </>
+          }
+        />
+      );
+    }
+    return (
+      <Destinations
+        ordered={coolState.ordered}
+        unlocated={[]}
+        area={titleCase(areaState.result.lgaName)}
+        labels={copy.COOL_LABELS}
+        save={async (ids) => setChosenCool(chosenDestinations(coolState.ordered, ids))}
+        onContinue={() => setChosenCool([])}
       />
     );
   }
@@ -475,8 +540,10 @@ export function Search({
     // Holding them moves the wizard on to the note step above.
     const { snapshot, ordered, unlocated } = placesState;
     const area = titleCase(result.lgaName);
-    const continueWith = async (chosen: Destination[]) =>
+    const continueWith = async (chosen: Destination[]) => {
       setChosenPlaces(destinationsForPack(chosen, packId, snapshot, area, PACK_HAZARD));
+      void runCool(pendingPlace);
+    };
     return (
       <Destinations
         ordered={ordered}

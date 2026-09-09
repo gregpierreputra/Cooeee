@@ -70,12 +70,24 @@ export async function readPacks(page: Page) {
 
 /** E2-US2: the places step of the wizard. Ticks as many places as the area
  *  lets the user save (two, or fewer when fewer are located) and moves on. */
-export async function chooseLastResortPlaces(page: Page) {
+export async function chooseLastResortPlaces(page: Page, cool: 'choose' | 'skip' = 'skip') {
   const boxes = page.getByRole('checkbox');
   await expect(boxes.first()).toBeVisible(); // the list has been read from the snapshot
   const count = Math.min(2, await boxes.count());
   for (let i = 0; i < count; i += 1) await boxes.nth(i).check();
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
+  // The cool places step follows. With the bundle on the device two are chosen;
+  // without it the step says the list could not be included and the pack goes on.
+  if (cool === 'choose') {
+    await expect(page.getByRole('heading', { level: 1, name: 'Cool places for a heat day' })).toBeVisible();
+    const coolBoxes = page.getByRole('checkbox');
+    await coolBoxes.nth(0).check();
+    await coolBoxes.nth(1).check();
+    await page.getByRole('button', { name: 'Save cool places' }).click();
+  } else {
+    await expect(page.getByText('The official list could not be included for this area.')).toBeVisible();
+    await page.getByRole('button', { name: 'Continue' }).click();
+  }
   // The note step follows the places: keep the pre-filled example.
   await page.getByRole('button', { name: 'Keep this note' }).click();
 }

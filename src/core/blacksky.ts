@@ -14,9 +14,12 @@ import type { NearbyCache } from './nearby';
 import type { BundleFacility, Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from './types';
 
 /** What the screen has on the device for a heat day: the downloaded cool places
- *  and the last synced notices. Empty on a phone that has never opened Nearby. */
-export type HeatSources = Pick<NearbyCache, 'conditions' | 'meta'> & { cool: BundleFacility[] };
-export const NO_HEAT_SOURCES: HeatSources = { cool: [], conditions: [], meta: {} };
+ *  and the last synced notices, with the clock at the moment they were read.
+ *  The notices' freshness is judged at that moment and not again, so the
+ *  screen never changes its instruction mid-walk when the hour runs out.
+ *  Empty on a phone that has never opened Nearby. */
+export type HeatSources = Pick<NearbyCache, 'conditions' | 'meta'> & { cool: BundleFacility[]; readAt: number };
+export const NO_HEAT_SOURCES: HeatSources = { cool: [], conditions: [], meta: {}, readAt: 0 };
 
 /** One place to point at: a live bearing and distance from the fix. Built the
  *  same way for a place chosen into a pack and for a site on the state-wide
@@ -108,10 +111,13 @@ export type Screen =
       absence?: Destination;
     };
 
-// The chosen places, plus any absence row — which is never "chosen" but must
-// always be rendered.
-const shown = (places: Destination[]): Destination[] =>
-  places.filter((d) => d.chosen === true || d.kind === 'absence');
+// The chosen places of the kind the moment calls for (cool places under a heat
+// notice, otherwise bushfire; every kind when there is no fix to judge by),
+// plus any absence row — which is never "chosen" but must always be rendered.
+const shown = (places: Destination[], heat: boolean | null): Destination[] => {
+  const kind = heat === null ? null : heat ? 'cool-heat' : 'nsp-bushfire';
+  return places.filter((d) => (d.chosen === true && (kind === null || d.kind === kind)) || d.kind === 'absence');
+};
 
 /** The NEARBY_PLACES closest of the given places, nearest first. Every row is
  *  reachable from here: the list is never cut by a radius. This runs on every
@@ -140,9 +146,14 @@ export function nearestSites(
   );
 }
 
-/** The nearest downloaded cool places, listed by the Department of Transport and Planning. */
-const nearestCool = (fix: LatLon, cool: BundleFacility[]): Placed[] =>
-  nearestPlaces(fix, cool.map((f) => ({ id: String(f.facility_id), name: f.name, lat: f.lat, lon: f.lon, publisher: DTP_PUBLISHER })));
+/** The nearest downloaded cool places, skipping any the pack already carries. */
+const nearestCool = (fix: LatLon, cool: BundleFacility[], excludeIds: Set<string> = new Set()): Placed[] =>
+  nearestPlaces(
+    fix,
+    cool
+      .filter((f) => !excludeIds.has(String(f.facility_id)))
+      .map((f) => ({ id: String(f.facility_id), name: f.name, lat: f.lat, lon: f.lon, publisher: DTP_PUBLISHER })),
+  );
 
 /**
  * The whole BlackSky screen, derived from scratch on every fix and every
@@ -175,9 +186,9 @@ export function deriveState(
   const from = positionFrom(fix, permission);
   // Under a current heat notice the nearby list points at cool places instead
   // of bushfire places: the hazard at the fix decides which list is drawn.
-  const heat = from !== null && heatSources.cool.length > 0 && heatNoticeAt(now, heatSources, from);
+  const heat = from !== null && heatSources.cool.length > 0 && heatNoticeAt(heatSources.readAt, heatSources, from);
   const nearby = (fix: LatLon, exclude?: Set<string>): Placed[] =>
-    heat ? nearestCool(fix, heatSources.cool) : nearestSites(fix, snapshot, exclude);
+    heat ? nearestCool(fix, heatSources.cool, exclude) : nearestSites(fix, snapshot, exclude);
 
   if (packs.length === 0) {
     return from
@@ -195,7 +206,7 @@ export function deriveState(
       kind: 'ACQUIRING',
       reason: permission === 'denied' ? 'denied' : 'no-fix',
       pack: fallback.pack,
-      places: shown(fallback.places),
+      places: shown(fallback.places, null),
     };
 
   const confidence = confidenceOf(now, from);
@@ -220,7 +231,7 @@ export function deriveState(
     };
 
   const here = containing[0];
-  const chosen = shown(here.places);
+  const chosen = shown(here.places, heat);
   const places = chosen
     .filter(isGeocoded)
     .map((d) =>
@@ -234,7 +245,8 @@ export function deriveState(
     )
     .sort(byDistance);
 
-  // A chosen row's id is `${packId}:${siteId}`, so the site ids fall out of it.
+  // A chosen row's id is `${packId}:${siteId}` (or the facility id for a cool
+  // place), so the ids to skip in the nearby list fall out of it.
   const chosenSiteIds = new Set(chosen.map((d) => d.id.slice(here.pack.id.length + 1)));
   const absence = here.places.find((d) => d.kind === 'absence');
 
