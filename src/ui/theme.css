@@ -2122,3 +2122,20 @@ input {
   color: var(--ink-2);
   margin: 0.25rem 0 0;
 }
+
+/* The reader's own record of an action they have taken, and the control that
+   makes or corrects it. The control is not filled: the filled control means
+   "this is what would fix it", and ticking a record fixes nothing — the action
+   itself did that, out in the world, before the reader came back to say so. */
+.gap-done {
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  color: var(--ink-2);
+  margin: 0.25rem 0 0;
+}
+
+.gap-mark {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 0.5rem;
+}

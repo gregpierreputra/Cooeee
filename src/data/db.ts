@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import { NOTE_MAX_CHARS } from '../core/constants';
 import type { RehearsalInput } from '../core/rehearsal-entry';
 import type {
+  ActionCompletion,
   BundleFacility,
   BundlePostcode,
   CompletePackContent,
@@ -43,6 +44,8 @@ class CooeeeDb extends Dexie {
   syncMeta!: Table<SyncMetaRow, string>;
   // Finished rehearsals. A rehearsal in progress is never in here.
   rehearsals!: Table<Rehearsal, string>;
+  // The reader's own record of the actions they have taken, per pack.
+  actionCompletions!: Table<ActionCompletion, string>;
   // The CFA site list, for BlackSky's nearest-places pointer.
   snapshots!: Table<StoredSnapshot, string>;
 
@@ -98,6 +101,11 @@ class CooeeeDb extends Dexie {
     // EPIC 4 took version 7 for packPrograms before this branch landed, and a
     // shipped version is never mutated, so the rehearsal stores begin at 8.
     this.version(8).stores({ rehearsals: 'id, packId, finishedAt' });
+
+    // Version 9 adds the reader's own record of the actions they have taken.
+    // Keyed by pack and action rather than by rehearsal, so a completion
+    // outlives the run that raised the gap.
+    this.version(9).stores({ actionCompletions: 'id, packId' });
   }
 }
 
@@ -119,10 +127,16 @@ export const ownedTables = () => [
   db.packPrograms,
   // A rehearsal is about one pack. Deleting the pack takes its rehearsals with
   // it: a record of what was missing from a pack that no longer exists is not
-  // information, it is a loose end. REPLACING a pack is not deleting it, and
-  // takes the other path — see historyTables() above.
+  // information, it is a loose end. The same goes for the actions the reader
+  // marked against that pack. REPLACING a pack is not deleting it, and takes
+  // the other path — see historyTables() below.
   ...historyTables(),
 ];
+
+/** The id of one completion. One per action per pack: marking the same action
+ *  twice is the same record, not a second one. */
+export const actionCompletionId = (packId: string, actionId: string): string =>
+  `${packId}:${actionId}`;
 
 /** The tables holding what the READER has built up about a pack over time,
  *  rather than what the pack itself contains: the rehearsals they have run and
@@ -134,19 +148,45 @@ export const ownedTables = () => [
  *  belongs to the place rather than to the row that happened to hold it. So the
  *  replacement path moves these rather than deleting them (see
  *  carryHistoryToNewPack). An outright delete still takes them. */
-export const historyTables = () => [db.rehearsals];
+export const historyTables = () => [db.rehearsals, db.actionCompletions];
+
+/** Move one pack's rehearsals to another. The row's key is its own id, which
+ *  says nothing about the pack, so only the field changes. */
+const carryRehearsals = (oldId: string, newId: string): Promise<number> =>
+  db.rehearsals.where('packId').equals(oldId).modify({ packId: newId });
+
+/** Move one pack's action completions to another.
+ *
+ *  A completion's KEY embeds the pack it belongs to, so this is a delete and a
+ *  re-put rather than a field change: leaving the old key in place would strand
+ *  the row. It would still be listed for the new pack, so the reader would see
+ *  their tick — but marking the same action again would write a SECOND row
+ *  under the correct key, and unmarking would delete that one and leave the
+ *  stranded row behind, so the tick would come back. */
+async function carryCompletions(oldId: string, newId: string): Promise<void> {
+  const rows = await db.actionCompletions.where('packId').equals(oldId).toArray();
+  if (rows.length === 0) return;
+  await db.actionCompletions.bulkDelete(rows.map((row) => row.id));
+  await db.actionCompletions.bulkPut(
+    rows.map((row) => ({
+      ...row,
+      id: actionCompletionId(newId, row.actionId),
+      packId: newId,
+    })),
+  );
+}
 
 /** Move the reader's history from a pack being replaced onto the pack that
  *  replaces it. Callers run this inside their own transaction, which must list
  *  historyTables().
  *
- *  Without this, refreshing a pack would delete every rehearsal of it — and the
- *  action a rehearsal most often asks for is to build the pack again, so doing
- *  what the product asked would destroy the record of having done it. */
+ *  Without this, refreshing a pack would delete every rehearsal of it AND every
+ *  action the reader had marked done against it — and the action a rehearsal
+ *  most often asks for is to build the pack again, so doing what the product
+ *  asked would destroy the record of having done it. */
 export async function carryHistoryToNewPack(oldId: string, newId: string): Promise<void> {
-  await Promise.all(
-    historyTables().map((table) => table.where('packId').equals(oldId).modify({ packId: newId })),
-  );
+  await carryRehearsals(oldId, newId);
+  await carryCompletions(oldId, newId);
 }
 
 /** Remove every row the given packs own. Callers run this inside their own
@@ -208,6 +248,40 @@ export async function saveFinishedRehearsal(rehearsal: Rehearsal): Promise<void>
 /** Every finished rehearsal for one pack, oldest first. */
 export const listRehearsalsForPack = (packId: string): Promise<Rehearsal[]> =>
   db.rehearsals.where('packId').equals(packId).sortBy('finishedAt');
+
+/** Record that the reader has taken one of the actions a rehearsal gave them.
+ *
+ *  Idempotent: marking an action already marked rewrites the same row. */
+export async function markActionDone(
+  packId: string,
+  actionId: string,
+  doneAt: number,
+): Promise<void> {
+  if (!(doneAt > 0)) throw new RangeError('a completion is recorded with the date it was made');
+  await db.actionCompletions.put({
+    id: actionCompletionId(packId, actionId),
+    packId,
+    actionId,
+    doneAt,
+  });
+}
+
+/** Remove the reader's own completion, because they say it is not true.
+ *
+ *  THIS IS NOT THE PRODUCT UN-TICKING. "Never silently un-tick" is a rule about
+ *  the PRODUCT: it may not decide a completion has gone stale and take it away,
+ *  and nothing here or anywhere else expires one. A reader correcting a record
+ *  they made themselves is a different act, and the two must not be read as the
+ *  same rule — removing this function would not enforce the first one, it would
+ *  only leave a mistaken tick with no way back.
+ *
+ *  The row is deleted rather than dated: no history of ticks is kept. */
+export const undoActionDone = (packId: string, actionId: string): Promise<void> =>
+  db.actionCompletions.delete(actionCompletionId(packId, actionId));
+
+/** Every action the reader has marked against one pack. */
+export const listActionCompletions = (packId: string): Promise<ActionCompletion[]> =>
+  db.actionCompletions.where('packId').equals(packId).toArray();
 
 /** The CFA site list for BlackSky: written whole, read whole. */
 export const putNspSnapshot = (snapshot: NspSnapshot): Promise<string> =>

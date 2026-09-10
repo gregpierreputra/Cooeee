@@ -619,3 +619,74 @@ test('AC1 the result reads in order: heading, condition, then each gap', async (
   expect(condition).toBeGreaterThan(heading);
   expect(firstGap).toBeGreaterThan(condition);
 });
+
+// E5-US2-AC1 — the mark-done control, held to the same checks as every other
+// control in this flow.
+test('AC1 the mark-done control meets the minimum target size', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await runToResult(page, 'gap', 'No location fix');
+  await page.locator('.gap-row').first().waitFor();
+
+  const controls = await page.locator('.gap-mark').all();
+  expect(controls.length).toBeGreaterThanOrEqual(2);
+  for (const control of controls) {
+    const box = await control.boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(24);
+    expect(box!.height).toBeGreaterThanOrEqual(24);
+  }
+});
+
+test('AC1 a marked action keeps its contrast and its place in the reading order', async ({ page }) => {
+  await runToResult(page, 'gap', 'No location fix');
+  await page.locator('.gap-row').first().waitFor();
+  await page.locator('.gap-row').first().getByRole('button', { name: 'Mark this done' }).click();
+  await page.locator('.gap-done').first().waitFor();
+
+  const rows = await page.evaluate(() => {
+    const relativeLuminance = (channels: number[]) => {
+      const [r, g, b] = channels.map((value) => {
+        const s = value / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const channels = (colour: string) => colour.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+    const painted = (el: HTMLElement): number[] => {
+      let node: HTMLElement | null = el;
+      while (node) {
+        const background = getComputedStyle(node).backgroundColor;
+        if (background && !background.includes('rgba(0, 0, 0, 0)')) return channels(background);
+        node = node.parentElement;
+      }
+      return [255, 255, 255];
+    };
+    return [...document.querySelectorAll<HTMLElement>('.gap-done, .gap-mark')].map((el) => {
+      const style = getComputedStyle(el);
+      const foreground = relativeLuminance(channels(style.color));
+      const background = relativeLuminance(painted(el));
+      const ratio =
+        (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+      const px = Number.parseFloat(style.fontSize);
+      const large = px >= 24 || (px >= 18.66 && Number(style.fontWeight) >= 700);
+      return {
+        text: (el.textContent ?? '').slice(0, 30),
+        ratio: Math.round(ratio * 100) / 100,
+        required: large ? 3 : 4.5,
+      };
+    });
+  });
+  const failing = rows.filter((row) => row.ratio < row.required);
+  expect(failing, JSON.stringify(failing)).toEqual([]);
+
+  // The date sits after the action it belongs to, and before the control that
+  // changes it.
+  const order = await page.evaluate(() => {
+    const row = document.querySelector('.gap-row') as HTMLElement;
+    return [...row.querySelectorAll('.gap-action-label, .gap-done, .gap-mark')].map(
+      (el) => el.className,
+    );
+  });
+  expect(order[0]).toContain('gap-action-label');
+  expect(order[1]).toContain('gap-done');
+  expect(order[2]).toContain('gap-mark');
+});

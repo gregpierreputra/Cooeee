@@ -153,3 +153,149 @@ test.describe('AC1 what the run recorded', () => {
     expect(offOrigin).toEqual([]);
   });
 });
+
+// E5-US2-AC1 — the reader's own record of what they have done about a gap.
+//
+// `keep=1` makes the harness seed only once, so a reload keeps what the previous
+// load wrote. Without it every load starts from a clean device and a
+// survives-a-reload test could not be written at all.
+const KEEP = `${ORIGIN}/rehearse?mode=gap&keep=1`;
+
+const firstRow = (page: Page) => page.locator('.gap-row').first();
+
+async function runKept(page: Page, condition: string) {
+  await page.goto(KEEP);
+  await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
+  await page.getByRole('button', { name: new RegExp(condition) }).click();
+  await expect(page.locator('.gap-row').first()).toBeVisible();
+}
+
+test.describe('AC1 marking an action done', () => {
+  // TC-5.2.1-C
+  test('records the date, shows it, and survives a reload', async ({ page }) => {
+    await runKept(page, NO_FIX);
+    const row = firstRow(page);
+
+    await expect(row.getByRole('button', { name: 'Mark this done' })).toBeVisible();
+    await expect(row.locator('.gap-done')).toHaveCount(0);
+
+    await row.getByRole('button', { name: 'Mark this done' }).click();
+    await expect(row.locator('.gap-done')).toHaveText(/^You marked this done \d{1,2} [A-Z][a-z]+ \d{4}$/);
+    const shown = await row.locator('.gap-done').innerText();
+
+    // The app is closed and reopened. The rehearsal is gone, as AC3 requires;
+    // the record of what the reader has done is not.
+    await page.reload();
+    await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
+    await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
+    await expect(firstRow(page).locator('.gap-done')).toHaveText(shown);
+  });
+
+  test('is attributed to the reader, and never reads as the capability returning', async ({ page }) => {
+    await runKept(page, NO_FIX);
+    const row = page.locator('.gap-row', { hasText: CONDITION_MEANING });
+
+    await row.getByRole('button', { name: 'Mark this done' }).click();
+    await expect(row.locator('.gap-done')).toContainText('You marked this done');
+    // The gap is still stated, in the same words, beside the completion.
+    await expect(row).toContainText(CONDITION_MEANING);
+    await expect(row).not.toContainText('restored');
+    await expect(row).not.toContainText('available again');
+  });
+
+  // TC-5.2.1-F
+  test('does not change the gap it belongs to', async ({ page }) => {
+    await runKept(page, NO_FIX);
+    const before = await page.locator('.gap-row h3').allInnerTexts();
+    const meanings = await page.locator('.gap-row > p.muted').allInnerTexts();
+
+    await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
+    await expect(firstRow(page).locator('.gap-done')).toBeVisible();
+
+    expect(await page.locator('.gap-row h3').allInnerTexts()).toEqual(before);
+    expect(await page.locator('.gap-row > p.muted').allInnerTexts()).toEqual(meanings);
+  });
+
+  test('marks only the action it belongs to', async ({ page }) => {
+    await runKept(page, NO_FIX);
+    await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
+
+    await expect(firstRow(page).locator('.gap-done')).toBeVisible();
+    await expect(page.locator('.gap-row').nth(1).locator('.gap-done')).toHaveCount(0);
+  });
+});
+
+// TC-5.2.1-I. The reader correcting their own record is not the product
+// un-ticking: nothing expires a completion, and only this control removes one.
+test.describe('AC1 undoing a marking', () => {
+  test('leaves no completion, no date, and the gap unchanged', async ({ page }) => {
+    await runKept(page, NO_FIX);
+    const row = firstRow(page);
+    const title = await row.locator('h3').innerText();
+    const meaning = await row.locator('p.muted').first().innerText();
+
+    await row.getByRole('button', { name: 'Mark this done' }).click();
+    await expect(row.locator('.gap-done')).toBeVisible();
+
+    // The same control, tapped again. No confirm step, no menu.
+    await row.getByRole('button', { name: 'I have not done this' }).click();
+    await expect(row.locator('.gap-done')).toHaveCount(0);
+    await expect(row.getByRole('button', { name: 'Mark this done' })).toBeVisible();
+
+    // The gap is not newly detected: it reads exactly as it did before.
+    await expect(row.locator('h3')).toHaveText(title);
+    await expect(row.locator('p.muted').first()).toHaveText(meaning);
+    // Nothing reads as the gap having just been found: undoing a completion is
+    // a correction to the reader's record, not a change to what the run found.
+    // (The word "again" is not checked for: the actions themselves say "build
+    // this pack again", which is the action, not a claim about the gap.)
+    await expect(page.locator('main')).not.toContainText('newly');
+    await expect(page.locator('main')).not.toContainText('found again');
+    await expect(page.locator('main')).not.toContainText('new gap');
+    await expect(page.locator('main')).not.toContainText('reappeared');
+
+    // And it is gone from the device, not merely from the screen.
+    await page.reload();
+    await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
+    await expect(firstRow(page).locator('.gap-done')).toHaveCount(0);
+  });
+
+  test('can be marked again afterwards', async ({ page }) => {
+    await runKept(page, NO_FIX);
+    const row = firstRow(page);
+
+    await row.getByRole('button', { name: 'Mark this done' }).click();
+    await row.getByRole('button', { name: 'I have not done this' }).click();
+    await row.getByRole('button', { name: 'Mark this done' }).click();
+
+    await expect(row.locator('.gap-done')).toBeVisible();
+  });
+});
+
+// A completion belongs to the pack, not to the run, so the reader does not
+// re-tick what they have already done.
+test('AC1 a completion is still there on the next rehearsal', async ({ page }) => {
+  await runKept(page, NO_FIX);
+  await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
+  await expect(firstRow(page).locator('.gap-done')).toBeVisible();
+
+  // Leave the rehearsal and run another one on the same pack.
+  await page.getByRole('button', { name: 'Leave the rehearsal' }).click();
+  await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
+  await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
+
+  await expect(firstRow(page).locator('.gap-done')).toBeVisible();
+});
+
+// TC-5.2.1-E again, now that a date is on the screen: a date is not a count.
+test('AC1 a completion adds no total, count or verdict', async ({ page }) => {
+  await runKept(page, NO_FIX);
+  await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
+  await expect(firstRow(page).locator('.gap-done')).toBeVisible();
+
+  const text = (await page.locator('main').innerText()).toLowerCase();
+  ['score', 'grade', 'total', 'passed', 'failed', '%', 'out of', 'remaining', 'complete'].forEach(
+    (word) => expect(text, `found "${word}"`).not.toContain(word),
+  );
+  expect(text).not.toMatch(/\bunprepared\b|\byou are (ready|prepared)\b/);
+});

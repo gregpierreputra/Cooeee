@@ -12,6 +12,10 @@ import {
   listRehearsalsForPack,
   saveFinishedRehearsal,
   carryHistoryToNewPack,
+  actionCompletionId,
+  listActionCompletions,
+  markActionDone,
+  undoActionDone,
   sweepBuilding,
 } from '../../src/data/db';
 import { fileMeta, manifestGroup, sha256Hex } from '../../src/data/integrity';
@@ -48,6 +52,7 @@ beforeEach(async () => {
     db.programs.clear(),
     db.packPrograms.clear(),
     db.rehearsals.clear(),
+    db.actionCompletions.clear(),
   ]);
 });
 
@@ -240,9 +245,10 @@ describe('putNote', () => {
 });
 
 describe('schema', () => {
-  it('is version 8: the pack stores, the Nearby-places stores, the snapshot, files, notes, pack programs and rehearsals', () => {
-    expect(db.verno).toBe(8);
+  it('is version 9: the pack stores, the Nearby-places stores, the snapshot, files, notes, pack programs, rehearsals and completions', () => {
+    expect(db.verno).toBe(9);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
+      'actionCompletions',
       'destinations',
       'dynamicSnapshot',
       'files',
@@ -491,14 +497,138 @@ describe('replacing a pack carries its rehearsals to the pack that replaces it',
     expect(await listRehearsalsForPack('new')).toEqual([]);
   });
 
+  it('carries the actions the reader marked done as well', async () => {
+    await markActionDone('old', 'build-pack-again-for-places', Date.UTC(2026, 2, 3));
+
+    await carryHistoryToNewPack('old', 'new');
+
+    expect(await listActionCompletions('old')).toEqual([]);
+    expect(await listActionCompletions('new')).toEqual([
+      {
+        id: 'new:build-pack-again-for-places',
+        packId: 'new',
+        actionId: 'build-pack-again-for-places',
+        doneAt: Date.UTC(2026, 2, 3),
+      },
+    ]);
+  });
+
+  // A completion's KEY embeds the pack, so a move that changed only the field
+  // would strand the row: the reader would see their tick, marking again would
+  // write a second row under the right key, and unmarking would delete that one
+  // and leave the stranded row, so the tick would come back.
+  it('rewrites the completion key, so marking and unmarking still work afterwards', async () => {
+    await markActionDone('old', 'build-pack-again-for-places', Date.UTC(2026, 2, 3));
+    await carryHistoryToNewPack('old', 'new');
+
+    await markActionDone('new', 'build-pack-again-for-places', Date.UTC(2026, 2, 4));
+    expect(await listActionCompletions('new')).toHaveLength(1);
+
+    await undoActionDone('new', 'build-pack-again-for-places');
+    expect(await listActionCompletions('new')).toEqual([]);
+    expect(await db.actionCompletions.toArray()).toEqual([]);
+  });
+
   // Deleting a pack outright is a different act from replacing one, and still
   // takes the history with it.
   it('is not what happens when a pack is deleted outright', async () => {
     await db.packs.put(pack());
     await saveFinishedRehearsal(rehearsalFor('pack-1', 'run-1'));
 
+    await markActionDone('pack-1', 'build-pack-again-for-places', Date.UTC(2026, 2, 3));
+
     await deleteCompletePack('pack-1');
 
     expect(await listRehearsalsForPack('pack-1')).toEqual([]);
+    expect(await listActionCompletions('pack-1')).toEqual([]);
+  });
+});
+
+// E5-US2-AC1 — the reader's own record of the actions they have taken.
+describe('an action the reader marks done', () => {
+  const ACTION = 'build-pack-again-for-places';
+  const DONE_AT = Date.UTC(2026, 2, 3);
+
+  it('is recorded against the pack, with the date it was made', async () => {
+    await markActionDone('pack-1', ACTION, DONE_AT);
+
+    expect(await listActionCompletions('pack-1')).toEqual([
+      { id: 'pack-1:build-pack-again-for-places', packId: 'pack-1', actionId: ACTION, doneAt: DONE_AT },
+    ]);
+    expect(actionCompletionId('pack-1', ACTION)).toBe('pack-1:build-pack-again-for-places');
+  });
+
+  it('is one record per action per pack, however many times it is marked', async () => {
+    await markActionDone('pack-1', ACTION, DONE_AT);
+    await markActionDone('pack-1', ACTION, DONE_AT + 86_400_000);
+
+    const stored = await listActionCompletions('pack-1');
+    expect(stored).toHaveLength(1);
+    // The latest marking is the one that stands.
+    expect(stored[0].doneAt).toBe(DONE_AT + 86_400_000);
+  });
+
+  it('belongs to its own pack and to no other', async () => {
+    await markActionDone('pack-1', ACTION, DONE_AT);
+    await markActionDone('other-pack', ACTION, DONE_AT);
+
+    expect(await listActionCompletions('pack-1')).toHaveLength(1);
+    expect((await listActionCompletions('other-pack'))[0].packId).toBe('other-pack');
+  });
+
+  it('is refused without a date', async () => {
+    await expect(markActionDone('pack-1', ACTION, 0)).rejects.toThrow(RangeError);
+    expect(await listActionCompletions('pack-1')).toEqual([]);
+  });
+
+  // Completions are keyed by pack and action, not by rehearsal, so the run that
+  // raised the gap can come and go and the record stays.
+  it('outlives the rehearsal that raised the gap', async () => {
+    await markActionDone('pack-1', ACTION, DONE_AT);
+    await saveFinishedRehearsal({
+      id: 'run-1',
+      packId: 'pack-1',
+      condition: 'no-data',
+      startedAt: 1,
+      finishedAt: 2,
+      gaps: [{ gapType: 'places-missing', kind: 'pack-content', hazard: 'bushfire' }],
+    });
+    await db.rehearsals.clear();
+
+    expect(await listActionCompletions('pack-1')).toHaveLength(1);
+  });
+
+  // TC-5.2.1-I, the storage half. The READER removing their own record is not
+  // the product un-ticking: nothing here expires a completion, and only this
+  // call removes one.
+  it('is removed when the reader says they have not done it, leaving no row', async () => {
+    await markActionDone('pack-1', ACTION, DONE_AT);
+    await undoActionDone('pack-1', ACTION);
+
+    expect(await listActionCompletions('pack-1')).toEqual([]);
+    // Deleted, not dated: no history of ticks is kept.
+    expect(await db.actionCompletions.toArray()).toEqual([]);
+  });
+
+  it('can be removed when it was never there, without complaint', async () => {
+    await expect(undoActionDone('pack-1', ACTION)).resolves.toBeUndefined();
+    expect(await listActionCompletions('pack-1')).toEqual([]);
+  });
+
+  it('can be marked again after it has been removed', async () => {
+    await markActionDone('pack-1', ACTION, DONE_AT);
+    await undoActionDone('pack-1', ACTION);
+    await markActionDone('pack-1', ACTION, DONE_AT + 1000);
+
+    expect((await listActionCompletions('pack-1'))[0].doneAt).toBe(DONE_AT + 1000);
+  });
+
+  it('goes when the pack it belongs to goes', async () => {
+    await db.packs.put(pack());
+    await markActionDone('pack-1', ACTION, DONE_AT);
+
+    await deleteCompletePack('pack-1');
+
+    expect(await listActionCompletions('pack-1')).toEqual([]);
   });
 });

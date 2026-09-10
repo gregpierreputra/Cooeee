@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as copy from '../../src/core/copy';
 import { rehearsalResult } from '../../src/core/rehearsal-result';
-import type { DetectedGap, Rehearsal } from '../../src/core/types';
+import type { ActionCompletion, DetectedGap, Rehearsal } from '../../src/core/types';
 
 const rehearsal = (gaps: DetectedGap[], over: Partial<Rehearsal> = {}): Rehearsal => ({
   id: 'run-1',
@@ -159,5 +159,140 @@ describe('a result is a reading of the run that was recorded', () => {
     const record = rehearsal(gaps);
     rehearsalResult(record);
     expect(record.gaps).toEqual([packContentGap, persistentGap]);
+  });
+});
+
+// E5-US2-AC1 — the reader's own record of what they have done about a gap.
+describe('an action the reader has marked done', () => {
+  const completion = (over: Partial<ActionCompletion> = {}): ActionCompletion => ({
+    id: 'pack-1:build-pack-again-for-places',
+    packId: 'pack-1',
+    actionId: 'build-pack-again-for-places',
+    doneAt: Date.UTC(2026, 2, 3),
+    ...over,
+  });
+
+  const rowsOf = (record: Rehearsal, completions: ActionCompletion[]) => {
+    const result = rehearsalResult(record, completions);
+    if (result.state !== 'gaps') throw new Error('expected gaps');
+    return result.rows;
+  };
+
+  // TC-5.2.1-C, the reading half: the date is carried, in the product's format.
+  it('carries the date it was marked, written as every date in this product is', () => {
+    const [row] = rowsOf(rehearsal([packContentGap]), [completion()]);
+    expect(row.doneOn).toBe('3 March 2026');
+    expect(copy.ACTION_DONE_ON(row.doneOn!)).toBe('You marked this done 3 March 2026');
+  });
+
+  it('is not done until there is a completion for it', () => {
+    const [row] = rowsOf(rehearsal([packContentGap]), []);
+    expect(row.doneOn).toBeNull();
+  });
+
+  // One field, not a boolean beside a date: a row cannot say it is done while
+  // holding no date to say it with.
+  it('cannot say it is done without the date it was done on', () => {
+    rowsOf(rehearsal([packContentGap, persistentGap]), [completion()]).forEach((row) => {
+      expect(row).not.toHaveProperty('done');
+      expect(typeof row.doneOn === 'string' || row.doneOn === null).toBe(true);
+    });
+  });
+
+  it('marks only the action it belongs to', () => {
+    const rows = rowsOf(rehearsal([packContentGap, persistentGap]), [completion()]);
+    expect(rows[0].doneOn).toBe('3 March 2026');
+    expect(rows[1].doneOn).toBeNull();
+  });
+
+  // A completion is identified by the pack it was made against. One pack's
+  // record says nothing about another's.
+  it('does not carry across to another pack', () => {
+    const [row] = rowsOf(rehearsal([packContentGap]), [
+      completion({ packId: 'other-pack', id: 'other-pack:build-pack-again-for-places' }),
+    ]);
+    expect(row.doneOn).toBeNull();
+  });
+
+  it('ignores a completion for an action this result does not carry', () => {
+    const rows = rowsOf(rehearsal([persistentGap]), [completion()]);
+    expect(rows[0].doneOn).toBeNull();
+  });
+
+  // Completions belong to the pack, not to the run, so a later run finds the
+  // ones made before it: the reader does not re-tick what they have done.
+  it('is found by a later run of the same pack', () => {
+    const laterRun = rehearsal([packContentGap], { id: 'run-2', startedAt: 2, finishedAt: 3 });
+    expect(rowsOf(laterRun, [completion()])[0].doneOn).toBe('3 March 2026');
+  });
+
+  // TC-5.2.1-F. The record of what a rehearsal found is not touched by what the
+  // reader has done about it.
+  it('does not change the gap it belongs to', () => {
+    const record = rehearsal([packContentGap, persistentGap]);
+    const withNone = rowsOf(record, []);
+    const withOne = rowsOf(record, [completion()]);
+
+    expect(record.gaps).toEqual([packContentGap, persistentGap]);
+    expect(withOne.map((row) => row.gapType)).toEqual(withNone.map((row) => row.gapType));
+    expect(withOne.map((row) => row.action)).toEqual(withNone.map((row) => row.action));
+    expect(withOne.map((row) => row.meaning)).toEqual(withNone.map((row) => row.meaning));
+  });
+
+  // TC-5.2.1-I, the reading half: with the completion gone the row is simply
+  // not done. It is not newly detected, and nothing about the gap changed.
+  it('reads as not done once the reader has removed it, and nothing else moves', () => {
+    const record = rehearsal([packContentGap]);
+    const before = rowsOf(record, []);
+    const marked = rowsOf(record, [completion()]);
+    const undone = rowsOf(record, []);
+
+    expect(marked[0].doneOn).toBe('3 March 2026');
+    expect(undone[0].doneOn).toBeNull();
+    expect(undone).toEqual(before);
+  });
+
+  it('never turns a completion into a number', () => {
+    const result = rehearsalResult(rehearsal([packContentGap, persistentGap]), [completion()]);
+    ['done', 'doneCount', 'remaining', 'outstanding', 'completed'].forEach((field) =>
+      expect(result).not.toHaveProperty(field),
+    );
+  });
+});
+
+describe('the wording of the record and of a write that did not keep', () => {
+  it('attributes a completion to the reader, not to the world', () => {
+    expect(copy.ACTION_DONE_ON('3 March 2026')).toBe('You marked this done 3 March 2026');
+    // Never reads as the lost capability having returned.
+    expect(copy.ACTION_DONE_ON('3 March 2026')).not.toMatch(
+      /\brestored\b|\bfixed\b|\bworking\b|\bavailable\b|\bresolved\b/i,
+    );
+  });
+
+  it('offers the correction in the reader\'s own terms', () => {
+    expect(copy.MARK_ACTION_DONE).toBe('Mark this done');
+    expect(copy.UNDO_ACTION_DONE).toBe('I have not done this');
+  });
+
+  // Rule 0.1: "we could not keep this" and "this did not happen" are different
+  // statements, and the screen makes the first one.
+  it('says a run was not kept without saying it did not happen', () => {
+    expect(copy.RUN_NOT_KEPT).toBe(
+      'This rehearsal could not be kept on this device. What it found is on this screen now, and will not be here later.',
+    );
+    expect(copy.RUN_NOT_KEPT).not.toMatch(/\bdid not (run|happen)\b|\bfailed to run\b|\bno rehearsal\b/i);
+  });
+
+  it('says a marking was not kept, and promises no date for it', () => {
+    expect(copy.ACTION_NOT_KEPT).toBe(
+      'This could not be kept on this device. Nothing was recorded, so it will still be here to mark next time.',
+    );
+    expect(copy.ACTION_NOT_KEPT).not.toMatch(/\d/);
+  });
+
+  it('says nothing about the reader being unprepared', () => {
+    [copy.RUN_NOT_KEPT, copy.ACTION_NOT_KEPT, copy.MARK_ACTION_DONE, copy.UNDO_ACTION_DONE].forEach(
+      (line) => expect(line).not.toMatch(/\bunprepared\b|\bnot ready\b/i),
+    );
   });
 });

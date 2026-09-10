@@ -1,19 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as copy from '../../core/copy';
 import { detectGaps } from '../../core/rehearsal-checks';
-import { rehearsalResult, type RehearsalResult } from '../../core/rehearsal-result';
+import { rehearsalResult } from '../../core/rehearsal-result';
 import type { RehearsalRun } from '../../core/rehearsal-run';
-import type { CompletePackContent, Rehearsal } from '../../core/types';
-import { getCompletePackContent, saveFinishedRehearsal } from '../../data/db';
+import type { ActionCompletion, CompletePackContent, Rehearsal } from '../../core/types';
+import {
+  getCompletePackContent,
+  listActionCompletions,
+  markActionDone,
+  saveFinishedRehearsal,
+  undoActionDone,
+} from '../../data/db';
 
 type ResultProps = {
   run: RehearsalRun;
   loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
+  loadCompletions?: (packId: string) => Promise<ActionCompletion[]>;
   save?: (rehearsal: Rehearsal) => Promise<void>;
+  mark?: (packId: string, actionId: string, doneAt: number) => Promise<void>;
+  undo?: (packId: string, actionId: string) => Promise<void>;
   now?: () => number;
 };
 
-/** E5-US2-AC1 — what the rehearsal found.
+/** E5-US2-AC1 — what the rehearsal found, and what the reader has done about it.
  *
  *  The run walks the fixed journey against the chosen condition, and the moment
  *  it has an answer it HAS FINISHED: there is no step to wait for, so the
@@ -28,43 +37,87 @@ type ResultProps = {
 export default function Result({
   run,
   loadContent = getCompletePackContent,
+  loadCompletions = listActionCompletions,
   save = saveFinishedRehearsal,
+  mark = markActionDone,
+  undo = undoActionDone,
   now = Date.now,
 }: ResultProps) {
-  const [result, setResult] = useState<RehearsalResult | null>(null);
+  const [finished, setFinished] = useState<Rehearsal | null>(null);
+  const [completions, setCompletions] = useState<ActionCompletion[]>([]);
+  /** Whether the run itself reached the device. A rehearsal that could not be
+   *  kept still ran, and still has something to tell the reader. */
+  const [runKept, setRunKept] = useState(true);
+  /** The action whose last marking could not be kept, if any. */
+  const [notKept, setNotKept] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
-    loadContent(run.packId).then((content) => {
-      if (!live || !content) return;
-      const finished: Rehearsal = {
-        id: run.id,
-        packId: run.packId,
-        condition: run.condition,
-        startedAt: run.startedAt,
-        finishedAt: now(),
-        gaps: detectGaps(run.condition, content),
-      };
-      // Rendered from the record that was written, not from a second pass over
-      // the pack: what the reader sees is what the run found.
-      setResult(rehearsalResult(finished));
-      // The write is not awaited before rendering. A rehearsal that could not
-      // be recorded still ran, and still has something to tell the reader;
-      // withholding it would be the blank screen this epic forbids.
-      save(finished).catch(() => {});
-    });
+    Promise.all([loadContent(run.packId), loadCompletions(run.packId).catch(() => [])]).then(
+      ([content, alreadyDone]) => {
+        if (!live || !content) return;
+        const record: Rehearsal = {
+          id: run.id,
+          packId: run.packId,
+          condition: run.condition,
+          startedAt: run.startedAt,
+          finishedAt: now(),
+          gaps: detectGaps(run.condition, content),
+        };
+        setCompletions(alreadyDone);
+        setFinished(record);
+        // Not awaited before rendering: withholding a result that exists would
+        // be the blank screen this epic forbids. But a write that fails is not
+        // allowed to vanish either — the reader is told the run was not kept,
+        // because "we could not keep this" and "this did not happen" are
+        // different statements (rule 0.1).
+        save(record).catch(() => {
+          if (live) setRunKept(false);
+        });
+      },
+    );
     return () => {
       live = false;
     };
-  }, [loadContent, run, save, now]);
+  }, [loadContent, loadCompletions, run, save, now]);
 
-  if (result === null) return null;
+  /** Mark, or unmark, one action.
+   *
+   *  The row is updated first and corrected if the write fails, so a completion
+   *  is never shown with a date it does not hold: a date on screen for a record
+   *  that did not store would be the product asserting something it cannot back.
+   *
+   *  Unmarking is the SAME control, tapped again. It is the reader correcting
+   *  their own record, which is not the product deciding a completion has gone
+   *  stale — nothing here or anywhere else expires one. */
+  const toggle = useCallback(
+    (actionId: string, wasDone: boolean) => {
+      setNotKept(null);
+      const before = completions;
+      const doneAt = now();
+      setCompletions(
+        wasDone
+          ? before.filter((row) => row.actionId !== actionId)
+          : [...before, { id: `${run.packId}:${actionId}`, packId: run.packId, actionId, doneAt }],
+      );
+      const written = wasDone ? undo(run.packId, actionId) : mark(run.packId, actionId, doneAt);
+      written.catch(() => {
+        setCompletions(before);
+        setNotKept(actionId);
+      });
+    },
+    [completions, mark, undo, now, run.packId],
+  );
+
+  if (finished === null) return null;
+  const result = rehearsalResult(finished, completions);
 
   if (result.state === 'no-gaps') {
     return (
       <>
         <h2>{result.heading}</h2>
         <p className="muted">{result.conditionLine}</p>
+        {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
         <p>{result.detail}</p>
       </>
     );
@@ -74,6 +127,7 @@ export default function Result({
     <>
       <h2>{copy.RESULT_HEADING}</h2>
       <p className="muted">{result.conditionLine}</p>
+      {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
 
       <ul className="list gap-list">
         {result.rows.map((row) => (
@@ -86,6 +140,21 @@ export default function Result({
             <p className="muted">{row.meaning}</p>
             <p className="gap-action-label">{copy.ACTION_LABEL}</p>
             <p>{row.action}</p>
+
+            {/* The date is shown only where a completion is actually held. */}
+            {row.doneOn ? <p className="gap-done">{copy.ACTION_DONE_ON(row.doneOn)}</p> : null}
+            <button
+              type="button"
+              className="action gap-mark"
+              onClick={() => toggle(row.actionId, row.doneOn !== null)}
+            >
+              {row.doneOn ? copy.UNDO_ACTION_DONE : copy.MARK_ACTION_DONE}
+            </button>
+            {notKept === row.actionId ? (
+              <p className="muted" role="status">
+                {copy.ACTION_NOT_KEPT}
+              </p>
+            ) : null}
           </li>
         ))}
       </ul>

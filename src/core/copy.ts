@@ -1010,3 +1010,23 @@ export const ACTION_LABEL = 'What to do';
 export const NO_GAPS_HEADING = 'Nothing was missing in this rehearsal';
 export const NO_GAPS_DETAIL = (label: string) =>
   `Everything this rehearsal looked for was on the phone without ${label}. That is what was checked, on this pack, today.`;
+
+// ── E5-US2-AC1 the reader's own record of what they have done ─────────────
+// [DRAFT] pending Sharon's copy review, all four.
+
+export const MARK_ACTION_DONE = 'Mark this done';
+/** Attributes the fact to the READER, not to the world. "Done" alone would read,
+ *  on a gap the condition takes away, as the capability having come back. */
+export const ACTION_DONE_ON = (date: string) => `You marked this done ${date}`;
+/** The same control, tapped again. A reader correcting their own record. */
+export const UNDO_ACTION_DONE = 'I have not done this';
+
+/** Rule 0.1: "we could not keep this" and "this did not happen" are different
+ *  statements. The rehearsal ran and its result is on screen; what failed is the
+ *  keeping of it, and that is what is said. */
+export const RUN_NOT_KEPT =
+  'This rehearsal could not be kept on this device. What it found is on this screen now, and will not be here later.';
+/** No date is ever shown for a completion that did not store: a date would be
+ *  the product asserting a record it does not hold. */
+export const ACTION_NOT_KEPT =
+  'This could not be kept on this device. Nothing was recorded, so it will still be here to mark next time.';

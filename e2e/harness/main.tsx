@@ -538,7 +538,12 @@ if (window.location.pathname === '/nearby') {
 const rehearseMode = new URLSearchParams(window.location.search).get('mode') ?? 'empty';
 const rehearseNow = Date.UTC(2026, 8, 3, 2);
 let rehearseFlow = confirmation;
-if (window.location.pathname === '/rehearse') {
+// `keep=1` seeds only when the pack is not already there, so a reload preserves
+// what the previous load wrote. Without it every load starts from a clean
+// device, which is what the cold-start tests need and what would make a
+// survives-a-reload test impossible to write.
+const rehearseKeep = new URLSearchParams(window.location.search).get('keep') === '1';
+if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.packs.count()) > 0)) {
   await Promise.all(db.tables.map((table) => table.clear()));
   // 3 March 2026 in Melbourne, so the saved date on screen is the exact
   // day, full month, year form.
@@ -621,6 +626,7 @@ if (window.location.pathname === '/rehearse') {
   // A reload is what a cold start looks like, and needs no control at all.
   rehearseFlow = <RehearsalHarness />;
 }
+if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
 
 // The remount control is HARNESS FURNITURE, not product UI. It is rendered
 // after the screen under test and outside its .page container, so it can never

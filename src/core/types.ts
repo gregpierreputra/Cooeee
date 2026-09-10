@@ -431,5 +431,30 @@ export type Rehearsal = {
   gaps: DetectedGap[];         // the gaps this run found, written with it, atomically
 };
 
+/** The reader's own record that they have taken one of the actions a rehearsal
+ *  gave them.
+ *
+ *  Keyed by pack and action, NOT by rehearsal: an action taken in March is still
+ *  taken in September, and asking someone to re-tick it every run would train
+ *  them to tick without reading. So a completion outlives the run that raised
+ *  the gap, and the next run finds it already there.
+ *
+ *  It is never expired and never removed by the product. A condition-persistent
+ *  gap may recur, and the answer to that is the DATE on screen, not the product
+ *  quietly deciding a tick has gone stale — the same treatment EPIC 1 gives a
+ *  pack past its freshness window, which stays fully usable and plainly dated
+ *  while the reader judges it.
+ *
+ *  The reader may remove their own completion, and that is a different act from
+ *  the product removing it: one is a person correcting their own record, the
+ *  other is the product overruling them. Removing deletes the row rather than
+ *  dating it, because no history of ticks is kept. */
+export type ActionCompletion = {
+  id: string;        // `${packId}:${actionId}` — one per action per pack
+  packId: string;
+  actionId: string;
+  doneAt: number;    // epoch ms; rendered as '3 March 2026'
+};
+
 /** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */
 export type SyncMetaRow = { key: string; value: string };
