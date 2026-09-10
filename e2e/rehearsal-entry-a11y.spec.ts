@@ -690,3 +690,118 @@ test('AC1 a marked action keeps its contrast and its place in the reading order'
   expect(order[1]).toContain('gap-done');
   expect(order[2]).toContain('gap-mark');
 });
+
+// E5-US2-AC2/AC3/AC4 — the progress view, held to the same checks.
+const runWithEarlier = async (page: import('@playwright/test').Page, earlier: string) => {
+  await page.goto(`${ORIGIN}/rehearse?mode=gap&earlier=${earlier}`);
+  await page.getByRole('heading', { name: 'What are we rehearsing without?' }).waitFor();
+  await page.getByRole('button', { name: /No location fix/ }).click();
+  await page.locator('.progress').waitFor();
+};
+
+test('AC2 the progress view meets the contrast minimum on every element', async ({ page }) => {
+  await runWithEarlier(page, 'changed');
+
+  const rows = await page.evaluate(() => {
+    const relativeLuminance = (channels: number[]) => {
+      const [r, g, b] = channels.map((value) => {
+        const s = value / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const channels = (colour: string) => colour.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+    const painted = (el: HTMLElement): number[] => {
+      let node: HTMLElement | null = el;
+      while (node) {
+        const background = getComputedStyle(node).backgroundColor;
+        if (background && !background.includes('rgba(0, 0, 0, 0)')) return channels(background);
+        node = node.parentElement;
+      }
+      return [255, 255, 255];
+    };
+    return [...document.querySelectorAll<HTMLElement>('.progress h3, .progress p, .progress .kicker, .progress li')].map(
+      (el) => {
+        const style = getComputedStyle(el);
+        const foreground = relativeLuminance(channels(style.color));
+        const background = relativeLuminance(painted(el));
+        const ratio =
+          (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+        const px = Number.parseFloat(style.fontSize);
+        const large = px >= 24 || (px >= 18.66 && Number(style.fontWeight) >= 700);
+        return {
+          text: (el.textContent ?? '').slice(0, 30),
+          ratio: Math.round(ratio * 100) / 100,
+          required: large ? 3 : 4.5,
+        };
+      },
+    );
+  });
+
+  expect(rows.length).toBeGreaterThanOrEqual(4);
+  const failing = rows.filter((row) => row.ratio < row.required);
+  expect(failing, JSON.stringify(failing)).toEqual([]);
+});
+
+test('AC2 the progress view survives 200% text with no clipping or overlap', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await runWithEarlier(page, 'changed');
+
+  const height = async () => Math.round((await page.locator('.progress').boundingBox())!.height);
+  const before = await height();
+
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect
+    .poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize))
+    .toBe('32px');
+  expect(await height()).toBeGreaterThan(before);
+
+  const report = await page.evaluate(() => {
+    const doc = document.documentElement;
+    const overflowing: string[] = [];
+    const clipped: string[] = [];
+    document.querySelectorAll<HTMLElement>('.progress *').forEach((el) => {
+      const box = el.getBoundingClientRect();
+      if (box.right > doc.clientWidth + 1 || box.left < -1) overflowing.push(el.tagName + '.' + el.className);
+      if (el.scrollHeight > el.clientHeight + 1 && getComputedStyle(el).overflowY === 'hidden') {
+        clipped.push(el.tagName + '.' + el.className);
+      }
+    });
+    const blocks = [...document.querySelectorAll<HTMLElement>('.progress h3, .progress p, .progress .kicker')].map(
+      (el) => {
+        const box = el.getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom };
+      },
+    );
+    const overlaps: number[] = [];
+    for (let i = 1; i < blocks.length; i += 1) {
+      if (blocks[i].top < blocks[i - 1].bottom - 1) overlaps.push(i);
+    }
+    return { overflowing, clipped, overlaps, hScroll: document.body.scrollWidth > doc.clientWidth + 1 };
+  });
+
+  expect(report.overlaps).toEqual([]);
+  expect(report.clipped).toEqual([]);
+  expect(report.overflowing).toEqual([]);
+  expect(report.hScroll).toBe(false);
+});
+
+test('AC2 the progress view reads before the gaps it summarises', async ({ page }) => {
+  await runWithEarlier(page, 'changed');
+
+  const order = await page.evaluate(() =>
+    [...document.querySelectorAll('.page h2, .progress h3, .gap-row h3')].map((el) => ({
+      tag: el.tagName,
+      className: el.className,
+      inProgress: Boolean(el.closest('.progress')),
+    })),
+  );
+
+  const resultHeading = order.findIndex((entry) => entry.tag === 'H2');
+  const progressHeading = order.findIndex((entry) => entry.inProgress);
+  const firstGap = order.findIndex((entry) => entry.tag === 'H3' && !entry.inProgress);
+
+  expect(resultHeading).toBeGreaterThanOrEqual(0);
+  expect(progressHeading).toBeGreaterThan(resultHeading);
+  expect(firstGap).toBeGreaterThan(progressHeading);
+});

@@ -1,21 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as copy from '../../core/copy';
 import { detectGaps } from '../../core/rehearsal-checks';
+import { comparableEarlier, rehearsalProgress } from '../../core/rehearsal-progress';
 import { rehearsalResult } from '../../core/rehearsal-result';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { ActionCompletion, CompletePackContent, Rehearsal } from '../../core/types';
 import {
   getCompletePackContent,
   listActionCompletions,
+  listRehearsalsForPack,
   markActionDone,
   saveFinishedRehearsal,
   undoActionDone,
 } from '../../data/db';
+import ProgressView from './Progress';
 
 type ResultProps = {
   run: RehearsalRun;
   loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
   loadCompletions?: (packId: string) => Promise<ActionCompletion[]>;
+  loadRehearsals?: (packId: string) => Promise<Rehearsal[]>;
   save?: (rehearsal: Rehearsal) => Promise<void>;
   mark?: (packId: string, actionId: string, doneAt: number) => Promise<void>;
   undo?: (packId: string, actionId: string) => Promise<void>;
@@ -38,12 +42,17 @@ export default function Result({
   run,
   loadContent = getCompletePackContent,
   loadCompletions = listActionCompletions,
+  loadRehearsals = listRehearsalsForPack,
   save = saveFinishedRehearsal,
   mark = markActionDone,
   undo = undoActionDone,
   now = Date.now,
 }: ResultProps) {
   const [finished, setFinished] = useState<Rehearsal | null>(null);
+  /** The earlier rehearsal this one is compared against, or null when there is
+   *  none. Read BEFORE this run is recorded, so this run cannot be compared
+   *  with itself. */
+  const [earlier, setEarlier] = useState<Rehearsal | null>(null);
   const [completions, setCompletions] = useState<ActionCompletion[]>([]);
   /** Whether the run itself reached the device. A rehearsal that could not be
    *  kept still ran, and still has something to tell the reader. */
@@ -53,8 +62,12 @@ export default function Result({
 
   useEffect(() => {
     let live = true;
-    Promise.all([loadContent(run.packId), loadCompletions(run.packId).catch(() => [])]).then(
-      ([content, alreadyDone]) => {
+    Promise.all([
+      loadContent(run.packId),
+      loadCompletions(run.packId).catch(() => []),
+      loadRehearsals(run.packId).catch(() => []),
+    ]).then(
+      ([content, alreadyDone, previous]) => {
         if (!live || !content) return;
         const record: Rehearsal = {
           id: run.id,
@@ -62,9 +75,11 @@ export default function Result({
           condition: run.condition,
           startedAt: run.startedAt,
           finishedAt: now(),
+          packVerifiedAt: content.pack.verifiedAt,
           gaps: detectGaps(run.condition, content),
         };
         setCompletions(alreadyDone);
+        setEarlier(comparableEarlier(previous, record));
         setFinished(record);
         // Not awaited before rendering: withholding a result that exists would
         // be the blank screen this epic forbids. But a write that fails is not
@@ -79,7 +94,7 @@ export default function Result({
     return () => {
       live = false;
     };
-  }, [loadContent, loadCompletions, run, save, now]);
+  }, [loadContent, loadCompletions, loadRehearsals, run, save, now]);
 
   /** Mark, or unmark, one action.
    *
@@ -111,6 +126,7 @@ export default function Result({
 
   if (finished === null) return null;
   const result = rehearsalResult(finished, completions);
+  const progress = rehearsalProgress(finished, earlier, completions);
 
   if (result.state === 'no-gaps') {
     return (
@@ -119,6 +135,7 @@ export default function Result({
         <p className="muted">{result.conditionLine}</p>
         {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
         <p>{result.detail}</p>
+        <ProgressView progress={progress} />
       </>
     );
   }
@@ -128,6 +145,7 @@ export default function Result({
       <h2>{copy.RESULT_HEADING}</h2>
       <p className="muted">{result.conditionLine}</p>
       {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
+      <ProgressView progress={progress} />
 
       <ul className="list gap-list">
         {result.rows.map((row) => (

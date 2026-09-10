@@ -429,6 +429,21 @@ export type Rehearsal = {
   startedAt: number;
   finishedAt: number;          // always set; see above
   gaps: DetectedGap[];         // the gaps this run found, written with it, atomically
+  /** The pack's own verifiedAt at the moment this rehearsal ran.
+   *
+   *  Two rehearsals whose values differ were run against different pack
+   *  content, and the later value is the date the pack changed — which is what
+   *  lets a comparison say so rather than presenting two unlike runs as like
+   *  for like.
+   *
+   *  OPTIONAL, and it must stay optional: rehearsals recorded before this field
+   *  existed do not carry it, and a comparison involving one of those genuinely
+   *  cannot tell whether the pack changed. That is the honest indeterminate
+   *  case, and it is reachable rather than contrived precisely because those
+   *  rows exist. Defaulting a missing value to "unchanged" would turn "we
+   *  cannot tell" into "nothing changed", which is the substitution shared rule
+   *  0.1 exists to forbid. */
+  packVerifiedAt?: number;
 };
 
 /** The reader's own record that they have taken one of the actions a rehearsal

@@ -2139,3 +2139,47 @@ input {
   min-height: 44px;
   margin-top: 0.5rem;
 }
+
+/* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
+   Groups are told apart by their HEADINGS and by nothing else: no colour, no
+   dot, no badge, no arrow, so the screen still reads with every colour stripped
+   out [WCAG 1.4.1]. There is no figure of any kind here, and no empty one
+   standing in for a comparison that does not exist yet.
+
+   ponytail: rehearsals accumulate for the life of a pack lineage, and nothing
+   prunes them. At a heavy few hundred rows a year, of about a kilobyte each,
+   that is not a problem worth solving now, and a cap would be a deletion of the
+   reader's own history rather than maintenance. If one is ever added, the safe
+   rule is the most recent N per pack AND condition, since the comparison only
+   ever reads the most recent earlier run — and it must be visible to the
+   reader, not a silent prune. */
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.progress > h3 {
+  font-size: var(--step-1);
+  margin: 0;
+}
+
+.progress-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.progress-list {
+  gap: 0.25rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+.progress-pack-change {
+  font-size: var(--step-s);
+  margin: 0;
+}

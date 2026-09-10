@@ -624,6 +624,35 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
   // it is an unmount and a remount of the same component, which is the same
   // thing from the run's point of view and needs no second application shell.
   // A reload is what a cold start looks like, and needs no control at all.
+  // E5-US2-AC2/AC4. `earlier=` seeds a rehearsal that already happened, so the
+  // next run has something to compare against. Its value chooses what that
+  // earlier run knew:
+  //   same    — same pack content and the same gaps, so nothing moved
+  //   changed — a different packVerifiedAt, so the pack was built again between
+  //   unknown — recorded before the pack's verified date was kept, so whether
+  //             the pack changed cannot be said
+  const seeded = new URLSearchParams(window.location.search).get('earlier');
+  if (seeded) {
+    const earlierPackVerifiedAt =
+      seeded === 'changed' ? Date.UTC(2026, 1, 1) : rehearseSavedAt;
+    await db.rehearsals.put({
+      id: 'earlier-run',
+      packId: 'rehearse-pack',
+      condition: 'no-location-fix',
+      startedAt: Date.UTC(2026, 2, 1),
+      finishedAt: Date.UTC(2026, 2, 1),
+      ...(seeded === 'unknown' ? {} : { packVerifiedAt: earlierPackVerifiedAt }),
+      // The earlier run found the contingency only, so a pack-content gap in
+      // the later run reads as one the earlier run did not find.
+      gaps: [
+        {
+          gapType: 'live-direction-unavailable' as const,
+          kind: 'condition-persistent' as const,
+          hazard: 'bushfire' as const,
+        },
+      ],
+    });
+  }
   rehearseFlow = <RehearsalHarness />;
 }
 if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;

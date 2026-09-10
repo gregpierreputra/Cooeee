@@ -1030,3 +1030,28 @@ export const RUN_NOT_KEPT =
  *  the product asserting a record it does not hold. */
 export const ACTION_NOT_KEPT =
   'This could not be kept on this device. Nothing was recorded, so it will still be here to mark next time.';
+
+// ── E5-US2-AC2/AC3/AC4 what has moved since the last rehearsal ────────────
+// Words, never a figure. The three groups below are told apart by their
+// headings, not by a colour, a dot or a badge: strip every colour out and the
+// screen still says which list is which [WCAG 1.4.1]. All [DRAFT] for Sharon.
+
+export const PROGRESS_HEADING = 'Since you last rehearsed this pack this way';
+export const EARLIER_REHEARSAL_ON = (date: string) => `Compared with your rehearsal of ${date}`;
+export const GROUP_NEWLY_DETECTED = 'Not found last time';
+export const GROUP_STILL_OPEN = 'Still to do';
+export const GROUP_DONE_SINCE = 'You have done since then';
+
+/** AC3. A first rehearsal is a whole result. This says what is not there yet,
+ *  and does not frame the run as incomplete or as a starting score. */
+export const FIRST_REHEARSAL_HEADING = 'This is your first rehearsal of this pack this way';
+export const FIRST_REHEARSAL_DETAIL =
+  'There is nothing earlier to compare it with yet. What it found is below, in full.';
+
+/** AC4. States that the PACK changed, and keeps that separate from anything the
+ *  reader did. Nothing here attributes the difference to them. */
+export const PACK_CHANGED_ON = (date: string) =>
+  `You built this pack again on ${date}, so the two rehearsals looked at different saved information. What changed between them is not only what you did.`;
+/** The honest third answer. Not a softer way of saying nothing changed. */
+export const PACK_CHANGE_UNKNOWN =
+  'Whether the pack changed between these two rehearsals was not recorded, so it cannot be said either way.';
