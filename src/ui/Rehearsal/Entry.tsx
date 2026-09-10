@@ -5,6 +5,7 @@ import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../co
 import { isRunFor } from '../../core/rehearsal-run';
 import { readRehearsalSource } from '../../data/db';
 import Condition from './Condition';
+import Result from './Result';
 import Run from './Run';
 import { useRehearsalRun } from './run-state';
 import StatusPage from '../components/StatusPage';
@@ -65,7 +66,9 @@ export default function RehearsalEntry({
   // intact. Leaving the screen never asked the rehearsal to end, so it did not.
   if (gate.state === 'ready') {
     return isRunFor(run, gate.packId) && run !== null ? (
-      <Run run={run} />
+      <Run run={run}>
+        <Result run={run} />
+      </Run>
     ) : (
       <Condition packId={gate.packId} />
     );

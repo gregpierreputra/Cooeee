@@ -962,3 +962,51 @@ export const CONDITION_NO_FIX_DETAIL = 'The phone cannot work out where it is.';
 export const NOTHING_IS_SENT = 'Nothing is sent from this rehearsal. Nothing leaves this phone.';
 /** Ends the run. Leaving is the only way out, and it is always available. */
 export const LEAVE_REHEARSAL = 'Leave the rehearsal';
+
+// ── E5-US2-AC1 what a rehearsal found ─────────────────────────────────────
+// A gap is a capability the reader could not rely on under the condition they
+// chose. Nothing here counts, totals, scores or grades, and nothing here says
+// anything about the reader: the pack is short of something, or the condition
+// takes something away, and both are facts about the phone.
+
+export const RESULT_HEADING = 'What this rehearsal found';
+export const RESULT_CONDITION_LINE = (label: string) => `Rehearsed without ${label}.`;
+/** The hazard a gap belongs to, since one pack holds more than one. Total over
+ *  the two rehearsable hazards, so no caller needs a fallback. */
+export const HAZARD_NAME: Record<'bushfire' | 'heat', string> = {
+  bushfire: 'Bushfire',
+  heat: 'Extreme heat',
+};
+export const GAP_HAZARD_LINE = (hazard: string) => `${hazard} journey`;
+
+// The two kinds, told apart by these words and by nothing else.
+export const GAP_MEANING_PACK_CONTENT = 'This information is missing from your pack.';
+export const GAP_MEANING_CONDITION =
+  'This is not available under this condition. Here is what to do instead.';
+
+// What could not be relied on.
+export const GAP_DESIGNATION = 'The official area designation for this address';
+export const GAP_PLACES = 'The official places saved with this pack';
+export const GAP_PROVENANCE = 'The publisher and saved date on every stored item';
+export const GAP_LIVE_DIRECTION = 'Live direction and distance to your saved places';
+
+// The one action for each. None of them says the capability has come back.
+export const ACTION_BUILD_AGAIN_DESIGNATION =
+  'Build this pack again while you have a connection, so the official designation for this address is stored with it.';
+export const ACTION_BUILD_AGAIN_PLACES =
+  'Build this pack again while you have a connection, so the official places for this area are stored with it.';
+export const ACTION_BUILD_AGAIN_PROVENANCE =
+  'Build this pack again while you have a connection, so every stored item carries its publisher and its saved date.';
+/** Says what to do instead, and does not pretend the phone will find the way. */
+export const ACTION_WRITE_THE_WAY_DOWN =
+  'Write down how to reach each saved place from your front door, and keep it with the things you would take.';
+
+export const ACTION_LABEL = 'What to do';
+
+/** A rehearsal that found nothing to act on. It says what was checked and what
+ *  held. It does NOT say the reader is prepared, and it never will.
+ *  [DRAFT] pending Sharon's copy review. Reachable only after a no-data run on a
+ *  complete pack: under no location fix the contingency gap always fires. */
+export const NO_GAPS_HEADING = 'Nothing was missing in this rehearsal';
+export const NO_GAPS_DETAIL = (label: string) =>
+  `Everything this rehearsal looked for was on the phone without ${label}. That is what was checked, on this pack, today.`;

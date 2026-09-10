@@ -2097,3 +2097,28 @@ input {
 .rehearsal-bar-condition {
   font-weight: var(--w-med);
 }
+
+/* E5-US2-AC1 — what a rehearsal found. One row per gap, every row identical:
+   the two kinds of gap are told apart by the sentence each carries, never by a
+   colour, a border, an icon or a position in the list. A row that looked more
+   serious than its neighbour would be a ranking, and there is nothing on this
+   screen to rank — no total, no count, no score and no verdict. */
+.gap-list {
+  gap: 0.75rem;
+}
+
+.gap-row > h3 {
+  font-size: var(--step-1);
+  margin: 0;
+}
+
+/* Names the line beneath it as the one thing to do, so the action is never read
+   as more explanation. */
+.gap-action-label {
+  font-size: var(--step-s);
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin: 0.25rem 0 0;
+}

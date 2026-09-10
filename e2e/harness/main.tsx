@@ -557,7 +557,7 @@ if (window.location.pathname === '/rehearse') {
     packId: 'rehearse-pack',
     group: 'designation',
     code: 'BPA',
-    status: rehearseMode === 'rehearsable' ? 'present' : 'none-mapped-here',
+    status: rehearseMode === 'rehearsable' || rehearseMode === 'gap' ? 'present' : 'none-mapped-here',
     features: [],
     checkedAt: rehearseSavedAt,
     source: { ...packSource, retrievedAt: rehearseSavedAt },
@@ -566,6 +566,28 @@ if (window.location.pathname === '/rehearse') {
     ...cfaSource,
     retrievedAt: rehearseSavedAt,
   });
+  // 'rehearsable' saves an official place as well, so the pack holds the whole
+  // journey and a no-data run finds nothing missing. Every other mode holds the
+  // absence row alone, so the same run finds a pack-content gap beside whatever
+  // the condition itself takes away.
+  //
+  // The rows are decided HERE, before the manifest, and the manifest is built
+  // from exactly these rows. A row added after the manifest would not hash to
+  // what the pack recorded, and the read would withhold the whole group: the
+  // gate would call the pack unreadable and no rehearsal would run at all.
+  const rehearsePlaces: Destination[] =
+    rehearseMode === 'rehearsable'
+      ? [
+          rehearseAbsence,
+          {
+            id: 'rehearse-pack:nsp',
+            packId: 'rehearse-pack',
+            kind: 'nsp-bushfire',
+            name: 'Kalorama Reserve',
+            source: { ...cfaSource, retrievedAt: rehearseSavedAt },
+          },
+        ]
+      : [rehearseAbsence];
   await db.packs.put({
     ...savedPack,
     id: 'rehearse-pack',
@@ -576,7 +598,7 @@ if (window.location.pathname === '/rehearse') {
       version: 1,
       groups: {
         layers: await manifestGroup([rehearseLayer]),
-        destinations: await manifestGroup([rehearseAbsence]),
+        destinations: await manifestGroup(rehearsePlaces),
         recovery: { count: 0, sha256: '' },
         tiles: { count: 0, bytes: 0 },
       },
@@ -587,10 +609,10 @@ if (window.location.pathname === '/rehearse') {
   // row altered after the save, so the group no longer matches its own hash
   // and the read withholds it — the real "could not be read" path, not a
   // simulated one.
-  await db.destinations.put(
+  await db.destinations.bulkPut(
     rehearseMode === 'unreadable'
-      ? { ...rehearseAbsence, reason: 'Altered on the device after the pack was saved.' }
-      : rehearseAbsence,
+      ? [{ ...rehearseAbsence, reason: 'Altered on the device after the pack was saved.' }]
+      : rehearsePlaces,
   );
   // E5-US1-AC3. Leaving the rehearsal screen and coming back within the same
   // session must keep the run. In the running app that is a route change; here

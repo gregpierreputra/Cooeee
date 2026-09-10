@@ -13,12 +13,24 @@
 import { conditionLabel, type RehearsalCondition } from './rehearsal-condition';
 import * as copy from './copy';
 
-/** A rehearsal in progress: the pack it runs against, and the one condition it
- *  runs under. There is no id, no started-at and no progress field, because
- *  nothing about a run outlives the page it runs on. */
+/** A rehearsal in progress: the pack it runs against, the one condition it runs
+ *  under, and the identity it WOULD be recorded under if it finishes.
+ *
+ *  The id and the start time live here, in memory, and are written only as part
+ *  of the finished record. Nothing about a run in progress is stored, so a run
+ *  that is interrupted takes its id and its start time with it and leaves
+ *  nothing behind (E5-US1-AC3). There is no progress field, and there must not
+ *  be one: progress that outlived the page would be a partial result. */
 export type RehearsalRun = {
+  /** The id this run will be recorded under IF it finishes. Made when the run
+   *  starts and kept in memory: it identifies the run, not a stored row, and a
+   *  run that is interrupted takes it with it. */
+  id: string;
   packId: string;
   condition: RehearsalCondition;
+  /** When the user chose the condition. Held here and written only with the
+   *  finished record, never on its own. */
+  startedAt: number;
 };
 
 /** What the bar states, as two separate strings.

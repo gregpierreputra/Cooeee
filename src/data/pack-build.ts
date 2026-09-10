@@ -8,7 +8,14 @@ import type {
   PackOffer,
   TextPackContent,
 } from '../core/types';
-import { checkedNoteText, db, deleteOwnedRows, ownedTables } from './db';
+import {
+  carryHistoryToNewPack,
+  checkedNoteText,
+  db,
+  deleteOwnedRows,
+  historyTables,
+  ownedTables,
+} from './db';
 import { fileMeta, manifestGroup } from './integrity';
 
 function assertContent(content: TextPackContent): void {
@@ -149,13 +156,22 @@ export async function verifyAndFinalizeTextOnlyPack(
     throw new Error('staged pack failed manifest or size verification');
   }
 
-  await db.transaction('rw', [db.packs, ...ownedTables()], async () => {
+  await db.transaction('rw', [db.packs, ...ownedTables(), ...historyTables()], async () => {
     const current = await db.packs.get(staged.id);
     if (current?.status !== 'building') throw new Error('building pack changed before finalisation');
     const oldId = current.supersedes;
     if (oldId) {
       const old = await db.packs.get(oldId);
       if (old?.status !== 'complete') throw new Error('superseded complete pack is missing');
+      // The reader's own history of this PLACE moves to the pack that replaces
+      // the old one, rather than going with it. Refreshing a pack is not
+      // discarding it: the place is the same, and the record of having
+      // rehearsed that place belongs to the place. Deleting a pack outright
+      // still takes its history, in deleteCompletePack.
+      //
+      // Inside this transaction, with everything else: a rebuild that half
+      // moved a reader's history would be worse than one that dropped it.
+      await carryHistoryToNewPack(oldId, current.id);
       await deleteOwnedRows([oldId]);
       await db.packs.delete(oldId);
     }

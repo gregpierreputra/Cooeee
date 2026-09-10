@@ -4,8 +4,10 @@ import { REHEARSAL_CONDITIONS, conditionLabel } from '../../src/core/rehearsal-c
 import { barParts, isRunFor, type RehearsalRun } from '../../src/core/rehearsal-run';
 
 const run = (over: Partial<RehearsalRun> = {}): RehearsalRun => ({
+  id: 'run-1',
   packId: 'pack-1',
   condition: 'no-data',
+  startedAt: 1_756_100_000_000,
   ...over,
 });
 
@@ -66,12 +68,19 @@ describe('which pack a run belongs to', () => {
   });
 });
 
-// The shape itself is the AC3 guarantee: there is no id, no started-at and no
-// progress on a run, so there is nothing about one that could be written down
-// and later found half-finished.
+// The shape itself is the AC3 guarantee: a run holds nothing that is written
+// down while it is in progress, so there is nothing that could later be found
+// half-finished.
 describe('the shape of a run', () => {
-  it('carries the pack and the condition, and nothing that would outlive the page', () => {
-    expect(Object.keys(run()).sort()).toEqual(['condition', 'packId']);
+  // The id and the start time are the identity a FINISHED record would be
+  // written under. Neither is stored while the run is in progress, and there is
+  // no progress field: progress that outlived the page would be a partial
+  // result, which E5-US1-AC3 forbids.
+  it('carries only what a finished record needs, and no progress', () => {
+    expect(Object.keys(run()).sort()).toEqual(['condition', 'id', 'packId', 'startedAt']);
+    expect(run()).not.toHaveProperty('progress');
+    expect(run()).not.toHaveProperty('finishedAt');
+    expect(run()).not.toHaveProperty('gaps');
   });
 
   it('has no field for a second condition', () => {

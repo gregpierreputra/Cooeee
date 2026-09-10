@@ -9,6 +9,9 @@ import {
   listCompletePacksWithPlaces,
   putNote,
   readRehearsalSource,
+  listRehearsalsForPack,
+  saveFinishedRehearsal,
+  carryHistoryToNewPack,
   sweepBuilding,
 } from '../../src/data/db';
 import { fileMeta, manifestGroup, sha256Hex } from '../../src/data/integrity';
@@ -44,6 +47,7 @@ beforeEach(async () => {
     db.notes.clear(),
     db.programs.clear(),
     db.packPrograms.clear(),
+    db.rehearsals.clear(),
   ]);
 });
 
@@ -236,8 +240,8 @@ describe('putNote', () => {
 });
 
 describe('schema', () => {
-  it('is version 7: the pack stores, the Nearby-places stores, the snapshot, files, notes and pack programs', () => {
-    expect(db.verno).toBe(7);
+  it('is version 8: the pack stores, the Nearby-places stores, the snapshot, files, notes, pack programs and rehearsals', () => {
+    expect(db.verno).toBe(8);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
       'destinations',
       'dynamicSnapshot',
@@ -248,6 +252,7 @@ describe('schema', () => {
       'packs',
       'postcodes',
       'programs',
+      'rehearsals',
       'snapshots',
       'staticFacilities',
       'syncMeta',
@@ -375,5 +380,125 @@ describe('the rehearsal entry gate reads the device', () => {
     }
 
     expect(await snapshotStores()).toEqual(before);
+  });
+});
+
+// E5-US2-AC1 — recording a finished rehearsal.
+describe('a rehearsal is recorded only once it has finished', () => {
+  const finished = (over: Partial<Parameters<typeof saveFinishedRehearsal>[0]> = {}) => ({
+    id: 'run-1',
+    packId: 'pack-1',
+    condition: 'no-data' as const,
+    startedAt: 1_756_100_000_000,
+    finishedAt: 1_756_100_060_000,
+    gaps: [
+      { gapType: 'places-missing' as const, kind: 'pack-content' as const, hazard: 'bushfire' as const },
+    ],
+    ...over,
+  });
+
+  it('writes the run and the gaps it found in one row', async () => {
+    await saveFinishedRehearsal(finished());
+
+    const stored = await listRehearsalsForPack('pack-1');
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({ condition: 'no-data', finishedAt: 1_756_100_060_000 });
+    expect(stored[0].gaps).toEqual([
+      { gapType: 'places-missing', kind: 'pack-content', hazard: 'bushfire' },
+    ]);
+  });
+
+  // The guard exists because a row written before a run finishes is a row a
+  // cold start can find, and E5-US1-AC3 requires that an interrupted rehearsal
+  // is never recorded as completed.
+  it('refuses a rehearsal that has not finished', async () => {
+    await expect(saveFinishedRehearsal(finished({ finishedAt: 0 }))).rejects.toThrow(RangeError);
+    await expect(
+      saveFinishedRehearsal(finished({ finishedAt: 1_756_100_000_000 - 1 })),
+    ).rejects.toThrow(RangeError);
+    expect(await listRehearsalsForPack('pack-1')).toEqual([]);
+  });
+
+  // The record is keyed by the id of the run that produced it, so a screen that
+  // remounts rewrites the same row rather than recording the run twice.
+  it('records one row per run, however many times it is written', async () => {
+    await saveFinishedRehearsal(finished());
+    await saveFinishedRehearsal(finished());
+    await saveFinishedRehearsal(finished({ id: 'run-2' }));
+
+    expect(await listRehearsalsForPack('pack-1')).toHaveLength(2);
+  });
+
+  it('returns each pack its own rehearsals, oldest first', async () => {
+    await saveFinishedRehearsal(finished({ id: 'a', finishedAt: 1_756_100_200_000 }));
+    await saveFinishedRehearsal(finished({ id: 'b', finishedAt: 1_756_100_100_000 }));
+    await saveFinishedRehearsal(finished({ id: 'c', packId: 'other-pack' }));
+
+    expect((await listRehearsalsForPack('pack-1')).map((row) => row.id)).toEqual(['b', 'a']);
+    expect((await listRehearsalsForPack('other-pack')).map((row) => row.id)).toEqual(['c']);
+  });
+
+  // A record of what was missing from a pack that no longer exists is a loose
+  // end, not information.
+  it('goes when the pack it is about goes', async () => {
+    await db.packs.put(pack());
+    await saveFinishedRehearsal(finished());
+
+    await deleteCompletePack('pack-1');
+
+    expect(await listRehearsalsForPack('pack-1')).toEqual([]);
+  });
+});
+
+// The reader's history of a PLACE survives that place's pack being refreshed.
+// The action a rehearsal most often asks for is to build the pack again, so a
+// rebuild that deleted the rehearsals would destroy the record of having done
+// what the product asked.
+describe('replacing a pack carries its rehearsals to the pack that replaces it', () => {
+  const rehearsalFor = (packId: string, id: string) => ({
+    id,
+    packId,
+    condition: 'no-data' as const,
+    startedAt: 1,
+    finishedAt: 2,
+    gaps: [
+      { gapType: 'places-missing' as const, kind: 'pack-content' as const, hazard: 'bushfire' as const },
+    ],
+  });
+
+  it('moves them, rather than deleting them with the old pack', async () => {
+    await db.packs.put(pack({ id: 'old' }));
+    await saveFinishedRehearsal(rehearsalFor('old', 'run-1'));
+    await saveFinishedRehearsal(rehearsalFor('old', 'run-2'));
+
+    await carryHistoryToNewPack('old', 'new');
+
+    expect(await listRehearsalsForPack('old')).toEqual([]);
+    expect((await listRehearsalsForPack('new')).map((row) => row.id)).toEqual(['run-1', 'run-2']);
+  });
+
+  it('leaves the history of another pack where it is', async () => {
+    await saveFinishedRehearsal(rehearsalFor('old', 'run-1'));
+    await saveFinishedRehearsal(rehearsalFor('untouched', 'run-3'));
+
+    await carryHistoryToNewPack('old', 'new');
+
+    expect((await listRehearsalsForPack('untouched')).map((row) => row.id)).toEqual(['run-3']);
+  });
+
+  it('does nothing when the old pack had no history', async () => {
+    await expect(carryHistoryToNewPack('old', 'new')).resolves.toBeUndefined();
+    expect(await listRehearsalsForPack('new')).toEqual([]);
+  });
+
+  // Deleting a pack outright is a different act from replacing one, and still
+  // takes the history with it.
+  it('is not what happens when a pack is deleted outright', async () => {
+    await db.packs.put(pack());
+    await saveFinishedRehearsal(rehearsalFor('pack-1', 'run-1'));
+
+    await deleteCompletePack('pack-1');
+
+    expect(await listRehearsalsForPack('pack-1')).toEqual([]);
   });
 });

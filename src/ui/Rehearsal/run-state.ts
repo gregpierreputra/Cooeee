@@ -39,8 +39,13 @@ export const currentRun = (): RehearsalRun | null => current;
 
 /** Begin a run. Replaces any run already in progress rather than stacking one
  *  on it: a rehearsal is against one pack under one condition, always. */
-export function startRun(packId: string, condition: RehearsalCondition): void {
-  current = { packId, condition };
+export function startRun(
+  packId: string,
+  condition: RehearsalCondition,
+  id: string = crypto.randomUUID(),
+  startedAt: number = Date.now(),
+): void {
+  current = { id, packId, condition, startedAt };
   announce();
 }
 

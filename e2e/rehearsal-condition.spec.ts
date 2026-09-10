@@ -90,18 +90,28 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     });
   }
 
-  test('choosing writes nothing to the device', async ({ page }) => {
+  // Choosing a condition starts a rehearsal, and a rehearsal that has finished
+  // is recorded — that is E5-US2-AC1, and it is the ONLY thing the choice may
+  // write. Nothing about the pack is touched: a rehearsal reads the pack and
+  // reports on it, and must never alter what it is reporting on.
+  test('choosing writes nothing but the record of the rehearsal itself', async ({ page }) => {
     await page.goto(REHEARSABLE);
     // The baseline is taken AFTER the screen is up: the harness seeds the pack
     // on load, so sampling earlier would compare against a half-seeded device
     // and call the harness's own writes a rehearsal's.
     await expect(page.getByRole('heading', { name: HEADING })).toBeVisible();
     const before = await deviceStorage(page);
+    expect(before.recordCounts.rehearsals).toBe(0);
 
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
     await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_DATA);
+    // The rehearsal has to have finished before its record exists.
+    await expect.poll(async () => (await deviceStorage(page)).recordCounts.rehearsals).toBe(1);
 
-    expect(await deviceStorage(page)).toEqual(before);
+    const after = await deviceStorage(page);
+    expect(after.recordCounts).toEqual({ ...before.recordCounts, rehearsals: 1 });
+    expect(after.localStorageLength).toBe(before.localStorageLength);
+    expect(after.sessionStorageLength).toBe(before.sessionStorageLength);
   });
 });
 

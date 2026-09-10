@@ -14,6 +14,7 @@ import type {
   PackWithPlaces,
   PackProgram,
   RecoveryProgram,
+  Rehearsal,
   SnapshotActivation,
   StoredSnapshot,
   SyncMetaRow,
@@ -40,6 +41,8 @@ class CooeeeDb extends Dexie {
   postcodes!: Table<BundlePostcode, string>;
   dynamicSnapshot!: Table<SnapshotActivation, number>;
   syncMeta!: Table<SyncMetaRow, string>;
+  // Finished rehearsals. A rehearsal in progress is never in here.
+  rehearsals!: Table<Rehearsal, string>;
   // The CFA site list, for BlackSky's nearest-places pointer.
   snapshots!: Table<StoredSnapshot, string>;
 
@@ -87,6 +90,14 @@ class CooeeeDb extends Dexie {
     // Version 7 adds the store for the programs a pack carries, one row per
     // kept program, owned and hashed like every other pack group.
     this.version(7).stores({ packPrograms: 'id, packId' });
+
+    // Version 8 adds the store for FINISHED rehearsals. Indexed by pack and by
+    // finish time, which is what a later run needs to compare itself with the
+    // one before it. Nothing here holds a rehearsal in progress: see the note
+    // on saveFinishedRehearsal below.
+    // EPIC 4 took version 7 for packPrograms before this branch landed, and a
+    // shipped version is never mutated, so the rehearsal stores begin at 8.
+    this.version(8).stores({ rehearsals: 'id, packId, finishedAt' });
   }
 }
 
@@ -97,7 +108,46 @@ class CooeeeDb extends Dexie {
 export const db = new CooeeeDb();
 
 /** The tables holding rows a pack owns, for every cascade. */
-export const ownedTables = () => [db.layers, db.destinations, db.tiles, db.files, db.notes, db.packPrograms];
+export const ownedTables = () => [
+  db.layers,
+  db.destinations,
+  db.tiles,
+  db.files,
+  db.notes,
+  // Pack CONTENT: the programs this pack carries are rebuilt when the pack is
+  // rebuilt, so they cascade like every other group.
+  db.packPrograms,
+  // A rehearsal is about one pack. Deleting the pack takes its rehearsals with
+  // it: a record of what was missing from a pack that no longer exists is not
+  // information, it is a loose end. REPLACING a pack is not deleting it, and
+  // takes the other path — see historyTables() above.
+  ...historyTables(),
+];
+
+/** The tables holding what the READER has built up about a pack over time,
+ *  rather than what the pack itself contains: the rehearsals they have run and
+ *  the actions they have marked done.
+ *
+ *  These are owned by a pack, so deleting a pack deletes them. But a pack that
+ *  is REPLACED is not a pack that is gone: the reader kept the same place and
+ *  refreshed what is stored for it, and their record of rehearsing that place
+ *  belongs to the place rather than to the row that happened to hold it. So the
+ *  replacement path moves these rather than deleting them (see
+ *  carryHistoryToNewPack). An outright delete still takes them. */
+export const historyTables = () => [db.rehearsals];
+
+/** Move the reader's history from a pack being replaced onto the pack that
+ *  replaces it. Callers run this inside their own transaction, which must list
+ *  historyTables().
+ *
+ *  Without this, refreshing a pack would delete every rehearsal of it — and the
+ *  action a rehearsal most often asks for is to build the pack again, so doing
+ *  what the product asked would destroy the record of having done it. */
+export async function carryHistoryToNewPack(oldId: string, newId: string): Promise<void> {
+  await Promise.all(
+    historyTables().map((table) => table.where('packId').equals(oldId).modify({ packId: newId })),
+  );
+}
 
 /** Remove every row the given packs own. Callers run this inside their own
  *  transaction, which must list ownedTables(). */
@@ -132,6 +182,32 @@ export async function readRehearsalSource(packId: string): Promise<Omit<Rehearsa
     return { completeCount: 0, unfinishedCount: 0, content: 'unreadable' };
   }
 }
+
+/** E5-US2-AC1 — record ONE FINISHED rehearsal, with the gaps it found.
+ *
+ *  Called once, when the run has finished. There is deliberately no counterpart
+ *  that writes a row when a run starts, and adding one would break E5-US1-AC3:
+ *  a row written at the start is a row a cold start can find, and an
+ *  interrupted rehearsal must never be recorded as completed. If progress
+ *  tracking is wanted later, it belongs in memory beside the run, not here.
+ *
+ *  The gaps go in with the row, in one put, so a rehearsal and what it found
+ *  are never half-written with respect to each other. The id is the id of the
+ *  run that produced it, so a screen that remounts rewrites the same row rather
+ *  than recording the same rehearsal twice.
+ *
+ *  Action completions are NOT written here. They belong to the pack, not to a
+ *  run, and they live in their own store. */
+export async function saveFinishedRehearsal(rehearsal: Rehearsal): Promise<void> {
+  if (!(rehearsal.finishedAt > 0) || rehearsal.finishedAt < rehearsal.startedAt) {
+    throw new RangeError('a rehearsal is recorded only once it has finished');
+  }
+  await db.rehearsals.put(rehearsal);
+}
+
+/** Every finished rehearsal for one pack, oldest first. */
+export const listRehearsalsForPack = (packId: string): Promise<Rehearsal[]> =>
+  db.rehearsals.where('packId').equals(packId).sortBy('finishedAt');
 
 /** The CFA site list for BlackSky: written whole, read whole. */
 export const putNspSnapshot = (snapshot: NspSnapshot): Promise<string> =>

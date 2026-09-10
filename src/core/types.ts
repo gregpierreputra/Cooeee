@@ -389,5 +389,47 @@ export type DynamicSnapshot = {
   activations: SnapshotActivation[];
 };
 
+// --- Rehearsal (EPIC 5) ---
+/** Which of the two kinds a detected gap is. Distinguished in WORDS on screen,
+ *  never by severity, ranking or a separate list: one is something missing from
+ *  the pack, the other a capability the chosen condition takes away. */
+export type RehearsalGapKind = 'pack-content' | 'condition-persistent';
+
+/** The fixed set of things a rehearsal checks (D-F, 10 September). Stable
+ *  strings: they are written into stored rehearsals and read back by later runs,
+ *  so renaming one is a migration, not an edit. */
+export type RehearsalGapType =
+  | 'designation-missing'
+  | 'places-missing'
+  | 'provenance-missing'
+  | 'live-direction-unavailable';
+
+/** One thing the user could not rely on under the chosen condition. It is not a
+ *  defect and it is not a mark against the person: it is a capability, named. */
+export type DetectedGap = {
+  gapType: RehearsalGapType;
+  kind: RehearsalGapKind;
+  /** Which hazard's journey this gap belongs to. One pack holds more than one. */
+  hazard: 'bushfire' | 'heat';
+};
+
+/** ONE COMPLETED rehearsal.
+ *
+ *  There is no such thing as a stored rehearsal in progress. `finishedAt` is not
+ *  optional, and the row is written once, when the run has finished, never when
+ *  it starts: a row written at the start is a row a cold start can find, and
+ *  E5-US1-AC3 requires that an interrupted rehearsal is never recorded as
+ *  completed. Do not add a start-time write for progress tracking; progress
+ *  lives in memory and dies with the page, which is what makes an interrupted
+ *  run impossible to mistake for a finished one. */
+export type Rehearsal = {
+  id: string;                  // crypto.randomUUID(), and the id of the run that produced it
+  packId: string;
+  condition: 'no-data' | 'no-location-fix';
+  startedAt: number;
+  finishedAt: number;          // always set; see above
+  gaps: DetectedGap[];         // the gaps this run found, written with it, atomically
+};
+
 /** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */
 export type SyncMetaRow = { key: string; value: string };

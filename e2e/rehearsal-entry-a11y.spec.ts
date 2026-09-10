@@ -492,3 +492,130 @@ test('AC2 the one control in a run meets the minimum target size', async ({ page
   expect(box!.width).toBeGreaterThanOrEqual(24);
   expect(box!.height).toBeGreaterThanOrEqual(24);
 });
+
+// E5-US2-AC1 — the result, held to the same four checks: every gap row and the
+// screen it sits on.
+const runToResult = async (page: import('@playwright/test').Page, mode: string, condition: string) => {
+  await page.goto(`${ORIGIN}/rehearse?mode=${mode}`);
+  await page.getByRole('heading', { name: 'What are we rehearsing without?' }).waitFor();
+  await page.getByRole('button', { name: new RegExp(condition) }).click();
+  await page.locator('.rehearsal-bar').waitFor();
+};
+
+test('AC1 every gap row meets the contrast minimum', async ({ page }) => {
+  await runToResult(page, 'gap', 'No location fix');
+  await page.locator('.gap-row').first().waitFor();
+
+  const rows = await page.evaluate(() => {
+    const relativeLuminance = (channels: number[]) => {
+      const [r, g, b] = channels.map((value) => {
+        const s = value / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const channels = (colour: string) => colour.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+    const painted = (el: HTMLElement): number[] => {
+      let node: HTMLElement | null = el;
+      while (node) {
+        const background = getComputedStyle(node).backgroundColor;
+        if (background && !background.includes('rgba(0, 0, 0, 0)')) return channels(background);
+        node = node.parentElement;
+      }
+      return [255, 255, 255];
+    };
+    return [...document.querySelectorAll<HTMLElement>('.gap-row .kicker, .gap-row h3, .gap-row p')].map(
+      (el) => {
+        const style = getComputedStyle(el);
+        const foreground = relativeLuminance(channels(style.color));
+        const background = relativeLuminance(painted(el));
+        const ratio =
+          (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+        const px = Number.parseFloat(style.fontSize);
+        const large = px >= 24 || (px >= 18.66 && Number(style.fontWeight) >= 700);
+        return {
+          text: (el.textContent ?? '').slice(0, 30),
+          ratio: Math.round(ratio * 100) / 100,
+          required: large ? 3 : 4.5,
+        };
+      },
+    );
+  });
+
+  // Two gaps, each with a kicker, a heading, a meaning, a label and an action.
+  expect(rows.length).toBeGreaterThanOrEqual(8);
+  const failing = rows.filter((row) => row.ratio < row.required);
+  expect(failing, JSON.stringify(failing)).toEqual([]);
+});
+
+test('AC1 the result survives 200% text with no clipping or overlap', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await runToResult(page, 'gap', 'No location fix');
+  await page.locator('.gap-row').first().waitFor();
+
+  const rowHeight = async () =>
+    Math.round((await page.locator('.gap-row').first().boundingBox())!.height);
+  const before = await rowHeight();
+
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect
+    .poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize))
+    .toBe('32px');
+  expect(await rowHeight()).toBeGreaterThan(before);
+
+  const report = await page.evaluate(() => {
+    const doc = document.documentElement;
+    const overflowing: string[] = [];
+    const clipped: string[] = [];
+    document.querySelectorAll<HTMLElement>('main *').forEach((el) => {
+      const box = el.getBoundingClientRect();
+      if (box.right > doc.clientWidth + 1 || box.left < -1) overflowing.push(el.tagName + '.' + el.className);
+      if (el.scrollHeight > el.clientHeight + 1 && getComputedStyle(el).overflowY === 'hidden') {
+        clipped.push(el.tagName + '.' + el.className);
+      }
+    });
+    const blocks = [...document.querySelectorAll<HTMLElement>('.gap-row h3, .gap-row p')].map((el) => {
+      const box = el.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom };
+    });
+    const overlaps: number[] = [];
+    for (let i = 1; i < blocks.length; i += 1) {
+      if (blocks[i].top < blocks[i - 1].bottom - 1) overlaps.push(i);
+    }
+    return {
+      overflowing,
+      clipped,
+      overlaps,
+      hScroll: document.body.scrollWidth > doc.clientWidth + 1,
+      rows: document.querySelectorAll('.gap-row').length,
+    };
+  });
+
+  expect(report.overlaps).toEqual([]);
+  expect(report.clipped).toEqual([]);
+  expect(report.overflowing).toEqual([]);
+  expect(report.hScroll).toBe(false);
+  // Every gap is still there: none pushed out of the layout.
+  expect(report.rows).toBeGreaterThanOrEqual(2);
+});
+
+test('AC1 the result reads in order: heading, condition, then each gap', async ({ page }) => {
+  await runToResult(page, 'gap', 'No location fix');
+  await page.locator('.gap-row').first().waitFor();
+
+  const order = await page.evaluate(() =>
+    [...document.querySelectorAll('.page h2, .page > p, .gap-row h3, .gap-row p')].map((el) => ({
+      tag: el.tagName,
+      className: el.className,
+      text: el.textContent ?? '',
+    })),
+  );
+
+  const heading = order.findIndex((entry) => entry.tag === 'H2');
+  const condition = order.findIndex((entry) => entry.text.startsWith('Rehearsed without'));
+  const firstGap = order.findIndex((entry) => entry.tag === 'H3');
+
+  expect(heading).toBeGreaterThanOrEqual(0);
+  expect(condition).toBeGreaterThan(heading);
+  expect(firstGap).toBeGreaterThan(condition);
+});
