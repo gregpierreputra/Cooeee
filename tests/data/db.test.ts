@@ -204,21 +204,11 @@ describe('deleteCompletePack', () => {
     expect(await db.layers.count()).toBe(1);
   });
 
-  it('clears the shared programs when the last recovery-referencing pack goes', async () => {
+  it('leaves the recovery programs in place when the last pack goes', async () => {
     await db.packs.put(withRecovery('only'));
     await db.programs.put(program());
 
     await deleteCompletePack('only');
-
-    expect(await db.programs.count()).toBe(0);
-  });
-
-  it('keeps the shared programs while another pack still references recovery', async () => {
-    await db.packs.put(withRecovery('gone'));
-    await db.packs.put(withRecovery('kept'));
-    await db.programs.put(program());
-
-    await deleteCompletePack('gone');
 
     expect(await db.programs.count()).toBe(1);
   });

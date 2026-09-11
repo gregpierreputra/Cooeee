@@ -55,6 +55,11 @@ export function shareText(heading: string, programs: readonly RecoveryProgram[])
   return [`${heading}\n${copy.RECOVER_MAY_MATCH}`, ...blocks, copy.SHARED_FROM].join('\n\n');
 }
 
+/** Up to three initials, so each organisation has one mark a glance can tell
+ *  apart: Services Australia is SA, Country Fire Authority is CFA. */
+export const monogram = (org: string): string =>
+  org.split(' ').slice(0, 3).map((word) => word[0]).join('').toUpperCase();
+
 /** Past the window the screen says so in words; the programs stay shown. */
 export function recoveryStale(now: number, snapshotDate: string): boolean {
   return (now - Date.parse(snapshotDate)) / MS_PER_DAY > RECOVERY_STALE_DAYS;

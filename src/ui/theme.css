@@ -1769,7 +1769,80 @@ input {
 .recover .card a {
   align-self: start;
 }
-/* Keep is a small pill at the foot of the card; kept reads in the accent. */
+/* A ring with a line drawing, as the mockups' tinted icon circles: the need
+   at a glance, before any text is read. In a row it sits before the phrase. */
+.glyph {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.recover .need-button {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding-left: 0.5rem;
+}
+
+/* The source at a glance: its initials in a ring at the head of the card. */
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+.monogram {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.06em;
+}
+
+/* The needs a program is tagged with, each a small pill with its glyph. */
+.need-pills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.need-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.625rem 0.125rem 0.125rem;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+}
+.need-pill .glyph {
+  width: 28px;
+  height: 28px;
+}
+.need-pill .glyph svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* A kept card is a different object from the rest: an accent ring and a tinted
+   ground, as the mockups' chosen card, not only a changed button. */
+.recover .card.kept {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
 .recover .keep-button {
   align-self: start;
   min-height: 44px;

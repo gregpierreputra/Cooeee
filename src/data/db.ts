@@ -113,6 +113,9 @@ export const getNspSnapshot = (): Promise<NspSnapshot | undefined> => db.snapsho
  *  before the build reads them back by id. */
 export const putPrograms = (rows: RecoveryProgram[]): Promise<string> => db.programs.bulkPut(rows);
 
+/** Every program on the device: the precached snapshot, for Recover with no pack. */
+export const listPrograms = (): Promise<RecoveryProgram[]> => db.programs.toArray();
+
 /** A pack's notes, oldest first. Only the complete-pack reads below call this. */
 const listNotes = (packId: string): Promise<PackNote[]> =>
   db.notes.where('packId').equals(packId).sortBy('updatedAt');
@@ -214,20 +217,15 @@ export async function sweepBuilding(): Promise<void> {
   });
 }
 
-/** Permanently delete ONE complete pack and every row it owns. The shared
- *  recovery-programs snapshot is cleared only when no remaining pack still
- *  references recovery — it is one snapshot shared by every pack manifest,
- *  so it may only go when the last referencing pack goes. */
+/** Permanently delete ONE complete pack and every row it owns. The recovery
+ *  programs are not owned by any pack: they are the app's own precached
+ *  snapshot, read by Recover with or without a pack, so a delete leaves them. */
 export async function deleteCompletePack(id: string): Promise<void> {
-  await db.transaction('rw', [db.packs, db.programs, ...ownedTables()], async () => {
+  await db.transaction('rw', [db.packs, ...ownedTables()], async () => {
     const target = await db.packs.get(id);
     if (target?.status !== 'complete') return;
     await deleteOwnedRows([id]);
     await db.packs.delete(id);
-    const stillReferenced = await db.packs
-      .filter((p) => p.manifest.groups.recovery.count > 0)
-      .count();
-    if (stillReferenced === 0) await db.programs.clear();
   });
 }
 

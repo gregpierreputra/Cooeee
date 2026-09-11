@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RECOVERY_STALE_DAYS, MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
-import { NEEDS, recoveryPack, recoveryStale, selectPrograms, shareText } from '../../src/core/recover';
+import { monogram, NEEDS, recoveryPack, recoveryStale, selectPrograms, shareText } from '../../src/core/recover';
 import { pack, program } from '../fixtures';
 
 const withRecovery = (count: number, createdAt: number, id: string) =>
@@ -50,6 +50,14 @@ describe('shareText', () => {
     expect(text).toContain('Call 180 22 66');
     expect(text).toContain('https://www.servicesaustralia.gov.au/example');
     expect(text.endsWith(copy.SHARED_FROM)).toBe(true);
+  });
+});
+
+describe('monogram', () => {
+  it('is up to three initials, in capitals', () => {
+    expect(monogram('Services Australia')).toBe('SA');
+    expect(monogram('Country Fire Authority')).toBe('CFA');
+    expect(monogram('National Emergency Management Agency')).toBe('NEM');
   });
 });
 

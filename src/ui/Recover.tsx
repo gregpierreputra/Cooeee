@@ -5,47 +5,65 @@ import { GENERAL_CHANNEL_URL, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
 import { readKept, toggleKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
-import { isNeed, NEEDS, recoveryPack, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
-import type { CompletePackContent, Pack } from '../core/types';
+import { isNeed, monogram, NEEDS, recoveryPack, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
+import type { CompletePackContent, Pack, RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
-import { getCompletePackContent, listCompletePacks } from '../data/db';
+import { getCompletePackContent, listCompletePacks, listPrograms } from '../data/db';
+import ChoiceGlyph from './components/ChoiceGlyph';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 
 type RecoverProps = {
   loadPacks?: () => Promise<Pack[]>;
   loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
+  loadPrograms?: () => Promise<RecoveryProgram[]>;
   now?: number;
 };
 
-/** Needs-first support matching, read from the newest saved pack and nothing
- *  else. The choice lives in component state for this visit only; the one
- *  thing remembered is the list of program ids the person chose to keep. */
+/** What Recover reads: the newest pack's programs, re-hashed against its
+ *  manifest, or with no such pack the app's own precached snapshot, as Nearby
+ *  reads its downloaded list. `asAt` is the date the no-match state shows. */
+type Loaded = { programs: RecoveryProgram[]; verified: boolean; asAt: number };
+
+async function loadRecover(
+  loadPacks: () => Promise<Pack[]>,
+  loadContent: (id: string) => Promise<CompletePackContent | undefined>,
+  loadPrograms: () => Promise<RecoveryProgram[]>,
+): Promise<Loaded | undefined> {
+  const pack = recoveryPack(await loadPacks());
+  if (pack) {
+    const content = await loadContent(pack.id);
+    return content && { programs: content.recovery, verified: content.recoveryVerified, asAt: pack.verifiedAt };
+  }
+  const programs = await loadPrograms();
+  if (programs.length === 0) return undefined;
+  return { programs, verified: true, asAt: Math.max(...programs.map((program) => program.source.retrievedAt)) };
+}
+
+/** Needs-first support matching, read from the device and nothing else. The
+ *  choice lives in component state for this visit only; the one thing
+ *  remembered is the list of program ids the person chose to keep. */
 export default function Recover({
   loadPacks = listCompletePacks,
   loadContent = getCompletePackContent,
+  loadPrograms = listPrograms,
   now = Date.now(),
 }: RecoverProps) {
-  // null while the store has not answered, undefined when no pack carries recovery.
-  const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
+  // null while the store has not answered, undefined when nothing is on the device.
+  const [content, setContent] = useState<Loaded | null | undefined>(null);
   const [choice, setChoice] = useState<Choice | null>(null);
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
   const [shared, setShared] = useState<'copied' | 'unavailable' | null>(null);
 
   useEffect(() => {
     let live = true;
-    loadPacks()
-      .then((packs) => {
-        const pack = recoveryPack(packs);
-        return pack ? loadContent(pack.id) : undefined;
-      })
-      .then((value) => {
-        if (live) setContent(value);
-      });
+    loadRecover(loadPacks, loadContent, loadPrograms).then((value) => {
+      if (live) setContent(value);
+    });
     return () => {
       live = false;
     };
-  }, [loadPacks, loadContent]);
+  }, [loadPacks, loadContent, loadPrograms]);
 
   const choose = (next: Choice | null) => {
     setShared(null);
@@ -81,7 +99,7 @@ export default function Recover({
     );
   }
 
-  if (!content.recoveryVerified) {
+  if (!content.verified) {
     return (
       <main className="page recover">
         <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />
@@ -90,7 +108,7 @@ export default function Recover({
   }
 
   if (choice === null) {
-    const anyKept = content.recovery.some((program) => kept.includes(program.id));
+    const anyKept = content.programs.some((program) => kept.includes(program.id));
     const rows: { key: Choice; label: string }[] = [
       ...(anyKept ? [{ key: 'kept' as const, label: copy.KEPT_PROGRAMS }] : []),
       ...NEEDS.map((key) => ({ key, label: copy.NEED_PHRASE[key] })),
@@ -107,6 +125,7 @@ export default function Recover({
           {rows.map((row) => (
             <li key={row.key}>
               <button type="button" className="need-button" onClick={() => choose(row.key)}>
+                <ChoiceGlyph choice={row.key} />
                 {row.label}
               </button>
             </li>
@@ -119,7 +138,7 @@ export default function Recover({
   const heading = choice === 'all' ? copy.EVERY_PROGRAM
     : choice === 'kept' ? copy.KEPT_PROGRAMS
     : copy.NEED_PHRASE[choice];
-  const programs = selectPrograms(content.recovery, choice, kept);
+  const programs = selectPrograms(content.programs, choice, kept);
   const chooseAgain = (
     <button type="button" onClick={() => choose(null)}>{copy.CHOOSE_ANOTHER_NEED}</button>
   );
@@ -132,7 +151,7 @@ export default function Recover({
           <span className="kicker">{heading}</span>
           <h1>{copy.RECOVER_NO_MATCH_TITLE}</h1>
           <p className="muted">{copy.RECOVER_NO_MATCH_LINE}</p>
-          <p className="figure">{copy.VERIFIED_ON(formatSavedDate(content.pack.verifiedAt))}</p>
+          <p className="figure">{copy.VERIFIED_ON(formatSavedDate(content.asAt))}</p>
         </header>
         <div className="actions">
           <OfficialChannel href={isNeed(choice) ? NEED_CHANNELS[choice] : GENERAL_CHANNEL_URL} />
@@ -157,9 +176,24 @@ export default function Recover({
         {programs.map((program) => {
           const isKept = kept.includes(program.id);
           return (
-            <li key={program.id} className="card">
-              <h2>{program.title}</h2>
-              <p>{program.org}</p>
+            <li key={program.id} className={isKept ? 'card kept' : 'card'}>
+              {/* The source at a glance: its initials in a ring, as the mockups
+                  mark each household member, before any text is read. */}
+              <div className="card-head">
+                <span className="monogram" aria-hidden="true">{monogram(program.org)}</span>
+                <div>
+                  <h2>{program.title}</h2>
+                  <p>{program.org}</p>
+                </div>
+              </div>
+              <ul className="need-pills">
+                {program.needs.map((need) => (
+                  <li key={need} className="need-pill">
+                    <ChoiceGlyph choice={need} />
+                    {copy.NEED_PHRASE[need]}
+                  </li>
+                ))}
+              </ul>
               <p className="muted">{program.covers}</p>
               <ProvenanceLine source={program.source} now={now} />
               <p className="figure">{copy.LICENCE_LINE(program.source.licence)}</p>

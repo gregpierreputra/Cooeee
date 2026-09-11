@@ -23,6 +23,9 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   const cards = page.locator('.card');
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Example disaster payment');
+  await expect(cards.first().locator('.monogram')).toHaveText('SA');
+  await expect(cards.first().locator('.need-pill')).toHaveText([copy.NEED_PHRASE.money, copy.NEED_PHRASE.property]);
+  await expect(page.locator('.card.kept')).toHaveCount(0);
   await expect(cards.first()).toContainText('Published by Services Australia · Saved 9 September 2026');
   await expect(cards.first()).toContainText(copy.LICENCE_LINE('CC BY 4.0'));
   await expect(cards.getByRole('link', { name: copy.OPEN_ORIGINAL_SOURCE }))
@@ -61,8 +64,19 @@ test('an old snapshot is labelled in plain words and still shown', async ({ page
   await expect(page.locator('.card')).toContainText(copy.LICENCE_LINE('Link only, all rights reserved'));
 });
 
-// E4-US3-AC2: no pack is a designed screen that offers to build one.
-test('with no pack, Recover says it holds nothing and offers to build a pack', async ({ page }) => {
+// E4-US3-AC2: with no pack, Recover reads the app's own snapshot, as Nearby does.
+test('with no pack, Recover still answers from the precached programs', async ({ page }) => {
+  await page.goto(`${RECOVER_URL}?mode=snapshot`);
+  await page.getByRole('button', { name: copy.NEED_PHRASE.health }).click();
+  await expect(page.locator('.card')).toHaveCount(1);
+  await expect(page.locator('.card .monogram')).toHaveText('ARC');
+  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
+  await page.getByRole('button', { name: copy.NEED_PHRASE.documents }).click();
+  await expect(page.getByText(copy.VERIFIED_ON('9 September 2026'))).toBeVisible();
+});
+
+// E4-US3-AC2: nothing on the device at all is a designed screen that offers to build a pack.
+test('with nothing on the device, Recover says it holds nothing and offers to build a pack', async ({ page }) => {
   await page.goto(`${RECOVER_URL}?mode=none`);
   await expect(page.getByRole('heading', { name: copy.RECOVER_NONE_TITLE })).toBeVisible();
   await expect(page.getByText(copy.RECOVER_NONE_LINE)).toBeVisible();
@@ -78,7 +92,7 @@ test('the bottom bar opens Recover', async ({ page }) => {
   await nav.getByRole('link', { name: copy.NAV_RECOVER }).click();
 
   await expect(page).toHaveURL(/\/recover$/);
-  await expect(page.getByRole('heading', { name: copy.RECOVER_NONE_TITLE })).toBeVisible();
+  await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   await expect(nav).toBeVisible();
 });
 
@@ -100,6 +114,7 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   const keep = page.getByRole('button', { name: copy.KEEP });
   await keep.click();
   await expect(page.getByRole('button', { name: copy.KEPT })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.card.kept')).toHaveCount(1);
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["recover:payment"]');
 
   await page.reload();

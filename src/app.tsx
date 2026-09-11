@@ -6,6 +6,7 @@ import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
+import { loadRecoveryPrograms } from './data/recovery';
 import About from './ui/About';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
@@ -124,6 +125,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // official places with the radios off. A failed copy costs nothing now.
   useEffect(() => {
     cacheNspSnapshot().catch(() => {});
+    // The recovery programs too, so Recover works before any pack is saved.
+    loadRecoveryPrograms().catch(() => {});
   }, []);
 
   if (!passed) {

@@ -296,8 +296,9 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
 }
 
 // Recover at a fixed instant, from one seeded pack whose manifest really hashes
-// its two programs. ?mode=none leaves no pack; ?mode=stale back-dates the snapshot
-// past RECOVERY_STALE_DAYS.
+// its two programs. ?mode=none leaves nothing on the device; ?mode=snapshot seeds
+// the programs with no pack; ?mode=stale back-dates the snapshot past
+// RECOVERY_STALE_DAYS.
 const recoverMode = new URLSearchParams(window.location.search).get('mode') ?? 'cached';
 const recoverNow = Date.UTC(2026, 8, 11, 6);
 const recoverSnapshotAt = recoverMode === 'stale' ? Date.UTC(2026, 4, 1) : Date.UTC(2026, 8, 9);
@@ -331,7 +332,8 @@ const recoverPrograms: RecoveryProgram[] = [
 let recoverFlow = confirmation;
 if (window.location.pathname === '/recover') {
   await Promise.all(db.tables.map((table) => table.clear()));
-  if (recoverMode !== 'none') {
+  if (recoverMode !== 'none') await db.programs.bulkPut(recoverPrograms);
+  if (recoverMode !== 'none' && recoverMode !== 'snapshot') {
     await db.packs.put({
       ...savedPack,
       id: 'recover-pack',
@@ -347,7 +349,6 @@ if (window.location.pathname === '/recover') {
         },
       },
     });
-    await db.programs.bulkPut(recoverPrograms);
   }
   recoverFlow = <Recover now={recoverNow} />;
 }
