@@ -1853,27 +1853,64 @@ input {
   color: var(--accent);
 }
 
-/* Pack Details: the saved programs, sectioned off under one control. */
-.saved-programs {
+/* Pack Details: every block is a section with a glyph, a title, an optional
+   count and one control that shows or hides what is beneath. */
+.pack-section {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
-.saved-programs-head {
+.pack-section-head {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
-.saved-programs .glyph,
+.pack-section-head .glyph,
 .nudge .glyph {
   width: 36px;
   height: 36px;
 }
-.saved-programs .glyph svg,
+.pack-section-head .glyph svg,
 .nudge .glyph svg {
   width: 18px;
   height: 18px;
 }
+.section-count {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  font-variant-numeric: tabular-nums;
+}
+.section-toggle {
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: var(--step-s);
+}
+
+/* The Home nudge: the mockups' amber "honesty check" card. Amber is the
+   attention colour already used for a stale pack, so the nudge is distinct from
+   the teal accent and from the red and green of the connection notice, yet
+   stays inside the palette. */
+.nudge {
+  border: 2px solid var(--stale);
+  background: color-mix(in srgb, var(--stale) 10%, var(--surface));
+}
+.nudge .kicker {
+  color: var(--stale);
+}
+.nudge .glyph {
+  background: color-mix(in srgb, var(--stale) 18%, transparent);
+  color: var(--stale);
+}
 .nudge .action {
   align-self: start;
+  background: var(--stale);
+  border-color: var(--stale);
+  color: #3a2a00;
+  font-weight: var(--w-heavy);
 }

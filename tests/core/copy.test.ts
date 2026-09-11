@@ -393,9 +393,12 @@ describe('E4 Recover mandated copy', () => {
 
   it('names the saved programs section, its one control and the Home nudge', () => {
     expect(copy.SAVED_PROGRAMS).toBe('Saved programs');
-    expect(copy.SHOW_SAVED_PROGRAMS(1)).toBe('Show 1 saved program');
-    expect(copy.SHOW_SAVED_PROGRAMS(3)).toBe('Show 3 saved programs');
-    expect(copy.HIDE_SAVED_PROGRAMS).toBe('Hide saved programs');
+    expect(copy.SHOW).toBe('Show');
+    expect(copy.HIDE).toBe('Hide');
+    expect(copy.SHOW_SECTION('Saved programs')).toBe('Show Saved programs');
+    expect(copy.HIDE_SECTION('Notes')).toBe('Hide Notes');
+    expect(copy.STORED_INFORMATION).toBe('Stored information');
+    expect(copy.NUDGE_KICKER).toBe('Not yet offline');
     expect(copy.KEPT_NOT_SAVED(1)).toBe('1 kept program is not yet in an offline pack.');
     expect(copy.KEPT_NOT_SAVED(2)).toBe('2 kept programs are not yet in an offline pack.');
     expect(copy.KEPT_NOT_SAVED_LINE).toBe('Build a pack to carry their pages, so they open with no signal.');

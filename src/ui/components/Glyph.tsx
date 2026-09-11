@@ -1,9 +1,12 @@
 import type { Choice } from '../../core/recover';
 
-/** One line drawing per Recover choice: the six needs, every program, kept.
- *  Drawn inline like the bottom bar's icons, so it costs no request and renders
- *  with the radios off. Decorative: the phrase beside it is the accessible one. */
-const GLYPH_PATHS: Record<Choice, string> = {
+/** One line drawing per kind: the six needs, every program, kept, and the pack
+ *  page's sections. Drawn inline like the bottom bar's icons, so it costs no
+ *  request and renders with the radios off. Decorative: the words beside it
+ *  are the accessible ones. */
+export type GlyphKind = Choice | 'map' | 'layer' | 'place' | 'note';
+
+const GLYPH_PATHS: Record<GlyphKind, string> = {
   stay: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
   money: 'M3 7h18v10H3zM12 9.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5M6 12h.01M18 12h.01',
   food: 'M5 4h11v9a5.5 5.5 0 0 1-11 0zM16 7h2a2.5 2.5 0 0 1 0 5h-2M4 21h13',
@@ -12,9 +15,13 @@ const GLYPH_PATHS: Record<Choice, string> = {
   documents: 'M7 3h7l4 4v14H7zM14 3v4h4M9.5 12h5M9.5 16h5',
   all: 'M5 7h14M5 12h14M5 17h14',
   kept: 'M7 4h10v17l-5-3.5L7 21z',
+  map: 'M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14',
+  layer: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5',
+  place: 'M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11zM12 7.8a2.2 2.2 0 1 0 0 4.4a2.2 2.2 0 1 0 0-4.4',
+  note: 'M4 20h4l11-11-4-4L4 16zM13 7l4 4',
 };
 
-export default function ChoiceGlyph({ choice }: { choice: Choice }) {
+export default function Glyph({ kind }: { kind: GlyphKind }) {
   return (
     <span className="glyph">
       <svg
@@ -29,7 +36,7 @@ export default function ChoiceGlyph({ choice }: { choice: Choice }) {
         aria-hidden="true"
         focusable="false"
       >
-        <path d={GLYPH_PATHS[choice]} />
+        <path d={GLYPH_PATHS[kind]} />
       </svg>
     </span>
   );

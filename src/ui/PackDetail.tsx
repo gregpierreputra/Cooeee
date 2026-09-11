@@ -14,8 +14,9 @@ import {
 import { monogram } from '../core/recover';
 import type { CompletePackContent, PackDetailItem, PackFile } from '../core/types';
 import { getCompletePackContent } from '../data/db';
-import ChoiceGlyph from './components/ChoiceGlyph';
+import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
+import Section from './components/Section';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
 import { PlaceFacts } from './PackNew/Destinations';
@@ -37,8 +38,6 @@ export default function PackDetail({
 }: PackDetailProps) {
   const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
   const [offlineSource, setOfflineSource] = useState<PackDetailItem | null>(null);
-  // The saved programs are sectioned off and closed until asked for.
-  const [programsOpen, setProgramsOpen] = useState(false);
   // One object URL per stored file (the PDF copies and the area map), made
   // from the bytes already on the device and released with the screen. No
   // request is involved.
@@ -108,8 +107,7 @@ export default function PackDetail({
           ring is drawn at the middle rather than computed. Absent on packs
           built before the map was stored. */}
       {areaMap && fileUrls[areaMap.id] ? (
-        <section>
-          <span className="kicker">{copy.AREA_MAP_LABEL}</span>
+        <Section kind="map" title={copy.AREA_MAP_LABEL}>
           <figure className="area-map">
             <div className="area-map-frame">
               <img src={fileUrls[areaMap.id]} alt={copy.AREA_MAP_ALT} />
@@ -119,7 +117,7 @@ export default function PackDetail({
               {copy.AREA_MAP_LINE(formatSavedDate(areaMap.retrievedAt))}
             </figcaption>
           </figure>
-        </section>
+        </Section>
       ) : null}
 
       {!content.recoveryVerified ? (
@@ -134,15 +132,17 @@ export default function PackDetail({
       {absence ? <StateCard heading={absence} /> : null}
 
       {items.length > 0 ? (
-        <ul className="list pack-item-list">
-          {items.map((item) => (
-            <li key={item.id} className="card provenance-item">
-              <h2>{item.name}</h2>
-              <ProvenanceLine source={item.source} now={now} />
-              {sourceLinks(item)}
-            </li>
-          ))}
-        </ul>
+        <Section kind="layer" title={copy.STORED_INFORMATION} count={items.length}>
+          <ul className="list pack-item-list">
+            {items.map((item) => (
+              <li key={item.id} className="card provenance-item">
+                <h2>{item.name}</h2>
+                <ProvenanceLine source={item.source} now={now} />
+                {sourceLinks(item)}
+              </li>
+            ))}
+          </ul>
+        </Section>
       ) : absence || places.length > 0 ? null : (
         <StateCard heading={copy.NO_STORED_ITEMS} />
       )}
@@ -150,8 +150,7 @@ export default function PackDetail({
       {/* E2-US2: the two places the user chose, side by side with equal weight.
           Distance is a fact about each; there is no ordinal and no ranking. */}
       {places.length > 0 ? (
-        <section>
-          <span className="kicker">{copy.DESTINATIONS_STEP_TITLE}</span>
+        <Section kind="place" title={copy.DESTINATIONS_STEP_TITLE} count={places.length}>
           <ul className="list saved-destinations">
             {places.map((place) => {
               const item = {
@@ -172,26 +171,17 @@ export default function PackDetail({
               );
             })}
           </ul>
-        </section>
+        </Section>
       ) : null}
 
       {/* E4-US7: the programs kept when the pack was built, each with the copy
           of its own page. One control opens and closes the whole section, so
           the pack's other items stay uncluttered. */}
-      <section className="saved-programs">
-        <div className="saved-programs-head">
-          <ChoiceGlyph choice="kept" />
-          <span className="kicker">{copy.SAVED_PROGRAMS}</span>
-        </div>
+      <Section kind="kept" title={copy.SAVED_PROGRAMS} count={content.recovery.length} defaultOpen={false}>
         {content.recovery.length === 0 ? (
           <p className="muted">{copy.NO_SAVED_PROGRAMS} <Link to="/recover">{copy.NAV_RECOVER}</Link></p>
         ) : (
-          <button type="button" aria-expanded={programsOpen} onClick={() => setProgramsOpen(!programsOpen)}>
-            {programsOpen ? copy.HIDE_SAVED_PROGRAMS : copy.SHOW_SAVED_PROGRAMS(content.recovery.length)}
-          </button>
-        )}
-        {programsOpen ? (
-          <ul className="list">
+          <ul className="list saved-programs">
             {content.recovery.map((program) => (
               <li key={program.id} className="card provenance-item">
                 <div className="card-head">
@@ -204,7 +194,7 @@ export default function PackDetail({
                 <ul className="need-pills">
                   {program.needs.map((need) => (
                     <li key={need} className="need-pill">
-                      <ChoiceGlyph choice={need} />
+                      <Glyph kind={need} />
                       {copy.NEED_PHRASE[need]}
                     </li>
                   ))}
@@ -214,10 +204,12 @@ export default function PackDetail({
               </li>
             ))}
           </ul>
-        ) : null}
-      </section>
+        )}
+      </Section>
 
-      <PackNotes packId={content.pack.id} notes={content.notes} />
+      <Section kind="note" title={copy.NOTES}>
+        <PackNotes packId={content.pack.id} notes={content.notes} />
+      </Section>
 
       {offlineSource ? (
         <div className="sheet-backdrop">

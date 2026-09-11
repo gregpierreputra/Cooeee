@@ -9,7 +9,7 @@ import { isNeed, monogram, NEEDS, recoveryStale, selectPrograms, shareText, type
 import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { listPrograms } from '../data/db';
-import ChoiceGlyph from './components/ChoiceGlyph';
+import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 
@@ -94,7 +94,7 @@ export default function Recover({ loadPrograms = listPrograms, now = Date.now() 
           {rows.map((row) => (
             <li key={row.key}>
               <button type="button" className="need-button" onClick={() => choose(row.key)}>
-                <ChoiceGlyph choice={row.key} />
+                <Glyph kind={row.key} />
                 {row.label}
               </button>
             </li>
@@ -158,7 +158,7 @@ export default function Recover({ loadPrograms = listPrograms, now = Date.now() 
               <ul className="need-pills">
                 {program.needs.map((need) => (
                   <li key={need} className="need-pill">
-                    <ChoiceGlyph choice={need} />
+                    <Glyph kind={need} />
                     {copy.NEED_PHRASE[need]}
                   </li>
                 ))}

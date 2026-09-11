@@ -463,8 +463,12 @@ export const OFFICIAL_CHANNEL = 'Official channel (web)';
 export const CHOOSE_ANOTHER_NEED = 'Choose another need';
 export const RECOVER_NONE_TITLE = 'No support information is held on this phone.';
 export const SAVED_PROGRAMS = 'Saved programs';
-export const SHOW_SAVED_PROGRAMS = (count: number) => `Show ${count} saved ${count === 1 ? 'program' : 'programs'}`;
-export const HIDE_SAVED_PROGRAMS = 'Hide saved programs';
+export const STORED_INFORMATION = 'Stored information';
+export const SHOW = 'Show';
+export const HIDE = 'Hide';
+export const SHOW_SECTION = (title: string) => `Show ${title}`;
+export const HIDE_SECTION = (title: string) => `Hide ${title}`;
+export const NUDGE_KICKER = 'Not yet offline';
 export const NO_SAVED_PROGRAMS =
   'No programs were kept when this pack was built. Keep programs in Recover, then build a pack to carry their pages.';
 export const KEPT_NOT_SAVED = (count: number) =>

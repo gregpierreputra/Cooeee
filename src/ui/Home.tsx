@@ -7,7 +7,7 @@ import { unsavedKept } from '../core/recover';
 import type { Pack } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
-import ChoiceGlyph from './components/ChoiceGlyph';
+import Glyph from './components/Glyph';
 import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
 import { startTour } from './components/Tour';
@@ -41,7 +41,8 @@ export default function Home({ now }: { now?: number }) {
     };
   }, [seed]);
 
-  // E4-US7-AC4: kept programs that no saved pack carries yet. Read once on
+  // E4-US7-AC4: kept programs that no saved pack carries yet, in the amber
+  // attention treatment. Read once on
   // arrival, so coming back from Recover always shows the current count.
   const [unsaved, setUnsaved] = useState(0);
   useEffect(() => {
@@ -94,10 +95,13 @@ export default function Home({ now }: { now?: number }) {
       {/* The nudge: the kept card treatment, so it reads as the same object the
           person kept, and one way to act on it. */}
       {view !== null && unsaved > 0 ? (
-        <section className="card kept nudge">
+        <section className="card nudge">
           <div className="card-head">
-            <ChoiceGlyph choice="kept" />
-            <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
+            <Glyph kind="kept" />
+            <div>
+              <span className="kicker">{copy.NUDGE_KICKER}</span>
+              <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
+            </div>
           </div>
           <p className="muted">{copy.KEPT_NOT_SAVED_LINE}</p>
           <Link className="action" to="/packs/new">{copy.BUILD_A_PACK}</Link>
