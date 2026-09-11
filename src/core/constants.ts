@@ -137,6 +137,11 @@ export const NEED_CHANNELS = {
 } as const;
 export const GENERAL_CHANNEL_URL = 'https://www.disasterassist.gov.au/';
 
+/** Programs the user chose to keep: program ids only, on this phone, capped so
+ *  the list can never grow without bound. */
+export const KEPT_KEY = 'cooeee.kept.v1';
+export const KEPT_MAX = 50;
+
 /** Unit constant. The metres↔kilometres display cutoff and divisor for
  * destination.formatDistanceM — not a safety threshold. */
 export const METRES_PER_KM = 1_000;

@@ -54,7 +54,7 @@ type PreparationLine = { text: string; context: string; source: string };
 
 export function preparationLine(seed: number): PreparationLine {
   const line = copy.PREPARATION_LINES[preparationLineIndex(seed, copy.PREPARATION_LINES.length)];
-  return { ...line, source: copy.PREPARATION_SOURCE };
+  return { ...line, source: line.source ?? copy.PREPARATION_SOURCE };
 }
 
 export type NavItem = { key: 'home' | 'nearby' | 'recover' | 'about'; label: string; to: string };

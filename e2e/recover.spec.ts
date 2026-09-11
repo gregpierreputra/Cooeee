@@ -11,7 +11,7 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   await page.goto(RECOVER_URL);
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   await expect(page.getByText(copy.RECOVER_PRIVACY_LINE)).toBeVisible();
-  await expect(page.getByRole('button')).toHaveCount(6);
+  await expect(page.getByRole('button')).toHaveCount(7);
 
   let requests = 0;
   await page.route('**', async (route) => { requests += 1; await route.continue(); });
@@ -30,6 +30,7 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   await expect(cards.getByRole('link', { name: copy.CALL_LINE('180 22 66') }))
     .toHaveAttribute('href', 'tel:1802266');
   await expect(page.locator('main')).not.toContainText(/recommended|eligible for|best match/i);
+  await expect(page.getByRole('button', { name: copy.KEEP })).toHaveCount(1);
   await expect(page.getByText(copy.RECOVER_STALE_LINE)).toHaveCount(0);
 
   await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
@@ -79,4 +80,49 @@ test('the bottom bar opens Recover', async ({ page }) => {
   await expect(page).toHaveURL(/\/recover$/);
   await expect(page.getByRole('heading', { name: copy.RECOVER_NONE_TITLE })).toBeVisible();
   await expect(nav).toBeVisible();
+});
+
+// E4-US4-AC1: every program, any day, with no need chosen.
+test('every program in the pack can be read without choosing a need', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
+  await expect(page.getByRole('heading', { name: copy.EVERY_PROGRAM })).toBeVisible();
+  await expect(page.locator('.card')).toHaveCount(2);
+  await expect(page.locator('.card').first()).toContainText('Australian Red Cross');
+  await expect(page.getByText(copy.RECOVER_ORDER_LINE)).toBeVisible();
+});
+
+// E4-US6: a kept program is remembered on the phone, listed first, and offered as its own row.
+test('a kept program comes first and is offered as a row of its own', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await expect(page.getByRole('button', { name: copy.KEPT_PROGRAMS })).toHaveCount(0);
+  await page.getByRole('button', { name: copy.NEED_PHRASE.money }).click();
+  const keep = page.getByRole('button', { name: copy.KEEP });
+  await keep.click();
+  await expect(page.getByRole('button', { name: copy.KEPT })).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["recover:payment"]');
+
+  await page.reload();
+  await page.getByRole('button', { name: copy.KEPT_PROGRAMS }).click();
+  await expect(page.locator('.card')).toHaveCount(1);
+  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
+  await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
+  await expect(page.locator('.card').first()).toContainText('Example disaster payment');
+  await expect(page.getByText(copy.RECOVER_ORDER_LINE_KEPT)).toBeVisible();
+  await page.getByRole('button', { name: copy.KEPT }).click();
+  expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('[]');
+});
+
+// E4-US5: the list leaves as plain text, with the caveat at the top.
+test('the list is shared as plain text that starts with the caveat', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: HARNESS });
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.NEED_PHRASE.money }).click();
+  await page.getByRole('button', { name: copy.SHARE_LIST }).click();
+  await expect(page.getByRole('status')).toHaveText(copy.COPIED_LINE);
+  const text = await page.evaluate(() => navigator.clipboard.readText());
+  expect(text.startsWith(`${copy.NEED_PHRASE.money}\n${copy.RECOVER_MAY_MATCH}`)).toBe(true);
+  expect(text).toContain('Call 180 22 66');
+  expect(text).toContain('Published by Services Australia · Saved 9 September 2026');
+  expect(text.endsWith(copy.SHARED_FROM)).toBe(true);
 });

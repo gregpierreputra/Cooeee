@@ -431,7 +431,7 @@ export const NAV_RECOVER = 'Recover';
 // E4 Recover: needs-first support matching, read from the pack's dated snapshot
 export const RECOVER_QUESTION = 'What do you need?';
 export const RECOVER_PRIVACY_LINE =
-  'Nothing you choose here leaves this phone, and nothing is stored.';
+  'Nothing you choose here leaves this phone. Only a program you keep is remembered, on this phone.';
 export const NEED_PHRASE: Record<NeedKey, string> = {
   stay: 'Somewhere to stay',
   money: 'Money for essentials',
@@ -443,6 +443,15 @@ export const NEED_PHRASE: Record<NeedKey, string> = {
 export const RECOVER_MAY_MATCH =
   'These may match. The responsible organisation decides who is eligible.';
 export const RECOVER_ORDER_LINE = 'Listed by organisation name, in alphabetical order.';
+export const RECOVER_ORDER_LINE_KEPT = 'Kept programs first, then by organisation name.';
+export const EVERY_PROGRAM = 'Every program in this pack';
+export const KEPT_PROGRAMS = 'Kept programs';
+export const KEEP = 'Keep';
+export const KEPT = 'Kept';
+export const SHARE_LIST = 'Share this list';
+export const COPIED_LINE = 'Copied. Paste it into a message.';
+export const SHARE_UNAVAILABLE = 'Sharing is not available in this browser.';
+export const SHARED_FROM = 'Shared from Cooeee. Programs change, and the organisation decides.';
 export const RECOVER_STALE_LINE =
   'This information was captured more than three months ago. Programs change, so check with the organisation.';
 export const LICENCE_LINE = (licence: string) => `Licence · ${licence}`;
@@ -466,7 +475,8 @@ export const PREPARATION_LABEL = "Today's reminder";
  *  anything about what is happening outside. Each carries a second line for
  *  the reader the first was not written for: someone without a car, a garden,
  *  animals, tools or a household of their own. */
-export const PREPARATION_LINES = [
+export const PREPARATION_SOURCE_RECOVERY = 'Based on the programs saved in your pack.';
+export const PREPARATION_LINES: readonly { text: string; context: string; source?: string }[] = [
   {
     text: 'Write your household bushfire plan down, and decide who does what.',
     context: 'If you live alone, the plan is still worth writing. Decide who you would call and where you would go.',
@@ -498,6 +508,16 @@ export const PREPARATION_LINES = [
   {
     text: 'Talk the plan through with everyone in the house before the fire season starts.',
     context: 'Include anyone who visits or cares for you regularly, and the neighbours you would check on.',
+  },
+  {
+    text: 'Read the support programs saved in your pack, so the names are familiar later.',
+    context: 'Open Recover from the bottom bar. Every program shows who runs it and when it was captured, and it opens with no signal.',
+    source: PREPARATION_SOURCE_RECOVERY,
+  },
+  {
+    text: 'Keep the programs that fit your household, so they list first when you need them.',
+    context: 'Tap Keep on a program in Recover. Only the program is remembered, on this phone, and nothing about you.',
+    source: PREPARATION_SOURCE_RECOVERY,
   },
 ] as const;
 
@@ -633,6 +653,16 @@ export const TOUR_STEPS = [
       'The nearest official places, from your position or a postcode, while you have a connection.',
       'Before a pack exists, or away from home, you still need to know where the official places are.',
       'Lists relief centres and places of last resort with their distance, sorted by distance, not a safety ranking.',
+    ],
+  },
+  {
+    path: '/recover',
+    target: '.recover',
+    title: 'Recover',
+    lines: [
+      'The official support programs saved in your pack, found by saying what you need in plain words.',
+      'After an event, people do not know what the schemes are called. Before it, they have time to read.',
+      'Lists programs that may match a need with their publisher and saved date, keeps the ones you choose, and shares the list as text. Every result is a possible match, and the responsible organisation decides who is eligible.',
     ],
   },
   {

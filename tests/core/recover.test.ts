@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { RECOVERY_STALE_DAYS, MS_PER_DAY } from '../../src/core/constants';
-import { matchPrograms, NEEDS, recoveryPack, recoveryStale } from '../../src/core/recover';
+import * as copy from '../../src/core/copy';
+import { NEEDS, recoveryPack, recoveryStale, selectPrograms, shareText } from '../../src/core/recover';
 import { pack, program } from '../fixtures';
 
 const withRecovery = (count: number, createdAt: number, id: string) =>
@@ -18,19 +19,37 @@ describe('recoveryPack', () => {
   });
 });
 
-describe('matchPrograms', () => {
+describe('selectPrograms', () => {
   const b = program({ id: 'b', org: 'Services Australia', title: 'Zed payment', needs: ['money'] });
   const a = program({ id: 'a', org: 'Services Australia', title: 'Alpha payment', needs: ['money', 'stay'] });
   const c = program({ id: 'c', org: 'Australian Red Cross', title: 'Coping', needs: ['health'] });
+  const ids = (rows: { id: string }[]) => rows.map((row) => row.id);
 
   it('returns only the programs tagged with the need, by organisation then title', () => {
-    expect(matchPrograms([b, c, a], 'money').map((p) => p.id)).toEqual(['a', 'b']);
-    expect(matchPrograms([b, c, a], 'health').map((p) => p.id)).toEqual(['c']);
-    expect(matchPrograms([b, c, a], 'documents')).toEqual([]);
+    expect(ids(selectPrograms([b, c, a], 'money', []))).toEqual(['a', 'b']);
+    expect(ids(selectPrograms([b, c, a], 'health', []))).toEqual(['c']);
+    expect(selectPrograms([b, c, a], 'documents', [])).toEqual([]);
+  });
+
+  it('lists every program, or only the kept ones, with kept programs first', () => {
+    expect(ids(selectPrograms([b, c, a], 'all', []))).toEqual(['c', 'a', 'b']);
+    expect(ids(selectPrograms([b, c, a], 'all', ['b']))).toEqual(['b', 'c', 'a']);
+    expect(ids(selectPrograms([b, c, a], 'kept', ['b', 'missing']))).toEqual(['b']);
   });
 
   it('offers every need exactly once', () => {
     expect([...NEEDS].sort()).toEqual(['documents', 'food', 'health', 'money', 'property', 'stay']);
+  });
+});
+
+describe('shareText', () => {
+  it('carries the caveat, and the publisher and saved date of every program, and nothing about the person', () => {
+    const text = shareText('Money for essentials', [program({ telephone: '180 22 66' }), program({ id: 'p2', title: 'Second' })]);
+    expect(text.startsWith(`Money for essentials\n${copy.RECOVER_MAY_MATCH}`)).toBe(true);
+    expect(text.match(/Published by Services Australia · Saved /g)).toHaveLength(2);
+    expect(text).toContain('Call 180 22 66');
+    expect(text).toContain('https://www.servicesaustralia.gov.au/example');
+    expect(text.endsWith(copy.SHARED_FROM)).toBe(true);
   });
 });
 

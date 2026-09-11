@@ -254,7 +254,7 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
-  it('tours nine features across every screen, three led lines each', () => {
+  it('tours ten features across every screen, three led lines each', () => {
     expect(copy.TOUR_STEPS.map((step) => step.title)).toEqual([
       "Today's reminder",
       'Your saved packs',
@@ -264,6 +264,7 @@ describe('the returning-user home', () => {
       'The bottom bar',
       'The address search',
       'Nearby official places',
+      'Recover',
       'About Cooeee',
     ]);
     for (const step of copy.TOUR_STEPS) {
@@ -384,9 +385,15 @@ describe('E4 Recover mandated copy', () => {
     expect(copy.RECOVER_ORDER_LINE).toBe('Listed by organisation name, in alphabetical order.');
   });
 
+  it('says what is shared, and that the caveat travels with a shared list', () => {
+    expect(copy.SHARED_FROM).toBe('Shared from Cooeee. Programs change, and the organisation decides.');
+    expect(copy.RECOVER_ORDER_LINE_KEPT).toBe('Kept programs first, then by organisation name.');
+    expect(copy.PREPARATION_LINES.filter((line) => line.source === copy.PREPARATION_SOURCE_RECOVERY)).toHaveLength(2);
+  });
+
   it('states that nothing chosen leaves the phone', () => {
     expect(copy.RECOVER_PRIVACY_LINE).toBe(
-      'Nothing you choose here leaves this phone, and nothing is stored.',
+      'Nothing you choose here leaves this phone. Only a program you keep is remembered, on this phone.',
     );
   });
 

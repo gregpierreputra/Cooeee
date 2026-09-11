@@ -131,10 +131,15 @@ describe('preparation line selection', () => {
     expect(line.source).toBe('Based on Country Fire Authority guidance.');
   });
 
-  it('offers eight lines, none of them about a place or about conditions', () => {
-    expect(copy.PREPARATION_LINES).toHaveLength(8);
-    expect(new Set(copy.PREPARATION_LINES.map((row) => row.text)).size).toBe(8);
-    expect(new Set(copy.PREPARATION_LINES.map((row) => row.context)).size).toBe(8);
+  it('offers ten lines, none of them about a place or about conditions', () => {
+    expect(copy.PREPARATION_LINES).toHaveLength(10);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.text)).size).toBe(10);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.context)).size).toBe(10);
+  });
+
+  it('names the recovery lines\' own source, and the CFA source for the rest', () => {
+    expect(preparationLine(8 * MS_PER_DAY).source).toBe(copy.PREPARATION_SOURCE_RECOVERY);
+    expect(preparationLine(0).source).toBe(copy.PREPARATION_SOURCE);
   });
 });
 
