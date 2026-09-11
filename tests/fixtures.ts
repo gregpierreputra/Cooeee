@@ -3,6 +3,7 @@ import type {
   NspSite,
   NspSnapshot,
   Pack,
+  PackProgram,
   RecoveryProgram,
   Source,
 } from '../src/core/types';
@@ -69,6 +70,14 @@ export const program = (over: Partial<RecoveryProgram> = {}): RecoveryProgram =>
   officialUrl: 'https://www.servicesaustralia.gov.au/example',
   snapshotDate: '2026-08-18',
   source: source({ publisher: 'Services Australia' }),
+  ...over,
+});
+
+export const packProgram = (over: Partial<PackProgram> = {}): PackProgram => ({
+  ...program(),
+  id: 'pack-1:prog-1',
+  packId: 'pack-1',
+  programId: 'prog-1',
   ...over,
 });
 

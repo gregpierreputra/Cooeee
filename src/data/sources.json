@@ -1,14 +1,44 @@
 [
   {
     "url": "https://www.cfa.vic.gov.au/plan-prepare/your-local-area-info-and-advice/neighbourhood-safer-places",
-    "name": "neighbourhood-safer-places.v2026-09-05.pdf",
-    "retrievedAt": 1788599710195,
-    "sha256": "b0e263d348985d461819c75731f87b8c700b8dd2d4aa3bb697e12f02f2cf8806"
+    "name": "neighbourhood-safer-places.v2026-09-11.pdf",
+    "retrievedAt": 1789125719731,
+    "sha256": "f6fdde7ff0bd9d377640d1e9919e0e0e5249b5fdfb09ff0c3ed67b1788d808fa"
   },
   {
     "url": "https://discover.data.vic.gov.au/dataset/designated-bushfire-prone-area-bpa",
-    "name": "designated-bushfire-prone-area.v2026-09-05.pdf",
-    "retrievedAt": 1788599710195,
-    "sha256": "1decc7a7792c8ab81e1f2557052314761e6d55370b8d52bd2d897e1a37e9932d"
+    "name": "designated-bushfire-prone-area.v2026-09-11.pdf",
+    "retrievedAt": 1789125719731,
+    "sha256": "a17b255a589e7a02bada9f479bd3fa936f80001eb895e3973b9a04c79f87f669"
+  },
+  {
+    "url": "https://www.servicesaustralia.gov.au/top-payments-for-natural-disaster",
+    "name": "services-australia-disaster-payments.v2026-09-11.pdf",
+    "retrievedAt": 1789125719731,
+    "sha256": "11d55b53adbc57c56bfe69527705a076c1c986d662b987ca1732a4f718057e83"
+  },
+  {
+    "url": "https://www.servicesaustralia.gov.au/crisis-payment-for-other-extreme-circumstances",
+    "name": "services-australia-crisis-payment.v2026-09-11.pdf",
+    "retrievedAt": 1789125719731,
+    "sha256": "fb1c87ecc1403bd29f8f124eae7c4341fc4ffaa40c4cf7d4b98ec6e796e531bf"
+  },
+  {
+    "url": "https://www.servicesaustralia.gov.au/how-to-manage-my-current-payment-or-card-during-disaster",
+    "name": "services-australia-cards-after-disaster.v2026-09-11.pdf",
+    "retrievedAt": 1789125719731,
+    "sha256": "ca068493fbb299e5dd223fd9763993796d0fb468c5ac408195710d6ff4f25675"
+  },
+  {
+    "url": "https://www.ses.vic.gov.au/plan-and-stay-safe/recovery",
+    "name": "vicses-recovery.v2026-09-11.pdf",
+    "retrievedAt": 1789125719731,
+    "sha256": "87132d680ca526117a6cae53fdd334f6230ee61ccae3420f9b96a82974c511d4"
+  },
+  {
+    "url": "https://www.cfa.vic.gov.au/plan-prepare/fires-in-the-home/after-the-fire",
+    "name": "cfa-after-the-fire.v2026-09-11.pdf",
+    "retrievedAt": 1789125719731,
+    "sha256": "6815c0fdfc9f8703b9dbda95e480b162ce7c44c1b7dc7fa178350c0d522878e4"
   }
 ]

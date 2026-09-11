@@ -181,6 +181,10 @@ export type RecoveryProgram = {
   source: Source;
 };
 
+/** A program copied into a pack: the row a pack owns and hashes, so what the
+ *  pack shows is what was saved, whatever the app's snapshot does later. */
+export type PackProgram = RecoveryProgram & { packId: string; programId: string };
+
 // ID alongside x, y, z alongside with the blobs for info bytes
 export type TileRow = { 
   packId: string;
@@ -273,13 +277,12 @@ export type PackSeed = Omit<
   'status' | 'verifiedAt' | 'builtWithTiles' | 'sizeBytes' | 'manifest'
 >;
 
-/** Complete text content supplied to the local manifest builder. Recovery
- * rows are pre-seeded global snapshot records and are verified, not rewritten. */
+/** Complete text content supplied to the local manifest builder. */
 export type TextPackContent = {
   pack: PackSeed;
   layers: ExposureLayer[];
   destinations: Destination[];
-  recovery: RecoveryProgram[];
+  recovery: PackProgram[];
 };
 
 /** Raw rows behind one complete pack detail view. Recovery is shown only when
@@ -288,7 +291,7 @@ export type CompletePackContent = {
   pack: Pack;
   layers: ExposureLayer[];
   destinations: Destination[];
-  recovery: RecoveryProgram[];
+  recovery: PackProgram[];
   files: PackFile[];
   notes: PackNote[];
   recoveryVerified: boolean;       // the shared recovery snapshot matches this pack's manifest

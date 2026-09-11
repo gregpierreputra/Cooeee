@@ -24,6 +24,16 @@ const pages = [
   { url: nsp.source.url, name: 'neighbourhood-safer-places', mustContain: 'Neighbourhood Safer Places' },
   { url: DTP_DATASET_URL, name: 'designated-bushfire-prone-area', mustContain: 'Designated Bushfire Prone Area' },
 ];
+// The official page of every recovery program, so a pack can carry the pages
+// of the programs the user kept. A publisher that blocks the render is skipped
+// with a warning: that program keeps its web link only, and the two pages
+// above still gate the build.
+const programs = JSON.parse(readFileSync(new URL('recovery-sources.json', import.meta.url), 'utf8'));
+for (const program of programs) {
+  // A program with no page marker is link only: its publisher allows no copy.
+  if (!program.pageContains) continue;
+  pages.push({ url: program.officialUrl, name: program.id, mustContain: program.pageContains, optional: true });
+}
 
 // The dataset page previews its map in a Digital Twin Victoria frame, which
 // answers a headless browser with a block page: a tester once found that 403
@@ -54,7 +64,19 @@ mkdirSync(new URL('sources/', dataDir), { recursive: true });
 
 const browser = await chromium.launch();
 const sources = [];
-for (const { url, name, mustContain } of pages) {
+for (const { url, name, mustContain, optional } of pages) {
+  try {
+    await render(url, name, mustContain);
+  } catch (error) {
+    if (!optional) throw error;
+    console.warn(`sources: skipped ${name}: ${error.message}`);
+  }
+}
+await browser.close();
+
+writeFileSync(registerUrl, `${JSON.stringify(sources, null, 2)}\n`);
+
+async function render(url, name, mustContain) {
   // A desktop-width layout, printed to A4 at three quarters, so the copy is the
   // page a reader sees on a computer rather than a narrow tablet cut of it. The
   // page's own content security policy is set aside for this render only: it
@@ -101,6 +123,3 @@ for (const { url, name, mustContain } of pages) {
   sources.push({ url, name: file, retrievedAt, sha256: createHash('sha256').update(pdf).digest('hex') });
   console.log(`sources: wrote ${file} (${pdf.length} bytes)`);
 }
-await browser.close();
-
-writeFileSync(registerUrl, `${JSON.stringify(sources, null, 2)}\n`);

@@ -53,8 +53,13 @@ export const loadSourceFiles = (packId: string, urls: string[]): Promise<PackFil
  *  server that is down or slow must not stop the pack, so the pack is built
  *  without it and its page simply shows no map. */
 export async function loadPackFiles(packId: string, content: TextPackContent): Promise<PackFile[]> {
+  // A kept program's page travels too, where the build rendered one; a page
+  // the build could not render leaves that program with its web link only.
+  const programPages = content.recovery
+    .map((program) => program.officialUrl)
+    .filter((url) => sources.some((source) => source.url === url));
   const [pages, map] = await Promise.all([
-    loadSourceFiles(packId, sourcePageUrls(content)),
+    loadSourceFiles(packId, [...sourcePageUrls(content), ...programPages]),
     loadAreaMap(packId, content.pack).catch(() => null),
   ]);
   return map ? [...pages, map] : pages;

@@ -19,7 +19,9 @@ import * as copy from '../../core/copy';
 import { chosenDestinations, orderByDistance } from '../../core/destination';
 import { titleCase } from '../../core/home';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
+import { readKept } from '../../core/kept';
 import { buildPackSeed } from '../../core/pack';
+import { packProgramsFor } from '../../core/recover';
 import type {
   AddressCandidate,
   BushfireAreaResult,
@@ -32,7 +34,8 @@ import type {
   PendingPlace,
   TextPackContent,
 } from '../../core/types';
-import { listCompletePacks } from '../../data/db';
+import { listCompletePacks, listPrograms } from '../../data/db';
+import { localFlagStore } from '../../data/acknowledgement';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
 import { loadPackFiles } from '../../data/source-files';
@@ -271,7 +274,9 @@ export function Search({
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
         destinations,
-        recovery: [],
+        // The programs the user kept in Recover, copied so the pack carries
+        // them and their pages with no signal.
+        recovery: packProgramsFor(seed.id, await listPrograms(), readKept(localFlagStore())),
       };
       // The PDF copies of the source pages and the map of the area travel with
       // the pack, so their bytes are part of the one size stated before

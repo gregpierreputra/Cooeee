@@ -2,8 +2,12 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
 import { homeView, titleCase, type HomeView } from '../core/home';
+import { readKept } from '../core/kept';
+import { unsavedKept } from '../core/recover';
 import type { Pack } from '../core/types';
-import { deleteCompletePack, listCompletePacks } from '../data/db';
+import { localFlagStore } from '../data/acknowledgement';
+import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
+import ChoiceGlyph from './components/ChoiceGlyph';
 import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
 import { startTour } from './components/Tour';
@@ -36,6 +40,19 @@ export default function Home({ now }: { now?: number }) {
       live = false;
     };
   }, [seed]);
+
+  // E4-US7-AC4: kept programs that no saved pack carries yet. Read once on
+  // arrival, so coming back from Recover always shows the current count.
+  const [unsaved, setUnsaved] = useState(0);
+  useEffect(() => {
+    let live = true;
+    listSavedProgramIds().then((saved) => {
+      if (live) setUnsaved(unsavedKept(readKept(localFlagStore()), saved).length);
+    });
+    return () => {
+      live = false;
+    };
+  }, [view]);
 
   // Deleting a pack takes two taps: the delete control swaps that pack's card
   // for a question, and only the second destroys data. Keep restores the card
@@ -73,6 +90,19 @@ export default function Home({ now }: { now?: number }) {
           <p className="muted preparation-source">{view.preparation.source}</p>
         </section>
       )}
+
+      {/* The nudge: the kept card treatment, so it reads as the same object the
+          person kept, and one way to act on it. */}
+      {view !== null && unsaved > 0 ? (
+        <section className="card kept nudge">
+          <div className="card-head">
+            <ChoiceGlyph choice="kept" />
+            <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
+          </div>
+          <p className="muted">{copy.KEPT_NOT_SAVED_LINE}</p>
+          <Link className="action" to="/packs/new">{copy.BUILD_A_PACK}</Link>
+        </section>
+      ) : null}
 
       {view === null ? null : view.packs.length === 0 ? (
         <StateCard heading={copy.NO_PACK_SAVED} detail={copy.NO_PACKS_HINT} />

@@ -462,6 +462,14 @@ export const RECOVER_NO_MATCH_LINE =
 export const OFFICIAL_CHANNEL = 'Official channel (web)';
 export const CHOOSE_ANOTHER_NEED = 'Choose another need';
 export const RECOVER_NONE_TITLE = 'No support information is held on this phone.';
+export const SAVED_PROGRAMS = 'Saved programs';
+export const SHOW_SAVED_PROGRAMS = (count: number) => `Show ${count} saved ${count === 1 ? 'program' : 'programs'}`;
+export const HIDE_SAVED_PROGRAMS = 'Hide saved programs';
+export const NO_SAVED_PROGRAMS =
+  'No programs were kept when this pack was built. Keep programs in Recover, then build a pack to carry their pages.';
+export const KEPT_NOT_SAVED = (count: number) =>
+  `${count} kept ${count === 1 ? 'program is' : 'programs are'} not yet in an offline pack.`;
+export const KEPT_NOT_SAVED_LINE = 'Build a pack to carry their pages, so they open with no signal.';
 export const RECOVER_NONE_LINE =
   'Build a pack when you are online. It carries the official programs so they open with no signal.';
 

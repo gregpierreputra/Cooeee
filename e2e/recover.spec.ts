@@ -138,3 +138,32 @@ test('the list is shared as plain text that starts with the caveat', async ({ pa
   expect(text).toContain('Published by Services Australia · Saved 9 September 2026');
   expect(text.endsWith(copy.SHARED_FROM)).toBe(true);
 });
+
+// E4-US7: the saved programs are sectioned off on the pack page under one
+// control, each with the copy of its own page.
+test('the pack page sections off its saved programs, each with its own page copy', async ({ page }) => {
+  await page.goto(`${HARNESS}/detail`);
+  const section = page.locator('.saved-programs');
+  await expect(section.getByText(copy.SAVED_PROGRAMS)).toBeVisible();
+  await expect(section.locator('.card')).toHaveCount(0);
+  const toggle = section.getByRole('button', { name: copy.SHOW_SAVED_PROGRAMS(1) });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
+  await expect(section.locator('.card')).toHaveCount(1);
+  await expect(section.locator('.monogram')).toHaveText('SA');
+  await expect(section.locator('.need-pill')).toHaveText([copy.NEED_PHRASE.money]);
+  await expect(section.getByRole('link', { name: copy.OPEN_SOURCE_FILE })).toHaveAttribute('download', 'program.pdf');
+  await section.getByRole('button', { name: copy.HIDE_SAVED_PROGRAMS }).click();
+  await expect(section.locator('.card')).toHaveCount(0);
+});
+
+// E4-US7-AC4: kept programs with no pack to carry them earn one nudge on Home.
+test('Home nudges towards a pack while a kept program is not saved offline', async ({ page }) => {
+  await acknowledgeFirstOpen(page);
+  await page.goto('/');
+  await expect(page.locator('.nudge')).toHaveCount(0);
+  await page.evaluate(() => window.localStorage.setItem('cooeee.kept.v1', '["services-australia-crisis-payment"]'));
+  await page.goto('/');
+  await expect(page.locator('.nudge')).toContainText(copy.KEPT_NOT_SAVED(1));
+  await expect(page.locator('.nudge').getByRole('link', { name: copy.BUILD_A_PACK })).toBeVisible();
+});

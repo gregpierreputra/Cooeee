@@ -1852,3 +1852,28 @@ input {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* Pack Details: the saved programs, sectioned off under one control. */
+.saved-programs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.saved-programs-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.saved-programs .glyph,
+.nudge .glyph {
+  width: 36px;
+  height: 36px;
+}
+.saved-programs .glyph svg,
+.nudge .glyph svg {
+  width: 18px;
+  height: 18px;
+}
+.nudge .action {
+  align-self: start;
+}

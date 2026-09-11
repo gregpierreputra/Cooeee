@@ -4,38 +4,51 @@
     "org": "Services Australia",
     "title": "Disaster recovery payments and allowance",
     "covers": "A one-off payment and a short-term income support allowance after a declared disaster.",
-    "needs": ["money"],
+    "needs": [
+      "money"
+    ],
     "officialUrl": "https://www.servicesaustralia.gov.au/top-payments-for-natural-disaster",
     "telephone": "180 22 66",
     "publisher": "Services Australia",
-    "licence": "CC BY 4.0"
+    "licence": "CC BY 4.0",
+    "pageContains": "Services Australia"
   },
   {
     "id": "services-australia-crisis-payment",
     "org": "Services Australia",
     "title": "Crisis Payment for extreme circumstances",
     "covers": "A one-off payment if you had to leave your home because of a disaster and already receive an income support payment.",
-    "needs": ["money", "stay"],
+    "needs": [
+      "money",
+      "stay"
+    ],
     "officialUrl": "https://www.servicesaustralia.gov.au/crisis-payment-for-other-extreme-circumstances",
     "publisher": "Services Australia",
-    "licence": "CC BY 4.0"
+    "licence": "CC BY 4.0",
+    "pageContains": "Services Australia"
   },
   {
     "id": "services-australia-cards-after-disaster",
     "org": "Services Australia",
     "title": "Your payment or card during a disaster",
     "covers": "Replacing a lost Medicare or concession card and keeping an existing payment going after a disaster.",
-    "needs": ["documents"],
+    "needs": [
+      "documents"
+    ],
     "officialUrl": "https://www.servicesaustralia.gov.au/how-to-manage-my-current-payment-or-card-during-disaster",
     "publisher": "Services Australia",
-    "licence": "CC BY 4.0"
+    "licence": "CC BY 4.0",
+    "pageContains": "Services Australia"
   },
   {
     "id": "disaster-assist-victoria",
     "org": "National Emergency Management Agency",
     "title": "Assistance for declared disasters in Victoria",
     "covers": "The disasters declared in Victoria and the Commonwealth and state assistance open for each one.",
-    "needs": ["money", "property"],
+    "needs": [
+      "money",
+      "property"
+    ],
     "officialUrl": "https://www.disasterassist.gov.au/find-a-disaster/australian-disasters?state=vic",
     "publisher": "Australian Government Department of Home Affairs",
     "licence": "CC BY 3.0 AU"
@@ -45,7 +58,11 @@
     "org": "Emergency Management Victoria",
     "title": "Emergency relief and recovery",
     "covers": "Relief centres, emergency relief assistance and help re-establishing a home after an emergency in Victoria.",
-    "needs": ["stay", "food", "property"],
+    "needs": [
+      "stay",
+      "food",
+      "property"
+    ],
     "officialUrl": "https://www.emergency.vic.gov.au/relief/",
     "telephone": "1800 226 226",
     "publisher": "Emergency Management Victoria",
@@ -56,27 +73,35 @@
     "org": "Victoria State Emergency Service",
     "title": "Recovery after a flood or storm",
     "covers": "Cleaning up and returning home after a flood or storm.",
-    "needs": ["property"],
+    "needs": [
+      "property"
+    ],
     "officialUrl": "https://www.ses.vic.gov.au/plan-and-stay-safe/recovery",
     "publisher": "Victoria State Emergency Service",
-    "licence": "Facts and link only, licence to be confirmed"
+    "licence": "Facts and link only, licence to be confirmed",
+    "pageContains": "SES"
   },
   {
     "id": "cfa-after-the-fire",
     "org": "Country Fire Authority",
     "title": "After the fire",
     "covers": "Returning to a property and cleaning up after a fire.",
-    "needs": ["property"],
+    "needs": [
+      "property"
+    ],
     "officialUrl": "https://www.cfa.vic.gov.au/plan-prepare/fires-in-the-home/after-the-fire",
     "publisher": "Country Fire Authority",
-    "licence": "Facts and link only, licence to be confirmed"
+    "licence": "Facts and link only, licence to be confirmed",
+    "pageContains": "CFA"
   },
   {
     "id": "red-cross-coping",
     "org": "Australian Red Cross",
     "title": "Coping after a crisis",
     "covers": "Looking after yourself and others after an emergency, and where to find someone to talk to.",
-    "needs": ["health"],
+    "needs": [
+      "health"
+    ],
     "officialUrl": "https://www.redcross.org.au/emergencies/coping-after-a-crisis/",
     "publisher": "Australian Red Cross",
     "licence": "Link only, all rights reserved"

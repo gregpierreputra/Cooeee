@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RECOVERY_STALE_DAYS, MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
-import { monogram, NEEDS, recoveryStale, selectPrograms, shareText } from '../../src/core/recover';
+import { monogram, NEEDS, packProgramsFor, recoveryStale, selectPrograms, shareText, unsavedKept } from '../../src/core/recover';
 import { program } from '../fixtures';
 
 describe('selectPrograms', () => {
@@ -36,6 +36,15 @@ describe('shareText', () => {
     expect(text).toContain('Call 180 22 66');
     expect(text).toContain('https://www.servicesaustralia.gov.au/example');
     expect(text.endsWith(copy.SHARED_FROM)).toBe(true);
+  });
+});
+
+describe('packProgramsFor and unsavedKept', () => {
+  it('copies only the kept programs as rows the pack owns', () => {
+    const rows = packProgramsFor('p1', [program({ id: 'a' }), program({ id: 'b' })], ['b', 'gone']);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: 'p1:b', packId: 'p1', programId: 'b', org: 'Services Australia' });
+    expect(unsavedKept(['a', 'b'], ['b'])).toEqual(['a']);
   });
 });
 

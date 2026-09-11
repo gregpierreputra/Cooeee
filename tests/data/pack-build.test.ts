@@ -11,7 +11,7 @@ import {
 } from '../../src/data/pack-build';
 import { db, getCompletePackContent, listCompletePacks } from '../../src/data/db';
 import { sha256Hex } from '../../src/data/integrity';
-import { destination, pack, program, source } from '../fixtures';
+import { destination, pack, packProgram, source } from '../fixtures';
 
 function seed(over: Partial<PackSeed> = {}): PackSeed {
   const complete = pack();
@@ -24,7 +24,7 @@ function seed(over: Partial<PackSeed> = {}): PackSeed {
   return { ...value, ...over };
 }
 
-const recovery = program();
+const recovery = packProgram();
 const content = (over: Partial<TextPackContent> = {}): TextPackContent => ({
   pack: seed(),
   layers: [{
@@ -45,7 +45,6 @@ const content = (over: Partial<TextPackContent> = {}): TextPackContent => ({
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((table) => table.clear()));
-  await db.programs.put(recovery);
 });
 
 describe('E1-US1-AC9 offer preparation', () => {
@@ -158,23 +157,6 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
     expect(await db.packs.count()).toBe(0);
   });
 
-  it('keeps the previous pack byte-identical when staging fails', async () => {
-    const old = pack({ id: 'old-pack', address: 'OLD ADDRESS' });
-    await db.packs.put(old);
-    const before = structuredClone(await db.packs.get(old.id));
-    const proposed = content({
-      pack: seed({ id: 'new-pack', supersedes: old.id }),
-      layers: [],
-      destinations: [],
-      recovery: [{ ...recovery, id: 'missing-program' }],
-    });
-    const offer = await createPackOffer(proposed);
-
-    await expect(saveTextOnlyPack(proposed, offer, 999)).rejects.toThrow('not present');
-    expect(await db.packs.get(old.id)).toEqual(before);
-    expect((await listCompletePacks()).map(({ id }) => id)).toEqual(['old-pack']);
-  });
-
   it('atomically exposes the replacement and removes the old owned rows', async () => {
     const old = pack({ id: 'old-pack', address: 'OLD ADDRESS' });
     await db.packs.put(old);
@@ -186,11 +168,13 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
       pack: seed({ id: 'new-pack', supersedes: old.id, address: 'NEW ADDRESS' }),
       layers: [{ ...content().layers[0], id: 'new-pack:BPA', packId: 'new-pack' }],
       destinations: [destination({ id: 'new-pack:d', packId: 'new-pack' })],
+      recovery: [packProgram({ id: 'new-pack:prog-1', packId: 'new-pack' })],
     });
     const offer = await createPackOffer(proposed);
     await saveTextOnlyPack(proposed, offer, 999);
 
     expect((await listCompletePacks()).map(({ id }) => id)).toEqual(['new-pack']);
+    expect(await db.packPrograms.where('packId').equals('new-pack').count()).toBe(1);
     expect(await db.layers.where('packId').equals('old-pack').count()).toBe(0);
     expect(await db.destinations.where('packId').equals('old-pack').count()).toBe(0);
     expect(await db.tiles.where('packId').equals('old-pack').count()).toBe(0);

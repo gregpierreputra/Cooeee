@@ -11,6 +11,7 @@ import type {
   PackFile,
   PackNote,
   PackWithPlaces,
+  PackProgram,
   RecoveryProgram,
   SnapshotActivation,
   StoredSnapshot,
@@ -26,6 +27,7 @@ class CooeeeDb extends Dexie {
   layers!: Table<ExposureLayer, string>;
   destinations!: Table<Destination, string>;
   programs!: Table<RecoveryProgram, string>;
+  packPrograms!: Table<PackProgram, string>;
   tiles!: Table<TileRow, [string, number, number, number]>;
   // The files saved with a pack: the PDF copies of its source pages and the
   // map of its area.
@@ -81,6 +83,9 @@ class CooeeeDb extends Dexie {
     this.version(5).stores({ files: 'id, packId' });
     // Version 6 adds the store for the user's own notes on a pack.
     this.version(6).stores({ notes: 'id, packId' });
+    // Version 7 adds the store for the programs a pack carries, one row per
+    // kept program, owned and hashed like every other pack group.
+    this.version(7).stores({ packPrograms: 'id, packId' });
   }
 }
 
@@ -91,7 +96,7 @@ class CooeeeDb extends Dexie {
 export const db = new CooeeeDb();
 
 /** The tables holding rows a pack owns, for every cascade. */
-export const ownedTables = () => [db.layers, db.destinations, db.tiles, db.files, db.notes];
+export const ownedTables = () => [db.layers, db.destinations, db.tiles, db.files, db.notes, db.packPrograms];
 
 /** Remove every row the given packs own. Callers run this inside their own
  *  transaction, which must list ownedTables(). */
@@ -119,6 +124,13 @@ export const putPrograms = (rows: RecoveryProgram[]): Promise<void> =>
   });
 
 export const listPrograms = (): Promise<RecoveryProgram[]> => db.programs.toArray();
+
+/** The ids of every program some complete pack carries, for the Home nudge. */
+export async function listSavedProgramIds(): Promise<string[]> {
+  const packIds = (await listCompletePacks()).map((pack) => pack.id);
+  const rows = await db.packPrograms.where('packId').anyOf(packIds).toArray();
+  return [...new Set(rows.map((row) => row.programId))];
+}
 
 /** A pack's notes, oldest first. Only the complete-pack reads below call this. */
 const listNotes = (packId: string): Promise<PackNote[]> =>
@@ -177,14 +189,13 @@ export async function getCompletePackContent(id: string): Promise<CompletePackCo
   const pack = await getCompletePack(id);
   if (!pack) return undefined;
   const groups = pack.manifest.groups;
-  const [layers, destinations, files, notes] = await Promise.all([
+  const [layers, destinations, files, notes, programs] = await Promise.all([
     db.layers.where('packId').equals(id).toArray(),
     db.destinations.where('packId').equals(id).toArray(),
     db.files.where('packId').equals(id).toArray(),
     listNotes(id),
+    db.packPrograms.where('packId').equals(id).toArray(),
   ]);
-  // The recovery snapshot is shared by every pack; only a pack that references it reads it.
-  const programs = groups.recovery.count === 0 ? [] : await db.programs.toArray();
 
   const layersVerified = await groupMatches(groups.layers, layers);
   const destinationsVerified = await groupMatches(groups.destinations, destinations);

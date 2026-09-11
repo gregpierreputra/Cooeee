@@ -11,7 +11,7 @@ import {
   sweepBuilding,
 } from '../../src/data/db';
 import { fileMeta, manifestGroup, sha256Hex } from '../../src/data/integrity';
-import { destination, pack, program, source } from '../fixtures';
+import { destination, pack, packProgram, program, source } from '../fixtures';
 
 const layer = (packId: string) => ({
   id: `${packId}:BPA`,
@@ -42,6 +42,7 @@ beforeEach(async () => {
     db.files.clear(),
     db.notes.clear(),
     db.programs.clear(),
+    db.packPrograms.clear(),
   ]);
 });
 
@@ -62,8 +63,8 @@ describe('a pack is invisible until it is complete', () => {
     expect(await getCompletePackContent('half')).toBeUndefined();
   });
 
-  it('loads complete owned rows and only a manifest-matching recovery snapshot', async () => {
-    const recovery = [program()];
+  it('loads complete owned rows and only manifest-matching program rows', async () => {
+    const recovery = [packProgram()];
     const recoveryManifest = await manifestGroup(recovery);
     await db.packs.put(pack({
       manifest: {
@@ -76,7 +77,7 @@ describe('a pack is invisible until it is complete', () => {
       },
     }));
     await db.destinations.put(destination());
-    await db.programs.bulkPut(recovery);
+    await db.packPrograms.bulkPut(recovery);
 
     const detail = await getCompletePackContent('pack-1');
     expect(detail?.destinations).toEqual([destination()]);
@@ -84,7 +85,7 @@ describe('a pack is invisible until it is complete', () => {
     expect(detail?.recoveryVerified).toBe(true);
   });
 
-  it('withholds recovery rows when the local snapshot does not match the pack manifest', async () => {
+  it('withholds program rows that do not match the pack manifest', async () => {
     await db.packs.put(pack({
       manifest: {
         ...pack().manifest,
@@ -94,7 +95,7 @@ describe('a pack is invisible until it is complete', () => {
         },
       },
     }));
-    await db.programs.put(program());
+    await db.packPrograms.put(packProgram());
 
     expect(await getCompletePackContent('pack-1')).toMatchObject({
       recovery: [], files: [], notes: [], recoveryVerified: false,
@@ -234,14 +235,15 @@ describe('putNote', () => {
 });
 
 describe('schema', () => {
-  it('is version 6: the pack stores, the Nearby-places stores, the snapshot, files and notes stores', () => {
-    expect(db.verno).toBe(6);
+  it('is version 7: the pack stores, the Nearby-places stores, the snapshot, files, notes and pack programs', () => {
+    expect(db.verno).toBe(7);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
       'destinations',
       'dynamicSnapshot',
       'files',
       'layers',
       'notes',
+      'packPrograms',
       'packs',
       'postcodes',
       'programs',

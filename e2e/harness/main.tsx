@@ -2,7 +2,7 @@ import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 
-import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
+import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
 import { DTP_DATASET_URL } from '../../src/core/constants';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../src/core/nsp';
@@ -192,12 +192,11 @@ const sizeContent: TextPackContent = {
     name: 'Malformed test-only item',
     source: { ...packSource, publisher: '' },
   }] : [],
-  recovery: [recoveryProgram],
+  recovery: [{ ...recoveryProgram, id: 'new-pack:services-australia-example', packId: 'new-pack', programId: 'services-australia-example' }],
 };
 
 let sizeFlow = confirmation;
 if (window.location.pathname === '/size') {
-  await db.programs.put(recoveryProgram);
   if (sizeMode === 'interrupt') await db.packs.put(savedPack);
   const offer = await createPackOffer(sizeContent);
   let interruptOnce = sizeMode === 'interrupt';
@@ -251,9 +250,11 @@ const detailDestination: Destination = detailMode === 'absence'
       name: 'Kalorama Reserve',
       source: cfaSource,
     };
-const detailRecovery: RecoveryProgram = {
+const detailRecovery: PackProgram = {
   ...recoveryProgram,
-  id: 'detail-recovery',
+  id: 'detail-pack:services-australia-example',
+  packId: 'detail-pack',
+  programId: 'services-australia-example',
   title: 'Disaster support reference',
   source: {
     publisher: 'Services Australia',
@@ -271,6 +272,8 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
     id: 'detail-pack:bpa.pdf', packId: 'detail-pack', url: DTP_DATASET_URL, name: 'bpa.pdf',
     retrievedAt: detailSavedAt, sizeBytes: bytes.byteLength, sha256: await sha256Hex(bytes), bytes,
   };
+  // The saved program's own page copy, so its file link renders here.
+  const programFile: PackFile = { ...detailFile, id: 'detail-pack:program.pdf', url: detailRecovery.officialUrl, name: 'program.pdf' };
   // Real hashes: the reads re-verify every group against the manifest.
   await db.packs.put({
     ...savedPack,
@@ -285,14 +288,14 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
         destinations: await manifestGroup([detailDestination]),
         recovery: await manifestGroup([detailRecovery]),
         tiles: { count: 0, bytes: 0 },
-        files: await manifestGroup([fileMeta(detailFile)]),
+        files: await manifestGroup([fileMeta(detailFile), fileMeta(programFile)]),
       },
     },
   });
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
-  await db.programs.put(detailRecovery);
-  await db.files.put(detailFile);
+  await db.packPrograms.put(detailRecovery);
+  await db.files.bulkPut([detailFile, programFile]);
 }
 
 // Recover at a fixed instant, from the programs on the device and no pack.

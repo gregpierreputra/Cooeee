@@ -391,6 +391,16 @@ describe('E4 Recover mandated copy', () => {
     expect(copy.PREPARATION_LINES.filter((line) => line.source === copy.PREPARATION_SOURCE_RECOVERY)).toHaveLength(2);
   });
 
+  it('names the saved programs section, its one control and the Home nudge', () => {
+    expect(copy.SAVED_PROGRAMS).toBe('Saved programs');
+    expect(copy.SHOW_SAVED_PROGRAMS(1)).toBe('Show 1 saved program');
+    expect(copy.SHOW_SAVED_PROGRAMS(3)).toBe('Show 3 saved programs');
+    expect(copy.HIDE_SAVED_PROGRAMS).toBe('Hide saved programs');
+    expect(copy.KEPT_NOT_SAVED(1)).toBe('1 kept program is not yet in an offline pack.');
+    expect(copy.KEPT_NOT_SAVED(2)).toBe('2 kept programs are not yet in an offline pack.');
+    expect(copy.KEPT_NOT_SAVED_LINE).toBe('Build a pack to carry their pages, so they open with no signal.');
+  });
+
   it('states that nothing chosen leaves the phone', () => {
     expect(copy.RECOVER_PRIVACY_LINE).toBe(
       'Nothing you choose here leaves this phone. Only a program you keep is remembered, on this phone.',

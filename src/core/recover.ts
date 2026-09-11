@@ -4,7 +4,7 @@
 import { MS_PER_DAY, RECOVERY_STALE_DAYS } from './constants';
 import * as copy from './copy';
 import { formatSavedDate } from './provenance';
-import type { NeedKey, RecoveryProgram } from './types';
+import type { NeedKey, PackProgram, RecoveryProgram } from './types';
 
 /** The order the need phrases are offered in. */
 export const NEEDS: readonly NeedKey[] = ['stay', 'money', 'food', 'property', 'health', 'documents'];
@@ -48,6 +48,22 @@ export function shareText(heading: string, programs: readonly RecoveryProgram[])
  *  apart: Services Australia is SA, Country Fire Authority is CFA. */
 export const monogram = (org: string): string =>
   org.split(' ').slice(0, 3).map((word) => word[0]).join('').toUpperCase();
+
+/** The kept programs as rows this pack owns: copied, so the pack shows what
+ *  was saved whatever the app's snapshot does later. */
+export function packProgramsFor(
+  packId: string,
+  programs: readonly RecoveryProgram[],
+  kept: readonly string[],
+): PackProgram[] {
+  return programs
+    .filter((program) => kept.includes(program.id))
+    .map((program) => ({ ...program, id: `${packId}:${program.id}`, packId, programId: program.id }));
+}
+
+/** The kept programs no saved pack carries yet: the Home nudge counts them. */
+export const unsavedKept = (kept: readonly string[], saved: readonly string[]): string[] =>
+  kept.filter((id) => !saved.includes(id));
 
 /** Past the window the screen says so in words; the programs stay shown. */
 export function recoveryStale(now: number, snapshotDate: string): boolean {

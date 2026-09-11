@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { Link } from 'react-router';
 
 import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
@@ -10,8 +11,10 @@ import {
   packDetailItems,
   packDetailPlaces,
 } from '../core/provenance';
+import { monogram } from '../core/recover';
 import type { CompletePackContent, PackDetailItem, PackFile } from '../core/types';
 import { getCompletePackContent } from '../data/db';
+import ChoiceGlyph from './components/ChoiceGlyph';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
@@ -34,6 +37,8 @@ export default function PackDetail({
 }: PackDetailProps) {
   const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
   const [offlineSource, setOfflineSource] = useState<PackDetailItem | null>(null);
+  // The saved programs are sectioned off and closed until asked for.
+  const [programsOpen, setProgramsOpen] = useState(false);
   // One object URL per stored file (the PDF copies and the area map), made
   // from the bytes already on the device and released with the screen. No
   // request is involved.
@@ -169,6 +174,48 @@ export default function PackDetail({
           </ul>
         </section>
       ) : null}
+
+      {/* E4-US7: the programs kept when the pack was built, each with the copy
+          of its own page. One control opens and closes the whole section, so
+          the pack's other items stay uncluttered. */}
+      <section className="saved-programs">
+        <div className="saved-programs-head">
+          <ChoiceGlyph choice="kept" />
+          <span className="kicker">{copy.SAVED_PROGRAMS}</span>
+        </div>
+        {content.recovery.length === 0 ? (
+          <p className="muted">{copy.NO_SAVED_PROGRAMS} <Link to="/recover">{copy.NAV_RECOVER}</Link></p>
+        ) : (
+          <button type="button" aria-expanded={programsOpen} onClick={() => setProgramsOpen(!programsOpen)}>
+            {programsOpen ? copy.HIDE_SAVED_PROGRAMS : copy.SHOW_SAVED_PROGRAMS(content.recovery.length)}
+          </button>
+        )}
+        {programsOpen ? (
+          <ul className="list">
+            {content.recovery.map((program) => (
+              <li key={program.id} className="card provenance-item">
+                <div className="card-head">
+                  <span className="monogram" aria-hidden="true">{monogram(program.org)}</span>
+                  <div>
+                    <h2>{program.title}</h2>
+                    <p>{program.org}</p>
+                  </div>
+                </div>
+                <ul className="need-pills">
+                  {program.needs.map((need) => (
+                    <li key={need} className="need-pill">
+                      <ChoiceGlyph choice={need} />
+                      {copy.NEED_PHRASE[need]}
+                    </li>
+                  ))}
+                </ul>
+                <ProvenanceLine source={program.source} now={now} />
+                {sourceLinks({ id: program.id, name: program.title, source: program.source, pageUrl: program.officialUrl })}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
 
       <PackNotes packId={content.pack.id} notes={content.notes} />
 

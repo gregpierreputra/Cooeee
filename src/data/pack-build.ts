@@ -6,7 +6,6 @@ import type {
   PackManifest,
   PackNote,
   PackOffer,
-  RecoveryProgram,
   TextPackContent,
 } from '../core/types';
 import { checkedNoteText, db, deleteOwnedRows, ownedTables } from './db';
@@ -74,14 +73,6 @@ async function textOnlyManifest(offer: PackOffer): Promise<PackManifest> {
   };
 }
 
-async function storedRecovery(rows: readonly RecoveryProgram[]): Promise<RecoveryProgram[]> {
-  const stored = await db.programs.bulkGet(rows.map(({ id }) => id));
-  if (stored.some((row) => row === undefined)) {
-    throw new Error('a recovery item required by the pack is not present on the device');
-  }
-  return stored as RecoveryProgram[];
-}
-
 /** First AC9 write: one hidden building pack plus its owned text rows. */
 export async function stageTextOnlyPack(
   content: TextPackContent,
@@ -91,12 +82,7 @@ export async function stageTextOnlyPack(
 ): Promise<void> {
   const prepared = prepareProvenancedContent(content);
   assertContent(prepared.content);
-  const recovery = await storedRecovery(prepared.content.recovery);
-  const rebuiltOffer = await createPreparedPackOffer(
-    { ...prepared.content, recovery },
-    prepared.omittedItems,
-    files,
-  );
+  const rebuiltOffer = await createPreparedPackOffer(prepared.content, prepared.omittedItems, files);
   if (canonicalJson(rebuiltOffer) !== canonicalJson(offer)) {
     throw new Error('pack offer no longer matches the proposed content');
   }
@@ -110,11 +96,12 @@ export async function stageTextOnlyPack(
     manifest: await textOnlyManifest(offer),
   };
 
-  await db.transaction('rw', [db.packs, db.layers, db.destinations, db.files, db.notes], async () => {
+  await db.transaction('rw', [db.packs, db.layers, db.destinations, db.packPrograms, db.files, db.notes], async () => {
     if (await db.packs.get(buildingPack.id)) throw new Error('pack id already exists');
     await db.packs.add(buildingPack);
     await db.layers.bulkAdd(prepared.content.layers);
     await db.destinations.bulkAdd(prepared.content.destinations);
+    await db.packPrograms.bulkAdd(prepared.content.recovery);
     await db.files.bulkAdd(files);
     if (note) await db.notes.add(note);
   });
@@ -144,8 +131,8 @@ export async function verifyAndFinalizeTextOnlyPack(
   // Each stored file is re-measured; its hash is the one recorded at fetch time.
   const files = (await db.files.where('packId').equals(staged.id).toArray())
     .map((file) => ({ ...file, sizeBytes: file.bytes.byteLength }));
+  const recovery = await db.packPrograms.where('packId').equals(staged.id).toArray();
   const prepared = prepareProvenancedContent(content);
-  const recovery = await storedRecovery(prepared.content.recovery);
   const verifiedOffer = await createPreparedPackOffer(
     {
       pack: prepared.content.pack,
