@@ -14,6 +14,7 @@ import BlackSky from '../../src/ui/BlackSky';
 import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
+import Recover from '../../src/ui/Recover';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BottomNav from '../../src/ui/components/BottomNav';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
@@ -294,6 +295,63 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
   await db.files.put(detailFile);
 }
 
+// Recover at a fixed instant, from one seeded pack whose manifest really hashes
+// its two programs. ?mode=none leaves no pack; ?mode=stale back-dates the snapshot
+// past RECOVERY_STALE_DAYS.
+const recoverMode = new URLSearchParams(window.location.search).get('mode') ?? 'cached';
+const recoverNow = Date.UTC(2026, 8, 11, 6);
+const recoverSnapshotAt = recoverMode === 'stale' ? Date.UTC(2026, 4, 1) : Date.UTC(2026, 8, 9);
+const recoverSnapshotDate = new Date(recoverSnapshotAt).toISOString().slice(0, 10);
+const recoverPrograms: RecoveryProgram[] = [
+  {
+    ...recoveryProgram,
+    id: 'recover:payment',
+    title: 'Example disaster payment',
+    needs: ['money', 'property'],
+    telephone: '180 22 66',
+    snapshotDate: recoverSnapshotDate,
+    source: { ...recoveryProgram.source, retrievedAt: recoverSnapshotAt },
+  },
+  {
+    id: 'recover:coping',
+    org: 'Australian Red Cross',
+    title: 'Coping after a crisis',
+    covers: 'Where to find someone to talk to after an emergency.',
+    needs: ['health'],
+    officialUrl: 'https://www.redcross.org.au/emergencies/coping-after-a-crisis/',
+    snapshotDate: recoverSnapshotDate,
+    source: {
+      publisher: 'Australian Red Cross',
+      url: 'https://www.redcross.org.au/emergencies/coping-after-a-crisis/',
+      licence: 'Link only, all rights reserved',
+      retrievedAt: recoverSnapshotAt,
+    },
+  },
+];
+let recoverFlow = confirmation;
+if (window.location.pathname === '/recover') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  if (recoverMode !== 'none') {
+    await db.packs.put({
+      ...savedPack,
+      id: 'recover-pack',
+      verifiedAt: Date.UTC(2026, 8, 10),
+      manifest: {
+        version: 1,
+        groups: {
+          layers: await manifestGroup([]),
+          destinations: await manifestGroup([]),
+          recovery: await manifestGroup(recoverPrograms),
+          tiles: { count: 0, bytes: 0 },
+          files: await manifestGroup([]),
+        },
+      },
+    });
+    await db.programs.bulkPut(recoverPrograms);
+  }
+  recoverFlow = <Recover now={recoverNow} />;
+}
+
 function DetailLauncher() {
   const [open, setOpen] = useState(false);
   return open
@@ -501,6 +559,7 @@ createRoot(root).render(
         : window.location.pathname === '/size' ? sizeFlow
         : window.location.pathname === '/destinations' ? destinationsFlow
         : window.location.pathname === '/nearby' ? nearbyFlow
+        : window.location.pathname === '/recover' ? recoverFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

@@ -120,6 +120,23 @@ export const OFFICIAL_DOMAINS = [
 
 export const MS_PER_DAY = 86_400_000;
 
+/** Recovery programs change faster than places do, so the pack's recovery
+ *  snapshot has its own window, separate from PACK_REFRESH_DAYS and the
+ *  SNAPSHOT_MAX_AGE_DAYS build gate. Label only; the programs stay shown. */
+export const RECOVERY_STALE_DAYS = 90;
+
+/** The official channel named when the pack holds nothing for a need. Static
+ *  pack content on OFFICIAL_DOMAINS, never fetched. */
+export const NEED_CHANNELS = {
+  stay: 'https://www.emergency.vic.gov.au/relief/',
+  money: 'https://www.servicesaustralia.gov.au/natural-disaster-support',
+  food: 'https://www.emergency.vic.gov.au/relief/',
+  property: 'https://www.disasterassist.gov.au/find-a-disaster/australian-disasters?state=vic',
+  health: 'https://www.redcross.org.au/emergencies/coping-after-a-crisis/',
+  documents: 'https://www.servicesaustralia.gov.au/natural-disaster-support',
+} as const;
+export const GENERAL_CHANNEL_URL = 'https://www.disasterassist.gov.au/';
+
 /** Unit constant. The metres↔kilometres display cutoff and divisor for
  * destination.formatDistanceM — not a safety threshold. */
 export const METRES_PER_KM = 1_000;

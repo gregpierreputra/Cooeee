@@ -34,6 +34,7 @@ import type {
 } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
 import { loadNspSnapshot } from '../../data/nsp';
+import { loadRecoveryPrograms } from '../../data/recovery';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
 import { loadPackFiles } from '../../data/source-files';
 import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
@@ -271,7 +272,9 @@ export function Search({
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
         destinations,
-        recovery: [],
+        // The statewide recovery snapshot travels in every pack, so Recover
+        // reads it with no connection.
+        recovery: await loadRecoveryPrograms(),
       };
       // The PDF copies of the source pages and the map of the area travel with
       // the pack, so their bytes are part of the one size stated before

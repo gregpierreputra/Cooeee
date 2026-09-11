@@ -1757,3 +1757,15 @@ input {
   font-size: var(--step-s);
   color: var(--ink-3);
 }
+
+/* ── Recover ───────────────────────────────────────────────────────────────── */
+
+/* One need per row, the phrase reading left to right as a sentence would, the
+   whole pill the target. */
+.recover .need-button {
+  width: 100%;
+  text-align: left;
+}
+.recover .card a {
+  align-self: start;
+}

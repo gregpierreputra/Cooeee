@@ -140,10 +140,11 @@ describe('preparation line selection', () => {
 
 // BlackSky is entered by a deliberate hold. It is never a tab, in any state.
 describe('bottom navigation', () => {
-  it('offers home and nearby places, the same whether or not a pack is saved', () => {
+  it('offers home, nearby places, Recover and About, the same whether or not a pack is saved', () => {
     expect(NAV_ITEMS).toEqual([
       { key: 'home', label: 'Home', to: '/' },
       { key: 'nearby', label: 'Nearby', to: '/nearby' },
+      { key: 'recover', label: 'Recover', to: '/recover' },
       { key: 'about', label: 'About', to: '/about' },
     ]);
   });

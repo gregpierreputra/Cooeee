@@ -374,3 +374,33 @@ describe('first-open disclosure', () => {
     expect(statements).toMatch(/[Dd]oes not watch conditions/);
   });
 });
+
+// E4 Recover: the lines that carry the may-match boundary and the privacy claim.
+describe('E4 Recover mandated copy', () => {
+  it('frames every result as a possible match the organisation decides on', () => {
+    expect(copy.RECOVER_MAY_MATCH).toBe(
+      'These may match. The responsible organisation decides who is eligible.',
+    );
+    expect(copy.RECOVER_ORDER_LINE).toBe('Listed by organisation name, in alphabetical order.');
+  });
+
+  it('states that nothing chosen leaves the phone', () => {
+    expect(copy.RECOVER_PRIVACY_LINE).toBe(
+      'Nothing you choose here leaves this phone, and nothing is stored.',
+    );
+  });
+
+  it('separates "this pack holds nothing" from "no help exists"', () => {
+    expect(copy.RECOVER_NO_MATCH_TITLE).toBe('This pack holds nothing for that need.');
+    expect(copy.RECOVER_NO_MATCH_LINE).toBe(
+      'That is not the same as no help existing. Try the official channel when you have a connection.',
+    );
+    expect(copy.RECOVER_NONE_TITLE).toBe('No support information is held on this phone.');
+  });
+
+  it('offers needs in everyday words, never a program, agency or scheme name', () => {
+    for (const phrase of Object.values(copy.NEED_PHRASE)) {
+      expect(phrase).not.toMatch(/payment|allowance|grant|australia|scheme|program/i);
+    }
+  });
+});

@@ -18,6 +18,7 @@ import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
 import Tour, { startTour } from './ui/components/Tour';
 import PackDetail from './ui/PackDetail';
+import Recover from './ui/Recover';
 import { Search } from './ui/PackNew/Search';
 
 /** main.tsx dispatches this when the service worker has a new version waiting.
@@ -165,6 +166,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
         <Route path="/nearby" element={<Nearby />} />
+        <Route path="/recover" element={<Recover />} />
         <Route path="/about" element={<About />} />
         <Route path="/blacksky" element={<BlackSky />} />
       </Routes>

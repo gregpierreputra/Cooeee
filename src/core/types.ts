@@ -161,7 +161,7 @@ export type Destination = {
 
 // --- Recovery ---
 // NeedKey string for a given recovery program
-type NeedKey = 'stay' | 'money' | 'food' | 'property' | 'health' | 'documents'; 
+export type NeedKey = 'stay' | 'money' | 'food' | 'property' | 'health' | 'documents'; 
 
 export type RecoveryProgram = {
   id: string;

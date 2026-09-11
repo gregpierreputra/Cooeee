@@ -109,6 +109,10 @@ export const putNspSnapshot = (snapshot: NspSnapshot): Promise<string> =>
 
 export const getNspSnapshot = (): Promise<NspSnapshot | undefined> => db.snapshots.get('nsp');
 
+/** The recovery snapshot rows a pack build is about to reference. Written whole
+ *  before the build reads them back by id. */
+export const putPrograms = (rows: RecoveryProgram[]): Promise<string> => db.programs.bulkPut(rows);
+
 /** A pack's notes, oldest first. Only the complete-pack reads below call this. */
 const listNotes = (packId: string): Promise<PackNote[]> =>
   db.notes.where('packId').equals(packId).sortBy('updatedAt');

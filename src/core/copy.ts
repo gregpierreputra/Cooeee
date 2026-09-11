@@ -6,7 +6,7 @@
 // Never reword them without updating the tests.
 
 import { AREA_MAP_HALF_KM } from './constants';
-import type { Destination, FacilityType, SourceStatus } from './types';
+import type { Destination, FacilityType, NeedKey, SourceStatus } from './types';
 
 // Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
@@ -426,6 +426,35 @@ export const SAVED_PLACE_LABEL = 'Saved place';
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_ABOUT = 'About';
+export const NAV_RECOVER = 'Recover';
+
+// E4 Recover: needs-first support matching, read from the pack's dated snapshot
+export const RECOVER_QUESTION = 'What do you need?';
+export const RECOVER_PRIVACY_LINE =
+  'Nothing you choose here leaves this phone, and nothing is stored.';
+export const NEED_PHRASE: Record<NeedKey, string> = {
+  stay: 'Somewhere to stay',
+  money: 'Money for essentials',
+  food: 'Food and water',
+  property: 'Repairs to my home',
+  health: 'Someone to talk to',
+  documents: 'Replace lost documents',
+};
+export const RECOVER_MAY_MATCH =
+  'These may match. The responsible organisation decides who is eligible.';
+export const RECOVER_ORDER_LINE = 'Listed by organisation name, in alphabetical order.';
+export const RECOVER_STALE_LINE =
+  'This information was captured more than three months ago. Programs change, so check with the organisation.';
+export const LICENCE_LINE = (licence: string) => `Licence · ${licence}`;
+export const CALL_LINE = (number: string) => `Call ${number}`;
+export const RECOVER_NO_MATCH_TITLE = 'This pack holds nothing for that need.';
+export const RECOVER_NO_MATCH_LINE =
+  'That is not the same as no help existing. Try the official channel when you have a connection.';
+export const OFFICIAL_CHANNEL = 'Official channel (web)';
+export const CHOOSE_ANOTHER_NEED = 'Choose another need';
+export const RECOVER_NONE_TITLE = 'No support information is held on this phone.';
+export const RECOVER_NONE_LINE =
+  'Build a pack when you are online. It carries the official programs so they open with no signal.';
 
 /** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
  *  is written here in sentence case and read out as words, not as letters. */
