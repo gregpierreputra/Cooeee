@@ -59,7 +59,7 @@ export async function loadPackFiles(packId: string, content: TextPackContent): P
     .map((program) => program.officialUrl)
     .filter((url) => sources.some((source) => source.url === url));
   const [pages, map] = await Promise.all([
-    loadSourceFiles(packId, [...sourcePageUrls(content), ...programPages]),
+    loadSourceFiles(packId, [...new Set([...sourcePageUrls(content), ...programPages])]),
     loadAreaMap(packId, content.pack).catch(() => null),
   ]);
   return map ? [...pages, map] : pages;

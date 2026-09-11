@@ -35,7 +35,8 @@ export default function Section({
           {open ? copy.HIDE : copy.SHOW}
         </button>
       </div>
-      {open ? children : null}
+      {/* Hidden, not unmounted: a note being written survives a hide. */}
+      <div hidden={!open}>{children}</div>
     </section>
   );
 }

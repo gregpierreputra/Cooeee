@@ -76,46 +76,55 @@ await browser.close();
 
 writeFileSync(registerUrl, `${JSON.stringify(sources, null, 2)}\n`);
 
-async function render(url, name, mustContain) {
+/** The page as a PDF, or a thrown reason; the browser page is always closed. */
+async function renderPdf(url, mustContain, name) {
   // A desktop-width layout, printed to A4 at three quarters, so the copy is the
   // page a reader sees on a computer rather than a narrow tablet cut of it. The
   // page's own content security policy is set aside for this render only: it
   // lists the hosts its pictures may come from, and the map below is ours.
   const page = await browser.newPage({ viewport: { width: 1060, height: 1400 }, bypassCSP: true });
-  await page.route(/digitaltwin/, (route) => route.abort()); // never even loaded
-  await page.goto(url, { waitUntil: 'load', timeout: 90_000 });
-  // A site's own pop-up (a location prompt, a cookie notice) is not the page.
-  await page.locator('[role="dialog"], [aria-modal="true"]').evaluateAll((dialogs) =>
-    dialogs.forEach((dialog) => dialog.remove()));
-  // The map frame becomes the Web Map Service picture; every other frame goes,
-  // so nothing a frame answers with can end up printed.
-  await page.locator('iframe').evaluateAll((frames, [src, caption]) => {
-    for (const frame of frames) {
-      if (!frame.src.includes('digitaltwin')) {
-        frame.remove();
-        continue;
+  try {
+    await page.route(/digitaltwin/, (route) => route.abort()); // never even loaded
+    await page.goto(url, { waitUntil: 'load', timeout: 90_000 });
+    // A site's own pop-up (a location prompt, a cookie notice) is not the page.
+    await page.locator('[role="dialog"], [aria-modal="true"]').evaluateAll((dialogs) =>
+      dialogs.forEach((dialog) => dialog.remove()));
+    // The map frame becomes the Web Map Service picture; every other frame goes,
+    // so nothing a frame answers with can end up printed.
+    await page.locator('iframe').evaluateAll((frames, [src, caption]) => {
+      for (const frame of frames) {
+        if (!frame.src.includes('digitaltwin')) {
+          frame.remove();
+          continue;
+        }
+        const doc = frame.ownerDocument;
+        const figure = doc.createElement('figure');
+        figure.style.cssText = 'margin:0;break-inside:avoid';
+        const img = doc.createElement('img');
+        img.id = 'state-map';
+        img.src = src;
+        img.style.cssText = 'display:block;width:100%;height:auto';
+        const figcaption = doc.createElement('figcaption');
+        figcaption.textContent = caption;
+        figcaption.style.cssText = 'margin-top:8px;font-size:14px;color:#444';
+        figure.append(img, figcaption);
+        frame.replaceWith(figure);
       }
-      const doc = frame.ownerDocument;
-      const figure = doc.createElement('figure');
-      figure.style.cssText = 'margin:0;break-inside:avoid';
-      const img = doc.createElement('img');
-      img.id = 'state-map';
-      img.src = src;
-      img.style.cssText = 'display:block;width:100%;height:auto';
-      const figcaption = doc.createElement('figcaption');
-      figcaption.textContent = caption;
-      figcaption.style.cssText = 'margin-top:8px;font-size:14px;color:#444';
-      figure.append(img, figcaption);
-      frame.replaceWith(figure);
-    }
-  }, [STATE_MAP_URL, STATE_MAP_CAPTION]);
-  const map = page.locator('#state-map');
-  if (await map.count()) await map.evaluate((img) => img.decode()); // a map that did not load fails the build
-  const text = await page.innerText('body');
-  if (!text.includes(mustContain)) throw new Error(`${name}: the rendered page does not read as "${mustContain}"`);
-  if (/\b403\b|Request blocked/.test(text)) throw new Error(`${name}: the rendered page carries a block page`);
-  const pdf = await page.pdf({ format: 'A4', scale: 0.75, printBackground: true });
-  await page.close();
+    }, [STATE_MAP_URL, STATE_MAP_CAPTION]);
+    const map = page.locator('#state-map');
+    if (await map.count()) await map.evaluate((img) => img.decode()); // a map that did not load fails the build
+    const text = await page.innerText('body');
+    if (!text.includes(mustContain)) throw new Error(`${name}: the rendered page does not read as "${mustContain}"`);
+    if (/\b403\b|Request blocked/.test(text)) throw new Error(`${name}: the rendered page carries a block page`);
+    return await page.pdf({ format: 'A4', scale: 0.75, printBackground: true });
+  } finally {
+    await page.close();
+  }
+}
+
+/** Render one page and register its copy. */
+async function render(url, name, mustContain) {
+  const pdf = await renderPdf(url, mustContain, name);
   const file = `${name}.v${date}.pdf`;
   writeFileSync(new URL(`sources/${file}`, dataDir), pdf);
   // The fingerprint travels with the register, so the app can refuse a copy

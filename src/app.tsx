@@ -4,6 +4,7 @@ import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
 import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
+import { pruneKept } from './core/kept';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
 import { loadRecoveryPrograms } from './data/recovery';
@@ -125,8 +126,11 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // official places with the radios off. A failed copy costs nothing now.
   useEffect(() => {
     cacheNspSnapshot().catch(() => {});
-    // The recovery programs too, so Recover works before any pack is saved.
-    loadRecoveryPrograms().catch(() => {});
+    // The recovery programs too, so Recover works before any pack is saved;
+    // a kept id the new snapshot no longer holds is dropped with it.
+    loadRecoveryPrograms()
+      .then((programs) => pruneKept(localFlagStore(), programs.map((program) => program.id)))
+      .catch(() => {});
   }, []);
 
   if (!passed) {

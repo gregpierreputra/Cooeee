@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadPackFiles, loadSourceFiles } from '../../src/data/source-files';
 import sources from '../../src/data/sources.json';
-import { pack } from '../fixtures';
+import { pack, packProgram } from '../fixtures';
 
 // The register bundled with the app names each rendered page and its
 // fingerprint. Whatever the origin serves is checked against that fingerprint.
@@ -33,6 +33,15 @@ describe('loadPackFiles', () => {
     // check, and the map request fails its PNG check.
     serve(readFileSync(`public/data/sources/${datasetPage.name}`));
     const files = await loadPackFiles('pack-1', { pack: pack(), layers: [], destinations: [], recovery: [] });
+    expect(files.map((file) => file.name)).toEqual([datasetPage.name]);
+  });
+
+  it('carries a kept program\'s page where the build rendered one, and skips one it did not', async () => {
+    const datasetPage = sources[1];
+    serve(readFileSync(`public/data/sources/${datasetPage.name}`));
+    const rendered = packProgram({ officialUrl: datasetPage.url });
+    const linkOnly = packProgram({ id: 'pack-1:link', programId: 'link', officialUrl: 'https://www.redcross.org.au/' });
+    const files = await loadPackFiles('pack-1', { pack: pack(), layers: [], destinations: [], recovery: [rendered, linkOnly] });
     expect(files.map((file) => file.name)).toEqual([datasetPage.name]);
   });
 });

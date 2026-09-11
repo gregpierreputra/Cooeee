@@ -145,7 +145,7 @@ test('the pack page sections off its saved programs, each with its own page copy
   await page.goto(`${HARNESS}/detail`);
   const section = page.locator('.pack-section', { hasText: copy.SAVED_PROGRAMS });
   await expect(section.locator('.section-count')).toHaveText('1');
-  await expect(section.locator('.card')).toHaveCount(0);
+  await expect(section.locator('.card').first()).toBeHidden();
   const toggle = section.getByRole('button', { name: copy.SHOW_SECTION(copy.SAVED_PROGRAMS) });
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
@@ -154,7 +154,7 @@ test('the pack page sections off its saved programs, each with its own page copy
   await expect(section.locator('.need-pill')).toHaveText([copy.NEED_PHRASE.money]);
   await expect(section.getByRole('link', { name: copy.OPEN_SOURCE_FILE })).toHaveAttribute('download', 'program.pdf');
   await section.getByRole('button', { name: copy.HIDE_SECTION(copy.SAVED_PROGRAMS) }).click();
-  await expect(section.locator('.card')).toHaveCount(0);
+  await expect(section.locator('.card').first()).toBeHidden();
 });
 
 // E1-US2-AC10: every block of the pack page has a glyph and one control.
@@ -166,9 +166,9 @@ test('every pack page section carries a glyph and opens and closes under one con
   const places = page.locator('.pack-section', { hasText: copy.DESTINATIONS_STEP_TITLE });
   await expect(places.locator('.card')).toHaveCount(1);
   await places.getByRole('button', { name: copy.HIDE_SECTION(copy.DESTINATIONS_STEP_TITLE) }).click();
-  await expect(places.locator('.card')).toHaveCount(0);
+  await expect(places.locator('.card').first()).toBeHidden();
   await places.getByRole('button', { name: copy.SHOW_SECTION(copy.DESTINATIONS_STEP_TITLE) }).click();
-  await expect(places.locator('.card')).toHaveCount(1);
+  await expect(places.locator('.card').first()).toBeVisible();
 });
 
 // E4-US7-AC4: kept programs with no pack to carry them earn one nudge on Home.

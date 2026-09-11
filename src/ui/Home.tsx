@@ -4,7 +4,6 @@ import * as copy from '../core/copy';
 import { homeView, titleCase, type HomeView } from '../core/home';
 import { readKept } from '../core/kept';
 import { unsavedKept } from '../core/recover';
-import type { Pack } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
 import Glyph from './components/Glyph';
@@ -31,29 +30,26 @@ export default function Home({ now }: { now?: number }) {
   // navigates away and comes back.
   const [seed] = useState(() => now ?? Date.now());
 
+  // E4-US7-AC4: the kept programs no saved pack carries yet, for the amber
+  // nudge. Read with the packs on every arrival, so coming back from Recover
+  // shows the current count.
+  const [unsaved, setUnsaved] = useState(0);
+  const load = async () => {
+    const [rows, saved] = await Promise.all([listCompletePacks(), listSavedProgramIds()]);
+    return { rows, unsaved: unsavedKept(readKept(localFlagStore()), saved).length };
+  };
+
   useEffect(() => {
     let live = true;
-    listCompletePacks().then((rows: Pack[]) => {
-      if (live) setView(homeView(seed, rows));
+    load().then((loaded) => {
+      if (!live) return;
+      setView(homeView(seed, loaded.rows));
+      setUnsaved(loaded.unsaved);
     });
     return () => {
       live = false;
     };
   }, [seed]);
-
-  // E4-US7-AC4: kept programs that no saved pack carries yet, in the amber
-  // attention treatment. Read once on
-  // arrival, so coming back from Recover always shows the current count.
-  const [unsaved, setUnsaved] = useState(0);
-  useEffect(() => {
-    let live = true;
-    listSavedProgramIds().then((saved) => {
-      if (live) setUnsaved(unsavedKept(readKept(localFlagStore()), saved).length);
-    });
-    return () => {
-      live = false;
-    };
-  }, [view]);
 
   // Deleting a pack takes two taps: the delete control swaps that pack's card
   // for a question, and only the second destroys data. Keep restores the card
@@ -66,7 +62,9 @@ export default function Home({ now }: { now?: number }) {
 
   const removePack = async (id: string) => {
     await deleteCompletePack(id);
-    setView(homeView(seed, await listCompletePacks()));
+    const loaded = await load();
+    setView(homeView(seed, loaded.rows));
+    setUnsaved(loaded.unsaved);
     setConfirming(null);
   };
 

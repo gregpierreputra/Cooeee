@@ -285,8 +285,8 @@ export type TextPackContent = {
   recovery: PackProgram[];
 };
 
-/** Raw rows behind one complete pack detail view. Recovery is shown only when
- * its global snapshot still matches the pack's recorded manifest. */
+/** Raw rows behind one complete pack detail view. Every group is shown only
+ * when its rows still match the pack's recorded manifest. */
 export type CompletePackContent = {
   pack: Pack;
   layers: ExposureLayer[];
@@ -294,7 +294,7 @@ export type CompletePackContent = {
   recovery: PackProgram[];
   files: PackFile[];
   notes: PackNote[];
-  recoveryVerified: boolean;       // the shared recovery snapshot matches this pack's manifest
+  recoveryVerified: boolean;       // this pack's program rows match its manifest
   contentVerified: boolean;        // layers, destinations and files all match the manifest
 };
 

@@ -21,8 +21,8 @@ function assertContent(content: TextPackContent): void {
   if (content.destinations.some((row) => row.packId !== content.pack.id || !hasCompleteSource(row.source))) {
     throw new TypeError('every destination must belong to the pack and carry complete source provenance');
   }
-  if (content.recovery.some((row) => !hasCompleteSource(row.source))) {
-    throw new TypeError('every recovery item must carry complete source provenance');
+  if (content.recovery.some((row) => row.packId !== content.pack.id || !hasCompleteSource(row.source))) {
+    throw new TypeError('every program must belong to the pack and carry complete source provenance');
   }
 }
 
@@ -96,7 +96,7 @@ export async function stageTextOnlyPack(
     manifest: await textOnlyManifest(offer),
   };
 
-  await db.transaction('rw', [db.packs, db.layers, db.destinations, db.packPrograms, db.files, db.notes], async () => {
+  await db.transaction('rw', [db.packs, ...ownedTables()], async () => {
     if (await db.packs.get(buildingPack.id)) throw new Error('pack id already exists');
     await db.packs.add(buildingPack);
     await db.layers.bulkAdd(prepared.content.layers);

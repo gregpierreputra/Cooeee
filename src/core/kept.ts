@@ -16,6 +16,19 @@ export function readKept(store: FlagStore | null): string[] {
   }
 }
 
+/** Drop kept ids the snapshot no longer holds, once the snapshot has landed,
+ *  so the Home nudge can never count a program that cannot be saved. */
+export function pruneKept(store: FlagStore | null, known: readonly string[]): void {
+  const kept = readKept(store);
+  const next = kept.filter((id) => known.includes(id));
+  if (next.length === kept.length) return;
+  try {
+    store?.setItem(KEPT_KEY, JSON.stringify(next));
+  } catch {
+    // Storage refused: the stale id stays until the next start.
+  }
+}
+
 /** Keep the id, or release it when already kept. The oldest id is dropped past
  *  the cap. The list returned is the truth for the screen even when the store
  *  refuses the write, so a tap never appears to do nothing. */

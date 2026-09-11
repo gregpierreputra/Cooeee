@@ -164,7 +164,7 @@ describe('sweepBuilding', () => {
 });
 
 describe('deleteCompletePack', () => {
-  // A pack whose manifest still references the shared recovery snapshot.
+  // A pack whose manifest records program rows.
   const withRecovery = (id: string, status: 'building' | 'complete' = 'complete') =>
     pack({
       id,
