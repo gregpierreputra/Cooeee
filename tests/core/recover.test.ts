@@ -2,22 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { RECOVERY_STALE_DAYS, MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
-import { monogram, NEEDS, recoveryPack, recoveryStale, selectPrograms, shareText } from '../../src/core/recover';
-import { pack, program } from '../fixtures';
-
-const withRecovery = (count: number, createdAt: number, id: string) =>
-  pack({ id, createdAt, manifest: { ...pack().manifest, groups: { ...pack().manifest.groups, recovery: { count, sha256: 'x' } } } });
-
-describe('recoveryPack', () => {
-  it('is the newest complete pack that carries recovery references, or null', () => {
-    const old = withRecovery(2, 1, 'old');
-    const newest = withRecovery(2, 3, 'newest');
-    const none = withRecovery(0, 9, 'none');
-    expect(recoveryPack([old, none, newest])).toBe(newest);
-    expect(recoveryPack([none])).toBeNull();
-    expect(recoveryPack([])).toBeNull();
-  });
-});
+import { monogram, NEEDS, recoveryStale, selectPrograms, shareText } from '../../src/core/recover';
+import { program } from '../fixtures';
 
 describe('selectPrograms', () => {
   const b = program({ id: 'b', org: 'Services Australia', title: 'Zed payment', needs: ['money'] });

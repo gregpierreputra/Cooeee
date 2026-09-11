@@ -4,26 +4,15 @@
 import { MS_PER_DAY, RECOVERY_STALE_DAYS } from './constants';
 import * as copy from './copy';
 import { formatSavedDate } from './provenance';
-import type { NeedKey, Pack, RecoveryProgram } from './types';
+import type { NeedKey, RecoveryProgram } from './types';
 
 /** The order the need phrases are offered in. */
 export const NEEDS: readonly NeedKey[] = ['stay', 'money', 'food', 'property', 'health', 'documents'];
 
-/** The newest saved pack that carries recovery references. Every pack copies
- *  the same statewide snapshot, so the newest copy is the one to read. */
-export function recoveryPack(packs: readonly Pack[]): Pack | null {
-  return packs
-    .filter((pack) => pack.manifest.groups.recovery.count > 0)
-    .reduce<Pack | null>(
-      (newest, pack) => (newest === null || pack.createdAt > newest.createdAt ? pack : newest),
-      null,
-    );
-}
-
 /** What the person asked to see: one need, every program, or the kept ones. */
 export type Choice = NeedKey | 'all' | 'kept';
 
-export const isNeed = (choice: Choice): choice is NeedKey => (NEEDS as readonly string[]).includes(choice);
+export const isNeed = (choice: Choice): choice is NeedKey => choice !== 'all' && choice !== 'kept';
 
 /** The programs for a choice, in the one neutral order the screen states: kept
  *  programs first, then organisation, then title. Nothing about the person is

@@ -82,9 +82,9 @@ export function assertRecoverySnapshot(value: unknown): RecoveryProgram[] {
   return raw.programs.map(assertProgram);
 }
 
-/** Read the precached snapshot, store its rows, and hand them to the pack
- *  build, which reads them back by id and hashes them into the manifest.
- *  `fetchImpl` is injectable so tests can supply the bytes without a request. */
+/** Read the precached snapshot and store it whole. Called at every app start,
+ *  so Recover works with the radios off after the first visit. `fetchImpl` is
+ *  injectable so tests can supply the bytes without a request. */
 export async function loadRecoveryPrograms(fetchImpl: typeof fetch = fetch): Promise<RecoveryProgram[]> {
   const response = await fetchImpl(RECOVERY_SNAPSHOT_PATH, { cache: 'force-cache' });
   if (!response.ok) fail(`request failed (${response.status})`);

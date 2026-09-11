@@ -109,11 +109,15 @@ export const putNspSnapshot = (snapshot: NspSnapshot): Promise<string> =>
 
 export const getNspSnapshot = (): Promise<NspSnapshot | undefined> => db.snapshots.get('nsp');
 
-/** The recovery snapshot rows a pack build is about to reference. Written whole
- *  before the build reads them back by id. */
-export const putPrograms = (rows: RecoveryProgram[]): Promise<string> => db.programs.bulkPut(rows);
+/** The recovery programs are the app's own precached snapshot, not pack
+ *  content: replaced whole at every app start, so an older snapshot's rows
+ *  never linger beside the current ones. Recover reads the table as it is. */
+export const putPrograms = (rows: RecoveryProgram[]): Promise<void> =>
+  db.transaction('rw', db.programs, async () => {
+    await db.programs.clear();
+    await db.programs.bulkPut(rows);
+  });
 
-/** Every program on the device: the precached snapshot, for Recover with no pack. */
 export const listPrograms = (): Promise<RecoveryProgram[]> => db.programs.toArray();
 
 /** A pack's notes, oldest first. Only the complete-pack reads below call this. */

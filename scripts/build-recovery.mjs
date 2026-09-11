@@ -36,9 +36,7 @@ const programs = sources.map((row) => {
     throw new Error(`${row.id}: telephone must hold digits, spaces and a plus only`);
   }
   return {
-    // The date is part of the id, so a later snapshot never overwrites rows an
-    // older pack has already hashed into its manifest.
-    id: `${row.id}@${snapshotDate}`,
+    id: row.id,
     org: row.org,
     title: row.title,
     covers: row.covers,

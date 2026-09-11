@@ -5,65 +5,39 @@ import { GENERAL_CHANNEL_URL, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
 import { readKept, toggleKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
-import { isNeed, monogram, NEEDS, recoveryPack, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
-import type { CompletePackContent, Pack, RecoveryProgram } from '../core/types';
+import { isNeed, monogram, NEEDS, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
+import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
-import { getCompletePackContent, listCompletePacks, listPrograms } from '../data/db';
+import { listPrograms } from '../data/db';
 import ChoiceGlyph from './components/ChoiceGlyph';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 
 type RecoverProps = {
-  loadPacks?: () => Promise<Pack[]>;
-  loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
   loadPrograms?: () => Promise<RecoveryProgram[]>;
   now?: number;
 };
 
-/** What Recover reads: the newest pack's programs, re-hashed against its
- *  manifest, or with no such pack the app's own precached snapshot, as Nearby
- *  reads its downloaded list. `asAt` is the date the no-match state shows. */
-type Loaded = { programs: RecoveryProgram[]; verified: boolean; asAt: number };
-
-async function loadRecover(
-  loadPacks: () => Promise<Pack[]>,
-  loadContent: (id: string) => Promise<CompletePackContent | undefined>,
-  loadPrograms: () => Promise<RecoveryProgram[]>,
-): Promise<Loaded | undefined> {
-  const pack = recoveryPack(await loadPacks());
-  if (pack) {
-    const content = await loadContent(pack.id);
-    return content && { programs: content.recovery, verified: content.recoveryVerified, asAt: pack.verifiedAt };
-  }
-  const programs = await loadPrograms();
-  if (programs.length === 0) return undefined;
-  return { programs, verified: true, asAt: Math.max(...programs.map((program) => program.source.retrievedAt)) };
-}
-
-/** Needs-first support matching, read from the device and nothing else. The
- *  choice lives in component state for this visit only; the one thing
- *  remembered is the list of program ids the person chose to keep. */
-export default function Recover({
-  loadPacks = listCompletePacks,
-  loadContent = getCompletePackContent,
-  loadPrograms = listPrograms,
-  now = Date.now(),
-}: RecoverProps) {
-  // null while the store has not answered, undefined when nothing is on the device.
-  const [content, setContent] = useState<Loaded | null | undefined>(null);
+/** Needs-first support matching, read from the programs on the device and
+ *  nothing else, with or without a saved pack, as Nearby reads its downloaded
+ *  list. The choice lives in component state for this visit only; the one
+ *  thing remembered is the list of program ids the person chose to keep. */
+export default function Recover({ loadPrograms = listPrograms, now = Date.now() }: RecoverProps) {
+  // null while the store has not answered, an empty list when nothing is on the device.
+  const [programs, setPrograms] = useState<RecoveryProgram[] | null>(null);
   const [choice, setChoice] = useState<Choice | null>(null);
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
   const [shared, setShared] = useState<'copied' | 'unavailable' | null>(null);
 
   useEffect(() => {
     let live = true;
-    loadRecover(loadPacks, loadContent, loadPrograms).then((value) => {
-      if (live) setContent(value);
+    loadPrograms().then((rows) => {
+      if (live) setPrograms(rows);
     });
     return () => {
       live = false;
     };
-  }, [loadPacks, loadContent, loadPrograms]);
+  }, [loadPrograms]);
 
   const choose = (next: Choice | null) => {
     setShared(null);
@@ -71,23 +45,26 @@ export default function Recover({
   };
 
   // The phone's own share sheet where there is one (a text message needs no
-  // data), otherwise the clipboard. A share the person cancels reports nothing.
+  // data), otherwise the clipboard. A share the person cancels reports nothing;
+  // a share sheet that refuses falls back to the clipboard.
   async function share(text: string) {
     try {
-      if (navigator.share) {
-        await navigator.share({ text });
-      } else {
-        await navigator.clipboard.writeText(text);
-        setShared('copied');
-      }
+      await navigator.share({ text });
+      return;
     } catch (error) {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) setShared('unavailable');
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setShared('copied');
+    } catch {
+      setShared('unavailable');
     }
   }
 
-  if (content === null) return null;
+  if (programs === null) return null;
 
-  if (content === undefined) {
+  if (programs.length === 0) {
     return (
       <main className="page recover">
         <StateCard heading={copy.RECOVER_NONE_TITLE} detail={copy.RECOVER_NONE_LINE} />
@@ -99,16 +76,8 @@ export default function Recover({
     );
   }
 
-  if (!content.verified) {
-    return (
-      <main className="page recover">
-        <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />
-      </main>
-    );
-  }
-
   if (choice === null) {
-    const anyKept = content.programs.some((program) => kept.includes(program.id));
+    const anyKept = programs.some((program) => kept.includes(program.id));
     const rows: { key: Choice; label: string }[] = [
       ...(anyKept ? [{ key: 'kept' as const, label: copy.KEPT_PROGRAMS }] : []),
       ...NEEDS.map((key) => ({ key, label: copy.NEED_PHRASE[key] })),
@@ -138,20 +107,20 @@ export default function Recover({
   const heading = choice === 'all' ? copy.EVERY_PROGRAM
     : choice === 'kept' ? copy.KEPT_PROGRAMS
     : copy.NEED_PHRASE[choice];
-  const programs = selectPrograms(content.programs, choice, kept);
+  const shown = selectPrograms(programs, choice, kept);
   const chooseAgain = (
     <button type="button" onClick={() => choose(null)}>{copy.CHOOSE_ANOTHER_NEED}</button>
   );
 
-  if (programs.length === 0) {
-    // This pack holds nothing: a designed screen, and never "no help exists".
+  if (shown.length === 0) {
+    // The device holds nothing: a designed screen, and never "no help exists".
     return (
       <main className="page recover">
         <header className="hero">
           <span className="kicker">{heading}</span>
           <h1>{copy.RECOVER_NO_MATCH_TITLE}</h1>
           <p className="muted">{copy.RECOVER_NO_MATCH_LINE}</p>
-          <p className="figure">{copy.VERIFIED_ON(formatSavedDate(content.asAt))}</p>
+          <p className="figure">{copy.VERIFIED_ON(formatSavedDate(snapshotAt(programs)))}</p>
         </header>
         <div className="actions">
           <OfficialChannel href={isNeed(choice) ? NEED_CHANNELS[choice] : GENERAL_CHANNEL_URL} />
@@ -161,8 +130,8 @@ export default function Recover({
     );
   }
 
-  const stale = programs.some((program) => recoveryStale(now, program.snapshotDate));
-  const anyKeptShown = programs.some((program) => kept.includes(program.id));
+  const stale = shown.some((program) => recoveryStale(now, program.snapshotDate));
+  const anyKeptShown = shown.some((program) => kept.includes(program.id));
   return (
     <main className="page recover">
       <header className="hero">
@@ -173,7 +142,7 @@ export default function Recover({
         {stale ? <p>{copy.RECOVER_STALE_LINE}</p> : null}
       </header>
       <ul className="list">
-        {programs.map((program) => {
+        {shown.map((program) => {
           const isKept = kept.includes(program.id);
           return (
             <li key={program.id} className={isKept ? 'card kept' : 'card'}>
@@ -221,7 +190,7 @@ export default function Recover({
         <p className="muted" role="status" aria-live="polite">
           {shared === 'copied' ? copy.COPIED_LINE : shared === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
         </p>
-        <button type="button" onClick={() => void share(shareText(heading, programs))}>
+        <button type="button" onClick={() => void share(shareText(heading, shown))}>
           {copy.SHARE_LIST}
         </button>
         {chooseAgain}
@@ -229,6 +198,10 @@ export default function Recover({
     </main>
   );
 }
+
+/** When the snapshot on the device was taken: the date the no-match state shows. */
+const snapshotAt = (programs: RecoveryProgram[]) =>
+  Math.max(...programs.map((program) => program.source.retrievedAt));
 
 /** A static pack link to the publisher's entry point. It is the one thing on
  *  the screen that needs a connection, and it says so in its label. */

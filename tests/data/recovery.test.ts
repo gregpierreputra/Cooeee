@@ -32,4 +32,11 @@ describe('loadRecoveryPrograms', () => {
     expect(rows.map((row) => row.id)).toEqual(['prog-1']);
     expect(await db.programs.get('prog-1')).toMatchObject({ org: 'Services Australia' });
   });
+
+  it('replaces the table whole, so an older snapshot never lingers beside the current one', async () => {
+    await db.programs.put(program({ id: 'old' }));
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify(wire([program()])), { status: 200 }));
+    await loadRecoveryPrograms(fetchImpl as unknown as typeof fetch);
+    expect((await db.programs.toArray()).map((row) => row.id)).toEqual(['prog-1']);
+  });
 });

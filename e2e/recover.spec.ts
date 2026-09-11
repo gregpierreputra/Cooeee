@@ -7,6 +7,7 @@ const RECOVER_URL = `${HARNESS}/recover`;
 
 // E4-US1 and E4-US2: one question, plain phrases, may-match results with
 // publisher, licence and date on every card, and not one request for any of it.
+// The harness seeds the programs and no pack: Recover needs none.
 test('a need in plain words lists the may-match programs from the pack, with zero requests', async ({ page }) => {
   await page.goto(RECOVER_URL);
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
@@ -48,7 +49,7 @@ test('a need the pack holds nothing for says so and names the official channel',
 
   await expect(page.getByRole('heading', { name: copy.RECOVER_NO_MATCH_TITLE })).toBeVisible();
   await expect(page.getByText(copy.RECOVER_NO_MATCH_LINE)).toBeVisible();
-  await expect(page.getByText(copy.VERIFIED_ON('10 September 2026'))).toBeVisible();
+  await expect(page.getByText(copy.VERIFIED_ON('9 September 2026'))).toBeVisible();
   await expect(page.getByRole('link', { name: copy.OFFICIAL_CHANNEL }))
     .toHaveAttribute('href', NEED_CHANNELS.documents);
   await expect(page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED })).toBeVisible();
@@ -64,15 +65,11 @@ test('an old snapshot is labelled in plain words and still shown', async ({ page
   await expect(page.locator('.card')).toContainText(copy.LICENCE_LINE('Link only, all rights reserved'));
 });
 
-// E4-US3-AC2: with no pack, Recover reads the app's own snapshot, as Nearby does.
-test('with no pack, Recover still answers from the precached programs', async ({ page }) => {
-  await page.goto(`${RECOVER_URL}?mode=snapshot`);
+// E4-US2-AC6: the source at a glance.
+test('every card opens with its organisation\'s initials', async ({ page }) => {
+  await page.goto(RECOVER_URL);
   await page.getByRole('button', { name: copy.NEED_PHRASE.health }).click();
-  await expect(page.locator('.card')).toHaveCount(1);
   await expect(page.locator('.card .monogram')).toHaveText('ARC');
-  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
-  await page.getByRole('button', { name: copy.NEED_PHRASE.documents }).click();
-  await expect(page.getByText(copy.VERIFIED_ON('9 September 2026'))).toBeVisible();
 });
 
 // E4-US3-AC2: nothing on the device at all is a designed screen that offers to build a pack.

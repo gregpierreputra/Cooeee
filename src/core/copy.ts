@@ -519,7 +519,7 @@ export const PREPARATION_LINES: readonly { text: string; context: string; source
     context: 'Tap Keep on a program in Recover. Only the program is remembered, on this phone, and nothing about you.',
     source: PREPARATION_SOURCE_RECOVERY,
   },
-] as const;
+];
 
 /** Attribution, not citation: the lines above are Cooeee's own wording of
  *  Country Fire Authority plan-and-prepare guidance, so the byline credits the
