@@ -1,7 +1,7 @@
 // E4 Recover: the rules behind needs-first support matching. Pure, so the
 // screen renders what these return and judges nothing of its own.
 
-import { MS_PER_DAY, RECOVERY_STALE_DAYS } from './constants';
+import { HOTLINE_NUMBER, MS_PER_DAY, RECOVERY_STALE_DAYS } from './constants';
 import * as copy from './copy';
 import { formatSavedDate } from './provenance';
 import type { NeedKey, PackProgram, RecoveryProgram } from './types';
@@ -10,16 +10,17 @@ import type { NeedKey, PackProgram, RecoveryProgram } from './types';
 export const NEEDS: readonly NeedKey[] = ['stay', 'money', 'food', 'property', 'health', 'documents'];
 
 /** What the person asked to see: one need, every program, or the kept ones. */
-export type Choice = NeedKey | 'all' | 'kept';
+export type Choice = NeedKey | 'all' | 'kept' | 'calls';
 
-export const isNeed = (choice: Choice): choice is NeedKey => choice !== 'all' && choice !== 'kept';
+export const isNeed = (choice: Choice): choice is NeedKey =>
+  choice !== 'all' && choice !== 'kept' && choice !== 'calls';
 
 /** The programs for a choice, in the one neutral order the screen states: kept
  *  programs first, then organisation, then title. Nothing about the person is
  *  read; "kept" is a list of program ids the person chose. */
 export function selectPrograms(
   programs: readonly RecoveryProgram[],
-  choice: Choice,
+  choice: Exclude<Choice, 'calls'>,
   kept: readonly string[],
 ): RecoveryProgram[] {
   const rank = (program: RecoveryProgram) => (kept.includes(program.id) ? 0 : 1);
@@ -61,11 +62,29 @@ export function packProgramsFor(
     .map((program) => ({ ...program, id: `${packId}:${program.id}`, packId, programId: program.id }));
 }
 
-/** What a pack must gain and lose so it carries exactly the kept programs. */
-export const keptDiff = (have: readonly string[], kept: readonly string[]) => ({
-  add: kept.filter((id) => !have.includes(id)),
-  remove: have.filter((id) => !kept.includes(id)),
+/** What a pack must gain and lose so it carries exactly the kept programs.
+ *  A stale row, one the snapshot has since changed, is both removed and
+ *  added, so it is rebuilt from the current snapshot. */
+export const keptDiff = (have: readonly string[], kept: readonly string[], stale: readonly string[] = []) => ({
+  add: kept.filter((id) => !have.includes(id) || stale.includes(id)),
+  remove: have.filter((id) => !kept.includes(id) || stale.includes(id)),
 });
+
+/** Every number the device holds: the hotline first, then each program's own,
+ *  one entry per number. Nothing is typed and nothing is looked up. */
+export type CallEntry = { label: string; org?: string; number: string };
+export function callList(programs: readonly RecoveryProgram[]): CallEntry[] {
+  const entries: CallEntry[] = [{ label: copy.HOTLINE_LABEL, number: HOTLINE_NUMBER }];
+  const withNumber = programs
+    .filter((program): program is RecoveryProgram & { telephone: string } => Boolean(program.telephone))
+    .sort((a, b) => a.org.localeCompare(b.org) || a.title.localeCompare(b.title));
+  for (const program of withNumber) {
+    if (!entries.some((entry) => entry.number === program.telephone)) {
+      entries.push({ label: program.title, org: program.org, number: program.telephone });
+    }
+  }
+  return entries;
+}
 
 /** The kept programs no saved pack carries yet: the Home nudge counts them. */
 export const unsavedKept = (kept: readonly string[], saved: readonly string[]): string[] =>

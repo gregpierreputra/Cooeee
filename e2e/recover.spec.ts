@@ -12,7 +12,7 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   await page.goto(RECOVER_URL);
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   await expect(page.getByText(copy.RECOVER_PRIVACY_LINE)).toBeVisible();
-  await expect(page.getByRole('button')).toHaveCount(7);
+  await expect(page.getByRole('button')).toHaveCount(8);
 
   let requests = 0;
   await page.route('**', async (route) => { requests += 1; await route.continue(); });
@@ -197,4 +197,24 @@ test('a Recover card says when it is in your packs', async ({ page }) => {
   await page.goto(`${RECOVER_URL}?mode=saved`);
   await page.getByRole('button', { name: copy.NEED_PHRASE.money }).click();
   await expect(page.locator('.card .in-packs')).toHaveText(copy.IN_YOUR_PACKS);
+});
+
+// E4-US10: every number on the device, the hotline first, as tap-to-call links.
+test('who to call lists the hotline and each program number as a call link', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.WHO_TO_CALL }).click();
+  await expect(page.getByRole('heading', { name: copy.WHO_TO_CALL })).toBeVisible();
+  const links = page.locator('.card a');
+  await expect(links).toHaveCount(2);
+  await expect(links.first()).toHaveAttribute('href', 'tel:1800226226');
+  await expect(links.nth(1)).toHaveAttribute('href', 'tel:1802266');
+});
+
+// E4-US11: one print control, and nothing leaves the phone.
+test('the results screen offers to print the list', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.NEED_PHRASE.money }).click();
+  await page.evaluate(() => { (window as Window & { __printed?: number }).__printed = 0; window.print = () => { (window as Window & { __printed?: number }).__printed! += 1; }; });
+  await page.getByRole('button', { name: copy.PRINT_LIST }).click();
+  expect(await page.evaluate(() => (window as Window & { __printed?: number }).__printed)).toBe(1);
 });

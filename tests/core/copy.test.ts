@@ -415,6 +415,12 @@ describe('E4 Recover mandated copy', () => {
     for (const line of copy.COOEEE_INFO_LINES) expect(line.glyph).toBeTruthy();
   });
 
+  it('names the call list and the print control', () => {
+    expect(copy.WHO_TO_CALL).toBe('Who to call');
+    expect(copy.HOTLINE_LABEL).toBe('VicEmergency hotline');
+    expect(copy.PRINT_LIST).toBe('Print this list');
+  });
+
   it('states that nothing chosen leaves the phone', () => {
     expect(copy.RECOVER_PRIVACY_LINE).toBe(
       'Nothing you choose here leaves this phone. Only a program you keep is remembered, on this phone.',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RECOVERY_STALE_DAYS, MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
-import { keptDiff, monogram, NEEDS, packProgramsFor, recoveryStale, selectPrograms, shareText, unsavedKept } from '../../src/core/recover';
+import { callList, keptDiff, monogram, NEEDS, packProgramsFor, recoveryStale, selectPrograms, shareText, unsavedKept } from '../../src/core/recover';
 import { program } from '../fixtures';
 
 describe('selectPrograms', () => {
@@ -46,6 +46,20 @@ describe('packProgramsFor and unsavedKept', () => {
     expect(rows[0]).toMatchObject({ id: 'p1:b', packId: 'p1', programId: 'b', org: 'Services Australia' });
     expect(unsavedKept(['a', 'b'], ['b'])).toEqual(['a']);
     expect(keptDiff(['a', 'b'], ['b', 'c'])).toEqual({ add: ['c'], remove: ['a'] });
+    expect(keptDiff(['a', 'b'], ['a', 'b'], ['b'])).toEqual({ add: ['b'], remove: ['b'] });
+  });
+});
+
+describe('callList', () => {
+  it('opens with the hotline, then each program with a number once, by organisation', () => {
+    const list = callList([
+      program({ id: 'b', org: 'Services Australia', title: 'Payments', telephone: '180 22 66' }),
+      program({ id: 'a', org: 'Emergency Management Victoria', title: 'Relief', telephone: '1800 226 226' }),
+      program({ id: 'c', org: 'Country Fire Authority', title: 'After the fire' }),
+    ]);
+    expect(list.map((entry) => entry.number)).toEqual(['1800 226 226', '180 22 66']);
+    expect(list[0]).toEqual({ label: copy.HOTLINE_LABEL, number: '1800 226 226' });
+    expect(list[1].org).toBe('Services Australia');
   });
 });
 

@@ -5,7 +5,7 @@ import { GENERAL_CHANNEL_URL, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
 import { readKept, toggleKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
-import { isNeed, monogram, NEEDS, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
+import { callList, isNeed, monogram, NEEDS, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
 import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { listPrograms, listSavedProgramIds } from '../data/db';
@@ -91,6 +91,7 @@ export default function Recover({
       ...(anyKept ? [{ key: 'kept' as const, label: copy.KEPT_PROGRAMS }] : []),
       ...NEEDS.map((key) => ({ key, label: copy.NEED_PHRASE[key] })),
       { key: 'all', label: copy.EVERY_PROGRAM },
+      { key: 'calls', label: copy.WHO_TO_CALL },
     ];
     return (
       <main className="page recover">
@@ -113,13 +114,37 @@ export default function Recover({
     );
   }
 
+  const chooseAgain = (
+    <button type="button" onClick={() => choose(null)}>{copy.CHOOSE_ANOTHER_NEED}</button>
+  );
+
+  if (choice === 'calls') {
+    // E4-US10: every number already on the device, as tap-to-call links.
+    return (
+      <main className="page recover">
+        <header className="hero">
+          <span className="kicker">{copy.NAV_RECOVER}</span>
+          <h1>{copy.WHO_TO_CALL}</h1>
+          <p className="muted">{copy.CALLS_LINE}</p>
+        </header>
+        <ul className="list">
+          {callList(programs).map((entry) => (
+            <li key={entry.number} className="card">
+              <h2>{entry.label}</h2>
+              {entry.org ? <p>{entry.org}</p> : null}
+              <a href={`tel:${entry.number.replaceAll(' ', '')}`}>{copy.CALL_LINE(entry.number)}</a>
+            </li>
+          ))}
+        </ul>
+        <div className="actions">{chooseAgain}</div>
+      </main>
+    );
+  }
+
   const heading = choice === 'all' ? copy.EVERY_PROGRAM
     : choice === 'kept' ? copy.KEPT_PROGRAMS
     : copy.NEED_PHRASE[choice];
   const shown = selectPrograms(programs, choice, kept);
-  const chooseAgain = (
-    <button type="button" onClick={() => choose(null)}>{copy.CHOOSE_ANOTHER_NEED}</button>
-  );
 
   if (shown.length === 0) {
     // The device holds nothing: a designed screen, and never "no help exists".
@@ -203,6 +228,7 @@ export default function Recover({
         <button type="button" onClick={() => void share(shareText(heading, shown))}>
           {copy.SHARE_LIST}
         </button>
+        <button type="button" onClick={() => window.print()}>{copy.PRINT_LIST}</button>
         {chooseAgain}
       </div>
     </main>

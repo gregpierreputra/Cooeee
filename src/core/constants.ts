@@ -136,6 +136,8 @@ export const NEED_CHANNELS = {
   documents: 'https://www.servicesaustralia.gov.au/natural-disaster-support',
 } as const;
 export const GENERAL_CHANNEL_URL = 'https://www.disasterassist.gov.au/';
+/** The VicEmergency hotline, the one number every call list opens with. */
+export const HOTLINE_NUMBER = '1800 226 226';
 
 /** Programs the user chose to keep: program ids only, on this phone, capped so
  *  the list can never grow without bound. */

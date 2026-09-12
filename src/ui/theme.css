@@ -1955,3 +1955,42 @@ input {
   color: var(--accent);
   font-weight: var(--w-bold);
 }
+
+/* Recover on paper: the list with its caveat and ordering line, black on white,
+   with the app's chrome and controls left off the page. */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  html,
+  body,
+  .page {
+    background: #fff;
+    color: #000;
+  }
+  .recover .monogram,
+  .recover .glyph {
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
+  }
+  .notice-bar,
+  .notice-sliver,
+  .app-header,
+  .back-bar,
+  .bottom-nav,
+  .tour,
+  .recover .actions,
+  .recover .keep-button {
+    display: none;
+  }
+  .recover .card {
+    background: #fff;
+    border: 1px solid #000;
+    break-inside: avoid;
+  }
+  .recover .card *,
+  .recover .hero * {
+    color: #000;
+  }
+}

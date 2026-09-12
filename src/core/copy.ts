@@ -483,6 +483,10 @@ export const CARRY_PROGRAMS = (count: number) =>
   count === 0 ? 'Continue without programs' : `Carry ${count} ${count === 1 ? 'program' : 'programs'}`;
 export const CHOOSE_LATER = 'Not now, choose in Recover later';
 export const CHOOSE_IN_RECOVER = 'Choose programs in Recover';
+export const WHO_TO_CALL = 'Who to call';
+export const HOTLINE_LABEL = 'VicEmergency hotline';
+export const CALLS_LINE = 'Voice calls often work when data does not. Each number is the organisation\'s own.';
+export const PRINT_LIST = 'Print this list';
 export const RECOVER_NONE_LINE =
   'Build a pack when you are online. It carries the official programs so they open with no signal.';
 

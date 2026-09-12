@@ -54,6 +54,22 @@ describe('syncKeptIntoPacks', () => {
     vi.unstubAllGlobals();
   });
 
+  it('replaces a row and its page copy when the snapshot moved on', async () => {
+    const page = sources[2];
+    const bytes = readFileSync(`public/data/sources/${page.name}`);
+    vi.stubGlobal('fetch', async () => new Response(bytes, { status: 200 }));
+    await db.programs.put(program({ officialUrl: page.url, snapshotDate: '2026-09-11' }));
+    await db.packPrograms.put({ ...program({ officialUrl: page.url, snapshotDate: '2026-08-01' }), id: 'pack-1:prog-1', packId: 'pack-1', programId: 'prog-1' });
+    await db.files.put({ id: 'pack-1:old.pdf', packId: 'pack-1', url: page.url, name: 'old.pdf', retrievedAt: 1, sizeBytes: 3, sha256: 'x', bytes: new Uint8Array([1, 2, 3]).buffer });
+
+    await syncKeptIntoPacks(['prog-1']);
+    const content = await getCompletePackContent('pack-1');
+    expect(content?.recovery[0].snapshotDate).toBe('2026-09-11');
+    expect(content?.files.map((file) => file.name)).toEqual([page.name]);
+    expect(content?.recoveryVerified && content.contentVerified).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
   it('leaves a pack untouched when nothing changes', async () => {
     const before = await db.packs.get('pack-1');
     await syncKeptIntoPacks([]);
