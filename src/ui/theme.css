@@ -1915,17 +1915,19 @@ input {
   font-weight: var(--w-heavy);
 }
 
-/* About: a glyph ring leads each line, so the shape says what the line is. */
-.info-lines li {
+/* About: a glyph ring leads each line, so the shape says what the line is.
+   Scoped to the About page: the BlackSky panel and the tour cards share the
+   led-line list without a glyph, and read as prose. */
+.about .info-lines li {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
 }
-.info-lines .glyph {
+.about .info-lines .glyph {
   width: 36px;
   height: 36px;
 }
-.info-lines .glyph svg {
+.about .info-lines .glyph svg {
   width: 18px;
   height: 18px;
 }
