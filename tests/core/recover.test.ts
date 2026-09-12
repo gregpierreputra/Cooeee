@@ -47,6 +47,7 @@ describe('packProgramsFor and unsavedKept', () => {
     expect(unsavedKept(['a', 'b'], ['b'])).toEqual(['a']);
     expect(keptDiff(['a', 'b'], ['b', 'c'])).toEqual({ add: ['c'], remove: ['a'] });
     expect(keptDiff(['a', 'b'], ['a', 'b'], ['b'])).toEqual({ add: ['b'], remove: ['b'] });
+    expect(keptDiff(['a', 'b'], ['a'], ['b'])).toEqual({ add: [], remove: ['b'] });
   });
 });
 

@@ -79,7 +79,8 @@ export function callList(programs: readonly RecoveryProgram[]): CallEntry[] {
     .filter((program): program is RecoveryProgram & { telephone: string } => Boolean(program.telephone))
     .sort((a, b) => a.org.localeCompare(b.org) || a.title.localeCompare(b.title));
   for (const program of withNumber) {
-    if (!entries.some((entry) => entry.number === program.telephone)) {
+    const digits = (number: string) => number.replaceAll(' ', '');
+    if (!entries.some((entry) => digits(entry.number) === digits(program.telephone))) {
       entries.push({ label: program.title, org: program.org, number: program.telephone });
     }
   }

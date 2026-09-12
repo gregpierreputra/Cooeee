@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { HOTLINE_NUMBER } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 
 // Exact match, character for character, em dashes and the ± sign included. These
@@ -406,7 +407,8 @@ describe('E4 Recover mandated copy', () => {
 
   it('names the wizard step, its two ways on, and the in-your-packs line', () => {
     expect(copy.PROGRAMS_STEP_TITLE).toBe('Carry support programs in this pack?');
-    expect(copy.CARRY_PROGRAMS(0)).toBe('Continue without programs');
+    expect(copy.CARRY_PROGRAMS(0)).toBe('Keep none and continue');
+    expect(copy.VICEMERGENCY_HOTLINE).toContain(HOTLINE_NUMBER);
     expect(copy.CARRY_PROGRAMS(1)).toBe('Carry 1 program');
     expect(copy.CARRY_PROGRAMS(2)).toBe('Carry 2 programs');
     expect(copy.CHOOSE_LATER).toBe('Not now, choose in Recover later');

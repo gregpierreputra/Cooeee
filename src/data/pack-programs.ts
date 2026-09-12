@@ -8,14 +8,14 @@ import { currentCopyName, loadSourceFiles } from './source-files';
 // Every complete pack mirrors the kept list: keeping a program adds its row and
 // the copy of its page to each pack, releasing removes them, and the pack's
 // manifest and stated size are rewritten with the rows in one transaction. A
-// row the snapshot has since changed, or a page copy the register no longer
+// row from an older snapshot build, or a page copy the register no longer
 // names, is replaced with the current one, so a pack keeps up on ordinary days.
 
 async function syncPack(pack: Pack, kept: readonly string[]): Promise<void> {
   const have = await db.packPrograms.where('packId').equals(pack.id).toArray();
   const programs = await db.programs.toArray();
   const stale = have
-    .filter((row) => programs.some((p) => p.id === row.programId && p.snapshotDate !== row.snapshotDate))
+    .filter((row) => programs.some((p) => p.id === row.programId && p.source.retrievedAt !== row.source.retrievedAt))
     .map((row) => row.programId);
   const diff = keptDiff(have.map((row) => row.programId), kept, stale);
   const rows = [
@@ -36,7 +36,7 @@ async function syncPack(pack: Pack, kept: readonly string[]): Promise<void> {
   const missing = [...keptUrls].filter((url) =>
     currentCopyName(url) !== undefined && !stored.some((file) => file.url === url && isCurrent(file)));
   if (diff.add.length === 0 && diff.remove.length === 0 && missing.length === 0) return;
-  const added: PackFile[] = await loadSourceFiles(pack.id, missing).catch(() => []);
+  const added = (await Promise.all(missing.map((url) => loadSourceFiles(pack.id, [url]).catch(() => [])))).flat();
   const removedUrls = have
     .filter((row) => diff.remove.includes(row.programId))
     .map((row) => row.officialUrl)

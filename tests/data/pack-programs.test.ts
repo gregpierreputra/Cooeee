@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { readFileSync } from 'node:fs';
 import { db, getCompletePackContent } from '../../src/data/db';
@@ -13,6 +13,11 @@ beforeEach(async () => {
   await db.packs.put(pack());
   await db.programs.put(program());
 });
+afterEach(() => vi.unstubAllGlobals());
+
+// A program page the build rendered, whatever order the register is in.
+const page = sources.find((source) => source.name.startsWith('services-australia'))!;
+const bytes = readFileSync(`public/data/sources/${page.name}`);
 
 describe('syncKeptIntoPacks', () => {
   it('adds a kept program to a saved pack and re-hashes the manifest, then removes it when released', async () => {
@@ -29,8 +34,6 @@ describe('syncKeptIntoPacks', () => {
   });
 
   it('stores the page copy of a kept program, re-hashes the files group, and shares one page between two programs', async () => {
-    const page = sources[2]; // a program page the build rendered
-    const bytes = readFileSync(`public/data/sources/${page.name}`);
     vi.stubGlobal('fetch', async () => new Response(bytes, { status: 200 }));
     await db.programs.bulkPut([
       program({ id: 'p-a', officialUrl: page.url }),
@@ -51,15 +54,15 @@ describe('syncKeptIntoPacks', () => {
     content = await getCompletePackContent('pack-1');
     expect(content?.files).toEqual([]);
     expect(content?.contentVerified).toBe(true);
-    vi.unstubAllGlobals();
   });
 
   it('replaces a row and its page copy when the snapshot moved on', async () => {
-    const page = sources[2];
-    const bytes = readFileSync(`public/data/sources/${page.name}`);
     vi.stubGlobal('fetch', async () => new Response(bytes, { status: 200 }));
     await db.programs.put(program({ officialUrl: page.url, snapshotDate: '2026-09-11' }));
-    await db.packPrograms.put({ ...program({ officialUrl: page.url, snapshotDate: '2026-08-01' }), id: 'pack-1:prog-1', packId: 'pack-1', programId: 'prog-1' });
+    // An older build: its own time on the source row, as the build script sets it.
+    const older = program({ officialUrl: page.url, snapshotDate: '2026-08-01' });
+    older.source = { ...older.source, retrievedAt: 1 };
+    await db.packPrograms.put({ ...older, id: 'pack-1:prog-1', packId: 'pack-1', programId: 'prog-1' });
     await db.files.put({ id: 'pack-1:old.pdf', packId: 'pack-1', url: page.url, name: 'old.pdf', retrievedAt: 1, sizeBytes: 3, sha256: 'x', bytes: new Uint8Array([1, 2, 3]).buffer });
 
     await syncKeptIntoPacks(['prog-1']);
@@ -67,7 +70,19 @@ describe('syncKeptIntoPacks', () => {
     expect(content?.recovery[0].snapshotDate).toBe('2026-09-11');
     expect(content?.files.map((file) => file.name)).toEqual([page.name]);
     expect(content?.recoveryVerified && content.contentVerified).toBe(true);
-    vi.unstubAllGlobals();
+  });
+
+  it('keeps the older copy when the current one cannot be read, and takes the other pages', async () => {
+    const other = sources.find((source) => source.name.startsWith('cfa-'))!;
+    vi.stubGlobal('fetch', async (url: string) => (url.endsWith(page.name)
+      ? new Response('down', { status: 500 })
+      : new Response(readFileSync(`public/data/sources/${other.name}`), { status: 200 })));
+    await db.programs.bulkPut([program({ officialUrl: page.url }), program({ id: 'p-cfa', officialUrl: other.url })]);
+    await db.packPrograms.put({ ...program({ officialUrl: page.url }), id: 'pack-1:prog-1', packId: 'pack-1', programId: 'prog-1' });
+    await db.files.put({ id: 'pack-1:old.pdf', packId: 'pack-1', url: page.url, name: 'old.pdf', retrievedAt: 1, sizeBytes: 3, sha256: 'x', bytes: new Uint8Array([1, 2, 3]).buffer });
+
+    await syncKeptIntoPacks(['prog-1', 'p-cfa']);
+    expect((await db.files.toArray()).map((file) => file.name).sort()).toEqual(['old.pdf', other.name].sort());
   });
 
   it('leaves a pack untouched when nothing changes', async () => {

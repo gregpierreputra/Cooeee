@@ -480,7 +480,7 @@ export const PROGRAMS_STEP_TITLE = 'Carry support programs in this pack?';
 export const PROGRAMS_STEP_LINE =
   'The programs you tick travel in this pack with a copy of their official pages, so they open with no signal. Nothing about you is stored, and you can change this any day in Recover.';
 export const CARRY_PROGRAMS = (count: number) =>
-  count === 0 ? 'Continue without programs' : `Carry ${count} ${count === 1 ? 'program' : 'programs'}`;
+  count === 0 ? 'Keep none and continue' : `Carry ${count} ${count === 1 ? 'program' : 'programs'}`;
 export const CHOOSE_LATER = 'Not now, choose in Recover later';
 export const CHOOSE_IN_RECOVER = 'Choose programs in Recover';
 export const WHO_TO_CALL = 'Who to call';

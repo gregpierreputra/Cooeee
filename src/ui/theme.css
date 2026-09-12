@@ -1984,7 +1984,8 @@ input {
   .recover .keep-button {
     display: none;
   }
-  .recover .card {
+  .recover .card,
+  .recover .card.kept {
     background: #fff;
     border: 1px solid #000;
     break-inside: avoid;
