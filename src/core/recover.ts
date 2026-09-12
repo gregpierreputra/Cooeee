@@ -61,6 +61,12 @@ export function packProgramsFor(
     .map((program) => ({ ...program, id: `${packId}:${program.id}`, packId, programId: program.id }));
 }
 
+/** What a pack must gain and lose so it carries exactly the kept programs. */
+export const keptDiff = (have: readonly string[], kept: readonly string[]) => ({
+  add: kept.filter((id) => !have.includes(id)),
+  remove: have.filter((id) => !kept.includes(id)),
+});
+
 /** The kept programs no saved pack carries yet: the Home nudge counts them. */
 export const unsavedKept = (kept: readonly string[], saved: readonly string[]): string[] =>
   kept.filter((id) => !saved.includes(id));

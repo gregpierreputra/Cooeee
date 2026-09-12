@@ -8,13 +8,14 @@ import { formatSavedDate } from '../core/provenance';
 import { isNeed, monogram, NEEDS, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
 import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
-import { listPrograms } from '../data/db';
+import { listPrograms, listSavedProgramIds } from '../data/db';
 import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 
 type RecoverProps = {
   loadPrograms?: () => Promise<RecoveryProgram[]>;
+  loadSaved?: () => Promise<string[]>;
   now?: number;
 };
 
@@ -22,22 +23,30 @@ type RecoverProps = {
  *  nothing else, with or without a saved pack, as Nearby reads its downloaded
  *  list. The choice lives in component state for this visit only; the one
  *  thing remembered is the list of program ids the person chose to keep. */
-export default function Recover({ loadPrograms = listPrograms, now = Date.now() }: RecoverProps) {
+export default function Recover({
+  loadPrograms = listPrograms,
+  loadSaved = listSavedProgramIds,
+  now = Date.now(),
+}: RecoverProps) {
   // null while the store has not answered, an empty list when nothing is on the device.
   const [programs, setPrograms] = useState<RecoveryProgram[] | null>(null);
+  // The programs some saved pack already carries, so a card can say so.
+  const [saved, setSaved] = useState<string[]>([]);
   const [choice, setChoice] = useState<Choice | null>(null);
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
   const [shared, setShared] = useState<'copied' | 'unavailable' | null>(null);
 
   useEffect(() => {
     let live = true;
-    loadPrograms().then((rows) => {
-      if (live) setPrograms(rows);
+    Promise.all([loadPrograms(), loadSaved()]).then(([rows, savedIds]) => {
+      if (!live) return;
+      setPrograms(rows);
+      setSaved(savedIds);
     });
     return () => {
       live = false;
     };
-  }, [loadPrograms]);
+  }, [loadPrograms, loadSaved]);
 
   const choose = (next: Choice | null) => {
     setShared(null);
@@ -166,6 +175,7 @@ export default function Recover({ loadPrograms = listPrograms, now = Date.now() 
               <p className="muted">{program.covers}</p>
               <ProvenanceLine source={program.source} now={now} />
               <p className="figure">{copy.LICENCE_LINE(program.source.licence)}</p>
+              {saved.includes(program.id) ? <p className="figure in-packs">{copy.IN_YOUR_PACKS}</p> : null}
               <a href={program.officialUrl} target="_blank" rel="noopener noreferrer">
                 {copy.OPEN_ORIGINAL_SOURCE}
               </a>

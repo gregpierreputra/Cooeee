@@ -1914,3 +1914,42 @@ input {
   color: #3a2a00;
   font-weight: var(--w-heavy);
 }
+
+/* About: a glyph ring leads each line, so the shape says what the line is. */
+.info-lines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.info-lines .glyph {
+  width: 36px;
+  height: 36px;
+}
+.info-lines .glyph svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Nearby: the locate control carries its glyph inside the filled pill. */
+.nearby-locate .main-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+}
+.main-action .glyph {
+  width: 28px;
+  height: 28px;
+  background: rgb(0 0 0 / 12%);
+  color: inherit;
+}
+.main-action .glyph svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Recover: the line that says a program is already in a pack. */
+.in-packs {
+  color: var(--accent);
+  font-weight: var(--w-bold);
+}

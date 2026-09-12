@@ -20,7 +20,9 @@ export default defineConfig({
       workbox: {
         // The data snapshots under public/data are precached with the shell on
         // purpose: they version with the build, so an offline start has them.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest,woff2}'],
+        // The PDF page copies too, so a program kept with no signal still gets
+        // its page into every pack from the precache.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest,woff2,pdf}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//], // an API path is never the app shell
         runtimeCaching: [], // user data lives in IndexedDB; nothing else is cached at runtime

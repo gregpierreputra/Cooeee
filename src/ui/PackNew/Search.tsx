@@ -19,7 +19,7 @@ import * as copy from '../../core/copy';
 import { chosenDestinations, orderByDistance } from '../../core/destination';
 import { titleCase } from '../../core/home';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
-import { readKept } from '../../core/kept';
+import { readKept, writeKept } from '../../core/kept';
 import { buildPackSeed } from '../../core/pack';
 import { packProgramsFor } from '../../core/recover';
 import type {
@@ -32,6 +32,7 @@ import type {
   PackFile,
   PackOffer,
   PendingPlace,
+  RecoveryProgram,
   TextPackContent,
 } from '../../core/types';
 import { listCompletePacks, listPrograms } from '../../data/db';
@@ -47,6 +48,7 @@ import { Confirm } from './Confirm';
 import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
 import { Note } from './Note';
+import { Programs } from './Programs';
 import { Size } from './Size';
 
 /** Module scope, so the default has one stable identity for the life of the
@@ -86,6 +88,7 @@ type SearchProps = {
   loadPacks?: () => Promise<Pack[]>;
   loadNsp?: () => Promise<NspSnapshot>;
   loadFiles?: typeof loadPackFiles;
+  loadPrograms?: () => Promise<RecoveryProgram[]>;
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
   savePack?: typeof saveTextOnlyPack;
@@ -116,6 +119,7 @@ export function Search({
   loadPacks = listCompletePacks,
   loadNsp = loadNspSnapshot,
   loadFiles = loadPackFiles,
+  loadPrograms = listPrograms,
   onKeepSavedPlace,
   buildOffer = createPackOffer,
   savePack = saveTextOnlyPack,
@@ -152,6 +156,8 @@ export function Search({
   // note itself once it is past. Both in memory only until the pack save.
   const [chosenPlaces, setChosenPlaces] = useState<Destination[] | null>(null);
   const [note, setNote] = useState<string | undefined>(undefined);
+  // The programs step: null until the note is kept, then the list to tick.
+  const [programs, setPrograms] = useState<RecoveryProgram[] | null>(null);
   // Made once per confirmed place, before the places step: destination rows
   // carry the pack id, so the id must exist before the user chooses them.
   const [packId, setPackId] = useState('');
@@ -266,6 +272,7 @@ export function Search({
     place: PendingPlace,
     result: BushfireAreaResult,
     destinations: Destination[],
+    ticked: string[],
   ) {
     setOfferState({ kind: 'building' });
     try {
@@ -274,9 +281,9 @@ export function Search({
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
         destinations,
-        // The programs the user kept in Recover, copied so the pack carries
+        // The programs ticked on the programs step, copied so the pack carries
         // them and their pages with no signal.
-        recovery: packProgramsFor(seed.id, await listPrograms(), readKept(localFlagStore())),
+        recovery: packProgramsFor(seed.id, programs ?? [], ticked),
       };
       // The PDF copies of the source pages and the map of the area travel with
       // the pack, so their bytes are part of the one size stated before
@@ -320,6 +327,7 @@ export function Search({
     setPlacesState(null);
     setChosenPlaces(null);
     setNote(undefined);
+    setPrograms(null);
   }
 
   if (pendingPlace && conflictState?.kind === 'checking') {
@@ -397,6 +405,7 @@ export function Search({
                     pendingPlace,
                     offerState.result,
                     offerState.destinations,
+                    readKept(localFlagStore()),
                   )
                 }
               >
@@ -425,15 +434,30 @@ export function Search({
 
   // The note step, after the places and before the size. The example names the
   // nearest chosen place, so the note is about this pack from the first word.
-  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
+  // The programs step, after the note: the ticks become the kept list, so
+  // every pack mirrors the same choice; the opt-out carries none for now.
+  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces && programs) {
     const { result } = areaState;
+    return (
+      <Programs
+        programs={programs}
+        kept={readKept(localFlagStore())}
+        onContinue={(ticked) => {
+          if (ticked.length > 0) writeKept(localFlagStore(), ticked);
+          void buildPackOfferForResult(pendingPlace, result, chosenPlaces, ticked);
+        }}
+      />
+    );
+  }
+
+  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
     const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
     return (
       <Note
         example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
         onContinue={(text) => {
           setNote(text);
-          void buildPackOfferForResult(pendingPlace, result, chosenPlaces);
+          void loadPrograms().then(setPrograms).catch(() => setPrograms([]));
         }}
       />
     );

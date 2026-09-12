@@ -16,6 +16,15 @@ export function readKept(store: FlagStore | null): string[] {
   }
 }
 
+/** The whole kept list at once: the pack wizard's ticks. */
+export function writeKept(store: FlagStore | null, ids: readonly string[]): void {
+  try {
+    store?.setItem(KEPT_KEY, JSON.stringify(ids.slice(-KEPT_MAX)));
+  } catch {
+    // Storage refused: the choice lasts for this visit only.
+  }
+}
+
 /** Drop kept ids the snapshot no longer holds, once the snapshot has landed,
  *  so the Home nudge can never count a program that cannot be saved. */
 export function pruneKept(store: FlagStore | null, known: readonly string[]): void {

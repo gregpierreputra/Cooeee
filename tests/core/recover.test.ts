@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RECOVERY_STALE_DAYS, MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
-import { monogram, NEEDS, packProgramsFor, recoveryStale, selectPrograms, shareText, unsavedKept } from '../../src/core/recover';
+import { keptDiff, monogram, NEEDS, packProgramsFor, recoveryStale, selectPrograms, shareText, unsavedKept } from '../../src/core/recover';
 import { program } from '../fixtures';
 
 describe('selectPrograms', () => {
@@ -45,6 +45,7 @@ describe('packProgramsFor and unsavedKept', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ id: 'p1:b', packId: 'p1', programId: 'b', org: 'Services Australia' });
     expect(unsavedKept(['a', 'b'], ['b'])).toEqual(['a']);
+    expect(keptDiff(['a', 'b'], ['b', 'c'])).toEqual({ add: ['c'], remove: ['a'] });
   });
 });
 

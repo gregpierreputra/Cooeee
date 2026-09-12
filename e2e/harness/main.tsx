@@ -335,6 +335,11 @@ let recoverFlow = confirmation;
 if (window.location.pathname === '/recover') {
   await Promise.all(db.tables.map((table) => table.clear()));
   if (recoverMode !== 'none') await db.programs.bulkPut(recoverPrograms);
+  // ?mode=saved: a pack already carries the first program.
+  if (recoverMode === 'saved') {
+    await db.packs.put(savedPack);
+    await db.packPrograms.put({ ...recoverPrograms[0], id: `${savedPack.id}:recover:payment`, packId: savedPack.id, programId: 'recover:payment' });
+  }
   recoverFlow = <Recover now={recoverNow} />;
 }
 
@@ -373,6 +378,12 @@ if (window.location.pathname === '/home') {
       lon: testCandidate.lon,
       verifiedAt: homeNow - (homeDays - 1) * 86_400_000,
     });
+  }
+  // ?mode=kept: one pack, the programs table, and a kept id no pack carries yet;
+  // Home mirrors it into the pack on arrival, so no nudge is shown.
+  if (homeMode === 'kept') {
+    await db.programs.put(recoveryProgram);
+    window.localStorage.setItem('cooeee.kept.v1', JSON.stringify([recoveryProgram.id]));
   }
   homeFlow = (
     <>

@@ -404,6 +404,17 @@ describe('E4 Recover mandated copy', () => {
     expect(copy.KEPT_NOT_SAVED_LINE).toBe('Build a pack to carry their pages, so they open with no signal.');
   });
 
+  it('names the wizard step, its two ways on, and the in-your-packs line', () => {
+    expect(copy.PROGRAMS_STEP_TITLE).toBe('Carry support programs in this pack?');
+    expect(copy.CARRY_PROGRAMS(0)).toBe('Continue without programs');
+    expect(copy.CARRY_PROGRAMS(1)).toBe('Carry 1 program');
+    expect(copy.CARRY_PROGRAMS(2)).toBe('Carry 2 programs');
+    expect(copy.CHOOSE_LATER).toBe('Not now, choose in Recover later');
+    expect(copy.CHOOSE_IN_RECOVER).toBe('Choose programs in Recover');
+    expect(copy.IN_YOUR_PACKS).toBe('In your packs');
+    for (const line of copy.COOEEE_INFO_LINES) expect(line.glyph).toBeTruthy();
+  });
+
   it('states that nothing chosen leaves the phone', () => {
     expect(copy.RECOVER_PRIVACY_LINE).toBe(
       'Nothing you choose here leaves this phone. Only a program you keep is remembered, on this phone.',

@@ -76,6 +76,43 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => indexedDB.deleteDatabase('cooeee'));
 });
 
+// E4-US8: the programs step after the note; a ticked program is carried in the
+// saved pack with its page copy, and becomes the kept list.
+test('the wizard carries a ticked program into the saved pack', async ({ page }) => {
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await page.goto('/packs/new');
+  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByRole('button', { name: ADDRESS }).click();
+  await page.getByLabel('Place name').fill('Kalorama');
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  const boxes = page.getByRole('checkbox');
+  await expect(boxes.first()).toBeVisible();
+  await boxes.nth(0).check();
+  await boxes.nth(1).check();
+  await page.getByRole('button', { name: 'Save last-resort places' }).click();
+  await page.getByRole('button', { name: 'Keep this note' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Carry support programs in this pack?' })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Crisis Payment for extreme circumstances' }).check();
+  await page.getByRole('button', { name: 'Carry 1 program' }).click();
+  await expect(page.getByRole('heading')).toHaveText('Ready to download');
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
+  await expect(page.getByRole('link', { name: 'Choose programs in Recover' })).toHaveCount(0);
+  expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["services-australia-crisis-payment"]');
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
+  const section = page.locator('.pack-section', { hasText: 'Saved programs' });
+  await expect(section.locator('.section-count')).toHaveText('1');
+  await section.getByRole('button', { name: 'Show Saved programs' }).click();
+  await expect(section.getByRole('link', { name: 'Open original source as a file' })).toHaveAttribute('download', /crisis-payment/);
+});
+
 test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ page }) => {
   await mockOfficialServices(page, {
     candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],

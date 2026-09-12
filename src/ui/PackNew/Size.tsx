@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { packOfferSizeLine } from '../../core/pack-offer';
+import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import type { PackOffer } from '../../core/types';
 import StateCard from '../components/StateCard';
@@ -87,9 +88,14 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
           </>
         }
         actions={
-          <button className="main-action" type="button" onClick={onContinue}>
-            {copy.OPEN_SAVED_PACK}
-          </button>
+          <>
+            <button className="main-action" type="button" onClick={onContinue}>
+              {copy.OPEN_SAVED_PACK}
+            </button>
+            {offer.textManifest.recovery.count === 0 ? (
+              <Link className="action" to="/recover">{copy.CHOOSE_IN_RECOVER}</Link>
+            ) : null}
+          </>
         }
       />
     );

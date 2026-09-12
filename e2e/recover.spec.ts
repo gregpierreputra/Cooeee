@@ -182,3 +182,19 @@ test('Home nudges towards a pack while a kept program is not saved offline', asy
   await expect(page.locator('.nudge .kicker')).toHaveText(copy.NUDGE_KICKER);
   await expect(page.locator('.nudge').getByRole('link', { name: copy.BUILD_A_PACK })).toBeVisible();
 });
+
+// E4-US9: a program kept after a pack exists flows into that pack on the next
+// visit to Home, so the nudge never shows for a user who already has a pack.
+test('Home mirrors a kept program into an existing pack and shows no nudge', async ({ page }) => {
+  await page.goto(`${HARNESS}/home?mode=kept`);
+  await expect(page.locator('.home .card').first()).toBeVisible();
+  await expect(page.locator('.nudge')).toHaveCount(0);
+  await expect.poll(async () => (await page.evaluate(() => window.__storageCounts())).packPrograms).toBe(1);
+});
+
+// E4-US9-AC3: a Recover card says when a pack already carries it.
+test('a Recover card says when it is in your packs', async ({ page }) => {
+  await page.goto(`${RECOVER_URL}?mode=saved`);
+  await page.getByRole('button', { name: copy.NEED_PHRASE.money }).click();
+  await expect(page.locator('.card .in-packs')).toHaveText(copy.IN_YOUR_PACKS);
+});

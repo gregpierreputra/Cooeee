@@ -474,6 +474,15 @@ export const NO_SAVED_PROGRAMS =
 export const KEPT_NOT_SAVED = (count: number) =>
   `${count} kept ${count === 1 ? 'program is' : 'programs are'} not yet in an offline pack.`;
 export const KEPT_NOT_SAVED_LINE = 'Build a pack to carry their pages, so they open with no signal.';
+export const IN_YOUR_PACKS = 'In your packs';
+export const PROGRAMS_STEP_KICKER = 'Support programs';
+export const PROGRAMS_STEP_TITLE = 'Carry support programs in this pack?';
+export const PROGRAMS_STEP_LINE =
+  'The programs you tick travel in this pack with a copy of their official pages, so they open with no signal. Nothing about you is stored, and you can change this any day in Recover.';
+export const CARRY_PROGRAMS = (count: number) =>
+  count === 0 ? 'Continue without programs' : `Carry ${count} ${count === 1 ? 'program' : 'programs'}`;
+export const CHOOSE_LATER = 'Not now, choose in Recover later';
+export const CHOOSE_IN_RECOVER = 'Choose programs in Recover';
 export const RECOVER_NONE_LINE =
   'Build a pack when you are online. It carries the official programs so they open with no signal.';
 
@@ -554,22 +563,27 @@ export const BLACKSKY_WORKS_WITHOUT_PACK = 'WORKS WITHOUT A SAVED PACK';
 export const ABOUT_COOEEE = 'About Cooeee';
 export const COOEEE_INFO_LINES = [
   {
+    glyph: 'what',
     lead: 'What it is.',
     text: 'Cooeee is a small app for people who live where bushfires happen. It gathers official information about the places you choose and keeps it on your phone.',
   },
   {
+    glyph: 'why',
     lead: 'Why it exists.',
     text: 'When a fire comes, the power and the signal often go first. Information that was only online is gone at the moment it matters most.',
   },
   {
+    glyph: 'does',
     lead: 'What it does.',
     text: 'Build an offline pack for an address. Find the nearest official places from where you stand. Hold for BlackSky, the dark screen that points the way when nothing else works.',
   },
   {
+    glyph: 'not',
     lead: 'What it does not do.',
     text: 'It does not watch conditions and it never contacts you. VicEmergency and emergency services tell you when to act.',
   },
   {
+    glyph: 'stays',
     lead: 'Where your information stays.',
     text: 'On this phone. Your address is checked against Victorian Government data and Cooeee runs no server that could keep it.',
   },

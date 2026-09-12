@@ -1,4 +1,5 @@
 import * as copy from '../core/copy';
+import Glyph from './components/Glyph';
 
 /** What Cooeee is, on one card, in the same led lines as the BlackSky panel on
  *  the home screen. Reached from the bottom bar on every screen. Nothing here
@@ -11,7 +12,8 @@ export default function About() {
         <ul className="info-lines">
           {copy.COOEEE_INFO_LINES.map((line) => (
             <li key={line.lead}>
-              <b>{line.lead}</b> {line.text}
+              <Glyph kind={line.glyph} />
+              <span><b>{line.lead}</b> {line.text}</span>
             </li>
           ))}
         </ul>

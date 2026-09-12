@@ -6,6 +6,7 @@ import { readKept } from '../core/kept';
 import { unsavedKept } from '../core/recover';
 import { localFlagStore } from '../data/acknowledgement';
 import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
+import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
 import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
@@ -16,8 +17,8 @@ import { startTour } from './components/Tour';
  *
  *  Every saved pack, newest first, each card the way into its pack; then the
  *  control that builds one more, and the BlackSky control with the ring that
- *  says what BlackSky is. It reads IndexedDB and nothing else: no request is
- *  made here in any state, and no position is asked for. */
+ *  says what BlackSky is. It reads IndexedDB, asks for no position, and makes
+ *  no request other than a kept program's page copy from the precache. */
 export default function Home({ now }: { now?: number }) {
   // null = the store has not answered yet.
   // It answers in a frame or two from local IndexedDB, and
@@ -35,8 +36,13 @@ export default function Home({ now }: { now?: number }) {
   // shows the current count.
   const [unsaved, setUnsaved] = useState(0);
   const load = async () => {
+    const kept = readKept(localFlagStore());
+    // Every saved pack mirrors the kept list first, so a program kept since the
+    // last visit is in the packs before anything here is counted. The one
+    // request this can make is a page copy, served from the precache.
+    await syncKeptIntoPacks(kept).catch(() => {});
     const [rows, saved] = await Promise.all([listCompletePacks(), listSavedProgramIds()]);
-    return { rows, unsaved: unsavedKept(readKept(localFlagStore()), saved).length };
+    return { rows, unsaved: unsavedKept(kept, saved).length };
   };
 
   useEffect(() => {

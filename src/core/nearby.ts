@@ -46,7 +46,7 @@ export type NearbyRow = {
   timestamp: string | null;
   note: string | null;
 };
-export type NearbyGroup = { heading: string; note: string; rows: NearbyRow[] };
+export type NearbyGroup = { kind: 'bushfire' | 'relief'; heading: string; note: string; rows: NearbyRow[] };
 export type NearbyView = { groups: NearbyGroup[]; health: string[] };
 
 /** The device has something to answer from once either bundle has ever landed. */
@@ -225,11 +225,13 @@ export function nearbyView(
   return {
     groups: [
       {
+        kind: 'bushfire',
         heading: copy.GROUP_BUSHFIRE,
         note: copy.GROUP_BUSHFIRE_NOTE,
         rows: STATIC_TYPES.map((type) => staticRow(now, origin, cache, session, type)),
       },
       {
+        kind: 'relief',
         heading: copy.GROUP_RELIEF,
         note: copy.GROUP_RELIEF_NOTE,
         rows: DYNAMIC_TYPES.map((type) => dynamicRow(now, origin, cache, session, type)),

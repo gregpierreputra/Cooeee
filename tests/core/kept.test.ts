@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { FlagStore } from '../../src/core/acknowledgement';
 import { KEPT_KEY, KEPT_MAX } from '../../src/core/constants';
-import { pruneKept, readKept, toggleKept } from '../../src/core/kept';
+import { pruneKept, readKept, toggleKept, writeKept } from '../../src/core/kept';
 
 const memoryStore = (seed: Record<string, string> = {}): FlagStore => ({
   getItem: (key) => seed[key] ?? null,
@@ -26,6 +26,12 @@ describe('kept programs', () => {
     expect(toggleKept(store, kept, 'a')).toEqual([]);
     const full = Array.from({ length: KEPT_MAX }, (_, i) => `p${i}`);
     expect(toggleKept(store, full, 'new')).toEqual([...full.slice(1), 'new']);
+  });
+
+  it('writes the whole list at once, capped', () => {
+    const store = memoryStore();
+    writeKept(store, ['a', 'b']);
+    expect(readKept(store)).toEqual(['a', 'b']);
   });
 
   it('drops the ids a new snapshot no longer holds', () => {
