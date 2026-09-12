@@ -66,7 +66,7 @@ type ConflictState =
 type OfferState =
   | { kind: 'building' }
   | { kind: 'ready'; offer: PackOffer; content: TextPackContent; files: PackFile[] }
-  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[] };
+  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[]; ticked: string[] };
 
 /** E2-US1/US2: the official places of last resort for the confirmed place,
  * read from the precached CFA snapshot. Nothing here is written to the device. */
@@ -292,7 +292,7 @@ export function Search({
       const offer = await buildOffer(content, files);
       setOfferState({ kind: 'ready', offer, content, files });
     } catch {
-      setOfferState({ kind: 'failed', result, destinations });
+      setOfferState({ kind: 'failed', result, destinations, ticked });
     }
   }
 
@@ -405,7 +405,7 @@ export function Search({
                     pendingPlace,
                     offerState.result,
                     offerState.destinations,
-                    readKept(localFlagStore()),
+                    offerState.ticked,
                   )
                 }
               >
@@ -435,17 +435,20 @@ export function Search({
   // The note step, after the places and before the size. The example names the
   // nearest chosen place, so the note is about this pack from the first word.
   // The programs step, after the note: the ticks become the kept list, so
-  // every pack mirrors the same choice; the opt-out carries none for now.
+  // every pack mirrors the same choice. Not now leaves the list as it is and
+  // the pack carries what is kept, exactly as Home would make it.
   if (pendingPlace && areaState?.kind === 'result' && chosenPlaces && programs) {
     const { result } = areaState;
+    const kept = readKept(localFlagStore());
     return (
       <Programs
         programs={programs}
-        kept={readKept(localFlagStore())}
+        kept={kept}
         onContinue={(ticked) => {
-          if (ticked.length > 0) writeKept(localFlagStore(), ticked);
+          writeKept(localFlagStore(), ticked);
           void buildPackOfferForResult(pendingPlace, result, chosenPlaces, ticked);
         }}
+        onSkip={() => void buildPackOfferForResult(pendingPlace, result, chosenPlaces, kept)}
       />
     );
   }

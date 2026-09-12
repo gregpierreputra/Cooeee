@@ -1,48 +1,39 @@
 import { keptDiff, packProgramsFor } from '../core/recover';
 import { exactTextBytes } from '../core/pack-offer';
-import type { Pack, PackFile, PackProgram } from '../core/types';
+import type { Pack, PackFile } from '../core/types';
 import { db, listCompletePacks } from './db';
 import { fileMeta, manifestGroup } from './integrity';
-import { loadSourceFiles } from './source-files';
-import sources from './sources.json';
+import { hasRenderedCopy, loadSourceFiles } from './source-files';
 
 // Every complete pack mirrors the kept list: keeping a program adds its row and
 // the copy of its page to each pack, releasing removes them, and the pack's
 // manifest and stated size are rewritten with the rows in one transaction.
 
-const rendered = (url: string) => sources.some((source) => source.url === url);
-
-/** The page copies for the programs joining a pack. One page that cannot be
- *  read leaves only that program without a copy, as at pack build. */
-async function pageCopies(packId: string, rows: PackProgram[]): Promise<PackFile[]> {
-  const files = await Promise.all(
-    rows
-      .filter((row) => rendered(row.officialUrl))
-      .map((row) => loadSourceFiles(packId, [row.officialUrl]).catch(() => [])),
-  );
-  return files.flat();
-}
-
 async function syncPack(pack: Pack, kept: readonly string[]): Promise<void> {
   const have = await db.packPrograms.where('packId').equals(pack.id).toArray();
   const diff = keptDiff(have.map((row) => row.programId), kept);
-  if (diff.add.length === 0 && diff.remove.length === 0) return;
-
   const programs = await db.programs.toArray();
-  const added = packProgramsFor(pack.id, programs, diff.add);
-  const rows = [...have.filter((row) => !diff.remove.includes(row.programId)), ...added];
-  const keptUrls = new Set(rows.map((row) => row.officialUrl));
-  const removedUrls = have
-    .filter((row) => diff.remove.includes(row.programId))
-    .map((row) => row.officialUrl)
-    .filter((url) => !keptUrls.has(url));
+  const rows = [
+    ...have.filter((row) => !diff.remove.includes(row.programId)),
+    ...packProgramsFor(pack.id, programs, diff.add),
+  ];
   const [layers, destinations, stored] = await Promise.all([
     db.layers.where('packId').equals(pack.id).toArray(),
     db.destinations.where('packId').equals(pack.id).toArray(),
     db.files.where('packId').equals(pack.id).toArray(),
   ]);
-  const addedFiles = await pageCopies(pack.id, added);
-  const files = [...stored.filter((file) => !removedUrls.includes(file.url)), ...addedFiles];
+
+  // The page copies the pack is missing, one per page whatever shares it. A
+  // copy that could not be read this visit is asked for again next visit.
+  const keptUrls = new Set(rows.map((row) => row.officialUrl));
+  const missing = [...keptUrls].filter((url) => hasRenderedCopy(url) && !stored.some((file) => file.url === url));
+  if (diff.add.length === 0 && diff.remove.length === 0 && missing.length === 0) return;
+  const added: PackFile[] = await loadSourceFiles(pack.id, missing).catch(() => []);
+  const removedUrls = have
+    .filter((row) => diff.remove.includes(row.programId))
+    .map((row) => row.officialUrl)
+    .filter((url) => !keptUrls.has(url));
+  const files = [...stored.filter((file) => !removedUrls.includes(file.url)), ...added];
 
   // Hashed before the write: a hash awaited inside a Dexie transaction would
   // commit it early. The pack row is rewritten with its rows in one transaction.
@@ -65,10 +56,12 @@ async function syncPack(pack: Pack, kept: readonly string[]): Promise<void> {
   };
 
   await db.transaction('rw', [db.packs, db.packPrograms, db.files], async () => {
+    // A pack deleted or superseded since it was read gets no orphan rows.
+    if ((await db.packs.get(pack.id))?.status !== 'complete') return;
     await db.packPrograms.where('packId').equals(pack.id).filter((row) => diff.remove.includes(row.programId)).delete();
-    await db.packPrograms.bulkAdd(added);
+    await db.packPrograms.bulkPut(rows);
     await db.files.where('packId').equals(pack.id).filter((file) => removedUrls.includes(file.url)).delete();
-    await db.files.bulkAdd(addedFiles);
+    await db.files.bulkPut(added);
     await db.packs.update(pack.id, update);
   });
 }

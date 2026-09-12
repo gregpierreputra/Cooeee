@@ -8,12 +8,13 @@ type ProgramsProps = {
   programs: RecoveryProgram[];
   kept: readonly string[];
   onContinue: (ids: string[]) => void;
+  onSkip: () => void;
 };
 
 /** E4-US8: the programs step of the pack wizard, after the note. The kept
  *  programs start ticked; the ticks become the kept list and the pack carries
- *  them with their page copies. The opt-out builds the pack without any. */
-export function Programs({ programs, kept, onContinue }: ProgramsProps) {
+ *  them with their page copies. Not now changes nothing and builds on. */
+export function Programs({ programs, kept, onContinue, onSkip }: ProgramsProps) {
   const [ticked, setTicked] = useState<string[]>(kept.filter((id) => programs.some((p) => p.id === id)));
   const toggle = (id: string) =>
     setTicked(ticked.includes(id) ? ticked.filter((t) => t !== id) : [...ticked, id]);
@@ -49,7 +50,7 @@ export function Programs({ programs, kept, onContinue }: ProgramsProps) {
         <button className="main-action" type="button" onClick={() => onContinue(ticked)}>
           {copy.CARRY_PROGRAMS(ticked.length)}
         </button>
-        <button type="button" onClick={() => onContinue([])}>{copy.CHOOSE_LATER}</button>
+        <button type="button" onClick={onSkip}>{copy.CHOOSE_LATER}</button>
       </div>
     </main>
   );

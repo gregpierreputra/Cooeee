@@ -125,6 +125,9 @@ async function renderPdf(url, mustContain, name) {
 /** Render one page and register its copy. */
 async function render(url, name, mustContain) {
   const pdf = await renderPdf(url, mustContain, name);
+  // The service worker precaches these; a copy past its 2 MiB limit would be
+  // dropped without a word, so it fails here instead.
+  if (pdf.length >= 2_097_152) throw new Error(`${name}: ${pdf.length} bytes is past the precache limit`);
   const file = `${name}.v${date}.pdf`;
   writeFileSync(new URL(`sources/${file}`, dataDir), pdf);
   // The fingerprint travels with the register, so the app can refuse a copy

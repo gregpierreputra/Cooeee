@@ -42,6 +42,9 @@ async function readSourceFile(packId: string, url: string): Promise<PackFile> {
   };
 }
 
+/** Did the build render a copy of this page? */
+export const hasRenderedCopy = (url: string): boolean => sources.some((source) => source.url === url);
+
 /** The copies of the given pages, ready to be written with the pack. Nothing
  *  is written to the device here. */
 export const loadSourceFiles = (packId: string, urls: string[]): Promise<PackFile[]> =>
@@ -57,7 +60,7 @@ export async function loadPackFiles(packId: string, content: TextPackContent): P
   // the build could not render leaves that program with its web link only.
   const programPages = content.recovery
     .map((program) => program.officialUrl)
-    .filter((url) => sources.some((source) => source.url === url));
+    .filter(hasRenderedCopy);
   const [pages, map] = await Promise.all([
     loadSourceFiles(packId, [...new Set([...sourcePageUrls(content), ...programPages])]),
     loadAreaMap(packId, content.pack).catch(() => null),
