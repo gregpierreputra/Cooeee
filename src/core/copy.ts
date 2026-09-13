@@ -1142,3 +1142,19 @@ export const RESULT_DRY_RUN = 'This was a dry run: you ended it without going.';
 /** [DRAFT] pending Sharon's copy review. Her time, in whole minutes. */
 export const DURATION_UNDER_A_MINUTE = 'less than a minute';
 export const DURATION_MINUTES = (minutes: number) => (minutes === 1 ? '1 minute' : `${minutes} minutes`);
+
+// ── E5-US1-AC5 her note about the way ─────────────────────────────────────
+// Offered on the result after a walked rehearsal only, and never required. It
+// is saved as an ordinary note in this pack, under the same rule as every note,
+// so BlackSky reads it back without a connection. Saving reuses SAVE_NOTE,
+// NOTE_SAVED, NOTE_EMPTY and NOTE_CHANGE_FAILED. All [DRAFT] pending Sharon's
+// copy review.
+
+/** [DRAFT] pending Sharon's copy review. */
+export const WAY_NOTE_HEADING = 'What you learnt about the way';
+/** [DRAFT] pending Sharon's copy review. Says it is optional, what it is for,
+ *  and where it goes. */
+export const WAY_NOTE_DETAIL =
+  "If you like, write what the app cannot tell you: the turns, what you met on the way, what you would do differently. It is kept with this pack's notes, which BlackSky shows you without a connection.";
+/** [DRAFT] pending Sharon's copy review. */
+export const WAY_NOTE_LABEL = 'Your note about the way';

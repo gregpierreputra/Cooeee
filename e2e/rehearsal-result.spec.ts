@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { rehearseToResult, storedRehearsals } from './helpers';
+import { rehearseToResult, storedNotes, storedRehearsals } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 /** A pack holding the whole journey: a designation and an official place. */
@@ -455,5 +455,98 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
     const text = (await progress.innerText()).toLowerCase();
     expect(text).not.toMatch(/minute|walked|dry run|took you|without going|faster|slower|longer|shorter/);
     expect(text.replace(/\d{1,2} [a-z]+ \d{4}/g, '')).not.toMatch(/\d/);
+  });
+});
+
+// E5-US1-AC5, step 3 — her note about the way, into this pack's personal note.
+// It is offered after a walked rehearsal only, never required, and saved as an
+// ordinary note in this pack, her words alone, so BlackSky reads it back on the
+// day. That read-back is proven over the data layer BlackSky loads from, in
+// tests/data/db.test.ts: this harness mounts one screen at a time.
+test.describe('AC5 her note about the way', () => {
+  const WAY_NOTE_HEADING = 'What you learnt about the way';
+  const WAY_NOTE_LABEL = 'Your note about the way';
+  const WORDS = 'Left at the church, not the second gate.\nThe footbridge floods — use the road.';
+  const field = (page: Page) => page.getByLabel(WAY_NOTE_LABEL);
+  const saveControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Save', exact: true });
+
+  test('is offered after a walked rehearsal, and not after a dry run', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    await expect(page.getByRole('heading', { name: WAY_NOTE_HEADING })).toBeVisible();
+    await expect(field(page)).toBeVisible();
+    await expect(field(page)).toHaveValue('');
+    // After the gaps, never among them.
+    await expect(page.locator('.gap-list').getByLabel(WAY_NOTE_LABEL)).toHaveCount(0);
+
+    await rehearseToResult(page, NO_FIX, WITH_GAP);
+    await expect(page.getByRole('heading', { name: 'What this rehearsal found' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: WAY_NOTE_HEADING })).toHaveCount(0);
+    await expect(field(page)).toHaveCount(0);
+  });
+
+  test('is never required: leaving without writing keeps no note', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    await expect(field(page)).toBeVisible();
+    await page.getByRole('button', { name: 'Leave the rehearsal' }).click();
+    await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
+    expect(await storedNotes(page)).toEqual([]);
+  });
+
+  test('saves her words unchanged as one ordinary pack note, and changes nothing on the result', async ({
+    page,
+  }) => {
+    await rehearseToResult(page, NO_FIX, `${ORIGIN}/rehearse?mode=gap&earlier=changed`, 'I have arrived');
+    await expect(page.locator('.progress')).toBeVisible();
+    const gapsBefore = await page.locator('.gap-row h3').allInnerTexts();
+    const progressBefore = await page.locator('.progress').innerText();
+    await expect.poll(async () => (await storedRehearsals(page)).find((row) => row.ending === 'walked')).toBeTruthy();
+    const rehearsalBefore = (await storedRehearsals(page)).find((row) => row.ending === 'walked')!;
+
+    await field(page).fill(WORDS);
+    await saveControl(page).click();
+    await expect(page.getByText('Note saved.')).toBeVisible();
+
+    await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
+    const [note] = await storedNotes(page);
+    // An ordinary note: the store's own shape, this pack, her words exactly.
+    expect(Object.keys(note).sort()).toEqual(['id', 'packId', 'text', 'updatedAt']);
+    expect(note.packId).toBe('rehearse-pack');
+    expect(note.text).toBe(WORDS);
+    expect(typeof note.updatedAt).toBe('number');
+    // Her words alone: no mark that a rehearsal produced it, in the text or the id.
+    expect(String(note.text)).not.toMatch(/rehears/i);
+    expect(String(note.id)).not.toContain(String(rehearsalBefore.id));
+
+    // It changes no gap, no comparison, and not the rehearsal's own record.
+    expect(await page.locator('.gap-row h3').allInnerTexts()).toEqual(gapsBefore);
+    expect(await page.locator('.progress').innerText()).toBe(progressBefore);
+    expect((await storedRehearsals(page)).find((row) => row.id === rehearsalBefore.id)).toEqual(rehearsalBefore);
+
+    // Saving again after a change rewrites the same note rather than adding one.
+    await field(page).fill(`${WORDS}\nCarry water.`);
+    await saveControl(page).click();
+    await expect.poll(async () => (await storedNotes(page))[0]?.text).toBe(`${WORDS}\nCarry water.`);
+    expect(await storedNotes(page)).toHaveLength(1);
+    expect((await storedNotes(page))[0].id).toBe(note.id);
+  });
+
+  test('an empty note writes nothing, and says so', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    await field(page).fill('   ');
+    await saveControl(page).click();
+    await expect(page.getByText('Write something before saving.')).toBeVisible();
+    await page.waitForTimeout(300);
+    expect(await storedNotes(page)).toEqual([]);
+  });
+
+  // WCAG 1.3.1 and 2.5.8.
+  test('the field is labelled, and its one control meets the minimum target size', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    await expect(field(page)).toHaveAccessibleName(WAY_NOTE_LABEL);
+    const box = await saveControl(page).boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(24);
+    expect(box!.height).toBeGreaterThanOrEqual(24);
   });
 });

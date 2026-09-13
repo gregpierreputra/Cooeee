@@ -228,6 +228,24 @@ describe('deleteCompletePack', () => {
   });
 });
 
+// E5-US1-AC5 — her note about the way is an ordinary pack note, and the read
+// BlackSky loads brings it back.
+describe('a note about the way, written after a rehearsal', () => {
+  it('is stored as an ordinary note, her words kept, and read back by what BlackSky loads', async () => {
+    await db.packs.put(pack());
+    const words = 'Left at the church, not the second gate.\nThe footbridge floods — use the road.';
+    await putNote({ id: 'way-1', packId: 'pack-1', text: words, updatedAt: 1_756_100_900_000 });
+
+    expect(await db.notes.toArray()).toEqual([
+      { id: 'way-1', packId: 'pack-1', text: words, updatedAt: 1_756_100_900_000 },
+    ]);
+    const [loaded] = await listCompletePacksWithPlaces();
+    expect(loaded.notes.map((note) => note.text)).toEqual([words]);
+    // It belongs to the pack: no rehearsal record is written or touched by it.
+    expect(await db.rehearsals.count()).toBe(0);
+  });
+});
+
 describe('putNote', () => {
   const note = { id: 'n1', packId: 'done', text: ' Meet at the gate. ', updatedAt: 5 };
 

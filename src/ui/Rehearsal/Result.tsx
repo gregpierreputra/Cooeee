@@ -14,7 +14,9 @@ import {
   saveFinishedRehearsal,
   undoActionDone,
 } from '../../data/db';
+import { offersWayNote } from '../../core/rehearsal-note';
 import ProgressView from './Progress';
+import WayNote from './WayNote';
 
 type ResultProps = {
   run: RehearsalRun;
@@ -145,6 +147,8 @@ export default function Result({
         {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
         <p>{result.detail}</p>
         <ProgressView progress={progress} />
+        {/* E5-US1-AC5: after a walked rehearsal only, her optional note about the way. */}
+        {offersWayNote(finished) ? <WayNote packId={finished.packId} /> : null}
       </>
     );
   }
@@ -187,6 +191,10 @@ export default function Result({
           </li>
         ))}
       </ul>
+
+      {/* E5-US1-AC5: after a walked rehearsal only, her optional note about the
+          way. After the gaps, and never among them. */}
+      {offersWayNote(finished) ? <WayNote packId={finished.packId} /> : null}
     </>
   );
 }

@@ -102,11 +102,13 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
 
   // Choosing a condition is setup, not commitment (E5-US1-AC5): it writes
   // nothing at all. "I'm going now" keeps the started rehearsal, and ending it
-  // records it over that same row (E5-US2-AC1). That one record is the ONLY
-  // thing a rehearsal may write. Nothing about the pack is touched: a rehearsal
-  // reads the pack and reports on it, and must never alter what it is reporting
-  // on.
-  test('choosing writes nothing at all, and the rehearsal writes only its own record', async ({ page }) => {
+  // records it over that same row (E5-US2-AC1). A rehearsal writes that one
+  // record, and a note only if she writes one after walking (the test below).
+  // Nothing about the pack is otherwise touched: a rehearsal reads the pack and
+  // reports on it, and must never alter what it is reporting on.
+  test('choosing writes nothing at all, and a rehearsal without a note writes only its own record', async ({
+    page,
+  }) => {
     await page.goto(REHEARSABLE);
     // The baseline is taken AFTER the screen is up: the harness seeds the pack
     // on load, so sampling earlier would compare against a half-seeded device
@@ -135,6 +137,44 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     expect(after.recordCounts).toEqual({ ...before.recordCounts, rehearsals: 1 });
     expect(after.localStorageLength).toBe(before.localStorageLength);
     expect(after.sessionStorageLength).toBe(before.sessionStorageLength);
+  });
+
+  // E5-US1-AC5, step 3. After a walked rehearsal she may write a note about the
+  // way. Without one, the device is unchanged beyond the one record; with one,
+  // exactly one note row is added, and nothing else.
+  test('a walked rehearsal writes its own record, and exactly one note row only if she writes one', async ({
+    page,
+  }) => {
+    await page.goto(REHEARSABLE);
+    await expect(page.getByRole('heading', { name: HEADING })).toBeVisible();
+    const before = await deviceStorage(page);
+    expect(before.recordCounts.rehearsals).toBe(0);
+
+    await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
+    await page.getByRole('main').getByRole('button', { name: GO, exact: true }).click();
+    await page.getByRole('main').getByRole('button', { name: 'I have arrived', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Nothing was missing in this rehearsal' })).toBeVisible();
+    await expect(page.getByLabel('Your note about the way')).toBeVisible();
+    await expect.poll(async () => (await deviceStorage(page)).recordCounts.rehearsals).toBe(1);
+    await expect.poll(async () => typeof (await storedRehearsals(page))[0]?.finishedAt).toBe('number');
+
+    // Without a note: nothing beyond the one record, given time for a late write.
+    await page.waitForTimeout(500);
+    expect(await deviceStorage(page)).toEqual({
+      ...before,
+      recordCounts: { ...before.recordCounts, rehearsals: 1 },
+    });
+
+    // With a note: exactly one note row added, and nothing else.
+    await page.getByLabel('Your note about the way').fill('The gate by the oval is locked after dark.');
+    await page.getByRole('main').getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText('Note saved.')).toBeVisible();
+    await expect.poll(async () => (await deviceStorage(page)).recordCounts.notes).toBe(before.recordCounts.notes + 1);
+    await page.waitForTimeout(500);
+    expect(await deviceStorage(page)).toEqual({
+      ...before,
+      recordCounts: { ...before.recordCounts, rehearsals: 1, notes: before.recordCounts.notes + 1 },
+    });
   });
 });
 
