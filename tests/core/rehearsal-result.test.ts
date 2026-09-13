@@ -24,6 +24,13 @@ const persistentGap: DetectedGap = {
   hazard: 'bushfire',
 };
 
+/** A rehearsal she walked, taking fourteen minutes and twenty seconds. */
+const walked: Partial<Rehearsal> = {
+  ending: 'walked',
+  elapsedMs: 14 * 60_000 + 20_000,
+  finishedAt: 1_756_100_000_000 + 14 * 60_000 + 20_000,
+};
+
 describe('a result with gaps', () => {
   // TC-5.2.1-A
   it('gives every gap exactly one action', () => {
@@ -70,6 +77,28 @@ describe('a result with gaps', () => {
     ).toBe('Rehearsed without a location fix.');
   });
 
+  // E5-US1-AC5. Beside the condition line, a fact about this rehearsal.
+  it('states how the rehearsal ended, beside the condition, in each of the three states', () => {
+    ([[packContentGap], []] as DetectedGap[][]).forEach((gaps) => {
+      expect(rehearsalResult(rehearsal(gaps, walked)).endingLine).toBe(
+        'You walked it. It took you 14 minutes.',
+      );
+      expect(rehearsalResult(rehearsal(gaps, { ending: 'dry-run' })).endingLine).toBe(
+        'This was a dry run: you ended it without going.',
+      );
+      // A rehearsal recorded before the endings existed.
+      expect(rehearsalResult(rehearsal(gaps)).endingLine).toBe(copy.ENDING_NOT_RECORDED);
+    });
+  });
+
+  it('changes no gap, no action and no verdict, whichever ending it had', () => {
+    const gaps = [packContentGap, persistentGap];
+    const withoutEnding = rehearsalResult(rehearsal(gaps));
+    [rehearsalResult(rehearsal(gaps, walked)), rehearsalResult(rehearsal(gaps, { ending: 'dry-run' }))].forEach(
+      (result) => expect({ ...result, endingLine: '' }).toEqual({ ...withoutEnding, endingLine: '' }),
+    );
+  });
+
   it('keeps the rows in the order the run found them', () => {
     const result = rehearsalResult(rehearsal([persistentGap, packContentGap]));
     if (result.state !== 'gaps') throw new Error('expected gaps');
@@ -106,7 +135,15 @@ describe('a result never marks the reader', () => {
   const everyState = [
     rehearsalResult(rehearsal([packContentGap, persistentGap])),
     rehearsalResult(rehearsal([])),
+    rehearsalResult(rehearsal([packContentGap, persistentGap], walked)),
+    rehearsalResult(rehearsal([], walked)),
+    rehearsalResult(rehearsal([persistentGap], { ending: 'dry-run' })),
   ];
+  /** Every sentence of a result other than how it ended. */
+  const wordsOf = (result: ReturnType<typeof rehearsalResult>) =>
+    result.state === 'gaps'
+      ? [result.conditionLine, ...result.rows.flatMap((row) => [row.hazardLine, row.title, row.meaning, row.action])]
+      : [result.conditionLine, result.heading, result.detail];
 
   it('carries no total, count, percentage, score or grade in its shape', () => {
     everyState.forEach((result) => {
@@ -117,21 +154,22 @@ describe('a result never marks the reader', () => {
     });
   });
 
-  it('carries no total, count, percentage, score or grade in its words', () => {
-    const everyString = everyState
-      .flatMap((result) =>
-        result.state === 'gaps'
-          ? [result.conditionLine, ...result.rows.flatMap((row) => [row.hazardLine, row.title, row.meaning, row.action])]
-          : [result.conditionLine, result.heading, result.detail],
-      )
-      .join(' ');
+  it('carries no total, count, percentage, score or grade in its words, and no figure but her time', () => {
+    const everyString = everyState.flatMap((result) => [...wordsOf(result), result.endingLine]).join(' ');
 
     expect(everyString).not.toMatch(
       /\b\d+ (of|out of|gaps?|items?|checks?)\b|\b\d+%|\bscore\b|\bgrade\b|\btotal\b|\bpassed\b|\bfailed\b|\bpass\b|\bfail\b/i,
     );
-    // No bare digit anywhere: a number on this screen is a number the reader
-    // would count with.
-    expect(everyString).not.toMatch(/\d/);
+    // A digit appears only inside her own recorded time. Anywhere else, a number
+    // on this screen would be a number the reader counts with.
+    everyState.forEach((result) => {
+      expect(wordsOf(result).join(' ')).not.toMatch(/\d/);
+      expect(result.endingLine.replace('14 minutes', '')).not.toMatch(/\d/);
+    });
+    // So the rule cannot pass by accident: a walked result carries a digit, and
+    // a dry run carries none.
+    expect(everyState[2].endingLine).toMatch(/\d/);
+    expect(everyState[4].endingLine).not.toMatch(/\d/);
   });
 
   it('says nothing about the reader at all', () => {
@@ -141,6 +179,10 @@ describe('a result never marks the reader', () => {
       copy.NO_GAPS_HEADING,
       copy.NO_GAPS_DETAIL(copy.CONDITION_NO_DATA_WITHOUT),
       copy.ACTION_LABEL,
+      copy.RESULT_WALKED(copy.DURATION_MINUTES(14)),
+      copy.RESULT_WALKED_NO_TIME,
+      copy.RESULT_DRY_RUN,
+      copy.ENDING_NOT_RECORDED,
     ].join(' ');
     expect(everyString).not.toMatch(/\bunprepared\b|\byou (are|aren't) (ready|prepared)\b/i);
   });

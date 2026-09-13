@@ -525,13 +525,16 @@ test.describe('AC5 the two endings', () => {
   });
 });
 
-// Her time is hers. The app holds it and says nothing about it.
-test('AC5 her time is held and never judged: nothing about it on the result or the progress view', async ({
+// Her time is hers. Since step 4 the result states it once, in whole minutes,
+// beside the condition line; nothing judges it, and the progress view carries
+// none of it.
+test('AC5 her time is stated once, in whole minutes, never judged, and never on the progress view', async ({
   page,
 }) => {
+  await page.clock.install();
   await choose(page, NO_FIX, `${ORIGIN}/rehearse?mode=gap&earlier=changed`);
   await go(page);
-  await page.waitForTimeout(1100);
+  await page.clock.fastForward('14:20');
   await endingControl(page, ARRIVED).click();
 
   await expect(page.getByRole('heading', { name: RESULT_HEADING })).toBeVisible();
@@ -539,21 +542,27 @@ test('AC5 her time is held and never judged: nothing about it on the result or t
   await expect(progress).toBeVisible();
   await expect
     .poll(async () => (await storedRehearsals(page)).find((row) => row.ending === 'walked')?.elapsedMs)
-    .toBeGreaterThan(1000);
+    .toBeGreaterThanOrEqual(14 * 60_000 + 20_000);
   const elapsed = String((await storedRehearsals(page)).find((row) => row.ending === 'walked')!.elapsedMs);
 
   const text = (await main(page).innerText()).toLowerCase();
+  // The recorded figure itself is never shown: only its whole minutes, once.
   expect(text).not.toContain(elapsed);
-  // No duration in any form, and no word that rates one. The bare word "time"
-  // is not in this list: the progress view's existing heading "Not found last
-  // time" uses it for an occasion, not a duration.
-  expect(text).not.toMatch(/\b\d+\s*(ms|s|secs?|seconds?|mins?|minutes?|h|hrs?|hours?)\b/);
+  const line = 'you walked it. it took you 14 minutes.';
+  expect(text.split(line).length - 1).toBe(1);
+  // Nowhere else on the result is a duration, and nothing anywhere rates one.
+  // The bare word "time" is not in this list: the progress view's existing
+  // heading "Not found last time" uses it for an occasion, not a duration.
+  const rest = text.replace(line, '');
+  expect(rest).not.toMatch(/\b\d+\s*(ms|s|secs?|seconds?|mins?|minutes?|h|hrs?|hours?)\b/);
+  expect(rest).not.toMatch(/\b(your time|time taken|took|minutes?|mins?|hours?)\b/);
   expect(text).not.toMatch(
-    /\b(your time|time taken|took|minutes?|mins?|seconds?|secs?|hours?|elapsed|fast|faster|slow|slower|quick|quicker|target|pace|personal best)\b/,
+    /\b(seconds?|secs?|elapsed|fast|faster|slow|slower|quick|quicker|target|pace|personal best|your best)\b/,
   );
-  // The progress view carries no figure but its dates.
+  // The progress view carries no figure but its dates, and nothing of her time.
   const progressText = (await progress.innerText()).toLowerCase();
   expect(progressText.replace(/\d{1,2} [a-z]+ \d{4}/g, '')).not.toMatch(/\d/);
+  expect(progressText).not.toMatch(/minute|walked|took/);
 });
 
 // How it is worded matters more here than anywhere else.

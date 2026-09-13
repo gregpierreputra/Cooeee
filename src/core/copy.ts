@@ -1123,3 +1123,22 @@ export const ENDING_DRY_RUN_DETAIL = 'I ended it without going.';
  *  and never a default to either ending. */
 export const ENDING_NOT_RECORDED =
   'Whether this rehearsal was walked or a dry run was not recorded, so it cannot be said either way.';
+
+// ── E5-US1-AC5 the result says how the rehearsal ended ────────────────────
+// Beside the condition line, a fact about this rehearsal. Her time is shown in
+// whole minutes, never seconds, with nothing to measure it against: no target,
+// no fast or slow, no best. A dry run is stated as the kind of rehearsal it is.
+// A rehearsal with no ending recorded is stated by ENDING_NOT_RECORDED above.
+
+/** [DRAFT] pending Sharon's copy review. A walked rehearsal, and how long it took her. */
+export const RESULT_WALKED = (duration: string) => `You walked it. It took you ${duration}.`;
+/** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
+ *  kept with it. Every walk ended on the journey screen keeps one; this covers a
+ *  stored record that does not. */
+export const RESULT_WALKED_NO_TIME = 'You walked it.';
+/** [DRAFT] pending Sharon's copy review. A dry run, stated plainly, as a kind of
+ *  rehearsal and not a lesser one. */
+export const RESULT_DRY_RUN = 'This was a dry run: you ended it without going.';
+/** [DRAFT] pending Sharon's copy review. Her time, in whole minutes. */
+export const DURATION_UNDER_A_MINUTE = 'less than a minute';
+export const DURATION_MINUTES = (minutes: number) => (minutes === 1 ? '1 minute' : `${minutes} minutes`);

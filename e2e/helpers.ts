@@ -133,8 +133,14 @@ export async function rehearseToResult(
   condition: string,
   url?: string,
   ending: 'I have arrived' | 'End without going' = 'End without going',
+  /** How long she was out, as mm:ss, without the spec waiting it out: the page
+   *  clock is installed before the page loads and moved on between going and
+   *  ending. Pass with `url`. */
+  walkFor?: string,
 ) {
+  if (walkFor) await page.clock.install();
   await startJourney(page, condition, url);
+  if (walkFor) await page.clock.fastForward(walkFor);
   await page.getByRole('main').getByRole('button', { name: ending, exact: true }).click();
   await expect(
     page.getByRole('main').getByRole('heading', {

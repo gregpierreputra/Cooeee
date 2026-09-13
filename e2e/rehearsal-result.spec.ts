@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { rehearseToResult } from './helpers';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { rehearseToResult, storedRehearsals } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 /** A pack holding the whole journey: a designation and an official place. */
@@ -10,6 +10,10 @@ const WITH_GAP = `${ORIGIN}/rehearse?mode=gap`;
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
 const CHOOSE_HEADING = 'What are we rehearsing without?';
+
+/** E5-US1-AC5: how the rehearsal ended, beside the condition line. */
+const WALKED_LINE = 'You walked it. It took you 14 minutes.';
+const DRY_RUN_LINE = 'This was a dry run: you ended it without going.';
 
 const PACK_CONTENT_MEANING = 'This information is missing from your pack.';
 const CONDITION_MEANING =
@@ -92,23 +96,40 @@ test('AC1 no location fix always finds something, so it never reaches the no-gap
   ).toHaveCount(0);
 });
 
-// TC-5.2.1-E. The one thing this screen must never do.
+// TC-5.2.1-E. The one thing this screen must never do. The rule is that nothing
+// counts, totals, scores or grades, and nothing is a verdict about her. Since
+// E5-US1-AC5 the result also states her own time if she walked, so a digit is
+// allowed in exactly two places: inside that recorded time, and inside a date.
 test.describe('AC1 a result never marks the reader', () => {
-  for (const [name, url, condition] of [
-    ['gaps found', WITH_GAP, NO_FIX],
-    ['nothing found', WHOLE, NO_DATA],
+  for (const [name, url, condition, ending] of [
+    ['gaps found, walked', WITH_GAP, NO_FIX, 'walked'],
+    ['gaps found, a dry run', WITH_GAP, NO_FIX, 'dry-run'],
+    ['nothing found, walked', WHOLE, NO_DATA, 'walked'],
+    ['nothing found, a dry run', WHOLE, NO_DATA, 'dry-run'],
   ] as const) {
-    test(`${name}: no total, count, percentage, grade or verdict`, async ({ page }) => {
-      await rehearseToResult(page, condition, url);
+    test(`${name}: no total, count, percentage, grade or verdict, and no figure but her time or a date`, async ({
+      page,
+    }) => {
+      if (ending === 'walked') await rehearseToResult(page, condition, url, 'I have arrived', '14:20');
+      else await rehearseToResult(page, condition, url);
 
       const text = (await page.locator('main').innerText()).toLowerCase();
       ['score', 'grade', 'total', 'passed', 'failed', 'pass', 'fail', '%', 'out of'].forEach(
         (word) => expect(text, `found "${word}"`).not.toContain(word),
       );
-      // No bare digit: a number on this screen is a number the reader counts with.
-      expect(text).not.toMatch(/\d/);
-      // And no verdict about the person.
+      // No verdict about the person.
       expect(text).not.toMatch(/\bunprepared\b|\byou are (ready|prepared)\b/);
+
+      // The only digits on the result sit inside her own recorded time or a date.
+      const endingLine = (ending === 'walked' ? WALKED_LINE : DRY_RUN_LINE).toLowerCase();
+      expect(text).toContain(endingLine);
+      const rest = text.replace(endingLine, '').replace(/\d{1,2} [a-z]+ \d{4}/g, '');
+      expect(rest).not.toMatch(/\d/);
+
+      // So the rule cannot pass by accident: a walked result does carry a digit,
+      // and a dry run carries none at all.
+      if (ending === 'walked') expect(text).toMatch(/\d/);
+      else expect(text).not.toMatch(/\d/);
     });
   }
 });
@@ -293,4 +314,146 @@ test('AC1 a completion adds no total, count or verdict', async ({ page }) => {
     (word) => expect(text, `found "${word}"`).not.toContain(word),
   );
   expect(text).not.toMatch(/\bunprepared\b|\byou are (ready|prepared)\b/);
+});
+
+// E5-US1-AC5, step 4 — the result states which ending the rehearsal had, and her
+// time if she walked. Beside the condition line: a fact about this rehearsal,
+// above the gaps and never among them, and never in the progress view.
+//
+// The third state, no ending recorded, cannot reach this screen: every result
+// now comes from a run that ended one of the two ways, on the journey screen or
+// in answer to the question after a cold start. It belongs to rehearsals stored
+// before the endings existed, and is specified over the model this screen
+// renders, in tests/core/rehearsal-result.test.ts and rehearsal-ending.test.ts.
+test.describe('AC5 the result says how the rehearsal ended', () => {
+  const position = (locator: Locator) =>
+    locator.evaluate((el) => Array.from(document.querySelectorAll('*')).indexOf(el));
+
+  test('walked: that she went and how long it took her, beside the condition and above the gaps', async ({
+    page,
+  }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived', '14:20');
+
+    const line = page.getByText(WALKED_LINE, { exact: true });
+    await expect(line).toBeVisible();
+    await expect
+      .poll(async () => (await storedRehearsals(page))[0]?.elapsedMs)
+      .toBeGreaterThanOrEqual(14 * 60_000 + 20_000);
+    // In whole minutes: the seconds she walked are nowhere on the screen.
+    await expect(page.locator('main')).not.toContainText('second');
+
+    // Straight after the condition line, and before the progress view and the gaps.
+    const condition = await position(page.getByText('Rehearsed without a location fix.', { exact: true }));
+    const ending = await position(line);
+    expect(ending).toBe(condition + 1);
+    expect(ending).toBeLessThan(await position(page.locator('.progress')));
+    expect(ending).toBeLessThan(await position(page.locator('.gap-row').first()));
+    await expect(page.locator('.gap-list')).not.toContainText('walked');
+    await expect(page.locator('.progress')).not.toContainText('walked');
+  });
+
+  test('walked, with nothing missing: the no-gaps screen states it the same way, in the same place', async ({
+    page,
+  }) => {
+    await rehearseToResult(page, NO_DATA, WHOLE, 'I have arrived', '14:20');
+
+    await expect(page.getByRole('heading', { name: 'Nothing was missing in this rehearsal' })).toBeVisible();
+    const line = page.getByText(WALKED_LINE, { exact: true });
+    await expect(line).toBeVisible();
+    const condition = await position(page.getByText('Rehearsed without mobile data.', { exact: true }));
+    const ending = await position(line);
+    expect(ending).toBe(condition + 1);
+    expect(ending).toBeLessThan(await position(page.getByText('That is what was checked, on this pack, today.')));
+  });
+
+  test('two walks a few seconds apart read the same', async ({ page, context }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived', '14:20');
+    await expect(page.getByText(WALKED_LINE, { exact: true })).toBeVisible();
+    await expect.poll(async () => (await storedRehearsals(page))[0]?.elapsedMs).toBeGreaterThan(0);
+    const first = (await storedRehearsals(page))[0].elapsedMs as number;
+
+    const other = await context.newPage();
+    await rehearseToResult(other, NO_FIX, WITH_GAP, 'I have arrived', '14:27');
+    await expect(other.getByText(WALKED_LINE, { exact: true })).toBeVisible();
+    await expect.poll(async () => (await storedRehearsals(other))[0]?.elapsedMs).toBeGreaterThan(0);
+    const second = (await storedRehearsals(other))[0].elapsedMs as number;
+
+    // Genuinely different times, and the same words.
+    expect(second - first).toBeGreaterThanOrEqual(5_000);
+    await expect(page.getByText(WALKED_LINE, { exact: true })).toBeVisible();
+  });
+
+  test('a dry run: that she ended it without going, plainly, with no time and no figure', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP);
+
+    const line = page.getByText(DRY_RUN_LINE, { exact: true });
+    await expect(line).toBeVisible();
+    const words = (await line.innerText()).toLowerCase();
+    expect(words).not.toMatch(/\d/);
+    expect(words).not.toMatch(/\b(partial|incomplete|so far|only|just|merely|not a real|instead)\b/);
+
+    await expect.poll(async () => (await storedRehearsals(page))[0]?.ending).toBe('dry-run');
+    expect((await storedRehearsals(page))[0]).not.toHaveProperty('elapsedMs');
+    await expect(page.locator('main')).not.toContainText('minute');
+
+    const condition = await position(page.getByText('Rehearsed without a location fix.', { exact: true }));
+    expect(await position(line)).toBe(condition + 1);
+  });
+
+  // WCAG 1.4.1. With every colour removed only the words are left.
+  test('both lines read the same in greyscale, and are told apart by their words alone', async ({
+    page,
+    context,
+  }) => {
+    const read = async (target: Page, ending: 'I have arrived' | 'End without going') => {
+      if (ending === 'I have arrived') await rehearseToResult(target, NO_FIX, WITH_GAP, ending, '14:20');
+      else await rehearseToResult(target, NO_FIX, WITH_GAP, ending);
+      const line = target.getByText(ending === 'I have arrived' ? WALKED_LINE : DRY_RUN_LINE, { exact: true });
+      await expect(line).toBeVisible();
+      const words = await line.innerText();
+
+      await target.addStyleTag({ content: 'html { filter: grayscale(1) !important; }' });
+      expect(await target.evaluate(() => getComputedStyle(document.documentElement).filter)).toBe('grayscale(1)');
+      await expect(line).toBeVisible();
+      expect(await line.innerText()).toBe(words);
+      await expect(line.locator('svg, img, [role="img"]')).toHaveCount(0);
+
+      const treatment = (locator: Locator) =>
+        locator.evaluate((el) => {
+          const style = getComputedStyle(el);
+          return [
+            el.tagName,
+            el.className,
+            style.color,
+            style.backgroundColor,
+            style.fontWeight,
+            style.fontStyle,
+            style.textDecorationLine,
+          ].join('|');
+        });
+      return {
+        ending: await treatment(line),
+        condition: await treatment(target.getByText('Rehearsed without a location fix.', { exact: true })),
+      };
+    };
+
+    const walked = await read(page, 'I have arrived');
+    const dryRun = await read(await context.newPage(), 'End without going');
+    // Nothing but the words sets them apart: the same treatment as each other,
+    // and as the condition line beside them.
+    expect(walked.ending).toBe(dryRun.ending);
+    expect(walked.ending).toBe(walked.condition);
+  });
+
+  test('the progress view carries no time, no trend and no ending', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, `${ORIGIN}/rehearse?mode=gap&earlier=changed`, 'I have arrived', '14:20');
+
+    const progress = page.locator('.progress');
+    await expect(progress).toBeVisible();
+    await expect(page.getByText(WALKED_LINE, { exact: true })).toBeVisible();
+
+    const text = (await progress.innerText()).toLowerCase();
+    expect(text).not.toMatch(/minute|walked|dry run|took you|without going|faster|slower|longer|shorter/);
+    expect(text.replace(/\d{1,2} [a-z]+ \d{4}/g, '')).not.toMatch(/\d/);
+  });
 });

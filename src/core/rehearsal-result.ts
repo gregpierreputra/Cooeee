@@ -8,6 +8,7 @@
 
 import * as copy from './copy';
 import { conditionWithout } from './rehearsal-condition';
+import { endingLine as statedEnding, endingOf } from './rehearsal-ending';
 import { actionFor } from './rehearsal-actions';
 import { formatSavedDate } from './provenance';
 import type {
@@ -37,12 +38,15 @@ export type GapRow = {
   doneOn: string | null;
 };
 
+/** `endingLine` (E5-US1-AC5) is how the rehearsal ended, stated beside the
+ *  condition line: a fact about this rehearsal, above the gaps and never among
+ *  them. It changes no row and reaches no verdict. */
 export type RehearsalResult =
-  | { state: 'gaps'; conditionLine: string; rows: GapRow[] }
+  | { state: 'gaps'; conditionLine: string; endingLine: string; rows: GapRow[] }
   /** Its own designed screen, never an empty list. Only reachable after a
    *  no-data run on a complete pack: under no location fix the contingency gap
    *  always fires, so that condition can never produce this state. */
-  | { state: 'no-gaps'; conditionLine: string; heading: string; detail: string };
+  | { state: 'no-gaps'; conditionLine: string; endingLine: string; heading: string; detail: string };
 
 const rowFor = (detected: DetectedGap, doneAt: number | undefined): GapRow => {
   const action = actionFor(detected);
@@ -73,11 +77,13 @@ export function rehearsalResult(
 ): RehearsalResult {
   const without = conditionWithout(rehearsal.condition);
   const conditionLine = copy.RESULT_CONDITION_LINE(without);
+  const endingLine = statedEnding(endingOf(rehearsal));
 
   if (rehearsal.gaps.length === 0) {
     return {
       state: 'no-gaps',
       conditionLine,
+      endingLine,
       heading: copy.NO_GAPS_HEADING,
       detail: copy.NO_GAPS_DETAIL(without),
     };
@@ -94,6 +100,7 @@ export function rehearsalResult(
   return {
     state: 'gaps',
     conditionLine,
+    endingLine,
     rows: rehearsal.gaps.map((detected) =>
       rowFor(detected, doneAt.get(actionFor(detected).actionId)),
     ),

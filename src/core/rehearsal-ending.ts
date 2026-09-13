@@ -61,12 +61,30 @@ export const unfinishedView = (unfinished: UnfinishedRehearsal): UnfinishedView 
 /** The ending a finished rehearsal had. Three answers, and the third is not a
  *  polite version of either of the others: not knowing is its own state, the
  *  same shape as the pack change in rehearsal-progress.ts. */
-export type Ending = { state: 'walked' } | { state: 'dry-run' } | { state: 'not-recorded' };
+export type Ending =
+  /** `elapsedMs` is her recorded time, where a real one was kept. */
+  | { state: 'walked'; elapsedMs?: number }
+  | { state: 'dry-run' }
+  | { state: 'not-recorded' };
 
 export function endingOf(rehearsal: Rehearsal): Ending {
-  return isRehearsalEnding(rehearsal.ending)
-    ? { state: rehearsal.ending }
-    : { state: 'not-recorded' };
+  if (!isRehearsalEnding(rehearsal.ending)) return { state: 'not-recorded' };
+  if (rehearsal.ending === 'dry-run') return { state: 'dry-run' };
+  const kept = rehearsal.elapsedMs;
+  return typeof kept === 'number' && Number.isFinite(kept) && kept >= 0
+    ? { state: 'walked', elapsedMs: kept }
+    : { state: 'walked' };
+}
+
+const MS_PER_MINUTE = 60_000;
+
+/** Her time, in whole minutes. Under a minute is said as such and never counted
+ *  in seconds, so two walks a few seconds apart read the same and nothing here
+ *  invites a closer look. The nearest minute, with no rounding in her favour or
+ *  against it. */
+export function durationWords(elapsedMs: number): string {
+  if (elapsedMs < MS_PER_MINUTE) return copy.DURATION_UNDER_A_MINUTE;
+  return copy.DURATION_MINUTES(Math.round(elapsedMs / MS_PER_MINUTE));
 }
 
 /** The two endings as the journey screen offers them while the rehearsal runs,
@@ -98,13 +116,17 @@ export function endingRecord(
     : { finishedAt: endedAt, ending };
 }
 
-/** How an ending is stated. */
+/** How an ending is stated on the result, beside the condition line. Her time is
+ *  stated and never judged: nothing beside it, nothing to measure it against,
+ *  and no bearing on any gap. */
 export function endingLine(ending: Ending): string {
   switch (ending.state) {
     case 'walked':
-      return copy.ENDING_WALKED;
+      return ending.elapsedMs === undefined
+        ? copy.RESULT_WALKED_NO_TIME
+        : copy.RESULT_WALKED(durationWords(ending.elapsedMs));
     case 'dry-run':
-      return copy.ENDING_DRY_RUN;
+      return copy.RESULT_DRY_RUN;
     case 'not-recorded':
       return copy.ENDING_NOT_RECORDED;
   }

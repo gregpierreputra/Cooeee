@@ -139,6 +139,9 @@ export default function Result({
       <>
         <h2>{result.heading}</h2>
         <p className="muted">{result.conditionLine}</p>
+        {/* E5-US1-AC5: how it ended, beside the condition. A fact about this
+            rehearsal, stated once, and never measured against anything. */}
+        <p className="muted">{result.endingLine}</p>
         {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
         <p>{result.detail}</p>
         <ProgressView progress={progress} />
@@ -150,6 +153,8 @@ export default function Result({
     <>
       <h2>{copy.RESULT_HEADING}</h2>
       <p className="muted">{result.conditionLine}</p>
+      {/* E5-US1-AC5: how it ended, beside the condition and above the gaps. */}
+      <p className="muted">{result.endingLine}</p>
       {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
       <ProgressView progress={progress} />
 
