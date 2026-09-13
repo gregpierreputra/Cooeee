@@ -296,3 +296,34 @@ describe('progress is never a score', () => {
     expect(words).not.toMatch(/\bmore prepared\b|\bwell done\b|\bprogress\b|\bon track\b/i);
   });
 });
+
+// E5-US1-AC5. Her time is held with a walked rehearsal and never judged: it is
+// not on the progress view, and nothing on it is derived from it.
+describe('a walked rehearsal on the progress view', () => {
+  it('carries no time, and comes out exactly as it would without one', () => {
+    const earlier = rehearsal({
+      id: 'earlier',
+      startedAt: MARCH_3 - 900_000,
+      finishedAt: MARCH_3,
+      ending: 'walked',
+      elapsedMs: 900_000,
+    });
+    const latest = rehearsal({
+      id: 'latest',
+      startedAt: APRIL_1 - 600_000,
+      finishedAt: APRIL_1,
+      ending: 'walked',
+      elapsedMs: 600_000,
+    });
+    const progress = rehearsalProgress(latest, earlier, [completion()]);
+
+    expect(JSON.stringify(progress)).not.toMatch(/elapsed|900000|600000|minute|second|fast|slow/i);
+    expect(progress).toEqual(
+      rehearsalProgress(
+        { ...latest, ending: undefined, elapsedMs: undefined },
+        { ...earlier, ending: undefined, elapsedMs: undefined },
+        [completion()],
+      ),
+    );
+  });
+});

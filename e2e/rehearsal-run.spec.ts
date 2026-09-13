@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { deviceStorage, storedRehearsals } from './helpers';
+import { deviceStorage, startJourney, storedRehearsals } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 const REHEARSABLE = `${ORIGIN}/rehearse?mode=rehearsable`;
@@ -17,12 +17,9 @@ const CHOOSE_HEADING = 'What are we rehearsing without?';
 
 const bar = (page: Page) => page.locator('.rehearsal-bar');
 
-/** Start a run by choosing a condition, exactly as a user does. */
+/** Start a run exactly as a user does: choose a condition, then go (E5-US1-AC5). */
 async function startRun(page: Page, condition: string) {
-  await page.goto(REHEARSABLE);
-  await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
-  await page.getByRole('button', { name: new RegExp(condition) }).click();
-  await expect(bar(page)).toBeVisible();
+  await startJourney(page, condition, REHEARSABLE);
 }
 
 // E5-US1-AC2 — a rehearsal is never mistaken for the real thing.
@@ -95,6 +92,11 @@ test.describe('AC2 the bar marks the run', () => {
     await page.goto(REHEARSABLE);
     await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
     // Not yet running: nothing has been chosen, so there is no condition to name.
+    await expect(bar(page)).toHaveCount(0);
+
+    // Chosen and not yet gone on: setup, not a run (E5-US1-AC5), so still no bar.
+    await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
+    await expect(page.getByRole('heading', { name: 'Rehearse the way on foot' })).toBeVisible();
     await expect(bar(page)).toHaveCount(0);
   });
 
@@ -174,10 +176,7 @@ test.describe('AC3 leaving and coming back', () => {
 /** Start a run on a device that keeps what it stores, wait until the start is
  *  kept, then close and reopen the app. */
 async function coldStartMidRun(page: Page, condition: string) {
-  await page.goto(KEEP_REHEARSABLE);
-  await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
-  await page.getByRole('button', { name: new RegExp(condition) }).click();
-  await expect(bar(page)).toBeVisible();
+  await startJourney(page, condition, KEEP_REHEARSABLE);
   await expect.poll(async () => (await deviceStorage(page)).recordCounts.rehearsals).toBe(1);
   await page.reload();
 }
@@ -196,8 +195,12 @@ test.describe('AC3 a cold start', () => {
     expect(before.recordCounts.rehearsals).toBe(0);
 
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
+    // Chosen, not gone: nothing is kept yet (E5-US1-AC5).
+    await expect(page.getByRole('heading', { name: 'Rehearse the way on foot' })).toBeVisible();
+    expect((await deviceStorage(page)).recordCounts.rehearsals).toBe(0);
+    await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
     await expect(bar(page)).toBeVisible();
-    // Kept the moment it starts.
+    // Kept the moment she goes.
     await expect.poll(async () => (await deviceStorage(page)).recordCounts.rehearsals).toBe(1);
 
     // The app is closed and reopened.
@@ -312,6 +315,13 @@ test.describe('AC5 returning asks how it ended', () => {
         ending,
       });
       expect(rows[0].finishedAt as number).toBeGreaterThanOrEqual(started.startedAt as number);
+      // A walked rehearsal keeps the time between its start and her answer; a
+      // dry run keeps none.
+      if (ending === 'walked') {
+        expect(rows[0].elapsedMs).toBe((rows[0].finishedAt as number) - (started.startedAt as number));
+      } else {
+        expect(rows[0]).not.toHaveProperty('elapsedMs');
+      }
 
       // Answered, so it is not asked again.
       await page.reload();

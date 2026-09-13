@@ -1,6 +1,6 @@
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation } from 'react-router';
 
 import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
@@ -687,6 +687,14 @@ const harnessButtonStyle = {
   cursor: 'pointer',
 } as const;
 
+/** Harness furniture: where the in-memory router is, so a spec can see a control
+ *  navigate — the journey screen's hold goes to /blacksky — without the harness
+ *  growing routes of its own. */
+function LocationProbe() {
+  const { pathname } = useLocation();
+  return <span data-testid="location">{pathname}</span>;
+}
+
 function RehearsalHarness() {
   const [mounted, setMounted] = useState(true);
   return (
@@ -694,6 +702,7 @@ function RehearsalHarness() {
       {mounted ? <RehearsalEntry packId="rehearse-pack" now={rehearseNow} /> : null}
       <div style={harnessStyle} data-harness="true">
         <span>test harness</span>
+        <LocationProbe />
         <button
           type="button"
           data-testid="remount"

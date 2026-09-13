@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../core/rehearsal-entry';
+import type { RehearsalCondition } from '../../core/rehearsal-condition';
 import { isRunFor } from '../../core/rehearsal-run';
 import type { UnfinishedRehearsal } from '../../core/types';
 import { findUnfinishedRehearsal, readRehearsalSource } from '../../data/db';
 import Condition from './Condition';
+import { JourneyBefore, JourneyRunning } from './Journey';
 import Result from './Result';
 import Run from './Run';
 import Unfinished from './Unfinished';
-import Walk from './Walk';
-import { useRehearsalRun, useWalkPosition } from './run-state';
+import { useRehearsalRun } from './run-state';
 import StatusPage from '../components/StatusPage';
 
 type EntryProps = {
@@ -48,7 +49,10 @@ export default function RehearsalEntry({
   // A run in progress, if there is one. Dies with the page, so a cold start
   // finds none.
   const run = useRehearsalRun();
-  const position = useWalkPosition();
+  // E5-US1-AC5 — the condition she has chosen and not yet gone on. Setup, not
+  // commitment: held by this screen alone, never written and never held beyond
+  // it, so a curious tap leaves nothing behind once she leaves the screen.
+  const [chosen, setChosen] = useState<RehearsalCondition | null>(null);
   // E5-US1-AC5 — a kept rehearsal still waiting for its ending. Read whenever no
   // run is in memory: on opening, and again when a run ends, so leaving a run
   // without an ending comes straight back to the question. undefined = not read
@@ -95,25 +99,29 @@ export default function RehearsalEntry({
   // case the user is coming back to it and it continues, bar and condition
   // intact. Leaving the screen never asked the rehearsal to end, so it did not.
   //
-  // E5-US1-AC5 — a run walks the pack, then BlackSky, before its result. The
-  // position is held with the run, so coming back resumes the step it was on.
+  // E5-US1-AC5 — the rehearsal is the journey. A running one shows the journey
+  // screen, with the bar, until she gives it an ending; then the result.
   //
   // With no run in memory, a kept rehearsal that has no ending is asked about
   // before anything else: a new one cannot start over the top of it, and it is
-  // never resumed as though it were still running.
+  // never resumed as though it were still running. After that, a condition
+  // chosen and not yet gone on; and after that, the choice itself.
   if (gate.state === 'ready') {
     if (isRunFor(run, gate.packId) && run !== null) {
       return (
         <Run run={run}>
-          {position === 'result' ? <Result run={run} /> : <Walk run={run} step={position} />}
+          {run.ending ? <Result run={run} /> : <JourneyRunning run={run} />}
         </Run>
       );
     }
     if (unfinished === undefined) return null;
-    return unfinished !== null && unfinished.packId === gate.packId ? (
-      <Unfinished rehearsal={unfinished} />
+    if (unfinished !== null && unfinished.packId === gate.packId) {
+      return <Unfinished rehearsal={unfinished} />;
+    }
+    return chosen !== null ? (
+      <JourneyBefore packId={gate.packId} condition={chosen} onGone={() => setChosen(null)} />
     ) : (
-      <Condition packId={gate.packId} />
+      <Condition packId={gate.packId} onChoose={setChosen} />
     );
   }
 

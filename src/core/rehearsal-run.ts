@@ -33,6 +33,9 @@ export type RehearsalRun = {
    *  resumed from an unfinished rehearsal by her answer, and recorded with the
    *  finished rehearsal. Never filled in by the app. */
   ending?: RehearsalEnding;
+  /** The moment she gave that ending. What is recorded as the rehearsal's end,
+   *  so a result screen that remounts cannot move it. */
+  endedAt?: number;
 };
 
 /** What the bar states, as two separate strings.

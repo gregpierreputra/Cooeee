@@ -989,10 +989,8 @@ export const GAP_HAZARD_LINE = (hazard: string) => `${hazard} journey`;
 
 // The two kinds, told apart by these words and by nothing else.
 export const GAP_MEANING_PACK_CONTENT = 'This information is missing from your pack.';
-/** The condition sentence in its two halves (E5-US1-AC5). A walk step states the
- *  fact alone: the actions live on the result, so the second half would promise
- *  something not yet on screen. The wording is unchanged and the joined sentence
- *  is byte-identical, so the result reads exactly as it did. */
+/** The condition sentence in its two halves. The wording is unchanged and the
+ *  joined sentence is byte-identical, so the result reads exactly as it did. */
 export const GAP_MEANING_CONDITION_FACT = 'This is not available under this condition.';
 export const GAP_MEANING_CONDITION_NEXT = 'Here is what to do instead.';
 export const GAP_MEANING_CONDITION = `${GAP_MEANING_CONDITION_FACT} ${GAP_MEANING_CONDITION_NEXT}`;
@@ -1070,27 +1068,37 @@ export const PACK_CHANGED_ON = (date: string) =>
 export const PACK_CHANGE_UNKNOWN =
   'Whether the pack changed between these two rehearsals was not recorded, so it cannot be said either way.';
 
-// ── E5-US1-AC5 the rehearsal walks the journey ────────────────────────────
-// Two steps, the pack then BlackSky, before the result. The step headings reuse
-// YOUR_PACK and BLACKSKY_TITLE, and the hold reuses HOLD_FOR_BLACKSKY and
-// HOLD_TO_ENTER, so a step cannot drift from the real screen's wording. A gap on
-// a step uses the result's own sentences. Held is the exact mirror of its gap,
-// so the two states are told apart in words with every colour stripped out
-// [WCAG 1.4.1].
+// ── E5-US1-AC5 the journey: a walk to know the way ────────────────────────
+// The rehearsal is the journey itself. These words ask her to walk to one of the
+// official places saved with this pack, on foot, in calm conditions, with
+// BlackSky open, and say what that is for: knowing the way. None of them treats
+// a place as where she plans to go on the day, and none of them rates the walk:
+// no time to beat, no fast or slow, nothing to pass. The place list reuses
+// GAP_PLACES as its heading and GAP_MEANING_PACK_CONTENT when there is none; the
+// hold reuses HOLD_FOR_BLACKSKY and HOLD_TO_ENTER; the day's priority reuses
+// OFFICIAL_INSTRUCTIONS_FIRST. All new strings below are [DRAFT] pending
+// Sharon's copy review.
 
-/** [DRAFT] pending Sharon's copy review. Where the reader is in the walk. It
- *  counts steps, never steps passed. */
-export const STEP_OF = (n: number, total: number) => `Step ${n} of ${total}`;
-/** [DRAFT] pending Sharon's copy review. The mirror of GAP_MEANING_PACK_CONTENT. */
-export const STEP_HELD_PACK_CONTENT = 'This information is in your pack.';
-/** [DRAFT] pending Sharon's copy review. The mirror of GAP_MEANING_CONDITION_FACT.
- *  Takes the condition's without-form (conditionWithout), never its row title. */
-export const STEP_HELD_CONDITION = (without: string) => `This still works without ${without}.`;
-/** [DRAFT] pending Sharon's copy review. Says what the hold on the first step
- *  does in a rehearsal: it moves the walk on, and opens nothing real. */
-export const NEXT_STEP = 'Next step';
-/** [DRAFT] pending Sharon's copy review. The way from the last step to the result. */
-export const SEE_WHAT_IT_FOUND = 'See what it found';
+/** [DRAFT] Before she goes. */
+export const JOURNEY_BEFORE_HEADING = 'Rehearse the way on foot';
+/** [DRAFT] Takes the condition's without-form (conditionWithout). */
+export const JOURNEY_CONDITION_LINE = (without: string) => `This rehearsal is without ${without}.`;
+/** [DRAFT] What a rehearsal is. */
+export const JOURNEY_WHAT_IT_IS =
+  'A rehearsal is a walk to one of the official places saved with this pack, on foot, in calm conditions, with BlackSky open.';
+/** [DRAFT] What it is for, and what it is not. */
+export const JOURNEY_WHAT_IT_IS_FOR =
+  'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.';
+/** [DRAFT] The one control before she goes. It is the commitment. */
+export const I_AM_GOING_NOW = "I'm going now";
+/** [DRAFT] While she is out. */
+export const JOURNEY_RUNNING_HEADING = 'Practising the way';
+/** [DRAFT] What to do while she is out. */
+export const JOURNEY_RUNNING_DETAIL =
+  'Go to one of these places on foot, in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
+/** [DRAFT] The two endings on the journey screen, as the criterion names them. */
+export const ENDING_ARRIVED = 'I have arrived';
+export const ENDING_WITHOUT_GOING = 'End without going';
 
 // ── E5-US1-AC5 a started rehearsal is kept, and only she says how it ended ──
 // A rehearsal started and never given an ending is asked about, never guessed

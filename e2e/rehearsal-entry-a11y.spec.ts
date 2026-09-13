@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { rehearseToResult } from './helpers';
+import { rehearseToResult, startJourney } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 /** The heading is the first thing in the card, and every state has one. */
@@ -390,10 +390,7 @@ test('AC1 the condition rows are the same height, at normal type and at 200%', a
 // measured here is contrast, reflow at 200% and the target size of the one
 // control the run offers.
 const startRunFor = async (page: import('@playwright/test').Page, condition: string) => {
-  await page.goto(`${ORIGIN}/rehearse?mode=rehearsable`);
-  await page.getByRole('heading', { name: 'What are we rehearsing without?' }).waitFor();
-  await page.getByRole('button', { name: new RegExp(condition) }).click();
-  await page.locator('.rehearsal-bar').waitFor();
+  await startJourney(page, condition, `${ORIGIN}/rehearse?mode=rehearsable`);
 };
 
 test('AC2 the bar and the run meet the contrast minimum on every element', async ({ page }) => {

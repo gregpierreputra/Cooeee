@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { deviceStorage, rehearseToResult, storedRehearsals } from './helpers';
+import { deviceStorage, storedRehearsals } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 const REHEARSABLE = `${ORIGIN}/rehearse?mode=rehearsable`;
@@ -8,6 +8,10 @@ const EMPTY = `${ORIGIN}/rehearse?mode=empty`;
 const HEADING = 'What are we rehearsing without?';
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
+/** Each condition as it reads after "without". */
+const WITHOUT: Record<string, string> = { [NO_DATA]: 'mobile data', [NO_FIX]: 'a location fix' };
+const JOURNEY_HEADING = 'Rehearse the way on foot';
+const GO = "I'm going now";
 
 // E5-US1-AC1 — the user says what the rehearsal is run without.
 //
@@ -77,6 +81,12 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
       await page.goto(REHEARSABLE);
       await page.getByRole('button', { name: new RegExp(label) }).click();
 
+      // Chosen and not yet gone on (E5-US1-AC5): the journey screen names the
+      // chosen condition in words, and never the other.
+      await expect(page.getByText(`This rehearsal is without ${WITHOUT[label]}.`)).toBeVisible();
+      await expect(page.locator('main')).not.toContainText(`without ${WITHOUT[other]}`);
+      await page.getByRole('main').getByRole('button', { name: GO, exact: true }).click();
+
       // The chosen condition is carried onto the run, on the bar that marks it.
       await expect(page.locator('.rehearsal-bar-condition')).toHaveText(label);
       // The condition that was not chosen is nowhere: not on the bar, not
@@ -90,12 +100,13 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     });
   }
 
-  // Choosing a condition starts a rehearsal, which is kept from that moment
-  // (E5-US1-AC5), and finishing it records it over that same row (E5-US2-AC1).
-  // That one record is the ONLY thing the choice may write. Nothing about the
-  // pack is touched: a rehearsal reads the pack and reports on it, and must
-  // never alter what it is reporting on.
-  test('choosing writes nothing but the record of the rehearsal itself', async ({ page }) => {
+  // Choosing a condition is setup, not commitment (E5-US1-AC5): it writes
+  // nothing at all. "I'm going now" keeps the started rehearsal, and ending it
+  // records it over that same row (E5-US2-AC1). That one record is the ONLY
+  // thing a rehearsal may write. Nothing about the pack is touched: a rehearsal
+  // reads the pack and reports on it, and must never alter what it is reporting
+  // on.
+  test('choosing writes nothing at all, and the rehearsal writes only its own record', async ({ page }) => {
     await page.goto(REHEARSABLE);
     // The baseline is taken AFTER the screen is up: the harness seeds the pack
     // on load, so sampling earlier would compare against a half-seeded device
@@ -104,9 +115,16 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     const before = await deviceStorage(page);
     expect(before.recordCounts.rehearsals).toBe(0);
 
-    // Choosing starts the run. It finishes only once it has walked both steps
-    // to its result (E5-US1-AC5), so that is the whole of what is taken here.
-    await rehearseToResult(page, NO_DATA);
+    // Choosing: nothing at all, given time for a late write to land.
+    await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
+    await expect(page.getByRole('heading', { name: JOURNEY_HEADING })).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(await deviceStorage(page)).toEqual(before);
+
+    // Going, then ending: the one record.
+    await page.getByRole('main').getByRole('button', { name: GO, exact: true }).click();
+    await page.getByRole('main').getByRole('button', { name: 'End without going', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Nothing was missing in this rehearsal' })).toBeVisible();
     await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_DATA);
     // The started row and the finished one are the same row: one record, and it
     // has finished.
@@ -143,6 +161,8 @@ test('AC1 the choice renders with zero off-origin requests', async ({ page }) =>
   await page.goto(REHEARSABLE);
   await expect(page.getByRole('heading', { name: HEADING })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
+  await expect(page.getByRole('heading', { name: JOURNEY_HEADING })).toBeVisible();
+  await page.getByRole('main').getByRole('button', { name: GO, exact: true }).click();
   await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_FIX);
 
   expect(offOrigin).toEqual([]);

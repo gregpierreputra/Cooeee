@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE, GATE_KEY, GATE_VALUE, HOLD_MS } from '../src/core/constants';
+import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE, GATE_KEY, GATE_VALUE } from '../src/core/constants';
 
 /** The isolated component harness (e2e/harness), served on its own port. */
 export const HARNESS = 'http://127.0.0.1:4174';
@@ -109,32 +109,35 @@ export async function acknowledgeFirstOpen(page: Page) {
   ]);
 }
 
-/** E5-US1-AC5. A rehearsal as a reader takes it: the choice of condition, both
- *  steps of the walk, then the result. This is the one place the journey to a
- *  finished rehearsal is written down, so the next change to the flow is made
- *  here and in no spec. Harness pages only.
- *
- *  Pass `url` to open the choice first. Leave it out when the choice is already
- *  on screen, after a reload or after leaving a run. The walk's own behaviour is
- *  proven in rehearsal-walk.spec.ts; this only walks it. */
-export async function rehearseToResult(page: Page, condition: string, url?: string) {
+/** E5-US1-AC5. Start a rehearsal as a reader does: choose a condition, then
+ *  "I'm going now". The rehearsal is running and its bar is up. Harness pages
+ *  only. Pass `url` to open the choice first; leave it out when the choice is
+ *  already on screen. */
+export async function startJourney(page: Page, condition: string, url?: string) {
   if (url) await page.goto(url);
   await expect(page.getByRole('heading', { name: 'What are we rehearsing without?' })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(condition) }).click();
+  await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
   await expect(page.locator('.rehearsal-bar')).toBeVisible();
+}
 
-  const main = page.getByRole('main');
-  await expect(main.getByText('Step 1 of 2', { exact: true })).toBeVisible();
-  // The real control's two-second hold, held from the keyboard past two seconds.
-  await main.getByRole('button', { name: /Hold for BlackSky/ }).focus();
-  await page.keyboard.down('Enter');
-  await page.waitForTimeout(HOLD_MS + 500);
-  await page.keyboard.up('Enter');
-
-  await expect(main.getByText('Step 2 of 2', { exact: true })).toBeVisible();
-  await main.getByRole('button', { name: 'See what it found' }).click();
+/** E5-US1-AC5. A rehearsal as a reader takes it, to its result: the choice of
+ *  condition, the journey screen, "I'm going now", and one of the two endings.
+ *  This is the one place the journey to a finished rehearsal is written down, so
+ *  the next change to the flow is made here and in no spec. Both endings reach
+ *  the same result, so which one is given is the caller's to choose. The journey
+ *  screen's own behaviour is proven in rehearsal-journey.spec.ts; this only
+ *  takes it. */
+export async function rehearseToResult(
+  page: Page,
+  condition: string,
+  url?: string,
+  ending: 'I have arrived' | 'End without going' = 'End without going',
+) {
+  await startJourney(page, condition, url);
+  await page.getByRole('main').getByRole('button', { name: ending, exact: true }).click();
   await expect(
-    main.getByRole('heading', {
+    page.getByRole('main').getByRole('heading', {
       level: 2,
       name: /^(What this rehearsal found|Nothing was missing in this rehearsal)$/,
     }),

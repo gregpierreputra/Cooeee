@@ -437,6 +437,12 @@ export type Rehearsal = {
    *  existed carry none, and are reported as not recorded. A missing ending is
    *  never defaulted to either one. */
   ending?: RehearsalEnding;
+  /** On a walked rehearsal only: the time between startedAt and finishedAt, in
+   *  milliseconds, as it was. Held and never judged — no threshold, no target,
+   *  no fast or slow, no comparison with another time, and no bearing on any
+   *  gap. OPTIONAL: a dry run carries none, and nor does anything recorded
+   *  before it existed. */
+  elapsedMs?: number;
   /** The pack's own verifiedAt at the moment this rehearsal ran.
    *
    *  Two rehearsals whose values differ were run against different pack
@@ -469,6 +475,7 @@ export type UnfinishedRehearsal = {
   finishedAt?: never;
   gaps?: never;
   ending?: never;
+  elapsedMs?: never;
 };
 
 /** Everything the rehearsals store can hold. */

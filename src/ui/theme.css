@@ -2140,35 +2140,26 @@ input {
   margin-top: 0.5rem;
 }
 
-/* E5-US1-AC5 — the two steps of the walk. Every line identical, like the gap
-   rows: held and gap are told apart by the sentence each line carries and by
-   nothing else, so a greyscale screen reads exactly as a coloured one. */
-.walk-counter {
-  margin: 0;
+/* E5-US1-AC5 — the journey screen. The places sit in the card treatment the
+   rest of the pack uses. The two endings are identical controls of identical
+   weight, told apart by their words alone: neither reads as the expected one,
+   and a greyscale screen says which is which exactly as a coloured one does. */
+.journey-places > h3 {
+  font-size: var(--step-1);
+  margin: 1rem 0 0.5rem;
 }
 
-.walk-lines {
+.journey-place-list {
   gap: 0.75rem;
 }
 
-.walk-line > h3 {
-  font-size: var(--step-1);
+.journey-place-name {
+  font-weight: var(--w-bold);
   margin: 0;
 }
 
-.walk-line > p {
-  color: var(--ink);
-  margin: 0.25rem 0 0;
-}
-
-/* What the pack holds, above the sentence that says it holds. Set apart from
-   that sentence by its slant alone: the words, not the treatment, say whether a
-   line is held or a gap, and a gap line has no value at all. */
-.walk-value {
-  font-style: italic;
-}
-
-.walk-advance {
+.journey-go,
+.journey-endings .action {
   min-height: 44px;
 }
 

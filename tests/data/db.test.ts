@@ -550,6 +550,25 @@ describe('a started rehearsal is kept until she says how it ended', () => {
     expect((await findUnfinishedRehearsal('pack-1'))?.id).toBe('earlier');
   });
 
+  it('keeps a time only on a walked rehearsal, and only the time between its own start and end', async () => {
+    await saveFinishedRehearsal(finishedAs({ ending: 'walked', elapsedMs: 900_000 }));
+    expect((await listRehearsalsForPack('pack-1'))[0]).toMatchObject({ ending: 'walked', elapsedMs: 900_000 });
+
+    await expect(
+      saveFinishedRehearsal(finishedAs({ id: 'run-2', ending: 'dry-run', elapsedMs: 900_000 })),
+    ).rejects.toThrow(RangeError);
+    await expect(
+      saveFinishedRehearsal(finishedAs({ id: 'run-3', ending: 'walked', elapsedMs: 5 })),
+    ).rejects.toThrow(RangeError);
+    await expect(saveFinishedRehearsal(finishedAs({ id: 'run-4', elapsedMs: 900_000 }))).rejects.toThrow(
+      RangeError,
+    );
+    await expect(
+      saveStartedRehearsal({ ...started({ id: 'run-5' }), elapsedMs: 1 } as never),
+    ).rejects.toThrow(RangeError);
+    expect(await db.rehearsals.count()).toBe(1);
+  });
+
   it('goes when the pack it is about goes', async () => {
     await db.packs.put(pack());
     await saveStartedRehearsal(started());

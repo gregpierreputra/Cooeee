@@ -1,9 +1,6 @@
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
-import { conditionRows } from '../../core/rehearsal-condition';
-import { unfinishedFrom } from '../../core/rehearsal-ending';
-import { saveStartedRehearsal } from '../../data/db';
-import { startRun } from './run-state';
+import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
 
 /** E5-US1-AC1 — the user says what the rehearsal is run without.
  *
@@ -13,14 +10,20 @@ import { startRun } from './run-state';
  *  need a filled control on a screen that must not have one. Choosing is
  *  therefore the only way past this screen, and nothing is chosen until it is.
  *
+ *  Choosing is setup, not commitment (E5-US1-AC5): it writes nothing and starts
+ *  nothing. It hands the condition to the journey screen, where "I'm going now"
+ *  is what starts the rehearsal.
+ *
  *  Both rows are identical markup with identical weight. Nothing marks one as
  *  likelier, more realistic or more serious, and the row model carries no field
  *  that could. */
-export default function Condition({ packId }: { packId: string }) {
-  // The tap starts the run, and the run is held above this component (see
-  // run-state.ts) rather than in it: a rehearsal has to survive the user
-  // leaving this screen and coming back, which component state would not.
-  // Nothing is chosen until the tap, because there is no state here to default.
+export default function Condition({
+  packId,
+  onChoose,
+}: {
+  packId: string;
+  onChoose: (condition: RehearsalCondition) => void;
+}) {
   return (
     <main className="page rehearsal-condition">
       <span className="kicker">{copy.REHEARSAL_LABEL}</span>
@@ -36,14 +39,7 @@ export default function Condition({ packId }: { packId: string }) {
             <button
               type="button"
               className="candidate-action condition-action"
-              onClick={() => {
-                const run = startRun(packId, row.condition);
-                // E5-US1-AC5: kept on the device the moment it starts, so a cold
-                // start finds it and asks how it ended. If the device refuses
-                // the write, the run still goes ahead in memory, and a cold start
-                // then finds nothing to ask about: no ending is guessed either way.
-                saveStartedRehearsal(unfinishedFrom(run)).catch(() => undefined);
-              }}
+              onClick={() => onChoose(row.condition)}
             >
               <span className="condition-label">{row.label}</span>
               <span className="condition-detail">{row.detail}</span>

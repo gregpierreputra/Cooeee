@@ -1,28 +1,24 @@
 import { useSyncExternalStore } from 'react';
-import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { RehearsalCondition } from '../../core/rehearsal-condition';
+import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { RehearsalEnding, UnfinishedRehearsal } from '../../core/types';
-import { WALK_START, advanceWalk, type WalkPosition } from '../../core/rehearsal-walk';
 
 /** E5-US1-AC3, as amended by E5-US1-AC5 — where a running rehearsal is held.
  *
- *  The RUN is held here, in memory at module scope, so leaving the screen and
- *  coming back within the same session resumes it where it was: component state
- *  dies on unmount. The same latch pattern is used for the service-worker update
- *  flag in app.tsx and for the tour in components/Tour.tsx.
+ *  A rehearsal runs from "I'm going now" to the ending she gives it. The RUN is
+ *  held here, in memory at module scope, so leaving the screen — into BlackSky,
+ *  or anywhere — and coming back within the same session finds it still running:
+ *  component state would die on unmount. The same latch pattern is used for the
+ *  service-worker update flag in app.tsx and for the tour in components/Tour.tsx.
  *
- *  This value still dies with the document, so a closed and reopened app has no
- *  run: no bar, no resumed screen, no partial result. What survives is the
- *  REHEARSAL, kept on the device as an unfinished rehearsal from the moment it
- *  started (Condition.tsx). A cold start finds that and asks her how it ended;
- *  it never resumes a screen, and never decides the ending for her. */
+ *  A condition chosen and not yet gone on is NOT held here. It is setup, held by
+ *  the entry screen alone, so a curious tap leaves nothing behind.
+ *
+ *  This value dies with the document, so a closed and reopened app has no run:
+ *  no bar, no resumed screen, no partial result. What survives is the REHEARSAL,
+ *  kept on the device from the moment she went (Journey.tsx). A cold start finds
+ *  that and asks her how it ended; it never decides the ending for her. */
 let current: RehearsalRun | null = null;
-
-/** E5-US1-AC5 — where the run is in the walk. Held beside the run, not in it,
- *  and under the same rules: in memory only, so returning in the same session
- *  resumes the step, and a cold start has no step to find. It moves only through
- *  advanceWalk(), one step forward, so no step is reachable out of order. */
-let position: WalkPosition = WALK_START;
 
 const listeners = new Set<() => void>();
 
@@ -38,8 +34,9 @@ const subscribe = (listener: () => void) => {
 /** The run in progress, or null. Read directly by code that is not a component. */
 export const currentRun = (): RehearsalRun | null => current;
 
-/** Begin a run. Replaces any run already in progress rather than stacking one
- *  on it: a rehearsal is against one pack under one condition, always. */
+/** "I'm going now": begin the run. This moment is its start. Replaces any run
+ *  already in progress rather than stacking one on it: a rehearsal is against
+ *  one pack under one condition, always. */
 export function startRun(
   packId: string,
   condition: RehearsalCondition,
@@ -48,45 +45,42 @@ export function startRun(
 ): RehearsalRun {
   const run = { id, packId, condition, startedAt };
   current = run;
-  position = WALK_START;
   announce();
   return run;
+}
+
+/** She ends the running rehearsal with one of its two endings, now. Once given,
+ *  an ending and its moment do not change: a second tap cannot move either. */
+export function endWith(ending: RehearsalEnding, endedAt: number = Date.now()): void {
+  if (current === null || current.ending !== undefined) return;
+  current = { ...current, ending, endedAt };
+  announce();
 }
 
 /** Take up a kept unfinished rehearsal with the ending she gave it, at its
  *  result. The result records it finished, with that ending, over the kept row.
  *  The ending is hers: this is only ever called with her answer. */
-export function resumeWithEnding(unfinished: UnfinishedRehearsal, ending: RehearsalEnding): void {
+export function resumeWithEnding(
+  unfinished: UnfinishedRehearsal,
+  ending: RehearsalEnding,
+  endedAt: number = Date.now(),
+): void {
   current = {
     id: unfinished.id,
     packId: unfinished.packId,
     condition: unfinished.condition,
     startedAt: unfinished.startedAt,
     ending,
+    endedAt,
   };
-  position = 'result';
   announce();
 }
 
 /** End the run. The bar goes with it, everywhere, at once. */
 export function endRun(): void {
   current = null;
-  position = WALK_START;
   announce();
 }
-
-/** Where the run is in the walk. */
-export const currentWalkPosition = (): WalkPosition => position;
-
-/** Move the walk on by one step. The only way the position changes. */
-export function advanceWalkPosition(): void {
-  position = advanceWalk(position);
-  announce();
-}
-
-/** The walk position, as a component sees it. */
-export const useWalkPosition = (): WalkPosition =>
-  useSyncExternalStore(subscribe, currentWalkPosition, () => WALK_START);
 
 /** The run in progress, as a component sees it. Re-renders every screen of the
  *  run when the run starts or ends, so the bar can never be left behind on a

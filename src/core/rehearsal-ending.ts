@@ -69,6 +69,35 @@ export function endingOf(rehearsal: Rehearsal): Ending {
     : { state: 'not-recorded' };
 }
 
+/** The two endings as the journey screen offers them while the rehearsal runs,
+ *  in the present and in her words. The question asked after a cold start names
+ *  the same two endings looking back (endingRows). */
+export type JourneyEndingRow = { ending: RehearsalEnding; label: string };
+
+const JOURNEY_ENDING_LABEL: Record<RehearsalEnding, string> = {
+  walked: copy.ENDING_ARRIVED,
+  'dry-run': copy.ENDING_WITHOUT_GOING,
+};
+
+export const journeyEndingRows = (): JourneyEndingRow[] =>
+  REHEARSAL_ENDINGS.map((ending) => ({ ending, label: JOURNEY_ENDING_LABEL[ending] }));
+
+/** What an ending adds to the record: the ending she gave, the moment she gave
+ *  it, and — on a walked rehearsal only — the time between its start and that
+ *  moment. The time is carried exactly as it is: not rounded, rated, compared or
+ *  checked against anything. A dry run keeps no time. */
+export type EndingRecord = { finishedAt: number; ending: RehearsalEnding; elapsedMs?: number };
+
+export function endingRecord(
+  startedAt: number,
+  ending: RehearsalEnding,
+  endedAt: number,
+): EndingRecord {
+  return ending === 'walked'
+    ? { finishedAt: endedAt, ending, elapsedMs: endedAt - startedAt }
+    : { finishedAt: endedAt, ending };
+}
+
 /** How an ending is stated. */
 export function endingLine(ending: Ending): string {
   switch (ending.state) {

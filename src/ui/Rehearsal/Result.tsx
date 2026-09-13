@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as copy from '../../core/copy';
 import { detectGaps } from '../../core/rehearsal-checks';
+import { endingRecord } from '../../core/rehearsal-ending';
 import { comparableEarlier, rehearsalProgress } from '../../core/rehearsal-progress';
 import { rehearsalResult } from '../../core/rehearsal-result';
 import type { RehearsalRun } from '../../core/rehearsal-run';
@@ -74,11 +75,14 @@ export default function Result({
           packId: run.packId,
           condition: run.condition,
           startedAt: run.startedAt,
-          finishedAt: now(),
           packVerifiedAt: content.pack.verifiedAt,
           gaps: detectGaps(run.condition, content),
-          // Her ending, where she gave one (E5-US1-AC5). Never supplied here.
-          ...(run.ending ? { ending: run.ending } : {}),
+          // E5-US1-AC5: her ending, the moment she gave it, and on a walked
+          // rehearsal the time between its start and that moment. Never
+          // supplied here, and never judged anywhere.
+          ...(run.ending
+            ? endingRecord(run.startedAt, run.ending, run.endedAt ?? now())
+            : { finishedAt: now() }),
         };
         setCompletions(alreadyDone);
         setEarlier(comparableEarlier(previous, record));

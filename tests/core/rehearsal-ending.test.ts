@@ -4,13 +4,16 @@ import {
   REHEARSAL_ENDINGS,
   endingLine,
   endingOf,
+  endingRecord,
   endingRows,
   isRehearsalEnding,
   isUnfinished,
+  journeyEndingRows,
   unfinishedFrom,
   unfinishedView,
 } from '../../src/core/rehearsal-ending';
 import { comparableEarlier } from '../../src/core/rehearsal-progress';
+import { rehearsalResult } from '../../src/core/rehearsal-result';
 import type { Rehearsal, UnfinishedRehearsal } from '../../src/core/types';
 
 // Midday on 3 September 2026 in Melbourne.
@@ -93,5 +96,46 @@ describe('the ending of a finished rehearsal', () => {
     const shape = /^Whether .+ was not recorded, so it cannot be said either way\.$/;
     expect(copy.PACK_CHANGE_UNKNOWN).toMatch(shape);
     expect(copy.ENDING_NOT_RECORDED).toMatch(shape);
+  });
+});
+
+describe('the endings on the journey screen', () => {
+  it('are the same two endings, in the same order, in her words while she is out', () => {
+    expect(journeyEndingRows()).toEqual([
+      { ending: 'walked', label: 'I have arrived' },
+      { ending: 'dry-run', label: 'End without going' },
+    ]);
+    expect(journeyEndingRows().map((row) => row.ending)).toEqual(REHEARSAL_ENDINGS);
+  });
+});
+
+describe('what an ending records', () => {
+  it('keeps, on a walked rehearsal, the time between its start and end exactly as it is', () => {
+    expect(endingRecord(STARTED, 'walked', STARTED + 1_234_567)).toEqual({
+      finishedAt: STARTED + 1_234_567,
+      ending: 'walked',
+      elapsedMs: 1_234_567,
+    });
+  });
+
+  it('keeps no time on a dry run', () => {
+    const record = endingRecord(STARTED, 'dry-run', STARTED + 60_000);
+    expect(record).toEqual({ finishedAt: STARTED + 60_000, ending: 'dry-run' });
+    expect(record).not.toHaveProperty('elapsedMs');
+  });
+
+  // A gap is a fact about the pack, never about her legs.
+  it('finds the same result whichever ending she gave, and says nothing about her time', () => {
+    const gaps = [
+      {
+        gapType: 'live-direction-unavailable' as const,
+        kind: 'condition-persistent' as const,
+        hazard: 'bushfire' as const,
+      },
+    ];
+    const walked = rehearsalResult(finished({ gaps, ...endingRecord(STARTED, 'walked', STARTED + 900_000) }));
+    const dryRun = rehearsalResult(finished({ gaps, ...endingRecord(STARTED, 'dry-run', STARTED + 900_000) }));
+    expect(walked).toEqual(dryRun);
+    expect(JSON.stringify(walked)).not.toMatch(/900000|elapsed|minute|second|fast|slow/i);
   });
 });
