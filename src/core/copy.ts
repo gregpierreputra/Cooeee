@@ -1091,3 +1091,27 @@ export const STEP_HELD_CONDITION = (without: string) => `This still works withou
 export const NEXT_STEP = 'Next step';
 /** [DRAFT] pending Sharon's copy review. The way from the last step to the result. */
 export const SEE_WHAT_IT_FOUND = 'See what it found';
+
+// ── E5-US1-AC5 a started rehearsal is kept, and only she says how it ended ──
+// A rehearsal started and never given an ending is asked about, never guessed
+// at. None of these words says it was interrupted, abandoned, missed or left
+// short: the app does not know, which is why it asks.
+
+/** [DRAFT] pending Sharon's copy review. Asked on returning to a rehearsal that
+ *  was started and has no ending. */
+export const UNFINISHED_HEADING = 'How did this rehearsal end?';
+/** [DRAFT] pending Sharon's copy review. Takes the condition's without-form
+ *  (conditionWithout), never its row title. */
+export const UNFINISHED_DETAIL = (without: string, date: string) =>
+  `You started a rehearsal without ${without} on ${date}. Only you can say how it ended.`;
+/** [DRAFT] pending Sharon's copy review. The two endings, as the criterion names
+ *  them, each with what it means in her words. */
+export const ENDING_WALKED = 'Walked';
+export const ENDING_WALKED_DETAIL = 'I went to the place.';
+export const ENDING_DRY_RUN = 'Not walked, a dry run';
+export const ENDING_DRY_RUN_DETAIL = 'I ended it without going.';
+/** [DRAFT] pending Sharon's copy review. A rehearsal recorded before the endings
+ *  existed, in the shape PACK_CHANGE_UNKNOWN uses: not knowing is its own state,
+ *  and never a default to either ending. */
+export const ENDING_NOT_RECORDED =
+  'Whether this rehearsal was walked or a dry run was not recorded, so it cannot be said either way.';

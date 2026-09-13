@@ -1,6 +1,8 @@
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import { conditionRows } from '../../core/rehearsal-condition';
+import { unfinishedFrom } from '../../core/rehearsal-ending';
+import { saveStartedRehearsal } from '../../data/db';
 import { startRun } from './run-state';
 
 /** E5-US1-AC1 — the user says what the rehearsal is run without.
@@ -34,7 +36,14 @@ export default function Condition({ packId }: { packId: string }) {
             <button
               type="button"
               className="candidate-action condition-action"
-              onClick={() => startRun(packId, row.condition)}
+              onClick={() => {
+                const run = startRun(packId, row.condition);
+                // E5-US1-AC5: kept on the device the moment it starts, so a cold
+                // start finds it and asks how it ended. If the device refuses
+                // the write, the run still goes ahead in memory, and a cold start
+                // then finds nothing to ask about: no ending is guessed either way.
+                saveStartedRehearsal(unfinishedFrom(run)).catch(() => undefined);
+              }}
             >
               <span className="condition-label">{row.label}</span>
               <span className="condition-detail">{row.detail}</span>

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { deviceStorage, rehearseToResult } from './helpers';
+import { deviceStorage, rehearseToResult, storedRehearsals } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 const REHEARSABLE = `${ORIGIN}/rehearse?mode=rehearsable`;
@@ -90,10 +90,11 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     });
   }
 
-  // Choosing a condition starts a rehearsal, and a rehearsal that has finished
-  // is recorded — that is E5-US2-AC1, and it is the ONLY thing the choice may
-  // write. Nothing about the pack is touched: a rehearsal reads the pack and
-  // reports on it, and must never alter what it is reporting on.
+  // Choosing a condition starts a rehearsal, which is kept from that moment
+  // (E5-US1-AC5), and finishing it records it over that same row (E5-US2-AC1).
+  // That one record is the ONLY thing the choice may write. Nothing about the
+  // pack is touched: a rehearsal reads the pack and reports on it, and must
+  // never alter what it is reporting on.
   test('choosing writes nothing but the record of the rehearsal itself', async ({ page }) => {
     await page.goto(REHEARSABLE);
     // The baseline is taken AFTER the screen is up: the harness seeds the pack
@@ -107,8 +108,10 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     // to its result (E5-US1-AC5), so that is the whole of what is taken here.
     await rehearseToResult(page, NO_DATA);
     await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_DATA);
-    // The rehearsal has to have finished before its record exists.
+    // The started row and the finished one are the same row: one record, and it
+    // has finished.
     await expect.poll(async () => (await deviceStorage(page)).recordCounts.rehearsals).toBe(1);
+    await expect.poll(async () => typeof (await storedRehearsals(page))[0]?.finishedAt).toBe('number');
 
     const after = await deviceStorage(page);
     expect(after.recordCounts).toEqual({ ...before.recordCounts, rehearsals: 1 });

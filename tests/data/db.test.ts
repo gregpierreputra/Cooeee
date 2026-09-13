@@ -11,6 +11,8 @@ import {
   readRehearsalSource,
   listRehearsalsForPack,
   saveFinishedRehearsal,
+  saveStartedRehearsal,
+  findUnfinishedRehearsal,
   carryHistoryToNewPack,
   actionCompletionId,
   listActionCompletions,
@@ -19,6 +21,7 @@ import {
   sweepBuilding,
 } from '../../src/data/db';
 import { fileMeta, manifestGroup, sha256Hex } from '../../src/data/integrity';
+import type { Rehearsal, UnfinishedRehearsal } from '../../src/core/types';
 import { destination, pack, packProgram, program, source } from '../fixtures';
 
 const layer = (packId: string) => ({
@@ -453,6 +456,107 @@ describe('a rehearsal is recorded only once it has finished', () => {
     await deleteCompletePack('pack-1');
 
     expect(await listRehearsalsForPack('pack-1')).toEqual([]);
+  });
+});
+
+// E5-US1-AC5 — a started rehearsal is kept until she says how it ended, and it
+// never enters a comparison.
+describe('a started rehearsal is kept until she says how it ended', () => {
+  const started = (over: Partial<UnfinishedRehearsal> = {}): UnfinishedRehearsal => ({
+    id: 'run-1',
+    packId: 'pack-1',
+    condition: 'no-data',
+    startedAt: 1_756_100_000_000,
+    ...over,
+  });
+  const finishedAs = (over: Partial<Rehearsal> = {}): Rehearsal => ({
+    id: 'run-1',
+    packId: 'pack-1',
+    condition: 'no-data',
+    startedAt: 1_756_100_000_000,
+    finishedAt: 1_756_100_900_000,
+    gaps: [],
+    ...over,
+  });
+
+  it('is stored the moment it starts, and found again after the connection is gone', async () => {
+    await saveStartedRehearsal(started());
+    // A cold start: the page's connection closes, and the device keeps the row.
+    db.close();
+    await db.open();
+
+    expect(await findUnfinishedRehearsal('pack-1')).toEqual(started());
+    expect(await findUnfinishedRehearsal('other-pack')).toBeNull();
+  });
+
+  // The trap. listRehearsalsForPack is the only read behind the comparison, and
+  // it reads through the finishedAt index. A started row has no finishedAt, so
+  // IndexedDB never puts it in that index: it cannot come back, however the
+  // read is filtered.
+  it('never comes back from the read the comparison uses', async () => {
+    await saveFinishedRehearsal(
+      finishedAs({ id: 'earlier', startedAt: 1_756_000_000_000, finishedAt: 1_756_000_900_000 }),
+    );
+    await saveStartedRehearsal(started());
+
+    expect(await db.rehearsals.count()).toBe(2);
+    expect((await listRehearsalsForPack('pack-1')).map((row) => row.id)).toEqual(['earlier']);
+    // Straight from the index, with no pack filter in front of it.
+    expect((await db.rehearsals.orderBy('finishedAt').toArray()).map((row) => row.id)).toEqual([
+      'earlier',
+    ]);
+  });
+
+  it('becomes finished, with her ending, in the same row', async () => {
+    await saveStartedRehearsal(started());
+    await saveFinishedRehearsal(finishedAs({ ending: 'walked' }));
+
+    expect(await db.rehearsals.count()).toBe(1);
+    expect(await findUnfinishedRehearsal('pack-1')).toBeNull();
+    expect(await listRehearsalsForPack('pack-1')).toEqual([finishedAs({ ending: 'walked' })]);
+  });
+
+  // A rehearsal recorded before the endings existed keeps having none.
+  it('leaves a finished rehearsal with no ending as it is, never given one', async () => {
+    await saveFinishedRehearsal(finishedAs());
+    const [row] = await listRehearsalsForPack('pack-1');
+    expect(row).not.toHaveProperty('ending');
+  });
+
+  it('refuses a start that claims a finish, gaps or an ending, or that would overwrite a row', async () => {
+    await expect(saveStartedRehearsal({ ...started(), finishedAt: 1 } as never)).rejects.toThrow(RangeError);
+    await expect(saveStartedRehearsal({ ...started(), gaps: [] } as never)).rejects.toThrow(RangeError);
+    await expect(saveStartedRehearsal({ ...started(), ending: 'walked' } as never)).rejects.toThrow(RangeError);
+    await expect(saveStartedRehearsal(started({ startedAt: 0 }))).rejects.toThrow(RangeError);
+    expect(await db.rehearsals.count()).toBe(0);
+
+    // A finished rehearsal is never turned back into an unfinished one.
+    await saveFinishedRehearsal(finishedAs());
+    await expect(saveStartedRehearsal(started())).rejects.toThrow();
+    expect(await findUnfinishedRehearsal('pack-1')).toBeNull();
+    expect(await db.rehearsals.count()).toBe(1);
+  });
+
+  it('refuses an ending that is not one of the two', async () => {
+    await expect(saveFinishedRehearsal(finishedAs({ ending: 'probably' as never }))).rejects.toThrow(
+      RangeError,
+    );
+    expect(await db.rehearsals.count()).toBe(0);
+  });
+
+  it('asks about the one started first, if there are ever two', async () => {
+    await saveStartedRehearsal(started({ id: 'later', startedAt: 1_756_100_500_000 }));
+    await saveStartedRehearsal(started({ id: 'earlier' }));
+    expect((await findUnfinishedRehearsal('pack-1'))?.id).toBe('earlier');
+  });
+
+  it('goes when the pack it is about goes', async () => {
+    await db.packs.put(pack());
+    await saveStartedRehearsal(started());
+
+    await deleteCompletePack('pack-1');
+
+    expect(await findUnfinishedRehearsal('pack-1')).toBeNull();
   });
 });
 

@@ -77,6 +77,8 @@ export default function Result({
           finishedAt: now(),
           packVerifiedAt: content.pack.verifiedAt,
           gaps: detectGaps(run.condition, content),
+          // Her ending, where she gave one (E5-US1-AC5). Never supplied here.
+          ...(run.ending ? { ending: run.ending } : {}),
         };
         setCompletions(alreadyDone);
         setEarlier(comparableEarlier(previous, record));

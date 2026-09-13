@@ -413,22 +413,30 @@ export type DetectedGap = {
   hazard: 'bushfire' | 'heat';
 };
 
-/** ONE COMPLETED rehearsal.
+/** How a rehearsal ended, in the reader's own answer (E5-US1-AC5). There is no
+ *  third value and no default: the app never supplies an ending for her. */
+export type RehearsalEnding = 'walked' | 'dry-run';
+
+/** ONE FINISHED rehearsal.
  *
- *  There is no such thing as a stored rehearsal in progress. `finishedAt` is not
- *  optional, and the row is written once, when the run has finished, never when
- *  it starts: a row written at the start is a row a cold start can find, and
- *  E5-US1-AC3 requires that an interrupted rehearsal is never recorded as
- *  completed. Do not add a start-time write for progress tracking; progress
- *  lives in memory and dies with the page, which is what makes an interrupted
- *  run impossible to mistake for a finished one. */
+ *  `finishedAt` is required, and a row carrying it is the only kind the
+ *  rehearsals store's finishedAt index holds. A rehearsal that was started and
+ *  has no ending yet is a different type, UnfinishedRehearsal, stored in the
+ *  same table WITHOUT finishedAt: it is never in that index, and never one of
+ *  these. That is what keeps it out of every comparison (E5-US2-AC2). */
 export type Rehearsal = {
   id: string;                  // crypto.randomUUID(), and the id of the run that produced it
   packId: string;
   condition: 'no-data' | 'no-location-fix';
   startedAt: number;
-  finishedAt: number;          // always set; see above
+  finishedAt: number;          // always set on a finished rehearsal; see above
   gaps: DetectedGap[];         // the gaps this run found, written with it, atomically
+  /** The ending the reader said it had.
+   *
+   *  OPTIONAL, and it must stay optional: rehearsals recorded before the endings
+   *  existed carry none, and are reported as not recorded. A missing ending is
+   *  never defaulted to either one. */
+  ending?: RehearsalEnding;
   /** The pack's own verifiedAt at the moment this rehearsal ran.
    *
    *  Two rehearsals whose values differ were run against different pack
@@ -445,6 +453,26 @@ export type Rehearsal = {
    *  0.1 exists to forbid. */
   packVerifiedAt?: number;
 };
+
+/** A rehearsal that was started and has not been given an ending.
+ *
+ *  Stored the moment the condition is chosen (E5-US1-AC5, amending AC3), so it
+ *  survives the phone locked, the app evicted and a cold start. It carries no
+ *  finishedAt, no gaps and no ending, and the `never` fields make that a
+ *  property of the type: it cannot be passed where a Rehearsal is taken,
+ *  comparableEarlier included. Only the reader's answer makes it one. */
+export type UnfinishedRehearsal = {
+  id: string;
+  packId: string;
+  condition: 'no-data' | 'no-location-fix';
+  startedAt: number;
+  finishedAt?: never;
+  gaps?: never;
+  ending?: never;
+};
+
+/** Everything the rehearsals store can hold. */
+export type StoredRehearsal = Rehearsal | UnfinishedRehearsal;
 
 /** The reader's own record that they have taken one of the actions a rehearsal
  *  gave them.

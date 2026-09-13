@@ -6,31 +6,33 @@
 // colour, a tint or an icon would say nothing to a reader who cannot see it,
 // and nothing at all in greyscale.
 //
-// Nothing here is stored. A run is a value held in memory for as long as the
-// page is open, which is what makes an interrupted rehearsal impossible to
-// mistake for a live one: a restart has nothing to find.
+// A run is held in memory for as long as the page is open. Since E5-US1-AC5 the
+// rehearsal it belongs to is ALSO kept on the device from the moment it starts,
+// as an unfinished rehearsal (rehearsal-ending.ts), so a cold start finds it and
+// asks how it ended. What is never kept is where the run was on screen: a cold
+// start resumes no screen and shows no partial result.
 
 import { conditionLabel, type RehearsalCondition } from './rehearsal-condition';
 import * as copy from './copy';
+import type { RehearsalEnding } from './types';
 
 /** A rehearsal in progress: the pack it runs against, the one condition it runs
- *  under, and the identity it WOULD be recorded under if it finishes.
+ *  under, and the identity it is recorded under.
  *
- *  The id and the start time live here, in memory, and are written only as part
- *  of the finished record. Nothing about a run in progress is stored, so a run
- *  that is interrupted takes its id and its start time with it and leaves
- *  nothing behind (E5-US1-AC3). There is no progress field, and there must not
- *  be one: progress that outlived the page would be a partial result. */
+ *  There is no progress field, and there must not be one: progress that outlived
+ *  the page would be a partial result. */
 export type RehearsalRun = {
-  /** The id this run will be recorded under IF it finishes. Made when the run
-   *  starts and kept in memory: it identifies the run, not a stored row, and a
-   *  run that is interrupted takes it with it. */
+  /** The id the rehearsal is kept under, from its start to its finish. The row
+   *  its start writes and the row its finish writes are the same row. */
   id: string;
   packId: string;
   condition: RehearsalCondition;
-  /** When the user chose the condition. Held here and written only with the
-   *  finished record, never on its own. */
+  /** When the user chose the condition. */
   startedAt: number;
+  /** The ending the reader gave, once she has given one. Present only on a run
+   *  resumed from an unfinished rehearsal by her answer, and recorded with the
+   *  finished rehearsal. Never filled in by the app. */
+  ending?: RehearsalEnding;
 };
 
 /** What the bar states, as two separate strings.

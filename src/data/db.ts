@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { NOTE_MAX_CHARS } from '../core/constants';
+import { isRehearsalEnding, isUnfinished } from '../core/rehearsal-ending';
 import type { RehearsalInput } from '../core/rehearsal-entry';
 import type {
   ActionCompletion,
@@ -17,9 +18,11 @@ import type {
   RecoveryProgram,
   Rehearsal,
   SnapshotActivation,
+  StoredRehearsal,
   StoredSnapshot,
   SyncMetaRow,
   TileRow,
+  UnfinishedRehearsal,
 } from '../core/types';
 import { fileMeta, groupMatches, sha256Hex } from './integrity';
 
@@ -42,8 +45,8 @@ class CooeeeDb extends Dexie {
   postcodes!: Table<BundlePostcode, string>;
   dynamicSnapshot!: Table<SnapshotActivation, number>;
   syncMeta!: Table<SyncMetaRow, string>;
-  // Finished rehearsals. A rehearsal in progress is never in here.
-  rehearsals!: Table<Rehearsal, string>;
+  // Rehearsals: finished ones, and started ones still waiting for an ending.
+  rehearsals!: Table<StoredRehearsal, string>;
   // The reader's own record of the actions they have taken, per pack.
   actionCompletions!: Table<ActionCompletion, string>;
   // The CFA site list, for BlackSky's nearest-places pointer.
@@ -94,10 +97,12 @@ class CooeeeDb extends Dexie {
     // kept program, owned and hashed like every other pack group.
     this.version(7).stores({ packPrograms: 'id, packId' });
 
-    // Version 8 adds the store for FINISHED rehearsals. Indexed by pack and by
-    // finish time, which is what a later run needs to compare itself with the
-    // one before it. Nothing here holds a rehearsal in progress: see the note
-    // on saveFinishedRehearsal below.
+    // Version 8 adds the rehearsals store, indexed by pack and by finish time,
+    // which is what a later run needs to compare itself with the one before it.
+    // Since E5-US1-AC5 the store also holds a rehearsal that has started and has
+    // no ending yet, kept WITHOUT finishedAt and so absent from that index: see
+    // listRehearsalsForPack below. That adds no index, so it needs no version,
+    // and the line below is exactly as shipped.
     // EPIC 4 took version 7 for packPrograms before this branch landed, and a
     // shipped version is never mutated, so the rehearsal stores begin at 8.
     this.version(8).stores({ rehearsals: 'id, packId, finishedAt' });
@@ -223,18 +228,41 @@ export async function readRehearsalSource(packId: string): Promise<Omit<Rehearsa
   }
 }
 
+/** E5-US1-AC5 — keep a rehearsal the moment it starts.
+ *
+ *  Written when the condition is chosen, as an UnfinishedRehearsal: no
+ *  finishedAt, no gaps, no ending. A fifteen-minute walk with the phone locked
+ *  and the app evicted then survives a cold start, which finds this row and asks
+ *  her how it ended. Nothing here decides that for her.
+ *
+ *  `add`, not `put`: a start never overwrites a row, so it can never turn a
+ *  finished rehearsal back into an unfinished one. */
+export async function saveStartedRehearsal(started: UnfinishedRehearsal): Promise<void> {
+  const claimsAnEnd = ['finishedAt', 'gaps', 'ending'].some((field) => field in started);
+  if (claimsAnEnd || !isUnfinished(started) || !(started.startedAt > 0)) {
+    throw new RangeError('a started rehearsal is kept with no finish, no gaps and no ending');
+  }
+  await db.rehearsals.add(started);
+}
+
+/** The rehearsal on this pack still waiting for her to say how it ended, or
+ *  null. If there were ever two, the one started first is asked about first. */
+export async function findUnfinishedRehearsal(packId: string): Promise<UnfinishedRehearsal | null> {
+  const rows = await db.rehearsals.where('packId').equals(packId).toArray();
+  const unfinished = rows.filter(isUnfinished).sort((a, b) => a.startedAt - b.startedAt);
+  return unfinished[0] ?? null;
+}
+
 /** E5-US2-AC1 — record ONE FINISHED rehearsal, with the gaps it found.
  *
- *  Called once, when the run has finished. There is deliberately no counterpart
- *  that writes a row when a run starts, and adding one would break E5-US1-AC3:
- *  a row written at the start is a row a cold start can find, and an
- *  interrupted rehearsal must never be recorded as completed. If progress
- *  tracking is wanted later, it belongs in memory beside the run, not here.
+ *  Written when the run has finished, over the row its start kept: the id is
+ *  the run's own, so the unfinished row becomes the finished one in one put, and
+ *  a screen that remounts rewrites the same row rather than recording the same
+ *  rehearsal twice. The gaps go in with the row, so a rehearsal and what it found
+ *  are never half-written with respect to each other.
  *
- *  The gaps go in with the row, in one put, so a rehearsal and what it found
- *  are never half-written with respect to each other. The id is the id of the
- *  run that produced it, so a screen that remounts rewrites the same row rather
- *  than recording the same rehearsal twice.
+ *  An ending, where there is one, is one of the two she can give. None is added
+ *  here: the app never supplies an ending on her behalf.
  *
  *  Action completions are NOT written here. They belong to the pack, not to a
  *  run, and they live in their own store. */
@@ -242,12 +270,26 @@ export async function saveFinishedRehearsal(rehearsal: Rehearsal): Promise<void>
   if (!(rehearsal.finishedAt > 0) || rehearsal.finishedAt < rehearsal.startedAt) {
     throw new RangeError('a rehearsal is recorded only once it has finished');
   }
+  if (rehearsal.ending !== undefined && !isRehearsalEnding(rehearsal.ending)) {
+    throw new RangeError('a rehearsal ends only as walked or as a dry run');
+  }
   await db.rehearsals.put(rehearsal);
 }
 
-/** Every finished rehearsal for one pack, oldest first. */
+/** Every FINISHED rehearsal for one pack, oldest first.
+ *
+ *  Read through the finishedAt index, and the index is the guarantee, not a
+ *  filter: IndexedDB leaves a record out of an index when the record has no
+ *  value at that index's key path. An unfinished rehearsal is kept with no
+ *  finishedAt, so it is not in this index at all and cannot come back from this
+ *  read. This is the only read behind comparableEarlier (E5-US2-AC2), so a
+ *  journey that never happened can never be compared against. The cast states
+ *  that guarantee as a type; tests/data/db.test.ts proves it. */
 export const listRehearsalsForPack = (packId: string): Promise<Rehearsal[]> =>
-  db.rehearsals.where('packId').equals(packId).sortBy('finishedAt');
+  db.rehearsals
+    .orderBy('finishedAt')
+    .filter((row) => row.packId === packId)
+    .toArray() as Promise<Rehearsal[]>;
 
 /** Record that the reader has taken one of the actions a rehearsal gave them.
  *

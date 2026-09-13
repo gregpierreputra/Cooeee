@@ -3,10 +3,12 @@ import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../core/rehearsal-entry';
 import { isRunFor } from '../../core/rehearsal-run';
-import { readRehearsalSource } from '../../data/db';
+import type { UnfinishedRehearsal } from '../../core/types';
+import { findUnfinishedRehearsal, readRehearsalSource } from '../../data/db';
 import Condition from './Condition';
 import Result from './Result';
 import Run from './Run';
+import Unfinished from './Unfinished';
 import Walk from './Walk';
 import { useRehearsalRun, useWalkPosition } from './run-state';
 import StatusPage from '../components/StatusPage';
@@ -14,6 +16,7 @@ import StatusPage from '../components/StatusPage';
 type EntryProps = {
   packId: string;
   loadSource?: (packId: string) => Promise<Omit<RehearsalInput, 'now'>>;
+  loadUnfinished?: (packId: string) => Promise<UnfinishedRehearsal | null>;
   now?: number;
 };
 
@@ -36,6 +39,7 @@ type EntryProps = {
 export default function RehearsalEntry({
   packId,
   loadSource = readRehearsalSource,
+  loadUnfinished = findUnfinishedRehearsal,
   now = Date.now(),
 }: EntryProps) {
   // null = the store has not answered yet. It answers in a frame or two from
@@ -45,6 +49,30 @@ export default function RehearsalEntry({
   // finds none.
   const run = useRehearsalRun();
   const position = useWalkPosition();
+  // E5-US1-AC5 — a kept rehearsal still waiting for its ending. Read whenever no
+  // run is in memory: on opening, and again when a run ends, so leaving a run
+  // without an ending comes straight back to the question. undefined = not read
+  // yet, and nothing is drawn for that wait. A read that fails finds nothing to
+  // ask about, which decides no ending.
+  const [unfinished, setUnfinished] = useState<UnfinishedRehearsal | null | undefined>(undefined);
+  const runId = run?.id ?? null;
+
+  useEffect(() => {
+    if (runId !== null) return;
+    let live = true;
+    setUnfinished(undefined);
+    loadUnfinished(packId).then(
+      (row) => {
+        if (live) setUnfinished(row);
+      },
+      () => {
+        if (live) setUnfinished(null);
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [loadUnfinished, packId, runId]);
 
   useEffect(() => {
     let live = true;
@@ -69,11 +97,21 @@ export default function RehearsalEntry({
   //
   // E5-US1-AC5 — a run walks the pack, then BlackSky, before its result. The
   // position is held with the run, so coming back resumes the step it was on.
+  //
+  // With no run in memory, a kept rehearsal that has no ending is asked about
+  // before anything else: a new one cannot start over the top of it, and it is
+  // never resumed as though it were still running.
   if (gate.state === 'ready') {
-    return isRunFor(run, gate.packId) && run !== null ? (
-      <Run run={run}>
-        {position === 'result' ? <Result run={run} /> : <Walk run={run} step={position} />}
-      </Run>
+    if (isRunFor(run, gate.packId) && run !== null) {
+      return (
+        <Run run={run}>
+          {position === 'result' ? <Result run={run} /> : <Walk run={run} step={position} />}
+        </Run>
+      );
+    }
+    if (unfinished === undefined) return null;
+    return unfinished !== null && unfinished.packId === gate.packId ? (
+      <Unfinished rehearsal={unfinished} />
     ) : (
       <Condition packId={gate.packId} />
     );

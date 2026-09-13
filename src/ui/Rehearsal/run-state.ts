@@ -1,27 +1,21 @@
 import { useSyncExternalStore } from 'react';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { RehearsalCondition } from '../../core/rehearsal-condition';
+import type { RehearsalEnding, UnfinishedRehearsal } from '../../core/types';
 import { WALK_START, advanceWalk, type WalkPosition } from '../../core/rehearsal-walk';
 
-/** E5-US1-AC3 — where a running rehearsal is held, and why it is held HERE.
+/** E5-US1-AC3, as amended by E5-US1-AC5 — where a running rehearsal is held.
  *
- *  In memory, at module scope, and nowhere else. Not IndexedDB, not
- *  localStorage, not sessionStorage, not the URL.
- *
- *  Module scope rather than component state because AC3 requires a run to
- *  survive the user leaving the screen and coming back within the same session:
- *  component state dies on unmount, which would drop the user back at the
- *  choice with nothing chosen, and that is the ambiguity this criterion exists
- *  to prevent. The same latch pattern is used for the service-worker update
+ *  The RUN is held here, in memory at module scope, so leaving the screen and
+ *  coming back within the same session resumes it where it was: component state
+ *  dies on unmount. The same latch pattern is used for the service-worker update
  *  flag in app.tsx and for the tour in components/Tour.tsx.
  *
- *  Module scope rather than storage because AC3 equally requires that a closed
- *  and reopened app has NO rehearsal running. This value dies with the
- *  document, so a reload is a cold start by construction rather than by a
- *  cleanup step that could fail to run. There is nothing on the device for a
- *  restart to find, so there is no half-alive rehearsal to find it in, and no
- *  partial result to show. The store belongs to the change that adds gaps and
- *  actions, which are the first things that must genuinely survive a reload. */
+ *  This value still dies with the document, so a closed and reopened app has no
+ *  run: no bar, no resumed screen, no partial result. What survives is the
+ *  REHEARSAL, kept on the device as an unfinished rehearsal from the moment it
+ *  started (Condition.tsx). A cold start finds that and asks her how it ended;
+ *  it never resumes a screen, and never decides the ending for her. */
 let current: RehearsalRun | null = null;
 
 /** E5-US1-AC5 — where the run is in the walk. Held beside the run, not in it,
@@ -51,9 +45,26 @@ export function startRun(
   condition: RehearsalCondition,
   id: string = crypto.randomUUID(),
   startedAt: number = Date.now(),
-): void {
-  current = { id, packId, condition, startedAt };
+): RehearsalRun {
+  const run = { id, packId, condition, startedAt };
+  current = run;
   position = WALK_START;
+  announce();
+  return run;
+}
+
+/** Take up a kept unfinished rehearsal with the ending she gave it, at its
+ *  result. The result records it finished, with that ending, over the kept row.
+ *  The ending is hers: this is only ever called with her answer. */
+export function resumeWithEnding(unfinished: UnfinishedRehearsal, ending: RehearsalEnding): void {
+  current = {
+    id: unfinished.id,
+    packId: unfinished.packId,
+    condition: unfinished.condition,
+    startedAt: unfinished.startedAt,
+    ending,
+  };
+  position = 'result';
   announce();
 }
 

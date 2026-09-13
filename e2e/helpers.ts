@@ -140,3 +140,23 @@ export async function rehearseToResult(page: Page, condition: string, url?: stri
     }),
   ).toBeVisible();
 }
+
+/** Every row in the rehearsals store, read straight from IndexedDB rather than
+ *  through the app, so a spec sees exactly what the device holds: finished rows
+ *  and started ones alike. Harness pages only, after the app has opened. */
+export async function storedRehearsals(page: Page): Promise<Record<string, unknown>[]> {
+  return page.evaluate(async () => {
+    const request = <T>(req: IDBRequest<T>) =>
+      new Promise<T>((resolve, reject) => {
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    const database = await request(indexedDB.open('cooeee'));
+    try {
+      const store = database.transaction('rehearsals').objectStore('rehearsals');
+      return (await request(store.getAll())) as Record<string, unknown>[];
+    } finally {
+      database.close();
+    }
+  });
+}

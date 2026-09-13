@@ -1,8 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
-import { deviceStorage } from './helpers';
+import { deviceStorage, storedRehearsals } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 const REHEARSABLE = `${ORIGIN}/rehearse?mode=rehearsable`;
+/** `keep=1` seeds once, so a reload finds what the last load kept. Without it
+ *  every load starts from a clean device, which would wipe the kept rehearsal
+ *  a cold start is now required to find. */
+const KEEP_REHEARSABLE = `${REHEARSABLE}&keep=1`;
+const ENDING_HEADING = 'How did this rehearsal end?';
 const EMPTY = `${ORIGIN}/rehearse?mode=empty`;
 const UNREADABLE = `${ORIGIN}/rehearse?mode=unreadable`;
 
@@ -100,7 +105,9 @@ test.describe('AC2 the bar marks the run', () => {
     await expect(bar(page)).toHaveCount(0);
     await page.getByTestId('remount').click();
     await page.getByTestId('remount').click();
-    await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
+    // E5-US1-AC5: leaving gave the rehearsal no ending, so coming back asks for
+    // one. The bar does not come back with it, because nothing is running.
+    await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
     await expect(bar(page)).toHaveCount(0);
   });
 });
@@ -164,47 +171,152 @@ test.describe('AC3 leaving and coming back', () => {
   });
 });
 
+/** Start a run on a device that keeps what it stores, wait until the start is
+ *  kept, then close and reopen the app. */
+async function coldStartMidRun(page: Page, condition: string) {
+  await page.goto(KEEP_REHEARSABLE);
+  await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
+  await page.getByRole('button', { name: new RegExp(condition) }).click();
+  await expect(bar(page)).toBeVisible();
+  await expect.poll(async () => (await deviceStorage(page)).recordCounts.rehearsals).toBe(1);
+  await page.reload();
+}
+
+// E5-US1-AC3, as amended by E5-US1-AC5. Two of TC-5.1.3-B's three rules stand:
+// a cold start leaves no bar and no partial result. The third has flipped: a
+// started rehearsal is now kept, unfinished, and asked about.
 test.describe('AC3 a cold start', () => {
   // TC-5.1.3-B
-  test('leaves no bar, no partial result and no record', async ({ page }) => {
-    await page.goto(REHEARSABLE);
+  test('leaves no bar and no partial result, and keeps the started rehearsal unfinished', async ({
+    page,
+  }) => {
+    await page.goto(KEEP_REHEARSABLE);
     await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
     const before = await deviceStorage(page);
+    expect(before.recordCounts.rehearsals).toBe(0);
 
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
     await expect(bar(page)).toBeVisible();
+    // Kept the moment it starts.
+    await expect.poll(async () => (await deviceStorage(page)).recordCounts.rehearsals).toBe(1);
 
     // The app is closed and reopened.
     await page.reload();
 
+    // No bar: after a cold start nothing is running. Asserted once the question
+    // is up, so a count taken mid-render cannot pass for the wrong reason.
+    await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
     await expect(bar(page)).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
-    // No partial result, and nothing announcing an interruption: there is
-    // nothing to announce, because nothing was kept.
+    // No partial result, no resumed screen, and nothing announcing an
+    // interruption: the app does not know what happened, so it says nothing
+    // about it and asks.
+    await expect(page.getByRole('heading', { name: 'What this rehearsal found' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Nothing was missing in this rehearsal' })).toHaveCount(0);
+    await expect(page.locator('.gap-row')).toHaveCount(0);
+    await expect(page.getByText(/^Step \d of \d$/)).toHaveCount(0);
     await expect(page.locator('main')).not.toContainText('interrupted');
     await expect(page.locator('main')).not.toContainText('resume');
     await expect(page.locator('main')).not.toContainText('Rehearsal complete');
     await expect(page.locator('main')).not.toContainText(NO_DATA + ' rehearsal');
 
-    // And nothing was written at any point of the run.
-    expect(await deviceStorage(page)).toEqual(before);
+    // Exactly one record was written across the whole run and the restart, and
+    // nothing else changed on the device.
+    expect(await deviceStorage(page)).toEqual({
+      ...before,
+      recordCounts: { ...before.recordCounts, rehearsals: 1 },
+    });
+    // And that record is the started rehearsal, unfinished: no finish, no gaps,
+    // no ending. Nothing was guessed.
+    const rows = await storedRehearsals(page);
+    expect(rows).toHaveLength(1);
+    expect(Object.keys(rows[0]).sort()).toEqual(['condition', 'id', 'packId', 'startedAt']);
+    expect(rows[0]).toMatchObject({ packId: 'rehearse-pack', condition: 'no-data' });
   });
 
   test('never leaves a state where it is unclear whether a rehearsal is running', async ({ page }) => {
-    await startRun(page, NO_FIX);
-    await page.reload();
+    await coldStartMidRun(page, NO_FIX);
 
-    // Exactly one of the two readings is on screen: the choice, or the run.
-    // Polled rather than sampled once, so the reloaded page is given time to
-    // settle — a count taken mid-render would read zero of both and call an
-    // unfinished paint an ambiguous state.
+    // Exactly one of the three readings is on screen: the choice, the run, or
+    // the question. Polled rather than sampled once, so the reloaded page is
+    // given time to settle — a count taken mid-render would read zero of all
+    // three and call an unfinished paint an ambiguous state.
     const readings = async () =>
       (await bar(page).count()) +
-      (await page.getByRole('heading', { name: CHOOSE_HEADING }).count());
+      (await page.getByRole('heading', { name: CHOOSE_HEADING }).count()) +
+      (await page.getByRole('heading', { name: ENDING_HEADING }).count());
     await expect.poll(readings).toBe(1);
 
-    // And the one on screen is the choice, not a rehearsal that outlived the
-    // restart.
+    // And the one on screen is the question: not a rehearsal that outlived the
+    // restart, and not a fresh choice that has forgotten the one she started.
     expect(await bar(page).count()).toBe(0);
+    expect(await page.getByRole('heading', { name: CHOOSE_HEADING }).count()).toBe(0);
+    await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
   });
+});
+
+// E5-US1-AC5 — returning to a kept rehearsal asks which ending it had.
+test.describe('AC5 returning asks how it ended', () => {
+  test('offers both endings, chooses neither, and an unanswered question leaves it unfinished', async ({
+    page,
+  }) => {
+    await coldStartMidRun(page, NO_FIX);
+    await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
+
+    const endings = page.getByRole('main').getByRole('button');
+    await expect(endings).toHaveCount(2);
+    await expect(endings.nth(0)).toHaveAccessibleName(/^Walked/);
+    await expect(endings.nth(1)).toHaveAccessibleName(/^Not walked, a dry run/);
+    await expect(page.locator('[aria-pressed="true"], [aria-checked="true"], :checked')).toHaveCount(0);
+    await expect(page.getByText('You started a rehearsal without a location fix on')).toBeVisible();
+
+    // Left unanswered: away from the screen and back, then another cold start.
+    await page.getByTestId('remount').click();
+    await page.getByTestId('remount').click();
+    await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
+
+    // Still exactly the started rehearsal, still with no ending.
+    const rows = await storedRehearsals(page);
+    expect(rows).toHaveLength(1);
+    expect(Object.keys(rows[0]).sort()).toEqual(['condition', 'id', 'packId', 'startedAt']);
+  });
+
+  for (const [label, ending] of [
+    ['Walked', 'walked'],
+    ['Not walked, a dry run', 'dry-run'],
+  ] as const) {
+    test(`answering "${label}" reaches the existing result and records that ending, and only that`, async ({
+      page,
+    }) => {
+      await coldStartMidRun(page, NO_FIX);
+      await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
+      const [started] = await storedRehearsals(page);
+
+      await page.getByRole('button', { name: new RegExp(`^${label}`) }).click();
+
+      // The existing result, finding the same gaps whichever ending she gave.
+      await expect(page.getByRole('heading', { name: 'What this rehearsal found' })).toBeVisible();
+      await expect(page.locator('.gap-row h3')).toHaveText(['Live direction and distance to your saved places']);
+      await expect(bar(page)).toBeVisible();
+
+      // The kept row became the finished one, with her ending.
+      await expect.poll(async () => (await storedRehearsals(page))[0]?.ending).toBe(ending);
+      const rows = await storedRehearsals(page);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        id: started.id,
+        packId: 'rehearse-pack',
+        condition: 'no-location-fix',
+        startedAt: started.startedAt,
+        ending,
+      });
+      expect(rows[0].finishedAt as number).toBeGreaterThanOrEqual(started.startedAt as number);
+
+      // Answered, so it is not asked again.
+      await page.reload();
+      await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
+      await expect(page.getByRole('heading', { name: ENDING_HEADING })).toHaveCount(0);
+    });
+  }
 });

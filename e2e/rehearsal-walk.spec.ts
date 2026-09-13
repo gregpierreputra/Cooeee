@@ -20,6 +20,41 @@ const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
 const CONDITIONS = [NO_DATA, NO_FIX] as const;
 const CHOOSE_HEADING = 'What are we rehearsing without?';
+const ENDING_HEADING = 'How did this rehearsal end?';
+const CONDITION_VALUE: Record<string, string> = {
+  'No mobile data': 'no-data',
+  'No location fix': 'no-location-fix',
+};
+
+type Device = {
+  indexedDB: Record<string, Record<string, Record<string, unknown>[]>>;
+  localStorage: unknown;
+  sessionStorage: unknown;
+};
+
+const rehearsalRows = (device: Device) =>
+  Object.values(device.indexedDB).flatMap((stores) => stores.rehearsals ?? []);
+
+/** E5-US1-AC5: starting a rehearsal keeps exactly one thing. Asserts that the
+ *  only difference between two devices is one added rehearsal row, and that the
+ *  row is a started one: no finish, no gaps, no ending. */
+function expectOnlyAStartedRehearsalAdded(before: Device, after: Device, condition: string) {
+  const withoutRehearsals = (device: Device) => ({
+    ...device,
+    indexedDB: Object.fromEntries(
+      Object.entries(device.indexedDB).map(([name, stores]) => [
+        name,
+        Object.fromEntries(Object.entries(stores).filter(([store]) => store !== 'rehearsals')),
+      ]),
+    ),
+  });
+  expect(withoutRehearsals(after)).toEqual(withoutRehearsals(before));
+  expect(rehearsalRows(before)).toEqual([]);
+  const added = rehearsalRows(after);
+  expect(added).toHaveLength(1);
+  expect(Object.keys(added[0]).sort()).toEqual(['condition', 'id', 'packId', 'startedAt']);
+  expect(added[0].condition).toBe(CONDITION_VALUE[condition]);
+}
 
 const STEP_1 = 'Step 1 of 2';
 const STEP_2 = 'Step 2 of 2';
@@ -385,28 +420,37 @@ test.describe('TC-5.1.5-E interrupted mid-walk', () => {
     await expect(page.getByRole('heading', { name: RESULT_HEADING })).toHaveCount(0);
   });
 
-  test('a cold start on step 2 leaves no bar, no step and no partial record', async ({ page }) => {
+  // As amended by E5-US1-AC5: still no bar, no step and no partial result; the
+  // started rehearsal is now kept, unfinished, and asked about.
+  test('a cold start on step 2 leaves no bar, no step and no partial result, and asks how it ended', async ({
+    page,
+  }) => {
     await page.goto(KEEP_REHEARSABLE);
     await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
     const before = await deviceBytes(page);
 
     await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
     await expect(counter(page, STEP_1)).toBeVisible();
+    await expect.poll(async () => rehearsalRows(JSON.parse(await deviceBytes(page))).length).toBe(1);
     await holdToStep2(page);
+    const started = await deviceBytes(page);
 
     // The app is closed and reopened.
     await page.reload();
-    await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
+    await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
     await expect(bar(page)).toHaveCount(0);
     await expect(counter(page, STEP_1)).toHaveCount(0);
     await expect(counter(page, STEP_2)).toHaveCount(0);
     await expect(stepHeading(page, BLACKSKY)).toHaveCount(0);
     await expect(page.getByRole('heading', { name: RESULT_HEADING })).toHaveCount(0);
-    expect(await deviceBytes(page)).toBe(before);
+    // The only thing kept is the started rehearsal, and the restart changed nothing.
+    expectOnlyAStartedRehearsalAdded(JSON.parse(before), JSON.parse(started), NO_FIX);
+    expect(await deviceBytes(page)).toBe(started);
 
-    // A run started afresh begins at the first step, not where the last one stopped.
-    await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
-    await expect(counter(page, STEP_1)).toBeVisible();
+    // No step comes back: answering goes to the result, not to where the walk stopped.
+    await page.getByRole('button', { name: /^Not walked, a dry run/ }).click();
+    await expect(page.getByRole('heading', { name: RESULT_HEADING })).toBeVisible();
+    await expect(counter(page, STEP_1)).toHaveCount(0);
     await expect(counter(page, STEP_2)).toHaveCount(0);
   });
 });
@@ -414,7 +458,9 @@ test.describe('TC-5.1.5-E interrupted mid-walk', () => {
 // TC-5.1.5-F
 test.describe('TC-5.1.5-F nothing is written, nothing is sent', () => {
   for (const condition of CONDITIONS) {
-    test(`both steps under "${condition}" leave every store byte-identical, through a reload`, async ({
+    // As amended by E5-US1-AC5: starting keeps one started rehearsal, and the
+    // two steps write nothing beyond it, through a reload.
+    test(`both steps under "${condition}" write nothing beyond the started rehearsal, through a reload`, async ({
       page,
     }) => {
       const offOrigin = watchOffOrigin(page);
@@ -424,21 +470,24 @@ test.describe('TC-5.1.5-F nothing is written, nothing is sent', () => {
 
       await page.getByRole('button', { name: new RegExp(condition) }).click();
       await expect(counter(page, STEP_1)).toBeVisible();
-      expect(await deviceBytes(page)).toBe(before);
+      await expect.poll(async () => rehearsalRows(JSON.parse(await deviceBytes(page))).length).toBe(1);
+      const started = await deviceBytes(page);
+      expectOnlyAStartedRehearsalAdded(JSON.parse(before), JSON.parse(started), condition);
 
-      // A tap that does not advance writes nothing either.
+      // A tap that does not advance writes nothing further.
       await holdControl(page).click();
       await expect(page.getByText(HOLD_HINT)).toBeVisible();
-      expect(await deviceBytes(page)).toBe(before);
+      expect(await deviceBytes(page)).toBe(started);
 
       await holdToStep2(page);
       // Give any late write the chance to land before it is ruled out.
       await page.waitForTimeout(500);
-      expect(await deviceBytes(page)).toBe(before);
+      expect(await deviceBytes(page)).toBe(started);
 
+      // A reload finds the started rehearsal and asks; it writes nothing.
       await page.reload();
-      await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
-      expect(await deviceBytes(page)).toBe(before);
+      await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
+      expect(await deviceBytes(page)).toBe(started);
 
       expect(offOrigin).toEqual([]);
     });
@@ -551,6 +600,13 @@ test.describe('AC5 the walk cannot be skipped', () => {
 
     await page.getByTestId('remount').click();
     await page.getByTestId('remount').click();
+    // E5-US1-AC5: leaving gave it no ending, so that is asked before another
+    // can start. Answered, it reaches its result; left from there, the choice.
+    await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
+    await page.getByRole('button', { name: /^Not walked, a dry run/ }).click();
+    await expect(page.getByRole('heading', { name: RESULT_HEADING })).toBeVisible();
+    await main(page).getByRole('button', { name: 'Leave the rehearsal' }).click();
+
     await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
     await expect(counter(page, STEP_1)).toBeVisible();
     await expect(counter(page, STEP_2)).toHaveCount(0);
