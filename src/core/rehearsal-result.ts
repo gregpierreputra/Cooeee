@@ -7,7 +7,7 @@
 // not mark their work.
 
 import * as copy from './copy';
-import { conditionLabel } from './rehearsal-condition';
+import { conditionWithout } from './rehearsal-condition';
 import { actionFor } from './rehearsal-actions';
 import { formatSavedDate } from './provenance';
 import type {
@@ -71,15 +71,15 @@ export function rehearsalResult(
    *  the pack rather than to the run, so a run finds the ones made before it. */
   completions: readonly ActionCompletion[] = [],
 ): RehearsalResult {
-  const label = conditionLabel(rehearsal.condition);
-  const conditionLine = copy.RESULT_CONDITION_LINE(label);
+  const without = conditionWithout(rehearsal.condition);
+  const conditionLine = copy.RESULT_CONDITION_LINE(without);
 
   if (rehearsal.gaps.length === 0) {
     return {
       state: 'no-gaps',
       conditionLine,
       heading: copy.NO_GAPS_HEADING,
-      detail: copy.NO_GAPS_DETAIL(label),
+      detail: copy.NO_GAPS_DETAIL(without),
     };
   }
 

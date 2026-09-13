@@ -63,11 +63,11 @@ describe('a result with gaps', () => {
 
   it('states the condition the rehearsal ran under', () => {
     expect(rehearsalResult(rehearsal([packContentGap])).conditionLine).toBe(
-      'Rehearsed without No mobile data.',
+      'Rehearsed without mobile data.',
     );
     expect(
       rehearsalResult(rehearsal([persistentGap], { condition: 'no-location-fix' })).conditionLine,
-    ).toBe('Rehearsed without No location fix.');
+    ).toBe('Rehearsed without a location fix.');
   });
 
   it('keeps the rows in the order the run found them', () => {
@@ -137,9 +137,9 @@ describe('a result never marks the reader', () => {
   it('says nothing about the reader at all', () => {
     const everyString = [
       copy.RESULT_HEADING,
-      copy.RESULT_CONDITION_LINE('No mobile data'),
+      copy.RESULT_CONDITION_LINE(copy.CONDITION_NO_DATA_WITHOUT),
       copy.NO_GAPS_HEADING,
-      copy.NO_GAPS_DETAIL('No mobile data'),
+      copy.NO_GAPS_DETAIL(copy.CONDITION_NO_DATA_WITHOUT),
       copy.ACTION_LABEL,
     ].join(' ');
     expect(everyString).not.toMatch(/\bunprepared\b|\byou (are|aren't) (ready|prepared)\b/i);

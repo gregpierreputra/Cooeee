@@ -132,7 +132,7 @@ test.describe('AC1 what the run recorded', () => {
 
     await expect(page.locator('.rehearsal-bar')).toContainText('Rehearsal');
     await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_FIX);
-    await expect(page.getByText('Rehearsed without No location fix.')).toBeVisible();
+    await expect(page.getByText('Rehearsed without a location fix.')).toBeVisible();
   });
 
   test('nothing leaves the device while the result is produced', async ({ page }) => {

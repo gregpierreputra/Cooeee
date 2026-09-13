@@ -4,6 +4,7 @@ import {
   REHEARSAL_CONDITIONS,
   conditionLabel,
   conditionRows,
+  conditionWithout,
   isRehearsalCondition,
   type RehearsalCondition,
 } from '../../src/core/rehearsal-condition';
@@ -144,5 +145,30 @@ describe('the wording of this screen', () => {
       copy.CONDITION_NO_FIX_DETAIL,
     ].join(' ');
     expect(joined).not.toMatch(/\bunprepared\b|\bnot ready\b|\byou (are|aren't) (ready|prepared)\b/i);
+  });
+});
+
+// A row title answers "What are we rehearsing without?", so it already says
+// "No". A sentence that put "without" in front of it would say the opposite of
+// what happened, so those sentences take the without-form instead.
+describe('a condition after the word without', () => {
+  it('has its own form, apart from the row title', () => {
+    expect(conditionWithout('no-data')).toBe('mobile data');
+    expect(conditionWithout('no-location-fix')).toBe('a location fix');
+    // The row title, and so the bar, is unchanged.
+    expect(conditionLabel('no-data')).toBe('No mobile data');
+    expect(conditionLabel('no-location-fix')).toBe('No location fix');
+  });
+
+  it('never makes a sentence read "without No"', () => {
+    REHEARSAL_CONDITIONS.forEach((condition) => {
+      const without = conditionWithout(condition);
+      expect(without).not.toMatch(/^no\b/i);
+      [
+        copy.RESULT_CONDITION_LINE(without),
+        copy.NO_GAPS_DETAIL(without),
+        copy.STEP_HELD_CONDITION(without),
+      ].forEach((sentence) => expect(sentence).not.toMatch(/\bwithout no\b/i));
+    });
   });
 });

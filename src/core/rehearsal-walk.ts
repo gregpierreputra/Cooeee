@@ -13,7 +13,7 @@
 import * as copy from './copy';
 import { detectGaps } from './rehearsal-checks';
 import { GAP_KIND, GAP_TITLE } from './rehearsal-actions';
-import { conditionLabel, type RehearsalCondition } from './rehearsal-condition';
+import { conditionWithout, type RehearsalCondition } from './rehearsal-condition';
 import { rehearsableHazards } from './rehearsal-entry';
 import type { CompletePackContent, RehearsalGapKind, RehearsalGapType } from './types';
 
@@ -75,7 +75,7 @@ const GAP_STATEMENT: Record<RehearsalGapKind, string> = {
 const heldStatement = (kind: RehearsalGapKind, condition: RehearsalCondition): string =>
   kind === 'pack-content'
     ? copy.STEP_HELD_PACK_CONTENT
-    : copy.STEP_HELD_CONDITION(conditionLabel(condition));
+    : copy.STEP_HELD_CONDITION(conditionWithout(condition));
 
 /** What one step of the walk states, for this pack under this condition.
  *

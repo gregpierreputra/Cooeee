@@ -101,7 +101,7 @@ describe('a complete pack under no mobile data', () => {
     ]);
     expect(line(second, 'places-missing').statement).toBe('This information is in your pack.');
     expect(line(second, 'live-direction-unavailable').statement).toBe(
-      'This still works without No mobile data.',
+      'This still works without mobile data.',
     );
     expect(rehearsalResult(finished('no-data', held)).state).toBe('no-gaps');
   });

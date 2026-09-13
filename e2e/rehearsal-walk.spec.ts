@@ -32,7 +32,10 @@ const PLACES = 'The official places saved with this pack';
 const LIVE_DIRECTION = 'Live direction and distance to your saved places';
 
 const HELD_PACK_CONTENT = 'This information is in your pack.';
-const HELD_CONDITION = (label: string) => `This still works without ${label}.`;
+/** Each condition as it reads after "without". The row titles already say "No". */
+const NO_DATA_WITHOUT = 'mobile data';
+const NO_FIX_WITHOUT = 'a location fix';
+const HELD_CONDITION = (without: string) => `This still works without ${without}.`;
 const GAP_PACK_CONTENT = 'This information is missing from your pack.';
 const GAP_CONDITION_FACT = 'This is not available under this condition.';
 const GAP_CONDITION_NEXT = 'Here is what to do instead.';
@@ -167,7 +170,7 @@ test.describe('TC-5.1.5-A a complete pack under no mobile data', () => {
     await expect(stepLines(page)).toHaveCount(2);
     await expect(stepLines(page).getByRole('heading', { level: 3 })).toHaveText([PLACES, LIVE_DIRECTION]);
     await expect(statementOf(lineFor(page, PLACES))).toHaveText(HELD_PACK_CONTENT);
-    await expect(statementOf(lineFor(page, LIVE_DIRECTION))).toHaveText(HELD_CONDITION(NO_DATA));
+    await expect(statementOf(lineFor(page, LIVE_DIRECTION))).toHaveText(HELD_CONDITION(NO_DATA_WITHOUT));
     // No gap sentence anywhere on a walk where everything held.
     await expect(main(page)).not.toContainText(GAP_PACK_CONTENT);
     await expect(main(page)).not.toContainText(GAP_CONDITION_FACT);
@@ -188,7 +191,7 @@ test.describe('TC-5.1.5-B the official places are missing from the pack', () => 
     const places = lineFor(page, PLACES);
     await expect(statementOf(places)).toHaveText(GAP_PACK_CONTENT);
     // The other line on the step is unaffected by the missing places.
-    await expect(statementOf(lineFor(page, LIVE_DIRECTION))).toHaveText(HELD_CONDITION(NO_DATA));
+    await expect(statementOf(lineFor(page, LIVE_DIRECTION))).toHaveText(HELD_CONDITION(NO_DATA_WITHOUT));
 
     await seeWhatItFound(page).click();
     await expect(page.getByRole('heading', { name: RESULT_HEADING })).toBeVisible();
@@ -226,7 +229,7 @@ test.describe('TC-5.1.5-C no location fix', () => {
 // TC-5.1.5-D. With every colour removed only the words are left, so the words
 // alone have to say which state each line is in.
 test.describe('TC-5.1.5-D greyscale', () => {
-  const HELD = [HELD_PACK_CONTENT, HELD_CONDITION(NO_DATA), HELD_CONDITION(NO_FIX)];
+  const HELD = [HELD_PACK_CONTENT, HELD_CONDITION(NO_DATA_WITHOUT), HELD_CONDITION(NO_FIX_WITHOUT)];
   const GAP = [GAP_PACK_CONTENT, GAP_CONDITION_FACT];
 
   const cases = [

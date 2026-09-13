@@ -50,6 +50,20 @@ export const conditionRows = (): ConditionRow[] =>
 export const isRehearsalCondition = (value: unknown): value is RehearsalCondition =>
   typeof value === 'string' && (REHEARSAL_CONDITIONS as readonly string[]).includes(value);
 
-/** How the chosen condition is stated once it has been chosen. */
+/** How the chosen condition is stated once it has been chosen. This is the row
+ *  title, word for word, so the bar matches the choice screen. Never put it
+ *  after "without" in a sentence: it already says "No". */
 export const conditionLabel = (condition: RehearsalCondition): string =>
   ROW_COPY[condition].label;
+
+/** Kept apart from ROW_COPY so a choice row carries only what the row shows. */
+const WITHOUT_FORM: Record<RehearsalCondition, string> = {
+  'no-data': copy.CONDITION_NO_DATA_WITHOUT,
+  'no-location-fix': copy.CONDITION_NO_FIX_WITHOUT,
+};
+
+/** How the condition reads after the word "without", for the sentences that
+ *  embed it. A separate function rather than a string the caller adjusts, so a
+ *  sentence picks the right form by name. */
+export const conditionWithout = (condition: RehearsalCondition): string =>
+  WITHOUT_FORM[condition];

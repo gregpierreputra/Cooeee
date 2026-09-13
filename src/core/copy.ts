@@ -949,6 +949,13 @@ export const CONDITION_NO_FIX = 'No location fix';
  *  give you: the obvious phrasing uses words the wording scan forbids, and the
  *  plainer sentence is the better one anyway. */
 export const CONDITION_NO_FIX_DETAIL = 'The phone cannot work out where it is.';
+/** [DRAFT] pending Sharon's copy review. Each condition as it reads after the
+ *  word "without". The row titles above answer "What are we rehearsing
+ *  without?", so they already carry the "No". A sentence that put "without" in
+ *  front of a title would say the opposite of what happened: "Rehearsed without
+ *  No location fix" reads as a rehearsal that had one. */
+export const CONDITION_NO_DATA_WITHOUT = 'mobile data';
+export const CONDITION_NO_FIX_WITHOUT = 'a location fix';
 // ── E5-US1-AC2 a rehearsal is never mistaken for the real thing ───────────
 // The bar carries the word and the condition, on every screen of a run. Both
 // are words: a colour or an icon says nothing in greyscale, and nothing at all
@@ -970,7 +977,8 @@ export const LEAVE_REHEARSAL = 'Leave the rehearsal';
 // takes something away, and both are facts about the phone.
 
 export const RESULT_HEADING = 'What this rehearsal found';
-export const RESULT_CONDITION_LINE = (label: string) => `Rehearsed without ${label}.`;
+/** Takes the condition's without-form (conditionWithout), never its row title. */
+export const RESULT_CONDITION_LINE = (without: string) => `Rehearsed without ${without}.`;
 /** The hazard a gap belongs to, since one pack holds more than one. Total over
  *  the two rehearsable hazards, so no caller needs a fallback. */
 export const HAZARD_NAME: Record<'bushfire' | 'heat', string> = {
@@ -1013,8 +1021,9 @@ export const ACTION_LABEL = 'What to do';
  *  [DRAFT] pending Sharon's copy review. Reachable only after a no-data run on a
  *  complete pack: under no location fix the contingency gap always fires. */
 export const NO_GAPS_HEADING = 'Nothing was missing in this rehearsal';
-export const NO_GAPS_DETAIL = (label: string) =>
-  `Everything this rehearsal looked for was on the phone without ${label}. That is what was checked, on this pack, today.`;
+/** Takes the condition's without-form (conditionWithout), never its row title. */
+export const NO_GAPS_DETAIL = (without: string) =>
+  `Everything this rehearsal looked for was on the phone without ${without}. That is what was checked, on this pack, today.`;
 
 // ── E5-US2-AC1 the reader's own record of what they have done ─────────────
 // [DRAFT] pending Sharon's copy review, all four.
@@ -1074,8 +1083,9 @@ export const PACK_CHANGE_UNKNOWN =
 export const STEP_OF = (n: number, total: number) => `Step ${n} of ${total}`;
 /** [DRAFT] pending Sharon's copy review. The mirror of GAP_MEANING_PACK_CONTENT. */
 export const STEP_HELD_PACK_CONTENT = 'This information is in your pack.';
-/** [DRAFT] pending Sharon's copy review. The mirror of GAP_MEANING_CONDITION_FACT. */
-export const STEP_HELD_CONDITION = (label: string) => `This still works without ${label}.`;
+/** [DRAFT] pending Sharon's copy review. The mirror of GAP_MEANING_CONDITION_FACT.
+ *  Takes the condition's without-form (conditionWithout), never its row title. */
+export const STEP_HELD_CONDITION = (without: string) => `This still works without ${without}.`;
 /** [DRAFT] pending Sharon's copy review. Says what the hold on the first step
  *  does in a rehearsal: it moves the walk on, and opens nothing real. */
 export const NEXT_STEP = 'Next step';
