@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { deviceStorage } from './helpers';
+import { deviceStorage, rehearseToResult } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 const REHEARSABLE = `${ORIGIN}/rehearse?mode=rehearsable`;
@@ -103,7 +103,9 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     const before = await deviceStorage(page);
     expect(before.recordCounts.rehearsals).toBe(0);
 
-    await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
+    // Choosing starts the run. It finishes only once it has walked both steps
+    // to its result (E5-US1-AC5), so that is the whole of what is taken here.
+    await rehearseToResult(page, NO_DATA);
     await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_DATA);
     // The rehearsal has to have finished before its record exists.
     await expect.poll(async () => (await deviceStorage(page)).recordCounts.rehearsals).toBe(1);

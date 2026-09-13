@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { rehearseToResult } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 /** The heading is the first thing in the card, and every state has one. */
@@ -495,15 +496,8 @@ test('AC2 the one control in a run meets the minimum target size', async ({ page
 
 // E5-US2-AC1 — the result, held to the same four checks: every gap row and the
 // screen it sits on.
-const runToResult = async (page: import('@playwright/test').Page, mode: string, condition: string) => {
-  await page.goto(`${ORIGIN}/rehearse?mode=${mode}`);
-  await page.getByRole('heading', { name: 'What are we rehearsing without?' }).waitFor();
-  await page.getByRole('button', { name: new RegExp(condition) }).click();
-  await page.locator('.rehearsal-bar').waitFor();
-};
-
 test('AC1 every gap row meets the contrast minimum', async ({ page }) => {
-  await runToResult(page, 'gap', 'No location fix');
+  await rehearseToResult(page, 'No location fix', `${ORIGIN}/rehearse?mode=gap`);
   await page.locator('.gap-row').first().waitFor();
 
   const rows = await page.evaluate(() => {
@@ -550,7 +544,7 @@ test('AC1 every gap row meets the contrast minimum', async ({ page }) => {
 
 test('AC1 the result survives 200% text with no clipping or overlap', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await runToResult(page, 'gap', 'No location fix');
+  await rehearseToResult(page, 'No location fix', `${ORIGIN}/rehearse?mode=gap`);
   await page.locator('.gap-row').first().waitFor();
 
   const rowHeight = async () =>
@@ -600,7 +594,7 @@ test('AC1 the result survives 200% text with no clipping or overlap', async ({ p
 });
 
 test('AC1 the result reads in order: heading, condition, then each gap', async ({ page }) => {
-  await runToResult(page, 'gap', 'No location fix');
+  await rehearseToResult(page, 'No location fix', `${ORIGIN}/rehearse?mode=gap`);
   await page.locator('.gap-row').first().waitFor();
 
   const order = await page.evaluate(() =>
@@ -624,7 +618,7 @@ test('AC1 the result reads in order: heading, condition, then each gap', async (
 // control in this flow.
 test('AC1 the mark-done control meets the minimum target size', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await runToResult(page, 'gap', 'No location fix');
+  await rehearseToResult(page, 'No location fix', `${ORIGIN}/rehearse?mode=gap`);
   await page.locator('.gap-row').first().waitFor();
 
   const controls = await page.locator('.gap-mark').all();
@@ -637,7 +631,7 @@ test('AC1 the mark-done control meets the minimum target size', async ({ page })
 });
 
 test('AC1 a marked action keeps its contrast and its place in the reading order', async ({ page }) => {
-  await runToResult(page, 'gap', 'No location fix');
+  await rehearseToResult(page, 'No location fix', `${ORIGIN}/rehearse?mode=gap`);
   await page.locator('.gap-row').first().waitFor();
   await page.locator('.gap-row').first().getByRole('button', { name: 'Mark this done' }).click();
   await page.locator('.gap-done').first().waitFor();
@@ -692,15 +686,9 @@ test('AC1 a marked action keeps its contrast and its place in the reading order'
 });
 
 // E5-US2-AC2/AC3/AC4 — the progress view, held to the same checks.
-const runWithEarlier = async (page: import('@playwright/test').Page, earlier: string) => {
-  await page.goto(`${ORIGIN}/rehearse?mode=gap&earlier=${earlier}`);
-  await page.getByRole('heading', { name: 'What are we rehearsing without?' }).waitFor();
-  await page.getByRole('button', { name: /No location fix/ }).click();
-  await page.locator('.progress').waitFor();
-};
-
 test('AC2 the progress view meets the contrast minimum on every element', async ({ page }) => {
-  await runWithEarlier(page, 'changed');
+  await rehearseToResult(page, 'No location fix', `${ORIGIN}/rehearse?mode=gap&earlier=changed`);
+  await page.locator('.progress').waitFor();
 
   const rows = await page.evaluate(() => {
     const relativeLuminance = (channels: number[]) => {
@@ -745,7 +733,8 @@ test('AC2 the progress view meets the contrast minimum on every element', async 
 
 test('AC2 the progress view survives 200% text with no clipping or overlap', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await runWithEarlier(page, 'changed');
+  await rehearseToResult(page, 'No location fix', `${ORIGIN}/rehearse?mode=gap&earlier=changed`);
+  await page.locator('.progress').waitFor();
 
   const height = async () => Math.round((await page.locator('.progress').boundingBox())!.height);
   const before = await height();
@@ -787,7 +776,8 @@ test('AC2 the progress view survives 200% text with no clipping or overlap', asy
 });
 
 test('AC2 the progress view reads before the gaps it summarises', async ({ page }) => {
-  await runWithEarlier(page, 'changed');
+  await rehearseToResult(page, 'No location fix', `${ORIGIN}/rehearse?mode=gap&earlier=changed`);
+  await page.locator('.progress').waitFor();
 
   const order = await page.evaluate(() =>
     [...document.querySelectorAll('.page h2, .progress h3, .gap-row h3')].map((el) => ({

@@ -33,7 +33,7 @@ export const GAP_ACTION_ID: Record<RehearsalGapType, string> = {
 };
 
 /** What each gap is, in the reader's words: the thing they could not rely on. */
-const GAP_TITLE: Record<RehearsalGapType, string> = {
+export const GAP_TITLE: Record<RehearsalGapType, string> = {
   'designation-missing': copy.GAP_DESIGNATION,
   'places-missing': copy.GAP_PLACES,
   'provenance-missing': copy.GAP_PROVENANCE,

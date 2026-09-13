@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { rehearseToResult } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 /** A pack holding the whole journey: a designation and an official place. */
@@ -14,19 +15,12 @@ const PACK_CONTENT_MEANING = 'This information is missing from your pack.';
 const CONDITION_MEANING =
   'This is not available under this condition. Here is what to do instead.';
 
-async function run(page: Page, url: string, condition: string) {
-  await page.goto(url);
-  await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
-  await page.getByRole('button', { name: new RegExp(condition) }).click();
-  await expect(page.locator('.rehearsal-bar')).toBeVisible();
-}
-
 // E5-US2-AC1 — one action for each gap.
 
 test.describe('AC1 each gap arrives with one action', () => {
   // TC-5.2.1-A
   test('every gap row carries exactly one action, and never none', async ({ page }) => {
-    await run(page, WITH_GAP, NO_FIX);
+    await rehearseToResult(page, NO_FIX, WITH_GAP);
 
     const rows = page.locator('.gap-row');
     await expect(rows).not.toHaveCount(0);
@@ -42,7 +36,7 @@ test.describe('AC1 each gap arrives with one action', () => {
 
   // TC-5.2.1-B
   test('a pack-content gap and a condition gap read differently', async ({ page }) => {
-    await run(page, WITH_GAP, NO_FIX);
+    await rehearseToResult(page, NO_FIX, WITH_GAP);
 
     await expect(page.getByText(PACK_CONTENT_MEANING)).toBeVisible();
     await expect(page.getByText(CONDITION_MEANING)).toBeVisible();
@@ -51,7 +45,7 @@ test.describe('AC1 each gap arrives with one action', () => {
   });
 
   test('every gap names whose journey it belongs to', async ({ page }) => {
-    await run(page, WITH_GAP, NO_FIX);
+    await rehearseToResult(page, NO_FIX, WITH_GAP);
 
     const rows = page.locator('.gap-row');
     const count = await rows.count();
@@ -61,7 +55,7 @@ test.describe('AC1 each gap arrives with one action', () => {
   });
 
   test('a contingency action never says the capability has come back', async ({ page }) => {
-    await run(page, WHOLE, NO_FIX);
+    await rehearseToResult(page, NO_FIX, WHOLE);
 
     const row = page.locator('.gap-row', { hasText: CONDITION_MEANING });
     await expect(row).toHaveCount(1);
@@ -73,7 +67,7 @@ test.describe('AC1 each gap arrives with one action', () => {
 
 // TC-5.2.1-D
 test('AC1 a rehearsal that found nothing renders its own screen', async ({ page }) => {
-  await run(page, WHOLE, NO_DATA);
+  await rehearseToResult(page, NO_DATA, WHOLE);
 
   await expect(page.getByRole('heading', { name: 'Nothing was missing in this rehearsal' })).toBeVisible();
   await expect(page.locator('.gap-list')).toHaveCount(0);
@@ -90,7 +84,7 @@ test('AC1 a rehearsal that found nothing renders its own screen', async ({ page 
 test('AC1 no location fix always finds something, so it never reaches the no-gaps screen', async ({
   page,
 }) => {
-  await run(page, WHOLE, NO_FIX);
+  await rehearseToResult(page, NO_FIX, WHOLE);
 
   await expect(page.locator('.gap-row')).not.toHaveCount(0);
   await expect(
@@ -105,7 +99,7 @@ test.describe('AC1 a result never marks the reader', () => {
     ['nothing found', WHOLE, NO_DATA],
   ] as const) {
     test(`${name}: no total, count, percentage, grade or verdict`, async ({ page }) => {
-      await run(page, url, condition);
+      await rehearseToResult(page, condition, url);
 
       const text = (await page.locator('main').innerText()).toLowerCase();
       ['score', 'grade', 'total', 'passed', 'failed', 'pass', 'fail', '%', 'out of'].forEach(
@@ -122,7 +116,7 @@ test.describe('AC1 a result never marks the reader', () => {
 // TC-5.2.1-F, and the AC3 guarantee it rests on.
 test.describe('AC1 what the run recorded', () => {
   test('reading the result again gives the same gaps', async ({ page }) => {
-    await run(page, WITH_GAP, NO_FIX);
+    await rehearseToResult(page, NO_FIX, WITH_GAP);
     const before = await page.locator('.gap-row h3').allInnerTexts();
 
     // Leave the screen and come back: the same run, the same finding.
@@ -134,7 +128,7 @@ test.describe('AC1 what the run recorded', () => {
   });
 
   test('the result is a rehearsal, and says so throughout', async ({ page }) => {
-    await run(page, WITH_GAP, NO_FIX);
+    await rehearseToResult(page, NO_FIX, WITH_GAP);
 
     await expect(page.locator('.rehearsal-bar')).toContainText('Rehearsal');
     await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_FIX);
@@ -147,7 +141,7 @@ test.describe('AC1 what the run recorded', () => {
       if (!request.url().startsWith(ORIGIN)) offOrigin.push(`${request.method()} ${request.url()}`);
     });
 
-    await run(page, WITH_GAP, NO_DATA);
+    await rehearseToResult(page, NO_DATA, WITH_GAP);
     await expect(page.locator('.gap-row')).not.toHaveCount(0);
 
     expect(offOrigin).toEqual([]);
@@ -163,17 +157,11 @@ const KEEP = `${ORIGIN}/rehearse?mode=gap&keep=1`;
 
 const firstRow = (page: Page) => page.locator('.gap-row').first();
 
-async function runKept(page: Page, condition: string) {
-  await page.goto(KEEP);
-  await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
-  await page.getByRole('button', { name: new RegExp(condition) }).click();
-  await expect(page.locator('.gap-row').first()).toBeVisible();
-}
-
 test.describe('AC1 marking an action done', () => {
   // TC-5.2.1-C
   test('records the date, shows it, and survives a reload', async ({ page }) => {
-    await runKept(page, NO_FIX);
+    await rehearseToResult(page, NO_FIX, KEEP);
+    await expect(page.locator('.gap-row').first()).toBeVisible();
     const row = firstRow(page);
 
     await expect(row.getByRole('button', { name: 'Mark this done' })).toBeVisible();
@@ -187,12 +175,13 @@ test.describe('AC1 marking an action done', () => {
     // the record of what the reader has done is not.
     await page.reload();
     await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
-    await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
+    await rehearseToResult(page, NO_FIX);
     await expect(firstRow(page).locator('.gap-done')).toHaveText(shown);
   });
 
   test('is attributed to the reader, and never reads as the capability returning', async ({ page }) => {
-    await runKept(page, NO_FIX);
+    await rehearseToResult(page, NO_FIX, KEEP);
+    await expect(page.locator('.gap-row').first()).toBeVisible();
     const row = page.locator('.gap-row', { hasText: CONDITION_MEANING });
 
     await row.getByRole('button', { name: 'Mark this done' }).click();
@@ -205,7 +194,8 @@ test.describe('AC1 marking an action done', () => {
 
   // TC-5.2.1-F
   test('does not change the gap it belongs to', async ({ page }) => {
-    await runKept(page, NO_FIX);
+    await rehearseToResult(page, NO_FIX, KEEP);
+    await expect(page.locator('.gap-row').first()).toBeVisible();
     const before = await page.locator('.gap-row h3').allInnerTexts();
     const meanings = await page.locator('.gap-row > p.muted').allInnerTexts();
 
@@ -217,7 +207,8 @@ test.describe('AC1 marking an action done', () => {
   });
 
   test('marks only the action it belongs to', async ({ page }) => {
-    await runKept(page, NO_FIX);
+    await rehearseToResult(page, NO_FIX, KEEP);
+    await expect(page.locator('.gap-row').first()).toBeVisible();
     await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
 
     await expect(firstRow(page).locator('.gap-done')).toBeVisible();
@@ -229,7 +220,8 @@ test.describe('AC1 marking an action done', () => {
 // un-ticking: nothing expires a completion, and only this control removes one.
 test.describe('AC1 undoing a marking', () => {
   test('leaves no completion, no date, and the gap unchanged', async ({ page }) => {
-    await runKept(page, NO_FIX);
+    await rehearseToResult(page, NO_FIX, KEEP);
+    await expect(page.locator('.gap-row').first()).toBeVisible();
     const row = firstRow(page);
     const title = await row.locator('h3').innerText();
     const meaning = await row.locator('p.muted').first().innerText();
@@ -256,12 +248,13 @@ test.describe('AC1 undoing a marking', () => {
 
     // And it is gone from the device, not merely from the screen.
     await page.reload();
-    await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
+    await rehearseToResult(page, NO_FIX);
     await expect(firstRow(page).locator('.gap-done')).toHaveCount(0);
   });
 
   test('can be marked again afterwards', async ({ page }) => {
-    await runKept(page, NO_FIX);
+    await rehearseToResult(page, NO_FIX, KEEP);
+    await expect(page.locator('.gap-row').first()).toBeVisible();
     const row = firstRow(page);
 
     await row.getByRole('button', { name: 'Mark this done' }).click();
@@ -275,21 +268,23 @@ test.describe('AC1 undoing a marking', () => {
 // A completion belongs to the pack, not to the run, so the reader does not
 // re-tick what they have already done.
 test('AC1 a completion is still there on the next rehearsal', async ({ page }) => {
-  await runKept(page, NO_FIX);
+  await rehearseToResult(page, NO_FIX, KEEP);
+  await expect(page.locator('.gap-row').first()).toBeVisible();
   await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
   await expect(firstRow(page).locator('.gap-done')).toBeVisible();
 
   // Leave the rehearsal and run another one on the same pack.
   await page.getByRole('button', { name: 'Leave the rehearsal' }).click();
   await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
-  await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
+  await rehearseToResult(page, NO_FIX);
 
   await expect(firstRow(page).locator('.gap-done')).toBeVisible();
 });
 
 // TC-5.2.1-E again, now that a date is on the screen: a date is not a count.
 test('AC1 a completion adds no total, count or verdict', async ({ page }) => {
-  await runKept(page, NO_FIX);
+  await rehearseToResult(page, NO_FIX, KEEP);
+  await expect(page.locator('.gap-row').first()).toBeVisible();
   await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
   await expect(firstRow(page).locator('.gap-done')).toBeVisible();
 

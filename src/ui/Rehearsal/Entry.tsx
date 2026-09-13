@@ -7,7 +7,8 @@ import { readRehearsalSource } from '../../data/db';
 import Condition from './Condition';
 import Result from './Result';
 import Run from './Run';
-import { useRehearsalRun } from './run-state';
+import Walk from './Walk';
+import { useRehearsalRun, useWalkPosition } from './run-state';
 import StatusPage from '../components/StatusPage';
 
 type EntryProps = {
@@ -43,6 +44,7 @@ export default function RehearsalEntry({
   // A run in progress, if there is one. Dies with the page, so a cold start
   // finds none.
   const run = useRehearsalRun();
+  const position = useWalkPosition();
 
   useEffect(() => {
     let live = true;
@@ -64,10 +66,13 @@ export default function RehearsalEntry({
   // E5-US1-AC3 — unless a rehearsal for THIS pack is already running, in which
   // case the user is coming back to it and it continues, bar and condition
   // intact. Leaving the screen never asked the rehearsal to end, so it did not.
+  //
+  // E5-US1-AC5 — a run walks the pack, then BlackSky, before its result. The
+  // position is held with the run, so coming back resumes the step it was on.
   if (gate.state === 'ready') {
     return isRunFor(run, gate.packId) && run !== null ? (
       <Run run={run}>
-        <Result run={run} />
+        {position === 'result' ? <Result run={run} /> : <Walk run={run} step={position} />}
       </Run>
     ) : (
       <Condition packId={gate.packId} />

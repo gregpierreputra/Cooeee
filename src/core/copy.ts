@@ -981,8 +981,13 @@ export const GAP_HAZARD_LINE = (hazard: string) => `${hazard} journey`;
 
 // The two kinds, told apart by these words and by nothing else.
 export const GAP_MEANING_PACK_CONTENT = 'This information is missing from your pack.';
-export const GAP_MEANING_CONDITION =
-  'This is not available under this condition. Here is what to do instead.';
+/** The condition sentence in its two halves (E5-US1-AC5). A walk step states the
+ *  fact alone: the actions live on the result, so the second half would promise
+ *  something not yet on screen. The wording is unchanged and the joined sentence
+ *  is byte-identical, so the result reads exactly as it did. */
+export const GAP_MEANING_CONDITION_FACT = 'This is not available under this condition.';
+export const GAP_MEANING_CONDITION_NEXT = 'Here is what to do instead.';
+export const GAP_MEANING_CONDITION = `${GAP_MEANING_CONDITION_FACT} ${GAP_MEANING_CONDITION_NEXT}`;
 
 // What could not be relied on.
 export const GAP_DESIGNATION = 'The official area designation for this address';
@@ -1055,3 +1060,24 @@ export const PACK_CHANGED_ON = (date: string) =>
 /** The honest third answer. Not a softer way of saying nothing changed. */
 export const PACK_CHANGE_UNKNOWN =
   'Whether the pack changed between these two rehearsals was not recorded, so it cannot be said either way.';
+
+// ── E5-US1-AC5 the rehearsal walks the journey ────────────────────────────
+// Two steps, the pack then BlackSky, before the result. The step headings reuse
+// YOUR_PACK and BLACKSKY_TITLE, and the hold reuses HOLD_FOR_BLACKSKY and
+// HOLD_TO_ENTER, so a step cannot drift from the real screen's wording. A gap on
+// a step uses the result's own sentences. Held is the exact mirror of its gap,
+// so the two states are told apart in words with every colour stripped out
+// [WCAG 1.4.1].
+
+/** [DRAFT] pending Sharon's copy review. Where the reader is in the walk. It
+ *  counts steps, never steps passed. */
+export const STEP_OF = (n: number, total: number) => `Step ${n} of ${total}`;
+/** [DRAFT] pending Sharon's copy review. The mirror of GAP_MEANING_PACK_CONTENT. */
+export const STEP_HELD_PACK_CONTENT = 'This information is in your pack.';
+/** [DRAFT] pending Sharon's copy review. The mirror of GAP_MEANING_CONDITION_FACT. */
+export const STEP_HELD_CONDITION = (label: string) => `This still works without ${label}.`;
+/** [DRAFT] pending Sharon's copy review. Says what the hold on the first step
+ *  does in a rehearsal: it moves the walk on, and opens nothing real. */
+export const NEXT_STEP = 'Next step';
+/** [DRAFT] pending Sharon's copy review. The way from the last step to the result. */
+export const SEE_WHAT_IT_FOUND = 'See what it found';
