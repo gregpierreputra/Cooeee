@@ -8,7 +8,7 @@ import {
   packOfferSizeLine,
 } from '../../src/core/pack-offer';
 import type { PackOffer, PackSeed, TextPackContent } from '../../src/core/types';
-import { destination, pack, program } from '../fixtures';
+import { destination, pack, packProgram } from '../fixtures';
 
 function seed(): PackSeed {
   const complete = pack();
@@ -25,7 +25,7 @@ const content: TextPackContent = {
   pack: seed(),
   layers: [],
   destinations: [destination()],
-  recovery: [program()],
+  recovery: [packProgram()],
 };
 
 const offer: PackOffer = {

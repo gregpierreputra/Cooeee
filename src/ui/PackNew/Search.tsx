@@ -19,7 +19,9 @@ import * as copy from '../../core/copy';
 import { chosenDestinations, orderByDistance } from '../../core/destination';
 import { titleCase } from '../../core/home';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
+import { readKept, writeKept } from '../../core/kept';
 import { buildPackSeed } from '../../core/pack';
+import { packProgramsFor } from '../../core/recover';
 import type {
   AddressCandidate,
   BushfireAreaResult,
@@ -30,9 +32,11 @@ import type {
   PackFile,
   PackOffer,
   PendingPlace,
+  RecoveryProgram,
   TextPackContent,
 } from '../../core/types';
-import { listCompletePacks } from '../../data/db';
+import { listCompletePacks, listPrograms } from '../../data/db';
+import { localFlagStore } from '../../data/acknowledgement';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
 import { loadPackFiles } from '../../data/source-files';
@@ -44,6 +48,7 @@ import { Confirm } from './Confirm';
 import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
 import { Note } from './Note';
+import { Programs } from './Programs';
 import { Size } from './Size';
 
 /** Module scope, so the default has one stable identity for the life of the
@@ -61,7 +66,7 @@ type ConflictState =
 type OfferState =
   | { kind: 'building' }
   | { kind: 'ready'; offer: PackOffer; content: TextPackContent; files: PackFile[] }
-  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[] };
+  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[]; ticked: string[] };
 
 /** E2-US1/US2: the official places of last resort for the confirmed place,
  * read from the precached CFA snapshot. Nothing here is written to the device. */
@@ -83,6 +88,7 @@ type SearchProps = {
   loadPacks?: () => Promise<Pack[]>;
   loadNsp?: () => Promise<NspSnapshot>;
   loadFiles?: typeof loadPackFiles;
+  loadPrograms?: () => Promise<RecoveryProgram[]>;
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
   savePack?: typeof saveTextOnlyPack;
@@ -113,6 +119,7 @@ export function Search({
   loadPacks = listCompletePacks,
   loadNsp = loadNspSnapshot,
   loadFiles = loadPackFiles,
+  loadPrograms = listPrograms,
   onKeepSavedPlace,
   buildOffer = createPackOffer,
   savePack = saveTextOnlyPack,
@@ -149,6 +156,8 @@ export function Search({
   // note itself once it is past. Both in memory only until the pack save.
   const [chosenPlaces, setChosenPlaces] = useState<Destination[] | null>(null);
   const [note, setNote] = useState<string | undefined>(undefined);
+  // The programs step: null until the note is kept, then the list to tick.
+  const [programs, setPrograms] = useState<RecoveryProgram[] | null>(null);
   // Made once per confirmed place, before the places step: destination rows
   // carry the pack id, so the id must exist before the user chooses them.
   const [packId, setPackId] = useState('');
@@ -263,6 +272,7 @@ export function Search({
     place: PendingPlace,
     result: BushfireAreaResult,
     destinations: Destination[],
+    ticked: string[],
   ) {
     setOfferState({ kind: 'building' });
     try {
@@ -271,7 +281,9 @@ export function Search({
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
         destinations,
-        recovery: [],
+        // The programs ticked on the programs step, copied so the pack carries
+        // them and their pages with no signal.
+        recovery: packProgramsFor(seed.id, programs ?? [], ticked),
       };
       // The PDF copies of the source pages and the map of the area travel with
       // the pack, so their bytes are part of the one size stated before
@@ -280,7 +292,7 @@ export function Search({
       const offer = await buildOffer(content, files);
       setOfferState({ kind: 'ready', offer, content, files });
     } catch {
-      setOfferState({ kind: 'failed', result, destinations });
+      setOfferState({ kind: 'failed', result, destinations, ticked });
     }
   }
 
@@ -315,6 +327,7 @@ export function Search({
     setPlacesState(null);
     setChosenPlaces(null);
     setNote(undefined);
+    setPrograms(null);
   }
 
   if (pendingPlace && conflictState?.kind === 'checking') {
@@ -392,6 +405,7 @@ export function Search({
                     pendingPlace,
                     offerState.result,
                     offerState.destinations,
+                    offerState.ticked,
                   )
                 }
               >
@@ -420,15 +434,33 @@ export function Search({
 
   // The note step, after the places and before the size. The example names the
   // nearest chosen place, so the note is about this pack from the first word.
-  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
+  // The programs step, after the note: the ticks become the kept list, so
+  // every pack mirrors the same choice. Not now leaves the list as it is and
+  // the pack carries what is kept, exactly as Home would make it.
+  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces && programs) {
     const { result } = areaState;
+    const kept = readKept(localFlagStore());
+    return (
+      <Programs
+        programs={programs}
+        kept={kept}
+        onContinue={(ticked) => {
+          writeKept(localFlagStore(), ticked);
+          void buildPackOfferForResult(pendingPlace, result, chosenPlaces, ticked);
+        }}
+        onSkip={() => void buildPackOfferForResult(pendingPlace, result, chosenPlaces, kept)}
+      />
+    );
+  }
+
+  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
     const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
     return (
       <Note
         example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
         onContinue={(text) => {
           setNote(text);
-          void buildPackOfferForResult(pendingPlace, result, chosenPlaces);
+          void loadPrograms().then(setPrograms).catch(() => setPrograms([]));
         }}
       />
     );

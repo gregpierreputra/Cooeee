@@ -131,19 +131,25 @@ describe('preparation line selection', () => {
     expect(line.source).toBe('Based on Country Fire Authority guidance.');
   });
 
-  it('offers eight lines, none of them about a place or about conditions', () => {
-    expect(copy.PREPARATION_LINES).toHaveLength(8);
-    expect(new Set(copy.PREPARATION_LINES.map((row) => row.text)).size).toBe(8);
-    expect(new Set(copy.PREPARATION_LINES.map((row) => row.context)).size).toBe(8);
+  it('offers ten lines, none of them about a place or about conditions', () => {
+    expect(copy.PREPARATION_LINES).toHaveLength(10);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.text)).size).toBe(10);
+    expect(new Set(copy.PREPARATION_LINES.map((row) => row.context)).size).toBe(10);
+  });
+
+  it('names the recovery lines\' own source, and the CFA source for the rest', () => {
+    expect(preparationLine(8 * MS_PER_DAY).source).toBe(copy.PREPARATION_SOURCE_RECOVERY);
+    expect(preparationLine(0).source).toBe(copy.PREPARATION_SOURCE);
   });
 });
 
 // BlackSky is entered by a deliberate hold. It is never a tab, in any state.
 describe('bottom navigation', () => {
-  it('offers home and nearby places, the same whether or not a pack is saved', () => {
+  it('offers home, nearby places, Recover and About, the same whether or not a pack is saved', () => {
     expect(NAV_ITEMS).toEqual([
       { key: 'home', label: 'Home', to: '/' },
       { key: 'nearby', label: 'Nearby', to: '/nearby' },
+      { key: 'recover', label: 'Recover', to: '/recover' },
       { key: 'about', label: 'About', to: '/about' },
     ]);
   });

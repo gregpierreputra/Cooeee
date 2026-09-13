@@ -64,6 +64,7 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
       files: 0,
       layers: 0,
       notes: 0,
+      packPrograms: 0,
       packs: 0,
       postcodes: 0,
       programs: 0,

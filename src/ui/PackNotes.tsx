@@ -72,8 +72,7 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
     setNotes([...notes, { id: crypto.randomUUID(), packId, text: '', updatedAt: 0 }]);
 
   return (
-    <section className="pack-notes">
-      <span className="kicker">{copy.NOTES}</span>
+    <div className="pack-notes">
       <ul className="list">
         {notes.map((note) => {
           const answer = marks[note.id] as Mark | undefined;
@@ -117,6 +116,6 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
         })}
       </ul>
       <button type="button" onClick={addNote}>{copy.ADD_NOTE}</button>
-    </section>
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { HOTLINE_NUMBER } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 
 // Exact match, character for character, em dashes and the ± sign included. These
@@ -254,7 +255,7 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
-  it('tours nine features across every screen, three led lines each', () => {
+  it('tours ten features across every screen, three led lines each', () => {
     expect(copy.TOUR_STEPS.map((step) => step.title)).toEqual([
       "Today's reminder",
       'Your saved packs',
@@ -264,6 +265,7 @@ describe('the returning-user home', () => {
       'The bottom bar',
       'The address search',
       'Nearby official places',
+      'Recover',
       'About Cooeee',
     ]);
     for (const step of copy.TOUR_STEPS) {
@@ -372,5 +374,72 @@ describe('first-open disclosure', () => {
     ].join(' ');
     expect(statements).not.toMatch(/\bmonitors\b|\bnotifies\b|\bkeeps you informed\b/i);
     expect(statements).toMatch(/[Dd]oes not watch conditions/);
+  });
+});
+
+// E4 Recover: the lines that carry the may-match boundary and the privacy claim.
+describe('E4 Recover mandated copy', () => {
+  it('frames every result as a possible match the organisation decides on', () => {
+    expect(copy.RECOVER_MAY_MATCH).toBe(
+      'These may match. The responsible organisation decides who is eligible.',
+    );
+    expect(copy.RECOVER_ORDER_LINE).toBe('Listed by organisation name, in alphabetical order.');
+  });
+
+  it('says what is shared, and that the caveat travels with a shared list', () => {
+    expect(copy.SHARED_FROM).toBe('Shared from Cooeee. Programs change, and the organisation decides.');
+    expect(copy.RECOVER_ORDER_LINE_KEPT).toBe('Kept programs first, then by organisation name.');
+    expect(copy.PREPARATION_LINES.filter((line) => line.source === copy.PREPARATION_SOURCE_RECOVERY)).toHaveLength(2);
+  });
+
+  it('names the saved programs section, its one control and the Home nudge', () => {
+    expect(copy.SAVED_PROGRAMS).toBe('Saved programs');
+    expect(copy.SHOW).toBe('Show');
+    expect(copy.HIDE).toBe('Hide');
+    expect(copy.SHOW_SECTION('Saved programs')).toBe('Show Saved programs');
+    expect(copy.HIDE_SECTION('Notes')).toBe('Hide Notes');
+    expect(copy.STORED_INFORMATION).toBe('Stored information');
+    expect(copy.NUDGE_KICKER).toBe('Not yet offline');
+    expect(copy.KEPT_NOT_SAVED(1)).toBe('1 kept program is not yet in an offline pack.');
+    expect(copy.KEPT_NOT_SAVED(2)).toBe('2 kept programs are not yet in an offline pack.');
+    expect(copy.KEPT_NOT_SAVED_LINE).toBe('Build a pack to carry their pages, so they open with no signal.');
+  });
+
+  it('names the wizard step, its two ways on, and the in-your-packs line', () => {
+    expect(copy.PROGRAMS_STEP_TITLE).toBe('Carry support programs in this pack?');
+    expect(copy.CARRY_PROGRAMS(0)).toBe('Keep none and continue');
+    expect(copy.VICEMERGENCY_HOTLINE).toContain(HOTLINE_NUMBER);
+    expect(copy.CARRY_PROGRAMS(1)).toBe('Carry 1 program');
+    expect(copy.CARRY_PROGRAMS(2)).toBe('Carry 2 programs');
+    expect(copy.CHOOSE_LATER).toBe('Not now, choose in Recover later');
+    expect(copy.CHOOSE_IN_RECOVER).toBe('Choose programs in Recover');
+    expect(copy.IN_YOUR_PACKS).toBe('In your packs');
+    for (const line of copy.COOEEE_INFO_LINES) expect(line.glyph).toBeTruthy();
+  });
+
+  it('names the call list and the print control', () => {
+    expect(copy.WHO_TO_CALL).toBe('Who to call');
+    expect(copy.HOTLINE_LABEL).toBe('VicEmergency hotline');
+    expect(copy.PRINT_LIST).toBe('Print this list');
+  });
+
+  it('states that nothing chosen leaves the phone', () => {
+    expect(copy.RECOVER_PRIVACY_LINE).toBe(
+      'Nothing you choose here leaves this phone. Only a program you keep is remembered, on this phone.',
+    );
+  });
+
+  it('separates "this pack holds nothing" from "no help exists"', () => {
+    expect(copy.RECOVER_NO_MATCH_TITLE).toBe('This pack holds nothing for that need.');
+    expect(copy.RECOVER_NO_MATCH_LINE).toBe(
+      'That is not the same as no help existing. Try the official channel when you have a connection.',
+    );
+    expect(copy.RECOVER_NONE_TITLE).toBe('No support information is held on this phone.');
+  });
+
+  it('offers needs in everyday words, never a program, agency or scheme name', () => {
+    for (const phrase of Object.values(copy.NEED_PHRASE)) {
+      expect(phrase).not.toMatch(/payment|allowance|grant|australia|scheme|program/i);
+    }
   });
 });

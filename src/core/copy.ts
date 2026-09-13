@@ -6,7 +6,7 @@
 // Never reword them without updating the tests.
 
 import { AREA_MAP_HALF_KM } from './constants';
-import type { Destination, FacilityType, SourceStatus } from './types';
+import type { Destination, FacilityType, NeedKey, SourceStatus } from './types';
 
 // Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
@@ -426,6 +426,69 @@ export const SAVED_PLACE_LABEL = 'Saved place';
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_ABOUT = 'About';
+export const NAV_RECOVER = 'Recover';
+
+// E4 Recover: needs-first support matching, read from the pack's dated snapshot
+export const RECOVER_QUESTION = 'What do you need?';
+export const RECOVER_PRIVACY_LINE =
+  'Nothing you choose here leaves this phone. Only a program you keep is remembered, on this phone.';
+export const NEED_PHRASE: Record<NeedKey, string> = {
+  stay: 'Somewhere to stay',
+  money: 'Money for essentials',
+  food: 'Food and water',
+  property: 'Repairs to my home',
+  health: 'Someone to talk to',
+  documents: 'Replace lost documents',
+};
+export const RECOVER_MAY_MATCH =
+  'These may match. The responsible organisation decides who is eligible.';
+export const RECOVER_ORDER_LINE = 'Listed by organisation name, in alphabetical order.';
+export const RECOVER_ORDER_LINE_KEPT = 'Kept programs first, then by organisation name.';
+export const EVERY_PROGRAM = 'Every program in this pack';
+export const KEPT_PROGRAMS = 'Kept programs';
+export const KEEP = 'Keep';
+export const KEPT = 'Kept';
+export const SHARE_LIST = 'Share this list';
+export const COPIED_LINE = 'Copied. Paste it into a message.';
+export const SHARE_UNAVAILABLE = 'Sharing is not available in this browser.';
+export const SHARED_FROM = 'Shared from Cooeee. Programs change, and the organisation decides.';
+export const RECOVER_STALE_LINE =
+  'This information was captured more than three months ago. Programs change, so check with the organisation.';
+export const LICENCE_LINE = (licence: string) => `Licence · ${licence}`;
+export const CALL_LINE = (number: string) => `Call ${number}`;
+export const RECOVER_NO_MATCH_TITLE = 'This pack holds nothing for that need.';
+export const RECOVER_NO_MATCH_LINE =
+  'That is not the same as no help existing. Try the official channel when you have a connection.';
+export const OFFICIAL_CHANNEL = 'Official channel (web)';
+export const CHOOSE_ANOTHER_NEED = 'Choose another need';
+export const RECOVER_NONE_TITLE = 'No support information is held on this phone.';
+export const SAVED_PROGRAMS = 'Saved programs';
+export const STORED_INFORMATION = 'Stored information';
+export const SHOW = 'Show';
+export const HIDE = 'Hide';
+export const SHOW_SECTION = (title: string) => `Show ${title}`;
+export const HIDE_SECTION = (title: string) => `Hide ${title}`;
+export const NUDGE_KICKER = 'Not yet offline';
+export const NO_SAVED_PROGRAMS =
+  'No programs were kept when this pack was built. Keep programs in Recover, then build a pack to carry their pages.';
+export const KEPT_NOT_SAVED = (count: number) =>
+  `${count} kept ${count === 1 ? 'program is' : 'programs are'} not yet in an offline pack.`;
+export const KEPT_NOT_SAVED_LINE = 'Build a pack to carry their pages, so they open with no signal.';
+export const IN_YOUR_PACKS = 'In your packs';
+export const PROGRAMS_STEP_KICKER = 'Support programs';
+export const PROGRAMS_STEP_TITLE = 'Carry support programs in this pack?';
+export const PROGRAMS_STEP_LINE =
+  'The programs you tick travel in this pack with a copy of their official pages, so they open with no signal. Nothing about you is stored, and you can change this any day in Recover.';
+export const CARRY_PROGRAMS = (count: number) =>
+  count === 0 ? 'Keep none and continue' : `Carry ${count} ${count === 1 ? 'program' : 'programs'}`;
+export const CHOOSE_LATER = 'Not now, choose in Recover later';
+export const CHOOSE_IN_RECOVER = 'Choose programs in Recover';
+export const WHO_TO_CALL = 'Who to call';
+export const HOTLINE_LABEL = 'VicEmergency hotline';
+export const CALLS_LINE = 'Voice calls often work when data does not. Each number is the organisation\'s own.';
+export const PRINT_LIST = 'Print this list';
+export const RECOVER_NONE_LINE =
+  'Build a pack when you are online. It carries the official programs so they open with no signal.';
 
 /** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
  *  is written here in sentence case and read out as words, not as letters. */
@@ -437,7 +500,8 @@ export const PREPARATION_LABEL = "Today's reminder";
  *  anything about what is happening outside. Each carries a second line for
  *  the reader the first was not written for: someone without a car, a garden,
  *  animals, tools or a household of their own. */
-export const PREPARATION_LINES = [
+export const PREPARATION_SOURCE_RECOVERY = 'Based on the programs saved in your pack.';
+export const PREPARATION_LINES: readonly { text: string; context: string; source?: string }[] = [
   {
     text: 'Write your household bushfire plan down, and decide who does what.',
     context: 'If you live alone, the plan is still worth writing. Decide who you would call and where you would go.',
@@ -470,7 +534,17 @@ export const PREPARATION_LINES = [
     text: 'Talk the plan through with everyone in the house before the fire season starts.',
     context: 'Include anyone who visits or cares for you regularly, and the neighbours you would check on.',
   },
-] as const;
+  {
+    text: 'Read the support programs saved in your pack, so the names are familiar later.',
+    context: 'Open Recover from the bottom bar. Every program shows who runs it and when it was captured, and it opens with no signal.',
+    source: PREPARATION_SOURCE_RECOVERY,
+  },
+  {
+    text: 'Keep the programs that fit your household, so they list first when you need them.',
+    context: 'Tap Keep on a program in Recover. Only the program is remembered, on this phone, and nothing about you.',
+    source: PREPARATION_SOURCE_RECOVERY,
+  },
+];
 
 /** Attribution, not citation: the lines above are Cooeee's own wording of
  *  Country Fire Authority plan-and-prepare guidance, so the byline credits the
@@ -493,22 +567,27 @@ export const BLACKSKY_WORKS_WITHOUT_PACK = 'WORKS WITHOUT A SAVED PACK';
 export const ABOUT_COOEEE = 'About Cooeee';
 export const COOEEE_INFO_LINES = [
   {
+    glyph: 'what',
     lead: 'What it is.',
     text: 'Cooeee is a small app for people who live where bushfires happen. It gathers official information about the places you choose and keeps it on your phone.',
   },
   {
+    glyph: 'why',
     lead: 'Why it exists.',
     text: 'When a fire comes, the power and the signal often go first. Information that was only online is gone at the moment it matters most.',
   },
   {
+    glyph: 'does',
     lead: 'What it does.',
     text: 'Build an offline pack for an address. Find the nearest official places from where you stand. Hold for BlackSky, the dark screen that points the way when nothing else works.',
   },
   {
+    glyph: 'not',
     lead: 'What it does not do.',
     text: 'It does not watch conditions and it never contacts you. VicEmergency and emergency services tell you when to act.',
   },
   {
+    glyph: 'stays',
     lead: 'Where your information stays.',
     text: 'On this phone. Your address is checked against Victorian Government data and Cooeee runs no server that could keep it.',
   },
@@ -604,6 +683,16 @@ export const TOUR_STEPS = [
       'The nearest official places, from your position or a postcode, while you have a connection.',
       'Before a pack exists, or away from home, you still need to know where the official places are.',
       'Lists relief centres and places of last resort with their distance, sorted by distance, not a safety ranking.',
+    ],
+  },
+  {
+    path: '/recover',
+    target: '.recover',
+    title: 'Recover',
+    lines: [
+      'The official support programs saved in your pack, found by saying what you need in plain words.',
+      'After an event, people do not know what the schemes are called. Before it, they have time to read.',
+      'Lists programs that may match a need with their publisher and saved date, keeps the ones you choose, and shares the list as text. Every result is a possible match, and the responsible organisation decides who is eligible.',
     ],
   },
   {

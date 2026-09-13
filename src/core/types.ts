@@ -161,7 +161,7 @@ export type Destination = {
 
 // --- Recovery ---
 // NeedKey string for a given recovery program
-type NeedKey = 'stay' | 'money' | 'food' | 'property' | 'health' | 'documents'; 
+export type NeedKey = 'stay' | 'money' | 'food' | 'property' | 'health' | 'documents'; 
 
 export type RecoveryProgram = {
   id: string;
@@ -180,6 +180,10 @@ export type RecoveryProgram = {
     checkedAt: number };
   source: Source;
 };
+
+/** A program copied into a pack: the row a pack owns and hashes, so what the
+ *  pack shows is what was saved, whatever the app's snapshot does later. */
+export type PackProgram = RecoveryProgram & { packId: string; programId: string };
 
 // ID alongside x, y, z alongside with the blobs for info bytes
 export type TileRow = { 
@@ -273,25 +277,24 @@ export type PackSeed = Omit<
   'status' | 'verifiedAt' | 'builtWithTiles' | 'sizeBytes' | 'manifest'
 >;
 
-/** Complete text content supplied to the local manifest builder. Recovery
- * rows are pre-seeded global snapshot records and are verified, not rewritten. */
+/** Complete text content supplied to the local manifest builder. */
 export type TextPackContent = {
   pack: PackSeed;
   layers: ExposureLayer[];
   destinations: Destination[];
-  recovery: RecoveryProgram[];
+  recovery: PackProgram[];
 };
 
-/** Raw rows behind one complete pack detail view. Recovery is shown only when
- * its global snapshot still matches the pack's recorded manifest. */
+/** Raw rows behind one complete pack detail view. Every group is shown only
+ * when its rows still match the pack's recorded manifest. */
 export type CompletePackContent = {
   pack: Pack;
   layers: ExposureLayer[];
   destinations: Destination[];
-  recovery: RecoveryProgram[];
+  recovery: PackProgram[];
   files: PackFile[];
   notes: PackNote[];
-  recoveryVerified: boolean;       // the shared recovery snapshot matches this pack's manifest
+  recoveryVerified: boolean;       // this pack's program rows match its manifest
   contentVerified: boolean;        // layers, destinations and files all match the manifest
 };
 

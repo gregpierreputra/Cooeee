@@ -4,8 +4,10 @@ import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
 import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
+import { pruneKept } from './core/kept';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
+import { loadRecoveryPrograms } from './data/recovery';
 import About from './ui/About';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
@@ -18,6 +20,7 @@ import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
 import Tour, { startTour } from './ui/components/Tour';
 import PackDetail from './ui/PackDetail';
+import Recover from './ui/Recover';
 import { Search } from './ui/PackNew/Search';
 
 /** main.tsx dispatches this when the service worker has a new version waiting.
@@ -123,6 +126,11 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // official places with the radios off. A failed copy costs nothing now.
   useEffect(() => {
     cacheNspSnapshot().catch(() => {});
+    // The recovery programs too, so Recover works before any pack is saved;
+    // a kept id the new snapshot no longer holds is dropped with it.
+    loadRecoveryPrograms()
+      .then((programs) => pruneKept(localFlagStore(), programs.map((program) => program.id)))
+      .catch(() => {});
   }, []);
 
   if (!passed) {
@@ -165,6 +173,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
         <Route path="/nearby" element={<Nearby />} />
+        <Route path="/recover" element={<Recover />} />
         <Route path="/about" element={<About />} />
         <Route path="/blacksky" element={<BlackSky />} />
       </Routes>

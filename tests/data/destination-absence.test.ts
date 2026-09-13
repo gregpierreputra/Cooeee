@@ -11,9 +11,9 @@ import {
   saveTextOnlyPack,
   stageTextOnlyPack,
 } from '../../src/data/pack-build';
-import { pack, program, source } from '../fixtures';
+import { pack, packProgram, source } from '../fixtures';
 
-const recovery = program();
+const recovery = packProgram();
 
 function seed(over: Partial<PackSeed> = {}): PackSeed {
   const { status, verifiedAt, builtWithTiles, sizeBytes, manifest, ...value } = pack();

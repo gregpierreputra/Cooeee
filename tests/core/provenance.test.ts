@@ -19,7 +19,7 @@ import {
   sourcePageUrls,
 } from '../../src/core/provenance';
 import type { CompletePackContent, PackSeed, TextPackContent } from '../../src/core/types';
-import { destination, pack, program, source } from '../fixtures';
+import { destination, pack, packProgram, source } from '../fixtures';
 
 const NOW = Date.UTC(2026, 7, 29, 12);
 const daysAgo = (days: number) => NOW - days * MS_PER_DAY;
@@ -104,7 +104,7 @@ describe('E1-US2 required provenance', () => {
       id: 'pack-1:missing-publisher',
       source: source({ publisher: '' }),
     });
-    const invalidRecovery = program({
+    const invalidRecovery = packProgram({
       id: 'missing-date',
       source: source({ retrievedAt: Number.NaN }),
     });
@@ -112,7 +112,7 @@ describe('E1-US2 required provenance', () => {
       pack: seed(),
       layers: [layer],
       destinations: [destination(), invalidDestination],
-      recovery: [program(), invalidRecovery],
+      recovery: [packProgram(), invalidRecovery],
     };
 
     const result = prepareProvenancedContent(input);
@@ -120,7 +120,7 @@ describe('E1-US2 required provenance', () => {
     expect(result.content.pack).toBe(input.pack);
     expect(result.content.layers).toEqual([layer]);
     expect(result.content.destinations).toEqual([destination()]);
-    expect(result.content.recovery).toEqual([program()]);
+    expect(result.content.recovery).toEqual([packProgram()]);
     expect(result.omittedItems).toEqual([
       { id: 'pack-1:missing-publisher', missing: 'publisher' },
       { id: 'missing-date', missing: 'saved-date' },
@@ -183,13 +183,13 @@ describe('E1-US2 pack item projection', () => {
       }),
       layers: [layer],
       destinations: [destination()],
-      recovery: [program()],
+      recovery: [packProgram()],
       files: [], notes: [], recoveryVerified: true, contentVerified: true,
     };
 
+    // Saved programs have a section of their own on the pack page.
     expect(packDetailItems(content).map(({ name }) => name)).toEqual([
       'Designated Bushfire Prone Area',
-      'Example payment',
       'Offline basemap',
     ]);
   });

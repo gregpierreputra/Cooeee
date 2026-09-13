@@ -166,7 +166,6 @@ export function packDetailItems(content: CompletePackContent): PackDetailItem[] 
         ...(citation ? { citation } : {}),
       };
     }),
-    ...content.recovery.map((row) => ({ id: row.id, name: row.title, source: row.source })),
   ];
   // ponytail: unreachable for Iteration 1 packs, which are all built without a
   // basemap; kept because builtWithTiles is a stored field and this is the

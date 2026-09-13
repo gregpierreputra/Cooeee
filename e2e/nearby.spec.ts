@@ -40,6 +40,8 @@ test('AC4 offline, static places come from IndexedDB labelled cached with their 
   await expect(relief).toContainText('Lilydale Community Centre');
   await expect(relief).toContainText(STATE_CACHED(MINUTES_AGO(10)));
   await expect(relief).toContainText(MAY_BE_OUTDATED);
+  // E1-US3-AC7: one drawing per group head.
+  await expect(page.locator('.nearby-group .glyph')).toHaveCount(2);
 });
 
 test('AC5 offline with a snapshot past the threshold, no relief centre is shown — only the stale line and the hotline', async ({ page, context }) => {

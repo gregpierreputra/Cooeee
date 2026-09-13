@@ -17,6 +17,7 @@ import {
 } from '../core/nearby';
 import type { LatLon } from '../core/types';
 import { readNearbyCache, syncNearby } from '../data/nearby';
+import Glyph from './components/Glyph';
 import StateCard from './components/StateCard';
 
 type Origin = LatLon & { label: string };
@@ -142,6 +143,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
         <>
           <section className="card nearby-locate">
             <button type="button" className="main-action" onClick={locate} disabled={locating}>
+              <Glyph kind="locate" />
               {locating ? copy.LOCATING : copy.USE_MY_LOCATION}
             </button>
             <form className="nearby-postcode" onSubmit={findPostcode}>
@@ -171,7 +173,10 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
               <p className="muted">{copy.DISTANCES_NOTE}</p>
               {view.groups.map((group) => (
                 <section key={group.heading} className="nearby-group">
-                  <h2>{group.heading}</h2>
+                  <div className="pack-section-head">
+                    <Glyph kind={group.kind === 'bushfire' ? 'place' : 'relief'} />
+                    <h2>{group.heading}</h2>
+                  </div>
                   <p className="muted">{group.note}</p>
                   <ul className="list">
                     {group.rows.map((row) => (

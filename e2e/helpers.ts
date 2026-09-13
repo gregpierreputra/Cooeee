@@ -76,8 +76,10 @@ export async function chooseLastResortPlaces(page: Page) {
   const count = Math.min(2, await boxes.count());
   for (let i = 0; i < count; i += 1) await boxes.nth(i).check();
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
-  // The note step follows the places: keep the pre-filled example.
+  // The note step follows the places: keep the pre-filled example. Then the
+  // programs step: carry none for now.
   await page.getByRole('button', { name: 'Keep this note' }).click();
+  await page.getByRole('button', { name: 'Not now, choose in Recover later' }).click();
 }
 
 /** Seeds browser flags before any script on the page runs, so they are there

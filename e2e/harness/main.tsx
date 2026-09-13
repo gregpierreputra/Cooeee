@@ -2,7 +2,7 @@ import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 
-import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
+import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
 import { DTP_DATASET_URL } from '../../src/core/constants';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../src/core/nsp';
@@ -14,6 +14,7 @@ import BlackSky from '../../src/ui/BlackSky';
 import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
+import Recover from '../../src/ui/Recover';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BottomNav from '../../src/ui/components/BottomNav';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
@@ -191,12 +192,11 @@ const sizeContent: TextPackContent = {
     name: 'Malformed test-only item',
     source: { ...packSource, publisher: '' },
   }] : [],
-  recovery: [recoveryProgram],
+  recovery: [{ ...recoveryProgram, id: 'new-pack:services-australia-example', packId: 'new-pack', programId: 'services-australia-example' }],
 };
 
 let sizeFlow = confirmation;
 if (window.location.pathname === '/size') {
-  await db.programs.put(recoveryProgram);
   if (sizeMode === 'interrupt') await db.packs.put(savedPack);
   const offer = await createPackOffer(sizeContent);
   let interruptOnce = sizeMode === 'interrupt';
@@ -250,9 +250,11 @@ const detailDestination: Destination = detailMode === 'absence'
       name: 'Kalorama Reserve',
       source: cfaSource,
     };
-const detailRecovery: RecoveryProgram = {
+const detailRecovery: PackProgram = {
   ...recoveryProgram,
-  id: 'detail-recovery',
+  id: 'detail-pack:services-australia-example',
+  packId: 'detail-pack',
+  programId: 'services-australia-example',
   title: 'Disaster support reference',
   source: {
     publisher: 'Services Australia',
@@ -270,6 +272,8 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
     id: 'detail-pack:bpa.pdf', packId: 'detail-pack', url: DTP_DATASET_URL, name: 'bpa.pdf',
     retrievedAt: detailSavedAt, sizeBytes: bytes.byteLength, sha256: await sha256Hex(bytes), bytes,
   };
+  // The saved program's own page copy, so its file link renders here.
+  const programFile: PackFile = { ...detailFile, id: 'detail-pack:program.pdf', url: detailRecovery.officialUrl, name: 'program.pdf' };
   // Real hashes: the reads re-verify every group against the manifest.
   await db.packs.put({
     ...savedPack,
@@ -284,14 +288,59 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
         destinations: await manifestGroup([detailDestination]),
         recovery: await manifestGroup([detailRecovery]),
         tiles: { count: 0, bytes: 0 },
-        files: await manifestGroup([fileMeta(detailFile)]),
+        files: await manifestGroup([fileMeta(detailFile), fileMeta(programFile)]),
       },
     },
   });
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
-  await db.programs.put(detailRecovery);
-  await db.files.put(detailFile);
+  await db.packPrograms.put(detailRecovery);
+  await db.files.bulkPut([detailFile, programFile]);
+}
+
+// Recover at a fixed instant, from the programs on the device and no pack.
+// ?mode=none leaves nothing on the device; ?mode=stale back-dates the snapshot
+// past RECOVERY_STALE_DAYS.
+const recoverMode = new URLSearchParams(window.location.search).get('mode') ?? 'cached';
+const recoverNow = Date.UTC(2026, 8, 11, 6);
+const recoverSnapshotAt = recoverMode === 'stale' ? Date.UTC(2026, 4, 1) : Date.UTC(2026, 8, 9);
+const recoverSnapshotDate = new Date(recoverSnapshotAt).toISOString().slice(0, 10);
+const recoverPrograms: RecoveryProgram[] = [
+  {
+    ...recoveryProgram,
+    id: 'recover:payment',
+    title: 'Example disaster payment',
+    needs: ['money', 'property'],
+    telephone: '180 22 66',
+    snapshotDate: recoverSnapshotDate,
+    source: { ...recoveryProgram.source, retrievedAt: recoverSnapshotAt },
+  },
+  {
+    id: 'recover:coping',
+    org: 'Australian Red Cross',
+    title: 'Coping after a crisis',
+    covers: 'Where to find someone to talk to after an emergency.',
+    needs: ['health'],
+    officialUrl: 'https://www.redcross.org.au/emergencies/coping-after-a-crisis/',
+    snapshotDate: recoverSnapshotDate,
+    source: {
+      publisher: 'Australian Red Cross',
+      url: 'https://www.redcross.org.au/emergencies/coping-after-a-crisis/',
+      licence: 'Link only, all rights reserved',
+      retrievedAt: recoverSnapshotAt,
+    },
+  },
+];
+let recoverFlow = confirmation;
+if (window.location.pathname === '/recover') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  if (recoverMode !== 'none') await db.programs.bulkPut(recoverPrograms);
+  // ?mode=saved: a pack already carries the first program.
+  if (recoverMode === 'saved') {
+    await db.packs.put(savedPack);
+    await db.packPrograms.put({ ...recoverPrograms[0], id: `${savedPack.id}:recover:payment`, packId: savedPack.id, programId: 'recover:payment' });
+  }
+  recoverFlow = <Recover now={recoverNow} />;
 }
 
 function DetailLauncher() {
@@ -329,6 +378,12 @@ if (window.location.pathname === '/home') {
       lon: testCandidate.lon,
       verifiedAt: homeNow - (homeDays - 1) * 86_400_000,
     });
+  }
+  // ?mode=kept: one pack, the programs table, and a kept id no pack carries yet;
+  // Home mirrors it into the pack on arrival, so no nudge is shown.
+  if (homeMode === 'kept') {
+    await db.programs.put(recoveryProgram);
+    window.localStorage.setItem('cooeee.kept.v1', JSON.stringify([recoveryProgram.id]));
   }
   homeFlow = (
     <>
@@ -501,6 +556,7 @@ createRoot(root).render(
         : window.location.pathname === '/size' ? sizeFlow
         : window.location.pathname === '/destinations' ? destinationsFlow
         : window.location.pathname === '/nearby' ? nearbyFlow
+        : window.location.pathname === '/recover' ? recoverFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

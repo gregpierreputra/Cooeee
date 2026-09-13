@@ -42,6 +42,10 @@ async function readSourceFile(packId: string, url: string): Promise<PackFile> {
   };
 }
 
+/** The file name of the build's current copy of this page, if it rendered one. */
+export const currentCopyName = (url: string): string | undefined =>
+  sources.find((source) => source.url === url)?.name;
+
 /** The copies of the given pages, ready to be written with the pack. Nothing
  *  is written to the device here. */
 export const loadSourceFiles = (packId: string, urls: string[]): Promise<PackFile[]> =>
@@ -53,8 +57,13 @@ export const loadSourceFiles = (packId: string, urls: string[]): Promise<PackFil
  *  server that is down or slow must not stop the pack, so the pack is built
  *  without it and its page simply shows no map. */
 export async function loadPackFiles(packId: string, content: TextPackContent): Promise<PackFile[]> {
+  // A kept program's page travels too, where the build rendered one; a page
+  // the build could not render leaves that program with its web link only.
+  const programPages = content.recovery
+    .map((program) => program.officialUrl)
+    .filter((url) => currentCopyName(url) !== undefined);
   const [pages, map] = await Promise.all([
-    loadSourceFiles(packId, sourcePageUrls(content)),
+    loadSourceFiles(packId, [...new Set([...sourcePageUrls(content), ...programPages])]),
     loadAreaMap(packId, content.pack).catch(() => null),
   ]);
   return map ? [...pages, map] : pages;

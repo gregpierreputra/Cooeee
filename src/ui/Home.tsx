@@ -2,8 +2,12 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
 import { homeView, titleCase, type HomeView } from '../core/home';
-import type { Pack } from '../core/types';
-import { deleteCompletePack, listCompletePacks } from '../data/db';
+import { readKept } from '../core/kept';
+import { unsavedKept } from '../core/recover';
+import { localFlagStore } from '../data/acknowledgement';
+import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
+import { syncKeptIntoPacks } from '../data/pack-programs';
+import Glyph from './components/Glyph';
 import HoldButton from './components/HoldButton';
 import StateCard from './components/StateCard';
 import { startTour } from './components/Tour';
@@ -13,8 +17,8 @@ import { startTour } from './components/Tour';
  *
  *  Every saved pack, newest first, each card the way into its pack; then the
  *  control that builds one more, and the BlackSky control with the ring that
- *  says what BlackSky is. It reads IndexedDB and nothing else: no request is
- *  made here in any state, and no position is asked for. */
+ *  says what BlackSky is. It reads IndexedDB, asks for no position, and makes
+ *  no request other than a kept program's page copy from the precache. */
 export default function Home({ now }: { now?: number }) {
   // null = the store has not answered yet.
   // It answers in a frame or two from local IndexedDB, and
@@ -27,10 +31,26 @@ export default function Home({ now }: { now?: number }) {
   // navigates away and comes back.
   const [seed] = useState(() => now ?? Date.now());
 
+  // E4-US7-AC4: the kept programs no saved pack carries yet, for the amber
+  // nudge. Read with the packs on every arrival, so coming back from Recover
+  // shows the current count.
+  const [unsaved, setUnsaved] = useState(0);
+  const load = async () => {
+    const kept = readKept(localFlagStore());
+    // Every saved pack mirrors the kept list first, so a program kept since the
+    // last visit is in the packs before anything here is counted. The one
+    // request this can make is a page copy, served from the precache.
+    await syncKeptIntoPacks(kept).catch(() => {});
+    const [rows, saved] = await Promise.all([listCompletePacks(), listSavedProgramIds()]);
+    return { rows, unsaved: unsavedKept(kept, saved).length };
+  };
+
   useEffect(() => {
     let live = true;
-    listCompletePacks().then((rows: Pack[]) => {
-      if (live) setView(homeView(seed, rows));
+    load().then((loaded) => {
+      if (!live) return;
+      setView(homeView(seed, loaded.rows));
+      setUnsaved(loaded.unsaved);
     });
     return () => {
       live = false;
@@ -48,7 +68,9 @@ export default function Home({ now }: { now?: number }) {
 
   const removePack = async (id: string) => {
     await deleteCompletePack(id);
-    setView(homeView(seed, await listCompletePacks()));
+    const loaded = await load();
+    setView(homeView(seed, loaded.rows));
+    setUnsaved(loaded.unsaved);
     setConfirming(null);
   };
 
@@ -73,6 +95,22 @@ export default function Home({ now }: { now?: number }) {
           <p className="muted preparation-source">{view.preparation.source}</p>
         </section>
       )}
+
+      {/* The nudge: the kept card treatment, so it reads as the same object the
+          person kept, and one way to act on it. */}
+      {view !== null && unsaved > 0 ? (
+        <section className="card nudge">
+          <div className="card-head">
+            <Glyph kind="kept" />
+            <div>
+              <span className="kicker">{copy.NUDGE_KICKER}</span>
+              <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
+            </div>
+          </div>
+          <p className="muted">{copy.KEPT_NOT_SAVED_LINE}</p>
+          <Link className="action" to="/packs/new">{copy.BUILD_A_PACK}</Link>
+        </section>
+      ) : null}
 
       {view === null ? null : view.packs.length === 0 ? (
         <StateCard heading={copy.NO_PACK_SAVED} detail={copy.NO_PACKS_HINT} />
