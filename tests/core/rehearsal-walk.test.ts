@@ -191,6 +191,76 @@ describe('held and gap, told apart by words alone', () => {
   });
 });
 
+// Amended 14 September 2026: a line that holds shows its value from the pack.
+describe('a held line shows what the pack holds', () => {
+  const DTP = 'Department of Transport and Planning';
+  // 1_756_100_000_000 is 25 August 2025 in Melbourne.
+  const SAVED = '25 August 2025';
+  const held = content({
+    layers: [layer({ source: source({ publisher: DTP }) })],
+    destinations: [
+      destination({ id: 'pack-1:c', name: 'Third Reserve' }),
+      destination({ id: 'pack-1:b', name: 'Second Reserve', distanceOrder: 1 }),
+      destination({ id: 'pack-1:a', name: undefined, distanceOrder: 0 }),
+    ],
+  });
+
+  it('shows each value worded exactly as the rest of the app words it', () => {
+    const [first, second] = walk('no-data', held);
+    // The designation, as the area check states it.
+    expect(line(first, 'designation-missing').values).toEqual([
+      'This address is inside a Designated Bushfire Prone Area.',
+    ]);
+    // The shared provenance line, once for each distinct line: the three places
+    // share one publisher and one saved date.
+    expect(line(first, 'provenance-missing').values).toEqual([
+      `Published by ${DTP} · Saved ${SAVED}`,
+      `Published by Country Fire Authority · Saved ${SAVED}`,
+    ]);
+    // Named as the destinations list names them, in the order it listed them.
+    expect(line(second, 'places-missing').values).toEqual([
+      'Third Reserve',
+      'Official place of last resort information',
+      'Second Reserve',
+    ]);
+  });
+
+  it('never shows a value for live direction and distance, under either condition', () => {
+    REHEARSAL_CONDITIONS.forEach((condition) => {
+      expect(line(walkStep('blacksky', condition, held), 'live-direction-unavailable').values).toEqual([]);
+    });
+  });
+
+  it('shows no value on a gap line, so a gap has no empty slot', () => {
+    const everyGap = content({
+      layers: [layer({ status: 'none-mapped-here' })],
+      destinations: [destination({ source: source({ publisher: '' }) })],
+    });
+    const gapLines = walk('no-location-fix', everyGap)
+      .flatMap((view) => view.lines)
+      .filter((row) => row.state === 'gap');
+    expect(gapLines.map((row) => row.gapType)).toEqual([
+      'designation-missing',
+      'provenance-missing',
+      'live-direction-unavailable',
+    ]);
+    gapLines.forEach((row) => expect(row.values, row.gapType).toEqual([]));
+
+    const places = line(walkStep('blacksky', 'no-data', content({ destinations: [] })), 'places-missing');
+    expect(places.state).toBe('gap');
+    expect(places.values).toEqual([]);
+  });
+
+  it('shows no designation value it has no existing wording for', () => {
+    // Only a BPA row is ever built. A designation held by BMO alone has no
+    // area-check wording, so the line holds with no value rather than new words.
+    const bmo = content({ layers: [layer({ id: 'pack-1:BMO', code: 'BMO' })] });
+    const designation = line(walkStep('pack', 'no-data', bmo), 'designation-missing');
+    expect(designation.state).toBe('held');
+    expect(designation.values).toEqual([]);
+  });
+});
+
 describe('a check the journey never looks for', () => {
   it('is not stated as held', () => {
     // No bushfire content, so the designation is never looked for. The gate

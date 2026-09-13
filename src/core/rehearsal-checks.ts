@@ -14,7 +14,13 @@
 import { rehearsableHazards, type RehearsalHazard } from './rehearsal-entry';
 import { missingDisplayProvenance } from './provenance';
 import { GAP_KIND } from './rehearsal-actions';
-import type { CompletePackContent, DetectedGap, RehearsalGapType } from './types';
+import type {
+  CompletePackContent,
+  Destination,
+  DetectedGap,
+  ExposureLayer,
+  RehearsalGapType,
+} from './types';
 import type { RehearsalCondition } from './rehearsal-condition';
 
 /** The designation layers that answer "is this address in a designated area".
@@ -36,6 +42,28 @@ const gap = (gapType: RehearsalGapType, hazard: RehearsalHazard): DetectedGap =>
   kind: GAP_KIND[gapType],
 });
 
+// The rows each check decides on. Exported so a walk step shows the very rows
+// the check found, rather than a second reading of the pack that could differ.
+
+/** The stored rows holding an official designation for the address. */
+export const designationRows = (content: CompletePackContent): ExposureLayer[] =>
+  content.layers.filter(
+    (row) => row.status === 'present' && (DESIGNATION_CODES as readonly string[]).includes(row.code),
+  );
+
+/** The official places saved for one hazard's journey. */
+export const hazardPlaces = (content: CompletePackContent, hazard: RehearsalHazard): Destination[] =>
+  content.destinations.filter((row) => PLACE_HAZARD[row.kind] === hazard);
+
+/** Every stored item whose publisher and saved date one hazard's journey relies on. */
+export const provenanceItems = (
+  content: CompletePackContent,
+  hazard: RehearsalHazard,
+): (ExposureLayer | Destination)[] => [
+  ...(hazard === 'bushfire' ? content.layers : []),
+  ...hazardPlaces(content, hazard),
+];
+
 /** The saved-information checks. These run under BOTH conditions: the criterion
  *  requires saved information to remain available whichever capability the
  *  rehearsal takes away, so losing the location fix does not excuse a pack that
@@ -46,26 +74,16 @@ function packContentGaps(content: CompletePackContent, hazard: RehearsalHazard):
   // The official designation for the address. Bushfire only: heat carries no
   // designation layer, so its journey does not check for one.
   if (hazard === 'bushfire') {
-    const designated = content.layers.some(
-      (row) => row.status === 'present' && (DESIGNATION_CODES as readonly string[]).includes(row.code),
-    );
-    if (!designated) gaps.push(gap('designation-missing', hazard));
+    if (designationRows(content).length === 0) gaps.push(gap('designation-missing', hazard));
   }
 
   // The official places saved for this hazard.
-  const places = content.destinations.filter((row) => PLACE_HAZARD[row.kind] === hazard);
-  if (places.length === 0) gaps.push(gap('places-missing', hazard));
+  if (hazardPlaces(content, hazard).length === 0) gaps.push(gap('places-missing', hazard));
 
   // Every stored item has to name its publisher and its saved date, offline,
   // or the reader cannot judge what they are reading (shared rule 0.4). An item
   // without both is not shown, so its absence is a gap in the pack.
-  const itemsForHazard = [
-    ...content.layers.filter(
-      () => hazard === 'bushfire',
-    ),
-    ...places,
-  ];
-  const provenanceMissing = itemsForHazard.some(
+  const provenanceMissing = provenanceItems(content, hazard).some(
     (row) => missingDisplayProvenance(row.source) !== null,
   );
   if (provenanceMissing) gaps.push(gap('provenance-missing', hazard));

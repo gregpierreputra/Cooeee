@@ -52,6 +52,13 @@ export default function Walk({ run, step, loadContent = getCompletePackContent }
         {view.lines.map((line) => (
           <li key={line.gapType} className="card walk-line">
             <h3>{line.title}</h3>
+            {/* A line that holds shows what the pack holds, above the sentence
+                saying so. A gap has nothing to show, so it shows no slot. */}
+            {line.values.map((value, index) => (
+              <p key={`${index}:${value}`} className="walk-value">
+                {value}
+              </p>
+            ))}
             <p>{line.statement}</p>
           </li>
         ))}

@@ -77,6 +77,11 @@ export function savedAgeDays(now: number, savedAt: number): number {
   return Math.max(0, Math.floor((now - savedAt) / MS_PER_DAY));
 }
 
+/** The shared publisher-and-saved-date line, as every provenance line shows it. */
+export function publisherLine(source: Source): string {
+  return copy.PROVENANCE_LINE(source.publisher, formatSavedDate(source.retrievedAt));
+}
+
 export function provenanceView(now: number, source: Source): {
   publisherLine: string;
   ageLine: string;
@@ -84,7 +89,7 @@ export function provenanceView(now: number, source: Source): {
 } {
   const days = savedAgeDays(now, source.retrievedAt);
   return {
-    publisherLine: copy.PROVENANCE_LINE(source.publisher, formatSavedDate(source.retrievedAt)),
+    publisherLine: publisherLine(source),
     ageLine: days === 0 ? copy.SAVED_TODAY : copy.ITEM_DAYS_AGO(days),
     stale: days > PACK_REFRESH_DAYS,
   };

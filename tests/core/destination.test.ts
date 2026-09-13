@@ -7,6 +7,7 @@ import {
   chosenDestinations,
   formatDistanceM,
   ordinalLabel,
+  placeName,
   orderByDistance,
   savableCount,
 } from '../../src/core/destination';
@@ -198,5 +199,14 @@ describe('absenceRow', () => {
     expect(row.lat).toBeUndefined();
     expect(row.lon).toBeUndefined();
     expect(row.chosen).toBeUndefined();
+  });
+});
+
+describe('placeName', () => {
+  it('names a place by its official name, or as official information when it has none', () => {
+    expect(placeName(destination({ name: 'Kalorama Reserve' }))).toBe('Kalorama Reserve');
+    expect(placeName(destination({ name: undefined }))).toBe(
+      'Official place of last resort information',
+    );
   });
 });

@@ -1,6 +1,12 @@
 import * as copy from './copy';
 import { formatSavedDate } from './provenance';
-import type { BushfireAreaResult, ExposureLayer, LayerPublicationStatus, LayerStatus } from './types';
+import type {
+  BushfireAreaResult,
+  ExposureLayer,
+  LayerPublicationStatus,
+  LayerStatus,
+  VerifiedLayerStatus,
+} from './types';
 
 /** A positive point hit controls immediately.
  * For zero hits, the live existence probe controls,
@@ -49,27 +55,24 @@ type AreaCheckView = {
   priorityLine: string;
 };
 
-/** Keep the three honest domain states exhaustive for rendering. */
-export function areaCheckView(result: BushfireAreaResult): AreaCheckView {
-  const publisherLine = copy.DTP_SAVED_DATE(formatSavedDate(result.checkedAt));
-  switch (result.status) {
+/** How the area check states a designation status, in exactly its words. Kept
+ *  exhaustive over the three honest domain states, and shared, so a stored
+ *  designation shown anywhere else reads as the area check said it. */
+export function areaResultLine(status: VerifiedLayerStatus): string {
+  switch (status) {
     case 'present':
-      return {
-        resultLine: copy.INSIDE_BUSHFIRE_AREA,
-        publisherLine,
-        priorityLine: copy.OFFICIAL_INSTRUCTIONS_FIRST,
-      };
+      return copy.INSIDE_BUSHFIRE_AREA;
     case 'none-mapped-here':
-      return {
-        resultLine: copy.NOTHING_MAPPED_AT_ADDRESS,
-        publisherLine,
-        priorityLine: copy.OFFICIAL_INSTRUCTIONS_FIRST,
-      };
+      return copy.NOTHING_MAPPED_AT_ADDRESS;
     case 'not-published':
-      return {
-        resultLine: copy.AREA_NOT_PUBLISHED,
-        publisherLine,
-        priorityLine: copy.OFFICIAL_INSTRUCTIONS_FIRST,
-      };
+      return copy.AREA_NOT_PUBLISHED;
   }
+}
+
+export function areaCheckView(result: BushfireAreaResult): AreaCheckView {
+  return {
+    resultLine: areaResultLine(result.status),
+    publisherLine: copy.DTP_SAVED_DATE(formatSavedDate(result.checkedAt)),
+    priorityLine: copy.OFFICIAL_INSTRUCTIONS_FIRST,
+  };
 }

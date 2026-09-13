@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
-import { formatDistanceM } from '../core/destination';
+import { formatDistanceM, placeName } from '../core/destination';
 import {
   decideOriginalSourceAccess,
   formatSavedDate,
@@ -155,7 +155,7 @@ export default function PackDetail({
             {places.map((place) => {
               const item = {
                 id: place.id,
-                name: place.name ?? copy.OFFICIAL_DESTINATION_INFORMATION,
+                name: placeName(place),
                 source: place.source,
                 pageUrl: place.source.url,
               };

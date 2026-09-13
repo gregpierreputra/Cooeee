@@ -1,6 +1,6 @@
 import { DESTINATIONS_MAX, METRES_PER_KM } from './constants';
 import { distanceM } from './geo';
-import { NO_DESTINATION_PUBLISHED_FOR, ORDINALS } from './copy';
+import { NO_DESTINATION_PUBLISHED_FOR, OFFICIAL_DESTINATION_INFORMATION, ORDINALS } from './copy';
 import type { Destination, LatLon, Source } from './types';
 
 export const isGeocoded = (d: { lat?: number; lon?: number }): boolean =>
@@ -38,6 +38,11 @@ export const formatDistanceM = (metres: number): string =>
   metres < METRES_PER_KM
     ? `${Math.round(metres / 10) * 10} m`
     : `${(metres / METRES_PER_KM).toFixed(1)} km`;
+
+/** How an official place is named: in the destinations list, on the pack page,
+ *  and in a rehearsal. One definition, so the three cannot word a place apart. */
+export const placeName = (place: Pick<Destination, 'name'>): string =>
+  place.name ?? OFFICIAL_DESTINATION_INFORMATION;
 
 /** Toggling one place in the current selection. At most DESTINATIONS_MAX,
  *  nothing pre-selected, both equals. Returns the new selection, or null when

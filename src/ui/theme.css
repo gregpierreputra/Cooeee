@@ -2161,6 +2161,13 @@ input {
   margin: 0.25rem 0 0;
 }
 
+/* What the pack holds, above the sentence that says it holds. Set apart from
+   that sentence by its slant alone: the words, not the treatment, say whether a
+   line is held or a gap, and a gap line has no value at all. */
+.walk-value {
+  font-style: italic;
+}
+
 .walk-advance {
   min-height: 44px;
 }

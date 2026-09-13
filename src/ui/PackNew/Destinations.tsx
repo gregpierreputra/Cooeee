@@ -6,6 +6,7 @@ import {
   chooseRules,
   formatDistanceM,
   ordinalLabel,
+  placeName,
   savableCount,
 } from '../../core/destination';
 import { formatIsoDateShort, nspListDateLabel } from '../../core/nsp';
@@ -65,7 +66,7 @@ function DestinationRow({
     typeof place.distanceOrder === 'number' ? ordinalLabel(place.distanceOrder) : undefined;
   const distance =
     typeof place.distanceM === 'number' ? formatDistanceM(place.distanceM) : undefined;
-  const name = place.name ?? copy.OFFICIAL_DESTINATION_INFORMATION;
+  const name = placeName(place);
   const inputId = `choose-${place.id}`;
 
   return (

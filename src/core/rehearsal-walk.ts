@@ -8,13 +8,21 @@
 // A step decides nothing of its own. It reads the same detectGaps() the result
 // reads, so a line cannot say "held" on the walk and then appear as a gap on the
 // result, or the other way round. Like the result, nothing here counts, totals,
-// scores or grades, and nothing names a hazard.
+// scores or grades, and nothing names a hazard the pack does not hold.
+//
+// A line that holds shows the thing, not only a claim about it: its value from
+// the pack, above the sentence (amended 14 September 2026). Every value comes
+// from the renderer that already states it elsewhere in the app, so the reader
+// never meets her own pack worded differently inside a rehearsal.
 
+import { areaResultLine } from './area-check';
 import * as copy from './copy';
-import { detectGaps } from './rehearsal-checks';
+import { placeName } from './destination';
+import { publisherLine } from './provenance';
+import { designationRows, detectGaps, hazardPlaces, provenanceItems } from './rehearsal-checks';
 import { GAP_KIND, GAP_TITLE } from './rehearsal-actions';
 import { conditionWithout, type RehearsalCondition } from './rehearsal-condition';
-import { rehearsableHazards } from './rehearsal-entry';
+import { rehearsableHazards, type RehearsalHazard } from './rehearsal-entry';
 import type { CompletePackContent, RehearsalGapKind, RehearsalGapType } from './types';
 
 export type WalkStep = 'pack' | 'blacksky';
@@ -48,13 +56,17 @@ const STEP_HEADING: Record<WalkStep, string> = {
 
 export type StepLineState = 'held' | 'gap';
 
-/** One line on a step: what was looked for, and a sentence saying whether it
- *  held. The sentence is what tells the two states apart. `state` exists for
- *  tests and keys, never for a colour. */
+/** One line on a step: what was looked for, what the pack holds for it, and a
+ *  sentence saying whether it held. The sentence is what tells the two states
+ *  apart. `state` exists for tests and keys, never for a colour. */
 export type StepLine = {
   gapType: RehearsalGapType;
   state: StepLineState;
   title: string;
+  /** What the pack holds for this line, each already worded by the renderer the
+   *  rest of the app uses. Empty on a gap, so a gap has no empty slot, and always
+   *  empty for live direction and distance. */
+  values: string[];
   statement: string;
 };
 
@@ -77,6 +89,44 @@ const heldStatement = (kind: RehearsalGapKind, condition: RehearsalCondition): s
     ? copy.STEP_HELD_PACK_CONTENT
     : copy.STEP_HELD_CONDITION(conditionWithout(condition));
 
+/** What a held line shows, taken from the very rows its check decided on.
+ *
+ *  - The designation as the area check states it. Only a BPA row is ever built,
+ *    and the area check states BPA alone. A designation held by another code has
+ *    no existing wording, so it shows no value rather than new words.
+ *  - The publisher and saved date through the shared provenance line, once for
+ *    each distinct line, since the check covers every stored item.
+ *  - The places as the destinations list names them, in the order it listed them.
+ *  - Live direction and distance shows nothing. A real value needs a position,
+ *    and a rehearsal never asks for one. */
+function heldValues(
+  gapType: RehearsalGapType,
+  content: CompletePackContent,
+  hazards: readonly RehearsalHazard[],
+): string[] {
+  switch (gapType) {
+    case 'designation-missing':
+      return designationRows(content)
+        .filter((row) => row.code === 'BPA')
+        .map((row) => areaResultLine(row.status));
+    case 'provenance-missing':
+      return [
+        ...new Set(
+          hazards
+            .flatMap((hazard) => provenanceItems(content, hazard))
+            .map((row) => publisherLine(row.source)),
+        ),
+      ];
+    case 'places-missing':
+      return hazards
+        .flatMap((hazard) => hazardPlaces(content, hazard))
+        .sort((a, b) => (a.distanceOrder ?? 0) - (b.distanceOrder ?? 0))
+        .map((place) => placeName(place));
+    case 'live-direction-unavailable':
+      return [];
+  }
+}
+
 /** What one step of the walk states, for this pack under this condition.
  *
  *  A check is stated only where the checks actually look for it. The designation
@@ -93,7 +143,8 @@ export function walkStep(
   content: CompletePackContent,
 ): WalkStepView {
   const found = new Set(detectGaps(condition, content).map((row) => row.gapType));
-  const bushfire = rehearsableHazards(content).includes('bushfire');
+  const hazards = rehearsableHazards(content);
+  const bushfire = hazards.includes('bushfire');
   const checks = STEP_CHECKS[step].filter(
     (gapType) => gapType !== 'designation-missing' || bushfire,
   );
@@ -109,6 +160,7 @@ export function walkStep(
         gapType,
         state: isGap ? 'gap' : 'held',
         title: GAP_TITLE[gapType],
+        values: isGap ? [] : heldValues(gapType, content, hazards),
         statement: isGap ? GAP_STATEMENT[kind] : heldStatement(kind, condition),
       };
     }),

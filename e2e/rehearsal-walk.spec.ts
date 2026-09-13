@@ -31,6 +31,13 @@ const PROVENANCE = 'The publisher and saved date on every stored item';
 const PLACES = 'The official places saved with this pack';
 const LIVE_DIRECTION = 'Live direction and distance to your saved places';
 
+/** The harness pack's own values, as the rest of the app words them: the area
+ *  check's sentence, the shared provenance line, and the destinations list's name. */
+const DESIGNATION_VALUE = 'This address is inside a Designated Bushfire Prone Area.';
+const DTP_PROVENANCE = 'Published by Department of Transport and Planning · Saved 3 March 2026';
+const CFA_PROVENANCE = 'Published by Country Fire Authority · Saved 3 March 2026';
+const PLACE_VALUE = 'Kalorama Reserve';
+
 const HELD_PACK_CONTENT = 'This information is in your pack.';
 /** Each condition as it reads after "without". The row titles already say "No". */
 const NO_DATA_WITHOUT = 'mobile data';
@@ -62,7 +69,10 @@ const lineFor = (page: Page, title: string) =>
   main(page)
     .getByRole('listitem')
     .filter({ has: page.getByRole('heading', { level: 3, name: title, exact: true }) });
-const statementOf = (line: Locator) => line.locator('p');
+/** The sentence saying whether a line held: always the line's last paragraph. */
+const statementOf = (line: Locator) => line.locator('p').last();
+/** What a held line shows from the pack: every paragraph above its sentence. */
+const valuesOf = (line: Locator) => line.locator('p:not(:last-child)');
 
 /** Start a run by choosing a condition, exactly as a user does. */
 async function startRun(page: Page, condition: string, url = REHEARSABLE) {
@@ -262,13 +272,35 @@ test.describe('TC-5.1.5-D greyscale', () => {
       expect(await readState(DESIGNATION)).toBe('held');
       expect(await readState(PROVENANCE)).toBe('held');
 
+      // A value now sits above the sentence on a line that holds. No value may
+      // read as a held or gap sentence, so the sentence alone still says which.
+      const valuesNeverReadAsState = async (title: string) => {
+        for (const value of await valuesOf(lineFor(page, title)).allInnerTexts()) {
+          expect(HELD, `${title}: ${value}`).not.toContain(value.trim());
+          expect(GAP, `${title}: ${value}`).not.toContain(value.trim());
+        }
+      };
+      await valuesNeverReadAsState(DESIGNATION);
+      await valuesNeverReadAsState(PROVENANCE);
+
       await holdToStep2(page);
       for (const [title, state] of Object.entries(step2)) {
         expect(await readState(title), title).toBe(state);
       }
 
-      // Nothing but the words differs between the held line and the gap line:
-      // the same element structure, no icon, and the same computed treatment.
+      // A held line shows a value unless it is live direction and distance; a gap
+      // line shows none. Neither kind of value reads as a state sentence.
+      for (const [title, state] of Object.entries(step2)) {
+        await valuesNeverReadAsState(title);
+        const values = await valuesOf(lineFor(page, title)).count();
+        if (state === 'gap' || title === LIVE_DIRECTION) expect(values, title).toBe(0);
+        else expect(values, title).toBeGreaterThan(0);
+      }
+
+      // Nothing but the words tells the held line from the gap line: no icon, and
+      // the card, its title and its sentence carry the same computed treatment.
+      // The value above a held sentence is what the pack holds, not a state, so
+      // it is compared by what it says above rather than by how it is drawn.
       const heldTitle = Object.entries(step2).find(([, state]) => state === 'held')![0];
       const gapTitle = Object.entries(step2).find(([, state]) => state === 'gap')![0];
       for (const title of [heldTitle, gapTitle]) {
@@ -280,11 +312,57 @@ test.describe('TC-5.1.5-D greyscale', () => {
             const style = getComputedStyle(el);
             return [el.tagName, style.color, style.backgroundColor, style.borderColor, style.fontWeight, style.fontStyle, style.textDecorationLine].join('|');
           };
-          return [li, ...Array.from(li.querySelectorAll('*'))].map(describe);
+          return [li, li.querySelector('h3')!, li.querySelector('p:last-child')!].map(describe);
         });
       expect(await treatment(gapTitle)).toEqual(await treatment(heldTitle));
     });
   }
+});
+
+// Amended 14 September 2026: the step shows the thing, not a claim about the
+// thing. A line that holds shows its value from the pack above its sentence,
+// worded exactly as the rest of the app words it. A gap shows its sentence alone.
+test.describe('AC5 a held line shows its value from the pack', () => {
+  test('under a complete pack, each held line shows its value above its sentence', async ({ page }) => {
+    await startRun(page, NO_DATA);
+
+    // The line's paragraphs in order: the value, then the sentence.
+    await expect(lineFor(page, DESIGNATION).locator('p')).toHaveText([DESIGNATION_VALUE, HELD_PACK_CONTENT]);
+    await expect(lineFor(page, PROVENANCE).locator('p')).toHaveText([
+      DTP_PROVENANCE,
+      CFA_PROVENANCE,
+      HELD_PACK_CONTENT,
+    ]);
+
+    await holdToStep2(page);
+    await expect(lineFor(page, PLACES).locator('p')).toHaveText([PLACE_VALUE, HELD_PACK_CONTENT]);
+    // Live direction and distance holds and shows no value: a real one would need
+    // a position, and a rehearsal never asks for one.
+    await expect(lineFor(page, LIVE_DIRECTION).locator('p')).toHaveText([HELD_CONDITION(NO_DATA_WITHOUT)]);
+  });
+
+  test('under ?mode=gap, the places line shows the gap sentence and no value', async ({ page }) => {
+    await startRun(page, NO_DATA, WITH_GAP);
+
+    // What the pack does hold is still shown.
+    await expect(lineFor(page, DESIGNATION).locator('p')).toHaveText([DESIGNATION_VALUE, HELD_PACK_CONTENT]);
+    await expect(lineFor(page, PROVENANCE).locator('p')).toHaveText([DTP_PROVENANCE, HELD_PACK_CONTENT]);
+
+    await holdToStep2(page);
+    const places = lineFor(page, PLACES);
+    await expect(places.locator('p')).toHaveText([GAP_PACK_CONTENT]);
+    await expect(valuesOf(places)).toHaveCount(0);
+    await expect(places).not.toContainText(PLACE_VALUE);
+    // No empty slot where a value would be: the title and the sentence, nothing else.
+    expect(
+      await places.evaluate((li) =>
+        Array.from(li.children).map((child) => [child.tagName, (child.textContent ?? '').trim() !== '']),
+      ),
+    ).toEqual([
+      ['H3', true],
+      ['P', true],
+    ]);
+  });
 });
 
 // TC-5.1.5-E
@@ -530,23 +608,54 @@ test.describe('AC5 the two-second hold', () => {
   });
 });
 
-// Nothing on a step counts, scores or names a hazard; the step counter is the
-// one figure, and it counts steps, never steps passed.
+// The criterion's rules: nothing on a step counts, totals, scores or grades, and
+// no step names a hazard the pack does not hold. A value from the pack may carry
+// a date, and a designation may name the pack's own hazard.
 test.describe('AC5 a step never marks the reader', () => {
+  // Both harness packs hold bushfire and nothing else.
+  const ABSENT_HAZARDS = /\b(extreme heat|heat|flood|flooding)\b/;
+
   for (const [condition, url] of [
     [NO_DATA, REHEARSABLE],
     [NO_FIX, WITH_GAP],
   ] as const) {
-    test(`no score, no figure and no hazard name under "${condition}"`, async ({ page }) => {
+    test(`nothing counts or scores, and no hazard the pack does not hold, under "${condition}"`, async ({
+      page,
+    }) => {
       await startRun(page, condition, url);
       for (const step of [STEP_1, STEP_2]) {
         if (step === STEP_2) await holdToStep2(page);
-        // The counter is set in capitals by its style, so both sides are lowered first.
-        const text = (await main(page).innerText()).toLowerCase().replace(step.toLowerCase(), '');
-        expect(text).not.toMatch(/\d|%/);
-        ['score', 'grade', 'passed', 'failed', 'out of', 'prepared', 'bushfire', 'extreme heat'].forEach(
-          (word) => expect(text, `found "${word}"`).not.toContain(word),
+        await expect(stepLines(page)).toHaveCount(2);
+        // The counter is set in capitals by its style, so everything is lowered first.
+        const text = (await main(page).innerText()).toLowerCase();
+        const counterText = step.toLowerCase();
+        const values = (await valuesOf(stepLines(page)).allInnerTexts()).map((value) =>
+          value.trim().toLowerCase(),
         );
+
+        // No percentage, no "out of", and no score, grade or verdict word.
+        expect(text).not.toContain('%');
+        ['score', 'grade', 'passed', 'failed', 'out of', 'prepared'].forEach((word) =>
+          expect(text, `found "${word}"`).not.toContain(word),
+        );
+        // The only "n of n" on a step is the step counter.
+        expect(text.match(/\b\d+\s+of\s+\d+\b/g)).toEqual([counterText.replace('step ', '')]);
+        // Every other digit sits inside a value taken from the pack: with the
+        // counter and every value removed, no digit is left standing alone.
+        let rest = text.replace(counterText, '');
+        values.forEach((value) => {
+          rest = rest.split(value).join('');
+        });
+        expect(rest).not.toMatch(/\d/);
+        // No hazard the pack does not hold.
+        expect(text).not.toMatch(ABSENT_HAZARDS);
+
+        if (step === STEP_1) {
+          // So both rules bite: step 1 does show a saved date, and it is inside a
+          // value; and the pack's own hazard is named, inside its designation.
+          expect(values.some((value) => /\d/.test(value))).toBe(true);
+          expect(values.some((value) => value.includes('bushfire'))).toBe(true);
+        }
         await expect(page.getByText('Nothing is sent from this rehearsal. Nothing leaves this phone.')).toBeVisible();
       }
     });
