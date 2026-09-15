@@ -2416,6 +2416,19 @@ input {
   background: transparent;
 }
 
+/* E5-US6 — the phone instruction before going: the drawing beside the kicker,
+   the instruction beneath both. */
+.condition-how-to {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+  align-items: center;
+}
+.condition-how-to p {
+  grid-column: 1 / 3;
+  margin: 0.5rem 0 0;
+}
+
 /* E5-US5 — the pack page's list of its rehearsals: the date leads each card,
    the rest reads beneath it in the result's own words. */
 .history-row {

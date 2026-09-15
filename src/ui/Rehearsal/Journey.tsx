@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
-import { conditionWithout, type RehearsalCondition } from '../../core/rehearsal-condition';
+import {
+  conditionWithout,
+  connectionLine,
+  howToLine,
+  type RehearsalCondition,
+} from '../../core/rehearsal-condition';
 import { journeyEndingRows, unfinishedFrom } from '../../core/rehearsal-ending';
 import { journeyPlaces, type JourneyPlace } from '../../core/rehearsal-journey';
 import type { RehearsalRun } from '../../core/rehearsal-run';
@@ -9,6 +14,7 @@ import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types'
 import { getCompletePackContent, saveStartedRehearsal } from '../../data/db';
 import Glyph from '../components/Glyph';
 import HoldButton from '../components/HoldButton';
+import { useOnline } from '../components/useOnline';
 import Head from './Head';
 import { endWith, startRun } from './run-state';
 
@@ -97,6 +103,12 @@ export function JourneyBefore({
       <p>{copy.JOURNEY_WHAT_IT_IS}</p>
       <p>{copy.JOURNEY_WHAT_IT_IS_FOR}</p>
       <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+      {/* E5-US6 — the condition is made on the phone, not pretended. */}
+      <section className="card condition-how-to">
+        <Glyph kind="not" />
+        <span className="kicker">{copy.MAKE_IT_REAL}</span>
+        <p>{howToLine(condition)}</p>
+      </section>
       <Places places={places} />
 
       {/* Not filled: going on a practice walk fixes nothing. */}
@@ -129,12 +141,19 @@ export function JourneyRunning({
 }) {
   const navigate = useNavigate();
   const places = usePlaces(run.packId, loadContent);
+  // E5-US6 — what the browser reports, stated and never acted on.
+  const connection = connectionLine(run.condition, useOnline());
   if (places === null) return null;
 
   return (
     <>
       <h2>{copy.JOURNEY_RUNNING_HEADING}</h2>
       <p>{copy.JOURNEY_RUNNING_DETAIL}</p>
+      {connection ? (
+        <p className="journey-connection" role="status">
+          {connection}
+        </p>
+      ) : null}
       <Places places={places} />
 
       <div className="actions journey-hold">

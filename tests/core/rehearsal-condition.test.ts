@@ -5,6 +5,8 @@ import {
   conditionLabel,
   conditionRows,
   conditionWithout,
+  connectionLine,
+  howToLine,
   isRehearsalCondition,
   type RehearsalCondition,
 } from '../../src/core/rehearsal-condition';
@@ -170,5 +172,23 @@ describe('a condition after the word without', () => {
         copy.JOURNEY_CONDITION_LINE(without),
       ].forEach((sentence) => expect(sentence).not.toMatch(/\bwithout no\b/i));
     });
+  });
+});
+
+describe('E5-US6 making the condition real on the phone', () => {
+  it('gives one phone instruction per condition, about the phone and not the person', () => {
+    expect(howToLine('no-data')).toContain('aeroplane mode');
+    expect(howToLine('no-location-fix')).toContain('location off');
+    for (const line of [howToLine('no-data'), howToLine('no-location-fix')]) {
+      expect(line).toContain('as on the day');
+      expect(line).not.toMatch(/you must|you should|fail/i);
+    }
+  });
+
+  it('states what the browser reports for no data only, and never for a location fix', () => {
+    expect(connectionLine('no-data', false)).toBe(copy.PHONE_IS_OFFLINE);
+    expect(connectionLine('no-data', true)).toBe(copy.PHONE_STILL_ONLINE);
+    expect(connectionLine('no-location-fix', true)).toBeNull();
+    expect(connectionLine('no-location-fix', false)).toBeNull();
   });
 });

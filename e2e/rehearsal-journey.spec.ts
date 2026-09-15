@@ -851,3 +851,33 @@ for (const state of ['before', 'running'] as const) {
     ]);
   });
 }
+
+// E5-US6 — the condition is made on the phone, not pretended. Before going, one
+// instruction about the phone; while out under no data, what the browser
+// reports, stated and never acted on. A location fix is never asked about.
+test.describe('US6 making the condition real on the phone', () => {
+  test('before going, the screen says how to make the chosen condition on the phone', async ({ page }) => {
+    await choose(page, NO_DATA);
+    await expect(main(page).getByText(/aeroplane mode/)).toBeVisible();
+    await expect(main(page).getByText(/location off/)).toHaveCount(0);
+    await expect(main(page).getByRole('button')).toHaveCount(1);
+  });
+
+  test('while out without data, the screen says whether the phone is offline yet', async ({ page, context }) => {
+    await choose(page, NO_DATA);
+    await go(page);
+    const line = main(page).locator('.journey-connection');
+    await expect(line).toHaveText(/still has a connection/);
+    await context.setOffline(true);
+    await expect(line).toHaveText(/offline now, as on the day/);
+    // Stated only: both endings stay offered whatever the phone reports.
+    await expect(endingControl(page, ARRIVED)).toBeEnabled();
+    await expect(endingControl(page, WITHOUT_GOING)).toBeEnabled();
+  });
+
+  test('a rehearsal without a location fix carries no such line', async ({ page }) => {
+    await choose(page, NO_FIX);
+    await go(page);
+    await expect(main(page).locator('.journey-connection')).toHaveCount(0);
+  });
+});

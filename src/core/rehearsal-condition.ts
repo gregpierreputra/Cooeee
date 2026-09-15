@@ -71,3 +71,15 @@ const WITHOUT_FORM: Record<RehearsalCondition, string> = {
  *  sentence picks the right form by name. */
 export const conditionWithout = (condition: RehearsalCondition): string =>
   WITHOUT_FORM[condition];
+
+/** E5-US6. What to do on the phone so the condition is real, not pretended. */
+export const howToLine = (condition: RehearsalCondition): string =>
+  copy.CONDITION_HOW_TO[condition];
+
+/** E5-US6. What the browser reports while she is out, for the one condition
+ *  the browser can report on. A location fix cannot be seen without asking
+ *  for one, and a rehearsal never asks, so that condition gets no line. */
+export function connectionLine(condition: RehearsalCondition, online: boolean): string | null {
+  if (condition !== 'no-data') return null;
+  return online ? copy.PHONE_STILL_ONLINE : copy.PHONE_IS_OFFLINE;
+}

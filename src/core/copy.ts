@@ -1131,6 +1131,19 @@ export const PACK_CHANGE_UNKNOWN =
 export const JOURNEY_BEFORE_HEADING = 'Rehearse the way there';
 /** [DRAFT] Takes the condition's without-form (conditionWithout). */
 export const JOURNEY_CONDITION_LINE = (without: string) => `This rehearsal is without ${without}.`;
+// E5-US6 — make the condition real on the phone. One instruction per
+// condition, in the phone's own words, and a plain statement of what the
+// browser reports while she is out. Reported state only: the app cannot see
+// phone signal, and the line never blocks, times or judges anything.
+export const MAKE_IT_REAL = 'Make it real on this phone';
+export const CONDITION_HOW_TO: Record<'no-data' | 'no-location-fix', string> = {
+  'no-data': 'Turn on aeroplane mode and turn Wi-Fi off, so the phone has no data, as on the day.',
+  'no-location-fix': 'Turn location off in the phone settings, so there is no fix, as on the day.',
+};
+export const PHONE_IS_OFFLINE = 'Your phone is offline now, as on the day.';
+export const PHONE_STILL_ONLINE =
+  'Your phone still has a connection. Aeroplane mode makes this rehearsal real.';
+
 /** [DRAFT] What a rehearsal is. */
 export const JOURNEY_WHAT_IT_IS =
   'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.';
