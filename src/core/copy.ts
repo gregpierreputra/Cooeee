@@ -782,6 +782,8 @@ export const OFFICIAL_CHANNELS_LINE =
 export const ACKNOWLEDGE_CHECKBOX =
   'I understand how Cooeee works, and what it does not do.';
 export const CONTINUE = 'Continue';
+export const BEFORE_YOU_CONTINUE = 'Before you continue';
+export const ACKNOWLEDGE_HINT = 'Tick the box above to continue.';
 
 // ── Development gate (feature 1) ────────────────────────────────────────────
 export const GATE_TITLE = 'Password';

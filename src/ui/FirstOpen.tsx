@@ -68,7 +68,12 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
       </p>
 
       <div className="actions">
+        {/* The box is the one thing standing between the reader and the app,
+            so it is framed as a step of its own: a kicker naming it, an
+            accent border, and a line under the inactive button saying what
+            makes it active. */}
         <div className="acknowledge">
+          <span className="kicker">{copy.BEFORE_YOU_CONTINUE}</span>
           <input
             id="acknowledge"
             type="checkbox"
@@ -81,10 +86,16 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
           type="button"
           className="action main-action"
           disabled={!accepted}
+          aria-describedby={accepted ? undefined : 'acknowledge-hint'}
           onClick={onAcknowledge}
         >
           {copy.CONTINUE}
         </button>
+        {accepted ? null : (
+          <p id="acknowledge-hint" className="acknowledge-hint" role="status">
+            {copy.ACKNOWLEDGE_HINT}
+          </p>
+        )}
       </div>
     </main>
   );

@@ -372,6 +372,8 @@ describe('first-open disclosure', () => {
     expect(copy.ACKNOWLEDGE_CHECKBOX).toBe(
       'I understand how Cooeee works, and what it does not do.',
     );
+    expect(copy.BEFORE_YOU_CONTINUE).toBe('Before you continue');
+    expect(copy.ACKNOWLEDGE_HINT).toBe('Tick the box above to continue.');
   });
 
   // The disclosure is the one screen that must not read as reassurance while
