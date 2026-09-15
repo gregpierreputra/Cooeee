@@ -53,8 +53,8 @@ describe('composed lines', () => {
   });
 
   it('the choose hint pluralises for one place versus two', () => {
-    expect(copy.CHOOSE_PLACES_HINT(1)).toBe('Choose the place to save.');
-    expect(copy.CHOOSE_PLACES_HINT(2)).toBe('Choose two places to save.');
+    expect(copy.CHOOSE_PLACES_HINT(1)).toBe('Choose the place to save');
+    expect(copy.CHOOSE_PLACES_HINT(2)).toBe('Choose two places to save');
   });
 });
 
@@ -65,6 +65,12 @@ describe('shell copy', () => {
 
   it('says a pack is missing without implying anything about the place', () => {
     expect(copy.NO_PACKS_HINT).toContain('while you have a connection');
+  });
+
+  it('carries the tagline the splash shows on arrival', () => {
+    expect(copy.APP_TAGLINE).toBe(
+      'Your offline-capable life-saver supporting you before, during, and after disasters.',
+    );
   });
 });
 

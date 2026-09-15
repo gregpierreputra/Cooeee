@@ -29,7 +29,6 @@ export default function Run({ run, children }: { run: RehearsalRun; children?: R
       <main className="page rehearsal-run">
         <Head kind={run.ending ? 'found' : 'go'} />
         {children}
-        <p>{copy.NOTHING_IS_SENT}</p>
         <div className="actions">
           {/* Not a filled control: leaving a rehearsal is not what fixes
               anything, and the filled control means "this is what would fix

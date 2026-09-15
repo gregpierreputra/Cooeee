@@ -33,8 +33,12 @@ export type ConditionRow = {
 };
 
 const ROW_COPY: Record<RehearsalCondition, { label: string; detail: string }> = {
-  'no-data': { label: copy.CONDITION_NO_DATA, detail: copy.CONDITION_NO_DATA_DETAIL },
-  'no-location-fix': { label: copy.CONDITION_NO_FIX, detail: copy.CONDITION_NO_FIX_DETAIL },
+  'no-data': { 
+    label: copy.CONDITION_NO_DATA, 
+    detail: copy.CONDITION_NO_DATA_DETAIL },
+  'no-location-fix': { 
+    label: copy.CONDITION_NO_FIX,
+    detail: copy.CONDITION_NO_FIX_DETAIL },
 };
 
 /** The rows to offer, in the fixed order. Nothing is marked chosen: a row

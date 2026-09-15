@@ -18,6 +18,7 @@ import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
 import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
+import Splash from './ui/components/Splash';
 import Tour, { startTour } from './ui/components/Tour';
 import PackDetail from './ui/PackDetail';
 import Recover from './ui/Recover';
@@ -143,54 +144,65 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       .catch(() => {});
   }, []);
 
-  if (!passed) {
-    return (
-      <Gate
-        onPass={() => {
-          writeGate(localFlagStore());
-          setPassed(true);
-        }}
-      />
-    );
-  }
-
-  if (screen === 'first-open') {
-    return (
-      <FirstOpen
-        onAcknowledge={() => {
-          // The user moves on either way. A browser that refuses the write is a
-          // reason to ask again on the next open, never a reason to trap
-          // someone on this screen.
-          writeAcknowledgement(localFlagStore());
-          // The one time the tour starts on its own: the first landing.
-          startTour();
-          setScreen('prepared');
-        }}
-      />
-    );
-  }
-
+  // The splash sits above whichever screen opens: the gate, the disclosure,
+  // or the app itself, so an arrival looks the same wherever it lands.
   return (
-    <BrowserRouter>
-      <BlackSkyResume />
-      <ModeSwitch />
-      <NoticeBar />
-      <HeaderHost />
-      <UpdateBanner applyUpdate={applyUpdate} />
-      <BackBar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/packs/:packId" element={<PackDetailRoute />} />
-        <Route path="/packs/new" element={<Search />} />
-        <Route path="/rehearse" element={<Choose />} />
-        <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
-        <Route path="/nearby" element={<Nearby />} />
-        <Route path="/recover" element={<Recover />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/blacksky" element={<BlackSky />} />
-      </Routes>
-      <Tour />
-      <BottomNavHost />
-    </BrowserRouter>
+    <>
+      <Splash />
+      {screenFor()}
+    </>
   );
+
+  function screenFor() {
+    if (!passed) {
+      return (
+        <Gate
+          onPass={() => {
+            writeGate(localFlagStore());
+            setPassed(true);
+          }}
+        />
+      );
+    }
+
+    if (screen === 'first-open') {
+      return (
+        <FirstOpen
+          onAcknowledge={() => {
+            // The user moves on either way. A browser that refuses the write is a
+            // reason to ask again on the next open, never a reason to trap
+            // someone on this screen.
+            writeAcknowledgement(localFlagStore());
+            // The one time the tour starts on its own: the first landing.
+            startTour();
+            setScreen('prepared');
+          }}
+        />
+      );
+    }
+
+    return (
+      <BrowserRouter>
+        <BlackSkyResume />
+        <ModeSwitch />
+        <NoticeBar />
+        <HeaderHost />
+        <UpdateBanner applyUpdate={applyUpdate} />
+        <BackBar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/packs/:packId" element={<PackDetailRoute />} />
+          <Route path="/packs/new" element={<Search />} />
+          <Route path="/rehearse" element={<Choose />} />
+          <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
+          <Route path="/nearby" element={<Nearby />} />
+          <Route path="/recover" element={<Recover />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/blacksky" element={<BlackSky />} />
+        </Routes>
+        <Tour />
+        <BottomNavHost />
+      </BrowserRouter>
+    );
+  }
 }

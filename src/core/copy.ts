@@ -46,6 +46,8 @@ export const CARDINAL_POINTS = [
 
 // Application shell
 export const APP_NAME = 'Cooeee';
+export const APP_TAGLINE =
+  'Your offline-capable life-saver supporting you before, during, and after disasters.';
 export const BACK = 'Back';
 
 // Connection notice. States what the browser reports, nothing more — this app
@@ -250,7 +252,7 @@ export const NSP_BUSHFIRE_ONLY =
 
 export const SAVE_LAST_RESORT_PLACES = 'Save last-resort places';
 export const CHOOSE_PLACES_HINT = (n: number) =>
-  n === 1 ? 'Choose the place to save.' : 'Choose two places to save.';
+  n === 1 ? 'Choose the place to save' : 'Choose two places to save';
 export const TWO_PLACES_ALREADY_CHOSEN =
   'Two places are already chosen. Unchoose one to change your selection.';
 export const SAVING_LAST_RESORT_PLACES = 'Saving your last-resort places.';
@@ -1094,7 +1096,7 @@ export const JOURNEY_WHAT_IT_IS =
   'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.';
 /** [DRAFT] What it is for, and what it is not. */
 export const JOURNEY_WHAT_IT_IS_FOR =
-  'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.';
+  'It is practice at knowing the way: how long it takes, and which turns you take.';
 /** [DRAFT] The one control before she goes. It is the commitment. */
 export const I_AM_GOING_NOW = "I'm going now";
 /** [DRAFT] While she is out. */
