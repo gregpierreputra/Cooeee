@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { matchPath, useLocation, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 
 export const TOUR_EVENT = 'cooeee:tour';
@@ -60,7 +60,9 @@ export default function Tour() {
       return;
     }
     const { path, target } = STEPS[step];
-    if (pathname !== path) {
+    // A stop's path may forward on arrival (/rehearse goes to the one saved
+    // pack), so the stop is reached when the path is a prefix, not an equal.
+    if (!matchPath({ path, end: path === '/' }, pathname)) {
       setRect(null); // the layer itself dims the new screen until its target is found
       navigate(path, { replace: true });
       return;

@@ -663,9 +663,9 @@ export const TOUR_STEPS = [
     target: '.bottom-nav-inner',
     title: 'The bottom bar',
     lines: [
-      'Three places to go from any screen. Home, Nearby and About.',
+      'Five places to go from any screen. Home, Nearby, Rehearse, Recover and About.',
       'A phone is used with one thumb, so the way around the app stays at the bottom, within reach.',
-      'Home lists your packs. Nearby finds official places from where you are. About says what Cooeee is. BlackSky is deliberately not here.',
+      'Home lists your packs. Nearby finds official places from where you are. Rehearse practises the way. Recover finds support. About says what Cooeee is. BlackSky is deliberately not here.',
     ],
   },
   {
@@ -686,6 +686,16 @@ export const TOUR_STEPS = [
       'The nearest official places, from your position or a postcode, while you have a connection.',
       'Before a pack exists, or away from home, you still need to know where the official places are.',
       'Lists relief centres and places of last resort with their distance, sorted by distance, not a safety ranking.',
+    ],
+  },
+  {
+    path: '/rehearse',
+    target: '.rehearsal-entry, .rehearsal-condition',
+    title: 'Rehearse',
+    lines: [
+      'A practice trip to one of the official places saved with a pack, on a calm day, without mobile data or without a location fix.',
+      'The day is the wrong time to find out what the pack is missing or that the way is unfamiliar. A rehearsal finds it while there is time to fix it.',
+      'Choose a pack and a condition, go with BlackSky open as on the day, and end it as you choose. What was missing becomes one written action each, never a score.',
     ],
   },
   {

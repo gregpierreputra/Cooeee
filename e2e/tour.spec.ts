@@ -47,6 +47,15 @@ test('starts after the acknowledgement, steps across screens, and skips', async 
     .poll(async () => (await page.locator('.tour-spot').boundingBox())!.y)
     .toBeLessThan(before.y);
 
+  // Stop nine is Rehearse: with no pack saved it lands on the entry screen.
+  await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  await dimmed(page);
+  await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  await dimmed(page);
+  await expect(dialog).toContainText(count(9));
+  await expect(page).toHaveURL(/\/rehearse$/);
+  await expect(page.locator('.tour-spot')).toBeVisible();
+
   await dialog.getByRole('button', { name: SKIP_TOUR }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/\/$/);

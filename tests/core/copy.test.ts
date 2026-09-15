@@ -269,7 +269,7 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
-  it('tours ten features across every screen, three led lines each', () => {
+  it('tours eleven features across every screen, three led lines each', () => {
     expect(copy.TOUR_STEPS.map((step) => step.title)).toEqual([
       "Today's reminder",
       'Your saved packs',
@@ -279,6 +279,7 @@ describe('the returning-user home', () => {
       'The bottom bar',
       'The address search',
       'Nearby official places',
+      'Rehearse',
       'Recover',
       'About Cooeee',
     ]);
