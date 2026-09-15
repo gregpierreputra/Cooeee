@@ -1701,6 +1701,20 @@ input {
    sparse. */
 .first-open {
   gap: 0.75rem;
+  /* Its own stacking context, so the particle canvas below sits under the
+     page's words and above the body ground, and never above anything else. */
+  isolation: isolate;
+}
+
+/* The motes behind the welcome and the disclosure: full screen, under the
+   text, and inert to every tap. */
+.particles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .first-open-hero {

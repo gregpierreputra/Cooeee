@@ -47,7 +47,10 @@ test('a device with nothing stored opens on the disclosure screen, continue inac
   for (const step of WELCOME_STEPS) await expect(page.getByText(step.line)).toBeVisible();
   await expect(page.locator('.welcome-step .glyph')).toHaveCount(WELCOME_STEPS.length);
   expect(await storedFlag(page)).toBeNull();
+  // The motes drift behind the welcome and the disclosure, and nowhere after.
+  await expect(page.locator('canvas.particles')).toHaveCount(1);
   await page.getByRole('button', { name: SEE_HOW_IT_WORKS }).click();
+  await expect(page.locator('canvas.particles')).toHaveCount(1);
 
   await expect(page.getByRole('heading', { level: 1, name: APP_NAME })).toBeVisible();
   await expect(page.getByText(FIRST_OPEN_PURPOSE)).toBeVisible();
@@ -103,6 +106,7 @@ test('ticking the box enables continue, which records the acknowledgement and mo
   await continueButton(page).click();
 
   await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
+  await expect(page.locator('canvas.particles')).toHaveCount(0);
   expect(await storedFlag(page)).toBe(ACKNOWLEDGEMENT_VALUE);
 });
 
