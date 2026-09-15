@@ -148,15 +148,6 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       .catch(() => {});
   }, []);
 
-  // The splash sits above whichever screen opens: the gate, the disclosure,
-  // or the app itself, so an arrival looks the same wherever it lands.
-  return (
-    <>
-      <Splash />
-      {screenFor()}
-    </>
-  );
-
   function screenFor() {
     if (!passed) {
       return (
@@ -213,4 +204,13 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       </BrowserRouter>
     );
   }
+
+  // The splash sits above whichever screen opens: the gate, the disclosure,
+  // or the app itself, so an arrival looks the same wherever it lands.
+  return (
+    <>
+      <Splash />
+      {screenFor()}
+    </>
+  );
 }
