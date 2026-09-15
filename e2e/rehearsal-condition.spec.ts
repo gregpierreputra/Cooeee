@@ -10,7 +10,7 @@ const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
 /** Each condition as it reads after "without". */
 const WITHOUT: Record<string, string> = { [NO_DATA]: 'mobile data', [NO_FIX]: 'a location fix' };
-const JOURNEY_HEADING = 'Rehearse the way on foot';
+const JOURNEY_HEADING = 'Rehearse the way there';
 const GO = "I'm going now";
 
 // E5-US1-AC1 — the user says what the rehearsal is run without.

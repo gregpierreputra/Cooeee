@@ -1073,11 +1073,12 @@ export const PACK_CHANGED_ON = (date: string) =>
 export const PACK_CHANGE_UNKNOWN =
   'Whether the pack changed between these two rehearsals was not recorded, so it cannot be said either way.';
 
-// ── E5-US1-AC5 the journey: a walk to know the way ────────────────────────
-// The rehearsal is the journey itself. These words ask her to walk to one of the
-// official places saved with this pack, on foot, in calm conditions, with
-// BlackSky open, and say what that is for: knowing the way. None of them treats
-// a place as where she plans to go on the day, and none of them rates the walk:
+// ── E5-US1-AC5 the journey: a trip to know the way ────────────────────────
+// The rehearsal is the journey itself. These words ask her to go to one of the
+// official places saved with this pack, in calm conditions, with BlackSky open,
+// and say what that is for: knowing the way. On the day she may go by car, so
+// nothing here says on foot or walking. None of them treats a place as where
+// she plans to go on the day, and none of them rates the trip:
 // no time to beat, no fast or slow, nothing to pass. The place list reuses
 // GAP_PLACES as its heading and GAP_MEANING_PACK_CONTENT when there is none; the
 // hold reuses HOLD_FOR_BLACKSKY and HOLD_TO_ENTER; the day's priority reuses
@@ -1085,12 +1086,12 @@ export const PACK_CHANGE_UNKNOWN =
 // Sharon's copy review.
 
 /** [DRAFT] Before she goes. */
-export const JOURNEY_BEFORE_HEADING = 'Rehearse the way on foot';
+export const JOURNEY_BEFORE_HEADING = 'Rehearse the way there';
 /** [DRAFT] Takes the condition's without-form (conditionWithout). */
 export const JOURNEY_CONDITION_LINE = (without: string) => `This rehearsal is without ${without}.`;
 /** [DRAFT] What a rehearsal is. */
 export const JOURNEY_WHAT_IT_IS =
-  'A rehearsal is a walk to one of the official places saved with this pack, on foot, in calm conditions, with BlackSky open.';
+  'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.';
 /** [DRAFT] What it is for, and what it is not. */
 export const JOURNEY_WHAT_IT_IS_FOR =
   'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.';
@@ -1100,7 +1101,7 @@ export const I_AM_GOING_NOW = "I'm going now";
 export const JOURNEY_RUNNING_HEADING = 'Practising the way';
 /** [DRAFT] What to do while she is out. */
 export const JOURNEY_RUNNING_DETAIL =
-  'Go to one of these places on foot, in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
+  'Go to one of these places in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
 /** [DRAFT] The two endings on the journey screen, as the criterion names them. */
 export const ENDING_ARRIVED = 'I have arrived';
 export const ENDING_WITHOUT_GOING = 'End without going';
@@ -1119,15 +1120,15 @@ export const UNFINISHED_DETAIL = (without: string, date: string) =>
   `You started a rehearsal without ${without} on ${date}. Only you can say how it ended.`;
 /** [DRAFT] pending Sharon's copy review. The two endings, as the criterion names
  *  them, each with what it means in her words. */
-export const ENDING_WALKED = 'Walked';
+export const ENDING_WALKED = 'I went there';
 export const ENDING_WALKED_DETAIL = 'I went to the place.';
-export const ENDING_DRY_RUN = 'Not walked, a dry run';
+export const ENDING_DRY_RUN = 'I did not go, a dry run';
 export const ENDING_DRY_RUN_DETAIL = 'I ended it without going.';
 /** [DRAFT] pending Sharon's copy review. A rehearsal recorded before the endings
  *  existed, in the shape PACK_CHANGE_UNKNOWN uses: not knowing is its own state,
  *  and never a default to either ending. */
 export const ENDING_NOT_RECORDED =
-  'Whether this rehearsal was walked or a dry run was not recorded, so it cannot be said either way.';
+  'Whether you went there or ended this rehearsal without going was not recorded, so it cannot be said either way.';
 
 // ── E5-US1-AC5 the result says how the rehearsal ended ────────────────────
 // Beside the condition line, a fact about this rehearsal. Her time is shown in
@@ -1136,11 +1137,11 @@ export const ENDING_NOT_RECORDED =
 // A rehearsal with no ending recorded is stated by ENDING_NOT_RECORDED above.
 
 /** [DRAFT] pending Sharon's copy review. A walked rehearsal, and how long it took her. */
-export const RESULT_WALKED = (duration: string) => `You walked it. It took you ${duration}.`;
+export const RESULT_WALKED = (duration: string) => `You went there. It took you ${duration}.`;
 /** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
  *  kept with it. Every walk ended on the journey screen keeps one; this covers a
  *  stored record that does not. */
-export const RESULT_WALKED_NO_TIME = 'You walked it.';
+export const RESULT_WALKED_NO_TIME = 'You went there.';
 /** [DRAFT] pending Sharon's copy review. A dry run, stated plainly, as a kind of
  *  rehearsal and not a lesser one. */
 export const RESULT_DRY_RUN = 'This was a dry run: you ended it without going.';

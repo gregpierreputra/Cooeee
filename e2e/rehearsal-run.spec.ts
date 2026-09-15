@@ -96,7 +96,7 @@ test.describe('AC2 the bar marks the run', () => {
 
     // Chosen and not yet gone on: setup, not a run (E5-US1-AC5), so still no bar.
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
-    await expect(page.getByRole('heading', { name: 'Rehearse the way on foot' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Rehearse the way there' })).toBeVisible();
     await expect(bar(page)).toHaveCount(0);
   });
 
@@ -196,7 +196,7 @@ test.describe('AC3 a cold start', () => {
 
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
     // Chosen, not gone: nothing is kept yet (E5-US1-AC5).
-    await expect(page.getByRole('heading', { name: 'Rehearse the way on foot' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Rehearse the way there' })).toBeVisible();
     expect((await deviceStorage(page)).recordCounts.rehearsals).toBe(0);
     await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
     await expect(bar(page)).toBeVisible();
@@ -267,8 +267,8 @@ test.describe('AC5 returning asks how it ended', () => {
 
     const endings = page.getByRole('main').getByRole('button');
     await expect(endings).toHaveCount(2);
-    await expect(endings.nth(0)).toHaveAccessibleName(/^Walked/);
-    await expect(endings.nth(1)).toHaveAccessibleName(/^Not walked, a dry run/);
+    await expect(endings.nth(0)).toHaveAccessibleName(/^I went there/);
+    await expect(endings.nth(1)).toHaveAccessibleName(/^I did not go, a dry run/);
     await expect(page.locator('[aria-pressed="true"], [aria-checked="true"], :checked')).toHaveCount(0);
     await expect(page.getByText('You started a rehearsal without a location fix on')).toBeVisible();
 
@@ -286,8 +286,8 @@ test.describe('AC5 returning asks how it ended', () => {
   });
 
   for (const [label, ending] of [
-    ['Walked', 'walked'],
-    ['Not walked, a dry run', 'dry-run'],
+    ['I went there', 'walked'],
+    ['I did not go, a dry run', 'dry-run'],
   ] as const) {
     test(`answering "${label}" reaches the existing result and records that ending, and only that`, async ({
       page,

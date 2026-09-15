@@ -81,7 +81,7 @@ describe('a result with gaps', () => {
   it('states how the rehearsal ended, beside the condition, in each of the three states', () => {
     ([[packContentGap], []] as DetectedGap[][]).forEach((gaps) => {
       expect(rehearsalResult(rehearsal(gaps, walked)).endingLine).toBe(
-        'You walked it. It took you 14 minutes.',
+        'You went there. It took you 14 minutes.',
       );
       expect(rehearsalResult(rehearsal(gaps, { ending: 'dry-run' })).endingLine).toBe(
         'This was a dry run: you ended it without going.',

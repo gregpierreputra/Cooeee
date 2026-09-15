@@ -31,8 +31,8 @@ describe('the two endings', () => {
   it('are exactly two, in a fixed order, and neither is chosen for her', () => {
     expect(REHEARSAL_ENDINGS).toEqual(['walked', 'dry-run']);
     expect(endingRows()).toEqual([
-      { ending: 'walked', label: 'Walked', detail: 'I went to the place.' },
-      { ending: 'dry-run', label: 'Not walked, a dry run', detail: 'I ended it without going.' },
+      { ending: 'walked', label: 'I went there', detail: 'I went to the place.' },
+      { ending: 'dry-run', label: 'I did not go, a dry run', detail: 'I ended it without going.' },
     ]);
     endingRows().forEach((row) => expect(Object.keys(row).sort()).toEqual(['detail', 'ending', 'label']));
   });
@@ -89,10 +89,10 @@ describe('the ending of a finished rehearsal', () => {
   });
 
   it('is stated in words, and not recorded in the shape an unknown pack change uses', () => {
-    expect(endingLine({ state: 'walked' })).toBe('You walked it.');
+    expect(endingLine({ state: 'walked' })).toBe('You went there.');
     expect(endingLine({ state: 'dry-run' })).toBe('This was a dry run: you ended it without going.');
     expect(endingLine({ state: 'not-recorded' })).toBe(
-      'Whether this rehearsal was walked or a dry run was not recorded, so it cannot be said either way.',
+      'Whether you went there or ended this rehearsal without going was not recorded, so it cannot be said either way.',
     );
     const shape = /^Whether .+ was not recorded, so it cannot be said either way\.$/;
     expect(copy.PACK_CHANGE_UNKNOWN).toMatch(shape);
@@ -139,7 +139,7 @@ describe('what an ending records', () => {
     const walked = rehearsalResult(finished({ gaps, ...endingRecord(STARTED, 'walked', STARTED + 900_000) }));
     const dryRun = rehearsalResult(finished({ gaps, ...endingRecord(STARTED, 'dry-run', STARTED + 900_000) }));
     expect({ ...walked, endingLine: '' }).toEqual({ ...dryRun, endingLine: '' });
-    expect(walked.endingLine).toBe('You walked it. It took you 15 minutes.');
+    expect(walked.endingLine).toBe('You went there. It took you 15 minutes.');
     // Nowhere else, and never the recorded figure, seconds, or a word that rates it.
     expect(JSON.stringify({ ...walked, endingLine: '' })).not.toMatch(/minute/i);
     expect(JSON.stringify(walked)).not.toMatch(/900000|elapsed|second|fast|slow/i);
@@ -183,8 +183,8 @@ describe('her time, as the result states it', () => {
       endingLine({ state: 'not-recorded' }),
     ];
     expect(lines).toEqual([
-      'You walked it. It took you 14 minutes.',
-      'You walked it.',
+      'You went there. It took you 14 minutes.',
+      'You went there.',
       'This was a dry run: you ended it without going.',
       copy.ENDING_NOT_RECORDED,
     ]);

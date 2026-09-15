@@ -29,7 +29,7 @@ const WITHOUT: Record<string, string> = { [NO_DATA]: 'mobile data', [NO_FIX]: 'a
 const CONDITION_VALUE: Record<string, string> = { [NO_DATA]: 'no-data', [NO_FIX]: 'no-location-fix' };
 
 const CHOOSE_HEADING = 'What are we rehearsing without?';
-const BEFORE_HEADING = 'Rehearse the way on foot';
+const BEFORE_HEADING = 'Rehearse the way there';
 const RUNNING_HEADING = 'Practising the way';
 const GO = "I'm going now";
 const ARRIVED = 'I have arrived';
@@ -41,12 +41,12 @@ const HOLD_HINT = 'Hold to enter. Two seconds.';
 
 const CONDITION_LINE = (condition: string) => `This rehearsal is without ${WITHOUT[condition]}.`;
 const WHAT_IT_IS =
-  'A rehearsal is a walk to one of the official places saved with this pack, on foot, in calm conditions, with BlackSky open.';
+  'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.';
 const WHAT_IT_IS_FOR =
   'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.';
 const INSTRUCTIONS_FIRST = 'Follow Country Fire Authority and emergency service instructions first.';
 const RUNNING_DETAIL =
-  'Go to one of these places on foot, in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
+  'Go to one of these places in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
 const PLACES_HEADING = 'The official places saved with this pack';
 const NO_PLACE_SAVED = 'This information is missing from your pack.';
 const PLACE = 'Kalorama Reserve';
@@ -527,7 +527,7 @@ test.describe('AC5 the two endings', () => {
     await page.getByTestId('remount').click();
     await page.getByTestId('remount').click();
     await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
-    await page.getByRole('button', { name: /^Not walked, a dry run/ }).click();
+    await page.getByRole('button', { name: /^I did not go, a dry run/ }).click();
     await expect(page.getByRole('heading', { name: RESULT_HEADING })).toBeVisible();
     await leaveControl(page).click();
 
@@ -562,7 +562,7 @@ test('AC5 her time is stated once, in whole minutes, never judged, and never on 
   const text = (await main(page).innerText()).toLowerCase();
   // The recorded figure itself is never shown: only its whole minutes, once.
   expect(text).not.toContain(elapsed);
-  const line = 'you walked it. it took you 14 minutes.';
+  const line = 'you went there. it took you 14 minutes.';
   expect(text.split(line).length - 1).toBe(1);
   // Nowhere else on the result is a duration, and nothing anywhere rates one.
   // The bare word "time" is not in this list: the progress view's existing
