@@ -21,6 +21,7 @@ import NoticeBar from './ui/components/NoticeBar';
 import Tour, { startTour } from './ui/components/Tour';
 import PackDetail from './ui/PackDetail';
 import Recover from './ui/Recover';
+import RehearsalEntry from './ui/Rehearsal/Entry';
 import { Search } from './ui/PackNew/Search';
 
 /** main.tsx dispatches this when the service worker has a new version waiting.
@@ -113,6 +114,13 @@ function PackDetailRoute() {
   return <PackDetail packId={packId} />;
 }
 
+/** E5-US1-AC4 — the way into a rehearsal, and for now the only one. The gate
+ *  it renders decides from the device whether a rehearsal can start at all. */
+function RehearsalRoute() {
+  const { packId = '' } = useParams();
+  return <RehearsalEntry packId={packId} />;
+}
+
 export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // E1-US1-AC0. Read once, synchronously, before the first paint: the
   // disclosure screen comes BEFORE any other screen, so there is no frame in
@@ -172,6 +180,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/" element={<Home />} />
         <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
+        <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
         <Route path="/nearby" element={<Nearby />} />
         <Route path="/recover" element={<Recover />} />
         <Route path="/about" element={<About />} />

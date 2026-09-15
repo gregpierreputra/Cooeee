@@ -855,3 +855,306 @@ export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
 };
 export const HEALTH_LINE = (source: string, status: string, when: string) =>
   `${source}: ${status}, last updated ${when}`;
+
+// ── E5-US1-AC4 the rehearsal entry gate ───────────────────────────────────
+// Four states, four screens. Each names what is missing from the PACK. None of
+// them says anything about the reader: a pack that is not finished is a
+// statement about a download, not about the person holding the phone.
+
+export const REHEARSAL_LABEL = 'Rehearsal';
+export const REHEARSE_THIS_PACK = 'Rehearse this pack';
+/** The way back to the pack the user came from, offered only where there is a
+ *  readable pack to go back to. */
+export const BACK_TO_THIS_PACK = 'Back to this pack';
+
+// The pack exists and its build never finished.
+export const PACK_NOT_FINISHED = 'This pack was not finished';
+/** Defensive at zero rather than trusting every caller to have checked. The
+ *  gate only reaches this state with at least one unfinished build, but a
+ *  sentence beginning "0 packs" is the kind of line that reaches a screen once
+ *  a later caller forgets, so the singular wording covers it instead. */
+export const PACK_NOT_FINISHED_DETAIL = (count: number) =>
+  count > 1
+    ? `${count} packs were started on this device and their builds did not finish, so nothing was stored for them.`
+    : 'One pack was started on this device and its build did not finish, so nothing was stored for it.';
+/** [DRAFT] pending Sharon's copy review. This is the only line across the four
+ *  stopped states that tells the reader to do something rather than stating a
+ *  fact about the pack, and it is the only one whose sentence does not use the
+ *  action's own words the way the unreadable state's does. Shipped as-is. */
+export const PACK_NOT_FINISHED_NEXT =
+  'Building it again while you have a connection is what would make a rehearsal possible.';
+
+// The pack is finished and readable, and holds nothing a rehearsal runs from.
+export const NOTHING_TO_REHEARSE = 'This pack holds nothing to rehearse';
+/** Names no single hazard. One pack carries more than one, so a sentence that
+ *  named bushfire alone would be wrong for the rest of what the pack holds. */
+export const NOTHING_TO_REHEARSE_DETAIL = (name: string, savedOn: string) =>
+  `${name}, saved ${savedOn}, holds no designation recorded for its address, and no official place saved with it.`;
+export const NOTHING_TO_REHEARSE_NEXT =
+  'A rehearsal runs from one of those two. Building this pack again, once the official information covers this address, is what would add them.';
+
+// The pack could not be read back from the device.
+export const PACK_COULD_NOT_BE_READ = 'This pack could not be read';
+export const UNREADABLE_PART_NAMES: Record<string, string> = {
+  'stored-items': 'the stored information items',
+  'saved-places': 'the saved places',
+  'the-whole-pack': 'the whole pack',
+};
+/** Joins the named parts into one readable phrase. */
+export const AND_LIST = (items: string[]): string =>
+  items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+export const PACK_COULD_NOT_BE_READ_DETAIL = (parts: string) =>
+  `Cooeee read this pack from the device, and ${parts} did not match what the pack recorded, so they were not used.`;
+export const PACK_STORE_UNREADABLE_DETAIL =
+  'The pack store on this device could not be opened, so nothing about this pack could be read.';
+/** Says what would restore the pack in the words the action itself uses. It
+ *  does NOT say "build this pack again": the build flow starts from an address
+ *  search and does not carry this pack's address into it, so a sentence or a
+ *  button promising to rebuild THIS pack would be a promise the next screen
+ *  breaks. */
+export const PACK_COULD_NOT_BE_READ_NEXT =
+  'An offline pack built for this address again would restore it.';
+
+// Nothing is stored at all.
+export const NO_PACK_TO_REHEARSE = 'No pack is stored on this device';
+export const NO_PACK_ELSEWHERE = 'That pack is not on this device';
+export const NO_PACK_TO_REHEARSE_DETAIL =
+  'A rehearsal runs from a saved pack: the official information for one address, kept on this phone so it opens without signal.';
+/** Defensive at zero for the same reason: the screen only asks for this line
+ *  when another pack is saved, and "0 other packs are saved here" would be a
+ *  false statement if that ever stopped being true. */
+export const NO_PACK_OTHERS_DETAIL = (count: number) =>
+  count > 1
+    ? `${count} other packs are saved here. Open one from Home to rehearse it.`
+    : 'One other pack is saved here. Open it from Home to rehearse it.';
+
+
+// ── E5-US1-AC1 the disruption a rehearsal runs under ──────────────────────
+// Two conditions, the same two whatever the pack holds. Written as the reader
+// would say them, not as the state a developer would name: what is missing,
+// then what that means when it is.
+
+/** [DRAFT] pending Sharon's copy review (task UX-1 on the E5-US1-AC1 card).
+ *  Two things are hers to settle and are shipped as defaults meanwhile: the
+ *  question form, where EPIC 1's own list instructs instead ("Choose your
+ *  address from the list."), which is likely why a list under a question reads
+ *  less like something to choose from; and the "we", which is the only place in
+ *  the product where the app speaks of itself in the first person. */
+export const CHOOSE_CONDITION_HEADING = 'What are we rehearsing without?';
+export const CONDITION_NO_DATA = 'No mobile data';
+export const CONDITION_NO_DATA_DETAIL =
+  'Nothing loads. Anything the phone did not already have is not there.';
+export const CONDITION_NO_FIX = 'No location fix';
+/** Says what the phone cannot do, without naming the thing it would otherwise
+ *  give you: the obvious phrasing uses words the wording scan forbids, and the
+ *  plainer sentence is the better one anyway. */
+export const CONDITION_NO_FIX_DETAIL = 'The phone cannot work out where it is.';
+/** [DRAFT] pending Sharon's copy review. Each condition as it reads after the
+ *  word "without". The row titles above answer "What are we rehearsing
+ *  without?", so they already carry the "No". A sentence that put "without" in
+ *  front of a title would say the opposite of what happened: "Rehearsed without
+ *  No location fix" reads as a rehearsal that had one. */
+export const CONDITION_NO_DATA_WITHOUT = 'mobile data';
+export const CONDITION_NO_FIX_WITHOUT = 'a location fix';
+// ── E5-US1-AC2 a rehearsal is never mistaken for the real thing ───────────
+// The bar carries the word and the condition, on every screen of a run. Both
+// are words: a colour or an icon says nothing in greyscale, and nothing at all
+// to a reader who cannot see it.
+
+/** Said once, plainly, on the run itself. [DRAFT] pending Sharon's copy review:
+ *  the criterion forbids any wording implying something WAS sent, and says
+ *  nothing about stating the opposite. Shipped as a default because a rehearsal
+ *  of an emergency is exactly where a reader would wonder, and silence answers
+ *  them less well than a sentence does. */
+export const NOTHING_IS_SENT = 'Nothing is sent from this rehearsal. Nothing leaves this phone.';
+/** Ends the run. Leaving is the only way out, and it is always available. */
+export const LEAVE_REHEARSAL = 'Leave the rehearsal';
+
+// ── E5-US2-AC1 what a rehearsal found ─────────────────────────────────────
+// A gap is a capability the reader could not rely on under the condition they
+// chose. Nothing here counts, totals, scores or grades, and nothing here says
+// anything about the reader: the pack is short of something, or the condition
+// takes something away, and both are facts about the phone.
+
+export const RESULT_HEADING = 'What this rehearsal found';
+/** Takes the condition's without-form (conditionWithout), never its row title. */
+export const RESULT_CONDITION_LINE = (without: string) => `Rehearsed without ${without}.`;
+/** The hazard a gap belongs to, since one pack holds more than one. Total over
+ *  the two rehearsable hazards, so no caller needs a fallback. */
+export const HAZARD_NAME: Record<'bushfire' | 'heat', string> = {
+  bushfire: 'Bushfire',
+  heat: 'Extreme heat',
+};
+export const GAP_HAZARD_LINE = (hazard: string) => `${hazard} journey`;
+
+// The two kinds, told apart by these words and by nothing else.
+export const GAP_MEANING_PACK_CONTENT = 'This information is missing from your pack.';
+/** The condition sentence in its two halves. The wording is unchanged and the
+ *  joined sentence is byte-identical, so the result reads exactly as it did. */
+export const GAP_MEANING_CONDITION_FACT = 'This is not available under this condition.';
+export const GAP_MEANING_CONDITION_NEXT = 'Here is what to do instead.';
+export const GAP_MEANING_CONDITION = `${GAP_MEANING_CONDITION_FACT} ${GAP_MEANING_CONDITION_NEXT}`;
+
+// What could not be relied on.
+export const GAP_DESIGNATION = 'The official area designation for this address';
+export const GAP_PLACES = 'The official places saved with this pack';
+export const GAP_PROVENANCE = 'The publisher and saved date on every stored item';
+export const GAP_LIVE_DIRECTION = 'Live direction and distance to your saved places';
+
+// The one action for each. None of them says the capability has come back.
+export const ACTION_BUILD_AGAIN_DESIGNATION =
+  'Build this pack again while you have a connection, so the official designation for this address is stored with it.';
+export const ACTION_BUILD_AGAIN_PLACES =
+  'Build this pack again while you have a connection, so the official places for this area are stored with it.';
+export const ACTION_BUILD_AGAIN_PROVENANCE =
+  'Build this pack again while you have a connection, so every stored item carries its publisher and its saved date.';
+/** Says what to do instead, and does not pretend the phone will find the way. */
+export const ACTION_WRITE_THE_WAY_DOWN =
+  'Write down how to reach each saved place from your front door, and keep it with the things you would take.';
+
+export const ACTION_LABEL = 'What to do';
+
+/** A rehearsal that found nothing to act on. It says what was checked and what
+ *  held. It does NOT say the reader is prepared, and it never will.
+ *  [DRAFT] pending Sharon's copy review. Reachable only after a no-data run on a
+ *  complete pack: under no location fix the contingency gap always fires. */
+export const NO_GAPS_HEADING = 'Nothing was missing in this rehearsal';
+/** Takes the condition's without-form (conditionWithout), never its row title. */
+export const NO_GAPS_DETAIL = (without: string) =>
+  `Everything this rehearsal looked for was on the phone without ${without}. That is what was checked, on this pack, today.`;
+
+// ── E5-US2-AC1 the reader's own record of what they have done ─────────────
+// [DRAFT] pending Sharon's copy review, all four.
+
+export const MARK_ACTION_DONE = 'Mark this done';
+/** Attributes the fact to the READER, not to the world. "Done" alone would read,
+ *  on a gap the condition takes away, as the capability having come back. */
+export const ACTION_DONE_ON = (date: string) => `You marked this done ${date}`;
+/** The same control, tapped again. A reader correcting their own record. */
+export const UNDO_ACTION_DONE = 'I have not done this';
+
+/** Rule 0.1: "we could not keep this" and "this did not happen" are different
+ *  statements. The rehearsal ran and its result is on screen; what failed is the
+ *  keeping of it, and that is what is said. */
+export const RUN_NOT_KEPT =
+  'This rehearsal could not be kept on this device. What it found is on this screen now, and will not be here later.';
+/** No date is ever shown for a completion that did not store: a date would be
+ *  the product asserting a record it does not hold. */
+export const ACTION_NOT_KEPT =
+  'This could not be kept on this device. Nothing was recorded, so it will still be here to mark next time.';
+
+// ── E5-US2-AC2/AC3/AC4 what has moved since the last rehearsal ────────────
+// Words, never a figure. The three groups below are told apart by their
+// headings, not by a colour, a dot or a badge: strip every colour out and the
+// screen still says which list is which [WCAG 1.4.1]. All [DRAFT] for Sharon.
+
+export const PROGRESS_HEADING = 'Since you last rehearsed this pack this way';
+export const EARLIER_REHEARSAL_ON = (date: string) => `Compared with your rehearsal of ${date}`;
+export const GROUP_NEWLY_DETECTED = 'Not found last time';
+export const GROUP_STILL_OPEN = 'Still to do';
+export const GROUP_DONE_SINCE = 'You have done since then';
+
+/** AC3. A first rehearsal is a whole result. This says what is not there yet,
+ *  and does not frame the run as incomplete or as a starting score. */
+export const FIRST_REHEARSAL_HEADING = 'This is your first rehearsal of this pack this way';
+export const FIRST_REHEARSAL_DETAIL =
+  'There is nothing earlier to compare it with yet. What it found is below, in full.';
+
+/** AC4. States that the PACK changed, and keeps that separate from anything the
+ *  reader did. Nothing here attributes the difference to them. */
+export const PACK_CHANGED_ON = (date: string) =>
+  `You built this pack again on ${date}, so the two rehearsals looked at different saved information. What changed between them is not only what you did.`;
+/** The honest third answer. Not a softer way of saying nothing changed. */
+export const PACK_CHANGE_UNKNOWN =
+  'Whether the pack changed between these two rehearsals was not recorded, so it cannot be said either way.';
+
+// ── E5-US1-AC5 the journey: a walk to know the way ────────────────────────
+// The rehearsal is the journey itself. These words ask her to walk to one of the
+// official places saved with this pack, on foot, in calm conditions, with
+// BlackSky open, and say what that is for: knowing the way. None of them treats
+// a place as where she plans to go on the day, and none of them rates the walk:
+// no time to beat, no fast or slow, nothing to pass. The place list reuses
+// GAP_PLACES as its heading and GAP_MEANING_PACK_CONTENT when there is none; the
+// hold reuses HOLD_FOR_BLACKSKY and HOLD_TO_ENTER; the day's priority reuses
+// OFFICIAL_INSTRUCTIONS_FIRST. All new strings below are [DRAFT] pending
+// Sharon's copy review.
+
+/** [DRAFT] Before she goes. */
+export const JOURNEY_BEFORE_HEADING = 'Rehearse the way on foot';
+/** [DRAFT] Takes the condition's without-form (conditionWithout). */
+export const JOURNEY_CONDITION_LINE = (without: string) => `This rehearsal is without ${without}.`;
+/** [DRAFT] What a rehearsal is. */
+export const JOURNEY_WHAT_IT_IS =
+  'A rehearsal is a walk to one of the official places saved with this pack, on foot, in calm conditions, with BlackSky open.';
+/** [DRAFT] What it is for, and what it is not. */
+export const JOURNEY_WHAT_IT_IS_FOR =
+  'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.';
+/** [DRAFT] The one control before she goes. It is the commitment. */
+export const I_AM_GOING_NOW = "I'm going now";
+/** [DRAFT] While she is out. */
+export const JOURNEY_RUNNING_HEADING = 'Practising the way';
+/** [DRAFT] What to do while she is out. */
+export const JOURNEY_RUNNING_DETAIL =
+  'Go to one of these places on foot, in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
+/** [DRAFT] The two endings on the journey screen, as the criterion names them. */
+export const ENDING_ARRIVED = 'I have arrived';
+export const ENDING_WITHOUT_GOING = 'End without going';
+
+// ── E5-US1-AC5 a started rehearsal is kept, and only she says how it ended ──
+// A rehearsal started and never given an ending is asked about, never guessed
+// at. None of these words says it was interrupted, abandoned, missed or left
+// short: the app does not know, which is why it asks.
+
+/** [DRAFT] pending Sharon's copy review. Asked on returning to a rehearsal that
+ *  was started and has no ending. */
+export const UNFINISHED_HEADING = 'How did this rehearsal end?';
+/** [DRAFT] pending Sharon's copy review. Takes the condition's without-form
+ *  (conditionWithout), never its row title. */
+export const UNFINISHED_DETAIL = (without: string, date: string) =>
+  `You started a rehearsal without ${without} on ${date}. Only you can say how it ended.`;
+/** [DRAFT] pending Sharon's copy review. The two endings, as the criterion names
+ *  them, each with what it means in her words. */
+export const ENDING_WALKED = 'Walked';
+export const ENDING_WALKED_DETAIL = 'I went to the place.';
+export const ENDING_DRY_RUN = 'Not walked, a dry run';
+export const ENDING_DRY_RUN_DETAIL = 'I ended it without going.';
+/** [DRAFT] pending Sharon's copy review. A rehearsal recorded before the endings
+ *  existed, in the shape PACK_CHANGE_UNKNOWN uses: not knowing is its own state,
+ *  and never a default to either ending. */
+export const ENDING_NOT_RECORDED =
+  'Whether this rehearsal was walked or a dry run was not recorded, so it cannot be said either way.';
+
+// ── E5-US1-AC5 the result says how the rehearsal ended ────────────────────
+// Beside the condition line, a fact about this rehearsal. Her time is shown in
+// whole minutes, never seconds, with nothing to measure it against: no target,
+// no fast or slow, no best. A dry run is stated as the kind of rehearsal it is.
+// A rehearsal with no ending recorded is stated by ENDING_NOT_RECORDED above.
+
+/** [DRAFT] pending Sharon's copy review. A walked rehearsal, and how long it took her. */
+export const RESULT_WALKED = (duration: string) => `You walked it. It took you ${duration}.`;
+/** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
+ *  kept with it. Every walk ended on the journey screen keeps one; this covers a
+ *  stored record that does not. */
+export const RESULT_WALKED_NO_TIME = 'You walked it.';
+/** [DRAFT] pending Sharon's copy review. A dry run, stated plainly, as a kind of
+ *  rehearsal and not a lesser one. */
+export const RESULT_DRY_RUN = 'This was a dry run: you ended it without going.';
+/** [DRAFT] pending Sharon's copy review. Her time, in whole minutes. */
+export const DURATION_UNDER_A_MINUTE = 'less than a minute';
+export const DURATION_MINUTES = (minutes: number) => (minutes === 1 ? '1 minute' : `${minutes} minutes`);
+
+// ── E5-US1-AC5 her note about the way ─────────────────────────────────────
+// Offered on the result after a walked rehearsal only, and never required. It
+// is saved as an ordinary note in this pack, under the same rule as every note,
+// so BlackSky reads it back without a connection. Saving reuses SAVE_NOTE,
+// NOTE_SAVED, NOTE_EMPTY and NOTE_CHANGE_FAILED. All [DRAFT] pending Sharon's
+// copy review.
+
+/** [DRAFT] pending Sharon's copy review. */
+export const WAY_NOTE_HEADING = 'What you learnt about the way';
+/** [DRAFT] pending Sharon's copy review. Says it is optional, what it is for,
+ *  and where it goes. */
+export const WAY_NOTE_DETAIL =
+  "If you like, write what the app cannot tell you: the turns, what you met on the way, what you would do differently. It is kept with this pack's notes, which BlackSky shows you without a connection.";
+/** [DRAFT] pending Sharon's copy review. */
+export const WAY_NOTE_LABEL = 'Your note about the way';

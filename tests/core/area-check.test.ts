@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   areaCheckView,
+  areaResultLine,
   bpaExposureLayer,
   extentSnapshotDisagrees,
   resolveBushfireAreaStatus,
@@ -128,5 +129,13 @@ describe('E1-US1-AC5–AC7 exact copy', () => {
     expect(copy.AREA_NOT_SAVED).toBe(
       'Nothing has been saved. Your address is still here. Try again when you have a connection.',
     );
+  });
+});
+describe('areaResultLine', () => {
+  it("states each stored status in exactly the area check's words", () => {
+    (['present', 'none-mapped-here', 'not-published'] as const).forEach((status) => {
+      expect(areaResultLine(status)).toBe(areaCheckView(result(status)).resultLine);
+    });
+    expect(areaResultLine('present')).toBe('This address is inside a Designated Bushfire Prone Area.');
   });
 });

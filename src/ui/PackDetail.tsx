@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
-import { formatDistanceM } from '../core/destination';
+import { formatDistanceM, placeName } from '../core/destination';
 import {
   decideOriginalSourceAccess,
   formatSavedDate,
@@ -155,7 +155,7 @@ export default function PackDetail({
             {places.map((place) => {
               const item = {
                 id: place.id,
-                name: place.name ?? copy.OFFICIAL_DESTINATION_INFORMATION,
+                name: placeName(place),
                 source: place.source,
                 pageUrl: place.source.url,
               };
@@ -210,6 +210,15 @@ export default function PackDetail({
       <Section kind="note" title={copy.NOTES}>
         <PackNotes packId={content.pack.id} notes={content.notes} />
       </Section>
+
+      {/* E5-US1-AC4 — the only way into a rehearsal. It always leads to the
+          gate, never straight into a rehearsal: whether one can start at all
+          is decided there, from what this pack actually holds. */}
+      <div className="actions">
+        <Link className="action" to={`/rehearse/${content.pack.id}`}>
+          {copy.REHEARSE_THIS_PACK}
+        </Link>
+      </div>
 
       {offlineSource ? (
         <div className="sheet-backdrop">

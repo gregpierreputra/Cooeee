@@ -15,6 +15,7 @@ import {
   packDetailPlaces,
   prepareProvenancedContent,
   provenanceView,
+  publisherLine,
   savedAgeDays,
   sourcePageUrls,
 } from '../../src/core/provenance';
@@ -319,5 +320,15 @@ describe('E2-US1-AC3 stored absence row', () => {
         files: [], notes: [], recoveryVerified: true, contentVerified: true,
       }),
     ).toBeNull();
+  });
+});
+
+describe('publisherLine', () => {
+  it('is the publisher-and-saved-date line every provenance view shows', () => {
+    const row = source({ retrievedAt: daysAgo(3) });
+    expect(publisherLine(row)).toBe(provenanceView(NOW, row).publisherLine);
+    expect(publisherLine(row)).toBe(
+      `Published by Country Fire Authority · Saved ${formatSavedDate(daysAgo(3))}`,
+    );
   });
 });

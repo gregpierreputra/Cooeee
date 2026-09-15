@@ -443,3 +443,87 @@ describe('E4 Recover mandated copy', () => {
     }
   });
 });
+
+// E5-US1-AC4 — the four states of the rehearsal entry gate. Each one names what
+// is missing from the PACK. None of them describes the reader, and none of them
+// reports an unspecified problem, so each is asserted here by exact match.
+describe('the rehearsal entry gate', () => {
+  // The heading is the first thing on the card. An earlier draft put a line
+  // above it saying a rehearsal could not start, which said what the heading
+  // said one line before the heading said it.
+  it('the way back to the pack is offered in the reader\'s own terms', () => {
+    expect(copy.BACK_TO_THIS_PACK).toBe('Back to this pack');
+  });
+
+  it('an unfinished build is described as a build that stopped', () => {
+    expect(copy.PACK_NOT_FINISHED).toBe('This pack was not finished');
+    expect(copy.PACK_NOT_FINISHED_DETAIL(1)).toBe(
+      'One pack was started on this device and its build did not finish, so nothing was stored for it.',
+    );
+    expect(copy.PACK_NOT_FINISHED_NEXT).toBe(
+      'Building it again while you have a connection is what would make a rehearsal possible.',
+    );
+  });
+
+  // One pack now carries more than one hazard, so this line names none of them.
+  it('an empty pack names both of the things it does not hold, and no hazard by name', () => {
+    expect(copy.NOTHING_TO_REHEARSE).toBe('This pack holds nothing to rehearse');
+    expect(copy.NOTHING_TO_REHEARSE_DETAIL('Kalorama', '3 March 2026')).not.toMatch(
+      /bushfire|heat|flood/i,
+    );
+    expect(copy.NOTHING_TO_REHEARSE_DETAIL('Kalorama', '3 March 2026')).toBe(
+      'Kalorama, saved 3 March 2026, holds no designation recorded for its address, and no official place saved with it.',
+    );
+  });
+
+  // The two states differ by heading and by every sentence under it. Neither
+  // explains the other: an earlier draft carried a middle paragraph correcting
+  // a confusion the reader had not had.
+  it('a pack that cannot be read says so, and names what would restore it', () => {
+    expect(copy.PACK_COULD_NOT_BE_READ).toBe('This pack could not be read');
+    expect(copy.PACK_COULD_NOT_BE_READ_NEXT).toBe(
+      'An offline pack built for this address again would restore it.',
+    );
+    expect(copy.PACK_STORE_UNREADABLE_DETAIL).toBe(
+      'The pack store on this device could not be opened, so nothing about this pack could be read.',
+    );
+  });
+
+  it('every withheld part has a name of its own', () => {
+    expect(copy.UNREADABLE_PART_NAMES['stored-items']).toBe('the stored information items');
+    expect(copy.UNREADABLE_PART_NAMES['saved-places']).toBe('the saved places');
+    expect(copy.UNREADABLE_PART_NAMES['the-whole-pack']).toBe('the whole pack');
+  });
+
+  it('a device with no pack is offered one, and is never told it has none when it has one', () => {
+    expect(copy.NO_PACK_TO_REHEARSE).toBe('No pack is stored on this device');
+    expect(copy.NO_PACK_ELSEWHERE).toBe('That pack is not on this device');
+    expect(copy.NO_PACK_TO_REHEARSE_DETAIL).toBe(
+      'A rehearsal runs from a saved pack: the official information for one address, kept on this phone so it opens without signal.',
+    );
+  });
+});
+
+// E5-US1-AC1 — the two conditions a rehearsal can run under. Both are stated as
+// what is missing, then what that means when it is, and neither is ranked.
+describe('the choice of condition', () => {
+  it('asks what the rehearsal is run without', () => {
+    expect(copy.CHOOSE_CONDITION_HEADING).toBe('What are we rehearsing without?');
+  });
+
+  it('states each condition in plain words rather than as a technical state', () => {
+    expect(copy.CONDITION_NO_DATA).toBe('No mobile data');
+    expect(copy.CONDITION_NO_DATA_DETAIL).toBe(
+      'Nothing loads. Anything the phone did not already have is not there.',
+    );
+    expect(copy.CONDITION_NO_FIX).toBe('No location fix');
+    expect(copy.CONDITION_NO_FIX_DETAIL).toBe('The phone cannot work out where it is.');
+  });
+
+  it('states plainly that a rehearsal reaches nothing outside the phone', () => {
+    expect(copy.NOTHING_IS_SENT).toBe(
+      'Nothing is sent from this rehearsal. Nothing leaves this phone.',
+    );
+    expect(copy.LEAVE_REHEARSAL).toBe('Leave the rehearsal');
+  });
+});

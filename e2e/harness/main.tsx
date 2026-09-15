@@ -1,6 +1,6 @@
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation } from 'react-router';
 
 import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
@@ -15,6 +15,7 @@ import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
 import Recover from '../../src/ui/Recover';
+import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BottomNav from '../../src/ui/components/BottomNav';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
@@ -530,6 +531,191 @@ if (window.location.pathname === '/nearby') {
   nearbyFlow = <Nearby now={nearbyNow} fetcher={async () => { throw new Error('no network'); }} />;
 }
 
+// E5-US1-AC4. The rehearsal entry gate, at a fixed instant, over a pack seeded
+// straight into IndexedDB so the two demonstrable states are exact rather than
+// clock- or build-dependent. The gate reads the device through the real
+// readRehearsalSource, so what is asserted is the real path.
+const rehearseMode = new URLSearchParams(window.location.search).get('mode') ?? 'empty';
+const rehearseNow = Date.UTC(2026, 8, 3, 2);
+let rehearseFlow = confirmation;
+// `keep=1` seeds only when the pack is not already there, so a reload preserves
+// what the previous load wrote. Without it every load starts from a clean
+// device, which is what the cold-start tests need and what would make a
+// survives-a-reload test impossible to write.
+const rehearseKeep = new URLSearchParams(window.location.search).get('keep') === '1';
+if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.packs.count()) > 0)) {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  // 3 March 2026 in Melbourne, so the saved date on screen is the exact
+  // day, full month, year form.
+  const rehearseSavedAt = Date.UTC(2026, 2, 3);
+  // A pack of absences: the layer is published and maps nothing at the
+  // address, and the CFA list publishes no place for the area. Both are real
+  // stored rows, and neither is something to rehearse.
+  //
+  // 'rehearsable' is the one mode whose layer records a designation PRESENT at
+  // the address. The status is chosen HERE, before the manifest is built, so
+  // the stored row still hashes to what the pack recorded: a row altered after
+  // the manifest would be withheld, and the gate would report the pack
+  // unreadable rather than rehearsable.
+  const rehearseLayer: ExposureLayer = {
+    id: 'rehearse-pack:BPA',
+    packId: 'rehearse-pack',
+    group: 'designation',
+    code: 'BPA',
+    status: rehearseMode === 'rehearsable' || rehearseMode === 'gap' ? 'present' : 'none-mapped-here',
+    features: [],
+    checkedAt: rehearseSavedAt,
+    source: { ...packSource, retrievedAt: rehearseSavedAt },
+  };
+  const rehearseAbsence = absenceRow('rehearse-pack', 'Yarra Ranges', {
+    ...cfaSource,
+    retrievedAt: rehearseSavedAt,
+  });
+  // 'rehearsable' saves an official place as well, so the pack holds the whole
+  // journey and a no-data run finds nothing missing. Every other mode holds the
+  // absence row alone, so the same run finds a pack-content gap beside whatever
+  // the condition itself takes away.
+  //
+  // The rows are decided HERE, before the manifest, and the manifest is built
+  // from exactly these rows. A row added after the manifest would not hash to
+  // what the pack recorded, and the read would withhold the whole group: the
+  // gate would call the pack unreadable and no rehearsal would run at all.
+  const rehearsePlaces: Destination[] =
+    rehearseMode === 'rehearsable'
+      ? [
+          rehearseAbsence,
+          {
+            id: 'rehearse-pack:nsp',
+            packId: 'rehearse-pack',
+            kind: 'nsp-bushfire',
+            name: 'Kalorama Reserve',
+            source: { ...cfaSource, retrievedAt: rehearseSavedAt },
+          },
+        ]
+      : [rehearseAbsence];
+  await db.packs.put({
+    ...savedPack,
+    id: 'rehearse-pack',
+    name: 'Kalorama',
+    address: testCandidate.address,
+    verifiedAt: rehearseSavedAt,
+    manifest: {
+      version: 1,
+      groups: {
+        layers: await manifestGroup([rehearseLayer]),
+        destinations: await manifestGroup(rehearsePlaces),
+        recovery: { count: 0, sha256: '' },
+        tiles: { count: 0, bytes: 0 },
+      },
+    },
+  });
+  await db.layers.put(rehearseLayer);
+  // 'empty' stores exactly the row the manifest hashed. 'unreadable' stores a
+  // row altered after the save, so the group no longer matches its own hash
+  // and the read withholds it — the real "could not be read" path, not a
+  // simulated one.
+  await db.destinations.bulkPut(
+    rehearseMode === 'unreadable'
+      ? [{ ...rehearseAbsence, reason: 'Altered on the device after the pack was saved.' }]
+      : rehearsePlaces,
+  );
+  // E5-US1-AC3. Leaving the rehearsal screen and coming back within the same
+  // session must keep the run. In the running app that is a route change; here
+  // it is an unmount and a remount of the same component, which is the same
+  // thing from the run's point of view and needs no second application shell.
+  // A reload is what a cold start looks like, and needs no control at all.
+  // E5-US2-AC2/AC4. `earlier=` seeds a rehearsal that already happened, so the
+  // next run has something to compare against. Its value chooses what that
+  // earlier run knew:
+  //   same    — same pack content and the same gaps, so nothing moved
+  //   changed — a different packVerifiedAt, so the pack was built again between
+  //   unknown — recorded before the pack's verified date was kept, so whether
+  //             the pack changed cannot be said
+  const seeded = new URLSearchParams(window.location.search).get('earlier');
+  if (seeded) {
+    const earlierPackVerifiedAt =
+      seeded === 'changed' ? Date.UTC(2026, 1, 1) : rehearseSavedAt;
+    await db.rehearsals.put({
+      id: 'earlier-run',
+      packId: 'rehearse-pack',
+      condition: 'no-location-fix',
+      startedAt: Date.UTC(2026, 2, 1),
+      finishedAt: Date.UTC(2026, 2, 1),
+      ...(seeded === 'unknown' ? {} : { packVerifiedAt: earlierPackVerifiedAt }),
+      // The earlier run found the contingency only, so a pack-content gap in
+      // the later run reads as one the earlier run did not find.
+      gaps: [
+        {
+          gapType: 'live-direction-unavailable' as const,
+          kind: 'condition-persistent' as const,
+          hazard: 'bushfire' as const,
+        },
+      ],
+    });
+  }
+  rehearseFlow = <RehearsalHarness />;
+}
+if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
+
+// The remount control is HARNESS FURNITURE, not product UI. It is rendered
+// after the screen under test and outside its .page container, so it can never
+// sit above the rehearsal bar: in the product the bar is the topmost thing on a
+// run, and a harness control above it would make "visible without scrolling"
+// read as passing for the wrong reason. Its styling is deliberately unlike
+// anything in the product, and it says what it is.
+const harnessStyle = {
+  margin: '2rem 0 0',
+  padding: '0.5rem',
+  borderTop: '1px dashed #888',
+  font: '12px ui-monospace, SFMono-Regular, Menlo, monospace',
+  color: '#888',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+} as const;
+
+const harnessButtonStyle = {
+  appearance: 'none',
+  background: 'transparent',
+  border: '1px dashed currentColor',
+  borderRadius: 0,
+  color: 'inherit',
+  font: 'inherit',
+  minHeight: 'auto',
+  minWidth: 'auto',
+  padding: '2px 6px',
+  cursor: 'pointer',
+} as const;
+
+/** Harness furniture: where the in-memory router is, so a spec can see a control
+ *  navigate — the journey screen's hold goes to /blacksky — without the harness
+ *  growing routes of its own. */
+function LocationProbe() {
+  const { pathname } = useLocation();
+  return <span data-testid="location">{pathname}</span>;
+}
+
+function RehearsalHarness() {
+  const [mounted, setMounted] = useState(true);
+  return (
+    <>
+      {mounted ? <RehearsalEntry packId="rehearse-pack" now={rehearseNow} /> : null}
+      <div style={harnessStyle} data-harness="true">
+        <span>test harness</span>
+        <LocationProbe />
+        <button
+          type="button"
+          data-testid="remount"
+          style={harnessButtonStyle}
+          onClick={() => setMounted((on) => !on)}
+        >
+          {mounted ? 'unmount the screen' : 'mount it again'}
+        </button>
+      </div>
+    </>
+  );
+}
+
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
@@ -557,6 +743,7 @@ createRoot(root).render(
         : window.location.pathname === '/destinations' ? destinationsFlow
         : window.location.pathname === '/nearby' ? nearbyFlow
         : window.location.pathname === '/recover' ? recoverFlow
+        : window.location.pathname === '/rehearse' ? rehearseFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

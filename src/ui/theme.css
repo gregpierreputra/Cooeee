@@ -1995,3 +1995,214 @@ input {
     color: #000;
   }
 }
+/* E5-US1-AC1 — the two conditions a rehearsal can run under. IDENTICAL rows:
+   same treatment, same weight, same target, in a fixed order that is
+   presentation only. Nothing here may make one read as likelier, more realistic
+   or more serious than the other, so there is no first-row rule, no accent and
+   no icon. The screen carries no filled control at all: the filled control
+   means "this is what would fix it", and choosing a disruption fixes nothing.
+
+   The row treatment itself is .candidate-action, the address list's own rule,
+   worn as a second class rather than copied: the two tappable-row lists in this
+   product are then literally the same row, and cannot drift. Everything below
+   adds only the second line. */
+/* The rows are made equal in height, deliberately. Two conditions that must
+   read as equals are shown as equals, the same position this stylesheet already
+   takes where absence cards are given the presence card's treatment, and the
+   same one EPIC 2 takes in sorting official places by distance rather than by
+   worth. Left to itself the taller sentence would make its row a fifth taller
+   than its neighbour, and a reader cannot tell a longer sentence from a heavier
+   option.
+
+   A grid rather than a min-height: grid-auto-rows: 1fr holds the rows level at
+   any type size, where a fixed minimum would be overrun the moment the text
+   grew.
+
+   The content stays top-aligned, so the shorter row carries space beneath its
+   text. Centring it would pull that row's label off the line its neighbour's
+   label sits on, and two labels starting on the same line does more for "these
+   are equals" than a filled card does. The space below is the honest
+   consequence of one sentence being shorter, inside a card the same size as its
+   neighbour. */
+.condition-list {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 0.75rem;
+}
+
+.condition-list li {
+  display: grid;
+}
+
+.condition-action {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  height: 100%;
+}
+
+.condition-label {
+  font-weight: var(--w-heavy);
+}
+
+/* NOT .muted. Muted is this product's convention for passive explanatory prose,
+   and a control whose second line is muted reads as a card of text rather than
+   as something to tap. Every line of an address candidate row is full-strength
+   control text, and so is every line of this one.
+
+   The second line is subordinated by SIZE instead, which is how this product
+   already quiets a supporting line on a card (.saved-place .muted,
+   .nearby-health, label). Colour would put the row back to reading as prose,
+   and weight alone leaves the detail twice the label's height and still
+   outweighing it. At --step-s the line is below the large-text threshold, so it
+   is held to the full 4.5:1 rather than 3:1, and the standing contrast spec
+   measures it. */
+.condition-detail {
+  color: var(--ink);
+  font-size: var(--step-s);
+}
+
+/* E5-US1-AC2 — the bar that marks a running rehearsal. Sticky at the top of the
+   run, so it is on screen without scrolling from the first screen to the last.
+
+   It carries the word and the condition as TEXT, and nothing about it depends
+   on hue: strip every colour and both facts are still written on it. The rule
+   below is a border and a surface, not a tint — there is no coloured band here
+   for a greyscale screen, a sun-washed screen or a reader who cannot see it to
+   lose. The dotted underline on the marker is a second non-colour cue that
+   survives the same treatment. */
+.rehearsal-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.75rem max(1.75rem, env(safe-area-inset-left));
+  background: var(--surface-2);
+  border-bottom: 2px solid var(--ink);
+  color: var(--ink);
+  font-size: var(--step-s);
+}
+
+.rehearsal-bar-marker {
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.25em;
+}
+
+.rehearsal-bar-condition {
+  font-weight: var(--w-med);
+}
+
+/* E5-US2-AC1 — what a rehearsal found. One row per gap, every row identical:
+   the two kinds of gap are told apart by the sentence each carries, never by a
+   colour, a border, an icon or a position in the list. A row that looked more
+   serious than its neighbour would be a ranking, and there is nothing on this
+   screen to rank — no total, no count, no score and no verdict. */
+.gap-list {
+  gap: 0.75rem;
+}
+
+.gap-row > h3 {
+  font-size: var(--step-1);
+  margin: 0;
+}
+
+/* Names the line beneath it as the one thing to do, so the action is never read
+   as more explanation. */
+.gap-action-label {
+  font-size: var(--step-s);
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin: 0.25rem 0 0;
+}
+
+/* The reader's own record of an action they have taken, and the control that
+   makes or corrects it. The control is not filled: the filled control means
+   "this is what would fix it", and ticking a record fixes nothing — the action
+   itself did that, out in the world, before the reader came back to say so. */
+.gap-done {
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  color: var(--ink-2);
+  margin: 0.25rem 0 0;
+}
+
+.gap-mark {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 0.5rem;
+}
+
+/* E5-US1-AC5 — the journey screen. The places sit in the card treatment the
+   rest of the pack uses. The two endings are identical controls of identical
+   weight, told apart by their words alone: neither reads as the expected one,
+   and a greyscale screen says which is which exactly as a coloured one does. */
+.journey-places > h3 {
+  font-size: var(--step-1);
+  margin: 1rem 0 0.5rem;
+}
+
+.journey-place-list {
+  gap: 0.75rem;
+}
+
+.journey-place-name {
+  font-weight: var(--w-bold);
+  margin: 0;
+}
+
+.journey-go,
+.journey-endings .action {
+  min-height: 44px;
+}
+
+/* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
+   Groups are told apart by their HEADINGS and by nothing else: no colour, no
+   dot, no badge, no arrow, so the screen still reads with every colour stripped
+   out [WCAG 1.4.1]. There is no figure of any kind here, and no empty one
+   standing in for a comparison that does not exist yet.
+
+   ponytail: rehearsals accumulate for the life of a pack lineage, and nothing
+   prunes them. At a heavy few hundred rows a year, of about a kilobyte each,
+   that is not a problem worth solving now, and a cap would be a deletion of the
+   reader's own history rather than maintenance. If one is ever added, the safe
+   rule is the most recent N per pack AND condition, since the comparison only
+   ever reads the most recent earlier run — and it must be visible to the
+   reader, not a silent prune. */
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.progress > h3 {
+  font-size: var(--step-1);
+  margin: 0;
+}
+
+.progress-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.progress-list {
+  gap: 0.25rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+.progress-pack-change {
+  font-size: var(--step-s);
+  margin: 0;
+}

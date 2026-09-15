@@ -64,6 +64,28 @@ export default tseslint.config(
 
   { files: ['src/ui/**'], rules: { 'no-restricted-imports': ['error', NO_RAW_DB] } },
 
+  // E5-US1-AC5 — a rehearsal renders its own screens. The live BlackSky screen
+  // is never mounted from one, so its latch, position request and resume cannot
+  // be reached from a run. Repeats NO_RAW_DB, since this block replaces the one
+  // above for these files.
+  {
+    files: ['src/ui/Rehearsal/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          ...NO_RAW_DB,
+          patterns: [
+            {
+              group: ['**/BlackSky', '**/BlackSky.tsx'],
+              message: 'A rehearsal renders its own screens and never mounts the live BlackSky screen.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // RULE 2 — the offline surfaces import no network path and cannot call fetch.
   // The offline screens AND every component they render: a fetch in a child would
   // run inside the offline screen just the same. A component that must fetch

@@ -108,3 +108,83 @@ export async function acknowledgeFirstOpen(page: Page) {
     [ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE],
   ]);
 }
+
+/** E5-US1-AC5. Start a rehearsal as a reader does: choose a condition, then
+ *  "I'm going now". The rehearsal is running and its bar is up. Harness pages
+ *  only. Pass `url` to open the choice first; leave it out when the choice is
+ *  already on screen. */
+export async function startJourney(page: Page, condition: string, url?: string) {
+  if (url) await page.goto(url);
+  await expect(page.getByRole('heading', { name: 'What are we rehearsing without?' })).toBeVisible();
+  await page.getByRole('button', { name: new RegExp(condition) }).click();
+  await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
+  await expect(page.locator('.rehearsal-bar')).toBeVisible();
+}
+
+/** E5-US1-AC5. A rehearsal as a reader takes it, to its result: the choice of
+ *  condition, the journey screen, "I'm going now", and one of the two endings.
+ *  This is the one place the journey to a finished rehearsal is written down, so
+ *  the next change to the flow is made here and in no spec. Both endings reach
+ *  the same result, so which one is given is the caller's to choose. The journey
+ *  screen's own behaviour is proven in rehearsal-journey.spec.ts; this only
+ *  takes it. */
+export async function rehearseToResult(
+  page: Page,
+  condition: string,
+  url?: string,
+  ending: 'I have arrived' | 'End without going' = 'End without going',
+  /** How long she was out, as mm:ss, without the spec waiting it out: the page
+   *  clock is installed before the page loads and moved on between going and
+   *  ending. Pass with `url`. */
+  walkFor?: string,
+) {
+  if (walkFor) await page.clock.install();
+  await startJourney(page, condition, url);
+  if (walkFor) await page.clock.fastForward(walkFor);
+  await page.getByRole('main').getByRole('button', { name: ending, exact: true }).click();
+  await expect(
+    page.getByRole('main').getByRole('heading', {
+      level: 2,
+      name: /^(What this rehearsal found|Nothing was missing in this rehearsal)$/,
+    }),
+  ).toBeVisible();
+}
+
+/** Every row in the pack notes store, read straight from IndexedDB. Harness
+ *  pages only, after the app has opened. */
+export async function storedNotes(page: Page): Promise<Record<string, unknown>[]> {
+  return page.evaluate(async () => {
+    const request = <T>(req: IDBRequest<T>) =>
+      new Promise<T>((resolve, reject) => {
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    const database = await request(indexedDB.open('cooeee'));
+    try {
+      const store = database.transaction('notes').objectStore('notes');
+      return (await request(store.getAll())) as Record<string, unknown>[];
+    } finally {
+      database.close();
+    }
+  });
+}
+
+/** Every row in the rehearsals store, read straight from IndexedDB rather than
+ *  through the app, so a spec sees exactly what the device holds: finished rows
+ *  and started ones alike. Harness pages only, after the app has opened. */
+export async function storedRehearsals(page: Page): Promise<Record<string, unknown>[]> {
+  return page.evaluate(async () => {
+    const request = <T>(req: IDBRequest<T>) =>
+      new Promise<T>((resolve, reject) => {
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    const database = await request(indexedDB.open('cooeee'));
+    try {
+      const store = database.transaction('rehearsals').objectStore('rehearsals');
+      return (await request(store.getAll())) as Record<string, unknown>[];
+    } finally {
+      database.close();
+    }
+  });
+}

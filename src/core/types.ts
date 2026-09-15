@@ -389,5 +389,122 @@ export type DynamicSnapshot = {
   activations: SnapshotActivation[];
 };
 
+// --- Rehearsal (EPIC 5) ---
+/** Which of the two kinds a detected gap is. Distinguished in WORDS on screen,
+ *  never by severity, ranking or a separate list: one is something missing from
+ *  the pack, the other a capability the chosen condition takes away. */
+export type RehearsalGapKind = 'pack-content' | 'condition-persistent';
+
+/** The fixed set of things a rehearsal checks (D-F, 10 September). Stable
+ *  strings: they are written into stored rehearsals and read back by later runs,
+ *  so renaming one is a migration, not an edit. */
+export type RehearsalGapType =
+  | 'designation-missing'
+  | 'places-missing'
+  | 'provenance-missing'
+  | 'live-direction-unavailable';
+
+/** One thing the user could not rely on under the chosen condition. It is not a
+ *  defect and it is not a mark against the person: it is a capability, named. */
+export type DetectedGap = {
+  gapType: RehearsalGapType;
+  kind: RehearsalGapKind;
+  /** Which hazard's journey this gap belongs to. One pack holds more than one. */
+  hazard: 'bushfire' | 'heat';
+};
+
+/** How a rehearsal ended, in the reader's own answer (E5-US1-AC5). There is no
+ *  third value and no default: the app never supplies an ending for her. */
+export type RehearsalEnding = 'walked' | 'dry-run';
+
+/** ONE FINISHED rehearsal.
+ *
+ *  `finishedAt` is required, and a row carrying it is the only kind the
+ *  rehearsals store's finishedAt index holds. A rehearsal that was started and
+ *  has no ending yet is a different type, UnfinishedRehearsal, stored in the
+ *  same table WITHOUT finishedAt: it is never in that index, and never one of
+ *  these. That is what keeps it out of every comparison (E5-US2-AC2). */
+export type Rehearsal = {
+  id: string;                  // crypto.randomUUID(), and the id of the run that produced it
+  packId: string;
+  condition: 'no-data' | 'no-location-fix';
+  startedAt: number;
+  finishedAt: number;          // always set on a finished rehearsal; see above
+  gaps: DetectedGap[];         // the gaps this run found, written with it, atomically
+  /** The ending the reader said it had.
+   *
+   *  OPTIONAL, and it must stay optional: rehearsals recorded before the endings
+   *  existed carry none, and are reported as not recorded. A missing ending is
+   *  never defaulted to either one. */
+  ending?: RehearsalEnding;
+  /** On a walked rehearsal only: the time between startedAt and finishedAt, in
+   *  milliseconds, as it was. Held and never judged — no threshold, no target,
+   *  no fast or slow, no comparison with another time, and no bearing on any
+   *  gap. OPTIONAL: a dry run carries none, and nor does anything recorded
+   *  before it existed. */
+  elapsedMs?: number;
+  /** The pack's own verifiedAt at the moment this rehearsal ran.
+   *
+   *  Two rehearsals whose values differ were run against different pack
+   *  content, and the later value is the date the pack changed — which is what
+   *  lets a comparison say so rather than presenting two unlike runs as like
+   *  for like.
+   *
+   *  OPTIONAL, and it must stay optional: rehearsals recorded before this field
+   *  existed do not carry it, and a comparison involving one of those genuinely
+   *  cannot tell whether the pack changed. That is the honest indeterminate
+   *  case, and it is reachable rather than contrived precisely because those
+   *  rows exist. Defaulting a missing value to "unchanged" would turn "we
+   *  cannot tell" into "nothing changed", which is the substitution shared rule
+   *  0.1 exists to forbid. */
+  packVerifiedAt?: number;
+};
+
+/** A rehearsal that was started and has not been given an ending.
+ *
+ *  Stored the moment the condition is chosen (E5-US1-AC5, amending AC3), so it
+ *  survives the phone locked, the app evicted and a cold start. It carries no
+ *  finishedAt, no gaps and no ending, and the `never` fields make that a
+ *  property of the type: it cannot be passed where a Rehearsal is taken,
+ *  comparableEarlier included. Only the reader's answer makes it one. */
+export type UnfinishedRehearsal = {
+  id: string;
+  packId: string;
+  condition: 'no-data' | 'no-location-fix';
+  startedAt: number;
+  finishedAt?: never;
+  gaps?: never;
+  ending?: never;
+  elapsedMs?: never;
+};
+
+/** Everything the rehearsals store can hold. */
+export type StoredRehearsal = Rehearsal | UnfinishedRehearsal;
+
+/** The reader's own record that they have taken one of the actions a rehearsal
+ *  gave them.
+ *
+ *  Keyed by pack and action, NOT by rehearsal: an action taken in March is still
+ *  taken in September, and asking someone to re-tick it every run would train
+ *  them to tick without reading. So a completion outlives the run that raised
+ *  the gap, and the next run finds it already there.
+ *
+ *  It is never expired and never removed by the product. A condition-persistent
+ *  gap may recur, and the answer to that is the DATE on screen, not the product
+ *  quietly deciding a tick has gone stale — the same treatment EPIC 1 gives a
+ *  pack past its freshness window, which stays fully usable and plainly dated
+ *  while the reader judges it.
+ *
+ *  The reader may remove their own completion, and that is a different act from
+ *  the product removing it: one is a person correcting their own record, the
+ *  other is the product overruling them. Removing deletes the row rather than
+ *  dating it, because no history of ticks is kept. */
+export type ActionCompletion = {
+  id: string;        // `${packId}:${actionId}` — one per action per pack
+  packId: string;
+  actionId: string;
+  doneAt: number;    // epoch ms; rendered as '3 March 2026'
+};
+
 /** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */
 export type SyncMetaRow = { key: string; value: string };
