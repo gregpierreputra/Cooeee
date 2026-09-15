@@ -1141,6 +1141,8 @@ export const CONDITION_HOW_TO: Record<'no-data' | 'no-location-fix', string> = {
   'no-location-fix': 'Turn location off in the phone settings, so there is no fix, as on the day.',
 };
 export const PHONE_IS_OFFLINE = 'Your phone is offline now, as on the day.';
+// E5-US7 — the pack's notes on the journey, as BlackSky shows them on the day.
+export const NO_NOTES_ON_JOURNEY = 'No notes are saved with this pack.';
 export const PHONE_STILL_ONLINE =
   'Your phone still has a connection. Aeroplane mode makes this rehearsal real.';
 

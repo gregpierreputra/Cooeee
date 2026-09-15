@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as copy from '../../src/core/copy';
-import { journeyPlaces } from '../../src/core/rehearsal-journey';
+import { journeyNotes, journeyPlaces } from '../../src/core/rehearsal-journey';
 import type { CompletePackContent, ExposureLayer } from '../../src/core/types';
 import { destination, pack, source } from '../fixtures';
 
@@ -60,6 +60,20 @@ describe('the places the journey screen names', () => {
 
   it('names none when the pack holds no official place', () => {
     expect(journeyPlaces(content({ destinations: [] }))).toEqual([]);
+  });
+
+  it('E5-US7 carries the pack notes as text, in pack order, and none for a pack without', () => {
+    const held = content({
+      notes: [
+        { id: 'n1', packId: 'pack-1', text: 'Gas is off at the meter.', updatedAt: 2 },
+        { id: 'n2', packId: 'pack-1', text: 'Keys on the hook.', updatedAt: 1 },
+      ],
+    });
+    expect(journeyNotes(held)).toEqual([
+      { id: 'n1', text: 'Gas is off at the meter.' },
+      { id: 'n2', text: 'Keys on the hook.' },
+    ]);
+    expect(journeyNotes(content())).toEqual([]);
   });
 });
 

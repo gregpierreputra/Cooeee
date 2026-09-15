@@ -34,3 +34,10 @@ export function journeyPlaces(content: CompletePackContent): JourneyPlace[] {
       savedLine: copy.SAVED_LINE(formatSavedDate(place.source.retrievedAt)),
     }));
 }
+
+/** E5-US7. The pack's own notes, as BlackSky shows them on the day, so she
+ *  practises reading them where she will need them. Text only, in the order
+ *  the pack holds them; nothing here can change a note. */
+export function journeyNotes(content: CompletePackContent): { id: string; text: string }[] {
+  return content.notes.map((note) => ({ id: note.id, text: note.text }));
+}

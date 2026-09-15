@@ -845,10 +845,11 @@ for (const state of ['before', 'running'] as const) {
     const headings = await main(page)
       .getByRole('heading')
       .evaluateAll((els) => els.map((el) => `${el.tagName} ${el.textContent}`));
-    expect(headings).toEqual([
-      `H2 ${state === 'before' ? BEFORE_HEADING : RUNNING_HEADING}`,
-      `H3 ${PLACES_HEADING}`,
-    ]);
+    expect(headings).toEqual(
+      state === 'before'
+        ? [`H2 ${BEFORE_HEADING}`, `H3 ${PLACES_HEADING}`]
+        : [`H2 ${RUNNING_HEADING}`, `H3 ${PLACES_HEADING}`, 'H3 Notes'],
+    );
   });
 }
 
@@ -879,5 +880,25 @@ test.describe('US6 making the condition real on the phone', () => {
     await choose(page, NO_FIX);
     await go(page);
     await expect(main(page).locator('.journey-connection')).toHaveCount(0);
+  });
+});
+
+// E5-US7 — her own notes on the journey, read as BlackSky shows them on the
+// day. Read-only here: nothing on the run can change a note.
+test.describe('US7 the pack notes on the journey', () => {
+  test('a pack with notes shows each note while she is out, and none can be edited', async ({ page }) => {
+    await choose(page, NO_DATA, `${REHEARSABLE}&notes=1`);
+    await expect(main(page).getByText('Gas is off at the meter.')).toHaveCount(0);
+    await go(page);
+    await expect(main(page).getByRole('heading', { level: 3, name: 'Notes' })).toBeVisible();
+    await expect(main(page).locator('.journey-note')).toHaveText(['Gas is off at the meter.']);
+    await expect(main(page).getByRole('textbox')).toHaveCount(0);
+    await expect(places(page)).toHaveCount(1);
+  });
+
+  test('a pack without notes says so', async ({ page }) => {
+    await choose(page, NO_DATA);
+    await go(page);
+    await expect(main(page).getByText('No notes are saved with this pack.')).toBeVisible();
   });
 });

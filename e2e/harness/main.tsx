@@ -647,6 +647,10 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
       ? [{ ...rehearseAbsence, reason: 'Altered on the device after the pack was saved.' }]
       : rehearsePlaces,
   );
+  // E5-US7. ?notes=1: the pack carries one note of her own.
+  if (new URLSearchParams(window.location.search).get('notes') === '1') {
+    await db.notes.put({ id: 'rehearse-note', packId: 'rehearse-pack', text: 'Gas is off at the meter.', updatedAt: rehearseSavedAt });
+  }
   // E5-US1-AC3. Leaving the rehearsal screen and coming back within the same
   // session must keep the run. In the running app that is a route change; here
   // it is an unmount and a remount of the same component, which is the same

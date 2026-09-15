@@ -2352,7 +2352,8 @@ input {
    rest of the pack uses. The two endings are identical controls of identical
    weight, told apart by their words alone: neither reads as the expected one,
    and a greyscale screen says which is which exactly as a coloured one does. */
-.journey-places > h3 {
+.journey-places > h3,
+.journey-notes > h3 {
   font-size: var(--step-1);
   margin: 1rem 0 0.5rem;
 }
@@ -2365,20 +2366,31 @@ input {
   margin: 0;
 }
 .journey-places > h3,
+.journey-notes > h3,
 .way-note > h3 {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 .journey-places > h3 .glyph,
+.journey-notes > h3 .glyph,
 .way-note > h3 .glyph {
   width: 36px;
   height: 36px;
 }
 .journey-places > h3 .glyph svg,
+.journey-notes > h3 .glyph svg,
 .way-note > h3 .glyph svg {
   width: 18px;
   height: 18px;
+}
+
+.journey-notes {
+  display: grid;
+  gap: 0.75rem;
+}
+.journey-note {
+  margin: 0;
 }
 
 .journey-place-list {
