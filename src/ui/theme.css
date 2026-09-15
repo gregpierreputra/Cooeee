@@ -2416,6 +2416,19 @@ input {
   background: transparent;
 }
 
+/* E5-US5 — the pack page's list of its rehearsals: the date leads each card,
+   the rest reads beneath it in the result's own words. */
+.history-row {
+  display: grid;
+  gap: 0.25rem;
+}
+.history-row p {
+  margin: 0;
+}
+.history-date {
+  font-weight: var(--w-bold);
+}
+
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
    Groups are told apart by their HEADINGS and by nothing else: no colour, no
    dot, no badge, no arrow, so the screen still reads with every colour stripped

@@ -12,8 +12,9 @@ import {
   packDetailPlaces,
 } from '../core/provenance';
 import { monogram } from '../core/recover';
-import type { CompletePackContent, PackDetailItem, PackFile } from '../core/types';
-import { getCompletePackContent } from '../data/db';
+import { historyRows, type HistoryRow } from '../core/rehearsal-history';
+import type { CompletePackContent, PackDetailItem, PackFile, Rehearsal } from '../core/types';
+import { getCompletePackContent, listRehearsalsForPack } from '../data/db';
 import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
 import Section from './components/Section';
@@ -25,6 +26,7 @@ import { PackNotes } from './PackNotes';
 type PackDetailProps = {
   packId: string;
   loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
+  loadRehearsals?: (id: string) => Promise<Rehearsal[]>;
   now?: number;
 };
 
@@ -34,9 +36,11 @@ type PackDetailProps = {
 export default function PackDetail({
   packId,
   loadContent = getCompletePackContent,
+  loadRehearsals = listRehearsalsForPack,
   now = Date.now(),
 }: PackDetailProps) {
   const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
   const [offlineSource, setOfflineSource] = useState<PackDetailItem | null>(null);
   // One object URL per stored file (the PDF copies and the area map), made
   // from the bytes already on the device and released with the screen. No
@@ -62,6 +66,21 @@ export default function PackDetail({
       Object.values(urls).forEach((url) => URL.revokeObjectURL(url));
     };
   }, [loadContent, packId]);
+
+  // E5-US5 — the pack's own rehearsals, from the device store. A store that
+  // cannot be read lists none: the section says so rather than failing the page.
+  useEffect(() => {
+    let live = true;
+    loadRehearsals(packId).then(
+      (rows) => {
+        if (live) setHistory(historyRows(rows));
+      },
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [loadRehearsals, packId]);
 
   useEffect(() => {
     if (offlineSource) closeRef.current?.focus();
@@ -209,6 +228,25 @@ export default function PackDetail({
 
       <Section kind="note" title={copy.NOTES}>
         <PackNotes packId={content.pack.id} notes={content.notes} />
+      </Section>
+
+      {/* E5-US5 — every rehearsal of this pack, newest first, in the result's
+          own words. Closed by default: it is a record, not the next step. */}
+      <Section kind="rehearse" title={copy.REHEARSALS} count={history.length} defaultOpen={false}>
+        {history.length === 0 ? (
+          <p>{copy.NOT_YET_REHEARSED}</p>
+        ) : (
+          <ul className="list history-list">
+            {history.map((row) => (
+              <li key={row.id} className="card history-row">
+                <p className="history-date">{row.date}</p>
+                <p className="muted">{row.condition}</p>
+                <p>{row.ending}</p>
+                <p className="figure">{row.gaps}</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
 
       {/* E5-US1-AC4 — one of two ways into a rehearsal (the other is the bar's

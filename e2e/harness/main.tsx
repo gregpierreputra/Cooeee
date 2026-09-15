@@ -298,6 +298,19 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
   });
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
+  // E5-US5. ?mode=rehearsed: the pack has been rehearsed once, and walked.
+  if (detailMode === 'rehearsed') {
+    await db.rehearsals.put({
+      id: 'detail-run',
+      packId: 'detail-pack',
+      condition: 'no-data',
+      startedAt: Date.UTC(2026, 2, 3, 1),
+      finishedAt: Date.UTC(2026, 2, 3, 1, 14),
+      ending: 'walked',
+      elapsedMs: 14 * 60_000,
+      gaps: [],
+    });
+  }
   await db.packPrograms.put(detailRecovery);
   await db.files.bulkPut([detailFile, programFile]);
 }

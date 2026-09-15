@@ -898,6 +898,14 @@ export const HEALTH_TEXT = (status: string, when: string) =>
 
 export const REHEARSAL_LABEL = 'Rehearsal';
 export const REHEARSE_THIS_PACK = 'Rehearse this pack';
+
+// ── E5-US5 the rehearsal history on the pack page ─────────────────────────
+// A list in time order, in the result's own words. A count of gaps is a
+// count, never a score: nothing here totals, grades or ranks a rehearsal.
+export const REHEARSALS = 'Rehearsals';
+export const NOT_YET_REHEARSED = 'Not yet rehearsed.';
+export const HISTORY_GAPS = (count: number) =>
+  count === 0 ? 'No gaps found' : count === 1 ? '1 gap found' : `${count} gaps found`;
 /** E5-US3-AC2 — asked when the bar's Rehearse is tapped and several packs are
  *  saved. Same question form as CHOOSE_CONDITION_HEADING. */
 export const CHOOSE_PACK_TO_REHEARSE = 'Which pack are we rehearsing?';
