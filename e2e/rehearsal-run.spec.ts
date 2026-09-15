@@ -140,7 +140,6 @@ test.describe('AC2 nothing leaves the device during a run', () => {
     // And nothing on screen claims anything was sent.
     await expect(page.locator('main')).not.toContainText('has been sent');
     await expect(page.locator('main')).not.toContainText('Message sent');
-    await expect(page.getByText('Nothing is sent from this rehearsal. Nothing leaves this phone.')).toBeVisible();
   });
 });
 

@@ -98,7 +98,7 @@ describe("the journey screen's words", () => {
       'Rehearse the way there',
       'This rehearsal is without mobile data.',
       'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.',
-      'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.',
+      'It is practice at knowing the way: how long it takes, and which turns you take.',
       "I'm going now",
     ]);
     expect(running).toEqual([
@@ -119,9 +119,8 @@ describe("the journey screen's words", () => {
     });
   });
 
-  it('say it is practice at knowing the way, and not a choice of where to go on the day', () => {
+  it('say it is practice at knowing the way', () => {
     expect(copy.JOURNEY_WHAT_IT_IS_FOR).toContain('practice at knowing the way');
-    expect(copy.JOURNEY_WHAT_IT_IS_FOR).toContain('It is not a choice of where to go on the day.');
   });
 
   it('never read as a plan for the day', () => {

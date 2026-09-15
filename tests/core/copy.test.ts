@@ -541,10 +541,7 @@ describe('the choice of condition', () => {
     expect(copy.CONDITION_NO_FIX_DETAIL).toBe('The phone cannot work out where it is.');
   });
 
-  it('states plainly that a rehearsal reaches nothing outside the phone', () => {
-    expect(copy.NOTHING_IS_SENT).toBe(
-      'Nothing is sent from this rehearsal. Nothing leaves this phone.',
-    );
+  it('names the way out of a rehearsal', () => {
     expect(copy.LEAVE_REHEARSAL).toBe('Leave the rehearsal');
   });
 });

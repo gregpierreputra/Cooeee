@@ -300,10 +300,6 @@ export const NOTE_DELETED = 'Note deleted.';
 export const NOTE_EMPTY = 'Write something before saving.';
 export const NOTE_CHANGE_FAILED = 'That change was not saved. Try again.';
 
-/** Position words for the distance-ordered list; beyond the third there is no
- *  label, because there is no ranking to extend. */
-export const ORDINALS = ['nearest', 'second nearest', 'third nearest'] as const;
-
 // Screen eyebrows
 // The small label above each screen's heading, rendered as the hero kicker. 
 // It names the step of the flow the user is in, so the label earns its place
@@ -1013,7 +1009,6 @@ export const CONDITION_NO_FIX_WITHOUT = 'a location fix';
  *  nothing about stating the opposite. Shipped as a default because a rehearsal
  *  of an emergency is exactly where a reader would wonder, and silence answers
  *  them less well than a sentence does. */
-export const NOTHING_IS_SENT = 'Nothing is sent from this rehearsal. Nothing leaves this phone.';
 /** Ends the run. Leaving is the only way out, and it is always available. */
 export const LEAVE_REHEARSAL = 'Leave the rehearsal';
 

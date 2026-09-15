@@ -43,7 +43,7 @@ const CONDITION_LINE = (condition: string) => `This rehearsal is without ${WITHO
 const WHAT_IT_IS =
   'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.';
 const WHAT_IT_IS_FOR =
-  'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.';
+  'It is practice at knowing the way: how long it takes, and which turns you take.';
 const INSTRUCTIONS_FIRST = 'Follow Country Fire Authority and emergency service instructions first.';
 const RUNNING_DETAIL =
   'Go to one of these places in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
