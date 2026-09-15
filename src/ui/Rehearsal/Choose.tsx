@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
+import Head from './Head';
 import type { Pack } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
 import RehearsalEntry from './Entry';
@@ -36,7 +37,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
 
   return (
     <main className="page rehearsal-condition">
-      <span className="kicker">{copy.REHEARSAL_LABEL}</span>
+      <Head />
       <h2>{copy.CHOOSE_PACK_TO_REHEARSE}</h2>
       <p>{copy.CHOOSE_PACK_TO_REHEARSE_DETAIL}</p>
 

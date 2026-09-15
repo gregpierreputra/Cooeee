@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 import type { RehearsalRun } from '../../core/rehearsal-run';
+import Head from './Head';
 import RehearsalBar from './RehearsalBar';
 import { endRun } from './run-state';
 
@@ -26,6 +27,7 @@ export default function Run({ run, children }: { run: RehearsalRun; children?: R
     <>
       <RehearsalBar run={run} />
       <main className="page rehearsal-run">
+        <Head kind={run.ending ? 'found' : 'go'} />
         {children}
         <p>{copy.NOTHING_IS_SENT}</p>
         <div className="actions">

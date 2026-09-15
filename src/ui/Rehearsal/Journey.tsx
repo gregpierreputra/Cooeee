@@ -7,7 +7,9 @@ import { journeyPlaces, type JourneyPlace } from '../../core/rehearsal-journey';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types';
 import { getCompletePackContent, saveStartedRehearsal } from '../../data/db';
+import Glyph from '../components/Glyph';
 import HoldButton from '../components/HoldButton';
+import Head from './Head';
 import { endWith, startRun } from './run-state';
 
 type LoadContent = (id: string) => Promise<CompletePackContent | undefined>;
@@ -44,7 +46,10 @@ function usePlaces(packId: string, loadContent: LoadContent): JourneyPlace[] | n
 function Places({ places }: { places: JourneyPlace[] }) {
   return (
     <section className="journey-places">
-      <h3>{copy.GAP_PLACES}</h3>
+      <h3>
+        <Glyph kind="place" />
+        {copy.GAP_PLACES}
+      </h3>
       {places.length > 0 ? (
         <ul className="list journey-place-list">
           {places.map((place) => (
@@ -85,7 +90,7 @@ export function JourneyBefore({
 
   return (
     <main className="page rehearsal-journey">
-      <span className="kicker">{copy.REHEARSAL_LABEL}</span>
+      <Head />
       <h2>{copy.JOURNEY_BEFORE_HEADING}</h2>
       <p>{copy.JOURNEY_CONDITION_LINE(conditionWithout(condition))}</p>
       <p>{copy.JOURNEY_WHAT_IT_IS}</p>

@@ -2149,6 +2149,30 @@ input {
   margin: 1rem 0 0.5rem;
 }
 
+/* The rehearsal glyphs: one on the kicker of every rehearsal screen, one on
+   the places heading, one on the note heading. The pack page's section-head
+   size, and the same drawing on every screen of a run, so the picture says
+   which part of the rehearsal this is without a word being added. */
+.rehearsal-head {
+  margin: 0;
+}
+.journey-places > h3,
+.way-note > h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.journey-places > h3 .glyph,
+.way-note > h3 .glyph {
+  width: 36px;
+  height: 36px;
+}
+.journey-places > h3 .glyph svg,
+.way-note > h3 .glyph svg {
+  width: 18px;
+  height: 18px;
+}
+
 .journey-place-list {
   gap: 0.75rem;
 }

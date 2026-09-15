@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
+import Head from './Head';
 import { unfinishedView } from '../../core/rehearsal-ending';
 import type { UnfinishedRehearsal } from '../../core/types';
 import { resumeWithEnding } from './run-state';
@@ -22,7 +23,7 @@ export default function Unfinished({ rehearsal }: { rehearsal: UnfinishedRehears
 
   return (
     <main className="page rehearsal-condition rehearsal-unfinished">
-      <span className="kicker">{copy.REHEARSAL_LABEL}</span>
+      <Head />
       <h2>{view.heading}</h2>
       <p>{view.detail}</p>
 
