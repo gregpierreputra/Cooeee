@@ -25,12 +25,13 @@ export default function Run({ run, children }: { run: RehearsalRun; children?: R
       <main className="page rehearsal-run">
         <Head kind={run.ending ? 'found' : 'go'} />
         {children}
-        <div className="actions">
+        <div className="actions rehearsal-leave">
           {/* Not a filled control: leaving a rehearsal is not what fixes
               anything, and the filled control means "this is what would fix
-              it" everywhere else in this flow. */}
+              it" everywhere else in this flow. Set apart by a rule above it
+              and the app's red outline: it ends something, like delete. */}
           <button
-            className="action"
+            className="action leave-action"
             type="button"
             onClick={() => {
               endRun();

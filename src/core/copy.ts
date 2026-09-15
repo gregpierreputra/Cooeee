@@ -1137,6 +1137,7 @@ export const JOURNEY_RUNNING_HEADING = 'Practising the way';
 export const JOURNEY_RUNNING_DETAIL =
   'Go to one of these places in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
 /** [DRAFT] The two endings on the journey screen, as the criterion names them. */
+export const JOURNEY_ENDINGS_LABEL = 'When you are done';
 export const ENDING_ARRIVED = 'I have arrived';
 export const ENDING_WITHOUT_GOING = 'End without going';
 

@@ -143,13 +143,19 @@ export function JourneyRunning({
         </HoldButton>
       </div>
 
-      <div className="actions journey-endings">
-        {journeyEndingRows().map((row) => (
-          <button key={row.ending} type="button" className="action" onClick={() => endWith(row.ending)}>
-            {row.label}
-          </button>
-        ))}
-      </div>
+      {/* The endings sit in their own card, apart from the hold above and the
+          Leave control below: they finish the rehearsal, the other two do not.
+          Inside it the two stay identical, told apart by their words alone. */}
+      <section className="card journey-endings">
+        <span className="kicker">{copy.JOURNEY_ENDINGS_LABEL}</span>
+        <div className="actions">
+          {journeyEndingRows().map((row) => (
+            <button key={row.ending} type="button" className="action" onClick={() => endWith(row.ending)}>
+              {row.label}
+            </button>
+          ))}
+        </div>
+      </section>
     </>
   );
 }

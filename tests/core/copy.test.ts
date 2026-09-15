@@ -75,6 +75,10 @@ describe('shell copy', () => {
     expect(copy.SEE_HOW_IT_WORKS).toBe('See how it works');
   });
 
+  it('labels the endings card on the journey screen', () => {
+    expect(copy.JOURNEY_ENDINGS_LABEL).toBe('When you are done');
+  });
+
   it('carries the tagline the splash shows on arrival', () => {
     expect(copy.APP_TAGLINE).toBe(
       'Your offline-capable life-saver supporting you before, during, and after disasters.',
