@@ -1,5 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import {
+  ABOUT_DATA_SOURCES,
+  DATA_SOURCES_PLAIN,
   FIRST_RUN_LINE,
   FIRST_RUN_TITLE,
   HOURS_AGO,
@@ -42,6 +44,19 @@ test('AC4 offline, static places come from IndexedDB labelled cached with their 
   await expect(relief).toContainText(MAY_BE_OUTDATED);
   // E1-US3-AC7: one drawing per group head.
   await expect(page.locator('.nearby-group .glyph')).toHaveCount(2);
+
+  // The data sources sit behind the information ring: closed until tapped,
+  // then plain words naming each list and when it was last checked.
+  const ring = page.getByRole('button', { name: ABOUT_DATA_SOURCES });
+  await expect(ring).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByText(DATA_SOURCES_PLAIN)).toHaveCount(0);
+  await ring.click();
+  await expect(page.getByText(DATA_SOURCES_PLAIN)).toBeVisible();
+  await expect(page.locator('.data-sources .info-lines li')).toContainText([
+    /Country Fire Authority Neighbourhood Safer Places list\. Reachable when last checked/,
+  ]);
+  await ring.click();
+  await expect(page.getByText(DATA_SOURCES_PLAIN)).toHaveCount(0);
 });
 
 test('AC5 offline with a snapshot past the threshold, no relief centre is shown — only the stale line and the hotline', async ({ page, context }) => {

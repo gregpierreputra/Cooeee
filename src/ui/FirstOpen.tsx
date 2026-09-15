@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import * as copy from '../core/copy';
+import InfoGlyph from './components/InfoGlyph';
 import Mark from './components/Mark';
 
 /** E1-US1-AC0. The first screen anyone sees, and the only one that stands
@@ -63,7 +64,7 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
       </ul>
 
       <p className="official-channels">
-        <InfoIcon />
+        <InfoGlyph size={22} />
         <span>{copy.OFFICIAL_CHANNELS_LINE}</span>
       </p>
 
@@ -165,13 +166,3 @@ function PositionIcon() {
   );
 }
 
-/** The quieter note under the statements. */
-function InfoIcon() {
-  return (
-    <Glyph>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 11v5.5" />
-      <circle cx="12" cy="7.75" r="1" fill="currentColor" stroke="none" />
-    </Glyph>
-  );
-}

@@ -884,8 +884,11 @@ export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
   down: 'unreachable',
   unknown: 'not yet read',
 };
-export const HEALTH_LINE = (source: string, status: string, when: string) =>
-  `${source}: ${status}, last updated ${when}`;
+export const ABOUT_DATA_SOURCES = 'About the data sources';
+export const DATA_SOURCES_PLAIN =
+  'Where the places on this screen come from, and when each list was last checked.';
+export const HEALTH_TEXT = (status: string, when: string) =>
+  `${status[0].toUpperCase()}${status.slice(1)} when last checked, ${when}.`;
 
 // ── E5-US1-AC4 the rehearsal entry gate ───────────────────────────────────
 // Four states, four screens. Each names what is missing from the PACK. None of
