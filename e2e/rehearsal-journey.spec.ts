@@ -377,6 +377,20 @@ test.describe('AC5 the real two-second hold into BlackSky', () => {
     await expect(endingControl(page, ARRIVED)).toBeVisible();
   });
 
+  // E5-US3-AC3. Leaving BlackSky goes back to the rehearsal she came from, not
+  // to Home. The harness mounts the real BlackSky with a run already started.
+  test('leaving BlackSky returns to the running rehearsal', async ({ page }) => {
+    await page.goto(`${ORIGIN}/blacksky?run=1`);
+    const leave = page.getByRole('button', { name: 'Leave BlackSky' });
+    await leave.scrollIntoViewIfNeeded();
+    const box = (await leave.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(FULL_HOLD);
+    await page.mouse.up();
+    await expect(location(page)).toHaveText('/rehearse/saved-pack');
+  });
+
   for (const key of ['Enter', ' '] as const) {
     test(`is operable from the keyboard with ${key === ' ' ? 'Space' : key}`, async ({ page }) => {
       await choose(page, NO_DATA);
@@ -624,6 +638,10 @@ test('AC5 the journey reads in greyscale: both states and both endings told apar
   for (const control of [arrived, withoutGoing]) {
     await expect(control.locator('svg, img, [role="img"]')).toHaveCount(0);
   }
+  // The pointer rests where the go control was, which is now an ending: park it
+  // off the controls so a hover border is not read as a difference in treatment.
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(200);
   const treatment = (control: Locator) =>
     control.evaluate((el) => {
       const style = getComputedStyle(el);

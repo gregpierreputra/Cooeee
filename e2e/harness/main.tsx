@@ -17,6 +17,7 @@ import PackDetail from '../../src/ui/PackDetail';
 import Recover from '../../src/ui/Recover';
 import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
+import { startRun } from '../../src/ui/Rehearsal/run-state';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BottomNav from '../../src/ui/components/BottomNav';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
@@ -414,7 +415,18 @@ if (window.location.pathname === '/blacksky') {
     },
   ]);
   document.documentElement.dataset.mode = 'blacksky';
-  blackSkyFlow = <BlackSky />;
+  // E5-US3-AC3. `run=1` arrives from a running rehearsal of the first pack.
+  if (new URLSearchParams(window.location.search).get('run') === '1') {
+    startRun('saved-pack', 'no-location-fix');
+  }
+  blackSkyFlow = (
+    <>
+      <BlackSky />
+      <div hidden>
+        <LocationProbe />
+      </div>
+    </>
+  );
 }
 
 const destinationsMode = new URLSearchParams(window.location.search).get('mode') ?? 'sites';
