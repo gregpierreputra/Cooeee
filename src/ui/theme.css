@@ -873,6 +873,12 @@ input {
   margin: 0 auto;
 }
 
+/* A running rehearsal's bar sits inside the back bar, above the control, flush
+   with the top edge so the two read as one strip. */
+.back-bar .rehearsal-bar {
+  margin: -0.5rem 0 0.25rem;
+}
+
 /* A compact pill, not a full-width action: noticeable, 44px target, no more. */
 .back-bar button {
   display: inline-flex;
@@ -2276,9 +2282,6 @@ input {
    lose. The dotted underline on the marker is a second non-colour cue that
    survives the same treatment. */
 .rehearsal-bar {
-  position: sticky;
-  top: 0;
-  z-index: 3;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;

@@ -3,17 +3,14 @@ import { useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import Head from './Head';
-import RehearsalBar from './RehearsalBar';
 import { endRun } from './run-state';
 
 /** E5-US1-AC2 — the shell every screen of a running rehearsal sits inside.
  *
- *  The bar is rendered HERE rather than by each screen, so "present on every
- *  screen of the run, without exception" is a property of the structure: a
- *  screen added later cannot be given the bar wrongly or forgotten, because it
- *  does not render the bar at all. The bar is first in the DOM and sticks to
- *  the top of the page, so it is read first and stays visible without
- *  scrolling.
+ *  The bar is not rendered by the screens either: the app's back bar carries
+ *  it above the Back control whenever a run is in memory on a rehearsal path,
+ *  so "present on every screen of the run, without exception" is a property
+ *  of the shell, and a screen added later cannot forget it.
  *
  *  Leaving is the only way out and ends the run, which is what removes the bar.
  *  There is no control anywhere in here that reaches outside the device: no
@@ -25,7 +22,6 @@ export default function Run({ run, children }: { run: RehearsalRun; children?: R
 
   return (
     <>
-      <RehearsalBar run={run} />
       <main className="page rehearsal-run">
         <Head kind={run.ending ? 'found' : 'go'} />
         {children}

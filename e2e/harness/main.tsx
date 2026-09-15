@@ -1,6 +1,6 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter, useLocation } from 'react-router';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 
 import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
@@ -19,6 +19,7 @@ import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import { startRun } from '../../src/ui/Rehearsal/run-state';
 import AppHeader from '../../src/ui/components/AppHeader';
+import BackBar from '../../src/ui/components/BackBar';
 import BottomNav from '../../src/ui/components/BottomNav';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
 import { Destinations } from '../../src/ui/PackNew/Destinations';
@@ -709,11 +710,30 @@ function LocationProbe() {
   return <span data-testid="location">{pathname}</span>;
 }
 
+const REHEARSE_PATH = '/rehearse/rehearse-pack';
+
 function RehearsalHarness() {
   const [mounted, setMounted] = useState(true);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  // The app reaches this screen at its own path, and only BlackSky leaves it.
+  // The harness has no routes, so a control that navigates elsewhere (Leave
+  // goes to the pack page) is brought back here, as opening the screen again
+  // in the app would; BlackSky is left alone so a spec can see the hold land.
+  useEffect(() => {
+    if (mounted && pathname !== REHEARSE_PATH && !pathname.startsWith('/blacksky')) {
+      navigate(REHEARSE_PATH, { replace: true });
+    }
+  }, [mounted, pathname, navigate]);
   return (
     <>
-      {mounted ? <RehearsalEntry packId="rehearse-pack" now={rehearseNow} /> : null}
+      {/* The app's back bar carries the rehearsal bar, so it is part of the screen under test. */}
+      {mounted ? (
+        <>
+          <BackBar />
+          <RehearsalEntry packId="rehearse-pack" now={rehearseNow} />
+        </>
+      ) : null}
       <div style={harnessStyle} data-harness="true">
         <span>test harness</span>
         <LocationProbe />
@@ -721,7 +741,11 @@ function RehearsalHarness() {
           type="button"
           data-testid="remount"
           style={harnessButtonStyle}
-          onClick={() => setMounted((on) => !on)}
+          onClick={() => {
+            // Mounting again is her return from BlackSky, which lands on the rehearsal path.
+            if (!mounted) navigate(REHEARSE_PATH, { replace: true });
+            setMounted((on) => !on);
+          }}
         >
           {mounted ? 'unmount the screen' : 'mount it again'}
         </button>
@@ -768,9 +792,13 @@ const areaFlow = (
 // Screens link back to the pack list, so they need router context. The
 // harness has no routes of its own, so ONE in-memory router keeps every
 // component mountable in isolation without a second application shell.
+// The rehearsal harness starts on its own path, as the app does, so the back
+// bar (which hides on the home path) is on screen and carries the rehearsal bar.
+const initialEntries = window.location.pathname === '/rehearse' ? [REHEARSE_PATH] : undefined;
+
 createRoot(root).render(
   <StrictMode>
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
     {window.location.pathname === '/home' ? homeFlow
       : window.location.pathname === '/blacksky' ? blackSkyFlow
       : window.location.pathname === '/conflict' ? conflictFlow

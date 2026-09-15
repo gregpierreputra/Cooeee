@@ -343,13 +343,13 @@ test.describe('AC5 the real two-second hold into BlackSky', () => {
   test('a tap earns only the hint, and goes nowhere', async ({ page }) => {
     await choose(page, NO_DATA);
     await go(page);
-    await expect(location(page)).toHaveText('/');
+    await expect(location(page)).toHaveText('/rehearse/rehearse-pack');
     await expect(page.getByText(HOLD_HINT)).toHaveCount(0);
 
     await holdControl(page).click();
     await expect(page.getByText(HOLD_HINT)).toBeVisible();
     await page.waitForTimeout(FULL_HOLD);
-    await expect(location(page)).toHaveText('/');
+    await expect(location(page)).toHaveText('/rehearse/rehearse-pack');
   });
 
   test('a press released before two seconds goes nowhere', async ({ page }) => {
@@ -358,7 +358,7 @@ test.describe('AC5 the real two-second hold into BlackSky', () => {
 
     await pointerHold(page, HOLD_MS - 700);
     await page.waitForTimeout(FULL_HOLD);
-    await expect(location(page)).toHaveText('/');
+    await expect(location(page)).toHaveText('/rehearse/rehearse-pack');
     await expect(page.getByText(HOLD_HINT)).toBeVisible();
   });
 
