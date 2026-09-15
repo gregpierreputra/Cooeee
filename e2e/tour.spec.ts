@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ACKNOWLEDGE_CHECKBOX, CONTINUE, SKIP_TOUR, TOUR_BACK, TOUR_HINT, TOUR_NEXT, TOUR_STEPS } from '../src/core/copy';
+import { ACKNOWLEDGE_CHECKBOX, CONTINUE, SEE_HOW_IT_WORKS, SKIP_TOUR, TOUR_BACK, TOUR_HINT, TOUR_NEXT, TOUR_STEPS } from '../src/core/copy';
 import { acknowledgeFirstOpen, passGate } from './helpers';
 
 // The guided tour on the real bundle: it starts once, right after the
@@ -15,6 +15,7 @@ const dimmed = (page: import('@playwright/test').Page) =>
 test('starts after the acknowledgement, steps across screens, and skips', async ({ page }) => {
   await passGate(page);
   await page.goto('/');
+  await page.getByRole('button', { name: SEE_HOW_IT_WORKS }).click();
   await page.getByRole('checkbox', { name: ACKNOWLEDGE_CHECKBOX }).check();
   await page.getByRole('button', { name: CONTINUE }).click();
 

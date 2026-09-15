@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { GATE_KEY, GATE_VALUE } from '../src/core/constants';
-import { ACKNOWLEDGE_CHECKBOX, GATE_INCORRECT, GATE_LOCKED, GATE_SUBMIT, GATE_TITLE } from '../src/core/copy';
+import { GATE_INCORRECT, GATE_LOCKED, GATE_SUBMIT, GATE_TITLE, SEE_HOW_IT_WORKS } from '../src/core/copy';
 
 // Feature 1, against the real production bundle. Nothing serves /api under
 // vite preview, so each test plays the server's answer itself.
@@ -39,7 +39,7 @@ test('a wrong password stays on the gate, and the third miss locks it', async ({
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });
 
-test('the password reaches the disclosure and stores one flag', async ({ page }) => {
+test('the password reaches the welcome page and stores one flag', async ({ page }) => {
   const sent: unknown[] = [];
   await page.route('**/api/v1/gate', (route) => {
     sent.push(route.request().postDataJSON());
@@ -48,7 +48,7 @@ test('the password reaches the disclosure and stores one flag', async ({ page })
   await page.goto('/');
   await page.getByLabel(GATE_TITLE).fill('open-sesame');
   await page.getByRole('button', { name: GATE_SUBMIT }).click();
-  await expect(page.getByText(ACKNOWLEDGE_CHECKBOX)).toBeVisible();
+  await expect(page.getByRole('button', { name: SEE_HOW_IT_WORKS })).toBeVisible();
 
   expect(sent).toEqual([{ password: 'open-sesame' }]);
   expect(

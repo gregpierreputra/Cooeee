@@ -67,6 +67,14 @@ describe('shell copy', () => {
     expect(copy.NO_PACKS_HINT).toContain('while you have a connection');
   });
 
+  it('welcomes in three moments and two facts, one short line each', () => {
+    expect(copy.WELCOME_STEPS.map((step) => step.kicker)).toEqual(['Before', 'During', 'After']);
+    for (const line of [...copy.WELCOME_STEPS, ...copy.WELCOME_FACTS].map((s) => s.line)) {
+      expect(line.split(' ').length).toBeLessThanOrEqual(8);
+    }
+    expect(copy.SEE_HOW_IT_WORKS).toBe('See how it works');
+  });
+
   it('carries the tagline the splash shows on arrival', () => {
     expect(copy.APP_TAGLINE).toBe(
       'Your offline-capable life-saver supporting you before, during, and after disasters.',

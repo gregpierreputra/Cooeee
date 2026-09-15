@@ -13,6 +13,7 @@ import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
 import Gate from './ui/Gate';
 import Home from './ui/Home';
+import Welcome from './ui/Welcome';
 import Nearby from './ui/Nearby';
 import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
@@ -132,6 +133,9 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   const [screen, setScreen] = useState(() => openingScreen(localFlagStore()));
   // Feature 1: the development gate stands in front of the disclosure itself.
   const [passed, setPassed] = useState(() => readGate(localFlagStore()));
+  // The welcome is seen once, on the way to the disclosure. Nothing records
+  // it: the acknowledgement that follows is the only flag this screen leads to.
+  const [welcomed, setWelcomed] = useState(false);
 
   // The CFA site list into IndexedDB, so BlackSky can point at the nearest
   // official places with the radios off. A failed copy costs nothing now.
@@ -163,6 +167,10 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           }}
         />
       );
+    }
+
+    if (screen === 'first-open' && !welcomed) {
+      return <Welcome onContinue={() => setWelcomed(true)} />;
     }
 
     if (screen === 'first-open') {

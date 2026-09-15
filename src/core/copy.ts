@@ -734,6 +734,22 @@ export const BLACKSKY_INFO_LINES = [
   },
 ] as const;
 
+// ── Welcome, before the disclosure ───────────────────────────────────────────
+// Why the app is worth having, in three drawings and as few words as carry
+// them. The glyphs are the ones the rest of the app already draws for the same
+// ideas, so nothing here has to be learnt twice.
+
+export const WELCOME_STEPS = [
+  { glyph: 'layer', kicker: 'Before', line: 'Build a pack while you have signal.' },
+  { glyph: 'go', kicker: 'During', line: 'BlackSky points the way with none.' },
+  { glyph: 'kept', kicker: 'After', line: 'Find official support in plain words.' },
+] as const;
+export const WELCOME_FACTS = [
+  { glyph: 'stays', line: 'Opens with no signal.' },
+  { glyph: 'not', line: 'Nothing leaves your phone.' },
+] as const;
+export const SEE_HOW_IT_WORKS = 'See how it works';
+
 // ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────
 // The four statements are the screen. They are literal on-screen text, never
 // behind a link or an accordion, and each one is asserted by exact match in
