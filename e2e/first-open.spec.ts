@@ -12,6 +12,8 @@ import {
   FIRST_OPEN_PURPOSE,
   HEADER_HOME_LABEL,
   OFFICIAL_CHANNELS_LINE,
+  SEE_HOW_IT_WORKS,
+  WELCOME_STEPS,
 } from '../src/core/copy';
 
 // E1-US1-AC0, against the real production bundle. Every test here starts from a
@@ -20,6 +22,12 @@ import {
 
 // Feature 1: the development gate stands before this screen; e2e/gate.spec.ts covers it.
 test.beforeEach(({ page }) => passGate(page));
+
+/** A fresh device lands on the welcome page; the disclosure is one tap on. */
+async function openDisclosure(page: Page) {
+  await page.goto('/');
+  await page.getByRole('button', { name: SEE_HOW_IT_WORKS }).click();
+}
 
 const continueButton = (page: Page) => page.getByRole('button', { name: CONTINUE });
 const checkbox = (page: Page) => page.getByRole('checkbox', { name: ACKNOWLEDGE_CHECKBOX });
@@ -33,6 +41,16 @@ test('a device with nothing stored opens on the disclosure screen, continue inac
   page,
 }) => {
   await page.goto('/');
+
+  // The welcome page first: three moments, each with its drawing, and nothing
+  // stored for having seen it.
+  for (const step of WELCOME_STEPS) await expect(page.getByText(step.line)).toBeVisible();
+  await expect(page.locator('.welcome-step .glyph')).toHaveCount(WELCOME_STEPS.length);
+  expect(await storedFlag(page)).toBeNull();
+  // The motes drift behind the welcome and the disclosure, and nowhere after.
+  await expect(page.locator('canvas.particles')).toHaveCount(1);
+  await page.getByRole('button', { name: SEE_HOW_IT_WORKS }).click();
+  await expect(page.locator('canvas.particles')).toHaveCount(1);
 
   await expect(page.getByRole('heading', { level: 1, name: APP_NAME })).toBeVisible();
   await expect(page.getByText(FIRST_OPEN_PURPOSE)).toBeVisible();
@@ -58,7 +76,7 @@ test('a device with nothing stored opens on the disclosure screen, continue inac
 });
 
 test('the order on screen is the order the criterion names', async ({ page }) => {
-  await page.goto('/');
+  await openDisclosure(page);
   await expect(continueButton(page)).toBeVisible(); // rendered, not merely loaded
   const body = (await page.locator('body').innerText()) ?? '';
   const order = [
@@ -81,20 +99,23 @@ test('the order on screen is the order the criterion names', async ({ page }) =>
 test('ticking the box enables continue, which records the acknowledgement and moves on', async ({
   page,
 }) => {
-  await page.goto('/');
+  await openDisclosure(page);
   await checkbox(page).check();
   await expect(continueButton(page)).toBeEnabled();
 
   await continueButton(page).click();
 
   await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
+  await expect(page.locator('canvas.particles')).toHaveCount(0);
+  // The call plays once more, over the first Home.
+  await expect(page.locator('.splash')).toHaveCount(1);
   expect(await storedFlag(page)).toBe(ACKNOWLEDGEMENT_VALUE);
 });
 
 test('unticking the box makes continue inactive again — the button follows the box', async ({
   page,
 }) => {
-  await page.goto('/');
+  await openDisclosure(page);
   await checkbox(page).check();
   await expect(continueButton(page)).toBeEnabled();
   await checkbox(page).uncheck();
@@ -103,7 +124,7 @@ test('unticking the box makes continue inactive again — the button follows the
 
 // TC-1.1.0-C
 test('a later open goes straight past the screen', async ({ page }) => {
-  await page.goto('/');
+  await openDisclosure(page);
   await checkbox(page).check();
   await continueButton(page).click();
   await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
@@ -111,12 +132,13 @@ test('a later open goes straight past the screen', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
   await expect(page.getByText(ACKNOWLEDGE_CHECKBOX)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: SEE_HOW_IT_WORKS })).toHaveCount(0);
 });
 
 // TC-1.1.0-D
 test('an unexpected stored value is treated as not acknowledged', async ({ page }) => {
   await page.addInitScript((key) => localStorage.setItem(key, 'true'), ACKNOWLEDGEMENT_KEY);
-  await page.goto('/');
+  await openDisclosure(page);
 
   await expect(page.getByText(ACKNOWLEDGE_CHECKBOX)).toBeVisible();
   await expect(continueButton(page)).toBeDisabled();
@@ -124,13 +146,13 @@ test('an unexpected stored value is treated as not acknowledged', async ({ page 
 
 // Done when: clearing site data returns the app to first open.
 test('clearing site data returns the app to first open', async ({ page }) => {
-  await page.goto('/');
+  await openDisclosure(page);
   await checkbox(page).check();
   await continueButton(page).click();
   await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
 
   await page.evaluate(() => localStorage.clear());
-  await page.goto('/');
+  await openDisclosure(page);
   await expect(page.getByText(ACKNOWLEDGE_CHECKBOX)).toBeVisible();
 });
 
@@ -162,7 +184,7 @@ test('the screen makes no request off this origin and asks for no position', asy
     }
   });
 
-  await page.goto('/');
+  await openDisclosure(page);
   await expect(page.getByText(ACKNOWLEDGE_CHECKBOX)).toBeVisible();
   await checkbox(page).check();
 
@@ -175,7 +197,7 @@ test('the screen makes no request off this origin and asks for no position', asy
 // The stored flag holds an acknowledgement marker and nothing else: no date, no
 // identifier, no counter, and nothing about the person.
 test('the acknowledgement is one flag holding one marker', async ({ page }) => {
-  await page.goto('/');
+  await openDisclosure(page);
   await checkbox(page).check();
   await continueButton(page).click();
   await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();

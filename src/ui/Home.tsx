@@ -9,6 +9,7 @@ import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../d
 import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
 import HoldButton from './components/HoldButton';
+import InfoGlyph from './components/InfoGlyph';
 import StateCard from './components/StateCard';
 import { startTour } from './components/Tour';
 
@@ -231,26 +232,5 @@ function BlackSkyHoldRow({ children }: { children: ReactNode }) {
         </section>
       ) : null}
     </div>
-  );
-}
-
-/** The "i" inside both rings. Decorative: each ring carries its own name. */
-function InfoGlyph() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 11v5.5" />
-      <circle cx="12" cy="7.75" r="1" fill="currentColor" stroke="none" />
-    </svg>
   );
 }

@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
-import { conditionWithout, type RehearsalCondition } from '../../core/rehearsal-condition';
+import {
+  conditionWithout,
+  connectionLine,
+  howToLine,
+  type RehearsalCondition,
+} from '../../core/rehearsal-condition';
 import { journeyEndingRows, unfinishedFrom } from '../../core/rehearsal-ending';
-import { journeyPlaces, type JourneyPlace } from '../../core/rehearsal-journey';
+import { journeyNotes, journeyPlaces, type JourneyPlace } from '../../core/rehearsal-journey';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types';
 import { getCompletePackContent, saveStartedRehearsal } from '../../data/db';
+import Glyph from '../components/Glyph';
 import HoldButton from '../components/HoldButton';
+import { useOnline } from '../components/useOnline';
+import Head from './Head';
 import { endWith, startRun } from './run-state';
 
 type LoadContent = (id: string) => Promise<CompletePackContent | undefined>;
@@ -25,18 +33,24 @@ type LoadContent = (id: string) => Promise<CompletePackContent | undefined>;
 
 /** The official places the pack holds, read from the pack. null until read, and
  *  nothing is drawn for that wait. */
-function usePlaces(packId: string, loadContent: LoadContent): JourneyPlace[] | null {
-  const [places, setPlaces] = useState<JourneyPlace[] | null>(null);
+type Journey = { places: JourneyPlace[]; notes: { id: string; text: string }[] };
+
+function useJourney(packId: string, loadContent: LoadContent): Journey | null {
+  const [journey, setJourney] = useState<Journey | null>(null);
   useEffect(() => {
     let live = true;
     loadContent(packId).then((content) => {
-      if (live) setPlaces(content ? journeyPlaces(content) : []);
+      if (live) {
+        setJourney(
+          content ? { places: journeyPlaces(content), notes: journeyNotes(content) } : { places: [], notes: [] },
+        );
+      }
     });
     return () => {
       live = false;
     };
   }, [loadContent, packId]);
-  return places;
+  return journey;
 }
 
 /** The places, by the destinations list's name and the shared provenance line.
@@ -44,13 +58,17 @@ function usePlaces(packId: string, loadContent: LoadContent): JourneyPlace[] | n
 function Places({ places }: { places: JourneyPlace[] }) {
   return (
     <section className="journey-places">
-      <h3>{copy.GAP_PLACES}</h3>
+      <h3>
+        <Glyph kind="place" />
+        {copy.GAP_PLACES}
+      </h3>
       {places.length > 0 ? (
         <ul className="list journey-place-list">
           {places.map((place) => (
             <li key={place.id} className="card journey-place">
               <p className="journey-place-name">{place.name}</p>
-              <p className="muted">{place.publisherLine}</p>
+              {place.where ? <p className="muted">{place.where}</p> : null}
+              <p className="figure">{place.savedLine}</p>
             </li>
           ))}
         </ul>
@@ -80,18 +98,24 @@ export function JourneyBefore({
   loadContent?: LoadContent;
   keep?: (started: UnfinishedRehearsal) => Promise<void>;
 }) {
-  const places = usePlaces(packId, loadContent);
-  if (places === null) return null;
+  const journey = useJourney(packId, loadContent);
+  if (journey === null) return null;
 
   return (
     <main className="page rehearsal-journey">
-      <span className="kicker">{copy.REHEARSAL_LABEL}</span>
+      <Head />
       <h2>{copy.JOURNEY_BEFORE_HEADING}</h2>
       <p>{copy.JOURNEY_CONDITION_LINE(conditionWithout(condition))}</p>
       <p>{copy.JOURNEY_WHAT_IT_IS}</p>
       <p>{copy.JOURNEY_WHAT_IT_IS_FOR}</p>
       <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
-      <Places places={places} />
+      {/* E5-US6 — the condition is made on the phone, not pretended. */}
+      <section className="card condition-how-to">
+        <Glyph kind="not" />
+        <span className="kicker">{copy.MAKE_IT_REAL}</span>
+        <p>{howToLine(condition)}</p>
+      </section>
+      <Places places={journey.places} />
 
       {/* Not filled: going on a practice walk fixes nothing. */}
       <div className="actions">
@@ -122,14 +146,40 @@ export function JourneyRunning({
   loadContent?: LoadContent;
 }) {
   const navigate = useNavigate();
-  const places = usePlaces(run.packId, loadContent);
-  if (places === null) return null;
+  const journey = useJourney(run.packId, loadContent);
+  // E5-US6 — what the browser reports, stated and never acted on.
+  const connection = connectionLine(run.condition, useOnline());
+  if (journey === null) return null;
 
   return (
     <>
       <h2>{copy.JOURNEY_RUNNING_HEADING}</h2>
       <p>{copy.JOURNEY_RUNNING_DETAIL}</p>
-      <Places places={places} />
+      {connection ? (
+        <p className="journey-connection" role="status">
+          {connection}
+        </p>
+      ) : null}
+      <Places places={journey.places} />
+
+      {/* E5-US7 — her own notes, read here as BlackSky shows them on the day.
+          A paragraph each, not list items: the places list above is the one
+          list on this screen, and a screen reader's count of it stays true. */}
+      <section className="journey-notes">
+        <h3>
+          <Glyph kind="note" />
+          {copy.NOTES}
+        </h3>
+        {journey.notes.length > 0 ? (
+          journey.notes.map((note) => (
+            <p key={note.id} className="card journey-note">
+              {note.text}
+            </p>
+          ))
+        ) : (
+          <p>{copy.NO_NOTES_ON_JOURNEY}</p>
+        )}
+      </section>
 
       <div className="actions journey-hold">
         <HoldButton onHold={() => navigate('/blacksky')} hint={copy.HOLD_TO_ENTER}>
@@ -137,13 +187,19 @@ export function JourneyRunning({
         </HoldButton>
       </div>
 
-      <div className="actions journey-endings">
-        {journeyEndingRows().map((row) => (
-          <button key={row.ending} type="button" className="action" onClick={() => endWith(row.ending)}>
-            {row.label}
-          </button>
-        ))}
-      </div>
+      {/* The endings sit in their own card, apart from the hold above and the
+          Leave control below: they finish the rehearsal, the other two do not.
+          Inside it the two stay identical, told apart by their words alone. */}
+      <section className="card journey-endings">
+        <span className="kicker">{copy.JOURNEY_ENDINGS_LABEL}</span>
+        <div className="actions">
+          {journeyEndingRows().map((row) => (
+            <button key={row.ending} type="button" className="action" onClick={() => endWith(row.ending)}>
+              {row.label}
+            </button>
+          ))}
+        </div>
+      </section>
     </>
   );
 }

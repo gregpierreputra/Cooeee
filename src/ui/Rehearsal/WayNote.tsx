@@ -4,6 +4,7 @@ import * as copy from '../../core/copy';
 import { wayNote } from '../../core/rehearsal-note';
 import type { PackNote } from '../../core/types';
 import { putNote } from '../../data/db';
+import Glyph from '../components/Glyph';
 
 type Mark = 'saved' | 'empty' | 'failed';
 
@@ -52,7 +53,10 @@ export default function WayNote({
 
   return (
     <section className="way-note">
-      <h3>{copy.WAY_NOTE_HEADING}</h3>
+      <h3>
+        <Glyph kind="note" />
+        {copy.WAY_NOTE_HEADING}
+      </h3>
       <p>{copy.WAY_NOTE_DETAIL}</p>
       <div className="card note-card">
         <textarea

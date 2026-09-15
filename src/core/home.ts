@@ -57,15 +57,20 @@ export function preparationLine(seed: number): PreparationLine {
   return { ...line, source: line.source ?? copy.PREPARATION_SOURCE };
 }
 
-export type NavItem = { key: 'home' | 'nearby' | 'recover' | 'about'; label: string; to: string };
+export type NavItem = {
+  key: 'home' | 'nearby' | 'rehearse' | 'recover' | 'about';
+  label: string;
+  to: string;
+};
 
-/** The bottom navigation: home, the nearby places, Recover and the About page, the
+/** The bottom navigation: home, the nearby places, Rehearse, Recover and the About page, the
  *  same on every screen. Building and opening a pack are actions on the home
  *  screen itself, so neither is a tab. BlackSky is deliberately absent — it is
  *  entered by a deliberate hold, never by a tab. */
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'home', label: copy.NAV_HOME, to: '/' },
   { key: 'nearby', label: copy.NAV_NEARBY, to: '/nearby' },
+  { key: 'rehearse', label: copy.NAV_REHEARSE, to: '/rehearse' },
   { key: 'recover', label: copy.NAV_RECOVER, to: '/recover' },
   { key: 'about', label: copy.NAV_ABOUT, to: '/about' },
 ];

@@ -1,13 +1,15 @@
-import { Link } from 'react-router';
+import { NavLink } from 'react-router';
 import * as copy from '../../core/copy';
 import { NAV_ITEMS, type NavItem } from '../../core/home';
 
-/** The bottom navigation. Three destinations, all of which always exist; what
+/** The bottom navigation. Five destinations, all of which always exist; what
  *  they are is decided in core/home.ts NAV_ITEMS, not here.
  *
  *  A fixed bar on the panel colour, so it stays within thumb reach whatever the
  *  page above it does. Each item is an icon over its label — the label is
- *  always there, because an icon on its own is a guess.
+ *  always there, because an icon on its own is a guess. The destination the
+ *  user is on is marked (aria-current, set by NavLink) so the bar also says
+ *  where they are.
  *
  *  BlackSky is deliberately absent: it is entered by a deliberate hold, and a
  *  tab is exactly the accidental entry the hold exists to prevent. */
@@ -16,10 +18,10 @@ export default function BottomNav() {
     <nav className="bottom-nav" aria-label={copy.NAV_LABEL}>
       <div className="bottom-nav-inner">
         {NAV_ITEMS.map((item) => (
-          <Link key={item.key} className="bottom-nav-item" to={item.to}>
+          <NavLink key={item.key} className="bottom-nav-item" to={item.to} end={item.to === '/'}>
             <NavIcon kind={item.key} />
             <span className="bottom-nav-label">{item.label}</span>
-          </Link>
+          </NavLink>
         ))}
       </div>
     </nav>
@@ -29,6 +31,7 @@ export default function BottomNav() {
 const ICON_PATHS: Record<NavItem['key'], string> = {
   home: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
   nearby: 'M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11zM12 7.8a2.2 2.2 0 1 0 0 4.4a2.2 2.2 0 1 0 0-4.4',
+  rehearse: 'M4 12a8 8 0 1 1 2.3 5.7M4 18v-4h4M12 8v4l2.5 2.5',
   recover: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M8.5 12h7M12 8.5v7',
   about: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M12 11v5.5M12 7.75v.01',
 };

@@ -46,6 +46,8 @@ export const CARDINAL_POINTS = [
 
 // Application shell
 export const APP_NAME = 'Cooeee';
+export const APP_TAGLINE =
+  'Your offline-capable life-saver supporting you before, during, and after disasters.';
 export const BACK = 'Back';
 
 // Connection notice. States what the browser reports, nothing more — this app
@@ -250,7 +252,7 @@ export const NSP_BUSHFIRE_ONLY =
 
 export const SAVE_LAST_RESORT_PLACES = 'Save last-resort places';
 export const CHOOSE_PLACES_HINT = (n: number) =>
-  n === 1 ? 'Choose the place to save.' : 'Choose two places to save.';
+  n === 1 ? 'Choose the place to save' : 'Choose two places to save';
 export const TWO_PLACES_ALREADY_CHOSEN =
   'Two places are already chosen. Unchoose one to change your selection.';
 export const SAVING_LAST_RESORT_PLACES = 'Saving your last-resort places.';
@@ -297,10 +299,6 @@ export const NOTE_SAVED = 'Note saved.';
 export const NOTE_DELETED = 'Note deleted.';
 export const NOTE_EMPTY = 'Write something before saving.';
 export const NOTE_CHANGE_FAILED = 'That change was not saved. Try again.';
-
-/** Position words for the distance-ordered list; beyond the third there is no
- *  label, because there is no ranking to extend. */
-export const ORDINALS = ['nearest', 'second nearest', 'third nearest'] as const;
 
 // Screen eyebrows
 // The small label above each screen's heading, rendered as the hero kicker. 
@@ -427,6 +425,7 @@ export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_ABOUT = 'About';
 export const NAV_RECOVER = 'Recover';
+export const NAV_REHEARSE = 'Rehearse';
 
 // E4 Recover: needs-first support matching, read from the pack's dated snapshot
 export const RECOVER_QUESTION = 'What do you need?';
@@ -660,9 +659,9 @@ export const TOUR_STEPS = [
     target: '.bottom-nav-inner',
     title: 'The bottom bar',
     lines: [
-      'Three places to go from any screen. Home, Nearby and About.',
+      'Five places to go from any screen. Home, Nearby, Rehearse, Recover and About.',
       'A phone is used with one thumb, so the way around the app stays at the bottom, within reach.',
-      'Home lists your packs. Nearby finds official places from where you are. About says what Cooeee is. BlackSky is deliberately not here.',
+      'Home lists your packs. Nearby finds official places from where you are. Rehearse practises the way. Recover finds support. About says what Cooeee is. BlackSky is deliberately not here.',
     ],
   },
   {
@@ -683,6 +682,16 @@ export const TOUR_STEPS = [
       'The nearest official places, from your position or a postcode, while you have a connection.',
       'Before a pack exists, or away from home, you still need to know where the official places are.',
       'Lists relief centres and places of last resort with their distance, sorted by distance, not a safety ranking.',
+    ],
+  },
+  {
+    path: '/rehearse',
+    target: '.rehearsal-entry, .rehearsal-condition',
+    title: 'Rehearse',
+    lines: [
+      'A practice trip to one of the official places saved with a pack, on a calm day, without mobile data or without a location fix.',
+      'The day is the wrong time to find out what the pack is missing or that the way is unfamiliar. A rehearsal finds it while there is time to fix it.',
+      'Choose a pack and a condition, go with BlackSky open as on the day, and end it as you choose. What was missing becomes one written action each, never a score.',
     ],
   },
   {
@@ -731,6 +740,22 @@ export const BLACKSKY_INFO_LINES = [
   },
 ] as const;
 
+// ── Welcome, before the disclosure ───────────────────────────────────────────
+// Why the app is worth having, in three drawings and as few words as carry
+// them. The glyphs are the ones the rest of the app already draws for the same
+// ideas, so nothing here has to be learnt twice.
+
+export const WELCOME_STEPS = [
+  { glyph: 'layer', kicker: 'Before', line: 'Build a pack while you have signal.' },
+  { glyph: 'go', kicker: 'During', line: 'BlackSky points the way with none.' },
+  { glyph: 'kept', kicker: 'After', line: 'Find official support in plain words.' },
+] as const;
+export const WELCOME_FACTS = [
+  { glyph: 'stays', line: 'Opens with no signal.' },
+  { glyph: 'not', line: 'Nothing leaves your phone.' },
+] as const;
+export const SEE_HOW_IT_WORKS = 'See how it works';
+
 // ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────
 // The four statements are the screen. They are literal on-screen text, never
 // behind a link or an accordion, and each one is asserted by exact match in
@@ -763,6 +788,8 @@ export const OFFICIAL_CHANNELS_LINE =
 export const ACKNOWLEDGE_CHECKBOX =
   'I understand how Cooeee works, and what it does not do.';
 export const CONTINUE = 'Continue';
+export const BEFORE_YOU_CONTINUE = 'Before you continue';
+export const ACKNOWLEDGE_HINT = 'Tick the box above to continue.';
 
 // ── Development gate (feature 1) ────────────────────────────────────────────
 export const GATE_TITLE = 'Password';
@@ -826,6 +853,7 @@ export const HOURS_AGO = (hours: number) => `${hours} h ago`;
 export const NEVER = 'never';
 
 export const VERIFIED_ON = (date: string) => `Verified ${date}`;
+export const SAVED_LINE = (date: string) => `Saved ${date}`;
 export const AS_OF = (time: string) => `As of ${time}`;
 
 export const NONE_IN_LIST = (kind: string) => `No ${kind} is in the downloaded list.`;
@@ -853,8 +881,11 @@ export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
   down: 'unreachable',
   unknown: 'not yet read',
 };
-export const HEALTH_LINE = (source: string, status: string, when: string) =>
-  `${source}: ${status}, last updated ${when}`;
+export const ABOUT_DATA_SOURCES = 'About the data sources';
+export const DATA_SOURCES_PLAIN =
+  'Where the places on this screen come from, and when each list was last checked.';
+export const HEALTH_TEXT = (status: string, when: string) =>
+  `${status[0].toUpperCase()}${status.slice(1)} when last checked, ${when}.`;
 
 // ── E5-US1-AC4 the rehearsal entry gate ───────────────────────────────────
 // Four states, four screens. Each names what is missing from the PACK. None of
@@ -863,6 +894,18 @@ export const HEALTH_LINE = (source: string, status: string, when: string) =>
 
 export const REHEARSAL_LABEL = 'Rehearsal';
 export const REHEARSE_THIS_PACK = 'Rehearse this pack';
+
+// ── E5-US5 the rehearsal history on the pack page ─────────────────────────
+// A list in time order, in the result's own words. A count of gaps is a
+// count, never a score: nothing here totals, grades or ranks a rehearsal.
+export const REHEARSALS = 'Rehearsals';
+export const NOT_YET_REHEARSED = 'Not yet rehearsed.';
+export const HISTORY_GAPS = (count: number) =>
+  count === 0 ? 'No gaps found' : count === 1 ? '1 gap found' : `${count} gaps found`;
+/** E5-US3-AC2 — asked when the bar's Rehearse is tapped and several packs are
+ *  saved. Same question form as CHOOSE_CONDITION_HEADING. */
+export const CHOOSE_PACK_TO_REHEARSE = 'Which pack are we rehearsing?';
+export const CHOOSE_PACK_TO_REHEARSE_DETAIL = 'One rehearsal runs from one saved pack.';
 /** The way back to the pack the user came from, offered only where there is a
  *  readable pack to go back to. */
 export const BACK_TO_THIS_PACK = 'Back to this pack';
@@ -966,7 +1009,6 @@ export const CONDITION_NO_FIX_WITHOUT = 'a location fix';
  *  nothing about stating the opposite. Shipped as a default because a rehearsal
  *  of an emergency is exactly where a reader would wonder, and silence answers
  *  them less well than a sentence does. */
-export const NOTHING_IS_SENT = 'Nothing is sent from this rehearsal. Nothing leaves this phone.';
 /** Ends the run. Leaving is the only way out, and it is always available. */
 export const LEAVE_REHEARSAL = 'Leave the rehearsal';
 
@@ -1068,11 +1110,12 @@ export const PACK_CHANGED_ON = (date: string) =>
 export const PACK_CHANGE_UNKNOWN =
   'Whether the pack changed between these two rehearsals was not recorded, so it cannot be said either way.';
 
-// ── E5-US1-AC5 the journey: a walk to know the way ────────────────────────
-// The rehearsal is the journey itself. These words ask her to walk to one of the
-// official places saved with this pack, on foot, in calm conditions, with
-// BlackSky open, and say what that is for: knowing the way. None of them treats
-// a place as where she plans to go on the day, and none of them rates the walk:
+// ── E5-US1-AC5 the journey: a trip to know the way ────────────────────────
+// The rehearsal is the journey itself. These words ask her to go to one of the
+// official places saved with this pack, in calm conditions, with BlackSky open,
+// and say what that is for: knowing the way. On the day she may go by car, so
+// nothing here says on foot or walking. None of them treats a place as where
+// she plans to go on the day, and none of them rates the trip:
 // no time to beat, no fast or slow, nothing to pass. The place list reuses
 // GAP_PLACES as its heading and GAP_MEANING_PACK_CONTENT when there is none; the
 // hold reuses HOLD_FOR_BLACKSKY and HOLD_TO_ENTER; the day's priority reuses
@@ -1080,23 +1123,39 @@ export const PACK_CHANGE_UNKNOWN =
 // Sharon's copy review.
 
 /** [DRAFT] Before she goes. */
-export const JOURNEY_BEFORE_HEADING = 'Rehearse the way on foot';
+export const JOURNEY_BEFORE_HEADING = 'Rehearse the way there';
 /** [DRAFT] Takes the condition's without-form (conditionWithout). */
 export const JOURNEY_CONDITION_LINE = (without: string) => `This rehearsal is without ${without}.`;
+// E5-US6 — make the condition real on the phone. One instruction per
+// condition, in the phone's own words, and a plain statement of what the
+// browser reports while she is out. Reported state only: the app cannot see
+// phone signal, and the line never blocks, times or judges anything.
+export const MAKE_IT_REAL = 'Make it real on this phone';
+export const CONDITION_HOW_TO: Record<'no-data' | 'no-location-fix', string> = {
+  'no-data': 'Turn on aeroplane mode and turn Wi-Fi off, so the phone has no data, as on the day.',
+  'no-location-fix': 'Turn location off in the phone settings, so there is no fix, as on the day.',
+};
+export const PHONE_IS_OFFLINE = 'Your phone is offline now, as on the day.';
+// E5-US7 — the pack's notes on the journey, as BlackSky shows them on the day.
+export const NO_NOTES_ON_JOURNEY = 'No notes are saved with this pack.';
+export const PHONE_STILL_ONLINE =
+  'Your phone still has a connection. Aeroplane mode makes this rehearsal real.';
+
 /** [DRAFT] What a rehearsal is. */
 export const JOURNEY_WHAT_IT_IS =
-  'A rehearsal is a walk to one of the official places saved with this pack, on foot, in calm conditions, with BlackSky open.';
+  'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.';
 /** [DRAFT] What it is for, and what it is not. */
 export const JOURNEY_WHAT_IT_IS_FOR =
-  'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.';
+  'It is practice at knowing the way: how long it takes, and which turns you take.';
 /** [DRAFT] The one control before she goes. It is the commitment. */
 export const I_AM_GOING_NOW = "I'm going now";
 /** [DRAFT] While she is out. */
 export const JOURNEY_RUNNING_HEADING = 'Practising the way';
 /** [DRAFT] What to do while she is out. */
 export const JOURNEY_RUNNING_DETAIL =
-  'Go to one of these places on foot, in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
+  'Go to one of these places in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.';
 /** [DRAFT] The two endings on the journey screen, as the criterion names them. */
+export const JOURNEY_ENDINGS_LABEL = 'When you are done';
 export const ENDING_ARRIVED = 'I have arrived';
 export const ENDING_WITHOUT_GOING = 'End without going';
 
@@ -1114,15 +1173,15 @@ export const UNFINISHED_DETAIL = (without: string, date: string) =>
   `You started a rehearsal without ${without} on ${date}. Only you can say how it ended.`;
 /** [DRAFT] pending Sharon's copy review. The two endings, as the criterion names
  *  them, each with what it means in her words. */
-export const ENDING_WALKED = 'Walked';
+export const ENDING_WALKED = 'I went there';
 export const ENDING_WALKED_DETAIL = 'I went to the place.';
-export const ENDING_DRY_RUN = 'Not walked, a dry run';
+export const ENDING_DRY_RUN = 'I did not go, a dry run';
 export const ENDING_DRY_RUN_DETAIL = 'I ended it without going.';
 /** [DRAFT] pending Sharon's copy review. A rehearsal recorded before the endings
  *  existed, in the shape PACK_CHANGE_UNKNOWN uses: not knowing is its own state,
  *  and never a default to either ending. */
 export const ENDING_NOT_RECORDED =
-  'Whether this rehearsal was walked or a dry run was not recorded, so it cannot be said either way.';
+  'Whether you went there or ended this rehearsal without going was not recorded, so it cannot be said either way.';
 
 // ── E5-US1-AC5 the result says how the rehearsal ended ────────────────────
 // Beside the condition line, a fact about this rehearsal. Her time is shown in
@@ -1131,11 +1190,11 @@ export const ENDING_NOT_RECORDED =
 // A rehearsal with no ending recorded is stated by ENDING_NOT_RECORDED above.
 
 /** [DRAFT] pending Sharon's copy review. A walked rehearsal, and how long it took her. */
-export const RESULT_WALKED = (duration: string) => `You walked it. It took you ${duration}.`;
+export const RESULT_WALKED = (duration: string) => `You went there. It took you ${duration}.`;
 /** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
  *  kept with it. Every walk ended on the journey screen keeps one; this covers a
  *  stored record that does not. */
-export const RESULT_WALKED_NO_TIME = 'You walked it.';
+export const RESULT_WALKED_NO_TIME = 'You went there.';
 /** [DRAFT] pending Sharon's copy review. A dry run, stated plainly, as a kind of
  *  rehearsal and not a lesser one. */
 export const RESULT_DRY_RUN = 'This was a dry run: you ended it without going.';

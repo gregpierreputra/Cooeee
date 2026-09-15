@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ACKNOWLEDGE_CHECKBOX, CONTINUE, SKIP_TOUR, TOUR_BACK, TOUR_HINT, TOUR_NEXT, TOUR_STEPS } from '../src/core/copy';
+import { ACKNOWLEDGE_CHECKBOX, CONTINUE, SEE_HOW_IT_WORKS, SKIP_TOUR, TOUR_BACK, TOUR_HINT, TOUR_NEXT, TOUR_STEPS } from '../src/core/copy';
 import { acknowledgeFirstOpen, passGate } from './helpers';
 
 // The guided tour on the real bundle: it starts once, right after the
@@ -15,6 +15,7 @@ const dimmed = (page: import('@playwright/test').Page) =>
 test('starts after the acknowledgement, steps across screens, and skips', async ({ page }) => {
   await passGate(page);
   await page.goto('/');
+  await page.getByRole('button', { name: SEE_HOW_IT_WORKS }).click();
   await page.getByRole('checkbox', { name: ACKNOWLEDGE_CHECKBOX }).check();
   await page.getByRole('button', { name: CONTINUE }).click();
 
@@ -45,6 +46,15 @@ test('starts after the acknowledgement, steps across screens, and skips', async 
   await expect
     .poll(async () => (await page.locator('.tour-spot').boundingBox())!.y)
     .toBeLessThan(before.y);
+
+  // Stop nine is Rehearse: with no pack saved it lands on the entry screen.
+  await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  await dimmed(page);
+  await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  await dimmed(page);
+  await expect(dialog).toContainText(count(9));
+  await expect(page).toHaveURL(/\/rehearse$/);
+  await expect(page.locator('.tour-spot')).toBeVisible();
 
   await dialog.getByRole('button', { name: SKIP_TOUR }).click();
   await expect(dialog).toHaveCount(0);

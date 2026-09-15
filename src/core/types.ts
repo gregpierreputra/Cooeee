@@ -508,3 +508,7 @@ export type ActionCompletion = {
 
 /** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */
 export type SyncMetaRow = { key: string; value: string };
+
+/** One data source as a screen names it: what the list is, and in plain words
+ *  how it read when last checked. */
+export type SourceLine = { lead: string; text: string };

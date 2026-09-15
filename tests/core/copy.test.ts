@@ -53,8 +53,8 @@ describe('composed lines', () => {
   });
 
   it('the choose hint pluralises for one place versus two', () => {
-    expect(copy.CHOOSE_PLACES_HINT(1)).toBe('Choose the place to save.');
-    expect(copy.CHOOSE_PLACES_HINT(2)).toBe('Choose two places to save.');
+    expect(copy.CHOOSE_PLACES_HINT(1)).toBe('Choose the place to save');
+    expect(copy.CHOOSE_PLACES_HINT(2)).toBe('Choose two places to save');
   });
 });
 
@@ -65,6 +65,24 @@ describe('shell copy', () => {
 
   it('says a pack is missing without implying anything about the place', () => {
     expect(copy.NO_PACKS_HINT).toContain('while you have a connection');
+  });
+
+  it('welcomes in three moments and two facts, one short line each', () => {
+    expect(copy.WELCOME_STEPS.map((step) => step.kicker)).toEqual(['Before', 'During', 'After']);
+    for (const line of [...copy.WELCOME_STEPS, ...copy.WELCOME_FACTS].map((s) => s.line)) {
+      expect(line.split(' ').length).toBeLessThanOrEqual(8);
+    }
+    expect(copy.SEE_HOW_IT_WORKS).toBe('See how it works');
+  });
+
+  it('labels the endings card on the journey screen', () => {
+    expect(copy.JOURNEY_ENDINGS_LABEL).toBe('When you are done');
+  });
+
+  it('carries the tagline the splash shows on arrival', () => {
+    expect(copy.APP_TAGLINE).toBe(
+      'Your offline-capable life-saver supporting you before, during, and after disasters.',
+    );
   });
 });
 
@@ -255,7 +273,7 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
-  it('tours ten features across every screen, three led lines each', () => {
+  it('tours eleven features across every screen, three led lines each', () => {
     expect(copy.TOUR_STEPS.map((step) => step.title)).toEqual([
       "Today's reminder",
       'Your saved packs',
@@ -265,6 +283,7 @@ describe('the returning-user home', () => {
       'The bottom bar',
       'The address search',
       'Nearby official places',
+      'Rehearse',
       'Recover',
       'About Cooeee',
     ]);
@@ -358,6 +377,8 @@ describe('first-open disclosure', () => {
     expect(copy.ACKNOWLEDGE_CHECKBOX).toBe(
       'I understand how Cooeee works, and what it does not do.',
     );
+    expect(copy.BEFORE_YOU_CONTINUE).toBe('Before you continue');
+    expect(copy.ACKNOWLEDGE_HINT).toBe('Tick the box above to continue.');
   });
 
   // The disclosure is the one screen that must not read as reassurance while
@@ -520,10 +541,7 @@ describe('the choice of condition', () => {
     expect(copy.CONDITION_NO_FIX_DETAIL).toBe('The phone cannot work out where it is.');
   });
 
-  it('states plainly that a rehearsal reaches nothing outside the phone', () => {
-    expect(copy.NOTHING_IS_SENT).toBe(
-      'Nothing is sent from this rehearsal. Nothing leaves this phone.',
-    );
+  it('names the way out of a rehearsal', () => {
     expect(copy.LEAVE_REHEARSAL).toBe('Leave the rehearsal');
   });
 });

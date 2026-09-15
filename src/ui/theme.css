@@ -873,6 +873,12 @@ input {
   margin: 0 auto;
 }
 
+/* A running rehearsal's bar sits inside the back bar, above the control, flush
+   with the top edge so the two read as one strip. */
+.back-bar .rehearsal-bar {
+  margin: -0.5rem 0 0.25rem;
+}
+
 /* A compact pill, not a full-width action: noticeable, 44px target, no more. */
 .back-bar button {
   display: inline-flex;
@@ -1289,6 +1295,128 @@ input {
   color: var(--accent);
 }
 
+/* ── Splash on arrival ─────────────────────────────────────────────────────── */
+
+/* Plays once per document load that came from outside the app. Above the tour
+   (20), below nothing. pointer-events: none is what makes it unintrusive: every
+   tap goes straight through to the screen beneath, and the layer's own fade at
+   the end is the animation whose end unmounts it. Four seconds in all, paced
+   so the call can be watched rather than glimpsed. Under reduced motion every
+   duration collapses to nothing and the layer is gone on the first frame. */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 0 1.5rem;
+  background: var(--glow), var(--bg);
+  color: var(--ink);
+  text-align: center;
+  pointer-events: none;
+  animation: splash-out 0.6s ease-in 3.4s forwards;
+}
+
+/* The mark: the dot lands, then each arc draws itself away from it. */
+.splash-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  color: var(--accent);
+}
+.splash-mark circle {
+  transform-origin: 6.5px 12px;
+  animation: splash-dot 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.splash-mark path {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: splash-arc 0.8s ease-out both;
+}
+.splash-mark path:nth-of-type(1) {
+  animation-delay: 0.5s;
+}
+.splash-mark path:nth-of-type(2) {
+  animation-delay: 0.9s;
+}
+
+/* The call travelling: two rings leave the dot and fade as they go. */
+.splash-mark::before,
+.splash-mark::after {
+  content: '';
+  position: absolute;
+  left: 1.5px;
+  top: 19.5px;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  animation: splash-ring 1.6s ease-out 1.4s both;
+}
+.splash-mark::after {
+  animation-delay: 1.8s;
+}
+
+/* The name settles from wide tracking to its own; the tagline follows. */
+.splash-name {
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  animation: splash-name 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 1.2s both;
+}
+.splash-tagline {
+  max-width: 28ch;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  animation: splash-rise 0.8s ease-out 1.9s both;
+}
+
+@keyframes splash-dot {
+  from {
+    transform: scale(0);
+  }
+}
+@keyframes splash-arc {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes splash-ring {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+@keyframes splash-name {
+  from {
+    opacity: 0;
+    letter-spacing: 0.4em;
+    transform: translateY(8px);
+  }
+}
+@keyframes splash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes splash-out {
+  to {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1426,7 +1554,7 @@ input {
 
 /* A fixed bar on the panel colour, inside the safe area, so it stays within
    thumb reach whatever the page above it does. On every screen but BlackSky.
-   Three equal destinations: none is weighted, and BlackSky is not among them. */
+   Five equal destinations: none is weighted, and BlackSky is not among them. */
 .bottom-nav {
   position: fixed;
   inset-inline: 0;
@@ -1461,6 +1589,12 @@ input {
   text-decoration: none;
 }
 
+/* Where the user is: the ink, not the accent, so the mark is a weight and not
+   a call to act. Set by the router, so it is also what a screen reader says. */
+.bottom-nav-item[aria-current='page'] {
+  color: var(--ink);
+}
+
 .bottom-nav-icon {
   flex: none;
 }
@@ -1483,6 +1617,51 @@ input {
 .first-open,
 .gate {
   padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
+}
+
+/* ── Welcome, before the disclosure ───────────────────────────────────────── */
+
+/* Same hero as the disclosure; the tagline is centred with it because here the
+   three of them are the title. */
+.welcome-tagline {
+  text-align: center;
+  max-width: 30ch;
+  justify-self: center;
+}
+
+/* One card per moment: the drawing, the moment's name, one line. */
+.welcome-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 1rem;
+  align-items: center;
+}
+.welcome-step .glyph {
+  grid-row: 1 / 3;
+}
+.welcome-step p {
+  margin: 0;
+  font-weight: var(--w-med);
+}
+
+/* Two facts, smaller drawings, no card: the quiet line under the promise. */
+.welcome-facts {
+  gap: 0.5rem;
+}
+.welcome-fact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--ink-2);
+}
+.welcome-fact .glyph {
+  width: 32px;
+  height: 32px;
+}
+.welcome-fact .glyph svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* ── Development gate (feature 1) ──────────────────────────────────────────── */
@@ -1523,6 +1702,20 @@ input {
    sparse. */
 .first-open {
   gap: 0.75rem;
+  /* Its own stacking context, so the particle canvas below sits under the
+     page's words and above the body ground, and never above anything else. */
+  isolation: isolate;
+}
+
+/* The motes behind the welcome and the disclosure: full screen, under the
+   text, and inert to every tap. */
+.particles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .first-open-hero {
@@ -1620,22 +1813,35 @@ input {
 /* A row, not a stack: the label is the statement, and it is the label element
    itself so a screen reader reads the whole sentence with the box. */
 .acknowledge {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
+  column-gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+}
+
+/* Ticked, the frame settles: the fill says the step is done. */
+.acknowledge:has(:checked) {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+}
+
+.acknowledge .kicker {
+  grid-column: 1 / 3;
+  margin-bottom: 0.5rem;
 }
 
 .acknowledge input[type='checkbox'] {
-  min-height: 24px;
-  width: 24px;
-  height: 24px;
+  min-height: 28px;
+  width: 28px;
+  height: 28px;
   margin: 0;
-  flex: 0 0 auto;
   accent-color: var(--accent);
 }
 
-/* 44 px of tappable target around a 24 px box, without moving the box. */
+/* 44 px of tappable target around the box, without moving the box. */
 .acknowledge label {
   display: flex;
   align-items: center;
@@ -1644,6 +1850,16 @@ input {
   font-weight: var(--w-med);
   font-size: var(--step-0);
   cursor: pointer;
+}
+
+/* Under the inactive button: what makes it active, in the accent so it reads
+   as the next step rather than as an error. */
+.acknowledge-hint {
+  margin: -0.5rem 0 0;
+  text-align: center;
+  color: var(--accent);
+  font-weight: var(--w-med);
+  font-size: var(--step-s);
 }
 
 /* Inactive until the box is ticked. The attribute does the work — this only
@@ -1751,11 +1967,18 @@ input {
   font-weight: var(--w-heavy);
 }
 
-.nearby-health {
+.data-sources {
   display: grid;
-  gap: 0.25rem;
-  font-size: var(--step-s);
-  color: var(--ink-3);
+  gap: 0.75rem;
+}
+.data-sources-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+.info-ring[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 /* ── Recover ───────────────────────────────────────────────────────────────── */
@@ -2042,7 +2265,8 @@ input {
 }
 
 .condition-label {
-  font-weight: var(--w-heavy);
+  font-size: var(--step-2);
+  font-weight: var(--w-med);
 }
 
 /* NOT .muted. Muted is this product's convention for passive explanatory prose,
@@ -2052,14 +2276,15 @@ input {
 
    The second line is subordinated by SIZE instead, which is how this product
    already quiets a supporting line on a card (.saved-place .muted,
-   .nearby-health, label). Colour would put the row back to reading as prose,
+   label). Colour would put the row back to reading as prose,
    and weight alone leaves the detail twice the label's height and still
    outweighing it. At --step-s the line is below the large-text threshold, so it
    is held to the full 4.5:1 rather than 3:1, and the standing contrast spec
    measures it. */
 .condition-detail {
-  color: var(--ink);
+  color: var(--ink-2);
   font-size: var(--step-s);
+  font-weight: var(--w-med);
 }
 
 /* E5-US1-AC2 — the bar that marks a running rehearsal. Sticky at the top of the
@@ -2072,11 +2297,9 @@ input {
    lose. The dotted underline on the marker is a second non-colour cue that
    survives the same treatment. */
 .rehearsal-bar {
-  position: sticky;
-  top: 0;
-  z-index: 3;
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: baseline;
   gap: 0.5rem;
   padding: 0.75rem max(1.75rem, env(safe-area-inset-left));
@@ -2144,9 +2367,45 @@ input {
    rest of the pack uses. The two endings are identical controls of identical
    weight, told apart by their words alone: neither reads as the expected one,
    and a greyscale screen says which is which exactly as a coloured one does. */
-.journey-places > h3 {
+.journey-places > h3,
+.journey-notes > h3 {
   font-size: var(--step-1);
   margin: 1rem 0 0.5rem;
+}
+
+/* The rehearsal glyphs: one on the kicker of every rehearsal screen, one on
+   the places heading, one on the note heading. The pack page's section-head
+   size, and the same drawing on every screen of a run, so the picture says
+   which part of the rehearsal this is without a word being added. */
+.rehearsal-head {
+  margin: 0;
+}
+.journey-places > h3,
+.journey-notes > h3,
+.way-note > h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.journey-places > h3 .glyph,
+.journey-notes > h3 .glyph,
+.way-note > h3 .glyph {
+  width: 36px;
+  height: 36px;
+}
+.journey-places > h3 .glyph svg,
+.journey-notes > h3 .glyph svg,
+.way-note > h3 .glyph svg {
+  width: 18px;
+  height: 18px;
+}
+
+.journey-notes {
+  display: grid;
+  gap: 0.75rem;
+}
+.journey-note {
+  margin: 0;
 }
 
 .journey-place-list {
@@ -2161,6 +2420,53 @@ input {
 .journey-go,
 .journey-endings .action {
   min-height: 44px;
+}
+.journey-endings {
+  display: grid;
+  gap: 0.75rem;
+}
+.journey-endings .actions {
+  margin-top: 0;
+}
+
+/* Leaving is set apart from every other control on the run: a rule above it,
+   and the red outline the delete controls use, so it reads as the one that
+   ends something rather than as a third ending. */
+.rehearsal-leave {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.leave-action {
+  color: var(--offline);
+  border-color: var(--offline);
+  background: transparent;
+}
+
+/* E5-US6 — the phone instruction before going: the drawing beside the kicker,
+   the instruction beneath both. */
+.condition-how-to {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+  align-items: center;
+}
+.condition-how-to p {
+  grid-column: 1 / 3;
+  margin: 0.5rem 0 0;
+}
+
+/* E5-US5 — the pack page's list of its rehearsals: the date leads each card,
+   the rest reads beneath it in the result's own words. */
+.history-row {
+  display: grid;
+  gap: 0.25rem;
+}
+.history-row p {
+  margin: 0;
+}
+.history-date {
+  font-weight: var(--w-bold);
 }
 
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.

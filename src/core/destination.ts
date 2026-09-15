@@ -1,6 +1,6 @@
 import { DESTINATIONS_MAX, METRES_PER_KM } from './constants';
 import { distanceM } from './geo';
-import { NO_DESTINATION_PUBLISHED_FOR, OFFICIAL_DESTINATION_INFORMATION, ORDINALS } from './copy';
+import { NO_DESTINATION_PUBLISHED_FOR, OFFICIAL_DESTINATION_INFORMATION } from './copy';
 import type { Destination, LatLon, Source } from './types';
 
 export const isGeocoded = (d: { lat?: number; lon?: number }): boolean =>
@@ -24,11 +24,6 @@ export const orderByDistance = (
     .map((d, i) => ({ ...d, distanceOrder: i }));
   return { ordered, ungeocoded };
 };
-
-/** Position in a distance-ordered list, worded as position and nothing more.
- *  Beyond the third there is no label, because there is no ranking to extend. */
-export const ordinalLabel = (order: number): (typeof ORDINALS)[number] | undefined =>
-  ORDINALS[order];
 
 /** A straight-line distance for display: whole tens of metres below a kilometre,
  *  one decimal place above it. The figure is a ±5% estimate, so it is never

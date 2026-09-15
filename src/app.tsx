@@ -13,14 +13,17 @@ import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
 import Gate from './ui/Gate';
 import Home from './ui/Home';
+import Welcome from './ui/Welcome';
 import Nearby from './ui/Nearby';
 import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
 import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
+import Splash from './ui/components/Splash';
 import Tour, { startTour } from './ui/components/Tour';
 import PackDetail from './ui/PackDetail';
 import Recover from './ui/Recover';
+import Choose from './ui/Rehearsal/Choose';
 import RehearsalEntry from './ui/Rehearsal/Entry';
 import { Search } from './ui/PackNew/Search';
 
@@ -114,8 +117,9 @@ function PackDetailRoute() {
   return <PackDetail packId={packId} />;
 }
 
-/** E5-US1-AC4 — the way into a rehearsal, and for now the only one. The gate
- *  it renders decides from the device whether a rehearsal can start at all. */
+/** E5-US1-AC4 — the way into a rehearsal, from the pack page or from the bar's
+ *  picker. The gate it renders decides from the device whether a rehearsal can
+ *  start at all. */
 function RehearsalRoute() {
   const { packId = '' } = useParams();
   return <RehearsalEntry packId={packId} />;
@@ -129,6 +133,12 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   const [screen, setScreen] = useState(() => openingScreen(localFlagStore()));
   // Feature 1: the development gate stands in front of the disclosure itself.
   const [passed, setPassed] = useState(() => readGate(localFlagStore()));
+  // The welcome is seen once, on the way to the disclosure. Nothing records
+  // it: the acknowledgement that follows is the only flag this screen leads to.
+  const [welcomed, setWelcomed] = useState(false);
+  // The call plays once more after the disclosure, over the first Home. A new
+  // key mounts a fresh splash; `play` tells it not to ask how the page loaded.
+  const [replays, setReplays] = useState(0);
 
   // The CFA site list into IndexedDB, so BlackSky can point at the nearest
   // official places with the radios off. A failed copy costs nothing now.
@@ -141,53 +151,70 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       .catch(() => {});
   }, []);
 
-  if (!passed) {
+  function screenFor() {
+    if (!passed) {
+      return (
+        <Gate
+          onPass={() => {
+            writeGate(localFlagStore());
+            setPassed(true);
+          }}
+        />
+      );
+    }
+
+    if (screen === 'first-open' && !welcomed) {
+      return <Welcome onContinue={() => setWelcomed(true)} />;
+    }
+
+    if (screen === 'first-open') {
+      return (
+        <FirstOpen
+          onAcknowledge={() => {
+            // The user moves on either way. A browser that refuses the write is a
+            // reason to ask again on the next open, never a reason to trap
+            // someone on this screen.
+            writeAcknowledgement(localFlagStore());
+            // The one time the tour starts on its own: the first landing.
+            startTour();
+            setReplays(1);
+            setScreen('prepared');
+          }}
+        />
+      );
+    }
+
     return (
-      <Gate
-        onPass={() => {
-          writeGate(localFlagStore());
-          setPassed(true);
-        }}
-      />
+      <BrowserRouter>
+        <BlackSkyResume />
+        <ModeSwitch />
+        <NoticeBar />
+        <HeaderHost />
+        <UpdateBanner applyUpdate={applyUpdate} />
+        <BackBar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/packs/:packId" element={<PackDetailRoute />} />
+          <Route path="/packs/new" element={<Search />} />
+          <Route path="/rehearse" element={<Choose />} />
+          <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
+          <Route path="/nearby" element={<Nearby />} />
+          <Route path="/recover" element={<Recover />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/blacksky" element={<BlackSky />} />
+        </Routes>
+        <Tour />
+        <BottomNavHost />
+      </BrowserRouter>
     );
   }
 
-  if (screen === 'first-open') {
-    return (
-      <FirstOpen
-        onAcknowledge={() => {
-          // The user moves on either way. A browser that refuses the write is a
-          // reason to ask again on the next open, never a reason to trap
-          // someone on this screen.
-          writeAcknowledgement(localFlagStore());
-          // The one time the tour starts on its own: the first landing.
-          startTour();
-          setScreen('prepared');
-        }}
-      />
-    );
-  }
-
+  // The splash sits above whichever screen opens: the gate, the disclosure,
+  // or the app itself, so an arrival looks the same wherever it lands.
   return (
-    <BrowserRouter>
-      <BlackSkyResume />
-      <ModeSwitch />
-      <NoticeBar />
-      <HeaderHost />
-      <UpdateBanner applyUpdate={applyUpdate} />
-      <BackBar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/packs/:packId" element={<PackDetailRoute />} />
-        <Route path="/packs/new" element={<Search />} />
-        <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
-        <Route path="/nearby" element={<Nearby />} />
-        <Route path="/recover" element={<Recover />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/blacksky" element={<BlackSky />} />
-      </Routes>
-      <Tour />
-      <BottomNavHost />
-    </BrowserRouter>
+    <>
+      <Splash key={replays} play={replays > 0 ? true : undefined} />
+      {screenFor()}
+    </>
   );
 }

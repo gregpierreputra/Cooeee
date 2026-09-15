@@ -18,7 +18,6 @@ const UNLOCATED_SAME_LGA = 'Wandin North Reserve';
 const UNLOCATED_OTHER_LGA = 'Alexandra Showgrounds';
 const CAVEAT = 'sorted by distance, not a safety ranking';
 const DISTANCE = /^\d+(\.\d+)?\s(m|km)$/;
-const ANY_ORDINAL = /^(nearest|second nearest|third nearest)$/;
 
 function offOriginRequests(page: Page): string[] {
   const seen: string[] = [];
@@ -80,21 +79,6 @@ test('AC2 orders the located places by straight-line distance, not by document o
   expect(names).toEqual(BY_DISTANCE);
 });
 
-test('AC2 labels the first three by position and stops', async ({ page }) => {
-  await page.goto(URL);
-  const rows = page.locator('[data-testid=ordered-destinations] .destination-item');
-
-  await expect(rows.nth(0).getByText('nearest', { exact: true })).toBeVisible();
-  await expect(rows.nth(1).getByText('second nearest', { exact: true })).toBeVisible();
-  await expect(rows.nth(2).getByText('third nearest', { exact: true })).toBeVisible();
-
-  // The fourth place has a distance but no ordinal — there is no fourth label.
-  await expect(rows.nth(3).getByText(ANY_ORDINAL)).toHaveCount(0);
-  await expect(rows.nth(3).getByText(DISTANCE)).toBeVisible();
-
-  expect(await page.getByText('nearest', { exact: true }).count()).toBe(1);
-});
-
 test('AC2 shows a straight-line distance on every ordered row', async ({ page }) => {
   await page.goto(URL);
   const rows = page.locator('[data-testid=ordered-destinations] .destination-item');
@@ -108,7 +92,7 @@ test('AC2 shows the mandated caveat line once, above the list and not inside it'
   page,
 }) => {
   await page.goto(URL);
-  await expect(page.locator('p.caveat')).toHaveText(CAVEAT);
+  await expect(page.locator('p.caveat')).toContainText(CAVEAT);
   expect(await page.getByText(CAVEAT).count()).toBe(1);
   await expect(page.locator('[data-testid=ordered-destinations]')).not.toContainText(CAVEAT);
 });

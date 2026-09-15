@@ -12,7 +12,7 @@ const NO_FIX = 'No location fix';
 const CHOOSE_HEADING = 'What are we rehearsing without?';
 
 /** E5-US1-AC5: how the rehearsal ended, beside the condition line. */
-const WALKED_LINE = 'You walked it. It took you 14 minutes.';
+const WALKED_LINE = 'You went there. It took you 14 minutes.';
 const DRY_RUN_LINE = 'This was a dry run: you ended it without going.';
 
 const PACK_CONTENT_MEANING = 'This information is missing from your pack.';
@@ -145,7 +145,8 @@ test.describe('AC1 what the run recorded', () => {
     await page.getByTestId('remount').click();
     await expect(page.locator('.rehearsal-bar')).toBeVisible();
 
-    expect(await page.locator('.gap-row h3').allInnerTexts()).toEqual(before);
+    // The result reads the device again on return; wait for it, do not race it.
+    await expect(page.locator('.gap-row h3')).toHaveText(before);
   });
 
   test('the result is a rehearsal, and says so throughout', async ({ page }) => {

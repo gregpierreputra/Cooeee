@@ -183,10 +183,11 @@ describe('nearbyView', () => {
 
   it('lists every source with its status and age; the snapshot reading of the feed wins', () => {
     const view = nearbyView(NOW, KALORAMA, cache(), OFFLINE);
-    expect(view.health).toContain(copy.HEALTH_LINE('Country Fire Authority Neighbourhood Safer Places list', 'reachable', copy.ITEM_DAYS_AGO(1)));
-    expect(view.health).toContain(copy.HEALTH_LINE('VicEmergency feed', 'reachable', copy.MINUTES_AGO(10)));
-    expect(view.health).toContain(copy.HEALTH_LINE('other', 'reachable', copy.HOURS_AGO(1)));
+    expect(view.health).toContainEqual({ lead: 'Country Fire Authority Neighbourhood Safer Places list', text: copy.HEALTH_TEXT('reachable', copy.ITEM_DAYS_AGO(1)) });
+    expect(view.health).toContainEqual({ lead: 'VicEmergency feed', text: copy.HEALTH_TEXT('reachable', copy.MINUTES_AGO(10)) });
+    expect(view.health).toContainEqual({ lead: 'other', text: copy.HEALTH_TEXT('reachable', copy.HOURS_AGO(1)) });
+    expect(copy.HEALTH_TEXT('reachable', 'a day ago')).toBe('Reachable when last checked, a day ago.');
     const never = nearbyView(NOW, KALORAMA, cache({ meta: { static_synced_at: ago(0), data_health: JSON.stringify({ vicemergency_feed: { status: 'unknown', last_success_at: null } }) } }), OFFLINE);
-    expect(never.health).toContain(copy.HEALTH_LINE('VicEmergency feed', 'not yet read', copy.NEVER));
+    expect(never.health).toContainEqual({ lead: 'VicEmergency feed', text: copy.HEALTH_TEXT('not yet read', copy.NEVER) });
   });
 });

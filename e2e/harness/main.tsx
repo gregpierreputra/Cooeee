@@ -1,6 +1,6 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter, useLocation } from 'react-router';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 
 import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
@@ -15,8 +15,11 @@ import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
 import Recover from '../../src/ui/Recover';
+import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
+import { startRun } from '../../src/ui/Rehearsal/run-state';
 import AppHeader from '../../src/ui/components/AppHeader';
+import BackBar from '../../src/ui/components/BackBar';
 import BottomNav from '../../src/ui/components/BottomNav';
 import { Confirm } from '../../src/ui/PackNew/Confirm';
 import { Destinations } from '../../src/ui/PackNew/Destinations';
@@ -295,6 +298,19 @@ if (window.location.pathname === '/detail' || window.location.pathname === '/det
   });
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
+  // E5-US5. ?mode=rehearsed: the pack has been rehearsed once, and walked.
+  if (detailMode === 'rehearsed') {
+    await db.rehearsals.put({
+      id: 'detail-run',
+      packId: 'detail-pack',
+      condition: 'no-data',
+      startedAt: Date.UTC(2026, 2, 3, 1),
+      finishedAt: Date.UTC(2026, 2, 3, 1, 14),
+      ending: 'walked',
+      elapsedMs: 14 * 60_000,
+      gaps: [],
+    });
+  }
   await db.packPrograms.put(detailRecovery);
   await db.files.bulkPut([detailFile, programFile]);
 }
@@ -413,7 +429,18 @@ if (window.location.pathname === '/blacksky') {
     },
   ]);
   document.documentElement.dataset.mode = 'blacksky';
-  blackSkyFlow = <BlackSky />;
+  // E5-US3-AC3. `run=1` arrives from a running rehearsal of the first pack.
+  if (new URLSearchParams(window.location.search).get('run') === '1') {
+    startRun('saved-pack', 'no-location-fix');
+  }
+  blackSkyFlow = (
+    <>
+      <BlackSky />
+      <div hidden>
+        <LocationProbe />
+      </div>
+    </>
+  );
 }
 
 const destinationsMode = new URLSearchParams(window.location.search).get('mode') ?? 'sites';
@@ -589,6 +616,7 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
             packId: 'rehearse-pack',
             kind: 'nsp-bushfire',
             name: 'Kalorama Reserve',
+            addressText: 'Kalorama Memorial Reserve Road, Kalorama',
             source: { ...cfaSource, retrievedAt: rehearseSavedAt },
           },
         ]
@@ -619,6 +647,10 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
       ? [{ ...rehearseAbsence, reason: 'Altered on the device after the pack was saved.' }]
       : rehearsePlaces,
   );
+  // E5-US7. ?notes=1: the pack carries one note of her own.
+  if (new URLSearchParams(window.location.search).get('notes') === '1') {
+    await db.notes.put({ id: 'rehearse-note', packId: 'rehearse-pack', text: 'Gas is off at the meter.', updatedAt: rehearseSavedAt });
+  }
   // E5-US1-AC3. Leaving the rehearsal screen and coming back within the same
   // session must keep the run. In the running app that is a route change; here
   // it is an unmount and a remount of the same component, which is the same
@@ -656,6 +688,7 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
   rehearseFlow = <RehearsalHarness />;
 }
 if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
+
 
 // The remount control is HARNESS FURNITURE, not product UI. It is rendered
 // after the screen under test and outside its .page container, so it can never
@@ -695,11 +728,30 @@ function LocationProbe() {
   return <span data-testid="location">{pathname}</span>;
 }
 
+const REHEARSE_PATH = '/rehearse/rehearse-pack';
+
 function RehearsalHarness() {
   const [mounted, setMounted] = useState(true);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  // The app reaches this screen at its own path, and only BlackSky leaves it.
+  // The harness has no routes, so a control that navigates elsewhere (Leave
+  // goes to the pack page) is brought back here, as opening the screen again
+  // in the app would; BlackSky is left alone so a spec can see the hold land.
+  useEffect(() => {
+    if (mounted && pathname !== REHEARSE_PATH && !pathname.startsWith('/blacksky')) {
+      navigate(REHEARSE_PATH, { replace: true });
+    }
+  }, [mounted, pathname, navigate]);
   return (
     <>
-      {mounted ? <RehearsalEntry packId="rehearse-pack" now={rehearseNow} /> : null}
+      {/* The app's back bar carries the rehearsal bar, so it is part of the screen under test. */}
+      {mounted ? (
+        <>
+          <BackBar />
+          <RehearsalEntry packId="rehearse-pack" now={rehearseNow} />
+        </>
+      ) : null}
       <div style={harnessStyle} data-harness="true">
         <span>test harness</span>
         <LocationProbe />
@@ -707,10 +759,36 @@ function RehearsalHarness() {
           type="button"
           data-testid="remount"
           style={harnessButtonStyle}
-          onClick={() => setMounted((on) => !on)}
+          onClick={() => {
+            // Mounting again is her return from BlackSky, which lands on the rehearsal path.
+            if (!mounted) navigate(REHEARSE_PATH, { replace: true });
+            setMounted((on) => !on);
+          }}
         >
           {mounted ? 'unmount the screen' : 'mount it again'}
         </button>
+      </div>
+    </>
+  );
+}
+
+// E5-US3-AC2. The bar's Rehearse before a pack is known: `packs=` seeds that
+// many complete packs (0, 1 or 2), newest first by their saved date.
+let chooseFlow = confirmation;
+if (window.location.pathname === '/rehearse-choose') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  const count = Number(new URLSearchParams(window.location.search).get('packs') ?? '2');
+  await db.packs.bulkPut(
+    [
+      savedPack,
+      { ...savedPack, id: 'second-pack', name: 'Kalorama', address: testCandidate.address, verifiedAt: savedPack.verifiedAt + 1 },
+    ].slice(0, count),
+  );
+  chooseFlow = (
+    <>
+      <Choose />
+      <div style={harnessStyle} data-harness="true">
+        <LocationProbe />
       </div>
     </>
   );
@@ -732,9 +810,13 @@ const areaFlow = (
 // Screens link back to the pack list, so they need router context. The
 // harness has no routes of its own, so ONE in-memory router keeps every
 // component mountable in isolation without a second application shell.
+// The rehearsal harness starts on its own path, as the app does, so the back
+// bar (which hides on the home path) is on screen and carries the rehearsal bar.
+const initialEntries = window.location.pathname === '/rehearse' ? [REHEARSE_PATH] : undefined;
+
 createRoot(root).render(
   <StrictMode>
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
     {window.location.pathname === '/home' ? homeFlow
       : window.location.pathname === '/blacksky' ? blackSkyFlow
       : window.location.pathname === '/conflict' ? conflictFlow
@@ -744,6 +826,7 @@ createRoot(root).render(
         : window.location.pathname === '/nearby' ? nearbyFlow
         : window.location.pathname === '/recover' ? recoverFlow
         : window.location.pathname === '/rehearse' ? rehearseFlow
+        : window.location.pathname === '/rehearse-choose' ? chooseFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

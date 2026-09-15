@@ -33,8 +33,14 @@ export type ConditionRow = {
 };
 
 const ROW_COPY: Record<RehearsalCondition, { label: string; detail: string }> = {
-  'no-data': { label: copy.CONDITION_NO_DATA, detail: copy.CONDITION_NO_DATA_DETAIL },
-  'no-location-fix': { label: copy.CONDITION_NO_FIX, detail: copy.CONDITION_NO_FIX_DETAIL },
+  'no-data': {
+    label: copy.CONDITION_NO_DATA,
+    detail: copy.CONDITION_NO_DATA_DETAIL,
+  },
+  'no-location-fix': {
+    label: copy.CONDITION_NO_FIX,
+    detail: copy.CONDITION_NO_FIX_DETAIL,
+  },
 };
 
 /** The rows to offer, in the fixed order. Nothing is marked chosen: a row
@@ -67,3 +73,15 @@ const WITHOUT_FORM: Record<RehearsalCondition, string> = {
  *  sentence picks the right form by name. */
 export const conditionWithout = (condition: RehearsalCondition): string =>
   WITHOUT_FORM[condition];
+
+/** E5-US6. What to do on the phone so the condition is real, not pretended. */
+export const howToLine = (condition: RehearsalCondition): string =>
+  copy.CONDITION_HOW_TO[condition];
+
+/** E5-US6. What the browser reports while she is out, for the one condition
+ *  the browser can report on. A location fix cannot be seen without asking
+ *  for one, and a rehearsal never asks, so that condition gets no line. */
+export function connectionLine(condition: RehearsalCondition, online: boolean): string | null {
+  if (condition !== 'no-data') return null;
+  return online ? copy.PHONE_STILL_ONLINE : copy.PHONE_IS_OFFLINE;
+}

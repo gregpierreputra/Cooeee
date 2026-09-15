@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as copy from '../../src/core/copy';
-import { journeyPlaces } from '../../src/core/rehearsal-journey';
+import { journeyNotes, journeyPlaces } from '../../src/core/rehearsal-journey';
 import type { CompletePackContent, ExposureLayer } from '../../src/core/types';
 import { destination, pack, source } from '../fixtures';
 
@@ -35,43 +35,45 @@ const content = (over: Partial<CompletePackContent> = {}): CompletePackContent =
 const SAVED = '25 August 2025';
 
 describe('the places the journey screen names', () => {
-  it('names each official place as the destinations list does, with its provenance line, in list order', () => {
+  it('names each official place as the destinations list does, with its address and saved date, in list order', () => {
     const held = content({
       destinations: [
-        destination({ id: 'pack-1:c', name: 'Third Reserve' }),
+        destination({ id: 'pack-1:c', name: 'Third Reserve', addressText: '1 High Street, Kalorama' }),
         destination({
           id: 'pack-1:b',
           name: 'Second Reserve',
           distanceOrder: 1,
           source: source({ publisher: 'Another Publisher' }),
         }),
-        destination({ id: 'pack-1:a', name: undefined, distanceOrder: 0 }),
+        destination({ id: 'pack-1:a', name: undefined, addressText: undefined, distanceOrder: 0 }),
         // A real stored row recording that the list holds nothing: not a place.
         destination({ id: 'pack-1:absence', kind: 'absence', reason: 'None here.' }),
       ],
     });
 
     expect(journeyPlaces(held)).toEqual([
-      {
-        id: 'pack-1:c',
-        name: 'Third Reserve',
-        publisherLine: `Published by Country Fire Authority · Saved ${SAVED}`,
-      },
-      {
-        id: 'pack-1:a',
-        name: 'Official place of last resort information',
-        publisherLine: `Published by Country Fire Authority · Saved ${SAVED}`,
-      },
-      {
-        id: 'pack-1:b',
-        name: 'Second Reserve',
-        publisherLine: `Published by Another Publisher · Saved ${SAVED}`,
-      },
+      { id: 'pack-1:c', name: 'Third Reserve', where: '1 High Street, Kalorama', savedLine: `Saved ${SAVED}` },
+      { id: 'pack-1:a', name: 'Official place of last resort information', where: '', savedLine: `Saved ${SAVED}` },
+      { id: 'pack-1:b', name: 'Second Reserve', where: '', savedLine: `Saved ${SAVED}` },
     ]);
   });
 
   it('names none when the pack holds no official place', () => {
     expect(journeyPlaces(content({ destinations: [] }))).toEqual([]);
+  });
+
+  it('E5-US7 carries the pack notes as text, in pack order, and none for a pack without', () => {
+    const held = content({
+      notes: [
+        { id: 'n1', packId: 'pack-1', text: 'Gas is off at the meter.', updatedAt: 2 },
+        { id: 'n2', packId: 'pack-1', text: 'Keys on the hook.', updatedAt: 1 },
+      ],
+    });
+    expect(journeyNotes(held)).toEqual([
+      { id: 'n1', text: 'Gas is off at the meter.' },
+      { id: 'n2', text: 'Keys on the hook.' },
+    ]);
+    expect(journeyNotes(content())).toEqual([]);
   });
 });
 
@@ -93,31 +95,32 @@ describe("the journey screen's words", () => {
 
   it('are exactly the draft wording, pending the copy review', () => {
     expect(before).toEqual([
-      'Rehearse the way on foot',
+      'Rehearse the way there',
       'This rehearsal is without mobile data.',
-      'A rehearsal is a walk to one of the official places saved with this pack, on foot, in calm conditions, with BlackSky open.',
-      'It is practice at knowing the way: how long it takes, which turns you take, and what you meet on it. It is not a choice of where to go on the day.',
+      'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.',
+      'It is practice at knowing the way: how long it takes, and which turns you take.',
       "I'm going now",
     ]);
     expect(running).toEqual([
       'Practising the way',
-      'Go to one of these places on foot, in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.',
+      'Go to one of these places in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.',
       'I have arrived',
       'End without going',
     ]);
   });
 
-  it('ask for a walk on foot, in calm conditions, with BlackSky open, before and during', () => {
+  it('ask for a trip in calm conditions, with BlackSky open, before and during, however she gets there', () => {
+    [copy.JOURNEY_BEFORE_HEADING, copy.JOURNEY_WHAT_IT_IS, copy.JOURNEY_RUNNING_DETAIL].forEach((line) => {
+      expect(line).not.toMatch(/foot|walk/i);
+    });
     [copy.JOURNEY_WHAT_IT_IS, copy.JOURNEY_RUNNING_DETAIL].forEach((line) => {
-      expect(line).toContain('on foot');
       expect(line).toContain('in calm conditions');
       expect(line).toContain('with BlackSky open');
     });
   });
 
-  it('say it is practice at knowing the way, and not a choice of where to go on the day', () => {
+  it('say it is practice at knowing the way', () => {
     expect(copy.JOURNEY_WHAT_IT_IS_FOR).toContain('practice at knowing the way');
-    expect(copy.JOURNEY_WHAT_IT_IS_FOR).toContain('It is not a choice of where to go on the day.');
   });
 
   it('never read as a plan for the day', () => {

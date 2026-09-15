@@ -24,6 +24,7 @@ import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../cor
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import HoldButton from './components/HoldButton';
+import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
 
 type BlackSkyProps = {
@@ -285,7 +286,12 @@ export default function BlackSky({
       ) : null}
       {/* US3-AC1: one plainly named exit, full-width at thumb reach. Leaving
           demands the same deliberate 2s hold as entering, so a pocket press
-          cannot silently drop the emergency screen. */}
+          cannot silently drop the emergency screen.
+          E5-US3-AC3: a rehearsal that is running is where she came from, so
+          leaving goes back to it, not to Home.
+          ponytail: a cold start inside BlackSky loses the in-memory run and
+          leaves to Home; the kept rehearsal is asked about on the pack's next
+          visit. Upgrade path: look the unfinished row up on leave. */}
       <div className="actions">
         {notice ? (
           <p className="muted blacksky-hold-hint" role="status">
@@ -295,7 +301,8 @@ export default function BlackSky({
         <HoldButton
           onHold={() => {
             unlatchBlackSky(localFlagStore());
-            navigate('/', { replace: true });
+            const run = currentRun();
+            navigate(run ? `/rehearse/${run.packId}` : '/', { replace: true });
           }}
           hint={copy.HOLD_TO_LEAVE}
         >

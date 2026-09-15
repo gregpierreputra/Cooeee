@@ -6,7 +6,6 @@ import {
   chooseRules,
   chosenDestinations,
   formatDistanceM,
-  ordinalLabel,
   placeName,
   orderByDistance,
   savableCount,
@@ -73,21 +72,6 @@ describe('formatDistanceM', () => {
     expect(formatDistanceM(1140)).toBe('1.1 km');
     expect(formatDistanceM(1260)).toBe('1.3 km');
     expect(formatDistanceM(12_345)).toBe('12.3 km');
-  });
-});
-
-describe('ordinalLabel', () => {
-  it('labels the first three positions and stops', () => {
-    expect(ordinalLabel(0)).toBe('nearest');
-    expect(ordinalLabel(1)).toBe('second nearest');
-    expect(ordinalLabel(2)).toBe('third nearest');
-    expect(ordinalLabel(3)).toBeUndefined();
-  });
-
-  it('never returns a superlative of worth', () => {
-    for (let i = 0; i < 10; i++) {
-      expect(ordinalLabel(i) ?? '').not.toMatch(/best|safest|recommended/i);
-    }
   });
 });
 

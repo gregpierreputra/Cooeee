@@ -91,17 +91,13 @@ describe('the shape of a run', () => {
 });
 
 describe('the wording of a running rehearsal', () => {
-  it('says what a rehearsal does not do, and never implies something was sent', () => {
-    expect(copy.NOTHING_IS_SENT).toBe(
-      'Nothing is sent from this rehearsal. Nothing leaves this phone.',
-    );
-    // "sent" appears only as something that does NOT happen.
-    expect(copy.NOTHING_IS_SENT).not.toMatch(/\bhas been sent\b|\bwe sent\b|\bmessage sent\b|\bsending\b/i);
+  it('names the way out, and never implies something was sent', () => {
     expect(copy.LEAVE_REHEARSAL).toBe('Leave the rehearsal');
+    expect(copy.LEAVE_REHEARSAL).not.toMatch(/\bsent\b|\bsending\b/i);
   });
 
   it('names no hazard, and says nothing about the reader', () => {
-    const lines = [copy.NOTHING_IS_SENT, copy.LEAVE_REHEARSAL, copy.REHEARSAL_LABEL];
+    const lines = [copy.LEAVE_REHEARSAL, copy.REHEARSAL_LABEL];
     lines.forEach((line) => {
       expect(line).not.toMatch(/\b(bushfire|fire|heat|hot|flood|storm|smoke|ember)\b/i);
       expect(line).not.toMatch(/\bunprepared\b|\bnot ready\b/i);

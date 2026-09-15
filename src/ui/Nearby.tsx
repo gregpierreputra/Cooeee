@@ -6,6 +6,7 @@ import {
   NEARBY_RESYNC_MS,
 } from '../core/constants';
 import * as copy from '../core/copy';
+import DataSources from './components/DataSources';
 import {
   hasNearbyData,
   nearbyView,
@@ -185,14 +186,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
                   </ul>
                 </section>
               ))}
-              <section className="nearby-health">
-                <span className="kicker">{copy.DATA_SOURCES_LABEL}</span>
-                {view.health.map((line) => (
-                  <p key={line} className="figure">
-                    {line}
-                  </p>
-                ))}
-              </section>
+              <DataSources lines={view.health} />
             </>
           ) : null}
         </>

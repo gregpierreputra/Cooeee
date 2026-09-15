@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
+import Head from './Head';
 import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
 
 /** E5-US1-AC1 — the user says what the rehearsal is run without.
@@ -26,7 +27,7 @@ export default function Condition({
 }) {
   return (
     <main className="page rehearsal-condition">
-      <span className="kicker">{copy.REHEARSAL_LABEL}</span>
+      <Head />
       <h2>{copy.CHOOSE_CONDITION_HEADING}</h2>
 
       <ul className="list condition-list">

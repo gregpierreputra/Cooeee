@@ -5,6 +5,7 @@ import { DYNAMIC_TYPES, FACILITY_SOURCE, STATIC_TYPES } from './facility-sources
 import { distanceM } from './geo';
 import { formatSavedDate } from './provenance';
 import type {
+  SourceLine,
   BundleFacility,
   BundlePostcode,
   DataHealth,
@@ -47,7 +48,7 @@ export type NearbyRow = {
   note: string | null;
 };
 export type NearbyGroup = { kind: 'bushfire' | 'relief'; heading: string; note: string; rows: NearbyRow[] };
-export type NearbyView = { groups: NearbyGroup[]; health: string[] };
+export type NearbyView = { groups: NearbyGroup[]; health: SourceLine[] };
 
 /** The device has something to answer from once either bundle has ever landed. */
 export const hasNearbyData = (cache: NearbyCache): boolean =>
@@ -197,7 +198,7 @@ function dynamicRow(
   };
 }
 
-function healthLines(now: number, cache: NearbyCache): string[] {
+function healthLines(now: number, cache: NearbyCache): SourceLine[] {
   const health = parseHealth(cache);
   // The dynamic snapshot carries a fresher reading of the feed than the static bundle.
   if (cache.meta.dynamic_source_status) {
@@ -206,13 +207,13 @@ function healthLines(now: number, cache: NearbyCache): string[] {
       last_success_at: cache.meta.dynamic_source_last_success_at ?? null,
     };
   }
-  return Object.entries(health).map(([id, source]) =>
-    copy.HEALTH_LINE(
-      copy.SOURCE_NAMES[id] ?? id,
+  return Object.entries(health).map(([id, source]) => ({
+    lead: copy.SOURCE_NAMES[id] ?? id,
+    text: copy.HEALTH_TEXT(
       copy.SOURCE_STATUS_WORD[source.status],
       source.last_success_at ? ageLabel(now - Date.parse(source.last_success_at)) : copy.NEVER,
     ),
-  );
+  }));
 }
 
 /** Every facility type, always, each labelled on its own (spec §7.5). */

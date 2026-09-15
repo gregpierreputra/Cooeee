@@ -5,7 +5,6 @@ import {
   canSaveDestinations,
   chooseRules,
   formatDistanceM,
-  ordinalLabel,
   placeName,
   savableCount,
 } from '../../core/destination';
@@ -62,8 +61,6 @@ function DestinationRow({
   now: number;
   selection?: RowSelection;
 }) {
-  const ordinal =
-    typeof place.distanceOrder === 'number' ? ordinalLabel(place.distanceOrder) : undefined;
   const distance =
     typeof place.distanceM === 'number' ? formatDistanceM(place.distanceM) : undefined;
   const name = placeName(place);
@@ -82,7 +79,6 @@ function DestinationRow({
         ) : null}
         <h2>{selection ? <label htmlFor={inputId}>{name}</label> : name}</h2>
       </div>
-      {ordinal ? <p>{ordinal}</p> : null}
       {distance ? <p className="figure">{distance}</p> : null}
       <PlaceFacts place={place} now={now} />
     </li>
@@ -182,7 +178,7 @@ export function Destinations({
         <>
           {ordered.length > 0 ? (
             <>
-              <p className="caveat">{copy.SORTED_BY_DISTANCE}</p>
+              <p className="caveat">{copy.CHOOSE_PLACES_HINT(savableCount(ordered.length))} - {copy.SORTED_BY_DISTANCE}</p>
               <ul className="list destination-list" data-testid="ordered-destinations">
                 {ordered.map((place) => (
                   <DestinationRow
@@ -215,9 +211,6 @@ export function Destinations({
 
           {selectable ? (
             <>
-              <p className="destination-choose-hint">
-                {copy.CHOOSE_PLACES_HINT(savableCount(ordered.length))}
-              </p>
               <div role="status" aria-live="polite">
                 {capReached ? <p>{copy.TWO_PLACES_ALREADY_CHOSEN}</p> : null}
                 {saveState === 'failed' ? <p>{copy.LAST_RESORT_SAVE_FAILED}</p> : null}

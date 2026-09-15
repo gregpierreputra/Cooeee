@@ -28,11 +28,8 @@ type EntryProps = {
  *  them writes anything: nothing on this screen creates a rehearsal record,
  *  because in four of these states there is no rehearsal to record.
  *
- *  ponytail: the only way in is one link on the pack page, so the gate is
- *  always asked about a pack the user just had open, and there is no picker
- *  and no home-screen entry; upgrade path: the entry design Sharon has yet to
- *  make, which is also what decides whether a rehearsal can be started for a
- *  pack other than the one on screen.
+ *  Two ways in: the link on the pack page, and the bar's Rehearse, which goes
+ *  through Choose.tsx and lands here with the pack it picked.
  *
  *  Every sentence is about the PACK. A pack that was not finished is a fact
  *  about a download that stopped, and this screen never turns it into a

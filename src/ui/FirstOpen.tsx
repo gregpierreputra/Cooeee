@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import * as copy from '../core/copy';
+import InfoGlyph from './components/InfoGlyph';
 import Mark from './components/Mark';
+import Particles from './components/Particles';
 
 /** E1-US1-AC0. The first screen anyone sees, and the only one that stands
  *  between a fresh install and the app. It states in full what Cooeee does,
@@ -41,6 +43,7 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
 
   return (
     <main className="page first-open">
+      <Particles />
       <header className="hero first-open-hero">
         {/* Decorative: the wordmark beside it carries the name in text. */}
         <Mark className="mark" size={44} />
@@ -63,12 +66,17 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
       </ul>
 
       <p className="official-channels">
-        <InfoIcon />
+        <InfoGlyph size={22} />
         <span>{copy.OFFICIAL_CHANNELS_LINE}</span>
       </p>
 
       <div className="actions">
+        {/* The box is the one thing standing between the reader and the app,
+            so it is framed as a step of its own: a kicker naming it, an
+            accent border, and a line under the inactive button saying what
+            makes it active. */}
         <div className="acknowledge">
+          <span className="kicker">{copy.BEFORE_YOU_CONTINUE}</span>
           <input
             id="acknowledge"
             type="checkbox"
@@ -81,10 +89,16 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
           type="button"
           className="action main-action"
           disabled={!accepted}
+          aria-describedby={accepted ? undefined : 'acknowledge-hint'}
           onClick={onAcknowledge}
         >
           {copy.CONTINUE}
         </button>
+        {accepted ? null : (
+          <p id="acknowledge-hint" className="acknowledge-hint" role="status">
+            {copy.ACKNOWLEDGE_HINT}
+          </p>
+        )}
       </div>
     </main>
   );
@@ -154,13 +168,3 @@ function PositionIcon() {
   );
 }
 
-/** The quieter note under the statements. */
-function InfoIcon() {
-  return (
-    <Glyph>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 11v5.5" />
-      <circle cx="12" cy="7.75" r="1" fill="currentColor" stroke="none" />
-    </Glyph>
-  );
-}
