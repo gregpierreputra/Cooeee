@@ -107,6 +107,8 @@ test('ticking the box enables continue, which records the acknowledgement and mo
 
   await expect(page.getByRole('link', { name: HEADER_HOME_LABEL })).toBeVisible();
   await expect(page.locator('canvas.particles')).toHaveCount(0);
+  // The call plays once more, over the first Home.
+  await expect(page.locator('.splash')).toHaveCount(1);
   expect(await storedFlag(page)).toBe(ACKNOWLEDGEMENT_VALUE);
 });
 

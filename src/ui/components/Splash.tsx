@@ -12,13 +12,14 @@ function arrivedFromOutside(): boolean {
   return entry?.type === 'navigate';
 }
 
-/** The call going out, once, on arrival: the mark draws itself, the sound
- *  rings away from it, the name and the tagline follow, then the whole layer
- *  fades. Purely decorative, hidden from assistive technology, and it lets
- *  every tap through, so nothing waits for it. The layer's own fade is the
- *  last animation, and its end unmounts it. */
-export default function Splash() {
-  const [shown, setShown] = useState(arrivedFromOutside);
+/** The call going out: the mark draws itself, the sound rings away from it,
+ *  the name and the tagline follow, then the whole layer fades. It plays on
+ *  arrival from outside, and once more when `play` is set, over the first
+ *  Home after the disclosure. Purely decorative, hidden from assistive
+ *  technology, and it lets every tap through, so nothing waits for it. The
+ *  layer's own fade is the last animation, and its end unmounts it. */
+export default function Splash({ play }: { play?: boolean }) {
+  const [shown, setShown] = useState(() => play ?? arrivedFromOutside());
   if (!shown) return null;
 
   return (

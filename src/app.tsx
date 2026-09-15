@@ -136,6 +136,9 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // The welcome is seen once, on the way to the disclosure. Nothing records
   // it: the acknowledgement that follows is the only flag this screen leads to.
   const [welcomed, setWelcomed] = useState(false);
+  // The call plays once more after the disclosure, over the first Home. A new
+  // key mounts a fresh splash; `play` tells it not to ask how the page loaded.
+  const [replays, setReplays] = useState(0);
 
   // The CFA site list into IndexedDB, so BlackSky can point at the nearest
   // official places with the radios off. A failed copy costs nothing now.
@@ -174,6 +177,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
             writeAcknowledgement(localFlagStore());
             // The one time the tour starts on its own: the first landing.
             startTour();
+            setReplays(1);
             setScreen('prepared');
           }}
         />
@@ -209,7 +213,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // or the app itself, so an arrival looks the same wherever it lands.
   return (
     <>
-      <Splash />
+      <Splash key={replays} play={replays > 0 ? true : undefined} />
       {screenFor()}
     </>
   );
