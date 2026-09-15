@@ -35,38 +35,26 @@ const content = (over: Partial<CompletePackContent> = {}): CompletePackContent =
 const SAVED = '25 August 2025';
 
 describe('the places the journey screen names', () => {
-  it('names each official place as the destinations list does, with its provenance line, in list order', () => {
+  it('names each official place as the destinations list does, with its address and saved date, in list order', () => {
     const held = content({
       destinations: [
-        destination({ id: 'pack-1:c', name: 'Third Reserve' }),
+        destination({ id: 'pack-1:c', name: 'Third Reserve', addressText: '1 High Street, Kalorama' }),
         destination({
           id: 'pack-1:b',
           name: 'Second Reserve',
           distanceOrder: 1,
           source: source({ publisher: 'Another Publisher' }),
         }),
-        destination({ id: 'pack-1:a', name: undefined, distanceOrder: 0 }),
+        destination({ id: 'pack-1:a', name: undefined, addressText: undefined, distanceOrder: 0 }),
         // A real stored row recording that the list holds nothing: not a place.
         destination({ id: 'pack-1:absence', kind: 'absence', reason: 'None here.' }),
       ],
     });
 
     expect(journeyPlaces(held)).toEqual([
-      {
-        id: 'pack-1:c',
-        name: 'Third Reserve',
-        publisherLine: `Published by Country Fire Authority · Saved ${SAVED}`,
-      },
-      {
-        id: 'pack-1:a',
-        name: 'Official place of last resort information',
-        publisherLine: `Published by Country Fire Authority · Saved ${SAVED}`,
-      },
-      {
-        id: 'pack-1:b',
-        name: 'Second Reserve',
-        publisherLine: `Published by Another Publisher · Saved ${SAVED}`,
-      },
+      { id: 'pack-1:c', name: 'Third Reserve', where: '1 High Street, Kalorama', savedLine: `Saved ${SAVED}` },
+      { id: 'pack-1:a', name: 'Official place of last resort information', where: '', savedLine: `Saved ${SAVED}` },
+      { id: 'pack-1:b', name: 'Second Reserve', where: '', savedLine: `Saved ${SAVED}` },
     ]);
   });
 

@@ -50,7 +50,8 @@ const RUNNING_DETAIL =
 const PLACES_HEADING = 'The official places saved with this pack';
 const NO_PLACE_SAVED = 'This information is missing from your pack.';
 const PLACE = 'Kalorama Reserve';
-const PLACE_PROVENANCE = 'Published by Country Fire Authority · Saved 3 March 2026';
+const PLACE_WHERE = 'Kalorama Memorial Reserve Road, Kalorama';
+const PLACE_SAVED = 'Saved 3 March 2026';
 
 /** Comfortably past the real control's two seconds. */
 const FULL_HOLD = HOLD_MS + 500;
@@ -194,7 +195,9 @@ test.describe('AC5 before she goes', () => {
     await expect(main(page).getByRole('heading', { level: 3, name: PLACES_HEADING })).toBeVisible();
     await expect(places(page)).toHaveCount(1);
     await expect(places(page).first()).toContainText(PLACE);
-    await expect(places(page).first()).toContainText(PLACE_PROVENANCE);
+    await expect(places(page).first()).toContainText(PLACE_WHERE);
+    await expect(places(page).first()).toContainText(PLACE_SAVED);
+    await expect(places(page).first()).not.toContainText('Published by');
 
     // One control, and it is the commitment.
     await expect(main(page).getByRole('button')).toHaveCount(1);

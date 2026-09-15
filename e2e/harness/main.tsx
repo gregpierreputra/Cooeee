@@ -603,6 +603,7 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
             packId: 'rehearse-pack',
             kind: 'nsp-bushfire',
             name: 'Kalorama Reserve',
+            addressText: 'Kalorama Memorial Reserve Road, Kalorama',
             source: { ...cfaSource, retrievedAt: rehearseSavedAt },
           },
         ]

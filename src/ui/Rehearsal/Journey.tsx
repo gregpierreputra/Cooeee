@@ -55,7 +55,8 @@ function Places({ places }: { places: JourneyPlace[] }) {
           {places.map((place) => (
             <li key={place.id} className="card journey-place">
               <p className="journey-place-name">{place.name}</p>
-              <p className="muted">{place.publisherLine}</p>
+              {place.where ? <p className="muted">{place.where}</p> : null}
+              <p className="figure">{place.savedLine}</p>
             </li>
           ))}
         </ul>

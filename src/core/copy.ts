@@ -857,6 +857,7 @@ export const HOURS_AGO = (hours: number) => `${hours} h ago`;
 export const NEVER = 'never';
 
 export const VERIFIED_ON = (date: string) => `Verified ${date}`;
+export const SAVED_LINE = (date: string) => `Saved ${date}`;
 export const AS_OF = (time: string) => `As of ${time}`;
 
 export const NONE_IN_LIST = (kind: string) => `No ${kind} is in the downloaded list.`;
