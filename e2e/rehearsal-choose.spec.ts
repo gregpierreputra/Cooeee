@@ -12,6 +12,8 @@ test.describe('AC2 which pack to rehearse', () => {
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toContainText('Kalorama');
     await expect(rows.nth(1)).toContainText('Ferny Creek');
+    // Each row carries the pack's age in the home screen's own words.
+    await expect(rows.nth(1)).toContainText(/Saved .* ago/);
     await expect(page.locator('[aria-pressed], [aria-selected], .main-action')).toHaveCount(0);
     await rows.nth(1).click();
     await expect(page.getByTestId('location')).toHaveText('/rehearse/saved-pack');

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
+import { homeView } from '../../core/home';
 import Head from './Head';
 import type { Pack } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
@@ -10,8 +11,10 @@ import { useRehearsalRun } from './run-state';
 /** E5-US3-AC2 — the bar's Rehearse, before a pack is known.
  *
  *  One saved pack needs no question and goes straight to its gate. Several are
- *  asked about, newest first, in the same tappable rows as the choice of
- *  condition, and nothing is chosen for the user. None is the gate's own
+ *  asked about in the same tappable rows as the choice of condition, and
+ *  nothing is chosen for the user. The rows are the home screen's own list,
+ *  newest first with each pack's age in its own words, so the packs read here
+ *  exactly as they read there. None is the gate's own
  *  "no pack" screen, so that state has one set of words, not two. A rehearsal
  *  already running is where Rehearse goes, before any question. */
 export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: () => Promise<Pack[]> }) {
@@ -23,7 +26,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
     let live = true;
     loadPacks().then(
       (rows) => {
-        if (live) setPacks([...rows].sort((a, b) => b.verifiedAt - a.verifiedAt));
+        if (live) setPacks(rows);
       },
       () => {
         if (live) setPacks([]);
@@ -46,7 +49,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
       <p>{copy.CHOOSE_PACK_TO_REHEARSE_DETAIL}</p>
 
       <ul className="list condition-list">
-        {packs.map((pack) => (
+        {homeView(Date.now(), packs).packs.map(({ pack, ageLine }) => (
           <li key={pack.id}>
             <button
               type="button"
@@ -55,6 +58,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
             >
               <span className="condition-label">{pack.name}</span>
               <span className="condition-detail">{pack.address}</span>
+              <span className="condition-detail">{ageLine}</span>
             </button>
           </li>
         ))}
