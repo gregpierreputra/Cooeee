@@ -15,6 +15,7 @@ import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
 import Recover from '../../src/ui/Recover';
+import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BottomNav from '../../src/ui/components/BottomNav';
@@ -657,6 +658,7 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
 }
 if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
 
+
 // The remount control is HARNESS FURNITURE, not product UI. It is rendered
 // after the screen under test and outside its .page container, so it can never
 // sit above the rehearsal bar: in the product the bar is the topmost thing on a
@@ -716,6 +718,28 @@ function RehearsalHarness() {
   );
 }
 
+// E5-US3-AC2. The bar's Rehearse before a pack is known: `packs=` seeds that
+// many complete packs (0, 1 or 2), newest first by their saved date.
+let chooseFlow = confirmation;
+if (window.location.pathname === '/rehearse-choose') {
+  await Promise.all(db.tables.map((table) => table.clear()));
+  const count = Number(new URLSearchParams(window.location.search).get('packs') ?? '2');
+  await db.packs.bulkPut(
+    [
+      savedPack,
+      { ...savedPack, id: 'second-pack', name: 'Kalorama', address: testCandidate.address, verifiedAt: savedPack.verifiedAt + 1 },
+    ].slice(0, count),
+  );
+  chooseFlow = (
+    <>
+      <Choose />
+      <div style={harnessStyle} data-harness="true">
+        <LocationProbe />
+      </div>
+    </>
+  );
+}
+
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
@@ -744,6 +768,7 @@ createRoot(root).render(
         : window.location.pathname === '/nearby' ? nearbyFlow
         : window.location.pathname === '/recover' ? recoverFlow
         : window.location.pathname === '/rehearse' ? rehearseFlow
+        : window.location.pathname === '/rehearse-choose' ? chooseFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

@@ -427,6 +427,7 @@ export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_ABOUT = 'About';
 export const NAV_RECOVER = 'Recover';
+export const NAV_REHEARSE = 'Rehearse';
 
 // E4 Recover: needs-first support matching, read from the pack's dated snapshot
 export const RECOVER_QUESTION = 'What do you need?';
@@ -863,6 +864,10 @@ export const HEALTH_LINE = (source: string, status: string, when: string) =>
 
 export const REHEARSAL_LABEL = 'Rehearsal';
 export const REHEARSE_THIS_PACK = 'Rehearse this pack';
+/** E5-US3-AC2 — asked when the bar's Rehearse is tapped and several packs are
+ *  saved. Same question form as CHOOSE_CONDITION_HEADING. */
+export const CHOOSE_PACK_TO_REHEARSE = 'Which pack are we rehearsing?';
+export const CHOOSE_PACK_TO_REHEARSE_DETAIL = 'One rehearsal runs from one saved pack.';
 /** The way back to the pack the user came from, offered only where there is a
  *  readable pack to go back to. */
 export const BACK_TO_THIS_PACK = 'Back to this pack';

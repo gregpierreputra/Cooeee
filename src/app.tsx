@@ -21,6 +21,7 @@ import NoticeBar from './ui/components/NoticeBar';
 import Tour, { startTour } from './ui/components/Tour';
 import PackDetail from './ui/PackDetail';
 import Recover from './ui/Recover';
+import Choose from './ui/Rehearsal/Choose';
 import RehearsalEntry from './ui/Rehearsal/Entry';
 import { Search } from './ui/PackNew/Search';
 
@@ -114,8 +115,9 @@ function PackDetailRoute() {
   return <PackDetail packId={packId} />;
 }
 
-/** E5-US1-AC4 — the way into a rehearsal, and for now the only one. The gate
- *  it renders decides from the device whether a rehearsal can start at all. */
+/** E5-US1-AC4 — the way into a rehearsal, from the pack page or from the bar's
+ *  picker. The gate it renders decides from the device whether a rehearsal can
+ *  start at all. */
 function RehearsalRoute() {
   const { packId = '' } = useParams();
   return <RehearsalEntry packId={packId} />;
@@ -180,6 +182,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Route path="/" element={<Home />} />
         <Route path="/packs/:packId" element={<PackDetailRoute />} />
         <Route path="/packs/new" element={<Search />} />
+        <Route path="/rehearse" element={<Choose />} />
         <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
         <Route path="/nearby" element={<Nearby />} />
         <Route path="/recover" element={<Recover />} />

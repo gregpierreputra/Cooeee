@@ -1426,7 +1426,7 @@ input {
 
 /* A fixed bar on the panel colour, inside the safe area, so it stays within
    thumb reach whatever the page above it does. On every screen but BlackSky.
-   Three equal destinations: none is weighted, and BlackSky is not among them. */
+   Five equal destinations: none is weighted, and BlackSky is not among them. */
 .bottom-nav {
   position: fixed;
   inset-inline: 0;

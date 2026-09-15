@@ -211,9 +211,10 @@ export default function PackDetail({
         <PackNotes packId={content.pack.id} notes={content.notes} />
       </Section>
 
-      {/* E5-US1-AC4 — the only way into a rehearsal. It always leads to the
-          gate, never straight into a rehearsal: whether one can start at all
-          is decided there, from what this pack actually holds. */}
+      {/* E5-US1-AC4 — one of two ways into a rehearsal (the other is the bar's
+          Rehearse). It always leads to the gate, never straight into a
+          rehearsal: whether one can start at all is decided there, from what
+          this pack actually holds. */}
       <div className="actions">
         <Link className="action" to={`/rehearse/${content.pack.id}`}>
           {copy.REHEARSE_THIS_PACK}
