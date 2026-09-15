@@ -1461,6 +1461,12 @@ input {
   text-decoration: none;
 }
 
+/* Where the user is: the ink, not the accent, so the mark is a weight and not
+   a call to act. Set by the router, so it is also what a screen reader says. */
+.bottom-nav-item[aria-current='page'] {
+  color: var(--ink);
+}
+
 .bottom-nav-icon {
   flex: none;
 }

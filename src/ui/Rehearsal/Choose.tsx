@@ -5,15 +5,18 @@ import Head from './Head';
 import type { Pack } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
 import RehearsalEntry from './Entry';
+import { useRehearsalRun } from './run-state';
 
 /** E5-US3-AC2 — the bar's Rehearse, before a pack is known.
  *
  *  One saved pack needs no question and goes straight to its gate. Several are
  *  asked about, newest first, in the same tappable rows as the choice of
  *  condition, and nothing is chosen for the user. None is the gate's own
- *  "no pack" screen, so that state has one set of words, not two. */
+ *  "no pack" screen, so that state has one set of words, not two. A rehearsal
+ *  already running is where Rehearse goes, before any question. */
 export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: () => Promise<Pack[]> }) {
   const navigate = useNavigate();
+  const run = useRehearsalRun();
   const [packs, setPacks] = useState<Pack[] | null>(null);
 
   useEffect(() => {
@@ -31,6 +34,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
     };
   }, [loadPacks]);
 
+  if (run) return <Navigate to={`/rehearse/${run.packId}`} replace />;
   if (packs === null) return null;
   if (packs.length === 0) return <RehearsalEntry packId="" />;
   if (packs.length === 1) return <Navigate to={`/rehearse/${packs[0].id}`} replace />;

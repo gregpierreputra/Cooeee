@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { NavLink } from 'react-router';
 import * as copy from '../../core/copy';
 import { NAV_ITEMS, type NavItem } from '../../core/home';
 
@@ -7,7 +7,9 @@ import { NAV_ITEMS, type NavItem } from '../../core/home';
  *
  *  A fixed bar on the panel colour, so it stays within thumb reach whatever the
  *  page above it does. Each item is an icon over its label — the label is
- *  always there, because an icon on its own is a guess.
+ *  always there, because an icon on its own is a guess. The destination the
+ *  user is on is marked (aria-current, set by NavLink) so the bar also says
+ *  where they are.
  *
  *  BlackSky is deliberately absent: it is entered by a deliberate hold, and a
  *  tab is exactly the accidental entry the hold exists to prevent. */
@@ -16,10 +18,10 @@ export default function BottomNav() {
     <nav className="bottom-nav" aria-label={copy.NAV_LABEL}>
       <div className="bottom-nav-inner">
         {NAV_ITEMS.map((item) => (
-          <Link key={item.key} className="bottom-nav-item" to={item.to}>
+          <NavLink key={item.key} className="bottom-nav-item" to={item.to} end={item.to === '/'}>
             <NavIcon kind={item.key} />
             <span className="bottom-nav-label">{item.label}</span>
-          </Link>
+          </NavLink>
         ))}
       </div>
     </nav>

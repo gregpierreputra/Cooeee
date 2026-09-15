@@ -32,7 +32,8 @@ test.describe('AC3 a first rehearsal of this pack this way', () => {
   test('shows no empty chart, bar or figure standing in for the comparison', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, url(undefined));
 
-    await expect(page.locator('svg, canvas, progress, meter, .chart, .bar')).toHaveCount(0);
+    // Scoped to the comparison: the screen's decorative glyphs are drawings, not figures.
+    await expect(progress(page).locator('svg, canvas, progress, meter, .chart, .bar')).toHaveCount(0);
     await expect(progress(page).locator('.progress-group')).toHaveCount(0);
     const text = (await progress(page).innerText()).toLowerCase();
     ['baseline', 'incomplete', 'partial', 'so far', 'score'].forEach((word) =>
