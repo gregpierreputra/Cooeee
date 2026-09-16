@@ -67,6 +67,13 @@ function ModeSwitch() {
     document.documentElement.dataset.mode = pathname.startsWith('/blacksky')
       ? 'blacksky'
       : 'prepare';
+    // Focus follows the screen, so a keyboard or screen reader lands on the new
+    // page rather than staying on a control that has just gone.
+    const main = document.querySelector('main');
+    if (main) {
+      main.tabIndex = -1;
+      main.focus({ preventScroll: true });
+    }
   }, [pathname]);
   return null;
 }

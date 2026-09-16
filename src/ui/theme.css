@@ -529,6 +529,11 @@ input {
   outline-offset: 2px;
 }
 
+/* The page itself takes focus on arrival; the ring belongs on controls only. */
+main:focus {
+  outline: none;
+}
+
 /* An accent ring on an accent fill would vanish. */
 .main-action:focus-visible {
   outline-color: var(--ink);

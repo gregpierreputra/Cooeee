@@ -53,7 +53,7 @@ export default function PackDetail({
   useEffect(() => {
     let live = true;
     let urls: Record<string, string> = {};
-    loadContent(packId).then((value) => {
+    loadContent(packId).catch(() => undefined).then((value) => {
       if (!live) return;
       urls = Object.fromEntries((value?.files ?? []).map((file) => [
         file.id,
@@ -84,8 +84,15 @@ export default function PackDetail({
     };
   }, [loadRehearsals, packId]);
 
+  // The sheet takes focus while it is open, and Escape closes it.
   useEffect(() => {
-    if (offlineSource) closeRef.current?.focus();
+    if (!offlineSource) return;
+    closeRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOfflineSource(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [offlineSource]);
 
   if (content === null) return null;

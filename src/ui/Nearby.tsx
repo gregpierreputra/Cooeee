@@ -43,21 +43,27 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   const refresh = useCallback(async () => {
     if (!navigator.onLine) return;
     setSyncing(true);
-    const result = await syncNearby(fetcher);
-    setSession((previous) => ({
-      staticSyncedNow: previous.staticSyncedNow || result.staticSyncedNow,
-      dynamicSyncedNow: previous.dynamicSyncedNow || result.dynamicSyncedNow,
-    }));
-    setCache(await readNearbyCache());
-    setClock(now ?? Date.now());
-    setSyncing(false);
+    try {
+      const result = await syncNearby(fetcher);
+      setSession((previous) => ({
+        staticSyncedNow: previous.staticSyncedNow || result.staticSyncedNow,
+        dynamicSyncedNow: previous.dynamicSyncedNow || result.dynamicSyncedNow,
+      }));
+      setCache(await readNearbyCache());
+      setClock(now ?? Date.now());
+    } catch {
+      // The device copy already on screen stands.
+    } finally {
+      setSyncing(false);
+    }
   }, [fetcher, now]);
 
   // Device first, network second; then again whenever the app comes back to the
   // foreground or the browser reports a network (spec §7.4).
   useEffect(() => {
     let mounted = true;
-    void readNearbyCache().then((stored) => {
+    const empty = { facilities: [], postcodes: [], activations: [], meta: {} };
+    readNearbyCache().catch(() => empty).then((stored) => {
       if (!mounted) return;
       setCache(stored);
       void refresh();

@@ -41,10 +41,6 @@ CREATE TABLE postcodes (
     updated_at       TEXT NOT NULL
 );
 
-CREATE VIRTUAL TABLE postcodes_rtree USING rtree(
-    id, min_lat, max_lat, min_lon, max_lon
-);
-
 CREATE TABLE facilities (
     facility_id         INTEGER PRIMARY KEY AUTOINCREMENT,
     source_id           TEXT NOT NULL REFERENCES data_sources(source_id),
@@ -90,16 +86,6 @@ CREATE TABLE postcode_nearest_static (
     PRIMARY KEY (postcode, type_code)
 );
 
-CREATE TABLE incidents (
-    incident_id        TEXT PRIMARY KEY,
-    category            TEXT,
-    status               TEXT,
-    headline             TEXT,
-    geometry_geojson     TEXT,
-    source_updated_at    TEXT,
-    ingested_at            TEXT NOT NULL
-);
-
 CREATE TABLE activations (
     activation_id       INTEGER PRIMARY KEY AUTOINCREMENT,
     source_id           TEXT NOT NULL REFERENCES data_sources(source_id),
@@ -109,7 +95,6 @@ CREATE TABLE activations (
     address                TEXT,
     lat                    REAL NOT NULL,
     lon                     REAL NOT NULL,
-    incident_id              TEXT REFERENCES incidents(incident_id),
     status                    TEXT NOT NULL DEFAULT 'active'
                               CHECK (status IN ('active','closed','planned')),
     opened_at                 TEXT,
