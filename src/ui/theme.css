@@ -1981,6 +1981,40 @@ input {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
+/* ── An information panel arriving ─────────────────────────────────────────── */
+
+/* A tapped ring must visibly answer. The panel rises into place and carries a
+   ring of its screen's accent that fades as it settles, so the eye is taken to
+   it once and then left alone. The hook beside this scrolls it into view and
+   gives it focus; the scroll margins keep it clear of the fixed header above
+   and the bottom bar below. The blanket reduced-motion rule further up this
+   file collapses the animation, so it simply appears. */
+.info-panel {
+  --reveal: var(--accent);
+  scroll-margin-top: 7rem;
+  scroll-margin-bottom: 6rem;
+  outline: none;
+  animation: panel-reveal 420ms ease-out;
+}
+.blacksky-info-panel.info-panel {
+  --reveal: var(--blacksky-accent);
+}
+@keyframes panel-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 2px var(--reveal);
+  }
+  60% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 2px var(--reveal);
+  }
+  to {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
 /* ── Recover ───────────────────────────────────────────────────────────────── */
 
 /* One need per row, the phrase reading left to right as a sentence would, the
