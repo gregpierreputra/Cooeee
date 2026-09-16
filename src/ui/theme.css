@@ -1820,14 +1820,19 @@ input {
 }
 
 /* The mark beside the line takes the same red, so the pair reads as one. */
-.emergency-line svg {
+.emergency-line > svg {
   color: var(--offline);
+}
+
+/* In BlackSky every non-amber pixel stays off, so the ground goes back to true
+   black. The red rule alone marks the line, and on a screen that is otherwise
+   all amber it is the one thing in another colour. */
+:root[data-mode='blacksky'] .emergency-line {
+  background: #000000;
 }
 
 .official-channels svg {
   flex: 0 0 auto;
-  /* Optically centred on the first line of the smaller type beside it. */
-  margin-top: 0.0625rem;
 }
 
 /* A row, not a stack: the label is the statement, and it is the label element
@@ -2013,7 +2018,6 @@ input {
   --reveal: var(--accent);
   scroll-margin-top: 7rem;
   scroll-margin-bottom: 6rem;
-  outline: none;
   animation: panel-reveal 420ms ease-out;
 }
 .blacksky-info-panel.info-panel {

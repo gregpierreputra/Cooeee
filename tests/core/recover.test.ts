@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RECOVERY_STALE_DAYS, MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
-import { callList, keptDiff, monogram, NEEDS, packProgramsFor, recoveryStale, selectPrograms, shareText, unsavedKept } from '../../src/core/recover';
+import { callList, keptDiff, monogram, NEEDS, packProgramsFor, parseChoice, recoveryStale, selectPrograms, shareText, unsavedKept } from '../../src/core/recover';
 import { program } from '../fixtures';
 
 describe('selectPrograms', () => {
@@ -77,5 +77,24 @@ describe('recoveryStale', () => {
   it('turns over the day after the threshold', () => {
     expect(recoveryStale(snapshot + RECOVERY_STALE_DAYS * MS_PER_DAY, '2026-09-11')).toBe(false);
     expect(recoveryStale(snapshot + (RECOVERY_STALE_DAYS + 1) * MS_PER_DAY, '2026-09-11')).toBe(true);
+  });
+});
+
+describe('parseChoice', () => {
+  it('accepts only the choices the screen offers', () => {
+    expect(parseChoice('stay')).toBe('stay');
+    expect(parseChoice('kept')).toBe('kept');
+    expect(parseChoice('calls')).toBe('calls');
+    expect(parseChoice('all')).toBe('all');
+  });
+
+  // The value comes from the address bar, so anything unexpected has to read as
+  // no choice at all rather than reaching the screen.
+  it('reads anything else as no choice', () => {
+    expect(parseChoice(null)).toBeNull();
+    expect(parseChoice('')).toBeNull();
+    expect(parseChoice('STAY')).toBeNull();
+    expect(parseChoice('<script>alert(1)</script>')).toBeNull();
+    expect(parseChoice('constructor')).toBeNull();
   });
 });
