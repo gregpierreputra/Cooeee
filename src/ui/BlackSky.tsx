@@ -404,7 +404,7 @@ function ScreenBody({
             ))}
           </ul>
           <NearbyList places={screen.nearby} confidence={screen.confidence} />
-          <section className="card blacksky-guidance">
+          <section className="card blacksky-guidance emergency-line">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
             <a className="with-glyph call-link" href="tel:000">
               <Glyph kind="calls" line />
