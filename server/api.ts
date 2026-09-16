@@ -49,10 +49,11 @@ function parseQuery(db: Db, params: Params): { query: Query } | { error: Route }
     if (!row) return { error: { status: 404, body: { error: 'postcode not found in the Victorian list' } } };
     return { query: { postcode, lat: row.lat, lon: row.lon } };
   }
-  const lat = Number(params.get('lat'));
-  const lon = Number(params.get('lon'));
+  // Number('') is 0, so a blank value is refused before it is converted.
+  const coordinate = (key: string): number => Number(params.get(key)?.trim() || NaN);
+  const lat = coordinate('lat');
+  const lon = coordinate('lon');
   const valid =
-    params.has('lat') && params.has('lon') &&
     Number.isFinite(lat) && Number.isFinite(lon) &&
     Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
   if (!valid) return { error: { status: 400, body: { error: 'provide postcode=NNNN, or lat and lon' } } };

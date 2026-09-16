@@ -23,4 +23,14 @@ describe('the development gate', () => {
     expect(checkGate(secret, '203.0.113.3', 'right', t + 1000).status).toBe(200);
     expect(checkGate(secret, ip, 'right', t + 61_000).status).toBe(200);
   });
+
+  it('locks every address once twenty wrong answers arrive in a minute, whatever address they claim', () => {
+    // Later than the tests above, so their misses fall outside this window.
+    const later = t + 600_000;
+    for (let i = 0; i < 20; i += 1) {
+      expect(checkGate(secret, `198.51.100.${i}`, 'wrong', later).status).toBe(401);
+    }
+    expect(checkGate(secret, '198.51.100.250', 'right', later).status).toBe(429);
+    expect(checkGate(secret, '198.51.100.250', 'right', later + 60_000).status).toBe(200);
+  });
 });

@@ -50,11 +50,17 @@ export default function Recover({
 
   useEffect(() => {
     let live = true;
-    Promise.all([loadPrograms(), loadSaved()]).then(([rows, savedIds]) => {
-      if (!live) return;
-      setPrograms(rows);
-      setSaved(savedIds);
-    });
+    Promise.all([loadPrograms(), loadSaved()]).then(
+      ([rows, savedIds]) => {
+        if (!live) return;
+        setPrograms(rows);
+        setSaved(savedIds);
+      },
+      // A store that cannot be read shows the screen for no programs held.
+      () => {
+        if (live) setPrograms([]);
+      },
+    );
     return () => {
       live = false;
     };

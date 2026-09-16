@@ -7,6 +7,11 @@ const LOCK_MIN_MS = 30_000;
 const LOCK_MAX_MS = 60_000;
 const MAX_PASSWORD_LENGTH = 128;
 const attempts = new Map<string, { failures: number; lockedUntil: number }>();
+// A ceiling on wrong answers from EVERY address together. The per-address
+// count is keyed on x-forwarded-for, which a caller reaching the server
+// directly can forge, so this second count is what bounds a guessing run.
+const GLOBAL_FAILURES_PER_MINUTE = 20;
+const globalFailures = { count: 0, windowStart: 0 };
 
 // Hashing both sides first gives timingSafeEqual the equal-length inputs it
 // requires, so a wrong length leaks nothing either.
@@ -21,6 +26,8 @@ export function checkGate(secret: string | undefined, ip: string, password: unkn
   if (attempts.size > 10_000) attempts.clear();
   const entry = attempts.get(ip) ?? { failures: 0, lockedUntil: 0 };
   if (now < entry.lockedUntil) return locked(entry.lockedUntil - now);
+  if (now - globalFailures.windowStart >= 60_000) Object.assign(globalFailures, { count: 0, windowStart: now });
+  if (globalFailures.count >= GLOBAL_FAILURES_PER_MINUTE) return locked(globalFailures.windowStart + 60_000 - now);
   if (typeof password !== 'string' || password.length > MAX_PASSWORD_LENGTH) {
     return { status: 400, body: { error: 'bad request' } };
   }
@@ -28,6 +35,7 @@ export function checkGate(secret: string | undefined, ip: string, password: unkn
     attempts.delete(ip);
     return { status: 200, body: { ok: true } };
   }
+  globalFailures.count += 1;
   const failures = entry.failures + 1;
   if (failures < TRIES) {
     attempts.set(ip, { failures, lockedUntil: 0 });

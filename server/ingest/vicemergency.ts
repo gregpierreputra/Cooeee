@@ -75,37 +75,19 @@ export async function pollOnce(db: Db, fetcher: typeof fetch = fetch): Promise<S
  *  have left the feed — for this live table, disappearance means closure. */
 export function applyFeed(db: Db, features: Feature[]): SyncCounts {
   const now = nowIso();
-  const byId = new Map(features.map((feature) => [text(feature.properties?.id), feature]));
   const existing = db.prepare('SELECT 1 FROM activations WHERE source_id = ? AND external_ref = ?');
-  const upsertIncident = db.prepare(
-    `INSERT INTO incidents (incident_id, category, status, headline, source_updated_at, ingested_at)
-     VALUES (?, ?, ?, ?, ?, ?)
-     ON CONFLICT(incident_id) DO UPDATE SET category = excluded.category, status = excluded.status,
-       headline = excluded.headline, source_updated_at = excluded.source_updated_at, ingested_at = excluded.ingested_at`,
-  );
   const upsertActivation = db.prepare(
     `INSERT INTO activations
-       (source_id, external_ref, type_code, name, address, lat, lon, incident_id, status, opened_at, source_updated_at, ingested_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
+       (source_id, external_ref, type_code, name, address, lat, lon, status, opened_at, source_updated_at, ingested_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
      ON CONFLICT(source_id, external_ref) DO UPDATE SET type_code = excluded.type_code, name = excluded.name,
-       address = excluded.address, lat = excluded.lat, lon = excluded.lon, incident_id = excluded.incident_id,
+       address = excluded.address, lat = excluded.lat, lon = excluded.lon,
        status = 'active', closed_at = NULL, source_updated_at = excluded.source_updated_at, ingested_at = excluded.ingested_at`,
   );
   const active = db.prepare(
     "SELECT activation_id, external_ref FROM activations WHERE source_id = ? AND status = 'active'",
   );
   const close = db.prepare("UPDATE activations SET status = 'closed', closed_at = ? WHERE activation_id = ?");
-
-  // Only the incident an activation points at is kept (no geometry): the
-  // database stays small and the foreign key stays satisfiable.
-  const linkIncident = (props: Props): string | null => {
-    const eventId = text(props.eventId);
-    const incident = eventId ? byId.get(eventId)?.properties : null;
-    if (!eventId || !incident) return null;
-    const headline = text(incident.webHeadline) ?? text(incident.name) ?? text(incident.sourceTitle);
-    upsertIncident.run(eventId, text(incident.category1), text(incident.status), headline, text(incident.updated), now);
-    return eventId;
-  };
 
   return transaction(db, () => {
     let seen = 0;
@@ -134,7 +116,6 @@ export function applyFeed(db: Db, features: Feature[]): SyncCounts {
         text(props.location),
         point.lat,
         point.lon,
-        linkIncident(props),
         text(props.created),
         text(props.updated) ?? text(props.created) ?? now,
         now,
