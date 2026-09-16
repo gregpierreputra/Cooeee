@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
-import { GENERAL_CHANNEL_URL, NEED_CHANNELS } from '../core/constants';
+import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
 import { readKept, toggleKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
@@ -129,7 +129,10 @@ export default function Recover({
         </header>
         <ul className="list">
           {callList(programs).map((entry) => (
-            <li key={entry.number} className="card">
+            <li
+              key={entry.number}
+              className={entry.number === HOTLINE_NUMBER ? 'card emergency-line' : 'card'}
+            >
               <h2>{entry.label}</h2>
               {entry.org ? <p>{entry.org}</p> : null}
               <a href={`tel:${entry.number.replaceAll(' ', '')}`}>{copy.CALL_LINE(entry.number)}</a>

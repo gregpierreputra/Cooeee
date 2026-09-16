@@ -1791,8 +1791,10 @@ input {
   grid-column: 2;
 }
 
-/* The quieter note under the statements: its own small card, so the line that
-   points away from Cooeee is visibly not one of Cooeee's four statements. */
+/* The note under the statements: its own small card, so the line that points
+   away from Cooeee is visibly not one of Cooeee's four statements. It carries
+   the emergency treatment below, so it reads at full strength rather than as a
+   footnote. */
 .official-channels {
   display: flex;
   align-items: start;
@@ -1800,8 +1802,26 @@ input {
   padding: 0.75rem 1rem;
   border-radius: var(--r-card);
   background: var(--surface-2);
-  font-size: var(--step-s);
   color: var(--ink-2);
+}
+
+/* ── The emergency instruction ─────────────────────────────────────────────── */
+
+/* The one thing on a screen that must be read before anything else: how to
+   reach emergency services. Red is already the fixed state colour in every
+   mode, so nothing is invented here, and the shape is the ring-plus-tint the
+   nudge and the kept card already use. The words carry the meaning on their
+   own, so the colour adds weight without ever being the only signal. */
+.emergency-line {
+  border-inline-start: 3px solid var(--offline);
+  background: color-mix(in srgb, var(--offline) 12%, var(--surface));
+  color: var(--ink);
+  font-size: var(--step-0);
+}
+
+/* The mark beside the line takes the same red, so the pair reads as one. */
+.emergency-line svg {
+  color: var(--offline);
 }
 
 .official-channels svg {
