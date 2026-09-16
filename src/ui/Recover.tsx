@@ -103,7 +103,6 @@ export default function Recover({
   if (choice === null) {
     const anyKept = programs.some((program) => kept.includes(program.id));
     const rows: { key: Choice; label: string }[] = [
-      ...(anyKept ? [{ key: 'kept' as const, label: copy.KEPT_PROGRAMS }] : []),
       ...NEEDS.map((key) => ({ key, label: copy.NEED_PHRASE[key] })),
       { key: 'all', label: copy.EVERY_PROGRAM },
       { key: 'calls', label: copy.WHO_TO_CALL },
@@ -115,6 +114,15 @@ export default function Recover({
           <h1>{copy.RECOVER_QUESTION}</h1>
           <p className="muted">{copy.RECOVER_PRIVACY_LINE}</p>
         </header>
+        {/* What the person already chose is not one more need to pick from, so
+            it stands outside the list, in the same ring and tint a kept card
+            wears. It is here only while something is kept. */}
+        {anyKept ? (
+          <button type="button" className="need-button kept-button" onClick={() => choose('kept')}>
+            <Glyph kind="kept" />
+            {copy.KEPT_PROGRAMS}
+          </button>
+        ) : null}
         <ul className="list">
           {rows.map((row) => (
             <li key={row.key}>

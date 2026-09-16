@@ -2120,6 +2120,22 @@ input {
   border: 2px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
+
+/* The way into what the person already kept. It is not one more need to choose
+   between, so it sits above the list and wears the kept card's own ring and
+   tint: whoever has kept a program has already met this treatment and reads it
+   without being told. The filled glyph carries it at a glance. */
+.recover .kept-button {
+  width: 100%;
+  margin-bottom: 1rem;
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--accent);
+}
+.recover .kept-button .glyph {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
 .recover .keep-button {
   align-self: start;
   min-height: 44px;
