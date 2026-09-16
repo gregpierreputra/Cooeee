@@ -2505,6 +2505,19 @@ input {
   font-weight: var(--w-bold);
 }
 
+/* The gaps line and the ring that explains it share a row, as the hold control
+   and its ring do on Home. The panel takes the full width beneath the pair, so
+   it opens in flow and covers no other rehearsal. */
+.history-gaps {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.history-gaps > .info-panel {
+  grid-column: 1 / -1;
+}
+
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
    Groups are told apart by their HEADINGS and by nothing else: no colour, no
    dot, no badge, no arrow, so the screen still reads with every colour stripped
