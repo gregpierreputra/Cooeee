@@ -1820,14 +1820,19 @@ input {
 }
 
 /* The mark beside the line takes the same red, so the pair reads as one. */
-.emergency-line svg {
+.emergency-line > svg {
   color: var(--offline);
+}
+
+/* In BlackSky every non-amber pixel stays off, so the ground goes back to true
+   black. The red rule alone marks the line, and on a screen that is otherwise
+   all amber it is the one thing in another colour. */
+:root[data-mode='blacksky'] .emergency-line {
+  background: #000000;
 }
 
 .official-channels svg {
   flex: 0 0 auto;
-  /* Optically centred on the first line of the smaller type beside it. */
-  margin-top: 0.0625rem;
 }
 
 /* A row, not a stack: the label is the statement, and it is the label element
@@ -1999,6 +2004,39 @@ input {
 }
 .info-ring[aria-expanded='true'] {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* ── An information panel arriving ─────────────────────────────────────────── */
+
+/* A tapped ring must visibly answer. The panel rises into place and carries a
+   ring of its screen's accent that fades as it settles, so the eye is taken to
+   it once and then left alone. The hook beside this scrolls it into view and
+   gives it focus; the scroll margins keep it clear of the fixed header above
+   and the bottom bar below. The blanket reduced-motion rule further up this
+   file collapses the animation, so it simply appears. */
+.info-panel {
+  --reveal: var(--accent);
+  scroll-margin-top: 7rem;
+  scroll-margin-bottom: 6rem;
+  animation: panel-reveal 420ms ease-out;
+}
+.blacksky-info-panel.info-panel {
+  --reveal: var(--blacksky-accent);
+}
+@keyframes panel-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 2px var(--reveal);
+  }
+  60% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 2px var(--reveal);
+  }
+  to {
+    box-shadow: 0 0 0 2px transparent;
+  }
 }
 
 /* ── Recover ───────────────────────────────────────────────────────────────── */
