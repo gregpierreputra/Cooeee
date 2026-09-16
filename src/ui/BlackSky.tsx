@@ -92,9 +92,12 @@ export default function BlackSky({
         if (live) setPacks([]);
       },
     );
-    loadSites().then((snapshot) => {
-      if (live && snapshot) setSites(snapshot);
-    });
+    loadSites().then(
+      (snapshot) => {
+        if (live && snapshot) setSites(snapshot);
+      },
+      () => undefined, // with no list, the nearest-places pointer is simply absent
+    );
     return () => {
       live = false;
     };

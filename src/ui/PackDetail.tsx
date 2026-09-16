@@ -106,8 +106,15 @@ export default function PackDetail({
     };
   }, [loadDrills, packId]);
 
+  // The sheet takes focus while it is open, and Escape closes it.
   useEffect(() => {
-    if (offlineSource) closeRef.current?.focus();
+    if (!offlineSource) return;
+    closeRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOfflineSource(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [offlineSource]);
 
   if (content === null) return null;
