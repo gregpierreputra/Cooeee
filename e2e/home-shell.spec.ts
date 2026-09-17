@@ -182,7 +182,6 @@ test.describe('the returning-user home screen', () => {
   }) => {
     await page.goto(home('?days=3'));
     const ring = page.getByRole('button', { name: ABOUT_BLACKSKY });
-    const hold = page.getByRole('button', { name: HOLD_FOR_BLACKSKY });
     const panel = page.locator('.blacksky-info-panel');
     await expect(ring).toHaveAttribute('aria-expanded', 'false');
     await expect(panel).toHaveCount(0);
@@ -195,9 +194,15 @@ test.describe('the returning-user home screen', () => {
     await expect(ring).toHaveAttribute('aria-expanded', 'true');
     await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
     await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].lead);
-    const holdBox = await hold.boundingBox();
-    const panelBox = await panel.boundingBox();
-    expect(panelBox!.y).toBeGreaterThanOrEqual(holdBox!.y + holdBox!.height);
+    // Both edges are read in one frame: opening the panel scrolls it into view,
+    // so two separate measurements would straddle that scroll and compare
+    // positions taken at different offsets.
+    const below = await page.evaluate(() => {
+      const hold = document.querySelector('.blacksky-hold')!.getBoundingClientRect();
+      const box = document.querySelector('.blacksky-info-panel')!.getBoundingClientRect();
+      return box.y >= hold.y + hold.height;
+    });
+    expect(below).toBe(true);
 
     await ring.click();
     await expect(panel).toHaveCount(0);

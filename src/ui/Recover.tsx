@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 
 import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
 import { readKept, toggleKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
-import { callList, isNeed, monogram, NEEDS, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
+import { callList, isNeed, monogram, NEEDS, parseChoice, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
 import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { listPrograms, listSavedProgramIds } from '../data/db';
 import Glyph from './components/Glyph';
+import { canStepBack } from './components/history';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 
@@ -21,8 +22,9 @@ type RecoverProps = {
 
 /** Needs-first support matching, read from the programs on the device and
  *  nothing else, with or without a saved pack, as Nearby reads its downloaded
- *  list. The choice lives in component state for this visit only; the one
- *  thing remembered is the list of program ids the person chose to keep. */
+ *  list. The chosen category lives in the address, so it is a step the Back
+ *  control and the phone's own Back button can return through; the one thing
+ *  remembered between visits is the list of program ids the person kept. */
 export default function Recover({
   loadPrograms = listPrograms,
   loadSaved = listSavedProgramIds,
@@ -32,7 +34,12 @@ export default function Recover({
   const [programs, setPrograms] = useState<RecoveryProgram[] | null>(null);
   // The programs some saved pack already carries, so a card can say so.
   const [saved, setSaved] = useState<string[]>([]);
-  const [choice, setChoice] = useState<Choice | null>(null);
+  // The category is a history entry, not component state: going back from a
+  // category has to land on the list of categories, not on whatever screen
+  // came before Recover.
+  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+  const choice = parseChoice(params.get('need'));
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
   // A share note belongs to the category it was made on, so it shows only while
   // that category is open. Moving to another category hides it on the very first
@@ -145,7 +152,7 @@ export default function Recover({
   }
 
   const chooseAgain = (
-    <button type="button" onClick={() => choose(null)}>{copy.CHOOSE_ANOTHER_NEED}</button>
+    <button type="button" onClick={backToChoices}>{copy.CHOOSE_ANOTHER_NEED}</button>
   );
 
   if (choice === 'calls') {

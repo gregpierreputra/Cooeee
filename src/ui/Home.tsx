@@ -10,6 +10,7 @@ import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
 import HoldButton from './components/HoldButton';
 import InfoGlyph from './components/InfoGlyph';
+import { useRevealedPanel } from './components/useRevealedPanel';
 import StateCard from './components/StateCard';
 import { startTour } from './components/Tour';
 
@@ -215,6 +216,7 @@ export default function Home({ now }: { now?: number }) {
  *  not open it, on a phone or a PC alike. */
 function BlackSkyHoldRow({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const panel = useRevealedPanel<HTMLElement>(open);
 
   return (
     <div className="blacksky-hold-row">
@@ -223,13 +225,19 @@ function BlackSkyHoldRow({ children }: { children: ReactNode }) {
         className="info-ring blacksky-info"
         aria-label={copy.ABOUT_BLACKSKY}
         aria-expanded={open}
+        aria-controls="blacksky-info-panel"
         onClick={() => setOpen((value) => !value)}
       >
         <InfoGlyph />
       </button>
       {children}
       {open ? (
-        <section className="blacksky-info-panel">
+        <section
+          id="blacksky-info-panel"
+          ref={panel}
+          tabIndex={-1}
+          className="blacksky-info-panel info-panel"
+        >
           <span className="kicker">{copy.ABOUT_BLACKSKY}</span>
           <ul className="info-lines">
             {copy.BLACKSKY_INFO_LINES.map((line) => (
