@@ -2,6 +2,7 @@ import { useState } from 'react';
 import * as copy from '../../core/copy';
 import type { SourceLine } from '../../core/types';
 import InfoGlyph from './InfoGlyph';
+import { useRevealedPanel } from './useRevealedPanel';
 
 /** Where a screen's information comes from, behind an information ring. Closed
  *  by default: the names and readings are for whoever wants them, not a
@@ -10,6 +11,7 @@ import InfoGlyph from './InfoGlyph';
  *  screen shows its data sources, so they all read the same. */
 export default function DataSources({ lines }: { lines: SourceLine[] }) {
   const [open, setOpen] = useState(false);
+  const panel = useRevealedPanel<HTMLDivElement>(open);
   return (
     <section className="data-sources">
       <div className="data-sources-head">
@@ -26,7 +28,7 @@ export default function DataSources({ lines }: { lines: SourceLine[] }) {
         <span className="kicker">{copy.DATA_SOURCES_LABEL}</span>
       </div>
       {open ? (
-        <div id="data-sources-panel" className="card">
+        <div id="data-sources-panel" ref={panel} tabIndex={-1} className="card info-panel">
           <p>{copy.DATA_SOURCES_PLAIN}</p>
           <ul className="info-lines">
             {lines.map((line) => (

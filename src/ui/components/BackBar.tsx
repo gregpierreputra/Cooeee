@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
+import { canStepBack } from './history';
 import RehearsalBar from '../Rehearsal/RehearsalBar';
 import { useRehearsalRun } from '../Rehearsal/run-state';
 
@@ -20,11 +21,9 @@ export default function BackBar() {
   if (pathname === '/' || pathname.startsWith('/blacksky')) return null;
 
   const goBack = () => {
-    // The router stores this entry's position in the history stack as
-    // history.state.idx. Position 0 means the entry before this one is not
-    // ours (or does not exist), so going back would leave the app.
-    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
-    if (idx > 0) navigate(-1);
+    // Nothing of ours behind this entry means going back would leave the app,
+    // so the home screen is the terminal point instead.
+    if (canStepBack()) navigate(-1);
     else navigate('/');
   };
 

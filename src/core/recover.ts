@@ -15,6 +15,14 @@ export type Choice = NeedKey | 'all' | 'kept' | 'calls';
 export const isNeed = (choice: Choice): choice is NeedKey =>
   choice !== 'all' && choice !== 'kept' && choice !== 'calls';
 
+/** The choice a URL is asking for, or null for none. The value comes from the
+ *  address bar, so it is matched against the choices this screen offers and
+ *  anything else is treated as no choice at all. */
+export function parseChoice(value: string | null): Choice | null {
+  const offered: readonly string[] = [...NEEDS, 'all', 'kept', 'calls'];
+  return value !== null && offered.includes(value) ? (value as Choice) : null;
+}
+
 /** The programs for a choice, in the one neutral order the screen states: kept
  *  programs first, then organisation, then title. Nothing about the person is
  *  read; "kept" is a list of program ids the person chose. */
