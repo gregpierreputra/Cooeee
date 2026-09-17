@@ -33,6 +33,20 @@ describe('haversineKm', () => {
 });
 
 describe('findNearest', () => {
+  it('is not fooled by the corner of a search box: a closer place just outside its side wins', () => {
+    const db = openDb(':memory:');
+    upsertFacilities(db, 'cfa_nsp_arcgis', [
+      // About 27 km away, but inside the corner of the 20 km box.
+      facility('corner', 'NSP', 'Corner', { lat: GPO.lat + 0.17, lon: GPO.lon + 0.215 }),
+      // About 21 km due north: closer, and just outside that box.
+      facility('north', 'NSP', 'North', { lat: GPO.lat + 0.19, lon: GPO.lon }),
+    ]);
+    const nearest = findNearest<{ name: string; lat: number; lon: number }>(db, 'facilities', GPO, 'NSP');
+    expect(nearest?.row.name).toBe('North');
+    expect(nearest?.distanceKm).toBeGreaterThan(20);
+    expect(nearest?.distanceKm).toBeLessThan(22);
+  });
+
   it('returns the nearest row of the requested type, widening the box until one is found', () => {
     const db = openDb(':memory:');
     upsertFacilities(db, 'cfa_nsp_arcgis', [

@@ -119,6 +119,13 @@ describe('what an ending records', () => {
     });
   });
 
+  it('keeps no time on a walk she tells us about days later, and states it without one', () => {
+    const twoDays = 2 * 24 * 60 * 60_000;
+    const record = endingRecord(STARTED, 'walked', STARTED + twoDays);
+    expect(record).toEqual({ finishedAt: STARTED + twoDays, ending: 'walked' });
+    expect(endingLine({ state: 'walked' })).toBe('You went there.');
+  });
+
   it('keeps no time on a dry run', () => {
     const record = endingRecord(STARTED, 'dry-run', STARTED + 60_000);
     expect(record).toEqual({ finishedAt: STARTED + 60_000, ending: 'dry-run' });

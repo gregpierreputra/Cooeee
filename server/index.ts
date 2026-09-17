@@ -23,6 +23,10 @@ const BACKUPS_KEPT = 7;
 const SYNC_LOG_DAYS = 30;
 const CLOSED_ACTIVATION_DAYS = 7;
 
+// A last line of defence: a promise nobody awaited must be logged, not allowed
+// to end a process that people's Nearby screen depends on.
+process.on('unhandledRejection', (reason) => console.error('[server] unhandled rejection', reason));
+
 const db = openDb(DB_PATH);
 
 // Static sources, postcodes first so the first nearest-per-postcode rebuild has both sides.

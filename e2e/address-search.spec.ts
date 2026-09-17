@@ -92,7 +92,8 @@ test('AC3 distinguishes a valid empty response and retains the typed text', asyn
   await expect(page.getByLabel('Address')).toHaveValue('NOT A REGISTER ADDRESS');
   await expect(page.getByRole('button', { name: 'Search again' })).toBeVisible();
   await expect(page.getByText(/Did you mean|locality|parent suburb/i)).toHaveCount(0);
-  expect(requests).toBe(1);
+  // Asked as typed, then loosely, then by place name, before saying no match.
+  expect(requests).toBe(3);
 });
 
 test('AC3 remains readable at 200 percent text size', async ({ page }) => {
@@ -154,7 +155,9 @@ test('AC4 retry is explicit and issues exactly one new request', async ({ page }
   expect(requests).toBe(2);
   await tryAgain.click();
   await expect(page.getByRole('status')).toContainText('No matching address found');
-  expect(requests).toBe(3);
+  // One explicit retry. 'RIDGE' holds no number, so its empty answer is asked
+  // three ways (as typed, loosely, by place name) before no match is stated.
+  expect(requests).toBe(5);
 });
 
 // ── E1-US1-AC2 duplicate visible candidates ─────────────────────────────────
@@ -514,8 +517,10 @@ test('AC2 typing sends the query and nothing else, to nowhere else', async ({ pa
   await addressField(page).pressSequentially('6 RIDGE ROAD', { delay: 20 });
   await expect(page.getByRole('status')).toContainText('No matching address found');
 
-  // One endpoint, one method, no body: the address register's own WFS.
+  // One endpoint, one method, no body: the address register's own WFS. An
+  // empty answer is asked once more loosely, to the same place and no other.
   expect(outbound).toEqual([
+    'GET https://opendata.maps.vic.gov.au/geoserver/wfs ',
     'GET https://opendata.maps.vic.gov.au/geoserver/wfs ',
   ]);
 });
@@ -556,7 +561,8 @@ test('Use my location lists the nearest register addresses, and typing takes the
   await expect(page.getByRole('status')).toContainText('nearest your position');
   await expect(page.getByRole('listitem').first()).toContainText('1774-1776 DANDENONG ROAD');
   expect(requests).toEqual([
-    "property_status = 'A' AND DWITHIN(geom, POINT(-37.916205 145.129435), 60, meters)",
+    // The smallest radius first, and it found addresses, so nothing wider is asked.
+    "property_status = 'A' AND DWITHIN(geom, POINT(-37.916205 145.129435), 25, meters)",
   ]);
 
   await addressField(page).fill('RIDGE');

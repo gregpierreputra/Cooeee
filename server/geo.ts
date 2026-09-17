@@ -67,7 +67,10 @@ export function findNearest<T extends Point>(
       const distanceKm = haversineKm(origin, row);
       if (nearest === null || distanceKm < nearest.distanceKm) nearest = { row, distanceKm };
     }
-    return nearest;
+    // The box is a square, so its corners reach further than its radius. A row
+    // found out in a corner may be beaten by one just outside the box's side,
+    // and only the next, wider box can see that one.
+    if (nearest !== null && nearest.distanceKm <= radiusKm) return nearest;
   }
   return null;
 }

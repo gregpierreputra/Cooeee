@@ -8,7 +8,9 @@ export default defineConfig({
       provider: 'v8',
       // The gate covers the pure decision layer. Every file under src/core is
       // measured whether or not a test imports it, so an untested core module
-      // fails the build rather than quietly diluting the number.
+      // pulls the number down. The 90 percent holds across the layer as a
+      // whole, not file by file: a small untested file can hide in the total,
+      // so a new core module still needs its own test asked for in review.
       include: ['src/core/**'],
       exclude: ['src/core/types.ts'],
       reporter: ['text-summary'],

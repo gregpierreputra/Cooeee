@@ -60,6 +60,10 @@ export default function PackDetail({
       // Both land in the one render, so the file links are never a frame late.
       setFileUrls(urls);
       setContent(value);
+    }, () => {
+      // A store that cannot be read is a pack that is not available here, which
+      // the screen already says. Left unhandled it would stay blank for good.
+      if (live) setContent(undefined);
     });
     return () => {
       live = false;

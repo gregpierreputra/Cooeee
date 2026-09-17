@@ -69,4 +69,11 @@ test('entry demands the hold: a tap earns only the hint, a full hold enters', as
   await page.mouse.down();
   await expect(page).toHaveURL('/', { timeout: 5_000 });
   await page.mouse.up();
+
+  // Having left, Back must not drop her into BlackSky again: the entry the
+  // visit left behind is stepped over, and the latch stays clear.
+  await page.goBack();
+  await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
+  await expect(page).not.toHaveURL('/blacksky');
+  expect(await page.evaluate(() => localStorage.getItem('cooeee.blacksky.v1'))).toBeNull();
 });

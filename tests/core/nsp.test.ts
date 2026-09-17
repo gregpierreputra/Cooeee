@@ -165,6 +165,18 @@ describe('toDestination', () => {
     expect(d.addressText).toBe('Reserve Road, Near the oval, Belgrave');
   });
 
+  it('does not say the township twice when the CFA wording already carries it', () => {
+    const d = toDestination(
+      nspSite({ street: 'Sunset Strip, Jan Juc 3228 Off Domain Road', subLocation: '', township: 'Jan Juc' }),
+      'pack-9',
+      snap,
+    );
+    expect(d.addressText).toBe('Sunset Strip, Jan Juc 3228 Off Domain Road');
+    // A township that is only part of a longer word in the street is still said.
+    const sale = toDestination(nspSite({ street: 'Salesyard Road', subLocation: '', township: 'Sale' }), 'pack-9', snap);
+    expect(sale.addressText).toBe('Salesyard Road, Sale');
+  });
+
   it('produces a Source that passes the pack builder’s provenance gate', () => {
     expect(hasCompleteSource(toDestination(nspSite(), 'pack-9', snap).source)).toBe(true);
   });

@@ -11,6 +11,7 @@ import {
 import { bpaExposureLayer } from '../../core/area-check';
 import {
   ADDRESS_QUERY_DEBOUNCE_MS,
+  ADDRESS_QUERY_MAX_CHARS,
   ADDRESS_RESULT_LIMIT,
   isInsideVictoria,
   NEARBY_FIX_MAX_AGE_MS,
@@ -158,6 +159,9 @@ export function Search({
   const [locateNotice, setLocateNotice] = useState<string | null>(null);
   // Bumped by every tap and every keystroke, so a late answer is dropped.
   const locateIdRef = useRef(0);
+  // Stops the nearby lookup on the wire when the user moves on: its wider
+  // radii would otherwise still go out, each carrying the position.
+  const locateAbortRef = useRef<AbortController | null>(null);
   // Synchronous, because it guards against a second request within one tick.
   const requestIdRef = useRef(0);
   const inFlightQueryRef = useRef<string | null>(null);
@@ -234,8 +238,13 @@ export function Search({
     // and the cancellation at once.
   }, [trimmedQuery, attempt]);
 
+  // Leaving the screen stops a nearby lookup still on the wire.
+  useEffect(() => () => locateAbortRef.current?.abort(), []);
+
   function clearLocated() {
     locateIdRef.current += 1;
+    locateAbortRef.current?.abort();
+    locateAbortRef.current = null;
     setLocating(false);
     setLocated(null);
     setLocateNotice(null);
@@ -262,7 +271,9 @@ export function Search({
           notice = copy.ADDRESS_LOCATE_OUTSIDE;
         } else {
           try {
-            candidates = (await fetchAddressesNear(position)).candidates;
+            const controller = new AbortController();
+            locateAbortRef.current = controller;
+            candidates = (await fetchAddressesNear(position, undefined, controller.signal)).candidates;
             if (candidates.length === 0) notice = copy.ADDRESS_LOCATE_NONE;
           } catch {
             notice = copy.SEARCH_COULD_NOT_RUN;
@@ -633,6 +644,7 @@ export function Search({
             name="addressQuery"
             value={query}
             autoComplete="off"
+            maxLength={ADDRESS_QUERY_MAX_CHARS}
             aria-describedby="address-hint address-result"
             onChange={handleQueryChange}
           />

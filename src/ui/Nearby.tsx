@@ -43,25 +43,38 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   const refresh = useCallback(async () => {
     if (!navigator.onLine) return;
     setSyncing(true);
-    const result = await syncNearby(fetcher);
-    setSession((previous) => ({
-      staticSyncedNow: previous.staticSyncedNow || result.staticSyncedNow,
-      dynamicSyncedNow: previous.dynamicSyncedNow || result.dynamicSyncedNow,
-    }));
-    setCache(await readNearbyCache());
-    setClock(now ?? Date.now());
-    setSyncing(false);
+    try {
+      const result = await syncNearby(fetcher);
+      setSession((previous) => ({
+        staticSyncedNow: previous.staticSyncedNow || result.staticSyncedNow,
+        dynamicSyncedNow: previous.dynamicSyncedNow || result.dynamicSyncedNow,
+      }));
+      setCache(await readNearbyCache());
+      setClock(now ?? Date.now());
+    } catch {
+      // A device store that refuses (blocked site data, some private modes)
+      // leaves whatever is already on screen, and never the word syncing for good.
+    } finally {
+      setSyncing(false);
+    }
   }, [fetcher, now]);
 
   // Device first, network second; then again whenever the app comes back to the
   // foreground or the browser reports a network (spec §7.4).
   useEffect(() => {
     let mounted = true;
-    void readNearbyCache().then((stored) => {
-      if (!mounted) return;
-      setCache(stored);
-      void refresh();
-    });
+    void readNearbyCache().then(
+      (stored) => {
+        if (!mounted) return;
+        setCache(stored);
+        void refresh();
+      },
+      // A store that cannot be read holds nothing to show, which is the screen's
+      // own empty state. Left unhandled the screen stayed blank under its title.
+      () => {
+        if (mounted) setCache({ facilities: [], postcodes: [], activations: [], meta: {} });
+      },
+    );
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refresh();
     };

@@ -16,6 +16,7 @@ import {
 } from '../../data/db';
 import { offersWayNote } from '../../core/rehearsal-note';
 import ProgressView from './Progress';
+import { endRun } from './run-state';
 import WayNote from './WayNote';
 
 type ResultProps = {
@@ -71,7 +72,14 @@ export default function Result({
       loadRehearsals(run.packId).catch(() => []),
     ]).then(
       ([content, alreadyDone, previous]) => {
-        if (!live || !content) return;
+        if (!live) return;
+        // The pack was deleted or replaced while the run was in memory. There is
+        // nothing to read a result from, so the run ends and the entry screen
+        // says what it found, rather than this one staying blank for good.
+        if (!content) {
+          endRun();
+          return;
+        }
         const record: Rehearsal = {
           id: run.id,
           packId: run.packId,
@@ -97,6 +105,11 @@ export default function Result({
         save(record).catch(() => {
           if (live) setRunKept(false);
         });
+      },
+      // The pack could not be read at all. The same answer: end the run, and
+      // let the entry screen state what the store says.
+      () => {
+        if (live) endRun();
       },
     );
     return () => {

@@ -176,7 +176,11 @@ function dynamicRow(
     cache.meta.dynamic_source_last_success_at ?? cache.meta.dynamic_generated_at ?? syncedAt,
   );
   const ageMs = now - asOf;
-  const stale = ageMs > DYNAMIC_SNAPSHOT_MAX_AGE_MS;
+  // A phone whose clock has fallen behind the snapshot (a flat battery can reset
+  // it) cannot tell how old the snapshot is. It is then treated as too old:
+  // days old relief centres must never read as opened "just now".
+  const clockBehind = ageMs < -DYNAMIC_SNAPSHOT_MAX_AGE_MS;
+  const stale = ageMs > DYNAMIC_SNAPSHOT_MAX_AGE_MS || clockBehind;
   const nearest = stale ? null : nearestOfType(cache.activations, origin, type);
   const state: PlaceState =
     session.dynamicSyncedNow && status === 'healthy' && !stale ? 'live' : 'cached';

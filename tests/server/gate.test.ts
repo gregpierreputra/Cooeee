@@ -23,4 +23,17 @@ describe('the development gate', () => {
     expect(checkGate(secret, '203.0.113.3', 'right', t + 1000).status).toBe(200);
     expect(checkGate(secret, ip, 'right', t + 61_000).status).toBe(200);
   });
+
+  it('refuses everyone for the rest of the minute once wrong passwords pile up from any addresses', () => {
+    const later = t + 10 * 60_000; // a fresh minute, clear of the tests above
+    // Thirty wrong guesses, each from an address never seen before.
+    for (let i = 0; i < 30; i += 1) {
+      expect(checkGate(secret, `198.51.100.${i}`, 'wrong', later).status).toBe(401);
+    }
+    const refused = checkGate(secret, '198.51.100.200', 'right', later + 1000) as { status: number; body: { retryAfterSeconds: number } };
+    expect(refused.status).toBe(429);
+    expect(refused.body.retryAfterSeconds).toBe(59);
+    // The next minute opens again.
+    expect(checkGate(secret, '198.51.100.200', 'right', later + 60_000).status).toBe(200);
+  });
 });

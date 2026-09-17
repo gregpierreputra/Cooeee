@@ -45,6 +45,10 @@ function useJourney(packId: string, loadContent: LoadContent): Journey | null {
           content ? { places: journeyPlaces(content), notes: journeyNotes(content) } : { places: [], notes: [] },
         );
       }
+    }, () => {
+      // A pack that cannot be read lists no places, as a pack with none does, so
+      // the running rehearsal can still be given its ending.
+      if (live) setJourney({ places: [], notes: [] });
     });
     return () => {
       live = false;

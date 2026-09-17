@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { ADDRESS_FILTER_MAX_CHARS } from '../../src/core/constants';
 
 import {
   addressQueryCanRun,
   addressFilterForCql,
+  placeNameFilterForCql,
+  reorderedFilterForCql,
   addressResultsAtLimit,
   completedSearchState,
   liveSearchState,
@@ -62,8 +65,10 @@ describe('address search decisions', () => {
   });
   const like = (pattern: string) =>
     new RegExp(`^${pattern.replace(/%/g, '.*').replace(/_/g, '.')}$`);
-  function finds(typed: string, register: Row): boolean {
-    const js = addressFilterForCql(typed)
+  function finds(typed: string, register: Row, loose = false): boolean {
+    // As the app asks: the text as typed, and its words put back in order.
+    const reordered = reorderedFilterForCql(typed, loose);
+    const js = `(${addressFilterForCql(typed, loose)})${reordered ? ` OR (${reordered})` : ''}`
       .replace(/(\w+) LIKE '([^']*)'/g, (_m, field, value) =>
         `${like(value)}.test(String(r.${field} ?? ''))`)
       .replace(/(\w+) (<=|>=) (\d+)/g, (_m, field, op, n) => `(r.${field} != null && r.${field} ${op} ${n})`)
@@ -175,6 +180,76 @@ describe('address search decisions', () => {
     ['1774 Dandenong Road 3000', DANDENONG],
   ])('%j does not find another address', (typed, register) => {
     expect(finds(typed, register)).toBe(false);
+  });
+
+  it.each<[string, Row]>([
+    // The way people write an address to a map search, not to an envelope.
+    ['Clayton, 1774 Dandenong Road', DANDENONG],              // suburb first
+    ['Clayton VIC 3168, Unit 7/1774 Dandenong Rd', DANDENONG], // suburb, state and postcode first
+    ['Dandenong Road 1774, Clayton', DANDENONG],              // number after the road
+    ['Flat Rock Road 115, Kangaroo Ground', row({ ezi_address: '115 FLAT ROCK ROAD KANGAROO GROUND 3097', house_number_1: 115, road_name: 'FLAT ROCK', road_type: 'ROAD', locality_name: 'KANGAROO GROUND', postcode: '3097' })], // a road that opens with a unit word
+    ['Glenaire, 3460 Great Ocean Road', row({ ezi_address: '3460 GREAT OCEAN ROAD GLENAIRE 3238', house_number_1: 3460, road_name: 'GREAT OCEAN', road_type: 'ROAD', locality_name: 'GLENAIRE', postcode: '3238' })], // a house number shaped like a postcode, suburb first
+    ['Glenaire 3238, 3460 Great Ocean Road', row({ ezi_address: '3460 GREAT OCEAN ROAD GLENAIRE 3238', house_number_1: 3460, road_name: 'GREAT OCEAN', road_type: 'ROAD', locality_name: 'GLENAIRE', postcode: '3238' })], // the same with its real postcode too
+    ['Grassy Flat Road 1, Diamond Creek', row({ ezi_address: '1 GRASSY FLAT ROAD DIAMOND CREEK 3089', house_number_1: 1, road_name: 'GRASSY FLAT', road_type: 'ROAD', locality_name: 'DIAMOND CREEK', postcode: '3089' })], // a road with a unit word in its name
+    ['17 Ti Tree Lane Mt Eliza', row({ ezi_address: '17 TI-TREE LANE MOUNT ELIZA 3930', house_number_1: 17, road_name: 'TI-TREE', road_type: 'LANE', locality_name: 'MOUNT ELIZA', postcode: '3930' })], // a hyphen road and a Mount suburb together
+    ['C5-1 Track Boola', row({ ezi_address: 'C5-1 TRACK BOOLA 3825', road_name: 'C5-1', road_type: 'TRACK', locality_name: 'BOOLA', postcode: '3825' })], // a track code with a hyphen
+    ['Burnside Heights, 102 Tenterfield Drive', row({ ezi_address: '102 TENTERFIELD DRIVE BURNSIDE HEIGHTS 3023', house_number_1: 102, road_name: 'TENTERFIELD', road_type: 'DRIVE', locality_name: 'BURNSIDE HEIGHTS', postcode: '3023' })], // a suburb that ends in a road type word
+    ['Riverside Quay 5, Southbank', row({ ezi_address: '5 RIVERSIDE QUAY SOUTHBANK 3006', house_number_1: 5, road_name: 'RIVERSIDE', road_type: 'QUAY', locality_name: 'SOUTHBANK', postcode: '3006' })], // number after a road whose type is not in the short list
+    ['359 Yendon No 2 Road Yendon', row({ ezi_address: '359 YENDON NO 2 ROAD YENDON 3352', house_number_1: 359, road_name: 'YENDON NO 2', road_type: 'ROAD', locality_name: 'YENDON', postcode: '3352' })], // a number inside the road name stays where it is
+    ['Yendon No 2 Road Scotsburn', row({ ezi_address: 'YENDON NO 2 ROAD SCOTSBURN 3352', road_name: 'YENDON NO 2', road_type: 'ROAD', locality_name: 'SCOTSBURN', postcode: '3352' })], // the same road with no house number
+    ['3207 / 22-24 Jane Bell Lane Melbourne', row({ ezi_address: '3207/22-24 JANE BELL LANE MELBOURNE 3000', house_number_1: 22, house_number_2: 24, road_name: 'JANE BELL', road_type: 'LANE', locality_name: 'MELBOURNE', postcode: '3000' })], // a unit that looks like a postcode, with spaces round the slash
+  ])('%j is put back in order and finds its address', (typed, register) => {
+    expect(finds(typed, register)).toBe(true);
+  });
+
+  it.each<[string, Row]>([
+    ['1774 Dandinong Road Clayton', DANDENONG], // a slip in the road
+    ['1774 Dandenong Road Claton', DANDENONG],  // a slip in the suburb
+    ['Clayton Dandenong Road', DANDENONG],      // suburb first with no number to mark it
+  ])('%j is found by the loose second try, and not by the first', (typed, register) => {
+    expect(finds(typed, register)).toBe(false);
+    expect(finds(typed, register, true)).toBe(true);
+  });
+
+  it('keeps every filter inside the length the register accepts, whatever is typed', () => {
+    const awkward = [
+      'Unit 12, 1369 Mount Dandenong Tourist Road Extension North, Upper Ferntree Gully Heights VIC 3156 Australia',
+      // Short words multiply the readings: these two went past the limit once.
+      'Mount Waverley 5 Mt St',
+      'Mt Martha, U 2 Mt Martha Rd N',
+      'A B C D E F G H I J K L M N O P',
+      `${'U'.repeat(20_000)}/`,
+      'X'.repeat(9_000),
+      `12 ${'Y'.repeat(3_000)} Road`,
+    ];
+    for (const typed of awkward) {
+      for (const loose of [false, true]) {
+        expect(addressFilterForCql(typed, loose).length).toBeLessThanOrEqual(ADDRESS_FILTER_MAX_CHARS);
+        expect((reorderedFilterForCql(typed, loose) ?? '').length).toBeLessThanOrEqual(ADDRESS_FILTER_MAX_CHARS);
+      }
+      expect((placeNameFilterForCql(typed) ?? '').length).toBeLessThanOrEqual(ADDRESS_FILTER_MAX_CHARS);
+    }
+  });
+
+  it('is not slowed by a paste built to make a pattern backtrack', () => {
+    const started = performance.now();
+    addressFilterForCql('('.repeat(50_000));
+    addressFilterForCql(`${'A-'.repeat(20_000)}1`);
+    expect(performance.now() - started).toBeLessThan(200);
+  });
+
+  it('reads a lot number as the road it is on, since the register holds no lots', () => {
+    expect(finds('Lot 5 Dandenong Road Clayton', DANDENONG)).toBe(true);
+    // A road that merely begins with the word keeps it.
+    const lotStreet = row({ ezi_address: '3 LOT STREET CLAYTON 3168', house_number_1: 3, road_name: 'LOT', road_type: 'STREET', locality_name: 'CLAYTON', postcode: '3168' });
+    expect(finds('Lot Street Clayton', lotStreet)).toBe(true);
+  });
+
+  it('asks for a place by name only when no number was typed', () => {
+    expect(placeNameFilterForCql("Monash University's"))
+      .toBe("(building_name LIKE 'MONASH_UNIVERSITYS%' OR complex_name LIKE 'MONASH_UNIVERSITYS%')");
+    expect(placeNameFilterForCql('1774 Dandenong Road')).toBeNull();
+    expect(placeNameFilterForCql('ab')).toBeNull();
   });
 
   it('sends nothing CQL could read as syntax, and leaves a bare number as a plain prefix', () => {

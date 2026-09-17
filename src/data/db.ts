@@ -1,4 +1,4 @@
-import Dexie, { type Table } from 'dexie';
+import Dexie, { liveQuery, type Table } from 'dexie';
 import { NOTE_MAX_CHARS } from '../core/constants';
 import { isRehearsalEnding, isUnfinished } from '../core/rehearsal-ending';
 import type { RehearsalInput } from '../core/rehearsal-entry';
@@ -192,6 +192,11 @@ async function carryCompletions(oldId: string, newId: string): Promise<void> {
 export async function carryHistoryToNewPack(oldId: string, newId: string): Promise<void> {
   await carryRehearsals(oldId, newId);
   await carryCompletions(oldId, newId);
+  // The reader's own notes are theirs, about the place, and nothing can write
+  // them again. They move with the history instead of going with the old rows.
+  // A note's key is its own id, so only the field changes. The caller's
+  // transaction already holds the notes table, which ownedTables() lists.
+  await db.notes.where('packId').equals(oldId).modify({ packId: newId });
 }
 
 /** Remove every row the given packs own. Callers run this inside their own
@@ -203,6 +208,15 @@ export async function deleteOwnedRows(packIds: string[]): Promise<void> {
 /** THE read API — complete packs only. */
 export const listCompletePacks = (): Promise<Pack[]> =>
   db.packs.where('status').equals('complete').toArray();
+
+/** The complete packs now, and again whenever they change. Returns the way to
+ *  stop watching. For the one part of the app that outlives every screen, the
+ *  header, which would otherwise go on stating what was true when it mounted.
+ *  A store that cannot be read is reported as no packs. */
+export function watchCompletePacks(onChange: (packs: Pack[]) => void): () => void {
+  const watch = liveQuery(listCompletePacks).subscribe({ next: onChange, error: () => onChange([]) });
+  return () => watch.unsubscribe();
+}
 
 /** E5-US1-AC4 — everything the rehearsal entry gate needs, in one read.
  *

@@ -32,6 +32,10 @@ export default tseslint.config(
       '**/worktrees/**',
       'playwright-report/**',
       'test-results/**',
+      // Local working documents, ignored by git. Their one-off scripts are not
+      // part of the app, and linting them stopped `npm run verify` before the
+      // type check, the tests and the two gate scripts could run.
+      'docs/**',
     ],
   },
 

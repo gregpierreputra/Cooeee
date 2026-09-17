@@ -545,3 +545,12 @@ describe('the choice of condition', () => {
     expect(copy.LEAVE_REHEARSAL).toBe('Leave the rehearsal');
   });
 });
+
+describe('an age of one day', () => {
+  it('reads "1 day ago", never "1 days ago", wherever an age is stated', () => {
+    expect(copy.SAVED_DAYS_AGO(1)).toBe('Saved 1 day ago');
+    expect(copy.ITEM_DAYS_AGO(1)).toBe('1 day ago');
+    expect(copy.CHECKED_DAYS_AGO(1)).toBe('Checked 1 day ago');
+    expect(copy.SAVED_DAYS_AGO(2)).toBe('Saved 2 days ago');
+  });
+});

@@ -58,7 +58,9 @@ export const DISMISS_NOTICE = 'Dismiss connection notice';
 
 export const NO_PACKS_HINT =
   'Build a pack while you have a connection, so it is on your phone when there is none.';
-export const SAVED_DAYS_AGO = (days: number) => `Saved ${days} days ago`;
+/** "1 day", "3 days": a pack saved yesterday must not read "1 days ago". */
+const dayCount = (days: number) => (days === 1 ? '1 day' : `${days} days`);
+export const SAVED_DAYS_AGO = (days: number) => `Saved ${dayCount(days)} ago`;
 
 // Deleting a saved pack — the cross opens an in-card confirmation; nothing is
 // removed until the delete answer is chosen.
@@ -167,7 +169,7 @@ export const YOUR_PACK = 'Your pack';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
 export const SAVED_TODAY = 'Saved today';
-export const ITEM_DAYS_AGO = (days: number) => `${days} days ago`;
+export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;
 export const NOT_RECENTLY_VERIFIED_LABEL = 'Not recently verified';
 export const STALE_PACK_STILL_WORKS =
   'This pack still works. Refresh it when you are next online.';
@@ -412,7 +414,7 @@ export const BLACKSKY_RESUMED =
  *  wording from the pack card's SAVED_DAYS_AGO: the card reports when the pack
  *  was written, the header reports when its contents were last checked, and one
  *  sentence must never be mistaken for the other. */
-export const CHECKED_DAYS_AGO = (days: number) => `Checked ${days} days ago`;
+export const CHECKED_DAYS_AGO = (days: number) => `Checked ${dayCount(days)} ago`;
 
 /** The header's home control. The mark is decorative; this names it. */
 export const HEADER_HOME_LABEL = 'Cooeee home';

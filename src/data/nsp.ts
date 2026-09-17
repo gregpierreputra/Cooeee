@@ -1,4 +1,4 @@
-import { isInsideVictoria, MAX_RESPONSE_BYTES } from '../core/constants';
+import { BUNDLED_FILE_TIMEOUT_MS, isInsideVictoria, MAX_RESPONSE_BYTES } from '../core/constants';
 import type { NspSite, NspSnapshot, Source } from '../core/types';
 import { readJsonBounded } from './bounded-body';
 import { getNspSnapshot, putNspSnapshot } from './db';
@@ -124,7 +124,10 @@ export async function cacheNspSnapshot(): Promise<void> {
 /** Read and validate the precached CFA NSP snapshot. `fetchImpl` is injectable
  *  so the build pipeline and tests can supply the bytes without a real request. */
 export async function loadNspSnapshot(fetchImpl: typeof fetch = fetch): Promise<NspSnapshot> {
-  const response = await fetchImpl(NSP_SNAPSHOT_PATH, { cache: 'force-cache' });
+  const response = await fetchImpl(NSP_SNAPSHOT_PATH, {
+    cache: 'force-cache',
+    signal: AbortSignal.timeout(BUNDLED_FILE_TIMEOUT_MS),
+  });
   if (!response.ok) fail(`request failed (${response.status})`);
   return assertNspSnapshot(await readJsonBounded(response, MAX_RESPONSE_BYTES));
 }

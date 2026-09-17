@@ -1234,6 +1234,10 @@ input {
   margin: 0 auto;
   max-width: 560px;
   gap: 0.75rem;
+  /* At 200% text on a short screen the card can outgrow the screen. It scrolls
+     inside itself then, so Skip and Next can always be reached. */
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
 }
 .tour-card-top {
   bottom: auto;

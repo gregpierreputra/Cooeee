@@ -295,9 +295,13 @@ test.describe('the connection notice', () => {
 // entirely: the card gives way to the no-pack state and the store holds nothing.
 test('delete removes the pack from the device after the confirmation', async ({ page }) => {
   await page.goto(home('?days=3'));
+  await expect(page.locator('.app-header-age')).toHaveText(CHECKED_DAYS_AGO(3));
   await page.getByRole('button', { name: DELETE_PACK }).click();
   await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
   await expect(page.getByText(NO_PACK_SAVED)).toBeVisible();
+  // The header outlives the screen. It must stop stating the age of a pack
+  // that is gone, with no reload.
+  await expect(page.locator('.app-header-age')).toHaveCount(0);
   expect(await storageCounts(page)).toMatchObject({
     packs: 0, layers: 0, destinations: 0, files: 0, notes: 0,
   });

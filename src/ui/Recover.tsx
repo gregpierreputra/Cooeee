@@ -49,6 +49,10 @@ export default function Recover({
       if (!live) return;
       setPrograms(rows);
       setSaved(savedIds);
+    }, () => {
+      // A store that cannot be read holds nothing this screen can show, which is
+      // the empty state it already has. Left unhandled it would stay blank.
+      if (live) setPrograms([]);
     });
     return () => {
       live = false;
@@ -76,7 +80,11 @@ export default function Recover({
       await navigator.share({ text });
       return;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
+      // Cancelled by the person, or a second tap while the share sheet is still
+      // open (InvalidStateError). Neither is a share that failed, so neither
+      // earns the clipboard note while the real sheet is on screen.
+      const name = error instanceof DOMException ? error.name : '';
+      if (name === 'AbortError' || name === 'InvalidStateError') return;
     }
     try {
       await navigator.clipboard.writeText(text);
@@ -100,8 +108,12 @@ export default function Recover({
     );
   }
 
-  if (choice === null) {
-    const anyKept = programs.some((program) => kept.includes(program.id));
+  const anyKept = programs.some((program) => kept.includes(program.id));
+  // The kept list with nothing kept is not a category. It is reached by
+  // releasing the last kept program, or by an old address, and used to say
+  // "This pack holds nothing for that need", which is about something else.
+  // The list of categories is what is true then.
+  if (choice === null || (choice === 'kept' && !anyKept)) {
     const rows: { key: Choice; label: string }[] = [
       ...(anyKept ? [{ key: 'kept' as const, label: copy.KEPT_PROGRAMS }] : []),
       ...NEEDS.map((key) => ({ key, label: copy.NEED_PHRASE[key] })),

@@ -32,6 +32,13 @@ function text(value: unknown, field: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) fail(`${field} must be a non-empty string`);
   return value as string;
 }
+/** A date the screen can read. An unreadable one would become "NaN days ago",
+ *  or throw while the Nearby screen is being drawn from the cache. */
+function dateText(value: unknown, field: string): string {
+  const date = text(value, field);
+  if (Number.isNaN(Date.parse(date))) fail(`${field} must be a date`);
+  return date;
+}
 function nullableText(value: unknown, field: string): string | null {
   if (value === null || value === undefined) return null;
   return text(value, field);
@@ -79,7 +86,7 @@ export function assertStaticBundle(value: unknown): StaticBundle {
   const raw = record(value, 'static bundle');
   return {
     version: nullableText(raw.version, 'version'),
-    generated_at: text(raw.generated_at, 'generated_at'),
+    generated_at: dateText(raw.generated_at, 'generated_at'),
     facilities: list(raw.facilities, 'facilities').map((item, i) => {
       const r = record(item, `facilities[${i}]`);
       const at = (key: string) => `facilities[${i}].${key}`;
@@ -91,7 +98,7 @@ export function assertStaticBundle(value: unknown): StaticBundle {
         ...point(r.lat, r.lon, at('lat'), at('lon')),
         lga_name: nullableText(r.lga_name, at('lga_name')),
         designation_status: oneOf(r.designation_status, DESIGNATIONS, at('designation_status')),
-        last_verified_at: text(r.last_verified_at, at('last_verified_at')),
+        last_verified_at: dateText(r.last_verified_at, at('last_verified_at')),
       };
     }),
     postcodes: list(raw.postcodes, 'postcodes').map((item, i) => {
@@ -110,9 +117,11 @@ export function assertStaticBundle(value: unknown): StaticBundle {
 export function assertDynamicSnapshot(value: unknown): DynamicSnapshot {
   const raw = record(value, 'dynamic snapshot');
   return {
-    generated_at: text(raw.generated_at, 'generated_at'),
+    generated_at: dateText(raw.generated_at, 'generated_at'),
     source_status: oneOf(raw.source_status, STATUSES, 'source_status'),
-    source_last_success_at: nullableText(raw.source_last_success_at, 'source_last_success_at'),
+    source_last_success_at: raw.source_last_success_at === null || raw.source_last_success_at === undefined
+      ? null
+      : dateText(raw.source_last_success_at, 'source_last_success_at'),
     activations: list(raw.activations, 'activations').map((item, i) => {
       const r = record(item, `activations[${i}]`);
       const at = (key: string) => `activations[${i}].${key}`;
@@ -122,7 +131,7 @@ export function assertDynamicSnapshot(value: unknown): DynamicSnapshot {
         name: text(r.name, at('name')),
         address: nullableText(r.address, at('address')),
         ...point(r.lat, r.lon, at('lat'), at('lon')),
-        source_updated_at: text(r.source_updated_at, at('source_updated_at')),
+        source_updated_at: dateText(r.source_updated_at, at('source_updated_at')),
       };
     }),
   };

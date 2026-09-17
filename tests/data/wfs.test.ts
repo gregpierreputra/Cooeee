@@ -188,6 +188,50 @@ describe('address search request', () => {
     expect(calls).toBe(1);
   });
 
+  it('asks again loosely, then by place name, only while nothing has matched', async () => {
+    const filters: string[] = [];
+    const empty = async (input: RequestInfo | URL) => {
+      filters.push(new URL(String(input)).searchParams.get('CQL_FILTER') ?? '');
+      return new Response(JSON.stringify({ type: 'FeatureCollection', features: [] }), { status: 200 });
+    };
+    await fetchAddressCandidates('monash university', empty);
+    expect(filters).toHaveLength(3);
+    expect(filters[1]).toContain("'MON%");
+    expect(filters[2]).toContain('building_name');
+
+    // A typed number is never a place name, so that last question is not asked.
+    filters.length = 0;
+    await fetchAddressCandidates('12 ridge road', empty);
+    expect(filters).toHaveLength(2);
+  });
+
+  it('skips one unreadable record and keeps the good ones beside it', async () => {
+    const good = feature({ properties: { ezi_address: '6 RIDGE ROAD KALORAMA 3766', locality_name: 'KALORAMA', property_status: 'A', is_primary: 'Y' } });
+    const outsideVictoria = feature({ geometry: { type: 'Point', coordinates: [151.2, -33.8] }, properties: { ezi_address: 'BAD', locality_name: 'X', property_status: 'A', is_primary: 'Y' } });
+    const fetcher = async () => new Response(JSON.stringify({ features: [outsideVictoria, good] }), { status: 200 });
+    const resolution = await fetchAddressCandidates('6 ridge road', fetcher);
+    expect(resolution.candidates.map(({ address }) => address)).toEqual(['6 RIDGE ROAD KALORAMA 3766']);
+  });
+
+  it('treats a response where no record can be read as a failed search, never as no match', async () => {
+    const fetcher = async () => new Response(JSON.stringify({ features: [{ nonsense: true }] }), { status: 200 });
+    await expect(fetchAddressCandidates('6 ridge road', fetcher)).rejects.toThrow(TypeError);
+  });
+
+  it('keeps an honest no match when a later, looser question fails', async () => {
+    let calls = 0;
+    const fetcher = async () => {
+      calls += 1;
+      if (calls === 1) return new Response(JSON.stringify({ type: 'FeatureCollection', features: [] }), { status: 200 });
+      return new Response('', { status: 500 });
+    };
+    // The typed search answered with nothing. The looser one broke. That is
+    // still "no match", never "the search could not run", and it is not retried.
+    await expect(fetchAddressCandidates('12 ridge road', fetcher))
+      .resolves.toEqual({ candidates: [], returnedCount: 0 });
+    expect(calls).toBe(2);
+  });
+
   it('rejects a drifted feature-collection shape', async () => {
     const fetcher = async () => new Response(JSON.stringify({ features: null }), { status: 200 });
     await expect(fetchAddressCandidates('ridge', fetcher)).rejects.toThrow(TypeError);
