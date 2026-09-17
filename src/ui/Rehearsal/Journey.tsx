@@ -186,7 +186,7 @@ export function JourneyRunning({
       </section>
 
       <div className="actions journey-hold">
-        <HoldButton onHold={() => navigate('/blacksky')} hint={copy.HOLD_TO_ENTER}>
+        <HoldButton onHold={() => navigate('/blacksky', { state: { held: true } })} hint={copy.HOLD_TO_ENTER}>
           <span className="blacksky-hold-label">{copy.HOLD_FOR_BLACKSKY}</span>
         </HoldButton>
       </div>

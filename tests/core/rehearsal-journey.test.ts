@@ -157,11 +157,11 @@ describe('the rehearsal and the live BlackSky screen', () => {
   it('reaches the real BlackSky by its route, through the shared hold, as Home does', () => {
     const journey = readFileSync(join('src', 'ui', 'Rehearsal', 'Journey.tsx'), 'utf8');
     expect(journey).toMatch(/import HoldButton from '\.\.\/components\/HoldButton'/);
-    expect(journey).toContain("onHold={() => navigate('/blacksky')}");
+    expect(journey).toContain("onHold={() => navigate('/blacksky', { state: { held: true } })}");
     const app = readFileSync(join('src', 'app.tsx'), 'utf8');
-    // The route renders the one real BlackSky, through the wrapper that steps
-    // over a history entry a finished visit left behind.
+    // The route renders the one real BlackSky, through the wrapper that opens
+    // it only for a fresh hold or a visit that never ended.
     expect(app).toContain('<Route path="/blacksky" element={<BlackSkyRoute />} />');
-    expect(app).toContain('return leftBehind ? null : <BlackSky />;');
+    expect(app).toContain('return allowed ? <BlackSky /> : null;');
   });
 });

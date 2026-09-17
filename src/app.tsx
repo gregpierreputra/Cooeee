@@ -10,6 +10,7 @@ import {
 } from 'react-router';
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
+import { BLOCKED_NOTICE_MS } from './core/constants';
 import { canStepBack } from './ui/components/history';
 import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
@@ -68,28 +69,61 @@ function BlackSkyResume() {
   return null;
 }
 
-/** BlackSky, unless this is a Back press onto an entry left behind by a visit
- *  that has already ended.
+const BLACKSKY_BLOCKED_EVENT = 'cooeee:blacksky-blocked';
+
+/** BlackSky, but only for the two arrivals that are meant to open it: a fresh
+ *  two second hold, or a visit that never ended (the latch is still set, as
+ *  after a reload or a relaunch).
  *
  *  Entering BlackSky adds two history entries and leaving replaces only the
- *  newest, so the older one stays under the screen the user left to. One Back
- *  press from there used to land on it, open BlackSky again and latch it again,
- *  which took another two second hold to get out of. That entry is told apart
- *  by three facts together: it was reached by Back, the latch is clear (she
- *  left by the hold), and there is somewhere in the app to step back to. It is
- *  then stepped over. A reload inside BlackSky still has its latch, and a first
- *  arrival by link has nowhere to step back to, so both open it as before. */
+ *  newest, so an older one stays under the screen the user left to. Back,
+ *  Forward or a typed address would land on it and open BlackSky with no hold.
+ *  The hold marks its own navigation with `held`. History keeps that mark on
+ *  the old entry, so an arrival by Back or Forward (POP) never counts as a
+ *  hold. Any other arrival is stepped over, and one short line says so. */
 function BlackSkyRoute() {
   const navigate = useNavigate();
   const navigationType = useNavigationType();
+  const { state } = useLocation();
   // Decided once, at arrival: BlackSky sets the latch as soon as it mounts.
-  const [leftBehind] = useState(
-    () => navigationType === 'POP' && !isBlackSkyLatched(localFlagStore()) && canStepBack(),
+  const [allowed] = useState(
+    () =>
+      isBlackSkyLatched(localFlagStore()) ||
+      (navigationType !== 'POP' && (state as { held?: boolean } | null)?.held === true),
   );
   useEffect(() => {
-    if (leftBehind) navigate(-1);
-  }, [leftBehind]);
-  return leftBehind ? null : <BlackSky />;
+    if (allowed) return;
+    window.dispatchEvent(new Event(BLACKSKY_BLOCKED_EVENT));
+    if (canStepBack()) navigate(-1);
+    else navigate('/', { replace: true });
+  }, [allowed]);
+  return allowed ? <BlackSky /> : null;
+}
+
+/** The one line that says BlackSky was not opened. It asks for nothing, closes
+ *  on a tap, and goes on its own after BLOCKED_NOTICE_MS. */
+function BlockedNotice() {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const onBlocked = () => setShown(true);
+    window.addEventListener(BLACKSKY_BLOCKED_EVENT, onBlocked);
+    return () => window.removeEventListener(BLACKSKY_BLOCKED_EVENT, onBlocked);
+  }, []);
+  useEffect(() => {
+    if (!shown) return;
+    const timer = setTimeout(() => setShown(false), BLOCKED_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [shown]);
+
+  if (!shown) return null;
+  return (
+    <div className="banner" role="status">
+      <span>{copy.BLACKSKY_BLOCKED}</span>
+      <button type="button" onClick={() => setShown(false)}>
+        {copy.CLOSE}
+      </button>
+    </div>
+  );
 }
 
 /** A new route starts at its top. The browser keeps the window's scroll when
@@ -244,6 +278,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <NoticeBar />
         <HeaderHost />
         <UpdateBanner applyUpdate={applyUpdate} />
+        <BlockedNotice />
         <BackBar />
         <Routes>
           <Route path="/" element={<Home />} />

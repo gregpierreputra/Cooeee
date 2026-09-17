@@ -16,7 +16,7 @@ import {
   rememberChosenPack,
   unlatchBlackSky,
 } from '../core/blacksky-latch';
-import { TICK_MS } from '../core/constants';
+import { FIX_PUBLISH_M, TICK_MS, WATCH_RESTART_MS } from '../core/constants';
 import * as copy from '../core/copy';
 import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { titleCase } from '../core/home';
@@ -72,10 +72,11 @@ export default function BlackSky({
   // depends on where the phone is, which the fix supplies.
   const compass = useCompass(here ? magneticDeclinationDeg(here) : 0);
 
-  // US3-AC2, the power rule: GPS samples land in this ref (no render), and the
-  // TICK_MS interval below is the ONE publisher to state — so the screen
-  // updates at most once per tick, however often the sensor chatters. The
-  // arrows still turn with the phone between ticks: that is CSS, not a render.
+  // US3-AC2, the power rule: GPS samples land in this ref (no render). A sample
+  // FIX_PUBLISH_M or more from the position on screen is shown at once, so the
+  // distance follows a person who is moving; anything smaller is sensor noise
+  // and waits for the TICK_MS interval below, so a phone held still renders
+  // once per tick. The arrows turn with the phone by CSS, not by a render.
   const latestFix = useRef<Fix | null>(null);
 
   useEffect(() => {
@@ -113,35 +114,48 @@ export default function BlackSky({
     }
     let watch: number | null = null;
     let lock: WakeLockSentinel | null = null;
+    let watchdog: ReturnType<typeof setInterval> | undefined;
+    let heardAt = 0; // when the watch last delivered a position
 
     const onPosition = (position: GeolocationPosition) => {
-      latestFix.current = {
+      heardAt = Date.now();
+      const next = {
         lat: position.coords.latitude,
         lon: position.coords.longitude,
         accuracyM: Math.round(position.coords.accuracy),
         // Receipt time, NOT position.timestamp: staleness is measured against
         // Date.now(), and some mobile engines report GPS timestamps from a
         // different clock. Mixing clock domains would break the 30 s rule.
-        at: Date.now(),
+        at: heardAt,
       };
+      latestFix.current = next;
       setPermission('granted');
       setMark(null); // a real fix always beats a marked-position estimate
-      // Acquiring → showing a direction IS a meaningful change, so the very
-      // first fix renders immediately. Every later sample waits for the tick.
-      setFix((previous) => previous ?? latestFix.current);
+      // The first fix, and every real move after it, renders immediately.
+      setFix((shown) => (!shown || distanceM(shown, next) >= FIX_PUBLISH_M ? next : shown));
     };
     const onError = (error: GeolocationPositionError) => {
       if (error.code === error.PERMISSION_DENIED) setPermission('denied');
     };
 
-    const wake = () => {
-      if (watch !== null) return;
-      // The most accurate continuous watch the device offers: high accuracy on,
-      // and no cached position accepted in place of a fresh sensor read.
+    // The most accurate continuous watch the device offers: high accuracy on,
+    // and no cached position accepted in place of a fresh sensor read.
+    const startWatch = () => {
+      heardAt = Date.now();
       watch = navigator.geolocation.watchPosition(onPosition, onError, {
         enableHighAccuracy: true,
         maximumAge: 0,
       });
+    };
+    const wake = () => {
+      if (watch !== null) return;
+      startWatch();
+      // A watch that has gone quiet reports no error, so it is started again.
+      watchdog = setInterval(() => {
+        if (watch === null || Date.now() - heardAt < WATCH_RESTART_MS) return;
+        navigator.geolocation.clearWatch(watch);
+        startWatch();
+      }, WATCH_RESTART_MS);
       if (!('wakeLock' in navigator)) return;
       navigator.wakeLock.request('screen').then(
         (held) => {
@@ -152,6 +166,7 @@ export default function BlackSky({
       );
     };
     const sleep = () => {
+      clearInterval(watchdog);
       if (watch !== null) navigator.geolocation.clearWatch(watch);
       watch = null;
       void lock?.release();

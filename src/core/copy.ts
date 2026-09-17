@@ -338,10 +338,12 @@ export const COMPASS_LIVE = 'The arrow turns with your phone.';
 export const COMPASS_NORTH_UP = 'The arrow is drawn with north at the top of the screen.';
 export const TURN_ON_COMPASS = 'Turn on the compass';
 
-/** "850 m" under a kilometre, "1.1 km" from there. The precision a person on
- *  foot can act on — never more. */
-export const distanceLabel = (m: number): string =>
-  m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
+/** "850 m" under a kilometre, "2.34 km" under ten, "12.3 km" from there. Ten
+ *  metre steps within walking range, so the figure is seen to move on foot. */
+export const distanceLabel = (m: number): string => {
+  if (m < 1000) return `${Math.round(m)} m`;
+  return `${(m / 1000).toFixed(m < 10_000 ? 2 : 1)} km`;
+};
 
 // E3-US1-AC4 marked-position estimate
 export const MARK_HINT =
@@ -403,6 +405,7 @@ export const LEAVE_BLACKSKY = 'Leave BlackSky';
 /** Said above the Leave control, never over anything else: the phone's back
  *  button was pressed, or the app opened here again because BlackSky was the
  *  last screen open. Both end with the one way out. */
+export const BLACKSKY_BLOCKED = 'BlackSky was not opened. Hold its button for 2 seconds to enter.';
 export const BACK_PRESSED =
   'You pressed back. BlackSky stays until you hold Leave BlackSky for two seconds.';
 export const BLACKSKY_RESUMED =
