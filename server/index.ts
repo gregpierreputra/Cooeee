@@ -61,8 +61,16 @@ function housekeeping(): void {
   for (const name of stale) unlinkSync(join(dir, name));
 }
 
-housekeeping();
-setInterval(housekeeping, DAY_MS);
+// A full disk or a locked file must not take the API down with it.
+const safeHousekeeping = (): void => {
+  try {
+    housekeeping();
+  } catch (error) {
+    console.error('[housekeeping]', error);
+  }
+};
+safeHousekeeping();
+setInterval(safeHousekeeping, DAY_MS);
 void runDueStaticJobs();
 setInterval(() => void runDueStaticJobs(), HOUR_MS);
 startPoller(db);

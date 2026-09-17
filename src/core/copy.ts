@@ -1043,6 +1043,30 @@ export const GAP_PLACES = 'The official places saved with this pack';
 export const GAP_PROVENANCE = 'The publisher and saved date on every stored item';
 export const GAP_LIVE_DIRECTION = 'Live direction and distance to your saved places';
 
+/** What the gaps count on the pack page means, behind an information ring on
+ *  every row of the rehearsal list. It lives here, beside the four things a
+ *  rehearsal looks for, because it names them in their own words rather than
+ *  describing them again. A count, never a mark. */
+export const ABOUT_GAPS = 'About gaps';
+export const GAPS_INFO_LINES = [
+  {
+    lead: 'What a gap is.',
+    text: 'One thing the rehearsal looked for and could not rely on that day, either because it was not in the pack or because the condition took it away.',
+  },
+  {
+    lead: 'What it looks for.',
+    text: `${GAP_DESIGNATION}. ${GAP_PLACES}. ${GAP_PROVENANCE}. ${GAP_LIVE_DIRECTION}.`,
+  },
+  {
+    lead: 'None found.',
+    text: 'Everything the rehearsal looked for was on the phone that day. It says what was checked, and nothing about how ready you are.',
+  },
+  {
+    lead: 'It is a count.',
+    text: 'A number of things you can act on. Nothing here is a mark and nothing is ranked.',
+  },
+] as const;
+
 // The one action for each. None of them says the capability has come back.
 export const ACTION_BUILD_AGAIN_DESIGNATION =
   'Build this pack again while you have a connection, so the official designation for this address is stored with it.';

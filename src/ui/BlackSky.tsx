@@ -90,9 +90,12 @@ export default function BlackSky({
         if (live) setPacks([]);
       },
     );
-    loadSites().then((snapshot) => {
-      if (live && snapshot) setSites(snapshot);
-    });
+    loadSites().then(
+      (snapshot) => {
+        if (live && snapshot) setSites(snapshot);
+      },
+      () => undefined, // with no list, the nearest-places pointer is simply absent
+    );
     return () => {
       live = false;
     };
@@ -380,7 +383,7 @@ function ScreenBody({
             ))}
           </ul>
           <NearbyList places={screen.nearby} confidence={screen.confidence} />
-          <section className="card blacksky-guidance">
+          <section className="card blacksky-guidance emergency-line">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
             <a href="tel:000">{copy.CALL_TRIPLE_ZERO}</a>
             <a href="tel:1800226226">{copy.VICEMERGENCY_HOTLINE}</a>

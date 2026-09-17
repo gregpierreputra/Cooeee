@@ -16,10 +16,12 @@ import { historyRows, type HistoryRow } from '../core/rehearsal-history';
 import type { CompletePackContent, PackDetailItem, PackFile, Rehearsal } from '../core/types';
 import { getCompletePackContent, listRehearsalsForPack } from '../data/db';
 import Glyph from './components/Glyph';
+import InfoGlyph from './components/InfoGlyph';
 import ProvenanceLine from './components/ProvenanceLine';
 import Section from './components/Section';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
+import { useRevealedPanel } from './components/useRevealedPanel';
 import { PlaceFacts } from './PackNew/Destinations';
 import { PackNotes } from './PackNotes';
 
@@ -51,7 +53,7 @@ export default function PackDetail({
   useEffect(() => {
     let live = true;
     let urls: Record<string, string> = {};
-    loadContent(packId).then((value) => {
+    loadContent(packId).catch(() => undefined).then((value) => {
       if (!live) return;
       urls = Object.fromEntries((value?.files ?? []).map((file) => [
         file.id,
@@ -82,8 +84,15 @@ export default function PackDetail({
     };
   }, [loadRehearsals, packId]);
 
+  // The sheet takes focus while it is open, and Escape closes it.
   useEffect(() => {
-    if (offlineSource) closeRef.current?.focus();
+    if (!offlineSource) return;
+    closeRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOfflineSource(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [offlineSource]);
 
   if (content === null) return null;
@@ -242,7 +251,7 @@ export default function PackDetail({
                 <p className="history-date">{row.date}</p>
                 <p className="muted">{row.condition}</p>
                 <p>{row.ending}</p>
-                <p className="figure">{row.gaps}</p>
+                <HistoryGaps id={row.id} gaps={row.gaps} />
               </li>
             ))}
           </ul>
@@ -295,6 +304,44 @@ export default function PackDetail({
         </div>
       ) : null}
     </main>
+  );
+}
+
+/** One rehearsal's gaps line, with the ring that says what the count means.
+ *  Every row carries its own ring and its own panel, so both are named from the
+ *  rehearsal's id; the panel opens in flow beneath the pair, covering no other
+ *  rehearsal. Never on hover, as the other two information rings. */
+function HistoryGaps({ id, gaps }: { id: string; gaps: string }) {
+  const [open, setOpen] = useState(false);
+  const panel = useRevealedPanel<HTMLDivElement>(open);
+  const panelId = `history-gaps-${id}`;
+
+  return (
+    <div className="history-gaps">
+      <p className="figure">{gaps}</p>
+      <button
+        type="button"
+        className="info-ring"
+        aria-label={copy.ABOUT_GAPS}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <InfoGlyph />
+      </button>
+      {open ? (
+        <div id={panelId} ref={panel} tabIndex={-1} className="card info-panel">
+          <span className="kicker">{copy.ABOUT_GAPS}</span>
+          <ul className="info-lines">
+            {copy.GAPS_INFO_LINES.map((line) => (
+              <li key={line.lead}>
+                <b>{line.lead}</b> {line.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

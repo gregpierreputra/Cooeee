@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 
-import { GENERAL_CHANNEL_URL, NEED_CHANNELS } from '../core/constants';
+import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
 import { readKept, toggleKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
@@ -41,29 +41,42 @@ export default function Recover({
   const navigate = useNavigate();
   const choice = parseChoice(params.get('need'));
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
-  const [shared, setShared] = useState<'copied' | 'unavailable' | null>(null);
+  // A share note belongs to the category it was made on, so it shows only while
+  // that category is open. Moving to another category hides it on the very first
+  // frame, and a result that arrives after the reader has moved on stays with the
+  // category it was for. Leaving through the app clears it outright.
+  const [shared, setShared] = useState<{ on: Choice | null; state: 'copied' | 'unavailable' } | null>(null);
+  const shareNote = shared?.on === choice ? shared.state : null;
 
   useEffect(() => {
     let live = true;
-    Promise.all([loadPrograms(), loadSaved()]).then(([rows, savedIds]) => {
-      if (!live) return;
-      setPrograms(rows);
-      setSaved(savedIds);
-    });
+    Promise.all([loadPrograms(), loadSaved()]).then(
+      ([rows, savedIds]) => {
+        if (!live) return;
+        setPrograms(rows);
+        setSaved(savedIds);
+      },
+      // A store that cannot be read shows the screen for no programs held.
+      () => {
+        if (live) setPrograms([]);
+      },
+    );
     return () => {
       live = false;
     };
   }, [loadPrograms, loadSaved]);
 
-  // Any change of category, however it was reached, clears the share note the
-  // last one left behind.
-  useEffect(() => setShared(null), [choice]);
-
-  const choose = (next: Choice) => setParams({ need: next });
+  const choose = (next: Choice) => {
+    setShared(null);
+    setParams({ need: next });
+  };
 
   /** Back to the list of categories. Stepping back keeps the history honest;
    *  with nothing of ours behind this entry, the category is dropped instead. */
   const backToChoices = () => {
+    setShared(null);
+    // One step back is the category list because every category is entered from
+    // it. A link straight into a category would break that, and none exists.
     if (canStepBack()) navigate(-1);
     else setParams({}, { replace: true });
   };
@@ -72,6 +85,7 @@ export default function Recover({
   // data), otherwise the clipboard. A share the person cancels reports nothing;
   // a share sheet that refuses falls back to the clipboard.
   async function share(text: string) {
+    const on = choice;
     try {
       await navigator.share({ text });
       return;
@@ -80,9 +94,9 @@ export default function Recover({
     }
     try {
       await navigator.clipboard.writeText(text);
-      setShared('copied');
+      setShared({ on, state: 'copied' });
     } catch {
-      setShared('unavailable');
+      setShared({ on, state: 'unavailable' });
     }
   }
 
@@ -103,7 +117,6 @@ export default function Recover({
   if (choice === null) {
     const anyKept = programs.some((program) => kept.includes(program.id));
     const rows: { key: Choice; label: string }[] = [
-      ...(anyKept ? [{ key: 'kept' as const, label: copy.KEPT_PROGRAMS }] : []),
       ...NEEDS.map((key) => ({ key, label: copy.NEED_PHRASE[key] })),
       { key: 'all', label: copy.EVERY_PROGRAM },
       { key: 'calls', label: copy.WHO_TO_CALL },
@@ -115,6 +128,15 @@ export default function Recover({
           <h1>{copy.RECOVER_QUESTION}</h1>
           <p className="muted">{copy.RECOVER_PRIVACY_LINE}</p>
         </header>
+        {/* What the person already chose is not one more need to pick from, so
+            it stands outside the list, in the same ring and tint a kept card
+            wears. It is here only while something is kept. */}
+        {anyKept ? (
+          <button type="button" className="need-button kept-button" onClick={() => choose('kept')}>
+            <Glyph kind="kept" />
+            {copy.KEPT_PROGRAMS}
+          </button>
+        ) : null}
         <ul className="list">
           {rows.map((row) => (
             <li key={row.key}>
@@ -144,7 +166,10 @@ export default function Recover({
         </header>
         <ul className="list">
           {callList(programs).map((entry) => (
-            <li key={entry.number} className="card">
+            <li
+              key={entry.number}
+              className={entry.number === HOTLINE_NUMBER ? 'card emergency-line' : 'card'}
+            >
               <h2>{entry.label}</h2>
               {entry.org ? <p>{entry.org}</p> : null}
               <a href={`tel:${entry.number.replaceAll(' ', '')}`}>{copy.CALL_LINE(entry.number)}</a>
@@ -238,7 +263,7 @@ export default function Recover({
       </ul>
       <div className="actions">
         <p className="muted" role="status" aria-live="polite">
-          {shared === 'copied' ? copy.COPIED_LINE : shared === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
+          {shareNote === 'copied' ? copy.COPIED_LINE : shareNote === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
         </p>
         <button type="button" onClick={() => void share(shareText(heading, shown))}>
           {copy.SHARE_LIST}

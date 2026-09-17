@@ -15,6 +15,7 @@ import {
   undoActionDone,
 } from '../../data/db';
 import { offersWayNote } from '../../core/rehearsal-note';
+import StatusPage from '../components/StatusPage';
 import ProgressView from './Progress';
 import WayNote from './WayNote';
 
@@ -62,16 +63,22 @@ export default function Result({
   const [runKept, setRunKept] = useState(true);
   /** The action whose last marking could not be kept, if any. */
   const [notKept, setNotKept] = useState<string | null>(null);
+  /** The pack is gone, or its store could not be read. */
+  const [packMissing, setPackMissing] = useState(false);
 
   useEffect(() => {
     let live = true;
     Promise.all([
-      loadContent(run.packId),
+      loadContent(run.packId).catch(() => undefined),
       loadCompletions(run.packId).catch(() => []),
       loadRehearsals(run.packId).catch(() => []),
     ]).then(
       ([content, alreadyDone, previous]) => {
-        if (!live || !content) return;
+        if (!live) return;
+        if (!content) {
+          setPackMissing(true);
+          return;
+        }
         const record: Rehearsal = {
           id: run.id,
           packId: run.packId,
@@ -132,6 +139,11 @@ export default function Result({
     [completions, mark, undo, now, run.packId],
   );
 
+  if (packMissing) {
+    return (
+      <StatusPage page="rehearsal-result" kicker={copy.EYEBROW_MY_PACK} card={<p>{copy.PACK_NOT_FOUND}</p>} />
+    );
+  }
   if (finished === null) return null;
   const result = rehearsalResult(finished, completions);
   const progress = rehearsalProgress(finished, earlier, completions);

@@ -529,6 +529,11 @@ input {
   outline-offset: 2px;
 }
 
+/* The page itself takes focus on arrival; the ring belongs on controls only. */
+main:focus {
+  outline: none;
+}
+
 /* An accent ring on an accent fill would vanish. */
 .main-action:focus-visible {
   outline-color: var(--ink);
@@ -1791,8 +1796,10 @@ input {
   grid-column: 2;
 }
 
-/* The quieter note under the statements: its own small card, so the line that
-   points away from Cooeee is visibly not one of Cooeee's four statements. */
+/* The note under the statements: its own small card, so the line that points
+   away from Cooeee is visibly not one of Cooeee's four statements. It carries
+   the emergency treatment below, so it reads at full strength rather than as a
+   footnote. */
 .official-channels {
   display: flex;
   align-items: start;
@@ -1800,14 +1807,37 @@ input {
   padding: 0.75rem 1rem;
   border-radius: var(--r-card);
   background: var(--surface-2);
-  font-size: var(--step-s);
   color: var(--ink-2);
+}
+
+/* ── The emergency instruction ─────────────────────────────────────────────── */
+
+/* The one thing on a screen that must be read before anything else: how to
+   reach emergency services. Red is already the fixed state colour in every
+   mode, so nothing is invented here, and the shape is the ring-plus-tint the
+   nudge and the kept card already use. The words carry the meaning on their
+   own, so the colour adds weight without ever being the only signal. */
+.emergency-line {
+  border-inline-start: 3px solid var(--offline);
+  background: color-mix(in srgb, var(--offline) 12%, var(--surface));
+  color: var(--ink);
+  font-size: var(--step-0);
+}
+
+/* The mark beside the line takes the same red, so the pair reads as one. */
+.emergency-line > svg {
+  color: var(--offline);
+}
+
+/* In BlackSky every non-amber pixel stays off, so the ground goes back to true
+   black. The red rule alone marks the line, and on a screen that is otherwise
+   all amber it is the one thing in another colour. */
+:root[data-mode='blacksky'] .emergency-line {
+  background: #000000;
 }
 
 .official-channels svg {
   flex: 0 0 auto;
-  /* Optically centred on the first line of the smaller type beside it. */
-  margin-top: 0.0625rem;
 }
 
 /* A row, not a stack: the label is the statement, and it is the label element
@@ -1993,7 +2023,6 @@ input {
   --reveal: var(--accent);
   scroll-margin-top: 7rem;
   scroll-margin-bottom: 6rem;
-  outline: none;
   animation: panel-reveal 420ms ease-out;
 }
 .blacksky-info-panel.info-panel {
@@ -2099,6 +2128,22 @@ input {
 .recover .card.kept {
   border: 2px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+/* The way into what the person already kept. It is not one more need to choose
+   between, so it sits above the list and wears the kept card's own ring and
+   tint: whoever has kept a program has already met this treatment and reads it
+   without being told. The filled glyph carries it at a glance. */
+.recover .kept-button {
+  width: 100%;
+  margin-bottom: 1rem;
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--accent);
+}
+.recover .kept-button .glyph {
+  background: var(--accent);
+  color: var(--ink-on-accent);
 }
 .recover .keep-button {
   align-self: start;
@@ -2501,6 +2546,19 @@ input {
 }
 .history-date {
   font-weight: var(--w-bold);
+}
+
+/* The gaps line and the ring that explains it share a row, as the hold control
+   and its ring do on Home. The panel takes the full width beneath the pair, so
+   it opens in flow and covers no other rehearsal. */
+.history-gaps {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.history-gaps > .info-panel {
+  grid-column: 1 / -1;
 }
 
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.

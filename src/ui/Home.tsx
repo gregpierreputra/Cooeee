@@ -49,11 +49,18 @@ export default function Home({ now }: { now?: number }) {
 
   useEffect(() => {
     let live = true;
-    load().then((loaded) => {
-      if (!live) return;
-      setView(homeView(seed, loaded.rows));
-      setUnsaved(loaded.unsaved);
-    });
+    load().then(
+      (loaded) => {
+        if (!live) return;
+        setView(homeView(seed, loaded.rows));
+        setUnsaved(loaded.unsaved);
+      },
+      // A store that cannot be read must not leave a blank screen: it renders
+      // as if nothing were saved, the same way BlackSky does.
+      () => {
+        if (live) setView(homeView(seed, []));
+      },
+    );
     return () => {
       live = false;
     };
@@ -75,6 +82,8 @@ export default function Home({ now }: { now?: number }) {
     setUnsaved(loaded.unsaved);
     setConfirming(null);
   };
+  // A delete that fails closes the question and leaves the card as it was.
+  const removePackSafely = (id: string) => removePack(id).catch(() => setConfirming(null));
 
   return (
     <main className="page home">
@@ -133,7 +142,7 @@ export default function Home({ now }: { now?: number }) {
                 <button
                   type="button"
                   className="card-confirm-yes"
-                  onClick={() => void removePack(pack.id)}
+                  onClick={() => void removePackSafely(pack.id)}
                 >
                   {copy.CONFIRM_DELETE_PACK}
                 </button>

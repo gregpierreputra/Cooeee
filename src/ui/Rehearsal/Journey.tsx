@@ -39,7 +39,7 @@ function useJourney(packId: string, loadContent: LoadContent): Journey | null {
   const [journey, setJourney] = useState<Journey | null>(null);
   useEffect(() => {
     let live = true;
-    loadContent(packId).then((content) => {
+    loadContent(packId).catch(() => undefined).then((content) => {
       if (live) {
         setJourney(
           content ? { places: journeyPlaces(content), notes: journeyNotes(content) } : { places: [], notes: [] },

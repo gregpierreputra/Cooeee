@@ -65,7 +65,7 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
         ))}
       </ul>
 
-      <p className="official-channels">
+      <p className="official-channels emergency-line">
         <InfoGlyph size={22} />
         <span>{copy.OFFICIAL_CHANNELS_LINE}</span>
       </p>

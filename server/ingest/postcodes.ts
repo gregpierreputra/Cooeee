@@ -80,9 +80,7 @@ export async function fetchPostcodes(
   return { rows, skipped };
 }
 
-/** Same rule as facilities: an empty run never touches the table.
- *  postcodes_rtree stays empty on purpose — nothing resolves a point back to a
- *  postcode yet. Fill it, and store boundaries, when that lookup is needed. */
+/** Same rule as facilities: an empty run never touches the table. */
 export function upsertPostcodes(db: Db, rows: PostcodeInput[]): SyncCounts {
   if (rows.length === 0) throw new Error('upstream returned no postcodes — existing rows left untouched');
   const now = nowIso();
