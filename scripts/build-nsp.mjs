@@ -19,7 +19,11 @@ const isoDate = (epochMs) => new Date(epochMs).toISOString().slice(0, 10);
 async function getJson(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`CFA NSP layer returned HTTP ${response.status}`);
-  return response.json();
+  const body = await response.json();
+  // ArcGIS reports a failure as HTTP 200 with an error object. Read as data, a
+  // failed metadata call would quietly date the list as at today.
+  if (body?.error) throw new Error(`CFA NSP layer returned an error: ${JSON.stringify(body.error).slice(0, 200)}`);
+  return body;
 }
 
 /** The CFA address ends in the township and postcode ("Burdap Drive, Mount Evelyn

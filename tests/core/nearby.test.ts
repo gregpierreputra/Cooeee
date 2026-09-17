@@ -126,6 +126,13 @@ describe('nearbyView', () => {
     expect(relief.note).toContain('1800 226 226');
   });
 
+  it('treats a phone clock far behind the snapshot as too old, never as just now', () => {
+    // A flat battery reset the clock to two days before the snapshot was taken.
+    const relief = row(nearbyView(NOW - 2 * 24 * 3_600_000, KALORAMA, cache({}, 0), OFFLINE), 'RELIEF');
+    expect(relief.place).toBeNull();
+    expect(relief.note).toContain(copy.TOO_OLD_TO_SHOW);
+  });
+
   it('is not stale at exactly the threshold', () => {
     expect(row(nearbyView(NOW, KALORAMA, cache({}, 60 * 60_000), OFFLINE), 'RELIEF').place).not.toBeNull();
   });

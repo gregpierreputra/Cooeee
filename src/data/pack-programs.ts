@@ -78,7 +78,20 @@ async function syncPack(pack: Pack, kept: readonly string[]): Promise<void> {
   });
 }
 
+// One sync at a time. A sync reads a pack, may wait seconds for a page copy,
+// then writes the rows and a manifest hashed over what it read. Home, Recover
+// and the wizard can each start one, and two running together would leave rows
+// from one under the manifest of the other, so the pack would fail its own
+// check and withhold its programs for good.
+// ponytail: serialises within this tab only; use the Web Locks API if two open
+// tabs syncing at once ever shows up in practice.
+let queue: Promise<void> = Promise.resolve();
+
 /** Bring every complete pack in line with the kept list. */
-export async function syncKeptIntoPacks(kept: readonly string[]): Promise<void> {
-  for (const pack of await listCompletePacks()) await syncPack(pack, kept);
+export function syncKeptIntoPacks(kept: readonly string[]): Promise<void> {
+  const run = queue.then(async () => {
+    for (const pack of await listCompletePacks()) await syncPack(pack, kept);
+  });
+  queue = run.catch(() => {});
+  return run;
 }

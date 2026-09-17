@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import { headerAge, oldestPack, type HeaderAge } from '../../core/home';
-import type { Pack } from '../../core/types';
-import { listCompletePacks } from '../../data/db';
+import { watchCompletePacks } from '../../data/db';
 
 /** The fixed header — ONE component, mounted once by the application shell, so
  *  every screen carries the same header rather than its own copy of it.
@@ -15,16 +14,14 @@ import { listCompletePacks } from '../../data/db';
 export default function AppHeader({ now }: { now?: number }) {
   const [age, setAge] = useState<HeaderAge>({ kind: 'none' });
 
-  useEffect(() => {
-    let live = true;
-    listCompletePacks().then((rows: Pack[]) => {
-      if (!live) return;
-      setAge(headerAge(now ?? Date.now(), oldestPack(rows)?.verifiedAt ?? null));
-    });
-    return () => {
-      live = false;
-    };
-  }, [now]);
+  // The header is mounted once for the whole app, so a single read at mount
+  // would go on stating the age of a pack deleted since, and state nothing
+  // after a first pack is saved. It is told whenever the packs change. It still
+  // reads IndexedDB and nothing else.
+  useEffect(
+    () => watchCompletePacks((rows) => setAge(headerAge(now ?? Date.now(), oldestPack(rows)?.verifiedAt ?? null))),
+    [now],
+  );
 
   return (
     <header className="app-header">

@@ -51,10 +51,17 @@ export default function HoldButton({ onHold, hint, children }: HoldButtonProps) 
       <button
         type="button"
         className="blacksky-hold"
-        onPointerDown={startHold}
+        // Only the main button holds. A right click opens a menu that swallows
+        // the pointerup, and the timer would then enter BlackSky with no hold.
+        onPointerDown={(e) => {
+          if (e.button === 0) startHold();
+        }}
         onPointerUp={releaseHold}
         onPointerLeave={releaseHold}
         onPointerCancel={releaseHold}
+        onContextMenu={releaseHold}
+        // Tab away while Space is down and the keyup lands elsewhere.
+        onBlur={releaseHold}
         onKeyDown={(e) => {
           if (e.key === ' ') e.preventDefault(); // Space must not scroll the page under a hold
           if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) startHold();

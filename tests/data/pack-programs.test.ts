@@ -85,6 +85,34 @@ describe('syncKeptIntoPacks', () => {
     expect((await db.files.toArray()).map((file) => file.name).sort()).toEqual(['old.pdf', other.name].sort());
   });
 
+  it('two syncs started together leave a pack that still verifies', async () => {
+    // Home starts one sync while a page is still being read. The user keeps a
+    // second program and a second sync starts before the first has finished.
+    let release = () => {};
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    let first = true;
+    vi.stubGlobal('fetch', async () => {
+      if (first) { first = false; await held; }
+      return new Response(bytes, { status: 200 });
+    });
+    await db.programs.bulkPut([
+      program({ id: 'p-a', officialUrl: page.url }),
+      program({ id: 'p-b' }),
+    ]);
+
+    const slow = syncKeptIntoPacks(['p-a']);
+    await vi.waitFor(() => expect(first).toBe(false)); // the first sync is now waiting on its page
+    const fast = syncKeptIntoPacks(['p-a', 'p-b']);
+    await new Promise((resolve) => setTimeout(resolve, 50)); // and the second has had time to finish
+    release();
+    await Promise.all([slow, fast]);
+
+    const content = await getCompletePackContent('pack-1');
+    expect(content?.recoveryVerified).toBe(true);
+    expect(content?.contentVerified).toBe(true);
+    expect(content?.recovery.map((row) => row.programId).sort()).toEqual(['p-a', 'p-b']);
+  });
+
   it('leaves a pack untouched when nothing changes', async () => {
     const before = await db.packs.get('pack-1');
     await syncKeptIntoPacks([]);

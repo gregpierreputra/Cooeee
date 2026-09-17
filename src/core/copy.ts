@@ -58,7 +58,9 @@ export const DISMISS_NOTICE = 'Dismiss connection notice';
 
 export const NO_PACKS_HINT =
   'Build a pack while you have a connection, so it is on your phone when there is none.';
-export const SAVED_DAYS_AGO = (days: number) => `Saved ${days} days ago`;
+/** "1 day", "3 days": a pack saved yesterday must not read "1 days ago". */
+const dayCount = (days: number) => (days === 1 ? '1 day' : `${days} days`);
+export const SAVED_DAYS_AGO = (days: number) => `Saved ${dayCount(days)} ago`;
 
 // Deleting a saved pack — the cross opens an in-card confirmation; nothing is
 // removed until the delete answer is chosen.
@@ -90,6 +92,16 @@ export const ADDRESS_FIELD_HINT =
 export const ADDRESS_SEARCH_DISCLOSURE =
   'Not every address has an official place of last resort close by. Cooeee lists the nearest places the Country Fire Authority publishes. They may be some distance away, and for some areas there may be none.';
 export const SEARCH = 'Search';
+/** Use my location on the address search. The position is sent to the address
+ *  register, so the screen says so before the button is tapped. */
+export const ADDRESS_LOCATE_DISCLOSURE =
+  'Use my location sends your position to the Victorian address register to find the addresses nearest you. Cooeee does not store it.';
+export const ADDRESS_LOCATE_FOUND = 'These are the addresses nearest your position.';
+export const ADDRESS_LOCATE_FAILED = 'Your position could not be read. Type the address instead.';
+export const ADDRESS_LOCATE_OUTSIDE =
+  'Your position is outside Victoria. Type a Victorian address instead.';
+export const ADDRESS_LOCATE_NONE =
+  'No address was found near your position. Type the address instead.';
 export const SEARCH_IN_PROGRESS = 'Searching for addresses.';
 export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
 export const CHOOSE_ADDRESS = 'Choose your address from the list.';
@@ -97,11 +109,6 @@ export const CANDIDATE_LIST_LABEL = 'Address candidates';
 export const NONE_OF_THESE = 'None of these is my address';
 /** The register describes one address at more than one point and does not say
  * which it means. Stated as the limit it is, never as a result. */
-export const ADDRESS_NOT_RESOLVED = 'One address could not be matched to a single map location.';
-export const ADDRESSES_NOT_RESOLVED = (count: number) =>
-  `${count} addresses could not be matched to a single map location.`;
-export const ADDRESS_NOT_RESOLVED_REASON =
-  'The address register holds multiple map locations for the same written address, so Cooeee cannot choose one.';
 export const REFINE_ADDRESS_HINT =
   'Check or add a unit or street number, then search again.';
 /** Both numbers, in one line. The lines on screen are the distinct addresses
@@ -162,7 +169,7 @@ export const YOUR_PACK = 'Your pack';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
 export const SAVED_TODAY = 'Saved today';
-export const ITEM_DAYS_AGO = (days: number) => `${days} days ago`;
+export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;
 export const NOT_RECENTLY_VERIFIED_LABEL = 'Not recently verified';
 export const STALE_PACK_STILL_WORKS =
   'This pack still works. Refresh it when you are next online.';
@@ -407,7 +414,7 @@ export const BLACKSKY_RESUMED =
  *  wording from the pack card's SAVED_DAYS_AGO: the card reports when the pack
  *  was written, the header reports when its contents were last checked, and one
  *  sentence must never be mistaken for the other. */
-export const CHECKED_DAYS_AGO = (days: number) => `Checked ${days} days ago`;
+export const CHECKED_DAYS_AGO = (days: number) => `Checked ${dayCount(days)} ago`;
 
 /** The header's home control. The mark is decorative; this names it. */
 export const HEADER_HOME_LABEL = 'Cooeee home';

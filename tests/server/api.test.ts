@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allowRequest, route } from '../../server/api';
+import { allowRequest, parseRequestUrl, route } from '../../server/api';
 import { type Db, openDb } from '../../server/db';
 import { upsertPostcodes } from '../../server/ingest/postcodes';
 import { rebuildNearestStatic, upsertFacilities } from '../../server/ingest/static';
@@ -157,5 +157,16 @@ describe('the per-address request budget', () => {
     expect(allowRequest(ip, t + 60)).toBe(false);
     expect(allowRequest('203.0.113.10', t + 60)).toBe(true); // another address has its own budget
     expect(allowRequest(ip, t + 60_000)).toBe(true);
+  });
+});
+
+describe('a malformed request line', () => {
+  it.each(['//', '//a:b:c', 'http://['])('%j is refused, never thrown, so it cannot end the process', (raw) => {
+    expect(parseRequestUrl(raw)).toBeNull();
+  });
+
+  it('reads an ordinary request line, and a missing one as the root', () => {
+    expect(parseRequestUrl('/api/v1/health?x=1')?.pathname).toBe('/api/v1/health');
+    expect(parseRequestUrl(undefined)?.pathname).toBe('/');
   });
 });

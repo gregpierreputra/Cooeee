@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+  useParams,
+} from 'react-router';
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
+import { canStepBack } from './ui/components/history';
 import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
 import { pruneKept } from './core/kept';
@@ -55,6 +64,40 @@ function BlackSkyResume() {
     if (isBlackSkyLatched(localFlagStore()) && !pathname.startsWith('/blacksky')) {
       navigate('/blacksky', { replace: true });
     }
+  }, [pathname]);
+  return null;
+}
+
+/** BlackSky, unless this is a Back press onto an entry left behind by a visit
+ *  that has already ended.
+ *
+ *  Entering BlackSky adds two history entries and leaving replaces only the
+ *  newest, so the older one stays under the screen the user left to. One Back
+ *  press from there used to land on it, open BlackSky again and latch it again,
+ *  which took another two second hold to get out of. That entry is told apart
+ *  by three facts together: it was reached by Back, the latch is clear (she
+ *  left by the hold), and there is somewhere in the app to step back to. It is
+ *  then stepped over. A reload inside BlackSky still has its latch, and a first
+ *  arrival by link has nowhere to step back to, so both open it as before. */
+function BlackSkyRoute() {
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
+  // Decided once, at arrival: BlackSky sets the latch as soon as it mounts.
+  const [leftBehind] = useState(
+    () => navigationType === 'POP' && !isBlackSkyLatched(localFlagStore()) && canStepBack(),
+  );
+  useEffect(() => {
+    if (leftBehind) navigate(-1);
+  }, [leftBehind]);
+  return leftBehind ? null : <BlackSky />;
+}
+
+/** A new route starts at its top. The browser keeps the window's scroll when
+ *  the router swaps one screen for another in the same document. */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0); // in braces, see the first run effect in App
   }, [pathname]);
   return null;
 }
@@ -136,6 +179,15 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // The welcome is seen once, on the way to the disclosure. Nothing records
   // it: the acknowledgement that follows is the only flag this screen leads to.
   const [welcomed, setWelcomed] = useState(false);
+  // Each first run screen replaces the last in the same document, so the window
+  // keeps its scroll. On a small phone the welcome's button is below the fold,
+  // and the disclosure then opened at its checkbox with the four statements
+  // above the screen. Every new screen starts at its top.
+  useEffect(() => {
+    // In braces on purpose: newer browsers return a promise from scrollTo, and
+    // React takes whatever an effect returns for its cleanup function.
+    window.scrollTo(0, 0);
+  }, [passed, welcomed, screen]);
   // The call plays once more after the disclosure, over the first Home. A new
   // key mounts a fresh splash; `play` tells it not to ask how the page loaded.
   const [replays, setReplays] = useState(0);
@@ -187,6 +239,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
     return (
       <BrowserRouter>
         <BlackSkyResume />
+        <ScrollToTop />
         <ModeSwitch />
         <NoticeBar />
         <HeaderHost />
@@ -201,7 +254,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           <Route path="/nearby" element={<Nearby />} />
           <Route path="/recover" element={<Recover />} />
           <Route path="/about" element={<About />} />
-          <Route path="/blacksky" element={<BlackSky />} />
+          <Route path="/blacksky" element={<BlackSkyRoute />} />
         </Routes>
         <Tour />
         <BottomNavHost />

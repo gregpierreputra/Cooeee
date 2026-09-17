@@ -11,7 +11,11 @@ import {
 import { bpaExposureLayer } from '../../core/area-check';
 import {
   ADDRESS_QUERY_DEBOUNCE_MS,
+  ADDRESS_QUERY_MAX_CHARS,
   ADDRESS_RESULT_LIMIT,
+  isInsideVictoria,
+  NEARBY_FIX_MAX_AGE_MS,
+  NEARBY_FIX_TIMEOUT_MS,
   PACK_HAZARD,
   PLACES_OFFERED,
 } from '../../core/constants';
@@ -40,7 +44,12 @@ import { localFlagStore } from '../../data/acknowledgement';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
 import { loadPackFiles } from '../../data/source-files';
-import { fetchAddressCandidates, fetchBushfireAreaResult } from '../../data/wfs';
+import {
+  fetchAddressCandidates,
+  fetchAddressesNear,
+  fetchBushfireAreaResult,
+} from '../../data/wfs';
+import Glyph from '../components/Glyph';
 import StatusPage from '../components/StatusPage';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
 import { Candidates } from './Candidates';
@@ -56,7 +65,7 @@ import { Size } from './Size';
  * every render, and a live search keyed on it would restart on every state
  * change — one request per keystroke of feedback, forever. */
 const searchAddressRegister = (query: string, signal: AbortSignal) =>
-  fetchAddressCandidates(query, undefined, undefined, signal);
+  fetchAddressCandidates(query, undefined, signal);
 
 type ConflictState =
   | { kind: 'checking' }
@@ -143,6 +152,16 @@ export function Search({
   // does not wait out a pause the user has already ended themselves.
   const [attempt, setAttempt] = useState({ immediate: false });
   const [candidate, setCandidate] = useState<AddressCandidate | null>(null);
+  // Use my location: the addresses nearest a position, shown in place of the
+  // typed search until the user types again. The position is never kept.
+  const [locating, setLocating] = useState(false);
+  const [located, setLocated] = useState<AddressCandidate[] | null>(null);
+  const [locateNotice, setLocateNotice] = useState<string | null>(null);
+  // Bumped by every tap and every keystroke, so a late answer is dropped.
+  const locateIdRef = useRef(0);
+  // Stops the nearby lookup on the wire when the user moves on: its wider
+  // radii would otherwise still go out, each carrying the position.
+  const locateAbortRef = useRef<AbortController | null>(null);
   // Synchronous, because it guards against a second request within one tick.
   const requestIdRef = useRef(0);
   const inFlightQueryRef = useRef<string | null>(null);
@@ -163,7 +182,12 @@ export function Search({
   const [packId, setPackId] = useState('');
 
   const trimmedQuery = query.trim();
-  const live = liveSearchState(query, settled, dismissed);
+  // While Use my location owns the list the typed search claims nothing. A
+  // notice alone does not: a failed fix leaves the typed search as it was.
+  const byPosition = locating || located !== null;
+  const live = byPosition
+    ? ({ kind: 'dismissed' } as const)
+    : liveSearchState(query, settled, dismissed);
 
   // Read through a ref so that a caller passing an inline function cannot make
   // the search restart on every render. Only the typed query and an explicit run
@@ -214,7 +238,63 @@ export function Search({
     // and the cancellation at once.
   }, [trimmedQuery, attempt]);
 
+  // Leaving the screen stops a nearby lookup still on the wire.
+  useEffect(() => () => locateAbortRef.current?.abort(), []);
+
+  function clearLocated() {
+    locateIdRef.current += 1;
+    locateAbortRef.current?.abort();
+    locateAbortRef.current = null;
+    setLocating(false);
+    setLocated(null);
+    setLocateNotice(null);
+  }
+
+  /** Read one position, then ask the register for the addresses nearest it.
+   * A position outside Victoria is never sent. Every failure leaves the typed
+   * search exactly as it was. */
+  function locate() {
+    clearLocated();
+    if (!('geolocation' in navigator)) {
+      setLocateNotice(copy.ADDRESS_LOCATE_FAILED);
+      return;
+    }
+    const id = locateIdRef.current;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        if (id !== locateIdRef.current) return;
+        const position = { lat: coords.latitude, lon: coords.longitude };
+        let notice: string | null = null;
+        let candidates: AddressCandidate[] | null = null;
+        if (!isInsideVictoria(position.lat, position.lon)) {
+          notice = copy.ADDRESS_LOCATE_OUTSIDE;
+        } else {
+          try {
+            const controller = new AbortController();
+            locateAbortRef.current = controller;
+            candidates = (await fetchAddressesNear(position, undefined, controller.signal)).candidates;
+            if (candidates.length === 0) notice = copy.ADDRESS_LOCATE_NONE;
+          } catch {
+            notice = copy.SEARCH_COULD_NOT_RUN;
+          }
+        }
+        if (id !== locateIdRef.current) return;
+        setLocating(false);
+        setLocateNotice(notice);
+        setLocated(notice ? null : candidates);
+      },
+      () => {
+        if (id !== locateIdRef.current) return;
+        setLocating(false);
+        setLocateNotice(copy.ADDRESS_LOCATE_FAILED);
+      },
+      { enableHighAccuracy: true, timeout: NEARBY_FIX_TIMEOUT_MS, maximumAge: NEARBY_FIX_MAX_AGE_MS },
+    );
+  }
+
   function handleQueryChange(event: ChangeEvent<HTMLInputElement>) {
+    clearLocated();
     setQuery(event.currentTarget.value);
     // Dismissal lasts until the query changes — including a change back to text
     // that was searched before, which is a fresh request and a fresh list.
@@ -226,6 +306,7 @@ export function Search({
    * already in flight for this exact text is left to finish, so an explicit tap
    * during the wait cannot double the outbound requests. */
   function runSearchNow() {
+    clearLocated();
     if (inFlightQueryRef.current === trimmedQuery) return;
     setDismissed(false);
     setSettled(null);
@@ -563,9 +644,15 @@ export function Search({
             name="addressQuery"
             value={query}
             autoComplete="off"
+            maxLength={ADDRESS_QUERY_MAX_CHARS}
             aria-describedby="address-hint address-result"
             onChange={handleQueryChange}
           />
+          <button type="button" className="search-locate" onClick={locate} disabled={locating}>
+            <Glyph kind="locate" />
+            {locating ? copy.LOCATING : copy.USE_MY_LOCATION}
+          </button>
+          <p className="muted search-hint">{copy.ADDRESS_LOCATE_DISCLOSURE}</p>
 
           {/* One polite live region for the field. It carries the count when the
               list changes under a screen reader, which the list markup alone
@@ -573,7 +660,10 @@ export function Search({
           <div id="address-result" className="card search-result" role="status" aria-live="polite">
             {live.kind === 'too-short' ? <p>{copy.ADDRESS_QUERY_TOO_SHORT}</p> : null}
             {live.kind === 'pending' ? <p>{copy.SEARCH_IN_PROGRESS}</p> : null}
-            {live.kind === 'dismissed' ? <p>{copy.REFINE_ADDRESS_HINT}</p> : null}
+            {locating ? <p>{copy.LOCATING}</p> : null}
+            {located ? <p>{copy.ADDRESS_LOCATE_FOUND}</p> : null}
+            {locateNotice ? <p>{locateNotice}</p> : null}
+            {live.kind === 'dismissed' && !byPosition ? <p>{copy.REFINE_ADDRESS_HINT}</p> : null}
             {live.kind === 'no-match' ? <p>{copy.NO_ADDRESS_MATCH}</p> : null}
             {live.kind === 'candidates' ? (
               <>
@@ -594,9 +684,18 @@ export function Search({
           {live.kind === 'candidates' ? (
             <Candidates
               candidates={live.candidates}
-              unresolvedCount={live.unresolvedCount}
               onChoose={setCandidate}
               onNone={() => setDismissed(true)}
+            />
+          ) : null}
+          {located ? (
+            <Candidates
+              candidates={located}
+              onChoose={setCandidate}
+              onNone={() => {
+                clearLocated();
+                setLocateNotice(copy.REFINE_ADDRESS_HINT);
+              }}
             />
           ) : null}
         </div>

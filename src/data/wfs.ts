@@ -1,10 +1,14 @@
 import {
-  addressQueryForCql,
+  addressFilterForCql,
+  placeNameFilterForCql,
+  reorderedFilterForCql,
   resolveAddressCandidates,
   type AddressCandidateResolution,
 } from '../core/address-search';
 import { extentSnapshotDisagrees, resolveBushfireAreaStatus } from '../core/area-check';
 import {
+  ADDRESS_NEAR_FETCH_LIMIT,
+  ADDRESS_NEAR_METRES,
   ADDRESS_RESULT_LIMIT,
   ADDRESS_SEARCH_TIMEOUT_MS,
   AREA_CHECK_TIMEOUT_MS,
@@ -13,11 +17,13 @@ import {
   isInsideVictoria,
   MAX_RESPONSE_BYTES,
 } from '../core/constants';
+import { distanceM } from '../core/geo';
 import { readJsonBounded } from './bounded-body';
 import type {
   AddressCandidate,
   AddressRecord,
   BushfireAreaResult,
+  LatLon,
   PendingPlace,
 } from '../core/types';
 
@@ -90,7 +96,10 @@ function parseAddressRecord(value: unknown): AddressRecord {
   };
 }
 
-export function buildAddressSearchUrl(query: string): string {
+export function buildAddressSearchUrl(
+  query: string,
+  filter: string = addressFilterForCql(query),
+): string {
   const params = new URLSearchParams({
     service: 'WFS',
     version: '2.0.0',
@@ -98,7 +107,24 @@ export function buildAddressSearchUrl(query: string): string {
     outputFormat: 'application/json',
     typeNames: 'open-data-platform:address',
     count: String(ADDRESS_RESULT_LIMIT),
-    CQL_FILTER: `property_status = 'A' AND ezi_address LIKE '${addressQueryForCql(query)}%'`,
+    // Descending puts the whole property, which has no unit, ahead of its units.
+    sortBy: 'blg_unit_id_1 D',
+    CQL_FILTER: `property_status = 'A' AND ${filter}`,
+  });
+  return `${WFS_BASE_URL}?${params.toString()}`;
+}
+
+/** Active addresses within `metres` of a position. The point is written
+ * latitude first, the axis order this service reads (see pointFilter). */
+export function buildAddressNearUrl({ lat, lon }: LatLon, metres: number): string {
+  const params = new URLSearchParams({
+    service: 'WFS',
+    version: '2.0.0',
+    request: 'GetFeature',
+    outputFormat: 'application/json',
+    typeNames: 'open-data-platform:address',
+    count: String(ADDRESS_NEAR_FETCH_LIMIT),
+    CQL_FILTER: `property_status = 'A' AND DWITHIN(geom, POINT(${lat} ${lon}), ${metres}, meters)`,
   });
   return `${WFS_BASE_URL}?${params.toString()}`;
 }
@@ -108,7 +134,7 @@ export function buildAddressSearchUrl(query: string): string {
  * changes, the earlier request is aborted on the wire rather than left
  * running and ignored. */
 async function requestAddressRecords(
-  query: string,
+  url: string,
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   signal: AbortSignal | undefined,
 ): Promise<AddressRecord[]> {
@@ -119,7 +145,7 @@ async function requestAddressRecords(
   else signal?.addEventListener('abort', abortWithCaller, { once: true });
 
   try {
-    const response = await fetcher(buildAddressSearchUrl(query), {
+    const response = await fetcher(url, {
       method: 'GET',
       signal: controller.signal,
     });
@@ -128,7 +154,21 @@ async function requestAddressRecords(
     const payload: unknown = await readJsonBounded(response, MAX_RESPONSE_BYTES);
     assertRecord(payload, 'response');
     if (!Array.isArray(payload.features)) throw new TypeError('response.features must be an array');
-    return payload.features.map(parseAddressRecord);
+    // One record the register got wrong (a point outside Victoria, a missing
+    // suburb) must not cost the user every good record beside it, so it is
+    // skipped. When none can be read the register's shape has changed, and that
+    // is a search that could not run, never an honest "no match".
+    const records = payload.features.flatMap((feature: unknown) => {
+      try {
+        return [parseAddressRecord(feature)];
+      } catch {
+        return [];
+      }
+    });
+    if (records.length === 0 && payload.features.length > 0) {
+      throw new TypeError('no address record in the response could be read');
+    }
+    return records;
   } finally {
     clearTimeout(timeout);
     signal?.removeEventListener('abort', abortWithCaller);
@@ -143,30 +183,74 @@ async function requestAddressRecords(
 export async function fetchAddressCandidates(
   query: string,
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
-  onUnresolvedDuplicates: (message: string) => void = console.error,
   signal?: AbortSignal,
 ): Promise<AddressCandidateResolution> {
+  const ask = (filter: string) =>
+    requestAddressRecords(buildAddressSearchUrl(query, filter), fetcher, signal);
+
+  // The text as typed is THE search. A single dropped request is not the
+  // register being down, so it gets one immediate second attempt. Neither a
+  // caller's cancellation nor the attempt's own timeout is retried: the first is
+  // a query the user moved past, and the second would double the
+  // ADDRESS_SEARCH_TIMEOUT_MS bound the screen promises.
+  const typed = addressFilterForCql(query);
   let records: AddressRecord[];
   try {
-    records = await requestAddressRecords(query, fetcher, signal);
+    records = await ask(typed);
   } catch (error) {
-    // Neither a caller's cancellation nor the attempt's own timeout is retried:
-    // the first is a query the user moved past, and the second would double
-    // the ADDRESS_SEARCH_TIMEOUT_MS bound the screen promises.
     const aborted = signal?.aborted || (error instanceof Error && error.name === 'AbortError');
     if (aborted) throw error;
-    records = await requestAddressRecords(query, fetcher, signal);
+    records = await ask(typed);
   }
 
-  const resolution = resolveAddressCandidates(records);
-  // A bare count. The searched text, the returned addresses and their points
-  // are the user's business and none of them belongs in a diagnostic.
-  if (resolution.unresolvedCount > 0) {
-    onUnresolvedDuplicates(
-      `Vicmap address search left ${resolution.unresolvedCount} group(s) unresolved`,
-    );
+  // When nothing matched, the register is asked again with the words put back
+  // in order, then loosely (a spelling slip), and last by the name of a building
+  // or site. These are a courtesy on top of an honest "no match": one that
+  // fails, or comes after the time a search may take, ends the asking and the
+  // no match stands. It never turns into "the search could not run". Whatever
+  // comes back is still a real register address that the user must choose.
+  const started = Date.now();
+  const further = [
+    reorderedFilterForCql(query),
+    addressFilterForCql(query, true),
+    reorderedFilterForCql(query, true),
+    placeNameFilterForCql(query),
+  ];
+  for (const filter of further) {
+    if (resolveAddressCandidates(records).candidates.length > 0) break;
+    if (filter === null) continue;
+    if (Date.now() - started > ADDRESS_SEARCH_TIMEOUT_MS) break;
+    try {
+      records = await ask(filter);
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      break;
+    }
   }
-  return resolution;
+  return resolveAddressCandidates(records);
+}
+
+/** Use my location: the register's addresses nearest a position, nearest first.
+ * The closest radius is asked first and each wider one only when it finds nothing,
+ * which is what a fix on a rural property needs. The position must already be
+ * known to be inside Victoria, and nothing here stores it. */
+export async function fetchAddressesNear(
+  position: LatLon,
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
+  signal?: AbortSignal,
+): Promise<AddressCandidateResolution> {
+  let records: AddressRecord[] = [];
+  for (const metres of ADDRESS_NEAR_METRES) {
+    records = await requestAddressRecords(buildAddressNearUrl(position, metres), fetcher, signal);
+    if (records.length > 0) break;
+  }
+
+  // Nearest first. At one point (a building and its units) the whole property
+  // comes ahead of its units, so ten units cannot crowd the building itself out.
+  const metresAway = (record: AddressRecord) => distanceM(position, record.candidate);
+  const isUnit = (record: AddressRecord) => Number(record.candidate.address.includes('/'));
+  const nearest = [...records].sort((a, b) => metresAway(a) - metresAway(b) || isUnit(a) - isUnit(b));
+  return resolveAddressCandidates(nearest.slice(0, ADDRESS_RESULT_LIMIT));
 }
 
 function pointFilter({ lat, lon }: Pick<PendingPlace, 'lat' | 'lon'>): string {

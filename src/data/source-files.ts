@@ -1,4 +1,4 @@
-import { MAX_RESPONSE_BYTES } from '../core/constants';
+import { BUNDLED_FILE_TIMEOUT_MS, MAX_RESPONSE_BYTES } from '../core/constants';
 import { sourcePageUrls } from '../core/provenance';
 import type { PackFile, TextPackContent } from '../core/types';
 import { loadAreaMap } from './area-map';
@@ -22,7 +22,10 @@ function fail(message: string): never {
 async function readSourceFile(packId: string, url: string): Promise<PackFile> {
   const entry = sources.find((source) => source.url === url);
   if (!entry) fail(`no rendered copy of ${url}`);
-  const response = await fetch(`/data/sources/${entry.name}`, { cache: 'force-cache' });
+  const response = await fetch(`/data/sources/${entry.name}`, {
+    cache: 'force-cache',
+    signal: AbortSignal.timeout(BUNDLED_FILE_TIMEOUT_MS),
+  });
   if (!response.ok) fail(`${entry.name} request failed (${response.status})`);
   const bytes = await readBodyBounded(response, MAX_RESPONSE_BYTES);
   if (new TextDecoder().decode(bytes.slice(0, 4)) !== '%PDF') fail(`${entry.name} is not a PDF`);

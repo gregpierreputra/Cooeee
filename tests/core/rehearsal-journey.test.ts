@@ -159,6 +159,9 @@ describe('the rehearsal and the live BlackSky screen', () => {
     expect(journey).toMatch(/import HoldButton from '\.\.\/components\/HoldButton'/);
     expect(journey).toContain("onHold={() => navigate('/blacksky')}");
     const app = readFileSync(join('src', 'app.tsx'), 'utf8');
-    expect(app).toContain('<Route path="/blacksky" element={<BlackSky />} />');
+    // The route renders the one real BlackSky, through the wrapper that steps
+    // over a history entry a finished visit left behind.
+    expect(app).toContain('<Route path="/blacksky" element={<BlackSkyRoute />} />');
+    expect(app).toContain('return leftBehind ? null : <BlackSky />;');
   });
 });

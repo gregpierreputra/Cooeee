@@ -50,7 +50,10 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
     const saved = { ...note, updatedAt: Date.now() };
     try {
       await save(saved);
-      replace(saved);
+      // Only the saved time is taken from the write. Words typed while it was
+      // in flight are newer than what was saved, and must not be put back.
+      setNotes((current) =>
+        current.map((row) => (row.id === saved.id ? { ...row, updatedAt: saved.updatedAt } : row)));
       mark(note.id, 'saved');
     } catch {
       mark(note.id, 'failed');
@@ -61,7 +64,9 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
   // when its fade ends (onAnimationEnd below).
   async function removeNote(note: PackNote) {
     try {
-      if (note.updatedAt > 0) await remove(note.id);
+      // Asked for even when this card has no saved time yet: a save may be in
+      // flight, and deleting a note that was never stored changes nothing.
+      await remove(note.id);
       mark(note.id, 'deleted');
     } catch {
       mark(note.id, 'failed');

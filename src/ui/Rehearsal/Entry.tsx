@@ -11,7 +11,7 @@ import { JourneyBefore, JourneyRunning } from './Journey';
 import Result from './Result';
 import Run from './Run';
 import Unfinished from './Unfinished';
-import { useRehearsalRun } from './run-state';
+import { currentRun, endRun, useRehearsalRun } from './run-state';
 import StatusPage from '../components/StatusPage';
 
 type EntryProps = {
@@ -56,7 +56,10 @@ export default function RehearsalEntry({
   // yet, and nothing is drawn for that wait. A read that fails finds nothing to
   // ask about, which decides no ending.
   const [unfinished, setUnfinished] = useState<UnfinishedRehearsal | null | undefined>(undefined);
-  const runId = run?.id ?? null;
+  // Only a run for THIS pack stands in for the kept row. A run for another pack
+  // says nothing about this one, and skipping the read for it left this screen
+  // blank for as long as that other run stayed in memory.
+  const runId = run !== null && run.packId === packId ? run.id : null;
 
   useEffect(() => {
     if (runId !== null) return;
@@ -75,15 +78,28 @@ export default function RehearsalEntry({
     };
   }, [loadUnfinished, packId, runId]);
 
+  // The time this screen opened, held once. The default `now` is a fresh
+  // Date.now() on every render, so watching it would read the pack, set the
+  // gate, render, and read the pack again, for as long as the screen is open.
+  const [openedAt] = useState(now);
+
   useEffect(() => {
     let live = true;
+    // loadSource never rejects: a store that cannot be read comes back as
+    // 'unreadable', which is one of the gate's own stated screens.
     loadSource(packId).then((source) => {
-      if (live) setGate(rehearsalGate({ now, ...source }));
+      if (!live) return;
+      const next = rehearsalGate({ now: openedAt, ...source });
+      // A run whose pack can no longer be rehearsed (deleted, or replaced by a
+      // rebuild) has nothing left to run against. It ends here, so its bar goes
+      // and Rehearse in the bottom bar stops leading back to a pack that is gone.
+      if (next.state !== 'ready' && currentRun()?.packId === packId) endRun();
+      setGate(next);
     });
     return () => {
       live = false;
     };
-  }, [loadSource, packId, now]);
+  }, [loadSource, packId, openedAt]);
 
   if (gate === null) return null;
 

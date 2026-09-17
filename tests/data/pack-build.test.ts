@@ -163,6 +163,7 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
     await db.layers.put({ ...content().layers[0], id: 'old-pack:BPA', packId: 'old-pack' });
     await db.destinations.put(destination({ id: 'old-pack:d', packId: 'old-pack' }));
     await db.tiles.put({ packId: 'old-pack', z: 12, x: 1, y: 2, bytes: new Blob(['old']) });
+    await db.notes.put({ id: 'note-1', packId: 'old-pack', text: 'Gate code 4471', updatedAt: 5 });
 
     const proposed = content({
       pack: seed({ id: 'new-pack', supersedes: old.id, address: 'NEW ADDRESS' }),
@@ -178,5 +179,9 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
     expect(await db.layers.where('packId').equals('old-pack').count()).toBe(0);
     expect(await db.destinations.where('packId').equals('old-pack').count()).toBe(0);
     expect(await db.tiles.where('packId').equals('old-pack').count()).toBe(0);
+    // The reader's own note survives the replace, now on the new pack.
+    expect(await db.notes.toArray()).toEqual([
+      { id: 'note-1', packId: 'new-pack', text: 'Gate code 4471', updatedAt: 5 },
+    ]);
   });
 });

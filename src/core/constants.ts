@@ -29,6 +29,47 @@ export const DESTINATIONS_MAX = 2;
 export const ADDRESS_QUERY_MIN_CHARS = 3;
 export const ADDRESS_RESULT_LIMIT = 10;
 export const ADDRESS_SEARCH_TIMEOUT_MS = 10_000;
+/** The register answers HTTP 400 to a request of about 10,000 characters and
+ * accepts one of 6,700 (measured 18 September 2026). A filter grows by about a
+ * quarter when it is written into a web address, so it is held to this length. */
+export const ADDRESS_FILTER_MAX_CHARS = 5000;
+/** The longest text read from the address field, and the longest single word.
+ *  The longest written address in the register is under 100 characters and its
+ *  longest word under 25, so neither limit touches a real address. They stop a
+ *  huge paste from slowing the page or growing a filter past the register's limit. */
+export const ADDRESS_QUERY_MAX_CHARS = 200;
+export const ADDRESS_WORD_MAX_CHARS = 40;
+
+/** Use my location asks the register for addresses this close to the fix, then
+ * at each wider radius while it finds none. The register cannot sort by
+ * distance and returns at most the fetch limit in no useful order, so the steps
+ * are small: a radius that holds thousands of addresses would hand back fifty
+ * of them at random, none of them the nearest. More records than the list cap
+ * are fetched so the nearest ones can be picked on the device. */
+export const ADDRESS_NEAR_METRES = [25, 60, 150, 400, 1000, 2500, 5000] as const;
+export const ADDRESS_NEAR_FETCH_LIMIT = 50;
+
+/** A word typed after a road's type, as the register's short code for it: a
+ * direction, or one of its four rarer endings (extension, mall, connection,
+ * deviation). Every code the register uses is listed. */
+export const ROAD_DIRECTIONS: Readonly<Record<string, string>> = {
+  N: 'N', NORTH: 'N', NTH: 'N', S: 'S', SOUTH: 'S', STH: 'S',
+  E: 'E', EAST: 'E', W: 'W', WEST: 'W',
+  EX: 'EX', EXT: 'EX', EXTENSION: 'EX', ML: 'ML', MALL: 'ML',
+  CN: 'CN', CONNECTION: 'CN', DV: 'DV', DEVIATION: 'DV',
+};
+
+/** Short forms of road types, as the register spells the full word. A type
+ * typed in full needs no entry here: any word may be a road type. */
+export const ROAD_TYPES: Readonly<Record<string, string>> = {
+  ALY: 'ALLEY', ARC: 'ARCADE', AVE: 'AVENUE', AV: 'AVENUE', BVD: 'BOULEVARD', BLVD: 'BOULEVARD',
+  CSWY: 'CAUSEWAY', CH: 'CHASE', CCT: 'CIRCUIT', CIR: 'CIRCUIT', CL: 'CLOSE', CT: 'COURT', CRT: 'COURT',
+  CRES: 'CRESCENT', CR: 'CRESCENT', CRS: 'CRESCENT', DR: 'DRIVE', DRV: 'DRIVE', ESP: 'ESPLANADE',
+  FWY: 'FREEWAY', GLN: 'GLEN', GR: 'GROVE', GRV: 'GROVE', HTS: 'HEIGHTS', HWY: 'HIGHWAY', LN: 'LANE',
+  PDE: 'PARADE', PKWY: 'PARKWAY', PL: 'PLACE', PROM: 'PROMENADE', RDGE: 'RIDGE', RD: 'ROAD',
+  SQ: 'SQUARE', ST: 'STREET', STR: 'STREET', TCE: 'TERRACE', TER: 'TERRACE', TRK: 'TRACK', VW: 'VIEW',
+  WK: 'WALK', WY: 'WAY',
+};
 
 /** The pause after the last keystroke before the typed prefix leaves the device.
  *  The search runs while the user types, so with ADDRESS_QUERY_MIN_CHARS this is
@@ -49,6 +90,10 @@ export const AREA_CHECK_TIMEOUT_MS = 10_000;
 /** The map of a pack's area is drawn on request by the Web Map Service, which
  *  takes a few seconds; past this the pack is built without it. */
 export const AREA_MAP_TIMEOUT_MS = 20_000;
+/** A file the app ships with itself is normally answered from the phone in
+ *  milliseconds. On a first visit over a stalled connection it may never be
+ *  answered, and a wizard must not wait on it for ever. */
+export const BUNDLED_FILE_TIMEOUT_MS = 20_000;
 export const DTP_PUBLISHER = 'Department of Transport and Planning';
 export const DTP_LICENCE = 'CC BY 4.0';
 /** The publisher's own human-readable page for the designation dataset: title,
@@ -124,6 +169,11 @@ export const MS_PER_DAY = 86_400_000;
  *  snapshot has its own window, separate from PACK_REFRESH_DAYS and the
  *  SNAPSHOT_MAX_AGE_DAYS build gate. Label only; the programs stay shown. */
 export const RECOVERY_STALE_DAYS = 90;
+
+/** The longest gap between "I'm going now" and "I went there" that is still
+ *  read as the time the walk took. Past it the answer came later, looking back,
+ *  and the result says she went without stating a time. */
+export const REHEARSAL_TIMED_MAX_MS = 6 * 3_600_000;
 
 /** The official channel named when the pack holds nothing for a need. Static
  *  pack content on OFFICIAL_DOMAINS, never fetched. */

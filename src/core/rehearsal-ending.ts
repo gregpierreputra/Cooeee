@@ -6,6 +6,7 @@
 // asks. A rehearsal recorded before the endings existed carries none, and is
 // reported as not recorded: never defaulted to either ending.
 
+import { REHEARSAL_TIMED_MAX_MS } from './constants';
 import * as copy from './copy';
 import { formatSavedDate } from './provenance';
 import { conditionWithout } from './rehearsal-condition';
@@ -111,8 +112,13 @@ export function endingRecord(
   ending: RehearsalEnding,
   endedAt: number,
 ): EndingRecord {
-  return ending === 'walked'
-    ? { finishedAt: endedAt, ending, elapsedMs: endedAt - startedAt }
+  const elapsedMs = endedAt - startedAt;
+  // A rehearsal kept through a cold start may be answered days later. The gap
+  // is then not the time the walk took, and stating it ("It took you 2880
+  // minutes") would be a figure the app cannot stand behind, so none is kept.
+  const couldBeTheWalk = elapsedMs >= 0 && elapsedMs <= REHEARSAL_TIMED_MAX_MS;
+  return ending === 'walked' && couldBeTheWalk
+    ? { finishedAt: endedAt, ending, elapsedMs }
     : { finishedAt: endedAt, ending };
 }
 

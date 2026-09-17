@@ -16,4 +16,10 @@ describe('assertStaticBundle', () => {
     const oversized = Array.from({ length: MAX_SYNC_ROWS + 1 }, (_, i) => facility(i));
     expect(() => assertStaticBundle(bundle(oversized))).toThrow(/facilities has more than/);
   });
+
+  it('refuses a date it could not later read, so the cache never holds one', () => {
+    expect(() => assertStaticBundle(bundle([{ ...facility(1), last_verified_at: 'last Tuesday' }])))
+      .toThrow(/last_verified_at must be a date/);
+    expect(() => assertStaticBundle({ ...bundle([]), generated_at: 'soon' })).toThrow(/generated_at must be a date/);
+  });
 });

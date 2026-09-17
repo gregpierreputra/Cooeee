@@ -1,4 +1,4 @@
-import { MAX_RESPONSE_BYTES } from '../core/constants';
+import { BUNDLED_FILE_TIMEOUT_MS, MAX_RESPONSE_BYTES } from '../core/constants';
 import { isAllowedSourceUrl } from '../core/provenance';
 import { NEEDS } from '../core/recover';
 import type { NeedKey, RecoveryProgram, Source } from '../core/types';
@@ -86,7 +86,10 @@ export function assertRecoverySnapshot(value: unknown): RecoveryProgram[] {
  *  so Recover works with the radios off after the first visit. `fetchImpl` is
  *  injectable so tests can supply the bytes without a request. */
 export async function loadRecoveryPrograms(fetchImpl: typeof fetch = fetch): Promise<RecoveryProgram[]> {
-  const response = await fetchImpl(RECOVERY_SNAPSHOT_PATH, { cache: 'force-cache' });
+  const response = await fetchImpl(RECOVERY_SNAPSHOT_PATH, {
+    cache: 'force-cache',
+    signal: AbortSignal.timeout(BUNDLED_FILE_TIMEOUT_MS),
+  });
   if (!response.ok) fail(`request failed (${response.status})`);
   const programs = assertRecoverySnapshot(await readJsonBounded(response, MAX_RESPONSE_BYTES));
   await putPrograms(programs);

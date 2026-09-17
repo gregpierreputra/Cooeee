@@ -239,13 +239,27 @@ async function gate(request: IncomingMessage, gatePassword: string | undefined):
   return checkGate(gatePassword, clientAddress(request), password, Date.now());
 }
 
+/** The request line as a URL, or null when it is not one. A request line such
+ *  as "GET //" makes the URL constructor throw, and a throw outside the handler's
+ *  own try would end the process: one malformed request must never do that.
+ *  Exported so the rule can be tested without binding a port. */
+export function parseRequestUrl(raw: string | undefined): URL | null {
+  try {
+    return new URL(raw ?? '/', 'http://localhost');
+  } catch {
+    return null;
+  }
+}
+
 export function createApi(db: Db, gatePassword: string | undefined): Server {
   return createServer(async (request, response) => {
     const method = request.method ?? 'GET';
-    const url = new URL(request.url ?? '/', 'http://localhost');
+    const url = parseRequestUrl(request.url);
     let result: Route;
     try {
-      if (!allowRequest(clientAddress(request), Date.now())) {
+      if (url === null) {
+        result = { status: 400, body: { error: 'bad request' } };
+      } else if (!allowRequest(clientAddress(request), Date.now())) {
         result = { status: 429, body: { error: 'too many requests' } };
       } else if (method === 'POST' && url.pathname === '/api/v1/gate') {
         result = await gate(request, gatePassword);

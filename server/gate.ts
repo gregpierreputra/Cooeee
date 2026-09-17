@@ -8,6 +8,17 @@ const LOCK_MAX_MS = 60_000;
 const MAX_PASSWORD_LENGTH = 128;
 const attempts = new Map<string, { failures: number; lockedUntil: number }>();
 
+// The per-address count above trusts the address the proxy reports, and a
+// client that reaches this host directly can report a new one on every try.
+// So wrong passwords are also counted across every address: past this many in
+// a minute the gate refuses everyone until the minute is over. That caps
+// guessing at a rate no spoofed address can raise.
+// ponytail: a flood of wrong guesses locks honest users out for up to a minute;
+// accepted for a development gate, revisit if the gate ever guards real accounts.
+const GLOBAL_FAILURES_PER_MINUTE = 30;
+const GLOBAL_WINDOW_MS = 60_000;
+let globalWindow = { start: 0, failures: 0 };
+
 // Hashing both sides first gives timingSafeEqual the equal-length inputs it
 // requires, so a wrong length leaks nothing either.
 const sha256 = (text: string): Buffer => createHash('sha256').update(text).digest();
@@ -19,6 +30,10 @@ export function checkGate(secret: string | undefined, ip: string, password: unkn
   if (!secret) return { status: 503, body: { error: 'unavailable' } };
   // ponytail: clear every entry rather than expire each one; bounds memory under address spoofing.
   if (attempts.size > 10_000) attempts.clear();
+  if (now - globalWindow.start >= GLOBAL_WINDOW_MS) globalWindow = { start: now, failures: 0 };
+  if (globalWindow.failures >= GLOBAL_FAILURES_PER_MINUTE) {
+    return locked(globalWindow.start + GLOBAL_WINDOW_MS - now);
+  }
   const entry = attempts.get(ip) ?? { failures: 0, lockedUntil: 0 };
   if (now < entry.lockedUntil) return locked(entry.lockedUntil - now);
   if (typeof password !== 'string' || password.length > MAX_PASSWORD_LENGTH) {
@@ -28,6 +43,7 @@ export function checkGate(secret: string | undefined, ip: string, password: unkn
     attempts.delete(ip);
     return { status: 200, body: { ok: true } };
   }
+  globalWindow.failures += 1;
   const failures = entry.failures + 1;
   if (failures < TRIES) {
     attempts.set(ip, { failures, lockedUntil: 0 });

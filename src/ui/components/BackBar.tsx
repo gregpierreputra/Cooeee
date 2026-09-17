@@ -29,7 +29,9 @@ export default function BackBar() {
 
   return (
     <nav className="back-bar">
-      {run && pathname.startsWith('/rehearse') ? <RehearsalBar run={run} /> : null}
+      {/* Only on the running rehearsal's own screens: another pack's rehearsal
+          page is not a screen of this run, and must not wear its bar. */}
+      {run && pathname.startsWith(`/rehearse/${run.packId}`) ? <RehearsalBar run={run} /> : null}
       <div className="back-bar-inner">
         <button type="button" onClick={goBack}>
           <span aria-hidden="true">‹</span> {copy.BACK}

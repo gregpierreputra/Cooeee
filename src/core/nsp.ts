@@ -57,11 +57,19 @@ export const selectSitesForPack = (
   };
 };
 
-const composeAddress = (site: NspSite): string =>
-  [site.street, site.subLocation, site.township]
-    .map((part) => part.trim())
+/** The CFA's own words for where a site is, then its township. Some of those
+ *  words already carry the township, with access advice after it ("... Jan Juc
+ *  3228 Off Domain Road"). The township is then not said a second time. */
+const composeAddress = (site: NspSite): string => {
+  const street = site.street.trim();
+  const township = site.township.trim();
+  // As a whole word: the township "Sale" is not said by "Salesyard Road".
+  const escaped = township.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const saysTownship = township.length > 0 && new RegExp(`\\b${escaped}\\b`, 'i').test(street);
+  return [street, site.subLocation.trim(), saysTownship ? '' : township]
     .filter((part) => part.length > 0)
     .join(', ');
+};
 
 /** One CFA site → one DESTINATION row. Straight-line distance and the ordinal
  *  are added later by core/destination.ts, so an un-located site simply never

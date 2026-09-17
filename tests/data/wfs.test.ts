@@ -64,7 +64,7 @@ describe('address search request', () => {
     expect(url.origin + url.pathname).toBe('https://opendata.maps.vic.gov.au/geoserver/wfs');
     expect(url.searchParams.get('count')).toBe('10');
     expect(url.searchParams.get('CQL_FILTER')).toBe(
-      "property_status = 'A' AND ezi_address LIKE 'O''CONNOR%'",
+      "property_status = 'A' AND ((road_name LIKE 'OCONNOR%'))",
     );
     expect(url.searchParams.has('propertyName')).toBe(false);
   });
@@ -87,7 +87,6 @@ describe('address search request', () => {
         lat: -37.817939,
         lon: 145.36594,
       }],
-      unresolvedCount: 0,
       returnedCount: 2,
     });
   });
@@ -95,7 +94,7 @@ describe('address search request', () => {
   it('returns an empty list only for a valid empty feature collection', async () => {
     const fetcher = async () => new Response(JSON.stringify({ features: [] }), { status: 200 });
     await expect(fetchAddressCandidates('unknown', fetcher))
-      .resolves.toEqual({ candidates: [], unresolvedCount: 0, returnedCount: 0 });
+      .resolves.toEqual({ candidates: [], returnedCount: 0 });
   });
 
   // The search runs while the user types, so the caller supersedes its own
@@ -109,7 +108,7 @@ describe('address search request', () => {
       throw new DOMException('The operation was aborted.', 'AbortError');
     };
 
-    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+    await expect(fetchAddressCandidates('ridge', fetcher, caller.signal))
       .rejects.toThrow('aborted');
   });
 
@@ -122,7 +121,7 @@ describe('address search request', () => {
       throw new DOMException('The operation was aborted.', 'AbortError');
     };
 
-    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+    await expect(fetchAddressCandidates('ridge', fetcher, caller.signal))
       .rejects.toThrow('aborted');
     expect(signalled?.aborted).toBe(true);
   });
@@ -184,9 +183,53 @@ describe('address search request', () => {
       expect(init?.signal?.aborted).toBe(true);
       throw new DOMException('The operation was aborted.', 'AbortError');
     };
-    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+    await expect(fetchAddressCandidates('ridge', fetcher, caller.signal))
       .rejects.toThrow('aborted');
     expect(calls).toBe(1);
+  });
+
+  it('asks again loosely, then by place name, only while nothing has matched', async () => {
+    const filters: string[] = [];
+    const empty = async (input: RequestInfo | URL) => {
+      filters.push(new URL(String(input)).searchParams.get('CQL_FILTER') ?? '');
+      return new Response(JSON.stringify({ type: 'FeatureCollection', features: [] }), { status: 200 });
+    };
+    await fetchAddressCandidates('monash university', empty);
+    expect(filters).toHaveLength(3);
+    expect(filters[1]).toContain("'MON%");
+    expect(filters[2]).toContain('building_name');
+
+    // A typed number is never a place name, so that last question is not asked.
+    filters.length = 0;
+    await fetchAddressCandidates('12 ridge road', empty);
+    expect(filters).toHaveLength(2);
+  });
+
+  it('skips one unreadable record and keeps the good ones beside it', async () => {
+    const good = feature({ properties: { ezi_address: '6 RIDGE ROAD KALORAMA 3766', locality_name: 'KALORAMA', property_status: 'A', is_primary: 'Y' } });
+    const outsideVictoria = feature({ geometry: { type: 'Point', coordinates: [151.2, -33.8] }, properties: { ezi_address: 'BAD', locality_name: 'X', property_status: 'A', is_primary: 'Y' } });
+    const fetcher = async () => new Response(JSON.stringify({ features: [outsideVictoria, good] }), { status: 200 });
+    const resolution = await fetchAddressCandidates('6 ridge road', fetcher);
+    expect(resolution.candidates.map(({ address }) => address)).toEqual(['6 RIDGE ROAD KALORAMA 3766']);
+  });
+
+  it('treats a response where no record can be read as a failed search, never as no match', async () => {
+    const fetcher = async () => new Response(JSON.stringify({ features: [{ nonsense: true }] }), { status: 200 });
+    await expect(fetchAddressCandidates('6 ridge road', fetcher)).rejects.toThrow(TypeError);
+  });
+
+  it('keeps an honest no match when a later, looser question fails', async () => {
+    let calls = 0;
+    const fetcher = async () => {
+      calls += 1;
+      if (calls === 1) return new Response(JSON.stringify({ type: 'FeatureCollection', features: [] }), { status: 200 });
+      return new Response('', { status: 500 });
+    };
+    // The typed search answered with nothing. The looser one broke. That is
+    // still "no match", never "the search could not run", and it is not retried.
+    await expect(fetchAddressCandidates('12 ridge road', fetcher))
+      .resolves.toEqual({ candidates: [], returnedCount: 0 });
+    expect(calls).toBe(2);
   });
 
   it('rejects a drifted feature-collection shape', async () => {
@@ -214,38 +257,17 @@ describe('E1-US1-AC2 duplicate resolution at the data boundary', () => {
       collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.36594, -37.817939, 'Y')]),
     );
     expect(resolution.candidates).toHaveLength(1);
-    expect(resolution.unresolvedCount).toBe(0);
   });
 
-  it('withholds a repeated address the service returned at conflicting points', async () => {
+  it('offers a repeated address the service returned at conflicting points, at its first point', async () => {
     const resolution = await fetchAddressCandidates(
       'ridge',
       collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.365951, -37.817944)]),
-      () => undefined,
     );
-    expect(resolution).toEqual({ candidates: [], unresolvedCount: 1, returnedCount: 2 });
-  });
-
-  it('reports the unresolved condition as a bare count, naming no address or point', async () => {
-    const reported: string[] = [];
-    await fetchAddressCandidates(
-      'ridge',
-      collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.365951, -37.817944)]),
-      (message) => reported.push(message),
-    );
-    expect(reported).toHaveLength(1);
-    expect(reported[0]).toContain('1');
-    expect(reported[0]).not.toMatch(/RIDGE|KALORAMA|145\.|-37\.|pfi/i);
-  });
-
-  it('stays silent when every group resolved', async () => {
-    const reported: string[] = [];
-    await fetchAddressCandidates(
-      'ridge',
-      collection([duplicateAt(145.36594, -37.817939)]),
-      (message) => reported.push(message),
-    );
-    expect(reported).toEqual([]);
+    expect(resolution.returnedCount).toBe(2);
+    expect(resolution.candidates).toEqual([{
+      address: '6 RIDGE ROAD KALORAMA 3766', localityName: 'KALORAMA', lat: -37.817939, lon: 145.36594,
+    }]);
   });
 
   it('keeps distinct unit addresses returned at one shared point', async () => {
