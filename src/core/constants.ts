@@ -36,10 +36,14 @@ export const ADDRESS_SEARCH_TIMEOUT_MS = 10_000;
 export const ADDRESS_NEAR_METRES = [60, 1000, 5000] as const;
 export const ADDRESS_NEAR_FETCH_LIMIT = 50;
 
-/** A direction typed after a road, as the register's one letter. */
+/** A word typed after a road's type, as the register's short code for it: a
+ * direction, or one of its four rarer endings (extension, mall, connection,
+ * deviation). Every code the register uses is listed. */
 export const ROAD_DIRECTIONS: Readonly<Record<string, string>> = {
   N: 'N', NORTH: 'N', NTH: 'N', S: 'S', SOUTH: 'S', STH: 'S',
   E: 'E', EAST: 'E', W: 'W', WEST: 'W',
+  EX: 'EX', EXT: 'EX', EXTENSION: 'EX', ML: 'ML', MALL: 'ML',
+  CN: 'CN', CONNECTION: 'CN', DV: 'DV', DEVIATION: 'DV',
 };
 
 /** Short forms of road types, as the register spells the full word. A type

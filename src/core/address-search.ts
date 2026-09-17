@@ -71,16 +71,26 @@ export function sameAddressQuery(a: string, b: string): boolean {
  * file writes itself ever reach one, so nothing inside can end the literal. */
 const quoted = (text: string): string => `'${text}'`;
 
-const UNIT_WORDS = '(?:UNIT|FLAT|APT|APARTMENT|SHOP|SUITE|U)';
-// A unit as the register writes it before the slash: 7, G04, A, 10-11, 2-3A.
-const UNIT_ID = '([A-Z0-9][A-Z0-9-]{0,9})';
-// "7/", "G04/", "UNIT 7/" or "UNIT 7 " ahead of the house number.
+// A unit word stands alone ("Unity Lane" is a road), and a bare U counts only
+// hard against its number ("U7").
+const UNIT_WORDS = '(?:(?:UNIT|FLAT|APT|APARTMENT|SHOP|SUITE)(?![A-Z])|U(?=\\d))';
+// A unit as the register writes it before the slash: 7, G04, A, 10-11, 2-3A,
+// and once in a while with a slash of its own ("1122/3/1239 NEPEAN HIGHWAY").
+const UNIT_ID = '([A-Z0-9][A-Z0-9-]{0,13}(?:/[A-Z0-9]{1,4}(?=\\s*/))?)';
+// Typed after a unit word it must hold a digit ("7", "G04"), be one letter or
+// a letter range ("F", "B-E"), or be a few letters ahead of a house number
+// ("GD 622"), so that "Flat Rock Road" stays a road.
+const WORDED_UNIT_ID =
+  '((?=[A-Z-]*\\d)[A-Z0-9][A-Z0-9-]{0,9}|[A-Z](?:-[A-Z])?(?![A-Z0-9])|[A-Z-]{2,3}(?=\\s+[A-Z]?\\d))';
+// "7/", "G04/" or "UNIT 7/" by the slash, or "UNIT 7 " by the word. Some units
+// have no house number after them ("3/ PRINCES WALK").
 const UNIT_PATTERN = new RegExp(
-  `^(?:${UNIT_WORDS}\\s*)?${UNIT_ID}\\s*/\\s*|^${UNIT_WORDS}\\s*${UNIT_ID}\\s+(?=[A-Z]?\\d)`,
+  `^(?:${UNIT_WORDS}\\s*)?${UNIT_ID}\\s*/\\s*|^${UNIT_WORDS}\\s*${WORDED_UNIT_ID}\\s+`,
 );
-// "1774", "1774A", "R25" or the first number of a typed range such as
-// "1774-1776". Six digits is past any real house number and keeps it an integer.
-const NUMBER_PATTERN = /^([A-Z])?(\d{1,6})([A-Z])?(?:\s*-\s*[A-Z]?\d+[A-Z]?)?(?:\s+|$)/;
+// "1774", "1774A", "R25", "FF10A", "2AA" or the first number of a typed range
+// such as "1774-1776" or "85B-C". Six digits is past any real house number and
+// keeps it an integer.
+const NUMBER_PATTERN = /^([A-Z]{1,2})?(\d{1,6})([A-Z][A-Z0-9]?)?(?:\s*-\s*[A-Z0-9]{1,7})?(?:\s+|$)/;
 
 /** One CQL clause per way the words could be a road, its type, its direction
  * and its suburb. Where one ends and the next begins is not knowable from the
@@ -89,7 +99,14 @@ const NUMBER_PATTERN = /^([A-Z])?(\d{1,6})([A-Z])?(?:\s*-\s*[A-Z]?\d+[A-Z]?)?(?:
  * Words are joined with the LIKE single-character wildcard, so a road typed as
  * "Barmah Shepparton" also finds the register's "BARMAH-SHEPPARTON". */
 function roadClauses(words: readonly string[]): string[] {
-  const joined = (part: readonly string[]) => part.join('_');
+  // A wildcard straight after a one character word ("K Road", "1 St Kilda")
+  // would leave the register one character to search by, which takes seconds,
+  // so that one gap stays a plain space. Two characters must keep the wildcard:
+  // "TI-TREE", "HI-TECH" and "CO-OP" are real roads.
+  const joined = (part: readonly string[]) =>
+    part[0].length === 1 && part.length > 1
+      ? `${part[0]} ${part.slice(1).join('_')}`
+      : part.join('_');
   const suburb = (rest: readonly string[]) =>
     rest.length > 0 ? ` AND locality_name LIKE ${quoted(`${joined(rest)}%`)}` : '';
   const clauses: string[] = [];
@@ -97,26 +114,52 @@ function roadClauses(words: readonly string[]): string[] {
   for (let i = 1; i <= words.length; i += 1) {
     const road = joined(words.slice(0, i));
     const [next, after, ...rest] = words.slice(i);
-    // The words so far begin the road name, and the rest begin the suburb.
-    clauses.push(`(road_name LIKE ${quoted(`${road}%`)}${suburb(words.slice(i))})`);
+    // The words so far begin the road name, and the rest begin the suburb. One
+    // letter alone is too little to begin a road by, so it must be the whole
+    // name ("K Road").
+    clauses.push(`(road_name LIKE ${quoted(road.length > 1 ? `${road}%` : road)}${suburb(words.slice(i))})`);
     if (next === undefined) continue;
 
     // The next word is the road type, short, in full or still being typed:
     // "Rd", "Road", "Vista", "Stre".
-    const type = `road_name LIKE ${quoted(road)} AND road_type LIKE ${quoted(`${ROAD_TYPES[next] ?? next}%`)}`;
+    // A short form is also kept as typed: "Cir" begins Circus as well as Circuit.
+    const full = ROAD_TYPES[next];
+    const typeIs = full
+      ? `(road_type = ${quoted(full)} OR road_type LIKE ${quoted(`${next}%`)})`
+      : `road_type LIKE ${quoted(`${next}%`)}`;
+    const type = `road_name LIKE ${quoted(road)} AND ${typeIs}`;
     clauses.push(`(${type}${suburb(words.slice(i + 1))})`);
-    // A direction after the type: "Market Street S", "Barkly Terrace East".
-    if (after !== undefined && ROAD_DIRECTIONS[after]) {
-      clauses.push(`(${type} AND road_suffix = ${quoted(ROAD_DIRECTIONS[after])}${suburb(rest)})`);
+    // A direction after the type: "Market Street S", "Barkly Terrace East". A
+    // single letter may be one still being typed ("E" on the way to "Ex").
+    const ending = (word: string | undefined) =>
+      word === undefined ? undefined : (ROAD_DIRECTIONS[word] ?? (word.length === 1 ? word : undefined));
+    if (ending(after)) {
+      clauses.push(`(${type} AND road_suffix LIKE ${quoted(`${ending(after)}%`)}${suburb(rest)})`);
     }
     // A direction straight after a road with no type: "The Esplanade S".
-    if (ROAD_DIRECTIONS[next]) {
+    if (ending(next)) {
       clauses.push(
-        `(road_name LIKE ${quoted(road)} AND road_suffix = ${quoted(ROAD_DIRECTIONS[next])}${suburb(words.slice(i + 1))})`,
+        `(road_name LIKE ${quoted(road)} AND road_suffix LIKE ${quoted(`${ending(next)}%`)}${suburb(words.slice(i + 1))})`,
       );
     }
   }
   return clauses;
+}
+
+/** The register writes "MT PLEASANT" for some roads and "MOUNT DANDENONG" for
+ * others, and a road and its suburb may differ, so each typed Mt or Mount is
+ * asked for both ways. A plain prefix keeps the search fast, which a wildcard
+ * inside the word would not. Two such words cover every real address. */
+function mountSpellings(words: readonly string[]): string[][] {
+  let spellings: string[][] = [[]];
+  let swaps = 0;
+  for (const word of words) {
+    const isMount = (word === 'MT' || word === 'MOUNT') && swaps < 2;
+    if (isMount) swaps += 1;
+    const forms = isMount ? ['MT', 'MOUNT'] : [word];
+    spellings = spellings.flatMap((sofar) => forms.map((form) => [...sofar, form]));
+  }
+  return spellings;
 }
 
 /** Turn typed text into the register's own fields, so an address matches however
@@ -136,7 +179,9 @@ export function addressFilterForCql(query: string): string {
     .replace(/\([^)]*\)/g, ' ')
     .replace(/[^A-Z0-9 /-]/g, ' ')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim()
+    // The register keeps no floor, so "Level 8, 15 Queens Road" is read as the building.
+    .replace(/^(?:LEVEL|LVL|FLOOR)\s*[A-Z0-9]+\s+/, '');
   const clauses: string[] = [];
 
   const unit = UNIT_PATTERN.exec(text);
@@ -168,30 +213,36 @@ export function addressFilterForCql(query: string): string {
     const id = unit[1] ?? unit[2];
     clauses.push(`(ezi_address LIKE ${quoted(`${id}/%`)} OR ezi_address LIKE ${quoted(`U${id}/%`)})`);
   }
-  if (number) {
-    const [, prefix, digits, suffix] = number;
-    const n = Number(digits);
-    clauses.push(`house_number_1 <= ${n} AND (house_number_1 = ${n} OR house_number_2 >= ${n})`);
-    if (prefix) clauses.push(`house_prefix_1 = ${quoted(prefix)}`);
-    if (suffix) clauses.push(`house_suffix_1 = ${quoted(suffix)}`);
-  }
   if (postcode) clauses.push(`postcode = ${quoted(postcode)}`);
 
-  // The register writes some roads "MT PLEASANT" and others "MOUNT DANDENONG",
-  // so a typed Mt or Mount is asked for both ways.
-  // The road and the suburb may differ ("MT DANDENONG ... ROAD MOUNT DANDENONG"),
-  // so the first one is also swapped alone.
-  const swap = (word: string) => (word === 'MT' ? 'MOUNT' : word === 'MOUNT' ? 'MT' : word);
-  const first = words.findIndex((word) => swap(word) !== word);
-  const spellings = new Set([
-    words.join(' '),
-    words.map(swap).join(' '),
-    words.map((word, index) => (index === first ? swap(word) : word)).join(' '),
-  ]);
-  const readings = [...spellings].flatMap((spelling) => roadClauses(spelling.split(' ')));
-  clauses.push(`(${readings.join(' OR ')})`);
+  const readings = mountSpellings(words).flatMap(roadClauses);
+  if (words.length > 1 && words[0].length === 1) {
+    // A lone first letter may belong to a name the register writes as one word
+    // ("A'Beckett" is ABECKETT) or with a hyphen ("A-FRAME TRACK").
+    readings.push(...roadClauses([words[0] + words[1], ...words.slice(2)]));
+    readings.push(...roadClauses([`${words[0]}-${words[1]}`, ...words.slice(2)]));
+  }
+  // A short code where the number would be, with no number ("A MARIBYRNONG
+  // STREET", "LB JARLO DRIVE", "HHS2 ARTS DRIVE"): the road is also read without it.
+  if (!number && words.length > 1 && words[0].length <= 4) readings.push(...roadClauses(words.slice(1)));
+  const roads = `(${readings.join(' OR ')})`;
+  if (!number) return [...clauses, roads].join(' AND ');
 
-  return clauses.join(' AND ');
+  const [typedNumber, prefix, digits, suffix] = number;
+  const n = Number(digits);
+  const house = [
+    `house_number_1 <= ${n} AND (house_number_1 = ${n} OR house_number_2 >= ${n})`,
+    ...(prefix ? [`house_prefix_1 = ${quoted(prefix)}`] : []),
+    ...(suffix ? [`house_suffix_1 = ${quoted(suffix)}`] : []),
+    roads,
+  ].join(' AND ');
+  // A few roads are named like a house number ("15 MILE ROAD", "Z2 ROAD",
+  // "C23-2 TRACK"), so the number is also read as the start of the road.
+  const numberedRoad = roadClauses([...typedNumber.trim().split(/[ -]+/), ...words]).join(' OR ');
+  // Letters ahead of the number are a building code the register may hold some
+  // other way ("LM1 JARLO DRIVE"), so the road alone is offered too.
+  const alone = prefix ? ` OR ${roads}` : '';
+  return [...clauses, `((${house}) OR ${numberedRoad}${alone})`].join(' AND ');
 }
 
 /** Exclude inactive records, then resolve each exact `ezi_address` to one

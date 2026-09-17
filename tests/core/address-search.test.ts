@@ -95,6 +95,52 @@ describe('address search decisions', () => {
     road_name: 'VICTORIA', locality_name: 'PORTLAND', postcode: '3305',
   });
 
+  const WALK = row({
+    ezi_address: 'B-E/ PRINCES WALK MOUNT COTTRELL 3024',
+    road_name: 'PRINCES', road_type: 'WALK', locality_name: 'MOUNT COTTRELL', postcode: '3024',
+  });
+  const BRIDGE = row({
+    ezi_address: '85B-C QUEENS BRIDGE STREET SOUTHBANK 3006', house_number_1: 85, house_suffix_1: 'B',
+    road_name: 'QUEENS BRIDGE', road_type: 'STREET', locality_name: 'SOUTHBANK', postcode: '3006',
+  });
+  const CIRCUS = row({
+    ezi_address: '7 STAR CIRCUS DOCKLANDS 3008', house_number_1: 7,
+    road_name: 'STAR', road_type: 'CIRCUS', locality_name: 'DOCKLANDS', postcode: '3008',
+  });
+  const UNITY = row({
+    ezi_address: 'UNITY LANE FOOTSCRAY 3011', road_name: 'UNITY', road_type: 'LANE',
+    locality_name: 'FOOTSCRAY', postcode: '3011',
+  });
+  const LETTER = row({
+    ezi_address: 'A MARIBYRNONG STREET FOOTSCRAY 3011', house_suffix_1: 'A',
+    road_name: 'MARIBYRNONG', road_type: 'STREET', locality_name: 'FOOTSCRAY', postcode: '3011',
+  });
+
+  it.each<[string, Row]>([
+    // Shapes found by running every active address in the register through the parser.
+    ['Unit B-E, Princes Walk, Mt Cottrell', WALK], // a unit with no house number
+    ['b-e/ princes walk mount cottrell', WALK],
+    ['85B-C Queens Bridge St Southbank', BRIDGE],  // a range that ends in a letter
+    ['7 Star Cir', CIRCUS],                        // a short form that also begins a longer type
+    ['Unity Lane Footscray', UNITY],               // a road that begins like a unit word
+    ['A Maribyrnong Street Footscray', LETTER],    // a lone letter where the number would be
+    ['Level 8, 1774 Dandenong Road', DANDENONG],   // a floor the register does not hold
+    ['2 Ti Tree Drive Doveton', row({ ezi_address: '2 TI-TREE DRIVE DOVETON 3177', house_number_1: 2, road_name: 'TI-TREE', road_type: 'DRIVE', locality_name: 'DOVETON', postcode: '3177' })], // a two letter word joined by a hyphen
+    ['195 Wattle Valley Road Extension Camberwell', row({ ezi_address: '195 WATTLE VALLEY ROAD EX CAMBERWELL 3124', house_number_1: 195, road_name: 'WATTLE VALLEY', road_type: 'ROAD', road_suffix: 'EX', locality_name: 'CAMBERWELL', postcode: '3124' })], // a rarer road ending, written out
+    ['195 Wattle Valley Road E', row({ ezi_address: '195 WATTLE VALLEY ROAD EX CAMBERWELL 3124', house_number_1: 195, road_name: 'WATTLE VALLEY', road_type: 'ROAD', road_suffix: 'EX', locality_name: 'CAMBERWELL', postcode: '3124' })], // that ending still being typed
+    ['ff10a third ave portarlington', row({ ezi_address: 'FF10A THIRD AVENUE PORTARLINGTON 3223', house_prefix_1: 'FF', house_number_1: 10, house_suffix_1: 'A', road_name: 'THIRD', road_type: 'AVENUE', locality_name: 'PORTARLINGTON', postcode: '3223' })], // two letters ahead of the number
+    ['2AA Edwardes Street', row({ ezi_address: '2AA EDWARDES STREET RESERVOIR 3073', house_number_1: 2, house_suffix_1: 'AA', road_name: 'EDWARDES', road_type: 'STREET', locality_name: 'RESERVOIR', postcode: '3073' })], // two letters after the number
+    ['15 Mile Road Eildon', row({ ezi_address: '15 MILE ROAD EILDON 3713', road_name: '15 MILE', road_type: 'ROAD', locality_name: 'EILDON', postcode: '3713' })], // a road named like a house number
+    ['C23-2 Track Walhalla East', row({ ezi_address: 'C23-2 TRACK WALHALLA EAST 3825', road_name: 'C23-2', road_type: 'TRACK', locality_name: 'WALHALLA EAST', postcode: '3825' })], // a forest track code
+    ['1122/3/1239 Nepean Hwy', row({ ezi_address: '1122/3/1239 NEPEAN HIGHWAY CHELTENHAM 3192', house_number_1: 1239, road_name: 'NEPEAN', road_type: 'HIGHWAY', locality_name: 'CHELTENHAM', postcode: '3192' })], // a unit with a slash of its own
+    ['10 A Frame Track Muckleford', row({ ezi_address: '10 A-FRAME TRACK MUCKLEFORD 3451', house_number_1: 10, road_name: 'A-FRAME', road_type: 'TRACK', locality_name: 'MUCKLEFORD', postcode: '3451' })], // a one letter word joined by a hyphen
+    ['HHS2 Arts Drive Flora Hill', row({ ezi_address: 'HHS2 ARTS DRIVE FLORA HILL 3550', house_prefix_1: 'HH', house_suffix_1: 'S2', road_name: 'ARTS', road_type: 'DRIVE', locality_name: 'FLORA HILL', postcode: '3550' })], // a campus building code
+    ['12 O Shannassy St', row({ ezi_address: '12 OSHANNASSY STREET ESSENDON NORTH 3041', house_number_1: 12, road_name: 'OSHANNASSY', road_type: 'STREET', locality_name: 'ESSENDON NORTH', postcode: '3041' })],
+    ['518 K Road Werribee', row({ ezi_address: '518 K ROAD WERRIBEE SOUTH 3030', house_number_1: 518, road_name: 'K', road_type: 'ROAD', locality_name: 'WERRIBEE SOUTH', postcode: '3030' })],
+  ])('%j finds its register address', (typed, register) => {
+    expect(finds(typed, register)).toBe(true);
+  });
+
   it.each<[string, Row]>([
     // The reported address: a number inside a stored range, typed every which way.
     ['1774 Dandenong Road', DANDENONG],
