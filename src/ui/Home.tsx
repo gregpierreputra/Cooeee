@@ -188,7 +188,7 @@ export default function Home({ now }: { now?: number }) {
         {/* Reachable in both states, including with no pack saved. The ring to
             its left opens the lines that say what the mode is. */}
         <BlackSkyHoldRow>
-          <HoldButton onHold={() => navigate('/blacksky')} hint={copy.HOLD_TO_ENTER}>
+          <HoldButton onHold={() => navigate('/blacksky', { state: { held: true } })} hint={copy.HOLD_TO_ENTER}>
             <span className="blacksky-hold-label">{copy.HOLD_FOR_BLACKSKY}</span>
             {view !== null && view.packs.length === 0 ? (
               <span className="blacksky-hold-sub">{copy.BLACKSKY_WORKS_WITHOUT_PACK}</span>

@@ -119,6 +119,8 @@ export const FIX_STALE_MS = 30_000;
 export const ACCURACY_MAX_M = 100;
 
 export const HOLD_MS = 2_000;
+// How long the line saying BlackSky was not opened stays on screen.
+export const BLOCKED_NOTICE_MS = 8_000;
 export const TICK_MS = 5_000;
 // A position this far from the one on screen is shown at once, not at the next
 // tick. Smaller moves are sensor noise and wait, which saves the battery.

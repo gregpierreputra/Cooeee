@@ -405,6 +405,7 @@ export const LEAVE_BLACKSKY = 'Leave BlackSky';
 /** Said above the Leave control, never over anything else: the phone's back
  *  button was pressed, or the app opened here again because BlackSky was the
  *  last screen open. Both end with the one way out. */
+export const BLACKSKY_BLOCKED = 'BlackSky was not opened. Hold its button for 2 seconds to enter.';
 export const BACK_PRESSED =
   'You pressed back. BlackSky stays until you hold Leave BlackSky for two seconds.';
 export const BLACKSKY_RESUMED =

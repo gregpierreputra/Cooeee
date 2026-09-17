@@ -28,6 +28,8 @@ test('BlackSky cold-starts offline on a fresh install: the designed no-pack stat
   const failed: string[] = [];
   page.on('requestfailed', (r) => failed.push(`${r.method()} ${r.url()}`));
 
+  // A direct load opens BlackSky only for a visit that never ended.
+  await page.evaluate(() => localStorage.setItem('cooeee.blacksky.v1', 'latched'));
   await context.setOffline(true);
   // A direct URL load, not a client-side hop: this exercises the service
   // worker's navigateFallback and the empty IndexedDB read together.

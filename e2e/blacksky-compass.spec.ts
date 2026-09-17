@@ -11,6 +11,8 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   await acknowledgeFirstOpen(page);
   await page.goto('/');
   await page.waitForTimeout(1000); // the site list is copied into IndexedDB on app start
+  // A typed address opens BlackSky only for a visit that never ended.
+  await page.evaluate(() => localStorage.setItem('cooeee.blacksky.v1', 'latched'));
   await page.goto('/blacksky');
 
   await expect(page.getByText('Nearest official places of last resort')).toBeVisible();

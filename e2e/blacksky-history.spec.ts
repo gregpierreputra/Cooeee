@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BACK_PRESSED, BLACKSKY_RESUMED, HOLD_FOR_BLACKSKY, LEAVE_BLACKSKY } from '../src/core/copy';
+import { BACK_PRESSED, BLACKSKY_BLOCKED, BLACKSKY_RESUMED, HOLD_FOR_BLACKSKY, LEAVE_BLACKSKY } from '../src/core/copy';
 import { acknowledgeFirstOpen } from './helpers';
 
 // Against the real bundle: the harness runs a memory router, and this is about
@@ -36,6 +36,18 @@ test('the back button and a fresh visit both keep BlackSky until the hold', asyn
 
   // The hold is the one way out; after it the app opens where it is asked to.
   await hold(page, LEAVE_BLACKSKY, '/');
+
+  // The entry the relaunch left behind is the first in history. Back onto it
+  // must not open BlackSky again: the app stays out and says so in one line.
+  await page.goBack();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByText(BLACKSKY_BLOCKED)).toBeVisible();
+
+  // A typed address is not a hold either.
+  await page.goto('/blacksky');
+  await expect(page).toHaveURL('/');
+  await expect(page.getByText(BLACKSKY_BLOCKED)).toBeVisible();
+
   await page.goto('/');
   await expect(page).toHaveURL('/');
 });
