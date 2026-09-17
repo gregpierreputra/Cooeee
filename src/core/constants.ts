@@ -30,6 +30,26 @@ export const ADDRESS_QUERY_MIN_CHARS = 3;
 export const ADDRESS_RESULT_LIMIT = 10;
 export const ADDRESS_SEARCH_TIMEOUT_MS = 10_000;
 
+/** Use my location asks the register for addresses this close to the fix, then
+ * at each wider radius when a rural fix finds none. More records than
+ * the list cap are fetched so the nearest ones can be picked on the device. */
+export const ADDRESS_NEAR_METRES = [60, 1000, 5000] as const;
+export const ADDRESS_NEAR_FETCH_LIMIT = 50;
+
+/** Typed road types and their short forms, as the register spells them. */
+export const ROAD_TYPES: Readonly<Record<string, string>> = {
+  ALLEY: 'ALLEY', ARCADE: 'ARCADE', AVENUE: 'AVENUE', AVE: 'AVENUE', AV: 'AVENUE',
+  BOULEVARD: 'BOULEVARD', BVD: 'BOULEVARD', BLVD: 'BOULEVARD',
+  CIRCUIT: 'CIRCUIT', CCT: 'CIRCUIT', CLOSE: 'CLOSE', CL: 'CLOSE',
+  COURT: 'COURT', CT: 'COURT', CRESCENT: 'CRESCENT', CRES: 'CRESCENT', CR: 'CRESCENT',
+  DRIVE: 'DRIVE', DR: 'DRIVE', ESPLANADE: 'ESPLANADE', ESP: 'ESPLANADE',
+  FREEWAY: 'FREEWAY', FWY: 'FREEWAY', GROVE: 'GROVE', GR: 'GROVE',
+  HIGHWAY: 'HIGHWAY', HWY: 'HIGHWAY', LANE: 'LANE', LN: 'LANE', MEWS: 'MEWS',
+  PARADE: 'PARADE', PDE: 'PARADE', PLACE: 'PLACE', PL: 'PLACE', RISE: 'RISE',
+  ROAD: 'ROAD', RD: 'ROAD', SQUARE: 'SQUARE', SQ: 'SQUARE', STREET: 'STREET', ST: 'STREET',
+  TERRACE: 'TERRACE', TCE: 'TERRACE', TRACK: 'TRACK', TRK: 'TRACK', WALK: 'WALK', WAY: 'WAY',
+};
+
 /** The pause after the last keystroke before the typed prefix leaves the device.
  *  The search runs while the user types, so with ADDRESS_QUERY_MIN_CHARS this is
  *  the only thing bounding request volume against a public service: a twenty

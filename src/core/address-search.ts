@@ -1,4 +1,4 @@
-import { ADDRESS_QUERY_MIN_CHARS, ADDRESS_RESULT_LIMIT } from './constants';
+import { ADDRESS_QUERY_MIN_CHARS, ADDRESS_RESULT_LIMIT, ROAD_TYPES } from './constants';
 import type { AddressCandidate, AddressRecord } from './types';
 
 /** The outcome of turning one address response into things a user may choose.
@@ -69,11 +69,89 @@ export function sameAddressQuery(a: string, b: string): boolean {
   return a.trim() === b.trim();
 }
 
-/** The query sent to Vicmap is uppercase, CQL apostrophes are doubled, and the
- * LIKE wildcards % and _ are dropped so a typed one cannot widen the match.
- * The original text stays untouched in UI state for correction. */
-export function addressQueryForCql(query: string): string {
-  return query.trim().toUpperCase().replaceAll("'", "''").replace(/[%_]/g, '');
+/** A CQL string literal. Typed apostrophes are removed before this is reached,
+ * so nothing inside the text can end the literal. */
+const quoted = (text: string): string => `'${text}'`;
+
+const UNIT_WORDS = '(?:UNIT|FLAT|APT|SHOP|U)';
+const UNIT_ID = '([A-Z]{0,2}\\d{1,5}[A-Z]?)';
+// "7/", "G04/", "UNIT 7/" or "UNIT 7 " ahead of the house number.
+const UNIT_PATTERN = new RegExp(
+  `^(?:${UNIT_WORDS}\\s*)?${UNIT_ID}\\s*/\\s*|^${UNIT_WORDS}\\s*${UNIT_ID}\\s+(?=\\d)`,
+);
+// "1774", "1774A" or the first number of a typed range such as "1774-1776".
+// Six digits is past any real house number and keeps the number a plain integer.
+const NUMBER_PATTERN = /^(\d{1,6})([A-Z])?(?:\s*-\s*\d+[A-Z]?)?(?:\s+|$)/;
+
+/** Turn typed text into the register's own fields, so an address matches however
+ * it was typed: a number inside a stored range ("1774" finds "1774-1776"), a
+ * unit, short road types ("Rd"), commas, "VIC", a postcode, or no suburb at all.
+ *
+ * The register spells O'Connor as OCONNOR, so apostrophes are removed. After
+ * that only letters, digits, spaces and / - survive, which drops the LIKE
+ * wildcards and everything else CQL could read as syntax. Every word is sent as
+ * a quoted literal and every number as a number. The typed text in the field is
+ * never changed. */
+export function addressFilterForCql(query: string): string {
+  const text = query
+    .toUpperCase()
+    .replace(/['’]/g, '')
+    .replace(/[^A-Z0-9 /-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const clauses: string[] = [];
+
+  const unit = UNIT_PATTERN.exec(text);
+  const afterUnit = unit ? text.slice(unit[0].length) : text;
+  const number = NUMBER_PATTERN.exec(afterUnit);
+  const words = (number ? afterUnit.slice(number[0].length) : afterUnit)
+    .split(' ')
+    .filter((word) => word !== '')
+    .map((word) => (word === 'MT' ? 'MOUNT' : word)) // the register spells it out
+    .slice(0, 8); // bounds the number of splits a long paste can produce
+
+  // The tail may read "VIC 3168" or "3168 VIC", so the state is dropped on both
+  // sides of the postcode.
+  const dropState = () => {
+    while (['AUSTRALIA', 'VICTORIA', 'VIC'].includes(words.at(-1) ?? '')) words.pop();
+  };
+  dropState();
+  const postcode = /^\d{4}$/.test(words.at(-1) ?? '') ? words.pop() : undefined;
+  dropState();
+
+  // No road was typed, so there are no fields to ask about: the text is matched
+  // against the start of the full address, as a bare "1774" always was.
+  if (words.length === 0) return `ezi_address LIKE ${quoted(`${text}%`)}`;
+
+  // The register holds units in several fields, but always writes them first
+  // in the full address, as "7/" or "G04/".
+  if (unit) clauses.push(`ezi_address LIKE ${quoted(`${unit[1] ?? unit[2]}/%`)}`);
+  if (number) {
+    const n = Number(number[1]);
+    clauses.push(`house_number_1 <= ${n} AND (house_number_1 = ${n} OR house_number_2 >= ${n})`);
+    if (number[2]) clauses.push(`house_suffix_1 = ${quoted(number[2])}`);
+  }
+  if (postcode) clauses.push(`postcode = ${quoted(postcode)}`);
+
+  // Where the road name ends and the suburb begins is not knowable from the
+  // text, so every split is offered and the register keeps the ones that exist.
+  const suburb = (rest: string[]) =>
+    rest.length > 0 ? ` AND locality_name LIKE ${quoted(`${rest.join(' ')}%`)}` : '';
+  const splits: string[] = [];
+  for (let i = 1; i <= words.length; i += 1) {
+    const road = words.slice(0, i).join(' ');
+    const rest = words.slice(i);
+    splits.push(`(road_name LIKE ${quoted(`${road}%`)}${suburb(rest)})`);
+    const roadType = ROAD_TYPES[rest[0] ?? ''];
+    if (roadType) {
+      splits.push(
+        `(road_name = ${quoted(road)} AND road_type = ${quoted(roadType)}${suburb(rest.slice(1))})`,
+      );
+    }
+  }
+  clauses.push(`(${splits.join(' OR ')})`);
+
+  return clauses.join(' AND ');
 }
 
 function pointKey({ lat, lon }: AddressCandidate): string {

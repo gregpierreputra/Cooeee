@@ -587,3 +587,24 @@ test('AC2 nothing typed, returned or rejected is written to the device', async (
     indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
   });
 });
+test('Use my location lists the nearest register addresses, and typing takes the field back', async ({ page, context }) => {
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: -37.916205, longitude: 145.129435, accuracy: 10 });
+  const requests = await countAddressRequests(page, [
+    addressFeature('1778 DANDENONG ROAD CLAYTON 3168', 'CLAYTON', 145.1297, -37.9164),
+    addressFeature('1774-1776 DANDENONG ROAD CLAYTON 3168', 'CLAYTON', 145.129435, -37.916205),
+  ]);
+
+  await page.goto(SEARCH_URL);
+  await page.getByRole('button', { name: 'Use my location' }).click();
+
+  // Nearest first, whatever order the register answered in.
+  await expect(page.getByRole('status')).toContainText('nearest your position');
+  await expect(page.getByRole('listitem').first()).toContainText('1774-1776 DANDENONG ROAD');
+  expect(requests).toEqual([
+    "property_status = 'A' AND DWITHIN(geom, POINT(-37.916205 145.129435), 60, meters)",
+  ]);
+
+  await addressField(page).fill('RIDGE');
+  await expect(page.getByRole('status')).not.toContainText('nearest your position');
+});

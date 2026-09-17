@@ -90,6 +90,16 @@ export const ADDRESS_FIELD_HINT =
 export const ADDRESS_SEARCH_DISCLOSURE =
   'Not every address has an official place of last resort close by. Cooeee lists the nearest places the Country Fire Authority publishes. They may be some distance away, and for some areas there may be none.';
 export const SEARCH = 'Search';
+/** Use my location on the address search. The position is sent to the address
+ *  register, so the screen says so before the button is tapped. */
+export const ADDRESS_LOCATE_DISCLOSURE =
+  'Use my location sends your position to the Victorian address register to find the addresses nearest you. Cooeee does not store it.';
+export const ADDRESS_LOCATE_FOUND = 'These are the addresses nearest your position.';
+export const ADDRESS_LOCATE_FAILED = 'Your position could not be read. Type the address instead.';
+export const ADDRESS_LOCATE_OUTSIDE =
+  'Your position is outside Victoria. Type a Victorian address instead.';
+export const ADDRESS_LOCATE_NONE =
+  'No address was found near your position. Type the address instead.';
 export const SEARCH_IN_PROGRESS = 'Searching for addresses.';
 export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
 export const CHOOSE_ADDRESS = 'Choose your address from the list.';

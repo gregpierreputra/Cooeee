@@ -64,7 +64,7 @@ describe('address search request', () => {
     expect(url.origin + url.pathname).toBe('https://opendata.maps.vic.gov.au/geoserver/wfs');
     expect(url.searchParams.get('count')).toBe('10');
     expect(url.searchParams.get('CQL_FILTER')).toBe(
-      "property_status = 'A' AND ezi_address LIKE 'O''CONNOR%'",
+      "property_status = 'A' AND ((road_name LIKE 'OCONNOR%'))",
     );
     expect(url.searchParams.has('propertyName')).toBe(false);
   });

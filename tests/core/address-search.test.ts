@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   addressQueryCanRun,
-  addressQueryForCql,
+  addressFilterForCql,
   addressResultsAtLimit,
   completedSearchState,
   liveSearchState,
@@ -52,8 +52,39 @@ describe('address search decisions', () => {
     expect(addressQueryCanRun(query)).toBe(expected);
   });
 
-  it('uppercases, trims and CQL-escapes only the outbound query', () => {
-    expect(addressQueryForCql("  o'connor ")).toBe("O''CONNOR");
+  const NUMBER = "house_number_1 <= 1774 AND (house_number_1 = 1774 OR house_number_2 >= 1774)";
+  const DANDENONG_ROAD =
+    "(road_name LIKE 'DANDENONG%' AND locality_name LIKE 'ROAD%')"
+    + " OR (road_name = 'DANDENONG' AND road_type = 'ROAD')"
+    + " OR (road_name LIKE 'DANDENONG ROAD%')";
+
+  it.each([
+    // A number inside a stored range, the reported "1774 Dandenong Road".
+    ['1774 Dandenong Road', `${NUMBER} AND (${DANDENONG_ROAD})`],
+    [
+      '  1774-1776  dandenong rd ',
+      `${NUMBER} AND ((road_name LIKE 'DANDENONG%' AND locality_name LIKE 'RD%')`
+        + " OR (road_name = 'DANDENONG' AND road_type = 'ROAD') OR (road_name LIKE 'DANDENONG RD%'))",
+    ],
+    [
+      'Unit 7/1774 Dandenong Rd, Clayton VIC 3168',
+      `ezi_address LIKE '7/%' AND ${NUMBER} AND postcode = '3168' AND (`
+        + "(road_name LIKE 'DANDENONG%' AND locality_name LIKE 'RD CLAYTON%')"
+        + " OR (road_name = 'DANDENONG' AND road_type = 'ROAD' AND locality_name LIKE 'CLAYTON%')"
+        + " OR (road_name LIKE 'DANDENONG RD%' AND locality_name LIKE 'CLAYTON%')"
+        + " OR (road_name LIKE 'DANDENONG RD CLAYTON%'))",
+    ],
+    [
+      'flat g04 1a mt high',
+      "ezi_address LIKE 'G04/%' AND house_number_1 <= 1 AND (house_number_1 = 1 OR house_number_2 >= 1)"
+        + " AND house_suffix_1 = 'A' AND ((road_name LIKE 'MOUNT%' AND locality_name LIKE 'HIGH%') OR (road_name LIKE 'MOUNT HIGH%'))",
+    ],
+    // Wildcards, CQL syntax and apostrophes never survive.
+    ["o'connor%_;)", "((road_name LIKE 'OCONNOR%'))"],
+    // No road typed: the start of the full address, as before.
+    ['1774', "ezi_address LIKE '1774%'"],
+  ])('turns %j into register fields', (query, filter) => {
+    expect(addressFilterForCql(query)).toBe(filter);
   });
 
   it('preserves service order while excluding inactive records', () => {

@@ -1,10 +1,12 @@
 import {
-  addressQueryForCql,
+  addressFilterForCql,
   resolveAddressCandidates,
   type AddressCandidateResolution,
 } from '../core/address-search';
 import { extentSnapshotDisagrees, resolveBushfireAreaStatus } from '../core/area-check';
 import {
+  ADDRESS_NEAR_FETCH_LIMIT,
+  ADDRESS_NEAR_METRES,
   ADDRESS_RESULT_LIMIT,
   ADDRESS_SEARCH_TIMEOUT_MS,
   AREA_CHECK_TIMEOUT_MS,
@@ -13,11 +15,13 @@ import {
   isInsideVictoria,
   MAX_RESPONSE_BYTES,
 } from '../core/constants';
+import { distanceM } from '../core/geo';
 import { readJsonBounded } from './bounded-body';
 import type {
   AddressCandidate,
   AddressRecord,
   BushfireAreaResult,
+  LatLon,
   PendingPlace,
 } from '../core/types';
 
@@ -98,7 +102,24 @@ export function buildAddressSearchUrl(query: string): string {
     outputFormat: 'application/json',
     typeNames: 'open-data-platform:address',
     count: String(ADDRESS_RESULT_LIMIT),
-    CQL_FILTER: `property_status = 'A' AND ezi_address LIKE '${addressQueryForCql(query)}%'`,
+    // Descending puts the whole property, which has no unit, ahead of its units.
+    sortBy: 'blg_unit_id_1 D',
+    CQL_FILTER: `property_status = 'A' AND ${addressFilterForCql(query)}`,
+  });
+  return `${WFS_BASE_URL}?${params.toString()}`;
+}
+
+/** Active addresses within `metres` of a position. The point is written
+ * latitude first, the axis order this service reads (see pointFilter). */
+export function buildAddressNearUrl({ lat, lon }: LatLon, metres: number): string {
+  const params = new URLSearchParams({
+    service: 'WFS',
+    version: '2.0.0',
+    request: 'GetFeature',
+    outputFormat: 'application/json',
+    typeNames: 'open-data-platform:address',
+    count: String(ADDRESS_NEAR_FETCH_LIMIT),
+    CQL_FILTER: `property_status = 'A' AND DWITHIN(geom, POINT(${lat} ${lon}), ${metres}, meters)`,
   });
   return `${WFS_BASE_URL}?${params.toString()}`;
 }
@@ -108,7 +129,7 @@ export function buildAddressSearchUrl(query: string): string {
  * changes, the earlier request is aborted on the wire rather than left
  * running and ignored. */
 async function requestAddressRecords(
-  query: string,
+  url: string,
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   signal: AbortSignal | undefined,
 ): Promise<AddressRecord[]> {
@@ -119,7 +140,7 @@ async function requestAddressRecords(
   else signal?.addEventListener('abort', abortWithCaller, { once: true });
 
   try {
-    const response = await fetcher(buildAddressSearchUrl(query), {
+    const response = await fetcher(url, {
       method: 'GET',
       signal: controller.signal,
     });
@@ -148,14 +169,14 @@ export async function fetchAddressCandidates(
 ): Promise<AddressCandidateResolution> {
   let records: AddressRecord[];
   try {
-    records = await requestAddressRecords(query, fetcher, signal);
+    records = await requestAddressRecords(buildAddressSearchUrl(query), fetcher, signal);
   } catch (error) {
     // Neither a caller's cancellation nor the attempt's own timeout is retried:
     // the first is a query the user moved past, and the second would double
     // the ADDRESS_SEARCH_TIMEOUT_MS bound the screen promises.
     const aborted = signal?.aborted || (error instanceof Error && error.name === 'AbortError');
     if (aborted) throw error;
-    records = await requestAddressRecords(query, fetcher, signal);
+    records = await requestAddressRecords(buildAddressSearchUrl(query), fetcher, signal);
   }
 
   const resolution = resolveAddressCandidates(records);
@@ -167,6 +188,26 @@ export async function fetchAddressCandidates(
     );
   }
   return resolution;
+}
+
+/** Use my location: the register's addresses nearest a position, nearest first.
+ * The close radius is asked first and the wide one only when it finds nothing,
+ * which is what a fix on a rural property needs. The position must already be
+ * known to be inside Victoria, and nothing here stores it. */
+export async function fetchAddressesNear(
+  position: LatLon,
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
+  signal?: AbortSignal,
+): Promise<AddressCandidateResolution> {
+  let records: AddressRecord[] = [];
+  for (const metres of ADDRESS_NEAR_METRES) {
+    records = await requestAddressRecords(buildAddressNearUrl(position, metres), fetcher, signal);
+    if (records.length > 0) break;
+  }
+
+  const metresAway = (record: AddressRecord) => distanceM(position, record.candidate);
+  const nearest = [...records].sort((a, b) => metresAway(a) - metresAway(b));
+  return resolveAddressCandidates(nearest.slice(0, ADDRESS_RESULT_LIMIT));
 }
 
 function pointFilter({ lat, lon }: Pick<PendingPlace, 'lat' | 'lon'>): string {

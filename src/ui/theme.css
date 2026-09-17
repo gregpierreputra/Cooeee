@@ -2189,19 +2189,23 @@ input {
   height: 18px;
 }
 
-/* Nearby: the locate control carries its glyph inside the filled pill. */
+/* Nearby and the address search: the locate control carries its glyph inside
+   the pill. On the address search it is a ghost pill, as Search is the filled one. */
+.search-locate,
 .nearby-locate .main-action {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
 }
+.search-locate .glyph,
 .main-action .glyph {
   width: 28px;
   height: 28px;
   background: rgb(0 0 0 / 12%);
   color: inherit;
 }
+.search-locate .glyph svg,
 .main-action .glyph svg {
   width: 16px;
   height: 16px;
