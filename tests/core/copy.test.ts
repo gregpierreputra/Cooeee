@@ -155,11 +155,12 @@ describe('BlackSky bearing and distance figures', () => {
     expect(copy.ACCURACY_READOUT(12)).toBe('± 12 m');
   });
 
-  it('shows metres under a kilometre and one decimal above', () => {
+  it('shows metres under a kilometre, ten metre steps under ten, one decimal above', () => {
     expect(copy.distanceLabel(850)).toBe('850 m');
     expect(copy.distanceLabel(999.4)).toBe('999 m');
-    expect(copy.distanceLabel(1120)).toBe('1.1 km');
-    expect(copy.distanceLabel(2700)).toBe('2.7 km');
+    expect(copy.distanceLabel(1120)).toBe('1.12 km');
+    expect(copy.distanceLabel(2700)).toBe('2.70 km');
+    expect(copy.distanceLabel(12_340)).toBe('12.3 km');
   });
 });
 

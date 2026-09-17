@@ -120,6 +120,12 @@ export const ACCURACY_MAX_M = 100;
 
 export const HOLD_MS = 2_000;
 export const TICK_MS = 5_000;
+// A position this far from the one on screen is shown at once, not at the next
+// tick. Smaller moves are sensor noise and wait, which saves the battery.
+export const FIX_PUBLISH_M = 5;
+// A position watch that has said nothing for this long is started again: some
+// phones stop delivering positions without reporting any error.
+export const WATCH_RESTART_MS = 15_000;
 
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion

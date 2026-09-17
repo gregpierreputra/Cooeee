@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test';
-import { TICK_MS } from '../src/core/constants';
 import { magneticDeclinationDeg } from '../src/core/geo';
 import { acknowledgeFirstOpen } from './helpers';
 
@@ -45,9 +44,9 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   await expect.poll(async () => norm(await rotation())).toBe(norm(bearing - 90 - declination));
 
   // The figure follows the phone: a fix from two kilometres further north
-  // changes the distance within one tick.
+  // changes the distance at once, well inside the five second tick.
   const figure = page.locator('.blacksky-figure-main').first();
   const before = (await figure.textContent()) ?? '';
   await context.setGeolocation({ latitude: -37.8, longitude: 145.36594, accuracy: 350 });
-  await expect(figure).not.toHaveText(before, { timeout: TICK_MS + 5_000 });
+  await expect(figure).not.toHaveText(before, { timeout: 2_000 });
 });
