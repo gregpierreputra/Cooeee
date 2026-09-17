@@ -146,7 +146,7 @@ if (window.location.pathname === '/conflict' && await db.packs.count() === 0) {
 const conflictMode = new URLSearchParams(window.location.search).get('mode');
 const conflictFlow = (
   <Search
-    search={async () => ({ candidates: [testCandidate], unresolvedCount: 0, returnedCount: 1 })}
+    search={async () => ({ candidates: [testCandidate], returnedCount: 1 })}
     checkArea={syntheticAreaCheck}
     loadFiles={noFiles}
     loadPacks={conflictMode === 'unavailable'
@@ -797,7 +797,7 @@ if (window.location.pathname === '/rehearse-choose') {
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
-    search={async () => ({ candidates: [testCandidate], unresolvedCount: 0, returnedCount: 1 })}
+    search={async () => ({ candidates: [testCandidate], returnedCount: 1 })}
     checkArea={areaMode === 'offline' ? undefined : syntheticAreaCheck}
     loadFiles={noFiles}
     buildOffer={offerShouldFail

@@ -164,34 +164,23 @@ async function requestAddressRecords(
 export async function fetchAddressCandidates(
   query: string,
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
-  onUnresolvedDuplicates: (message: string) => void = console.error,
   signal?: AbortSignal,
 ): Promise<AddressCandidateResolution> {
-  let records: AddressRecord[];
+  const url = buildAddressSearchUrl(query);
   try {
-    records = await requestAddressRecords(buildAddressSearchUrl(query), fetcher, signal);
+    return resolveAddressCandidates(await requestAddressRecords(url, fetcher, signal));
   } catch (error) {
     // Neither a caller's cancellation nor the attempt's own timeout is retried:
     // the first is a query the user moved past, and the second would double
     // the ADDRESS_SEARCH_TIMEOUT_MS bound the screen promises.
     const aborted = signal?.aborted || (error instanceof Error && error.name === 'AbortError');
     if (aborted) throw error;
-    records = await requestAddressRecords(buildAddressSearchUrl(query), fetcher, signal);
+    return resolveAddressCandidates(await requestAddressRecords(url, fetcher, signal));
   }
-
-  const resolution = resolveAddressCandidates(records);
-  // A bare count. The searched text, the returned addresses and their points
-  // are the user's business and none of them belongs in a diagnostic.
-  if (resolution.unresolvedCount > 0) {
-    onUnresolvedDuplicates(
-      `Vicmap address search left ${resolution.unresolvedCount} group(s) unresolved`,
-    );
-  }
-  return resolution;
 }
 
 /** Use my location: the register's addresses nearest a position, nearest first.
- * The close radius is asked first and the wide one only when it finds nothing,
+ * The closest radius is asked first and each wider one only when it finds nothing,
  * which is what a fix on a rural property needs. The position must already be
  * known to be inside Victoria, and nothing here stores it. */
 export async function fetchAddressesNear(

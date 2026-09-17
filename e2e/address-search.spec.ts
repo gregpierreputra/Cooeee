@@ -158,13 +158,10 @@ test('AC4 retry is explicit and issues exactly one new request', async ({ page }
 });
 
 // ── E1-US1-AC2 duplicate visible candidates ─────────────────────────────────
-// Vicmap can return one ezi_address more than once. Identical points collapse;
-// conflicting points with no single flagged record are never guessed at.
+// Vicmap can return one ezi_address more than once. It is listed once, at the
+// flagged record, or the first record when the register flags none or several.
 
 const DUP = '6 RIDGE ROAD KALORAMA 3766';
-const AMBIGUITY_REASON =
-  'The address register holds multiple map locations for the same written address, so Cooeee cannot choose one.';
-const REFINE_HINT = 'Check or add a unit or street number, then search again.';
 
 async function searchWith(page: Page, features: unknown[], query = 'RIDGE') {
   const officialCalls: string[] = [];
@@ -185,7 +182,6 @@ test('AC2 collapses one repeated address returned at a single point', async ({ p
 
   const list = page.getByRole('list', { name: 'Address candidates' });
   await expect(list.getByRole('button')).toHaveText([DUP, '8 RIDGE ROAD KALORAMA 3766']);
-  await expect(page.getByText(AMBIGUITY_REASON)).toHaveCount(0);
 });
 
 test('AC2 keeps different unit and street numbers as separate lines', async ({ page }) => {
@@ -211,77 +207,34 @@ test('AC2 retains the one flagged record when the points conflict', async ({ pag
 
   await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
     .toHaveText([DUP]);
-  await expect(page.getByText(AMBIGUITY_REASON)).toHaveCount(0);
 });
 
-test('AC2 never guesses a point when conflicting records carry no flag', async ({ page }) => {
-  const officialCalls = await searchWith(page, [
+test('AC2 an address the register holds at two unflagged points can still be chosen', async ({ page }) => {
+  await searchWith(page, [
+    addressFeature('4 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.365, -37.817),
     addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'N'),
     addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'N'),
   ]);
 
-  // The honest ambiguity state, not an empty screen and not a silent pick.
-  await expect(page.getByRole('heading', {
-    name: 'One address could not be matched to a single map location.',
-  })).toBeVisible();
-  await expect(page.getByText(AMBIGUITY_REASON)).toBeVisible();
-  await expect(page.getByText(REFINE_HINT)).toBeVisible();
-
-  // No selectable candidate, so no confirmation and no coordinate anywhere.
-  await expect(page.getByRole('list', { name: 'Address candidates' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: DUP })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Is this the place you want to save?' }))
-    .toHaveCount(0);
+  // Listed once, in the register's order, with no coordinate on screen.
+  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+    .toHaveText(['4 RIDGE ROAD KALORAMA 3766', DUP]);
   await expect(page.locator('main')).not.toContainText(/145\.|-37\.|pfi/i);
 
-  // The area check never ran and nothing was written.
-  expect(officialCalls).toEqual(['open-data-platform:address']);
-  expect(await storageState(page)).toEqual({
-    indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
-  });
-
-  // A way forward that does not invent an answer.
-  await page.getByRole('button', { name: 'Search again' }).click();
-  await expect(page.getByLabel('Address')).toHaveValue('RIDGE');
+  // Choosing it goes on to the confirm step like any other address.
+  await page.getByRole('button', { name: DUP }).click();
+  await expect(page.getByRole('heading', { name: 'Is this the place you want to save?' }))
+    .toBeVisible();
 });
 
-test('AC2 treats more than one flagged record at conflicting points as unresolved', async ({ page }) => {
+test('AC2 two flagged records at conflicting points are offered once, never ranked', async ({ page }) => {
   await searchWith(page, [
     addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'Y'),
     addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'Y'),
   ]);
 
-  await expect(page.getByText(AMBIGUITY_REASON)).toBeVisible();
-  await expect(page.getByRole('button', { name: DUP })).toHaveCount(0);
-});
-
-test('AC2 withholds only the unresolved address and still lists the rest', async ({ page }) => {
-  await searchWith(page, [
-    addressFeature('4 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.365, -37.817),
-    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'N'),
-    addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'N'),
-    addressFeature('8 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.366, -37.818),
-  ]);
-
-  await expect(page.getByRole('heading', { name: 'Choose your address from the list.' }))
-    .toBeVisible();
   await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
-    .toHaveText(['4 RIDGE ROAD KALORAMA 3766', '8 RIDGE ROAD KALORAMA 3766']);
-  await expect(page.getByText(AMBIGUITY_REASON)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'None of these is my address' })).toBeVisible();
-});
-
-test('AC2 counts more than one unresolved address without ranking them', async ({ page }) => {
-  await searchWith(page, [
-    addressFeature(DUP, 'KALORAMA', 145.36594, -37.817939, 'N'),
-    addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'N'),
-    addressFeature('8 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.366, -37.818, 'N'),
-    addressFeature('8 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.3661, -37.8181, 'N'),
-  ]);
-
-  await expect(page.getByRole('heading', {
-    name: '2 addresses could not be matched to a single map location.',
-  })).toBeVisible();
+    .toHaveText([DUP]);
   await expect(page.locator('main')).not.toContainText(/best|closest|likely|score/i);
 });
 
@@ -341,7 +294,8 @@ test('AC2 debounce collapses a typing burst into one request', async ({ page }) 
   // Nineteen characters, one outbound query — the debounce is what bounds the
   // request volume, and it is the last text typed that is asked about.
   expect(requests).toHaveLength(1);
-  expect(requests[0]).toContain('RIDGE ROAD KALORAMA');
+  // Words are joined by the register's single character wildcard.
+  expect(requests[0]).toContain('RIDGE_ROAD_KALORAMA');
 });
 
 test('AC2 state (a): while a search is pending, nothing is claimed about a result', async ({ page }) => {
@@ -478,7 +432,7 @@ test('AC2 a short result names its own size and claims no cap', async ({ page })
 test('AC2 the count is announced in a polite live region when the list changes', async ({ page }) => {
   await page.route(WFS_PATTERN, (route) => {
     const filter = new URL(route.request().url()).searchParams.get('CQL_FILTER') ?? '';
-    const count = filter.includes("'RIDGE R%'") ? 1 : 3;
+    const count = filter.includes("'RIDGE_R%'") ? 1 : 3;
     return route.fulfill({ json: { type: 'FeatureCollection', features:
       Array.from({ length: count }, (_, index) =>
         addressFeature(`${index + 1} RIDGE ROAD KALORAMA 3766`, 'KALORAMA', 145.36 + index / 1000, -37.81)) } });

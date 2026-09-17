@@ -87,7 +87,6 @@ describe('address search request', () => {
         lat: -37.817939,
         lon: 145.36594,
       }],
-      unresolvedCount: 0,
       returnedCount: 2,
     });
   });
@@ -95,7 +94,7 @@ describe('address search request', () => {
   it('returns an empty list only for a valid empty feature collection', async () => {
     const fetcher = async () => new Response(JSON.stringify({ features: [] }), { status: 200 });
     await expect(fetchAddressCandidates('unknown', fetcher))
-      .resolves.toEqual({ candidates: [], unresolvedCount: 0, returnedCount: 0 });
+      .resolves.toEqual({ candidates: [], returnedCount: 0 });
   });
 
   // The search runs while the user types, so the caller supersedes its own
@@ -109,7 +108,7 @@ describe('address search request', () => {
       throw new DOMException('The operation was aborted.', 'AbortError');
     };
 
-    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+    await expect(fetchAddressCandidates('ridge', fetcher, caller.signal))
       .rejects.toThrow('aborted');
   });
 
@@ -122,7 +121,7 @@ describe('address search request', () => {
       throw new DOMException('The operation was aborted.', 'AbortError');
     };
 
-    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+    await expect(fetchAddressCandidates('ridge', fetcher, caller.signal))
       .rejects.toThrow('aborted');
     expect(signalled?.aborted).toBe(true);
   });
@@ -184,7 +183,7 @@ describe('address search request', () => {
       expect(init?.signal?.aborted).toBe(true);
       throw new DOMException('The operation was aborted.', 'AbortError');
     };
-    await expect(fetchAddressCandidates('ridge', fetcher, () => undefined, caller.signal))
+    await expect(fetchAddressCandidates('ridge', fetcher, caller.signal))
       .rejects.toThrow('aborted');
     expect(calls).toBe(1);
   });
@@ -214,38 +213,17 @@ describe('E1-US1-AC2 duplicate resolution at the data boundary', () => {
       collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.36594, -37.817939, 'Y')]),
     );
     expect(resolution.candidates).toHaveLength(1);
-    expect(resolution.unresolvedCount).toBe(0);
   });
 
-  it('withholds a repeated address the service returned at conflicting points', async () => {
+  it('offers a repeated address the service returned at conflicting points, at its first point', async () => {
     const resolution = await fetchAddressCandidates(
       'ridge',
       collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.365951, -37.817944)]),
-      () => undefined,
     );
-    expect(resolution).toEqual({ candidates: [], unresolvedCount: 1, returnedCount: 2 });
-  });
-
-  it('reports the unresolved condition as a bare count, naming no address or point', async () => {
-    const reported: string[] = [];
-    await fetchAddressCandidates(
-      'ridge',
-      collection([duplicateAt(145.36594, -37.817939), duplicateAt(145.365951, -37.817944)]),
-      (message) => reported.push(message),
-    );
-    expect(reported).toHaveLength(1);
-    expect(reported[0]).toContain('1');
-    expect(reported[0]).not.toMatch(/RIDGE|KALORAMA|145\.|-37\.|pfi/i);
-  });
-
-  it('stays silent when every group resolved', async () => {
-    const reported: string[] = [];
-    await fetchAddressCandidates(
-      'ridge',
-      collection([duplicateAt(145.36594, -37.817939)]),
-      (message) => reported.push(message),
-    );
-    expect(reported).toEqual([]);
+    expect(resolution.returnedCount).toBe(2);
+    expect(resolution.candidates).toEqual([{
+      address: '6 RIDGE ROAD KALORAMA 3766', localityName: 'KALORAMA', lat: -37.817939, lon: 145.36594,
+    }]);
   });
 
   it('keeps distinct unit addresses returned at one shared point', async () => {

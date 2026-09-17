@@ -107,11 +107,6 @@ export const CANDIDATE_LIST_LABEL = 'Address candidates';
 export const NONE_OF_THESE = 'None of these is my address';
 /** The register describes one address at more than one point and does not say
  * which it means. Stated as the limit it is, never as a result. */
-export const ADDRESS_NOT_RESOLVED = 'One address could not be matched to a single map location.';
-export const ADDRESSES_NOT_RESOLVED = (count: number) =>
-  `${count} addresses could not be matched to a single map location.`;
-export const ADDRESS_NOT_RESOLVED_REASON =
-  'The address register holds multiple map locations for the same written address, so Cooeee cannot choose one.';
 export const REFINE_ADDRESS_HINT =
   'Check or add a unit or street number, then search again.';
 /** Both numbers, in one line. The lines on screen are the distinct addresses

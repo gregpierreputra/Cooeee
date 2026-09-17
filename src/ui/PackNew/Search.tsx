@@ -64,7 +64,7 @@ import { Size } from './Size';
  * every render, and a live search keyed on it would restart on every state
  * change — one request per keystroke of feedback, forever. */
 const searchAddressRegister = (query: string, signal: AbortSignal) =>
-  fetchAddressCandidates(query, undefined, undefined, signal);
+  fetchAddressCandidates(query, undefined, signal);
 
 type ConflictState =
   | { kind: 'checking' }
@@ -672,7 +672,6 @@ export function Search({
           {live.kind === 'candidates' ? (
             <Candidates
               candidates={live.candidates}
-              unresolvedCount={live.unresolvedCount}
               onChoose={setCandidate}
               onNone={() => setDismissed(true)}
             />
@@ -680,7 +679,6 @@ export function Search({
           {located ? (
             <Candidates
               candidates={located}
-              unresolvedCount={0}
               onChoose={setCandidate}
               onNone={() => {
                 clearLocated();

@@ -52,39 +52,89 @@ describe('address search decisions', () => {
     expect(addressQueryCanRun(query)).toBe(expected);
   });
 
-  const NUMBER = "house_number_1 <= 1774 AND (house_number_1 = 1774 OR house_number_2 >= 1774)";
-  const DANDENONG_ROAD =
-    "(road_name LIKE 'DANDENONG%' AND locality_name LIKE 'ROAD%')"
-    + " OR (road_name = 'DANDENONG' AND road_type = 'ROAD')"
-    + " OR (road_name LIKE 'DANDENONG ROAD%')";
+  // The filter is checked by what it finds, not by how it is spelt: it is run
+  // here over register rows exactly as the register would run it.
+  type Row = Record<string, string | number | null>;
+  const row = (fields: Row): Row => ({
+    ezi_address: '', house_prefix_1: null, house_number_1: null, house_suffix_1: null,
+    house_number_2: null, road_name: '', road_type: null, road_suffix: null,
+    locality_name: '', postcode: '', ...fields,
+  });
+  const like = (pattern: string) =>
+    new RegExp(`^${pattern.replace(/%/g, '.*').replace(/_/g, '.')}$`);
+  function finds(typed: string, register: Row): boolean {
+    const js = addressFilterForCql(typed)
+      .replace(/(\w+) LIKE '([^']*)'/g, (_m, field, value) =>
+        `${like(value)}.test(String(r.${field} ?? ''))`)
+      .replace(/(\w+) (<=|>=) (\d+)/g, (_m, field, op, n) => `(r.${field} != null && r.${field} ${op} ${n})`)
+      .replace(/(\w+) = (\d+)/g, (_m, field, n) => `r.${field} === ${n}`)
+      .replace(/(\w+) = '([^']*)'/g, (_m, field, value) => `r.${field} === '${value}'`)
+      .replace(/ AND /g, ' && ')
+      .replace(/ OR /g, ' || ');
+    return new Function('r', `return (${js});`)(register) as boolean;
+  }
 
-  it.each([
-    // A number inside a stored range, the reported "1774 Dandenong Road".
-    ['1774 Dandenong Road', `${NUMBER} AND (${DANDENONG_ROAD})`],
-    [
-      '  1774-1776  dandenong rd ',
-      `${NUMBER} AND ((road_name LIKE 'DANDENONG%' AND locality_name LIKE 'RD%')`
-        + " OR (road_name = 'DANDENONG' AND road_type = 'ROAD') OR (road_name LIKE 'DANDENONG RD%'))",
-    ],
-    [
-      'Unit 7/1774 Dandenong Rd, Clayton VIC 3168',
-      `ezi_address LIKE '7/%' AND ${NUMBER} AND postcode = '3168' AND (`
-        + "(road_name LIKE 'DANDENONG%' AND locality_name LIKE 'RD CLAYTON%')"
-        + " OR (road_name = 'DANDENONG' AND road_type = 'ROAD' AND locality_name LIKE 'CLAYTON%')"
-        + " OR (road_name LIKE 'DANDENONG RD%' AND locality_name LIKE 'CLAYTON%')"
-        + " OR (road_name LIKE 'DANDENONG RD CLAYTON%'))",
-    ],
-    [
-      'flat g04 1a mt high',
-      "ezi_address LIKE 'G04/%' AND house_number_1 <= 1 AND (house_number_1 = 1 OR house_number_2 >= 1)"
-        + " AND house_suffix_1 = 'A' AND ((road_name LIKE 'MOUNT%' AND locality_name LIKE 'HIGH%') OR (road_name LIKE 'MOUNT HIGH%'))",
-    ],
-    // Wildcards, CQL syntax and apostrophes never survive.
-    ["o'connor%_;)", "((road_name LIKE 'OCONNOR%'))"],
-    // No road typed: the start of the full address, as before.
-    ['1774', "ezi_address LIKE '1774%'"],
-  ])('turns %j into register fields', (query, filter) => {
-    expect(addressFilterForCql(query)).toBe(filter);
+  const DANDENONG = row({
+    ezi_address: '7/1774-1776 DANDENONG ROAD CLAYTON 3168', house_number_1: 1774, house_number_2: 1776,
+    road_name: 'DANDENONG', road_type: 'ROAD', locality_name: 'CLAYTON', postcode: '3168',
+  });
+  const MARKET = row({
+    ezi_address: '5A MARKET STREET S NEWTOWN (GEELONG) 3220', house_number_1: 5, house_suffix_1: 'A',
+    road_name: 'MARKET', road_type: 'STREET', road_suffix: 'S', locality_name: 'NEWTOWN (GEELONG)', postcode: '3220',
+  });
+  const BARMAH = row({
+    ezi_address: 'R25 BARMAH-SHEPPARTON ROAD MOUNT PLEASANT 3631', house_prefix_1: 'R', house_number_1: 25,
+    road_name: 'BARMAH-SHEPPARTON', road_type: 'ROAD', locality_name: 'MOUNT PLEASANT', postcode: '3631',
+  });
+  const VISTA = row({
+    ezi_address: 'G04/2 MT HENRY VISTA RIPPLESIDE 3215', house_number_1: 2,
+    road_name: 'MT HENRY', road_type: 'VISTA', locality_name: 'RIPPLESIDE', postcode: '3215',
+  });
+  const CAUSEWAY = row({
+    ezi_address: '42 VICTORIA PORTLAND 3305', house_number_1: 42,
+    road_name: 'VICTORIA', locality_name: 'PORTLAND', postcode: '3305',
+  });
+
+  it.each<[string, Row]>([
+    // The reported address: a number inside a stored range, typed every which way.
+    ['1774 Dandenong Road', DANDENONG],
+    ['1775 dandenong rd', DANDENONG],
+    ['  1774-1776  Dandenong Rd, Clayton VIC 3168 ', DANDENONG],
+    ['Unit 7/1776 Dandenong Rd Clayton, Victoria, Australia', DANDENONG],
+    ['unit 7 1774 dandenong road 3168', DANDENONG],
+    ['1774 Dandenong Clayton', DANDENONG],
+    ['1774 Dandenong Ro', DANDENONG], // still being typed
+    ['Dandenong Road Clayton', DANDENONG],
+    // A number suffix, a road direction, and a suburb the register brackets.
+    ['5a Market St S Newtown', MARKET],
+    ['5A Market Street South, Newtown (Geelong) 3220', MARKET],
+    // A number prefix, a hyphenated road typed with a space, Mount for the suburb.
+    ['R25 Barmah Shepparton Rd Mt Pleasant', BARMAH],
+    ['r25 barmah-shepparton road mount pleasant', BARMAH],
+    // A lettered unit, Mount typed for the register's MT, a road type not in the short list.
+    ['G04/2 Mount Henry Vista Rippleside', VISTA],
+    ['g04/2 mt henry vista', VISTA],
+    // A road with no type, whose name is also the state's.
+    ['42 Victoria 3305', CAUSEWAY],
+    ['42 Victoria Portland VIC', CAUSEWAY],
+  ])('%j finds its register address', (typed, register) => {
+    expect(finds(typed, register)).toBe(true);
+  });
+
+  it.each<[string, Row]>([
+    ['1778 Dandenong Road', DANDENONG],      // outside the range
+    ['1774 Dandenong Road Oakleigh', DANDENONG],
+    ['Unit 8/1774 Dandenong Road', DANDENONG],
+    ['5 Market Street N Newtown', MARKET],   // the other direction
+    ['1774 Dandenong Road 3000', DANDENONG],
+  ])('%j does not find another address', (typed, register) => {
+    expect(finds(typed, register)).toBe(false);
+  });
+
+  it('sends nothing CQL could read as syntax, and leaves a bare number as a plain prefix', () => {
+    expect(addressFilterForCql("o'connor%_;)('")).toBe("((road_name LIKE 'OCONNOR%'))");
+    expect(addressFilterForCql('1774')).toBe("ezi_address LIKE '1774%'");
+    expect(addressFilterForCql('9'.repeat(30) + ' High St')).not.toContain('house_number_1'); // too long to be a house number
   });
 
   it('preserves service order while excluding inactive records', () => {
@@ -97,7 +147,7 @@ describe('address search decisions', () => {
 
   it('returns nothing for an empty response', () => {
     expect(resolveAddressCandidates([]))
-      .toEqual({ candidates: [], unresolvedCount: 0, returnedCount: 0 });
+      .toEqual({ candidates: [], returnedCount: 0 });
   });
 });
 
@@ -112,7 +162,6 @@ describe('E1-US1-AC2 duplicate resolution — identical coordinates', () => {
       '6 RIDGE ROAD KALORAMA 3766',
       '8 RIDGE ROAD KALORAMA 3766',
     ]);
-    expect(resolution.unresolvedCount).toBe(0);
   });
 
   it('uses the selection flag only to replace a duplicate in place, never to reorder', () => {
@@ -125,7 +174,6 @@ describe('E1-US1-AC2 duplicate resolution — identical coordinates', () => {
     });
     expect(resolveAddressCandidates([secondary, record('NEXT'), flagged])).toEqual({
       candidates: [flagged.candidate, record('NEXT').candidate],
-      unresolvedCount: 0,
       returnedCount: 3,
     });
   });
@@ -142,60 +190,46 @@ describe('E1-US1-AC2 duplicate resolution — identical coordinates', () => {
 });
 
 describe('E1-US1-AC2 duplicate resolution — conflicting coordinates', () => {
-  it('retains the one flagged record when exactly one record in the group is flagged', () => {
+  it('offers the flagged record when one record in the group is flagged', () => {
     const unflagged = at('6 RIDGE ROAD KALORAMA 3766', KALORAMA);
     const flagged = at('6 RIDGE ROAD KALORAMA 3766', NEARBY, { isPrimary: true });
     expect(resolveAddressCandidates([unflagged, flagged])).toEqual({
       candidates: [flagged.candidate],
-      unresolvedCount: 0,
       returnedCount: 2,
     });
   });
 
-  it('selects no coordinate and reports the group unresolved when none is flagged', () => {
-    expect(resolveAddressCandidates([
-      at('6 RIDGE ROAD KALORAMA 3766', KALORAMA),
-      at('6 RIDGE ROAD KALORAMA 3766', NEARBY),
-    ])).toEqual({ candidates: [], unresolvedCount: 1, returnedCount: 2 });
+  it('offers the first record when none is flagged, so the address can still build a pack', () => {
+    const first = at('6 RIDGE ROAD KALORAMA 3766', KALORAMA);
+    expect(resolveAddressCandidates([first, at('6 RIDGE ROAD KALORAMA 3766', NEARBY)]))
+      .toEqual({ candidates: [first.candidate], returnedCount: 2 });
   });
 
-  it('selects no coordinate and reports the group unresolved when more than one is flagged', () => {
-    expect(resolveAddressCandidates([
-      at('6 RIDGE ROAD KALORAMA 3766', KALORAMA, { isPrimary: true }),
-      at('6 RIDGE ROAD KALORAMA 3766', NEARBY, { isPrimary: true }),
-    ])).toEqual({ candidates: [], unresolvedCount: 1, returnedCount: 2 });
+  it('offers the first flagged record when more than one is flagged', () => {
+    const first = at('6 RIDGE ROAD KALORAMA 3766', KALORAMA, { isPrimary: true });
+    expect(resolveAddressCandidates([first, at('6 RIDGE ROAD KALORAMA 3766', NEARBY, { isPrimary: true })]))
+      .toEqual({ candidates: [first.candidate], returnedCount: 2 });
   });
 
-  it('withholds only the unresolved group and keeps every resolved candidate in order', () => {
-    const resolution = resolveAddressCandidates([
+  it('keeps every address once, in service order', () => {
+    expect(addresses(resolveAddressCandidates([
       at('4 RIDGE ROAD KALORAMA 3766', KALORAMA),
       at('6 RIDGE ROAD KALORAMA 3766', KALORAMA),
       at('6 RIDGE ROAD KALORAMA 3766', NEARBY),
       at('8 RIDGE ROAD KALORAMA 3766', NEARBY),
-    ]);
-    expect(addresses(resolution)).toEqual([
+    ]))).toEqual([
       '4 RIDGE ROAD KALORAMA 3766',
+      '6 RIDGE ROAD KALORAMA 3766',
       '8 RIDGE ROAD KALORAMA 3766',
     ]);
-    expect(resolution.unresolvedCount).toBe(1);
   });
 
-  it('counts unresolved groups, not the records inside them', () => {
-    expect(resolveAddressCandidates([
-      at('6 RIDGE ROAD KALORAMA 3766', KALORAMA),
-      at('6 RIDGE ROAD KALORAMA 3766', NEARBY),
-      at('8 RIDGE ROAD KALORAMA 3766', KALORAMA),
-      at('8 RIDGE ROAD KALORAMA 3766', NEARBY),
-      at('8 RIDGE ROAD KALORAMA 3766', { lat: -37.9, lon: 145.4 }),
-    ])).toEqual({ candidates: [], unresolvedCount: 2, returnedCount: 5 });
-  });
-
-  it('ignores an inactive record when deciding whether a group conflicts', () => {
+  it('ignores an inactive record when choosing the point', () => {
     const active = at('6 RIDGE ROAD KALORAMA 3766', KALORAMA);
     expect(resolveAddressCandidates([
+      at('6 RIDGE ROAD KALORAMA 3766', NEARBY, { propertyStatus: 'R', isPrimary: true }),
       active,
-      at('6 RIDGE ROAD KALORAMA 3766', NEARBY, { propertyStatus: 'R' }),
-    ])).toEqual({ candidates: [active.candidate], unresolvedCount: 0, returnedCount: 2 });
+    ])).toEqual({ candidates: [active.candidate], returnedCount: 2 });
   });
 });
 
@@ -211,7 +245,6 @@ describe('E1-US1-AC2 distinct addresses are never merged', () => {
     ];
     const resolution = resolveAddressCandidates(distinct.map((a) => at(a, KALORAMA)));
     expect(addresses(resolution)).toEqual(distinct);
-    expect(resolution.unresolvedCount).toBe(0);
   });
 
   it('applies no trimming, case folding or punctuation stripping to the grouping key', () => {
@@ -239,27 +272,13 @@ describe('E1-US1-AC2 distinct addresses are never merged', () => {
 describe('E1-US1-AC2 search state', () => {
   it('keeps a single candidate as a candidate-list state', () => {
     const candidate = record('ONLY').candidate;
-    expect(completedSearchState({ candidates: [candidate], unresolvedCount: 0, returnedCount: 1 }))
-      .toEqual({ kind: 'candidates', candidates: [candidate], unresolvedCount: 0, returnedCount: 1 });
+    expect(completedSearchState({ candidates: [candidate], returnedCount: 1 }))
+      .toEqual({ kind: 'candidates', candidates: [candidate], returnedCount: 1 });
   });
 
   it('maps an empty successful response to no-match, not failure', () => {
-    expect(completedSearchState({ candidates: [], unresolvedCount: 0, returnedCount: 0 }))
+    expect(completedSearchState({ candidates: [], returnedCount: 0 }))
       .toEqual({ kind: 'no-match' });
-  });
-
-  it('never reports no-match while an unresolved group is present', () => {
-    expect(completedSearchState({ candidates: [], unresolvedCount: 1, returnedCount: 2 })).toEqual({
-      kind: 'candidates', candidates: [], unresolvedCount: 1, returnedCount: 2,
-    });
-  });
-
-  it('carries the unresolved count alongside resolved candidates', () => {
-    const candidate = record('ONLY').candidate;
-    expect(completedSearchState({ candidates: [candidate], unresolvedCount: 2, returnedCount: 5 }))
-      .toEqual({
-        kind: 'candidates', candidates: [candidate], unresolvedCount: 2, returnedCount: 5,
-      });
   });
 
   it('cannot turn a response holding an active record into no-match', () => {
@@ -291,19 +310,7 @@ describe('E1-US1-AC2–AC4 copy', () => {
     );
   });
 
-  it('states the ambiguity without naming a count it does not have', () => {
-    expect(copy.ADDRESS_NOT_RESOLVED).toBe(
-      'One address could not be matched to a single map location.',
-    );
-    expect(copy.ADDRESSES_NOT_RESOLVED(3)).toBe(
-      '3 addresses could not be matched to a single map location.',
-    );
-  });
-
-  it('explains the ambiguity and offers a way forward, without reassurance', () => {
-    expect(copy.ADDRESS_NOT_RESOLVED_REASON).toBe(
-      'The address register holds multiple map locations for the same written address, so Cooeee cannot choose one.',
-    );
+  it('offers a way forward when none of the listed addresses fits', () => {
     expect(copy.REFINE_ADDRESS_HINT).toBe(
       'Check or add a unit or street number, then search again.',
     );
@@ -314,11 +321,11 @@ describe('E1-US1-AC2–AC4 copy', () => {
 // The three states the live search must never conflate are tested one at a
 // time: still typing, answered with nothing, and could not run.
 
-const resolution = (candidates: AddressCandidate[], unresolvedCount = 0, returnedCount = candidates.length) =>
-  ({ candidates, unresolvedCount, returnedCount });
+const resolution = (candidates: AddressCandidate[], returnedCount = candidates.length) =>
+  ({ candidates, returnedCount });
 
 const answered = (query: string, candidates: AddressCandidate[], returnedCount?: number): SettledSearch =>
-  ({ query, outcome: { kind: 'resolved', resolution: resolution(candidates, 0, returnedCount) } });
+  ({ query, outcome: { kind: 'resolved', resolution: resolution(candidates, returnedCount) } });
 
 const failedFor = (query: string): SettledSearch => ({ query, outcome: { kind: 'failed' } });
 
@@ -357,7 +364,7 @@ describe('E1-US1-AC2 live search state', () => {
 
   it('lists candidates with the count the register returned', () => {
     expect(liveSearchState('RIDGE', answered('RIDGE', [candidate], 4), false)).toEqual({
-      kind: 'candidates', candidates: [candidate], unresolvedCount: 0, returnedCount: 4,
+      kind: 'candidates', candidates: [candidate], returnedCount: 4,
     });
   });
 

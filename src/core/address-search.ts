@@ -1,18 +1,17 @@
-import { ADDRESS_QUERY_MIN_CHARS, ADDRESS_RESULT_LIMIT, ROAD_TYPES } from './constants';
+import {
+  ADDRESS_QUERY_MIN_CHARS,
+  ADDRESS_RESULT_LIMIT,
+  ROAD_DIRECTIONS,
+  ROAD_TYPES,
+} from './constants';
 import type { AddressCandidate, AddressRecord } from './types';
 
-/** The outcome of turning one address response into things a user may choose.
- * `unresolvedCount` counts exact-address groups the register describes at more
- * than one point without identifying which one it means. Those groups yield no
- * candidate: a coordinate the user cannot see is never guessed at. */
+/** The outcome of turning one address response into things a user may choose. */
 export type AddressCandidateResolution = {
-
   candidates: AddressCandidate[];
-  unresolvedCount: number;
 
   /** How many records the register actually returned, before any exclusion or
-   * collapsing. 
-   * Rendered next to the number of lines so a capped response reads
+   * collapsing. Rendered next to the number of lines so a capped response reads
    * as a cap and not as the whole register. */
   returnedCount: number;
 };
@@ -45,7 +44,6 @@ type AddressSearchState =
   | {
       kind: 'candidates';
       candidates: AddressCandidate[];
-      unresolvedCount: number;
       returnedCount: number;
     }
   | { kind: 'no-match' }
@@ -69,33 +67,73 @@ export function sameAddressQuery(a: string, b: string): boolean {
   return a.trim() === b.trim();
 }
 
-/** A CQL string literal. Typed apostrophes are removed before this is reached,
- * so nothing inside the text can end the literal. */
+/** A CQL string literal. Only letters, digits and the two LIKE wildcards this
+ * file writes itself ever reach one, so nothing inside can end the literal. */
 const quoted = (text: string): string => `'${text}'`;
 
-const UNIT_WORDS = '(?:UNIT|FLAT|APT|SHOP|U)';
-const UNIT_ID = '([A-Z]{0,2}\\d{1,5}[A-Z]?)';
+const UNIT_WORDS = '(?:UNIT|FLAT|APT|APARTMENT|SHOP|SUITE|U)';
+// A unit as the register writes it before the slash: 7, G04, A, 10-11, 2-3A.
+const UNIT_ID = '([A-Z0-9][A-Z0-9-]{0,9})';
 // "7/", "G04/", "UNIT 7/" or "UNIT 7 " ahead of the house number.
 const UNIT_PATTERN = new RegExp(
-  `^(?:${UNIT_WORDS}\\s*)?${UNIT_ID}\\s*/\\s*|^${UNIT_WORDS}\\s*${UNIT_ID}\\s+(?=\\d)`,
+  `^(?:${UNIT_WORDS}\\s*)?${UNIT_ID}\\s*/\\s*|^${UNIT_WORDS}\\s*${UNIT_ID}\\s+(?=[A-Z]?\\d)`,
 );
-// "1774", "1774A" or the first number of a typed range such as "1774-1776".
-// Six digits is past any real house number and keeps the number a plain integer.
-const NUMBER_PATTERN = /^(\d{1,6})([A-Z])?(?:\s*-\s*\d+[A-Z]?)?(?:\s+|$)/;
+// "1774", "1774A", "R25" or the first number of a typed range such as
+// "1774-1776". Six digits is past any real house number and keeps it an integer.
+const NUMBER_PATTERN = /^([A-Z])?(\d{1,6})([A-Z])?(?:\s*-\s*[A-Z]?\d+[A-Z]?)?(?:\s+|$)/;
+
+/** One CQL clause per way the words could be a road, its type, its direction
+ * and its suburb. Where one ends and the next begins is not knowable from the
+ * text, so every reading is offered and the register keeps the ones that exist.
+ *
+ * Words are joined with the LIKE single-character wildcard, so a road typed as
+ * "Barmah Shepparton" also finds the register's "BARMAH-SHEPPARTON". */
+function roadClauses(words: readonly string[]): string[] {
+  const joined = (part: readonly string[]) => part.join('_');
+  const suburb = (rest: readonly string[]) =>
+    rest.length > 0 ? ` AND locality_name LIKE ${quoted(`${joined(rest)}%`)}` : '';
+  const clauses: string[] = [];
+
+  for (let i = 1; i <= words.length; i += 1) {
+    const road = joined(words.slice(0, i));
+    const [next, after, ...rest] = words.slice(i);
+    // The words so far begin the road name, and the rest begin the suburb.
+    clauses.push(`(road_name LIKE ${quoted(`${road}%`)}${suburb(words.slice(i))})`);
+    if (next === undefined) continue;
+
+    // The next word is the road type, short, in full or still being typed:
+    // "Rd", "Road", "Vista", "Stre".
+    const type = `road_name LIKE ${quoted(road)} AND road_type LIKE ${quoted(`${ROAD_TYPES[next] ?? next}%`)}`;
+    clauses.push(`(${type}${suburb(words.slice(i + 1))})`);
+    // A direction after the type: "Market Street S", "Barkly Terrace East".
+    if (after !== undefined && ROAD_DIRECTIONS[after]) {
+      clauses.push(`(${type} AND road_suffix = ${quoted(ROAD_DIRECTIONS[after])}${suburb(rest)})`);
+    }
+    // A direction straight after a road with no type: "The Esplanade S".
+    if (ROAD_DIRECTIONS[next]) {
+      clauses.push(
+        `(road_name LIKE ${quoted(road)} AND road_suffix = ${quoted(ROAD_DIRECTIONS[next])}${suburb(words.slice(i + 1))})`,
+      );
+    }
+  }
+  return clauses;
+}
 
 /** Turn typed text into the register's own fields, so an address matches however
  * it was typed: a number inside a stored range ("1774" finds "1774-1776"), a
- * unit, short road types ("Rd"), commas, "VIC", a postcode, or no suburb at all.
+ * unit, short road types ("Rd"), a direction ("Street South"), commas, "VIC",
+ * a postcode, or no suburb at all.
  *
- * The register spells O'Connor as OCONNOR, so apostrophes are removed. After
- * that only letters, digits, spaces and / - survive, which drops the LIKE
- * wildcards and everything else CQL could read as syntax. Every word is sent as
- * a quoted literal and every number as a number. The typed text in the field is
- * never changed. */
+ * The register spells O'Connor as OCONNOR, so apostrophes are removed, and a
+ * bracketed part such as "Newtown (Geelong)" is dropped. After that only
+ * letters, digits, spaces and / - survive, which drops everything CQL could
+ * read as syntax. Every word is sent inside a quoted literal and every number
+ * as a number. The typed text in the field is never changed. */
 export function addressFilterForCql(query: string): string {
   const text = query
     .toUpperCase()
     .replace(/['’]/g, '')
+    .replace(/\([^)]*\)/g, ' ')
     .replace(/[^A-Z0-9 /-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -105,15 +143,15 @@ export function addressFilterForCql(query: string): string {
   const afterUnit = unit ? text.slice(unit[0].length) : text;
   const number = NUMBER_PATTERN.exec(afterUnit);
   const words = (number ? afterUnit.slice(number[0].length) : afterUnit)
-    .split(' ')
+    .split(/[ /-]/)
     .filter((word) => word !== '')
-    .map((word) => (word === 'MT' ? 'MOUNT' : word)) // the register spells it out
-    .slice(0, 8); // bounds the number of splits a long paste can produce
+    .slice(0, 8); // bounds the number of readings a long paste can produce
 
   // The tail may read "VIC 3168" or "3168 VIC", so the state is dropped on both
   // sides of the postcode.
   const dropState = () => {
-    while (['AUSTRALIA', 'VICTORIA', 'VIC'].includes(words.at(-1) ?? '')) words.pop();
+    // The last word left is the road itself, as in "42 Victoria".
+    while (words.length > 1 && ['AUSTRALIA', 'VICTORIA', 'VIC'].includes(words.at(-1) ?? '')) words.pop();
   };
   dropState();
   const postcode = /^\d{4}$/.test(words.at(-1) ?? '') ? words.pop() : undefined;
@@ -121,69 +159,51 @@ export function addressFilterForCql(query: string): string {
 
   // No road was typed, so there are no fields to ask about: the text is matched
   // against the start of the full address, as a bare "1774" always was.
-  if (words.length === 0) return `ezi_address LIKE ${quoted(`${text}%`)}`;
+  if (words.length === 0) return `ezi_address LIKE ${quoted(`${text.replace(/[^A-Z0-9 /-]/g, '')}%`)}`;
 
   // The register holds units in several fields, but always writes them first
   // in the full address, as "7/" or "G04/".
-  if (unit) clauses.push(`ezi_address LIKE ${quoted(`${unit[1] ?? unit[2]}/%`)}`);
+  // A few units carry the U themselves ("U6/6-14"), so both are asked for.
+  if (unit) {
+    const id = unit[1] ?? unit[2];
+    clauses.push(`(ezi_address LIKE ${quoted(`${id}/%`)} OR ezi_address LIKE ${quoted(`U${id}/%`)})`);
+  }
   if (number) {
-    const n = Number(number[1]);
+    const [, prefix, digits, suffix] = number;
+    const n = Number(digits);
     clauses.push(`house_number_1 <= ${n} AND (house_number_1 = ${n} OR house_number_2 >= ${n})`);
-    if (number[2]) clauses.push(`house_suffix_1 = ${quoted(number[2])}`);
+    if (prefix) clauses.push(`house_prefix_1 = ${quoted(prefix)}`);
+    if (suffix) clauses.push(`house_suffix_1 = ${quoted(suffix)}`);
   }
   if (postcode) clauses.push(`postcode = ${quoted(postcode)}`);
 
-  // Where the road name ends and the suburb begins is not knowable from the
-  // text, so every split is offered and the register keeps the ones that exist.
-  const suburb = (rest: string[]) =>
-    rest.length > 0 ? ` AND locality_name LIKE ${quoted(`${rest.join(' ')}%`)}` : '';
-  const splits: string[] = [];
-  for (let i = 1; i <= words.length; i += 1) {
-    const road = words.slice(0, i).join(' ');
-    const rest = words.slice(i);
-    splits.push(`(road_name LIKE ${quoted(`${road}%`)}${suburb(rest)})`);
-    const roadType = ROAD_TYPES[rest[0] ?? ''];
-    if (roadType) {
-      splits.push(
-        `(road_name = ${quoted(road)} AND road_type = ${quoted(roadType)}${suburb(rest.slice(1))})`,
-      );
-    }
-  }
-  clauses.push(`(${splits.join(' OR ')})`);
+  // The register writes some roads "MT PLEASANT" and others "MOUNT DANDENONG",
+  // so a typed Mt or Mount is asked for both ways.
+  // The road and the suburb may differ ("MT DANDENONG ... ROAD MOUNT DANDENONG"),
+  // so the first one is also swapped alone.
+  const swap = (word: string) => (word === 'MT' ? 'MOUNT' : word === 'MOUNT' ? 'MT' : word);
+  const first = words.findIndex((word) => swap(word) !== word);
+  const spellings = new Set([
+    words.join(' '),
+    words.map(swap).join(' '),
+    words.map((word, index) => (index === first ? swap(word) : word)).join(' '),
+  ]);
+  const readings = [...spellings].flatMap((spelling) => roadClauses(spelling.split(' ')));
+  clauses.push(`(${readings.join(' OR ')})`);
 
   return clauses.join(' AND ');
 }
 
-function pointKey({ lat, lon }: AddressCandidate): string {
-  return `${lat} ${lon}`;
-}
-
-/** Resolve one exact-address group to the single record it stands for, or to
- * null when the register does not say which record that is. */
-function resolveGroup(group: readonly AddressRecord[]): AddressCandidate | null {
-  const flagged = group.filter(({ isPrimary }) => isPrimary);
-  const onePoint = group.every(
-    (record) => pointKey(record.candidate) === pointKey(group[0].candidate),
-  );
-
-  // One point: the records differ only in fields the user never sees and never
-  // chose between, so collapsing loses nothing. The selection flag breaks the
-  // tie in place, without it the service's own first record stands. Neither
-  // moves a candidate or marks it.
-  if (onePoint)  return (flagged[0] ?? group[0]).candidate;
-
-  // Different points: exactly one flagged record is the only evidence of which
-  // location the register means. With none, or with several, any pick would be
-  // a fabricated coordinate behind an identical-looking button, so the group is
-  // withheld and counted instead.
-  return flagged.length === 1 ? flagged[0].candidate : null;
-}
-
-/** Exclude inactive records, then resolve each exact `ezi_address` to at most
- * one candidate at its first-seen position. The grouping key is the returned
- * address string verbatim — no trimming, case folding or punctuation stripping
- * — so two officially distinct addresses, including units, suffixes and street
- * numbers, can never merge. Nothing is reordered, ranked or scored. */
+/** Exclude inactive records, then resolve each exact `ezi_address` to one
+ * candidate at its first-seen position. The grouping key is the returned
+ * address string verbatim, with no trimming, case folding or punctuation
+ * stripping, so two officially distinct addresses, including units, suffixes
+ * and street numbers, can never merge. Nothing is reordered, ranked or scored.
+ *
+ * The register lists about one address in 230 at more than one point, a few
+ * tens of metres apart, without marking one of them. Such an address is still
+ * a real home, so it is offered at the register's own flagged record, or its
+ * first record when none is flagged. */
 export function resolveAddressCandidates(
   records: readonly AddressRecord[],
 ): AddressCandidateResolution {
@@ -196,30 +216,21 @@ export function resolveAddressCandidates(
     else groups.set(record.candidate.address, [record]);
   }
 
-  const candidates: AddressCandidate[] = [];
-  let unresolvedCount = 0;
-
   // Map iteration is insertion-ordered, so this is the service's own order.
-  for (const group of groups.values()) {
-    const candidate = resolveGroup(group);
-    if (candidate) candidates.push(candidate);
-    else unresolvedCount += 1;
-  }
-
-  return { candidates, unresolvedCount, returnedCount: records.length };
+  const candidates = [...groups.values()].map(
+    (group) => (group.find(({ isPrimary }) => isPrimary) ?? group[0]).candidate,
+  );
+  return { candidates, returnedCount: records.length };
 }
 
 export function completedSearchState(
   resolution: AddressCandidateResolution,
 ): AddressSearchState {
-  // A response holding something the register could not pin down is not the
-  // same as a response holding nothing.
-  return resolution.candidates.length === 0 && resolution.unresolvedCount === 0
+  return resolution.candidates.length === 0
     ? { kind: 'no-match' }
     : {
         kind: 'candidates',
         candidates: [...resolution.candidates],
-        unresolvedCount: resolution.unresolvedCount,
         returnedCount: resolution.returnedCount,
       };
 }

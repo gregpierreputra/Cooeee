@@ -36,18 +36,22 @@ export const ADDRESS_SEARCH_TIMEOUT_MS = 10_000;
 export const ADDRESS_NEAR_METRES = [60, 1000, 5000] as const;
 export const ADDRESS_NEAR_FETCH_LIMIT = 50;
 
-/** Typed road types and their short forms, as the register spells them. */
+/** A direction typed after a road, as the register's one letter. */
+export const ROAD_DIRECTIONS: Readonly<Record<string, string>> = {
+  N: 'N', NORTH: 'N', NTH: 'N', S: 'S', SOUTH: 'S', STH: 'S',
+  E: 'E', EAST: 'E', W: 'W', WEST: 'W',
+};
+
+/** Short forms of road types, as the register spells the full word. A type
+ * typed in full needs no entry here: any word may be a road type. */
 export const ROAD_TYPES: Readonly<Record<string, string>> = {
-  ALLEY: 'ALLEY', ARCADE: 'ARCADE', AVENUE: 'AVENUE', AVE: 'AVENUE', AV: 'AVENUE',
-  BOULEVARD: 'BOULEVARD', BVD: 'BOULEVARD', BLVD: 'BOULEVARD',
-  CIRCUIT: 'CIRCUIT', CCT: 'CIRCUIT', CLOSE: 'CLOSE', CL: 'CLOSE',
-  COURT: 'COURT', CT: 'COURT', CRESCENT: 'CRESCENT', CRES: 'CRESCENT', CR: 'CRESCENT',
-  DRIVE: 'DRIVE', DR: 'DRIVE', ESPLANADE: 'ESPLANADE', ESP: 'ESPLANADE',
-  FREEWAY: 'FREEWAY', FWY: 'FREEWAY', GROVE: 'GROVE', GR: 'GROVE',
-  HIGHWAY: 'HIGHWAY', HWY: 'HIGHWAY', LANE: 'LANE', LN: 'LANE', MEWS: 'MEWS',
-  PARADE: 'PARADE', PDE: 'PARADE', PLACE: 'PLACE', PL: 'PLACE', RISE: 'RISE',
-  ROAD: 'ROAD', RD: 'ROAD', SQUARE: 'SQUARE', SQ: 'SQUARE', STREET: 'STREET', ST: 'STREET',
-  TERRACE: 'TERRACE', TCE: 'TERRACE', TRACK: 'TRACK', TRK: 'TRACK', WALK: 'WALK', WAY: 'WAY',
+  ALY: 'ALLEY', ARC: 'ARCADE', AVE: 'AVENUE', AV: 'AVENUE', BVD: 'BOULEVARD', BLVD: 'BOULEVARD',
+  CSWY: 'CAUSEWAY', CH: 'CHASE', CCT: 'CIRCUIT', CIR: 'CIRCUIT', CL: 'CLOSE', CT: 'COURT', CRT: 'COURT',
+  CRES: 'CRESCENT', CR: 'CRESCENT', CRS: 'CRESCENT', DR: 'DRIVE', DRV: 'DRIVE', ESP: 'ESPLANADE',
+  FWY: 'FREEWAY', GLN: 'GLEN', GR: 'GROVE', GRV: 'GROVE', HTS: 'HEIGHTS', HWY: 'HIGHWAY', LN: 'LANE',
+  PDE: 'PARADE', PKWY: 'PARKWAY', PL: 'PLACE', PROM: 'PROMENADE', RDGE: 'RIDGE', RD: 'ROAD',
+  SQ: 'SQUARE', ST: 'STREET', STR: 'STREET', TCE: 'TERRACE', TER: 'TERRACE', TRK: 'TRACK', VW: 'VIEW',
+  WK: 'WALK', WY: 'WAY',
 };
 
 /** The pause after the last keystroke before the typed prefix leaves the device.
