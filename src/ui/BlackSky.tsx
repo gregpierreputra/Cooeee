@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import {
   deriveState,
@@ -13,6 +13,7 @@ import {
   dialCentre,
   dialModel,
   positionTrust,
+  relativeBearing,
   siteNameBlock,
   type DialLabel,
   type DialModel,
@@ -25,7 +26,22 @@ import {
   rememberChosenPack,
   unlatchBlackSky,
 } from '../core/blacksky-latch';
-import { FIX_PUBLISH_M, TICK_MS, WATCH_RESTART_MS } from '../core/constants';
+import {
+  firstUtterance,
+  isMoving,
+  nextUtterance,
+  shouldStayAwake,
+  sideOf,
+  type VoiceRecord,
+  type VoiceState,
+} from '../core/blacksky-voice';
+import {
+  FIX_PUBLISH_M,
+  FIX_STALE_MS,
+  TICK_MS,
+  VOICE_CHECK_MS,
+  WATCH_RESTART_MS,
+} from '../core/constants';
 import * as copy from '../core/copy';
 import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { titleCase } from '../core/home';
@@ -36,6 +52,8 @@ import BlackSkyDial from './components/BlackSkyDial';
 import HoldButton from './components/HoldButton';
 import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
+import { useVoice } from './components/useVoice';
+import { useWakeLock } from './components/useWakeLock';
 
 type BlackSkyProps = {
   loadPacks?: () => Promise<PackWithPlaces[]>;
@@ -114,21 +132,22 @@ export default function BlackSky({
     };
   }, [loadPacks, loadSites]);
 
-  // The position watch and the screen wake lock, together. Browsers stop
-  // delivering positions while the screen is locked or the app is in the
-  // background, and some phones never resume a watch they paused: that is how
-  // the distance figure froze during walking tests. So both are dropped when
-  // the screen is hidden (no GPS and no lit screen for a page nobody is looking
-  // at) and started fresh the moment it returns. The wake lock keeps the phone
-  // from locking mid-walk, as a navigation app would; a phone that refuses it
-  // (power saving mode, or no such API) still gets the restart.
+  // The position watch. Browsers stop delivering positions while the screen is
+  // locked or the app is in the background, and some phones never resume a
+  // watch they paused: that is how the distance figure froze during walking
+  // tests. So the watch is dropped when the screen is hidden (no GPS for a page
+  // nobody is looking at) and started fresh the moment it returns.
+  // BS_Enhancement-AC4: on that return the clock and the newest position are
+  // published at once, not at the next tick, so the person sees figures that
+  // are right, or the GPS signal lost bar, before anything else. The wake lock
+  // that used to live here is now useWakeLock below, held only while moving or
+  // while voice is on.
   useEffect(() => {
     if (!('geolocation' in navigator)) {
       setPermission('denied');
       return;
     }
     let watch: number | null = null;
-    let lock: WakeLockSentinel | null = null;
     let watchdog: ReturnType<typeof setInterval> | undefined;
     let heardAt = 0; // when the watch last delivered a position
 
@@ -179,25 +198,20 @@ export default function BlackSky({
         navigator.geolocation.clearWatch(watch);
         startWatch();
       }, WATCH_RESTART_MS);
-      if (!('wakeLock' in navigator)) return;
-      navigator.wakeLock.request('screen').then(
-        (held) => {
-          if (watch === null) void held.release(); // granted after sleep(): let it go
-          else lock = held;
-        },
-        () => {},
-      );
     };
     const sleep = () => {
       clearInterval(watchdog);
       if (watch !== null) navigator.geolocation.clearWatch(watch);
       watch = null;
-      void lock?.release();
-      lock = null;
     };
     const onVisibility = () => {
-      if (document.hidden) sleep();
-      else wake();
+      if (document.hidden) {
+        sleep();
+        return;
+      }
+      setNow(Date.now());
+      setFix(latestFix.current);
+      wake();
     };
 
     document.addEventListener('visibilitychange', onVisibility);
@@ -236,6 +250,86 @@ export default function BlackSky({
     return () => clearInterval(timer);
   }, []);
 
+  // BS_Enhancement-AC3: voice. On or off is memory only, like the Show pick: no
+  // storage key, and a fresh visit to BlackSky is always silent until tapped.
+  // The rule that decides what to say is pure (core/blacksky-voice.ts); this
+  // screen keeps its record between calls and feeds it what is on screen now.
+  const voice = useVoice();
+  const { speak, cancel } = voice;
+  const [voiceOn, setVoiceOn] = useState(false);
+  const voiceRecord = useRef<VoiceRecord | null>(null);
+  // What the dial shows, refreshed on every render further down. The voice
+  // reads it from a timer, so it goes through a ref, and the side is worked out
+  // at that moment from the heading the compass hook last painted: the phone
+  // turns far more often than the screen renders.
+  const voiceInput = useRef<(Omit<VoiceState, 'side' | 'returned'> & { bearingDeg: number }) | null>(
+    null,
+  );
+  const { headingDeg } = compass;
+  const readVoiceState = useCallback(
+    (returned: boolean): VoiceState | null => {
+      if (!voiceInput.current) return null;
+      const { bearingDeg, ...shown } = voiceInput.current;
+      const heading = headingDeg();
+      const side = sideOf(heading === null ? null : relativeBearing(bearingDeg, heading));
+      return { ...shown, side, returned };
+    },
+    [headingDeg],
+  );
+
+  useEffect(() => {
+    if (!voiceOn) return;
+    let returned = false;
+    const check = () => {
+      // Nothing is said to a page nobody is looking at, or with no dial to read.
+      if (document.hidden || !voiceRecord.current) return;
+      const state = readVoiceState(returned);
+      if (!state) return;
+      returned = false;
+      const step = nextUtterance(voiceRecord.current, Date.now(), state);
+      voiceRecord.current = step.record;
+      if (step.utterance) speak(step.utterance.text, step.utterance.cutIn);
+    };
+    // Leaving the page stops the sentence at once: the person may be making a
+    // call, and the app must never talk over it. BS_Enhancement-AC4: coming
+    // back is noted, and the next check, which runs after the figures have
+    // been refreshed, says the current ones once.
+    const onVisibility = () => {
+      if (document.hidden) cancel();
+      else returned = true;
+    };
+    const timer = setInterval(check, VOICE_CHECK_MS);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [voiceOn, readVoiceState, speak, cancel]);
+
+  // One tap speaks once and turns repeating on; a second tap stops the sentence
+  // and turns it off. The first sentence starts INSIDE this handler: an iPhone
+  // only lets a page speak when the first utterance comes straight from a tap.
+  const toggleVoice = () => {
+    if (voiceOn) {
+      cancel();
+      voiceRecord.current = null;
+      setVoiceOn(false);
+      return;
+    }
+    const state = readVoiceState(false);
+    if (!state) return;
+    const first = firstUtterance(Date.now(), state);
+    voiceRecord.current = first.record;
+    speak(first.utterance!.text, true);
+    setVoiceOn(true);
+  };
+
+  // BS_Enhancement-AC4: the screen is kept awake only while voice is on or the
+  // person is moving. The speed of an old position says nothing about now, so
+  // it does not count. Released on Leave, because Leave unmounts this screen.
+  const speedMps = fix && now - fix.at <= FIX_STALE_MS ? fix.speedMps : undefined;
+  useWakeLock(shouldStayAwake(voiceOn, speedMps));
+
   if (packs === null) return null;
 
   // One pack needs no choosing. With several, only the chosen one is loaded,
@@ -256,6 +350,21 @@ export default function BlackSky({
   const model = dialModel(screen, shownId);
   const confidence = 'confidence' in screen ? screen.confidence : undefined;
   const trust = confidence ? positionTrust(confidence, estimate !== null) : null;
+  voiceInput.current =
+    model && trust
+      ? {
+          placeId: model.first.id,
+          // The site as the screen names it, so the voice, its caption and the
+          // name block all say the same thing.
+          site: siteNameBlock(model.first.name).site,
+          point: cardinalPoint(model.first.bearingDeg),
+          distanceM: model.first.distanceM,
+          about: trust.about,
+          signalLost: trust.bar !== null,
+          moving: isMoving(speedMps),
+          bearingDeg: model.first.bearingDeg,
+        }
+      : null;
   const dial =
     model && trust ? (
       <DialBody
@@ -270,6 +379,26 @@ export default function BlackSky({
             : copy.ACCURACY_READOUT(confidence!.accuracyM)
         }
         compass={compass}
+        // BS_Enhancement-AC3: the speaker button, at the right-hand end of the
+        // distance row, outlined when off and filled when on. Unavailable: no
+        // speech on this phone, so no button is drawn at all.
+        rowEnd={
+          voice.available ? (
+            <button
+              type="button"
+              className="blacksky-speaker"
+              aria-pressed={voiceOn}
+              aria-label={copy.VOICE_BUTTON}
+              onClick={toggleVoice}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" />
+                <path className="waves" d="M15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" />
+              </svg>
+            </button>
+          ) : null
+        }
+        caption={voice.caption}
         onShow={setShownId}
       />
     ) : trust ? (
@@ -522,6 +651,7 @@ function DialBody({
   readout,
   compass,
   rowEnd,
+  caption,
   onShow,
 }: {
   model: DialModel;
@@ -532,6 +662,8 @@ function DialBody({
    *  where there is one. The row keeps that 48 px free either way, so the
    *  figures sit in the same place with or without it. */
   rowEnd?: ReactNode;
+  /** The words being spoken, shown over the foot of the dial while they last. */
+  caption?: string | null;
   onShow: (id: string) => void;
 }) {
   const { first, label, others } = model;
@@ -589,6 +721,10 @@ function DialBody({
             description={copy.DIAL_DESCRIPTION(site, distance, point)}
           />
           {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
+          {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
+              over the foot of the dial, for as long as they are being said. Not
+              a live region: a screen reader would say them on top of the voice. */}
+          {caption ? <p className="blacksky-caption">{caption}</p> : null}
         </div>
       </div>
       {/* On an iPhone that is usually because the compass has not been allowed

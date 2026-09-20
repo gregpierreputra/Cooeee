@@ -140,6 +140,41 @@ export const HEADING_FROM_MOVEMENT_MPS = 10 / 3.6;
 // live while it is not.
 export const COMPASS_SILENT_MS = 3_000;
 
+// Voice (BS_Enhancement-AC3). Every figure here is a starting value, to be
+// tuned from the passenger-in-a-moving-car test, not a measured one.
+/** The distances, in metres, at which the phone speaks as they are passed in
+ *  either direction. Outermost first; the rule relies on that order. */
+export const VOICE_MILESTONES_M = [10_000, 5_000, 2_000, 1_000, 500, 200, 100] as const;
+/** Having passed a milestone, the distance must come back past it by this share
+ *  of the milestone before it counts as passed the other way. Without it a
+ *  position wandering either side of 5 km would say so every time. Starting value. */
+export const VOICE_MILESTONE_MARGIN = 0.05;
+/** Never two messages closer together than this, the GPS signal lost message
+ *  and its return excepted. Starting value. */
+export const VOICE_MIN_GAP_MS = 20_000;
+/** While moving, this long with nothing said earns one message, so a driver
+ *  knows the voice is still on. Starting value. */
+export const VOICE_SILENCE_MS = 180_000;
+/** The place must stay on its new side this long before the change is spoken:
+ *  a glance over the shoulder or one bend in the road is not a change. Starting value. */
+export const VOICE_SIDE_DWELL_MS = 5_000;
+/** Closer than this the person is at the place, within what a phone's position
+ *  can tell. Said once. Starting value. */
+export const AT_PLACE_M = 50;
+/** Where "ahead" ends and "behind" begins, in degrees either way from the top
+ *  of the phone: ahead is within 45, behind is beyond 135, and the two sides lie
+ *  between. Four equal quarters as a starting value. */
+export const VOICE_SIDE_EDGES_DEG = { ahead: 45, behind: 135 } as const;
+/** How often the voice rule is asked whether there is anything to say. It
+ *  reads refs and renders nothing; a second is fine-grained enough for a
+ *  five-second dwell. Starting value. */
+export const VOICE_CHECK_MS = 1_000;
+
+// Staying open (BS_Enhancement-AC4).
+/** Faster than this the person is moving, and the screen is kept awake. A slow
+ *  walk is about 1.4 m/s; a phone lying still reports 0 or nothing. Starting value. */
+export const AWAKE_MOVING_MPS = 1;
+
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion
 // sensors, the holder may be walking the whole time. ACCURACY_MAX_M above is
