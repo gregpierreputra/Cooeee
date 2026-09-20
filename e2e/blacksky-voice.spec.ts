@@ -197,14 +197,14 @@ test('Empty then Normal: nothing is spoken before the tap; the tap speaks the lo
 });
 
 // The speaker button sits at the right-hand end of the distance row, not in the
-// dial. 360 px wide with "12.3 km" and "NE" is the tightest that row gets.
+// dial. 360 px wide with "12.3 km" and NORTH- / EAST is the tightest that row gets.
 test('at 360 px the speaker button sits on the distance row and overlaps nothing', async ({ page }) => {
   await stubPhone(page);
   await openDial(page, 'no-pack');
   await page.setViewportSize({ width: 360, height: 800 });
   await pushPosition(page, { latitude: -37.95024, longitude: 145.26284 });
   await expect(page.locator('.blacksky-figure-main')).toHaveText('12.3 km');
-  await expect(page.locator('.blacksky-figure-point')).toHaveText('NE');
+  await expect(page.locator('.blacksky-figure-point')).toHaveText('North-east');
 
   const layout = await page.locator('.blacksky-dial-figures').evaluate((row) => {
     const box = (selector: string) => row.querySelector(selector)!.getBoundingClientRect();
@@ -232,7 +232,7 @@ test('at 360 px the speaker button sits on the distance row and overlaps nothing
   });
   await expect(page.locator('.blacksky-dial-frame .blacksky-speaker')).toHaveCount(0);
 
-  // It still speaks, and the spoken compass point is the full word, not "NE".
+  // It still speaks, the compass point a full word as it is on the screen.
   await speaker(page).click();
   expect((await spoken(page))[0]).toBe(`${SITE}, place of last resort. 12.3 kilometres. North-east.`);
 });
