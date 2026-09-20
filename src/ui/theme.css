@@ -968,51 +968,80 @@ input {
   font-weight: var(--w-bold);
 }
 
-/* A pointed row: the compass on the left, the place it points at on the right.
-   The compass column takes what it needs; the name takes the rest. */
-.blacksky-pointed {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.75rem 1.25rem;
+/* ── The dial (BS_Enhancement-AC1) ─────────────────────────────────────────
+   One place, read in a glance: where it comes from, its name, the distance,
+   the dial. Tight gaps, because the card asks for title to Leave on one
+   390 by 844 screen without scrolling. */
+.blacksky-dial-body {
+  display: grid;
+  gap: 0.625rem;
 }
 
-.blacksky-compass {
+/* Only while the dial is on screen: the no-fix reference screen keeps the
+   page's own spacing, as it was built. */
+.blacksky:has(.blacksky-dial-body) {
+  gap: 0.875rem;
+}
+
+.blacksky-dial-head {
   display: grid;
-  justify-items: center;
-  gap: 0.25rem;
+  gap: 0.125rem;
+}
+
+.blacksky-dial-head h2 {
+  font-size: var(--step-2);
+  font-weight: var(--w-heavy);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.blacksky-dial-head p {
+  margin: 0;
+  font-size: var(--step-1);
+}
+
+/* The distance on the left; beside it, the compass point over the position's
+   error. A grid, not a wrapping row, so a long figure ("12.3 km") with a long
+   point ("NORTH-EAST") narrows the right-hand column instead of pushing it
+   onto a line of its own and the page past one screen. */
+.blacksky-dial-figures {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: end;
+  gap: 0 0.75rem;
   color: var(--accent);
   font-weight: var(--w-heavy);
 }
 
-/* The arrow is the biggest thing on screen — about a third of a phone's width,
-   as in the mockups. It turns by CSS from two numbers: its own bearing and the
-   phone's heading, which the compass hook writes onto the screen root once per
-   frame. No heading yet means north-up. No transition: rotate(-350deg) and
-   rotate(10deg) are the same picture, and an animated hop between them would
-   spin the long way round. */
-.blacksky-arrow {
-  width: clamp(6.5rem, 34vw, 9rem);
-  height: auto;
-  fill: currentColor;
-  transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
+.blacksky-dial-distance,
+.blacksky-dial-beside {
+  display: grid;
+  min-width: 0;
 }
 
-/* The distance, at arm's-length size. Bounded below so three digits and a unit
-   still fit beside a name on a 320 px viewport at doubled font size. */
+.blacksky-dial-beside {
+  padding-bottom: 0.25rem;
+}
+
+.blacksky-dial-readout {
+  font-weight: var(--w-med);
+}
+
+/* A marked position's readout is a sentence: full width, under the figures. */
+.blacksky-dial-beside:has([data-long='true']) {
+  display: contents;
+}
+
+.blacksky-dial-readout[data-long='true'] {
+  grid-column: 1 / -1;
+}
+
+/* The distance is the largest text on the screen: never under 56 px. */
 .blacksky-figure-main {
-  font-size: clamp(2.25rem, 11vw, 3rem);
-  line-height: 0.95;
+  font-size: clamp(3.5rem, 15vw, 4.5rem);
+  line-height: 1;
   letter-spacing: -0.04em;
-}
-
-/* The nearest-places rows sit under the saved places at a reading size, so
-   three more directions do not triple the page. */
-.blacksky-nearby .blacksky-arrow {
-  width: 4.5rem;
-}
-
-.blacksky-nearby .blacksky-figure-main {
-  font-size: var(--step-2);
 }
 
 /* The point by name, in capitals as in the mockups: NORTH-EAST, never NE. */
@@ -1024,13 +1053,199 @@ input {
   color: var(--ink);
 }
 
-.blacksky-nearby .blacksky-figure-point {
-  font-size: var(--step-xs);
+/* BS_Enhancement-AC2: a figure from an old, vague or estimated position is
+   dimmed to the mode's second amber (5.8:1 on black, so still readable) and
+   prefixed. It steps back; it does not disappear. */
+.blacksky-dial-figures[data-about='true'] .blacksky-figure-main,
+.blacksky-dial-figures[data-about='true'] .blacksky-figure-point {
+  color: var(--ink-2);
+}
+
+.blacksky-dial-about {
+  font-size: var(--step-1);
+  line-height: 1.1;
+  color: var(--ink-2);
+}
+
+/* The dial is sized by the shorter of the phone's width and a share of its
+   height, so it never pushes Leave off a short screen. At its 200 px floor the
+   ring letters are still 17 px. */
+.blacksky-dial {
+  width: clamp(12.5rem, min(62vw, 27dvh), 17rem);
+  height: auto;
+  justify-self: center;
+  color: var(--accent);
+  overflow: visible;
+}
+
+/* The turning. The compass hook writes the heading onto the document root once
+   per frame; the ring turns against it, so N stays on true north, and the pin
+   sits at the place's bearing on that ring. No heading means 0, which is north
+   up. The origin is the viewBox centre (0 0), the default for SVG content. No
+   transition: rotate(-350deg) and rotate(10deg) are the same picture, and an
+   animated hop between them would spin the long way round. */
+.blacksky-dial-ring {
+  transform: rotate(calc(var(--heading, 0) * -1deg));
+}
+
+.blacksky-dial-pin {
+  transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
+}
+
+.blacksky-dial-ring circle {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2;
+}
+
+.blacksky-dial-ring line {
+  stroke: var(--ink-2);
+  stroke-width: 2;
+}
+
+/* Each letter turns back by the same heading about its own centre, so it
+   stays upright and readable however the ring has turned. */
+.blacksky-dial-letter {
+  font-size: 17px;
+  font-weight: var(--w-heavy);
+  fill: var(--ink-2);
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotate(calc(var(--heading, 0) * 1deg));
+}
+
+.blacksky-dial-notch,
+.blacksky-dial-pin circle,
+.blacksky-dial-person {
+  fill: currentColor;
+}
+
+.blacksky-dial-pin .blacksky-dial-pin-eye {
+  fill: var(--bg);
+}
+
+/* An old position, or a marked one: the person is drawn hollow. */
+.blacksky-dial-person.hollow {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+/* The dial, centred, with the North up tag in the top corner the ring leaves
+   free: a circle never reaches the corners of its own box. */
+.blacksky-dial-frame {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+
+.blacksky-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.125rem 0.75rem;
+  border: 1px solid var(--ink-2);
+  border-radius: 999px;
+  font-weight: var(--w-bold);
+  color: var(--ink-2);
+}
+
+/* Every other place, folded into one line that opens the sheet. One line by
+   the card: a long run of distances is cut with an ellipsis, and the sheet
+   has them all. */
+.blacksky-others {
+  width: 100%;
+  min-height: 48px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The sheet: a native dialog pinned to the foot of the screen, at thumb reach,
+   in the mode's own colours. The page behind it goes dark, not white. */
+.blacksky-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85dvh;
+  margin: auto auto 0;
+  padding: 1.25rem max(1.75rem, env(safe-area-inset-right))
+    max(1.75rem, env(safe-area-inset-bottom)) max(1.75rem, env(safe-area-inset-left));
+  border: 0;
+  border-top: 1px solid var(--accent);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--bg);
+  color: var(--ink);
+  overflow-y: auto;
+}
+
+.blacksky-sheet[open] {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.blacksky-sheet::backdrop {
+  background: rgb(0 0 0 / 0.8);
+}
+
+.blacksky-sheet p {
+  margin: 0;
+}
+
+.blacksky-sheet h2 {
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+}
+
+.blacksky-other {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.blacksky-other h3 {
+  margin: 0;
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  overflow-wrap: anywhere;
+}
+
+/* ── The bar (BS_Enhancement-AC2) ──────────────────────────────────────────
+   GPS signal lost, filled in the mode's amber so it is the first thing seen.
+   While the position is fresh the element stays in the page for the screen
+   reader's sake but is taken out of the layout, so it costs no gap. */
+.blacksky-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.625rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  font-weight: var(--w-heavy);
+}
+
+.blacksky-bar span + span {
+  font-weight: var(--w-med);
+}
+
+.blacksky-bar[data-on='false'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 /* The notes fold: a native <details>, so no script and no re-render on the
-   tick. The summary is a ruled bar at reading size with its own open/closed
-   mark; each note is a ruled row like the places above it. */
+   tick. Beside the dial it stands open, so the notes are read without a tap;
+   on the no-fix reference screen it starts folded. The summary is a ruled bar
+   at reading size with its own open/closed mark; each note is a ruled row like
+   the places above it. */
 .blacksky-notes summary {
   min-height: 56px;
   display: flex;

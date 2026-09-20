@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import {
   deriveState,
@@ -9,6 +9,15 @@ import {
   type Placed,
   type Screen,
 } from '../core/blacksky';
+import {
+  dialCentre,
+  dialModel,
+  positionTrust,
+  splitSiteName,
+  type DialLabel,
+  type DialModel,
+  type PositionTrust,
+} from '../core/blacksky-dial';
 import {
   isBlackSkyLatched,
   latchBlackSky,
@@ -23,6 +32,7 @@ import { titleCase } from '../core/home';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
+import BlackSkyDial from './components/BlackSkyDial';
 import HoldButton from './components/HoldButton';
 import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
@@ -54,6 +64,10 @@ export default function BlackSky({
     setChosenId(id);
     rememberChosenPack(localFlagStore(), id);
   };
+  // BS_Enhancement-AC1: the place the person picked with Show. Held in memory
+  // only, so it lasts exactly as long as this visit to BlackSky and needs no
+  // storage key; the main place never changes by itself while it is set.
+  const [shownId, setShownId] = useState<string | null>(null);
   const navigate = useNavigate();
   // Latched before this mount means the app brought the person back here (a
   // relaunch, a reload, or a return from another site), which is worth saying.
@@ -71,12 +85,13 @@ export default function BlackSky({
   // The sensors give magnetic north; the bearings are true. The correction
   // depends on where the phone is, which the fix supplies.
   const compass = useCompass(here ? magneticDeclinationDeg(here) : 0);
+  const { setMovement } = compass;
 
   // US3-AC2, the power rule: GPS samples land in this ref (no render). A sample
   // FIX_PUBLISH_M or more from the position on screen is shown at once, so the
   // distance follows a person who is moving; anything smaller is sensor noise
   // and waits for the TICK_MS interval below, so a phone held still renders
-  // once per tick. The arrows turn with the phone by CSS, not by a render.
+  // once per tick. The dial turns with the phone by CSS, not by a render.
   const latestFix = useRef<Fix | null>(null);
 
   useEffect(() => {
@@ -119,7 +134,8 @@ export default function BlackSky({
 
     const onPosition = (position: GeolocationPosition) => {
       heardAt = Date.now();
-      const next = {
+      const { heading, speed } = position.coords;
+      const next: Fix = {
         lat: position.coords.latitude,
         lon: position.coords.longitude,
         accuracyM: Math.round(position.coords.accuracy),
@@ -127,8 +143,15 @@ export default function BlackSky({
         // Date.now(), and some mobile engines report GPS timestamps from a
         // different clock. Mixing clock domains would break the 30 s rule.
         at: heardAt,
+        // BS_Enhancement-AC2: the direction of movement and the speed, when the
+        // browser gives them. A phone standing still reports null or NaN.
+        ...(typeof heading === 'number' && Number.isFinite(heading) ? { headingDeg: heading } : {}),
+        ...(typeof speed === 'number' && Number.isFinite(speed) ? { speedMps: speed } : {}),
       };
       latestFix.current = next;
+      // Straight to the compass hook, every sample, without a render: above
+      // walking speed this is what turns the dial.
+      setMovement(next.headingDeg, next.speedMps);
       setPermission('granted');
       setMark(null); // a real fix always beats a marked-position estimate
       // The first fix, and every real move after it, renders immediately.
@@ -183,7 +206,7 @@ export default function BlackSky({
       document.removeEventListener('visibilitychange', onVisibility);
       sleep();
     };
-  }, []);
+  }, [setMovement]);
 
   // One way out: the hold on Leave below. The phone's back button pops a
   // history entry, so this screen adds one spare entry on arrival and, on
@@ -223,11 +246,52 @@ export default function BlackSky({
   const screen = estimate
     ? deriveState(now, loaded, estimate, 'granted', sites)
     : deriveState(now, loaded, fix, permission, sites);
-  const hasArrows = screen.kind === 'IN_AREA' || ('nearby' in screen && screen.nearby.length > 0);
   const notes = chosen?.notes ?? [];
-  // The position the arrows are drawn from, so the picker can say which
-  // packs' areas contain it.
+  // The position the dial is drawn from, so the picker can say which packs'
+  // areas contain it.
   const from = estimate ?? positionFrom(fix, permission);
+
+  // BS_Enhancement-AC1 and AC2. deriveState says what can be pointed at; the
+  // dial rules pick the one main place and say how far to trust the position.
+  const model = dialModel(screen, shownId);
+  const confidence = 'confidence' in screen ? screen.confidence : undefined;
+  const trust = confidence ? positionTrust(confidence, estimate !== null) : null;
+  const dial =
+    model && trust ? (
+      <DialBody
+        model={model}
+        trust={trust}
+        // The error of the position, stated beside the figure it qualifies. A
+        // marked position keeps E3-US1-AC4's own words: always ESTIMATE, and
+        // the uncertainty growing.
+        readout={
+          estimate
+            ? copy.ESTIMATE_READOUT(estimate.accuracyM)
+            : copy.ACCURACY_READOUT(confidence!.accuracyM)
+        }
+        compass={compass}
+        onShow={setShownId}
+      />
+    ) : trust ? (
+      // Empty: a position, and nothing stored that can be pointed at.
+      <p className="muted">{copy.NO_PLACE_TO_POINT_AT}</p>
+    ) : null;
+  // The person's own notes, read-only here. Beside the dial they stand open,
+  // readable without a tap; on the no-fix reference screen they stay folded
+  // until asked for, as that screen was built.
+  const notesBlock =
+    notes.length > 0 ? (
+      <details className="blacksky-notes" open={model !== null}>
+        <summary>{copy.NOTES}</summary>
+        <ul className="list">
+          {notes.map((note) => (
+            <li key={note.id} className="blacksky-place blacksky-note">
+              {note.text}
+            </li>
+          ))}
+        </ul>
+      </details>
+    ) : null;
 
   return (
     <main className="page blacksky">
@@ -259,46 +323,41 @@ export default function BlackSky({
           </ul>
         </section>
       ) : null}
-      {/* Which way the arrows are to be read, and (iOS) the one tap that lets
-          the orientation sensor turn them. Under the title, as the screen's mode. */}
-      {hasArrows ? (
-        <>
-          <p className="muted">{compass.live ? copy.COMPASS_LIVE : copy.COMPASS_NORTH_UP}</p>
-          {compass.needsPermission ? (
-            <button type="button" onClick={() => void compass.enable()}>
-              {copy.TURN_ON_COMPASS}
-            </button>
-          ) : null}
-        </>
-      ) : null}
+      {/* BS_Enhancement-AC2: the bar. The status element is always in the
+          page, empty while the position is fresh, so a screen reader hears the
+          words once when they arrive and focus never moves (WCAG 4.1.3). The
+          age sits outside it: a figure that changes every tick must not be
+          read out every tick. */}
+      <div className="blacksky-bar" data-on={trust?.bar ? 'true' : 'false'}>
+        <span role="status">{trust?.bar ? copy.GPS_SIGNAL_LOST : null}</span>
+        {trust?.bar === 'stale' && confidence ? (
+          <span className="figure">{copy.LAST_POSITION_AGE(confidence.ageS)}</span>
+        ) : null}
+        {trust?.bar === 'mark' ? <span>{copy.FROM_YOUR_SAVED_PLACE}</span> : null}
+      </div>
       {chosen && !chosen.placesVerified ? (
         <p className="muted">{copy.PLACES_UNVERIFIED}</p>
       ) : null}
       {screen.kind === 'NO_PACK' && packs.length > 0 ? (
-        // Several packs and none chosen yet: only the live pointer to the
-        // nearest official places, from the position, until one is chosen.
+        // Several packs and none chosen yet: only the dial to the nearest
+        // official place, from the position, until one is chosen.
         from ? (
-          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+          <>
+            {dial}
+            {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
+          </>
         ) : (
           <p className="muted">{copy.NO_GPS_YET}</p>
         )
       ) : (
-        <ScreenBody screen={screen} estimating={estimate !== null} onMark={setMark} />
+        <ScreenBody
+          screen={screen}
+          estimating={estimate !== null}
+          onMark={setMark}
+          dial={dial}
+          notes={notesBlock}
+        />
       )}
-      {/* The user's own notes, folded until asked for and read-only here: one
-          tap opens them, each in its own ruled row at reading size. */}
-      {notes.length > 0 ? (
-        <details className="blacksky-notes">
-          <summary>{copy.NOTES}</summary>
-          <ul className="list">
-            {notes.map((note) => (
-              <li key={note.id} className="blacksky-place blacksky-note">
-                {note.text}
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
       {/* US3-AC1: one plainly named exit, full-width at thumb reach. Leaving
           demands the same deliberate 2s hold as entering, so a pocket press
           cannot silently drop the emergency screen.
@@ -332,21 +391,26 @@ function ScreenBody({
   screen,
   estimating,
   onMark,
+  dial,
+  notes,
 }: {
   screen: Screen;
   estimating: boolean;
   onMark: (mark: PositionMark) => void;
+  dial: ReactNode;
+  notes: ReactNode;
 }) {
   switch (screen.kind) {
     // US2-AC2: no pack stored. Nothing is invented or borrowed: the nearest
-    // official places on the stored CFA list are pointed at once there is a
+    // official place on the stored CFA list is on the dial once there is a
     // fix, then the built-in preparation guidance and a reminder to build a
     // pack when next online (from the home screen, after the hold to leave).
     case 'NO_PACK':
       return (
         <>
           <p className="muted">{copy.NO_PACK_HERE}</p>
-          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+          {dial}
+          {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
           <p className="muted">{copy.NO_PACKS_HINT}</p>
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
@@ -358,7 +422,7 @@ function ScreenBody({
     // US1-AC2: no fix at all, so nothing to point from. The saved information
     // stands as reference text — names, addresses and the reminder — and the
     // state line says why. A designed state, not an error: the next derivation
-    // with a fix draws the arrows on its own.
+    // with a fix draws the dial on its own.
     case 'ACQUIRING':
       return (
         <>
@@ -374,12 +438,13 @@ function ScreenBody({
           >
             {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
           </button>
+          {notes}
         </>
       );
     // US2-AC1: outside the loaded pack's area. The pack is named with the
     // distance to its area's edge — an informational row, never a bearing to
-    // an out-of-area point — then the nearest official places from here, plus
-    // general official guidance.
+    // an out-of-area point — then the dial to the nearest official place from
+    // here, the notes, and general official guidance with its two phone links.
     case 'OUT_OF_AREA':
       return (
         <>
@@ -394,7 +459,9 @@ function ScreenBody({
               </li>
             ))}
           </ul>
-          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+          {dial}
+          {notes}
+          <ConfidenceLines confidence={screen.confidence} />
           <section className="card blacksky-guidance">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
             <a href="tel:000">{copy.CALL_TRIPLE_ZERO}</a>
@@ -405,17 +472,15 @@ function ScreenBody({
           </section>
         </>
       );
+    // Inside the loaded pack's area: the card's order. The dial and the notes
+    // come first, so the glance and the person's own words fit one screen; the
+    // figures and lines EPIC 3 put here follow them, unchanged.
     case 'IN_AREA':
       return (
         <>
-          <p className="muted">{copy.SORTED_BY_DISTANCE}</p>
-          <ul className="list">
-            {screen.places.map((place) => (
-              <PlacedRow key={place.id} place={place} />
-            ))}
-          </ul>
-          <NearbyList places={screen.nearby} />
-          <ConfidenceLines confidence={screen.confidence} estimating={estimating} />
+          {dial}
+          {notes}
+          {estimating ? null : <ConfidenceLines confidence={screen.confidence} />}
           {screen.absence?.reason ? <p className="muted">{screen.absence.reason}</p> : null}
           {screen.pack.reminder ? (
             <p className="blacksky-reminder">{screen.pack.reminder}</p>
@@ -425,76 +490,137 @@ function ScreenBody({
   }
 }
 
-/** One place: the compass on the left — the arrow at arm's-length size, the
- *  distance and compass point beneath it — and the place it points at on the
- *  right. The arrow is one solid shape (the mockups' triangle and stem) so its
- *  size never depends on a font glyph. It carries its bearing as a CSS
- *  variable; the stylesheet turns it against the phone's heading. */
-function PlacedRow({ place }: { place: Placed }) {
+const DIAL_LABELS: Record<DialLabel, string> = {
+  chosen: copy.YOUR_CHOSEN_PLACE,
+  nearest: copy.NEAREST_PLACE_OF_LAST_RESORT,
+  listed: copy.PLACE_OF_LAST_RESORT,
+};
+
+/** BS_Enhancement-AC1: one place as the main subject. Top to bottom: where the
+ *  place comes from, its name (site first, suburb second), the distance as the
+ *  largest text on the screen with the compass point beside it, the dial, and
+ *  every other place folded into one line. No source line, no rank, one pin. */
+function DialBody({
+  model,
+  trust,
+  readout,
+  compass,
+  onShow,
+}: {
+  model: DialModel;
+  trust: PositionTrust;
+  readout: string;
+  compass: { live: boolean; needsPermission: boolean; enable: () => Promise<void> };
+  onShow: (id: string) => void;
+}) {
+  const { first, label, others } = model;
+  const { site, suburb } = splitSiteName(first.name);
+  const distance = copy.distanceLabel(first.distanceM);
+  const point = cardinalPoint(first.bearingDeg);
   return (
-    <li className="blacksky-place blacksky-pointed">
-      <div className="blacksky-compass">
-        <svg
-          className="blacksky-arrow"
-          viewBox="0 0 100 130"
-          aria-hidden="true"
-          style={{ '--bearing': place.bearingDeg } as CSSProperties}
-        >
-          <path d="M50 0 100 55 H70 V130 H30 V55 H0 Z" />
-        </svg>
-        <span className="blacksky-figure-main">{copy.distanceLabel(place.distanceM)}</span>
-        <span className="blacksky-figure-point">{cardinalPoint(place.bearingDeg)}</span>
+    <section className="blacksky-dial-body">
+      <div className="blacksky-dial-head">
+        <span className="kicker">{DIAL_LABELS[label]}</span>
+        <h2>{site}</h2>
+        {suburb ? <p className="muted">{suburb}</p> : null}
       </div>
-      <div className="blacksky-target">
-        <h2>{place.name}</h2>
-        <p className="muted">{copy.PLACE_DESCRIPTOR(place.publisher)}</p>
+      {/* BS_Enhancement-AC2: a figure from an old, vague or estimated position
+          is dimmed and says "about", so it never looks more certain than it is. */}
+      <p className="blacksky-dial-figures" data-about={trust.about ? 'true' : 'false'}>
+        <span className="blacksky-dial-distance">
+          {trust.about ? <span className="blacksky-dial-about">{copy.ABOUT}</span> : null}
+          <span className="blacksky-figure-main figure">{distance}</span>
+        </span>
+        <span className="blacksky-dial-beside">
+          <span className="blacksky-figure-point">{point}</span>
+          {/* The short "± 10 m" sits under the point; a marked position's
+              longer sentence takes the full width below. */}
+          <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark'}>
+            {readout}
+          </span>
+        </span>
+      </p>
+      {/* Nothing is turning the dial: it is drawn north up and says so, in the
+          corner the ring leaves free, so the tag costs the screen no height. */}
+      <div className="blacksky-dial-frame">
+        <BlackSkyDial
+          bearingDeg={first.bearingDeg}
+          centre={dialCentre(trust, !compass.live)}
+          description={copy.DIAL_DESCRIPTION(site, distance, point)}
+        />
+        {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
       </div>
-    </li>
+      {/* On an iPhone that is usually because the compass has not been allowed
+          yet, which is one tap. */}
+      {!compass.live && compass.needsPermission ? (
+        <button type="button" onClick={() => void compass.enable()}>
+          {copy.TURN_ON_COMPASS}
+        </button>
+      ) : null}
+      {others.length > 0 ? <OtherPlaces places={others} onShow={onShow} /> : null}
+    </section>
   );
 }
 
-/** The accuracy readout, and beside it — never instead of the arrows — the
- *  plain statement when the fix is vague or old. */
-function ConfidenceLines({
-  confidence,
-  estimating,
-}: {
-  confidence: Confidence;
-  estimating: boolean;
-}) {
+/** Every other place: one line that says how many and how far, and the sheet
+ *  it opens. A native dialog, so the page behind is inert, focus stays inside
+ *  and the phone's own dismiss closes it, with no script for any of that. The
+ *  sheet is a list of places, so the mandated phrase heads it. */
+function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string) => void }) {
+  const sheet = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   return (
     <>
-      <p className="muted figure">
-        {estimating
-          ? copy.ESTIMATE_READOUT(confidence.accuracyM)
-          : copy.ACCURACY_READOUT(confidence.accuracyM)}
-      </p>
-      {!estimating && confidence.approximate ? (
-        <p className="muted">{copy.GPS_APPROXIMATE(confidence.accuracyM)}</p>
-      ) : null}
-      {!estimating && confidence.stale ? (
-        <p className="muted">{copy.FIX_AGE(confidence.ageS)}</p>
-      ) : null}
+      <button type="button" className="blacksky-others" onClick={() => sheet.current?.showModal()}>
+        {copy.OTHER_PLACES(places.map((place) => copy.distanceLabel(place.distanceM)))}
+      </button>
+      <dialog ref={sheet} className="blacksky-sheet" aria-labelledby={titleId}>
+        <h2 id={titleId}>{copy.OTHER_PLACES_TITLE}</h2>
+        <p className="caveat">{copy.SORTED_BY_DISTANCE}</p>
+        <ul className="list">
+          {places.map((place) => {
+            const { site, suburb } = splitSiteName(place.name);
+            return (
+              <li key={place.id} className="blacksky-place blacksky-other">
+                <div>
+                  <h3>{site}</h3>
+                  {suburb ? <p className="muted">{suburb}</p> : null}
+                  <p className="figure">
+                    {copy.distanceLabel(place.distanceM)} · {cardinalPoint(place.bearingDeg)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={copy.SHOW_PLACE_NAMED(site)}
+                  onClick={() => {
+                    sheet.current?.close();
+                    onShow(place.id);
+                  }}
+                >
+                  {copy.SHOW_PLACE}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <button type="button" onClick={() => sheet.current?.close()}>
+          {copy.CLOSE_OTHER_PLACES}
+        </button>
+      </dialog>
     </>
   );
 }
 
-/** The nearest official places on the state-wide list, from the live fix.
- *  Nothing when there is no fix or no stored list. The confidence lines travel
- *  with it on the screens that have no other figure to hang them on. */
-function NearbyList({ places, confidence }: { places: Placed[]; confidence?: Confidence }) {
-  if (places.length === 0) return null;
+/** The plain statement when the fix is vague or old, under the dial and never
+ *  instead of it. The accuracy figure itself sits beside the distance. */
+function ConfidenceLines({ confidence }: { confidence: Confidence }) {
   return (
-    <section className="blacksky-nearby">
-      <span className="kicker">{copy.NEAREST_OFFICIAL_PLACES}</span>
-      <p className="muted">{copy.SORTED_BY_DISTANCE}</p>
-      <ul className="list">
-        {places.map((place) => (
-          <PlacedRow key={place.id} place={place} />
-        ))}
-      </ul>
-      {confidence ? <ConfidenceLines confidence={confidence} estimating={false} /> : null}
-    </section>
+    <>
+      {confidence.approximate ? (
+        <p className="muted">{copy.GPS_APPROXIMATE(confidence.accuracyM)}</p>
+      ) : null}
+      {confidence.stale ? <p className="muted">{copy.FIX_AGE(confidence.ageS)}</p> : null}
+    </>
   );
 }
 

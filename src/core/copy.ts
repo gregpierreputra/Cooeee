@@ -332,11 +332,45 @@ export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
 
 export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
 
-// The compass. Which way the arrow is to be read depends on whether the phone's
-// orientation sensor is feeding it, so the screen always says which.
-export const COMPASS_LIVE = 'The arrow turns with your phone.';
-export const COMPASS_NORTH_UP = 'The arrow is drawn with north at the top of the screen.';
+// The compass. iOS only hands the orientation sensor over after a tap.
 export const TURN_ON_COMPASS = 'Turn on the compass';
+
+// BS_Enhancement-AC1 one place on one compass dial
+/** The small label above the main place: where it comes from. Written in
+ *  capitals here, not by the stylesheet, so a screen reader and a test read
+ *  the same words the eye does. */
+export const YOUR_CHOSEN_PLACE = 'YOUR CHOSEN PLACE';
+export const NEAREST_PLACE_OF_LAST_RESORT = 'NEAREST PLACE OF LAST RESORT';
+/** A state-wide site picked with Show that is not the nearest one: calling it
+ *  nearest would be untrue. */
+export const PLACE_OF_LAST_RESORT = 'PLACE OF LAST RESORT';
+/** The dial as words, for a screen reader: the same three facts the eye gets. */
+export const DIAL_DESCRIPTION = (site: string, distance: string, point: string) =>
+  `${site}, ${distance}, ${point}`;
+/** Every other place folded into one line: how many, and how far each is. */
+export const OTHER_PLACES = (distances: string[]) =>
+  `${distances.length === 1 ? '1 other place' : `${distances.length} other places`} · ${distances.join(' · ')}`;
+export const OTHER_PLACES_TITLE = 'Other places';
+export const SHOW_PLACE = 'Show';
+/** The Show button's name for a screen reader, so five buttons are not all
+ *  called Show. It starts with the visible word (WCAG 2.5.3). */
+export const SHOW_PLACE_NAMED = (site: string) => `Show ${site}`;
+export const CLOSE_OTHER_PLACES = 'Close';
+/** A position, and nothing stored on the phone that can be pointed at. */
+export const NO_PLACE_TO_POINT_AT =
+  'No official place of last resort stored on this phone can be pointed at from here.';
+
+// BS_Enhancement-AC2 say plainly when position or heading cannot be trusted
+export const GPS_SIGNAL_LOST = 'GPS signal lost';
+/** How old the position is, beside the bar's words: seconds, then minutes. */
+export const LAST_POSITION_AGE = (s: number) =>
+  s < 60 ? `last position ${s} s ago` : `last position ${Math.floor(s / 60)} min ago`;
+/** The bar when the position is a mark the person made, not a fix. */
+export const FROM_YOUR_SAVED_PLACE = 'from your saved place';
+/** Before a distance measured from an old, vague or estimated position. */
+export const ABOUT = 'about';
+/** The tag on a dial that nothing is turning. */
+export const NORTH_UP = 'North up';
 
 /** "850 m" under a kilometre, "2.34 km" under ten, "12.3 km" from there. Ten
  *  metre steps within walking range, so the figure is seen to move on foot. */
@@ -373,7 +407,6 @@ export const PHONE_MAY_WORK =
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
-export const NEAREST_OFFICIAL_PLACES = 'Nearest official places of last resort';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack to load';

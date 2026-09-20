@@ -129,6 +129,17 @@ export const FIX_PUBLISH_M = 5;
 // phones stop delivering positions without reporting any error.
 export const WATCH_RESTART_MS = 15_000;
 
+// The dial's heading (BS_Enhancement-AC2). A car body disturbs a phone's compass
+// and most people leave a bushfire by car, so above this speed the direction of
+// movement from GPS turns the dial instead. 10 km/h is faster than a walk, where
+// the compass is the better reading, and slower than any driving. Exclusive: at
+// exactly this speed the compass still drives.
+export const HEADING_FROM_MOVEMENT_MPS = 10 / 3.6;
+// A heading source that has said nothing for this long is treated as absent,
+// and the dial is drawn north up: a dial frozen at its last angle would look
+// live while it is not.
+export const COMPASS_SILENT_MS = 3_000;
+
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion
 // sensors, the holder may be walking the whole time. ACCURACY_MAX_M above is
