@@ -474,15 +474,17 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter. Two seconds.';
 export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
-export const LEAVE_BLACKSKY = 'Leave BlackSky';
-/** Said above the Leave control, never over anything else: the phone's back
+/** The label on the compact Leave control in BlackSky's top bar. It says what
+ *  to do, because a pill that size has no room for a second line of help. */
+export const LEAVE_BLACKSKY = 'Hold to leave';
+/** Said under BlackSky's top bar, never over anything else: the phone's back
  *  button was pressed, or the app opened here again because BlackSky was the
  *  last screen open. Both end with the one way out. */
 export const BLACKSKY_BLOCKED = 'BlackSky was not opened. Hold its button for 2 seconds to enter.';
 export const BACK_PRESSED =
-  'You pressed back. BlackSky stays until you hold Leave BlackSky for two seconds.';
+  'You pressed back. BlackSky stays until you hold the Hold to leave button, at the top right, for two seconds.';
 export const BLACKSKY_RESUMED =
-  'BlackSky was open when you last left Cooeee, so it opened again. To leave, hold Leave BlackSky for two seconds.';
+  'BlackSky was open when you last left Cooeee, so it opened again. To leave, hold the Hold to leave button, at the top right, for two seconds.';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 

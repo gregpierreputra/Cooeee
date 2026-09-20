@@ -406,7 +406,45 @@ export default function BlackSky({
 
   return (
     <main className="page blacksky">
-      <h1 className="kicker blacksky-title">{copy.BLACKSKY_TITLE}</h1>
+      {/* The top bar: the mode's name, and the one way out at its right-hand end.
+          US3-AC1: leaving demands the same deliberate 2s hold as entering, so a
+          pocket press cannot silently drop the emergency screen.
+          The control used to be a full-width bar at the foot of the screen, at
+          thumb reach. It moved up here because the foot of the screen is worth
+          more to the person than to the exit: that is where the other places
+          and their own notes are read. A top corner is easier to brush by
+          accident than the foot, but it is the 2s hold, not the position, that
+          guards a pocket press, and the hold is unchanged: the same HoldButton,
+          the same fill, the same hint. The bar stands clear of the top edge of
+          the phone (see .blacksky in the stylesheet), where the system's own
+          pull-down lives.
+          The hint, and the notice that says why BlackSky is still open, are
+          laid out UNDER the bar by the stylesheet. Appearing there they push
+          the page down, never the button: a hint that moved the button would
+          slide it out from under the finger that is holding it.
+          E5-US3-AC3: a rehearsal that is running is where she came from, so
+          leaving goes back to it, not to Home.
+          ponytail: a cold start inside BlackSky loses the in-memory run and
+          leaves to Home; the kept rehearsal is asked about on the pack's next
+          visit. Upgrade path: look the unfinished row up on leave. */}
+      <header className="blacksky-topbar">
+        <h1 className="kicker blacksky-title">{copy.BLACKSKY_TITLE}</h1>
+        <HoldButton
+          onHold={() => {
+            unlatchBlackSky(localFlagStore());
+            const run = currentRun();
+            navigate(run ? `/rehearse/${run.packId}` : '/', { replace: true });
+          }}
+          hint={copy.HOLD_TO_LEAVE}
+        >
+          {copy.LEAVE_BLACKSKY}
+        </HoldButton>
+        {notice ? (
+          <p className="muted blacksky-hold-hint" role="status">
+            {notice}
+          </p>
+        ) : null}
+      </header>
       {/* Several packs: which one to load, asked at the top of the screen and
           left there so the choice can be changed. Full-width targets for wet
           hands; the chosen one is filled. */}
@@ -469,31 +507,6 @@ export default function BlackSky({
           notes={notesBlock}
         />
       )}
-      {/* US3-AC1: one plainly named exit, full-width at thumb reach. Leaving
-          demands the same deliberate 2s hold as entering, so a pocket press
-          cannot silently drop the emergency screen.
-          E5-US3-AC3: a rehearsal that is running is where she came from, so
-          leaving goes back to it, not to Home.
-          ponytail: a cold start inside BlackSky loses the in-memory run and
-          leaves to Home; the kept rehearsal is asked about on the pack's next
-          visit. Upgrade path: look the unfinished row up on leave. */}
-      <div className="actions">
-        {notice ? (
-          <p className="muted blacksky-hold-hint" role="status">
-            {notice}
-          </p>
-        ) : null}
-        <HoldButton
-          onHold={() => {
-            unlatchBlackSky(localFlagStore());
-            const run = currentRun();
-            navigate(run ? `/rehearse/${run.packId}` : '/', { replace: true });
-          }}
-          hint={copy.HOLD_TO_LEAVE}
-        >
-          {copy.LEAVE_BLACKSKY}
-        </HoldButton>
-      </div>
     </main>
   );
 }

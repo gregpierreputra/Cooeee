@@ -909,10 +909,34 @@ input {
 /* The bearing figure is the biggest thing on screen — readable at arm's length,
    while walking. Everything else recedes into dim amber. */
 
-/* The mode's name in the kicker treatment, ruled off from the screen below. */
-.blacksky-title {
-  padding-bottom: 0.75rem;
+/* The top bar: the mode's name in the kicker treatment on the left, the Leave
+   control as a compact pill on the right, ruled off from the screen below.
+   A grid, so that the hold's hint and the "still open" notice, which the
+   markup places after the button, fall into full-width rows UNDER the bar.
+   They push the page down when they appear; the button above them never moves,
+   so it cannot slide out from under the finger that is holding it. */
+.blacksky-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding-bottom: 0.625rem;
   border-bottom: 1px solid var(--line);
+}
+
+.blacksky-topbar > .blacksky-hold-hint {
+  grid-column: 1 / -1;
+  text-align: left;
+  font-size: var(--step-0); /* nothing on this screen but the two small labels is under 16 px */
+}
+
+/* The same hold control as everywhere else (the 2 s fill, the hint), at the
+   smallest size a thumb can still hold: 44 px high, one line, its own width. */
+.blacksky-topbar > .blacksky-hold {
+  min-height: 44px;
+  padding: 0 1.125rem;
+  flex-direction: row;
+  white-space: nowrap;
 }
 
 /* Which pack to load, when several are saved: asked under the title and left
@@ -1940,6 +1964,13 @@ input {
 .first-open,
 .gate {
   padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
+}
+
+/* BlackSky's Leave control sits in the top bar, so the bar is kept clear of the
+   phone's top edge: the system's pull-down starts there, and a finger reaching
+   for one must not land on the other. */
+.blacksky {
+  padding-top: max(1.5rem, calc(env(safe-area-inset-top) + 1rem));
 }
 
 /* ── Welcome, before the disclosure ───────────────────────────────────────── */
