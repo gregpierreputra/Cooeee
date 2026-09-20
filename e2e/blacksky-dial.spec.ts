@@ -140,6 +140,75 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
   await expect(label(page)).toHaveText('PLACE OF LAST RESORT');
 });
 
+// A Samsung in Chrome is about 360 px wide, and there the line used to read
+// "2 other places · 12.1 km · 13.1…". It must never be cut off: where it does
+// not fit, the distances go under the count, in the same one button.
+for (const [mode, count] of [['no-pack', 2], ['pack', 4]] as const) {
+  test(`at 360 px the ${count} other places are never cut off`, async ({ page }) => {
+    await openDial(page, mode);
+    await page.setViewportSize({ width: 360, height: 800 });
+    // Far enough away that every distance is a long one ("12.3 km").
+    await pushPosition(page, mode === 'pack' ? AT_FERNY_CREEK : AT_MELBOURNE);
+
+    const line = othersLine(page);
+    // The words are unchanged, whatever line they fall on.
+    const words = (await line.textContent())!;
+    expect(words).toMatch(new RegExp(`^${count} other places( · [\\d.]+ k?m){${count}}$`));
+
+    // Every part that is meant to be read lies wholly inside the box that clips
+    // the line, so nothing is cut off; nothing uses an ellipsis; and no line
+    // begins or ends with a separator that can be seen.
+    const fit = await line.evaluate((button) => {
+      const clip = button.querySelector('.blacksky-others-line')!.getBoundingClientRect();
+      // The words themselves, not their boxes: the count's box carries empty
+      // padding, and a distance's box carries its separator, both of which are
+      // meant to hang outside the clip.
+      const wordsOf = (node: Node) => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return range.getBoundingClientRect();
+      };
+      const inside = (box: DOMRect) =>
+        box.left >= clip.left - 0.5 && box.right <= clip.right + 0.5 && box.bottom <= clip.bottom + 0.5;
+      const count = button.querySelector('.blacksky-others-count')!;
+      const distances = [...button.querySelectorAll('.blacksky-others-distance')];
+      const figures = distances.map((el) => wordsOf(el.lastChild!));
+      const lines = new Map<number, DOMRect[]>();
+      for (const box of figures) lines.set(Math.round(box.top), [...(lines.get(Math.round(box.top)) ?? []), box]);
+      const separators = [...button.querySelectorAll('.blacksky-others-separator')].map((el) => el.getBoundingClientRect());
+      const visibleSeparators = separators.filter((box) => box.left >= clip.left - 0.5);
+      return {
+        ellipsis: [button, ...button.querySelectorAll('*')].filter((el) => getComputedStyle(el).textOverflow === 'ellipsis').length,
+        clippedParts: [count, ...distances].filter((el) => el.scrollWidth > el.clientWidth).length,
+        countInside: inside(wordsOf(count)),
+        figuresInside: figures.every(inside),
+        // A separator that shows always has a figure to its right on its own line.
+        danglingSeparators: visibleSeparators.filter(
+          (sep) => !figures.some((fig) => Math.abs(fig.top - sep.top) < 4 && fig.left >= sep.right - 1),
+        ).length,
+        hiddenSeparators: separators.length - visibleSeparators.length,
+        lines: lines.size,
+        height: button.getBoundingClientRect().height,
+        wrapped: figures[0].top > count.getBoundingClientRect().top + 4,
+      };
+    });
+    expect(fit.ellipsis).toBe(0);
+    expect(fit.clippedParts).toBe(0);
+    expect(fit.countInside).toBe(true);
+    expect(fit.figuresInside).toBe(true);
+    expect(fit.danglingSeparators).toBe(0);
+    expect(fit.height).toBeGreaterThanOrEqual(44);
+    // Wrapped: the count has the first line to itself, and the separator in
+    // front of each line's first distance is out of sight.
+    if (fit.wrapped) expect(fit.hiddenSeparators).toBe(fit.lines);
+    // Still one button, and it still opens the sheet.
+    await expect(page.getByRole('button', { name: /other place/ })).toHaveCount(1);
+    await line.click();
+    await expect(sheet(page).getByRole('listitem')).toHaveCount(count);
+    if (mode === 'pack') expect(fit.wrapped).toBe(true); // four distances cannot share the count's line
+  });
+}
+
 test('Normal, no pack: the nearest state-wide site is the subject', async ({ page }) => {
   await openDial(page, 'no-pack');
   await pushPosition(page, AT_FERNY_CREEK);
