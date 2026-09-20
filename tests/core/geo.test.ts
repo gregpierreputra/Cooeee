@@ -4,7 +4,6 @@ import { CARDINAL_POINTS } from '../../src/core/copy';
 import {
   bearingDeg,
   cardinalPoint,
-  cardinalPointShort,
   compassHeading,
   distanceM,
   magneticDeclinationDeg,
@@ -68,19 +67,6 @@ describe('cardinalPoint', () => {
   it('handles a negative bearing', () => {
     expect(cardinalPoint(-45)).toBe('North-west');
     expect(cardinalPoint(-90)).toBe('West');
-  });
-});
-
-describe('cardinalPointShort', () => {
-  it('gives the letters of the same sector as the word, all the way round', () => {
-    const letters = { North: 'N', 'North-east': 'NE', East: 'E', 'South-east': 'SE', South: 'S', 'South-west': 'SW', West: 'W', 'North-west': 'NW' };
-    for (let deg = -400; deg <= 800; deg += 7.5) expect(cardinalPointShort(deg)).toBe(letters[cardinalPoint(deg)]);
-  });
-
-  it('changes at the same boundary as the word', () => {
-    expect(cardinalPointShort(22.4)).toBe('N');
-    expect(cardinalPointShort(22.5)).toBe('NE');
-    expect(cardinalPoint(22.5)).toBe('North-east');
   });
 });
 

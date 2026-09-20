@@ -587,11 +587,6 @@ describe('the BlackSky dial', () => {
     expect(copy.OTHER_PLACES_COUNT(3)).toBe('3 other places');
   });
 
-  it('prints the eight compass points as their letters, in the same order as the words', () => {
-    expect([...copy.CARDINAL_POINTS_SHORT]).toEqual(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']);
-    expect(copy.CARDINAL_POINTS_SHORT).toHaveLength(copy.CARDINAL_POINTS.length);
-  });
-
   it('names each Show button by its place, starting with the visible word', () => {
     expect(copy.SHOW_PLACE).toBe('Show');
     expect(copy.SHOW_PLACE_NAMED('Community Hall')).toBe('Show Community Hall');

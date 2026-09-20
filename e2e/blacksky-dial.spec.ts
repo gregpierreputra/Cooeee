@@ -46,9 +46,8 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   await expect(name(page)).toHaveText('Village Green');
   await expect(page.locator('.blacksky-dial-head p')).toHaveText('Sassafras · car park');
   await expect(distance(page)).toHaveText('2.60 km');
-  // The compass point as its letters on the row; the word travels with them.
-  await expect(page.locator('.blacksky-figure-point')).toHaveText('N');
-  await expect(page.locator('.blacksky-figure-point')).toHaveAttribute('title', 'North');
+  // The compass point is a full word, never letters: a lone "N" read as stray.
+  await expect(page.locator('.blacksky-figure-point')).toHaveText('North');
 
   // WCAG 1.1.1: the dial's text equivalent is the same three facts, the
   // compass point in full.
@@ -92,7 +91,12 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
     return {
       distance: px(document.querySelector('.blacksky-figure-main')!),
       largest: Math.max(...withText.map(px)),
-      smallNotLabels: withText.filter((el) => px(el) < 16 && !el.closest('.kicker')).length,
+      // Under 16 px on purpose: the small labels, and the two things set quiet
+      // at 14 px so they never compete with the figure, the Leave pill and the
+      // compass point. Anything else under 16 px is a mistake.
+      smallNotLabels: withText.filter(
+        (el) => px(el) < 16 && !el.closest('.kicker, .blacksky-leave-pill, .blacksky-figure-point'),
+      ).length,
       smallTargets: [...document.querySelectorAll('main button, main summary')]
         .map((el) => el.getBoundingClientRect())
         .filter((box) => box.width > 0 && (box.width < 44 || box.height < 44)).length,
@@ -195,7 +199,7 @@ test('Leave sits in the top bar, clear of the top edge, and its hint never moves
 
 // A Samsung in Chrome is about 360 px wide: the narrowest phone the layout is
 // held to. 12.3 km to the north-east is the widest the distance row gets (a
-// three-digit figure, a two-letter point) short of a hundred kilometres.
+// three-digit figure, a two-word point) short of a hundred kilometres.
 test.describe('at 360 px wide', () => {
   const FAR_SOUTH_WEST = { latitude: -37.95024, longitude: 145.26284 };
 
@@ -204,7 +208,7 @@ test.describe('at 360 px wide', () => {
     await page.setViewportSize({ width: 360, height: 800 });
     await pushPosition(page, FAR_SOUTH_WEST);
     await expect(distance(page)).toHaveText('12.3 km');
-    await expect(page.locator('.blacksky-figure-point')).toHaveText('NE');
+    await expect(page.locator('.blacksky-figure-point')).toHaveText('North-east');
   });
 
   test('the other-places summary is one line and not clipped', async ({ page }) => {
@@ -265,6 +269,135 @@ test.describe('at 360 px wide', () => {
     expect(row.readoutLines).toBe(1); // "± 10 m" on one line under the point
     expect(row.readoutBottom).toBeLessThanOrEqual(row.rowBottom + 0.5);
     expect(row.overflow).toBe(false);
+  });
+});
+
+// A Samsung S26 in Chrome: 360 px wide and about 660 px between the browser's
+// bars. The three things seen wrong there, held as they now are.
+test.describe('on a 360 by 660 screen', () => {
+  const open = async (page: Page, mode: 'pack' | 'no-pack', position: { latitude: number; longitude: number }) => {
+    await openDial(page, mode);
+    await page.setViewportSize({ width: 360, height: 660 });
+    await pushPosition(page, position);
+    await expect(page.locator('.blacksky-dial')).toBeVisible();
+  };
+
+  test('the Notes heading is on the first screen, and the dial is still at least 240 px and square', async ({
+    page,
+  }) => {
+    await open(page, 'pack', AT_FERNY_CREEK);
+    const heading = page.locator('.blacksky-notes summary');
+    await expect(heading).toHaveText('Notes');
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => window.scrollY)).toBe(0); // on load, not after a scroll
+
+    const dial = (await page.locator('.blacksky-dial').boundingBox())!;
+    expect(dial.width).toBeGreaterThanOrEqual(240);
+    expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
+    // Nothing sits on anything: name block, row, dial, other places, heading.
+    const edges = await page.evaluate(() =>
+      ['.blacksky-dial-head', '.blacksky-dial-figures', '.blacksky-dial', '.blacksky-others', '.blacksky-notes summary'].map(
+        (selector) => {
+          const box = document.querySelector(selector)!.getBoundingClientRect();
+          return [box.top, box.bottom];
+        },
+      ),
+    );
+    for (let i = 1; i < edges.length; i += 1) expect(edges[i][0]).toBeGreaterThanOrEqual(edges[i - 1][1] - 0.5);
+
+    // A shorter screen still: the dial gives up height, down to its floor, and
+    // after that the page scrolls rather than squeeze or overlap anything.
+    await page.setViewportSize({ width: 360, height: 620 });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    expect((await page.locator('.blacksky-dial').boundingBox())!.width).toBeGreaterThanOrEqual(240);
+    await page.setViewportSize({ width: 360, height: 540 });
+    const floor = (await page.locator('.blacksky-dial').boundingBox())!;
+    expect(Math.round(floor.width)).toBe(240);
+    expect(Math.round(floor.height)).toBe(240);
+    const others = (await othersLine(page).boundingBox())!;
+    expect((await heading.boundingBox())!.y).toBeGreaterThanOrEqual(others.y + others.height);
+  });
+
+  test('with no notes the dial takes the freed room, down to the foot of the screen', async ({ page }) => {
+    // No pack, so no notes and no heading to keep in view: nothing is held back
+    // for one, and the dial's block runs to the page's own bottom padding.
+    await open(page, 'no-pack', AT_FERNY_CREEK);
+    await expect(page.locator('.blacksky-notes')).toHaveCount(0);
+    const foot = await page.evaluate(() => {
+      const main = document.querySelector('main')!;
+      return {
+        others: document.querySelector('.blacksky-others')!.getBoundingClientRect().bottom,
+        room: window.innerHeight - parseFloat(getComputedStyle(main).paddingBottom),
+      };
+    });
+    expect(Math.abs(foot.others - foot.room)).toBeLessThanOrEqual(1);
+    const dial = (await page.locator('.blacksky-dial').boundingBox())!;
+    expect(dial.width).toBeGreaterThanOrEqual(240);
+    expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
+  });
+
+  test('the Leave pill looks quiet and is still a 44 px target', async ({ page }) => {
+    await open(page, 'pack', AT_FERNY_CREEK);
+    const target = (await page.getByRole('button', { name: LEAVE_BLACKSKY, exact: true }).boundingBox())!;
+    expect(target.height).toBeGreaterThanOrEqual(44);
+    const look = await page.locator('.blacksky-leave-pill').evaluate((pill) => {
+      const style = getComputedStyle(pill);
+      const title = getComputedStyle(document.querySelector('.blacksky-title')!);
+      return {
+        fontSize: parseFloat(style.fontSize),
+        fontWeight: Number(style.fontWeight),
+        titleWeight: Number(title.fontWeight),
+        sameColourAsMuted: style.color === getComputedStyle(document.querySelector('.blacksky-dial-head p')!).color,
+        borderWidth: style.borderTopWidth,
+        filled: style.backgroundSize !== '0% 100%',
+        height: pill.getBoundingClientRect().height,
+      };
+    });
+    expect(look.fontSize).toBe(14);
+    expect(look.fontWeight).toBe(400);
+    expect(look.fontWeight).toBeLessThan(look.titleWeight); // never louder than the title
+    expect(look.sameColourAsMuted).toBe(true);
+    expect(look.borderWidth).toBe('1px');
+    expect(look.filled).toBe(false); // no fill until pressed
+    expect(look.height).toBeLessThan(target.height); // the look is smaller than the target
+  });
+
+  test('the compass point is a full word that overlaps nothing beside 12.3 km', async ({ page }) => {
+    await open(page, 'no-pack', { latitude: -37.95024, longitude: 145.26284 });
+    await expect(distance(page)).toHaveText('12.3 km');
+    const point = page.locator('.blacksky-figure-point');
+    await expect(point).toHaveText('North-east');
+    const row = await page.locator('.blacksky-dial-figures').evaluate((el) => {
+      const pointEl = el.querySelector('.blacksky-figure-point')!;
+      const words = document.createRange();
+      words.selectNodeContents(pointEl);
+      const style = getComputedStyle(pointEl);
+      const figure = el.querySelector('.blacksky-figure-main')!.getBoundingClientRect();
+      const readout = el.querySelector('.blacksky-dial-readout')!.getBoundingClientRect();
+      const box = words.getBoundingClientRect();
+      return {
+        fontSize: parseFloat(style.fontSize),
+        uppercase: style.textTransform === 'uppercase',
+        lines: new Set([...words.getClientRects()].map((r) => Math.round(r.top))).size,
+        clearOfDistance: box.left >= figure.right,
+        clearOfSpeakerPlace: box.right <= el.getBoundingClientRect().right - 48,
+        aboveTheAccuracy: box.bottom <= readout.top + 0.5,
+        // The element's own box: a text range reports the font's full ascent,
+        // which stands a pixel or two proud of a tight line box.
+        insideTheRow: pointEl.getBoundingClientRect().top >= el.getBoundingClientRect().top - 0.5,
+        rowOverflows: el.scrollWidth > el.clientWidth,
+      };
+    });
+    expect(row).toEqual({
+      fontSize: 14,
+      uppercase: true,
+      lines: 2, // NORTH- / EAST: a two-word point breaks at its hyphen
+      clearOfDistance: true,
+      clearOfSpeakerPlace: true,
+      aboveTheAccuracy: true,
+      insideTheRow: true,
+      rowOverflows: false,
+    });
   });
 });
 

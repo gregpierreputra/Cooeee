@@ -31,8 +31,9 @@ export const NOT_RECENTLY_VERIFIED = (days: number) =>
 
 // Shared vocabulary
 /** The eight compass points by name, index 0 = north, one every 45 degrees.
- *  Read by core/geo.ts cardinalPoint(). The full word is what a screen reader
- *  is given and what the voice says: "NE" read aloud is two letters. */
+ *  Read by core/geo.ts cardinalPoint(). Names, not letters: a lone "E" beside
+ *  the distance read as a stray letter on a real phone, and "NE" read aloud is
+ *  two letters. The word is shown small; it is never abbreviated. */
 export const CARDINAL_POINTS = [
   'North',
   'North-east',
@@ -43,13 +44,6 @@ export const CARDINAL_POINTS = [
   'West',
   'North-west',
 ] as const;
-/** The same eight points as the letters printed on any compass, in the same
- *  order. Read by core/geo.ts cardinalPointShort(). Used in one place: beside
- *  BlackSky's big distance, where the full word ("NORTH-EAST") left no room on
- *  the row for the speaker button on a narrow phone. The full word still
- *  travels with it for anyone who cannot see the letters. */
-export const CARDINAL_POINTS_SHORT = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
-
 // Application shell
 export const APP_NAME = 'Cooeee';
 export const APP_TAGLINE =
