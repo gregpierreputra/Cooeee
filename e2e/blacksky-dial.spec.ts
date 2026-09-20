@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { relativeBearing } from '../src/core/blacksky-dial';
 import {
   CALL_TRIPLE_ZERO,
+  HOLD_TO_LEAVE,
   LEAVE_BLACKSKY,
   MARK_AT_SAVED_PLACE,
   NO_GPS,
@@ -66,7 +67,8 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   // No list of places is on screen yet, so the mandated phrase is not either.
   await expect(page.getByText(SORTED_BY_DISTANCE)).toBeHidden();
 
-  // The notes are readable without a tap, and title to Leave fits 390 by 844.
+  // The notes are readable without a tap, and the whole screen, Leave in its
+  // top bar included, fits 390 by 844.
   await expect(page.getByText('Gas is off at the meter.')).toBeVisible();
   await expect(page.getByRole('button', { name: LEAVE_BLACKSKY })).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(844);
@@ -138,6 +140,48 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
   await sheet(page).getByRole('button', { name: 'Show Olinda Recreation Reserve' }).click();
   await expect(name(page)).toHaveText('Olinda Recreation Reserve');
   await expect(label(page)).toHaveText('PLACE OF LAST RESORT');
+});
+
+// The Leave control is a compact pill in the top bar, not a bar at the foot of
+// the screen: the foot goes to the places and the notes. What guards a pocket
+// press is the two-second hold, which is unchanged (blacksky-offline,
+// blacksky-history and rehearsal-journey hold it to leave; here, its place).
+test('Leave sits in the top bar, clear of the top edge, and its hint never moves it', async ({ page }) => {
+  await openDial(page, 'pack');
+  await pushPosition(page, AT_FERNY_CREEK);
+
+  const leave = page.getByRole('button', { name: 'Hold to leave', exact: true });
+  await expect(leave).toHaveCount(1); // the one way out, and no second one at the foot
+  await expect(leave).toHaveText(LEAVE_BLACKSKY);
+  const before = (await leave.boundingBox())!;
+  const title = (await page.getByRole('heading', { name: 'BlackSky', level: 1 }).boundingBox())!;
+  const dial = (await page.locator('.blacksky-dial').boundingBox())!;
+  const main = await page.locator('main').evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    return { right: box.right - parseFloat(style.paddingRight) };
+  });
+
+  // Beside the title, at the right-hand end of the bar, above everything else.
+  expect(before.y + before.height / 2).toBeGreaterThan(title.y);
+  expect(before.y + before.height / 2).toBeLessThan(title.y + title.height);
+  expect(before.x).toBeGreaterThan(title.x + 60);
+  expect(Math.abs(before.x + before.width - main.right)).toBeLessThanOrEqual(1);
+  expect(before.y + before.height).toBeLessThan(dial.y);
+  // A compact pill, still a full-size target, with a gap from the top edge of
+  // the phone, where the system's pull-down lives.
+  expect(before.height).toBeGreaterThanOrEqual(44);
+  expect(before.width).toBeLessThan(200);
+  expect(before.y).toBeGreaterThanOrEqual(24);
+
+  // A tap is not a hold: it earns the hint, under the bar, and the button has
+  // not moved by a pixel, so a finger that then holds is still on it.
+  await leave.click();
+  const hint = page.getByText(HOLD_TO_LEAVE);
+  await expect(hint).toBeVisible();
+  expect(await leave.boundingBox()).toEqual(before);
+  expect((await hint.boundingBox())!.y).toBeGreaterThanOrEqual(before.y + before.height);
+  expect(await hint.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
 });
 
 // A Samsung in Chrome is about 360 px wide, and there the line used to read

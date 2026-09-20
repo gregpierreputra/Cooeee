@@ -227,17 +227,21 @@ describe('deliberate activation', () => {
     expect(copy.HOLD_TO_ENTER).toBe('Hold to enter. Two seconds.');
   });
 
-  it('leaving the mode is one plainly named action', () => {
-    expect(copy.LEAVE_BLACKSKY).toBe('Leave BlackSky');
+  it('leaving the mode is one plainly named action, and its label says to hold', () => {
+    expect(copy.LEAVE_BLACKSKY).toBe('Hold to leave');
+    expect(copy.HOLD_TO_LEAVE).toBe('Hold to leave. Two seconds.');
   });
 
   it('a back press and a return both name the one way out', () => {
     expect(copy.BACK_PRESSED).toBe(
-      'You pressed back. BlackSky stays until you hold Leave BlackSky for two seconds.',
+      'You pressed back. BlackSky stays until you hold the Hold to leave button, at the top right, for two seconds.',
     );
     expect(copy.BLACKSKY_RESUMED).toBe(
-      'BlackSky was open when you last left Cooeee, so it opened again. To leave, hold Leave BlackSky for two seconds.',
+      'BlackSky was open when you last left Cooeee, so it opened again. To leave, hold the Hold to leave button, at the top right, for two seconds.',
     );
+    // Both name the control by the label it actually carries.
+    for (const notice of [copy.BACK_PRESSED, copy.BLACKSKY_RESUMED]) expect(notice).toContain(copy.LEAVE_BLACKSKY);
+    expect(copy.BACK_PRESSED).not.toContain('Leave BlackSky');
   });
 });
 
