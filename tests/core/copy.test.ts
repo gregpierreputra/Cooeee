@@ -555,3 +555,47 @@ describe('an age of one day', () => {
     expect(copy.SAVED_DAYS_AGO(2)).toBe('Saved 2 days ago');
   });
 });
+
+// BS_Enhancement-AC1 and AC2. The labels, the bar and the tag are asserted by
+// exact text on the screen too; here they are pinned as written.
+describe('the BlackSky dial', () => {
+  it('labels the main place by where it comes from', () => {
+    expect(copy.YOUR_CHOSEN_PLACE).toBe('YOUR CHOSEN PLACE');
+    expect(copy.NEAREST_PLACE_OF_LAST_RESORT).toBe('NEAREST PLACE OF LAST RESORT');
+    expect(copy.PLACE_OF_LAST_RESORT).toBe('PLACE OF LAST RESORT');
+  });
+
+  it('gives the dial the same three facts in words', () => {
+    expect(copy.DIAL_DESCRIPTION('Community Hall', '2.60 km', 'North-east')).toBe(
+      'Community Hall, 2.60 km, North-east',
+    );
+  });
+
+  it('folds the other places into one line, one place or several', () => {
+    expect(copy.OTHER_PLACES(['850 m'])).toBe('1 other place · 850 m');
+    expect(copy.OTHER_PLACES(['850 m', '2.13 km', '12.3 km'])).toBe(
+      '3 other places · 850 m · 2.13 km · 12.3 km',
+    );
+  });
+
+  it('names each Show button by its place, starting with the visible word', () => {
+    expect(copy.SHOW_PLACE).toBe('Show');
+    expect(copy.SHOW_PLACE_NAMED('Community Hall')).toBe('Show Community Hall');
+  });
+
+  it('says plainly that the signal is lost, with the age in seconds and then minutes', () => {
+    expect(copy.GPS_SIGNAL_LOST).toBe('GPS signal lost');
+    expect(copy.LAST_POSITION_AGE(35)).toBe('last position 35 s ago');
+    expect(copy.LAST_POSITION_AGE(59)).toBe('last position 59 s ago');
+    expect(copy.LAST_POSITION_AGE(60)).toBe('last position 1 min ago');
+    expect(copy.LAST_POSITION_AGE(185)).toBe('last position 3 min ago');
+    expect(copy.FROM_YOUR_SAVED_PLACE).toBe('from your saved place');
+    expect(copy.ABOUT).toBe('about');
+  });
+
+  it('tags a dial that nothing is turning, and never names a sensor', () => {
+    expect(copy.NORTH_UP).toBe('North up');
+    const written = [copy.NORTH_UP, copy.GPS_SIGNAL_LOST, copy.TURN_ON_COMPASS].join(' ');
+    expect(written).not.toMatch(/unsure|magnetometer|gyroscope|accelerometer/i);
+  });
+});
