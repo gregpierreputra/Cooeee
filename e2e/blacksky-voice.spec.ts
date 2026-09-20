@@ -196,6 +196,47 @@ test('Empty then Normal: nothing is spoken before the tap; the tap speaks the lo
   expect(await spoken(page)).toEqual([long]);
 });
 
+// The speaker button sits at the right-hand end of the distance row, not in the
+// dial. 360 px wide with "12.3 km" and "NE" is the tightest that row gets.
+test('at 360 px the speaker button sits on the distance row and overlaps nothing', async ({ page }) => {
+  await stubPhone(page);
+  await openDial(page, 'no-pack');
+  await page.setViewportSize({ width: 360, height: 800 });
+  await pushPosition(page, { latitude: -37.95024, longitude: 145.26284 });
+  await expect(page.locator('.blacksky-figure-main')).toHaveText('12.3 km');
+  await expect(page.locator('.blacksky-figure-point')).toHaveText('NE');
+
+  const layout = await page.locator('.blacksky-dial-figures').evaluate((row) => {
+    const box = (selector: string) => row.querySelector(selector)!.getBoundingClientRect();
+    const words = document.createRange();
+    words.selectNodeContents(row.querySelector('.blacksky-dial-readout')!);
+    const [rowBox, figure, beside, button] = [row.getBoundingClientRect(), box('.blacksky-figure-main'), box('.blacksky-dial-beside'), box('.blacksky-speaker')];
+    return {
+      onTheRow: button.top >= rowBox.top - 0.5 && button.bottom <= rowBox.bottom + 0.5,
+      atTheEnd: Math.abs(button.right - rowBox.right) <= 1,
+      clearOfFigure: button.left >= figure.right,
+      clearOfPointAndAccuracy: button.left >= Math.max(beside.right, words.getBoundingClientRect().right),
+      size: Math.min(button.width, button.height),
+      insideTheDial: row.closest('.blacksky-dial-frame') !== null,
+      rowOverflows: row.scrollWidth > row.clientWidth,
+    };
+  });
+  expect(layout).toEqual({
+    onTheRow: true,
+    atTheEnd: true,
+    clearOfFigure: true,
+    clearOfPointAndAccuracy: true,
+    size: 48,
+    insideTheDial: false,
+    rowOverflows: false,
+  });
+  await expect(page.locator('.blacksky-dial-frame .blacksky-speaker')).toHaveCount(0);
+
+  // It still speaks, and the spoken compass point is the full word, not "NE".
+  await speaker(page).click();
+  expect((await spoken(page))[0]).toBe(`${SITE}, place of last resort. 12.3 kilometres. North-east.`);
+});
+
 test('passing 5 km speaks the short form once, and nothing in between', async ({ page }) => {
   await stubPhone(page);
   await page.clock.install();
