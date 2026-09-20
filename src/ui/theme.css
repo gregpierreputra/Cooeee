@@ -1101,7 +1101,12 @@ input {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-  touch-action: manipulation;
+  /* none, not manipulation: a finger held down for two seconds drifts by a few
+     pixels, and while the browser may still pan it takes that drift for the
+     start of a scroll and cancels the pointer, which ended every hold on a
+     real phone. The cost is that a scroll cannot START on this one button; the
+     page scrolls from anywhere else. */
+  touch-action: none;
   /* The hold is acknowledged by a fill that sweeps left to right for the
      length of the hold — the confirmation cue on devices without vibration.
      The 2s sweep matches HOLD_MS in core/constants.ts, so a completed hold is
