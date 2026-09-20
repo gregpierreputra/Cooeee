@@ -545,7 +545,7 @@ function DialBody({
       <div className="blacksky-dial-frame">
         <BlackSkyDial
           bearingDeg={first.bearingDeg}
-          centre={dialCentre(trust, !compass.live)}
+          centre={dialCentre(trust)}
           description={copy.DIAL_DESCRIPTION(site, distance, point)}
         />
         {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}

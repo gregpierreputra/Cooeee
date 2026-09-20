@@ -54,6 +54,9 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   // One pin, in the true direction of the place: due north, drawn north up.
   await expect(page.locator('.blacksky-dial-pin')).toHaveCount(1);
   expect(await drawnAngle(page, '.blacksky-dial-pin')).toBe(relativeBearing(0, 0));
+  // The one arrow, at the centre, points at the place too, never just "up".
+  await expect(page.locator('.blacksky-dial-arrow path')).toHaveCount(1);
+  expect(await drawnAngle(page, '.blacksky-dial-arrow')).toBe(relativeBearing(0, 0));
   // Never more than one arrow, a source line, or the old arrows list.
   await expect(page.locator('.blacksky-arrow')).toHaveCount(0);
   await expect(page.getByText(/Official place of last resort ·/)).toHaveCount(0);
@@ -121,6 +124,7 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
   await expect(page.locator('.blacksky-dial-head p')).toHaveText('Belgrave South');
   await expect(distance(page)).toHaveText('3.50 km');
   expect(await drawnAngle(page, '.blacksky-dial-pin')).toBe(180);
+  expect(await drawnAngle(page, '.blacksky-dial-arrow')).toBe(180); // the arrow follows the pin
   await expect(page.getByText('Gas is off at the meter.')).toBeVisible();
 
   // It never changes by itself: a move of a kilometre north makes the first

@@ -241,15 +241,13 @@ describe('how far the position is trusted', () => {
     expect(positionTrust(confidence(), true)).toEqual({ bar: 'mark', about: true });
   });
 
-  it('draws the centre in the honest way for each case', () => {
-    const fresh = positionTrust(confidence(), false);
-    const stale = positionTrust(confidence({ stale: true }), false);
-    const mark = positionTrust(confidence(), true);
-    expect(dialCentre(fresh, false)).toBe('arrow');
-    expect(dialCentre(stale, false)).toBe('outline');
-    expect(dialCentre(fresh, true)).toBe('dot');
-    expect(dialCentre(stale, true)).toBe('dot');
-    expect(dialCentre(mark, false)).toBe('saved-place');
-    expect(dialCentre(mark, true)).toBe('saved-place');
+  // The arrow always points at the place, so the only thing left to draw
+  // differently is how far the position under it can be trusted. There is no
+  // dot for north up and no glyph for a mark any more.
+  it('draws the arrow solid on a fresh position and hollow on an old or marked one', () => {
+    expect(dialCentre(positionTrust(confidence(), false))).toBe('arrow');
+    expect(dialCentre(positionTrust(confidence({ approximate: true }), false))).toBe('arrow');
+    expect(dialCentre(positionTrust(confidence({ stale: true }), false))).toBe('outline');
+    expect(dialCentre(positionTrust(confidence(), true))).toBe('outline');
   });
 });

@@ -1088,7 +1088,10 @@ input {
   transform: rotate(calc(var(--heading, 0) * -1deg));
 }
 
-.blacksky-dial-pin {
+/* The pin and the centre arrow share one rule, so they always point the same
+   way: at the place. */
+.blacksky-dial-pin,
+.blacksky-dial-arrow {
   transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
 }
 
@@ -1116,7 +1119,7 @@ input {
 
 .blacksky-dial-notch,
 .blacksky-dial-pin circle,
-.blacksky-dial-person {
+.blacksky-dial-arrow path {
   fill: currentColor;
 }
 
@@ -1124,8 +1127,8 @@ input {
   fill: var(--bg);
 }
 
-/* An old position, or a marked one: the person is drawn hollow. */
-.blacksky-dial-person.hollow {
+/* An old position, or a marked one: the arrow is drawn hollow. */
+.blacksky-dial-arrow path.hollow {
   fill: none;
   stroke: currentColor;
   stroke-width: 3;
