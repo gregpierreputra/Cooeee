@@ -43,7 +43,7 @@ import {
   WATCH_RESTART_MS,
 } from '../core/constants';
 import * as copy from '../core/copy';
-import { cardinalPoint, cardinalPointShort, distanceM, magneticDeclinationDeg } from '../core/geo';
+import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { titleCase } from '../core/home';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
@@ -455,7 +455,10 @@ export default function BlackSky({
           }}
           hint={copy.HOLD_TO_LEAVE}
         >
-          {copy.LEAVE_BLACKSKY}
+          {/* The pill is what is SEEN: small, quiet, never louder than the title
+              beside it, because leaving is the last thing this screen is for.
+              The button around it is what is TOUCHED, and stays 44 px high. */}
+          <span className="blacksky-leave-pill">{copy.LEAVE_BLACKSKY}</span>
         </HoldButton>
         {notice ? (
           <p className="muted blacksky-hold-hint" role="status">
@@ -667,7 +670,6 @@ function DialBody({
   const { site, line } = siteNameBlock(first.name);
   const distance = copy.distanceLabel(first.distanceM);
   const [figure, unit] = distance.split(' '); // "12.3 km": always a number, a space, a unit
-  // The word for anyone who cannot see the letters; the letters for the row.
   const point = cardinalPoint(first.bearingDeg);
   return (
     <section className="blacksky-dial-body">
@@ -678,10 +680,9 @@ function DialBody({
       </div>
       {/* The distance row: the figure, then the compass point over the
           position's error, then the speaker button's place at the right-hand
-          end. The point is given as its compass letters here, because the full
-          word left no room for the button on a narrow phone; the word itself
-          is the letters' title and is what the dial's text equivalent and the
-          voice use.
+          end. The point is a full word, never letters: a lone "E" read as a
+          stray letter. It is set small, in the narrow column the big figure
+          leaves, and a two-word point breaks at its hyphen (NORTH- / EAST).
           BS_Enhancement-AC2: a figure from an old, vague or estimated position
           is dimmed and says "about", so it never looks more certain than it is. */}
       <div className="blacksky-dial-figures" data-about={trust.about ? 'true' : 'false'}>
@@ -695,9 +696,7 @@ function DialBody({
           </span>
         </span>
         <span className="blacksky-dial-beside">
-          <abbr className="blacksky-figure-point" title={point}>
-            {cardinalPointShort(first.bearingDeg)}
-          </abbr>
+          <span className="blacksky-figure-point">{point}</span>
           {/* The short "± 10 m" sits under the point; a marked position's
               longer sentence takes the full width below. */}
           <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark'}>
@@ -710,17 +709,23 @@ function DialBody({
           it: it is the largest thing on the screen, and it is sized for the map
           that is to go inside the ring. Nothing is turning it: it is drawn
           north up and says so, in the corner the ring leaves free. */}
-      <div className="blacksky-dial-frame">
-        <BlackSkyDial
-          bearingDeg={first.bearingDeg}
-          centre={dialCentre(trust)}
-          description={copy.DIAL_DESCRIPTION(site, distance, point)}
-        />
-        {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
-        {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words, over
-            the foot of the dial, for as long as they are being said. Not a live
-            region: a screen reader would say them on top of the voice. */}
-        {caption ? <p className="blacksky-caption">{caption}</p> : null}
+      {/* The slot is the room the layout can spare (see the stylesheet: it
+          shrinks so the Notes heading stays on the first screen). The frame
+          inside it is the dial's own square, as big as the slot allows, so the
+          North up tag still sits in the dial's corner, not the slot's. */}
+      <div className="blacksky-dial-slot">
+        <div className="blacksky-dial-frame">
+          <BlackSkyDial
+            bearingDeg={first.bearingDeg}
+            centre={dialCentre(trust)}
+            description={copy.DIAL_DESCRIPTION(site, distance, point)}
+          />
+          {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
+          {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
+              over the foot of the dial, for as long as they are being said. Not
+              a live region: a screen reader would say them on top of the voice. */}
+          {caption ? <p className="blacksky-caption">{caption}</p> : null}
+        </div>
       </div>
       {/* On an iPhone that is usually because the compass has not been allowed
           yet, which is one tap. */}
