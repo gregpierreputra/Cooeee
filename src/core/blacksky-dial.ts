@@ -1,5 +1,6 @@
 import type { Confidence, Placed, Screen } from './blacksky';
 import { COMPASS_SILENT_MS, HEADING_FROM_MOVEMENT_MPS } from './constants';
+import { PLACES_SEPARATOR } from './copy';
 
 // The rules behind the one-place dial (BS_Enhancement-AC1 and AC2). Everything
 // here is a pure function of its arguments: no browser, no clock, no storage.
@@ -75,6 +76,42 @@ export function splitSiteName(name: string): { site: string; suburb: string | nu
     return suburb && site ? { site, suburb } : whole;
   }
   return whole; // the first bracket never closes
+}
+
+/**
+ * The name block as the dial shows it: the site on one line, where it is on the
+ * next. splitSiteName does the first cut. This makes the second: many official
+ * site names end in a bracketed qualifier, "Barry Simon Reserve (NE Corner)",
+ * and at the dial's size that qualifier wrapped the name onto a second and
+ * third line above the one figure the person came for. The qualifier says
+ * WHERE at the site, so it belongs with the suburb:
+ *   site  "Barry Simon Reserve"
+ *   line  "Endeavour Hills · NE Corner"
+ * Nothing is dropped; it only moves down a line.
+ *
+ * Only a qualifier at the very END of the site is moved, found by balancing
+ * brackets from the right, so brackets inside the qualifier travel with it. A
+ * bracket in the middle of a site name ("Hub (Former Campus) Oval") is part of
+ * the name and stays. A name splitSiteName could not split is shown whole, as
+ * written, with no second line.
+ */
+export function siteNameBlock(name: string): { site: string; line: string | null } {
+  const { site, suburb } = splitSiteName(name);
+  if (suburb === null) return { site, line: null };
+  if (!site.endsWith(')')) return { site, line: suburb };
+
+  let depth = 0;
+  for (let i = site.length - 1; i >= 0; i -= 1) {
+    if (site[i] === ')') depth += 1;
+    else if (site[i] === '(') depth -= 1;
+    if (depth > 0) continue;
+    const lead = site.slice(0, i).trim();
+    const qualifier = site.slice(i + 1, -1).trim();
+    return lead && qualifier
+      ? { site: lead, line: `${suburb}${PLACES_SEPARATOR}${qualifier}` }
+      : { site, line: suburb };
+  }
+  return { site, line: suburb }; // unbalanced: leave the site as written
 }
 
 export type HeadingSource =

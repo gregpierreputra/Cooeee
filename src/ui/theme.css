@@ -994,8 +994,9 @@ input {
 
 /* ── The dial (BS_Enhancement-AC1) ─────────────────────────────────────────
    One place, read in a glance: where it comes from, its name, the distance,
-   the dial. Tight gaps, because the card asks for title to Leave on one
-   390 by 844 screen without scrolling. */
+   the dial. Tight gaps, so the glance (label to dial) stays together on one
+   screen; the notes may start below the fold now that the dial takes the
+   width, which the team accepted. */
 .blacksky-dial-body {
   display: grid;
   gap: 0.625rem;
@@ -1024,18 +1025,24 @@ input {
   font-size: var(--step-1);
 }
 
-/* The distance on the left; beside it, the compass point over the position's
-   error. A grid, not a wrapping row, so a long figure ("12.3 km") with a long
-   point ("NORTH-EAST") narrows the right-hand column instead of pushing it
-   onto a line of its own and the page past one screen. */
+/* The distance row: the figure on the left; beside it the compass point over
+   the position's error; and at the right-hand end 48 px kept for the speaker
+   button, whether or not this build has one, so the figures never shift. A
+   grid, not a wrapping row, so nothing drops onto a line of its own. */
 .blacksky-dial-figures {
   margin: 0;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) 48px;
   align-items: end;
-  gap: 0 0.75rem;
+  gap: 0 0.5rem;
   color: var(--accent);
   font-weight: var(--w-heavy);
+}
+
+.blacksky-dial-row-end {
+  grid-column: 3;
+  align-self: center;
+  display: grid;
 }
 
 .blacksky-dial-distance,
@@ -1068,9 +1075,17 @@ input {
   letter-spacing: -0.04em;
 }
 
-/* The point by name, in capitals as in the mockups: NORTH-EAST, never NE. */
+/* The unit, at half the number's size: still 28 px, well over the 16 px floor. */
+.blacksky-figure-unit {
+  font-size: 0.5em;
+  letter-spacing: 0;
+}
+
+/* The point as its compass letters (NE). The word is the abbreviation's title;
+   the dotted underline browsers give an abbreviation would read as a link. */
 .blacksky-figure-point {
-  font-size: var(--step-0);
+  text-decoration: none;
+  font-size: var(--step-1);
   font-weight: var(--w-heavy);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1091,12 +1106,15 @@ input {
   color: var(--ink-2);
 }
 
-/* The dial is sized by the shorter of the phone's width and a share of its
-   height, so it never pushes Leave off a short screen. At its 200 px floor the
-   ring letters are still 17 px. */
+/* The dial takes the width: the whole content width up to 340 px, square,
+   centred, nothing beside it. It is the largest element on the screen because
+   it is what is read at a glance, and because a map is to go inside the ring,
+   which needs the room. Everything in it is drawn in the viewBox's own units,
+   so the notch, letters, pin and arrow grow with it. */
 .blacksky-dial {
-  width: clamp(12.5rem, min(62vw, 27dvh), 17rem);
+  width: min(100%, 340px);
   height: auto;
+  aspect-ratio: 1;
   justify-self: center;
   color: var(--accent);
   overflow: visible;
@@ -1178,63 +1196,16 @@ input {
   color: var(--ink-2);
 }
 
-/* Every other place, folded into one button that opens the sheet. It is one
-   line where that fits and two where it does not, and it is never cut off: a
-   figure ending in an ellipsis is a distance the person was not given. The
-   vertical padding is small so the two-line form costs the one-screen layout
-   almost no height; min-height keeps the target at 48 px either way. */
+/* Every other place, folded into one line that opens the sheet: the count and
+   the range. One line on every phone, so it never wraps and is never cut off;
+   the sides are narrower than other buttons' to make sure of that at 360 px. */
 .blacksky-others {
   width: 100%;
   min-height: 48px;
-  padding-block: 0.25rem;
-  /* Narrower sides than other buttons: on a 390 px phone that is what lets
-     four distances share one line under the count, which keeps title to Leave
-     on one screen. */
   padding-inline: 1rem;
   text-align: left;
-  line-height: 1.25;
-  font-variant-numeric: tabular-nums;
-}
-
-/* How it wraps without leaving a dot dangling. Every distance carries its own
-   separator in front of it, as real text (the words do not change) in a box of
-   fixed width. The whole flow is pulled left by that width inside a clipped
-   line, so whatever comes first on ANY line has its separator pushed out of
-   sight, while a separator in the middle of a line shows as usual. The count
-   is padded by the same width so it still starts at the button's edge.
-   The distances are one flex item: if they do not fit beside the count they
-   drop under it together, count on the first line, and only if they are wider
-   than the button do they wrap again among themselves. A single distance never
-   breaks in two. */
-.blacksky-others-line {
-  display: block;
-  overflow: hidden;
-}
-
-.blacksky-others-flow {
-  display: flex;
-  flex-wrap: wrap;
-  margin-left: -0.75em;
-}
-
-.blacksky-others-count {
-  padding-left: 0.75em;
-}
-
-.blacksky-others-distances {
-  min-width: 0;
-}
-
-.blacksky-others-distance {
-  display: inline-block;
   white-space: nowrap;
-}
-
-.blacksky-others-separator {
-  display: inline-block;
-  width: 0.75em; /* about the dot and its two spaces; 1em would not fit four figures at 390 px */
-  text-align: center;
-  white-space: pre;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The sheet: a native dialog pinned to the foot of the screen, at thumb reach,

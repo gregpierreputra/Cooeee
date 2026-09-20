@@ -13,7 +13,7 @@ import {
   dialCentre,
   dialModel,
   positionTrust,
-  splitSiteName,
+  siteNameBlock,
   type DialLabel,
   type DialModel,
   type PositionTrust,
@@ -27,7 +27,7 @@ import {
 } from '../core/blacksky-latch';
 import { FIX_PUBLISH_M, TICK_MS, WATCH_RESTART_MS } from '../core/constants';
 import * as copy from '../core/copy';
-import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
+import { cardinalPoint, cardinalPointShort, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { titleCase } from '../core/home';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
@@ -485,9 +485,9 @@ function ScreenBody({
           </section>
         </>
       );
-    // Inside the loaded pack's area: the card's order. The dial and the notes
-    // come first, so the glance and the person's own words fit one screen; the
-    // figures and lines EPIC 3 put here follow them, unchanged.
+    // Inside the loaded pack's area: the card's order. The dial and then the
+    // person's own notes come first; the figures and lines EPIC 3 put here
+    // follow them, unchanged.
     case 'IN_AREA':
       return (
         <>
@@ -518,43 +518,66 @@ function DialBody({
   trust,
   readout,
   compass,
+  rowEnd,
   onShow,
 }: {
   model: DialModel;
   trust: PositionTrust;
   readout: string;
   compass: { live: boolean; needsPermission: boolean; enable: () => Promise<void> };
+  /** What sits at the right-hand end of the distance row: the speaker button,
+   *  where there is one. The row keeps that 48 px free either way, so the
+   *  figures sit in the same place with or without it. */
+  rowEnd?: ReactNode;
   onShow: (id: string) => void;
 }) {
   const { first, label, others } = model;
-  const { site, suburb } = splitSiteName(first.name);
+  const { site, line } = siteNameBlock(first.name);
   const distance = copy.distanceLabel(first.distanceM);
+  const [figure, unit] = distance.split(' '); // "12.3 km": always a number, a space, a unit
+  // The word for anyone who cannot see the letters; the letters for the row.
   const point = cardinalPoint(first.bearingDeg);
   return (
     <section className="blacksky-dial-body">
       <div className="blacksky-dial-head">
         <span className="kicker">{DIAL_LABELS[label]}</span>
         <h2>{site}</h2>
-        {suburb ? <p className="muted">{suburb}</p> : null}
+        {line ? <p className="muted">{line}</p> : null}
       </div>
-      {/* BS_Enhancement-AC2: a figure from an old, vague or estimated position
+      {/* The distance row: the figure, then the compass point over the
+          position's error, then the speaker button's place at the right-hand
+          end. The point is given as its compass letters here, because the full
+          word left no room for the button on a narrow phone; the word itself
+          is the letters' title and is what the dial's text equivalent and the
+          voice use.
+          BS_Enhancement-AC2: a figure from an old, vague or estimated position
           is dimmed and says "about", so it never looks more certain than it is. */}
-      <p className="blacksky-dial-figures" data-about={trust.about ? 'true' : 'false'}>
+      <div className="blacksky-dial-figures" data-about={trust.about ? 'true' : 'false'}>
         <span className="blacksky-dial-distance">
           {trust.about ? <span className="blacksky-dial-about">{copy.ABOUT}</span> : null}
-          <span className="blacksky-figure-main figure">{distance}</span>
+          {/* The number at full size, its unit at half: the number is what is
+              read at arm's length, and on a 360 px phone a full-size "km" took
+              the room the accuracy and the speaker button need on this row. */}
+          <span className="blacksky-figure-main figure">
+            {figure} <span className="blacksky-figure-unit">{unit}</span>
+          </span>
         </span>
         <span className="blacksky-dial-beside">
-          <span className="blacksky-figure-point">{point}</span>
+          <abbr className="blacksky-figure-point" title={point}>
+            {cardinalPointShort(first.bearingDeg)}
+          </abbr>
           {/* The short "± 10 m" sits under the point; a marked position's
               longer sentence takes the full width below. */}
           <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark'}>
             {readout}
           </span>
         </span>
-      </p>
-      {/* Nothing is turning the dial: it is drawn north up and says so, in the
-          corner the ring leaves free, so the tag costs the screen no height. */}
+        {rowEnd ? <span className="blacksky-dial-row-end">{rowEnd}</span> : null}
+      </div>
+      {/* The dial has the full width of the screen to itself, nothing beside
+          it: it is the largest thing on the screen, and it is sized for the map
+          that is to go inside the ring. Nothing is turning it: it is drawn
+          north up and says so, in the corner the ring leaves free. */}
       <div className="blacksky-dial-frame">
         <BlackSkyDial
           bearingDeg={first.bearingDeg}
@@ -584,37 +607,24 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
   const titleId = useId();
   return (
     <>
-      {/* Never cut off: a distance that ends in "…" is a distance not given.
-          Where the line does not fit (a 360 px phone), the distances drop under
-          the count. The words, read through, are unchanged: the count, then
-          each distance behind a separator (the same string as
-          copy.OTHER_PLACES). */}
+      {/* One line, always: how many, and the range they lie in. A list of
+          distances could not stay on one line on a narrow phone without being
+          cut off, and a cut-off distance is a distance not given. The full
+          list is one tap away, in the sheet. */}
       <button type="button" className="blacksky-others" onClick={() => sheet.current?.showModal()}>
-        <span className="blacksky-others-line">
-          <span className="blacksky-others-flow">
-            <span className="blacksky-others-count">{copy.OTHER_PLACES_COUNT(places.length)}</span>
-            <span className="blacksky-others-distances">
-              {places.map((place) => (
-                <span key={place.id} className="blacksky-others-distance">
-                  <span className="blacksky-others-separator">{copy.PLACES_SEPARATOR}</span>
-                  {copy.distanceLabel(place.distanceM)}
-                </span>
-              ))}
-            </span>
-          </span>
-        </span>
+        {copy.OTHER_PLACES(places.map((place) => copy.distanceLabel(place.distanceM)))}
       </button>
       <dialog ref={sheet} className="blacksky-sheet" aria-labelledby={titleId}>
         <h2 id={titleId}>{copy.OTHER_PLACES_TITLE}</h2>
         <p className="caveat">{copy.SORTED_BY_DISTANCE}</p>
         <ul className="list">
           {places.map((place) => {
-            const { site, suburb } = splitSiteName(place.name);
+            const { site, line } = siteNameBlock(place.name);
             return (
               <li key={place.id} className="blacksky-place blacksky-other">
                 <div>
                   <h3>{site}</h3>
-                  {suburb ? <p className="muted">{suburb}</p> : null}
+                  {line ? <p className="muted">{line}</p> : null}
                   <p className="figure">
                     {copy.distanceLabel(place.distanceM)} · {cardinalPoint(place.bearingDeg)}
                   </p>

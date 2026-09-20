@@ -7,6 +7,7 @@ import {
   headingSource,
   positionTrust,
   relativeBearing,
+  siteNameBlock,
   splitSiteName,
 } from '../../src/core/blacksky-dial';
 import {
@@ -138,6 +139,65 @@ describe('name split', () => {
   it('shows a name that cannot be split whole', () => {
     for (const name of ['Darley (Oval', '(Community Hall) Neighbourhood Safer Place', 'Gordon () Hall'])
       expect(splitSiteName(name)).toEqual({ site: name, suburb: null });
+  });
+});
+
+describe('the name block', () => {
+  it('with no qualifier, the site over the suburb', () => {
+    expect(siteNameBlock('Dederang (Community Hall) Neighbourhood Safer Place')).toEqual({
+      site: 'Community Hall',
+      line: 'Dederang',
+    });
+  });
+
+  it('moves one trailing qualifier down to the suburb line', () => {
+    expect(siteNameBlock('Endeavour Hills (Barry Simon Reserve (NE Corner)) Neighbourhood Safer Place')).toEqual({
+      site: 'Barry Simon Reserve',
+      line: 'Endeavour Hills · NE Corner',
+    });
+    expect(
+      siteNameBlock('Warrnambool (Albert Park - Reid Oval (sealed road at southern edge)) Neighbourhood Safer Place'),
+    ).toEqual({ site: 'Albert Park - Reid Oval', line: 'Warrnambool · sealed road at southern edge' });
+  });
+
+  it('balances nested brackets from the right, so the whole qualifier moves', () => {
+    expect(siteNameBlock('Mildura (Ovals (Harness Track (north gate))) Neighbourhood Safer Place')).toEqual({
+      site: 'Ovals',
+      line: 'Mildura · Harness Track (north gate)',
+    });
+  });
+
+  it('leaves a bracket in the middle of the site name where it is', () => {
+    expect(
+      siteNameBlock(
+        'Darley (Darley Civic and Community Hub (Former Secondary School Campus) Oval) Neighbourhood Safer Place',
+      ),
+    ).toEqual({ site: 'Darley Civic and Community Hub (Former Secondary School Campus) Oval', line: 'Darley' });
+    expect(
+      siteNameBlock(
+        'Pearcedale (Recreation Reserve Oval (first oval on entry) and surrounding car park) Neighbourhood Safer Place',
+      ),
+    ).toEqual({
+      site: 'Recreation Reserve Oval (first oval on entry) and surrounding car park',
+      line: 'Pearcedale',
+    });
+  });
+
+  it('shows a name that cannot be split whole, qualifier and all, with no second line', () => {
+    for (const name of ['Olinda Recreation Reserve', '(Hall (NE Corner)) Neighbourhood Safer Place', 'Darley (Oval'])
+      expect(siteNameBlock(name)).toEqual({ site: name, line: null });
+  });
+
+  it('keeps the site as written when its own brackets do not balance or hold nothing', () => {
+    expect(siteNameBlock('Gordon (Hall) north) Neighbourhood Safer Place').site).toBe('Hall');
+    expect(siteNameBlock('Gordon (Hall ()) Neighbourhood Safer Place')).toEqual({
+      site: 'Hall ()',
+      line: 'Gordon',
+    });
+    expect(siteNameBlock('Gordon ((NE Corner)) Neighbourhood Safer Place')).toEqual({
+      site: '(NE Corner)',
+      line: 'Gordon',
+    });
   });
 });
 
