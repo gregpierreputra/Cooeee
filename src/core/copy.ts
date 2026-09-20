@@ -31,8 +31,9 @@ export const NOT_RECENTLY_VERIFIED = (days: number) =>
 
 // Shared vocabulary
 /** The eight compass points by name, index 0 = north, one every 45 degrees.
- *  Read by core/geo.ts cardinalPoint(). Names, not letters: the point is read
- *  under the arrow at arm's length, and "NE" is an abbreviation. */
+ *  Read by core/geo.ts cardinalPoint(). Names, not letters: a lone "E" beside
+ *  the distance read as a stray letter on a real phone, and "NE" read aloud is
+ *  two letters. The word is shown small; it is never abbreviated. */
 export const CARDINAL_POINTS = [
   'North',
   'North-east',
@@ -43,7 +44,6 @@ export const CARDINAL_POINTS = [
   'West',
   'North-west',
 ] as const;
-
 // Application shell
 export const APP_NAME = 'Cooeee';
 export const APP_TAGLINE =
@@ -332,11 +332,57 @@ export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
 
 export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
 
-// The compass. Which way the arrow is to be read depends on whether the phone's
-// orientation sensor is feeding it, so the screen always says which.
-export const COMPASS_LIVE = 'The arrow turns with your phone.';
-export const COMPASS_NORTH_UP = 'The arrow is drawn with north at the top of the screen.';
+// The compass. iOS only hands the orientation sensor over after a tap.
 export const TURN_ON_COMPASS = 'Turn on the compass';
+
+// BS_Enhancement-AC1 one place on one compass dial
+/** The small label above the main place: where it comes from. Written in
+ *  capitals here, not by the stylesheet, so a screen reader and a test read
+ *  the same words the eye does. */
+export const YOUR_CHOSEN_PLACE = 'YOUR CHOSEN PLACE';
+export const NEAREST_PLACE_OF_LAST_RESORT = 'NEAREST PLACE OF LAST RESORT';
+/** A state-wide site picked with Show that is not the nearest one: calling it
+ *  nearest would be untrue. */
+export const PLACE_OF_LAST_RESORT = 'PLACE OF LAST RESORT';
+/** The dial as words, for a screen reader: the same three facts the eye gets. */
+export const DIAL_DESCRIPTION = (site: string, distance: string, point: string) =>
+  `${site}, ${distance}, ${point}`;
+/** Every other place folded into one line: how many, and the range they lie
+ *  in, nearest to furthest. A range, not a list, because the line must stay one
+ *  line on the narrowest phone and must never be cut off: a list of four
+ *  distances could do neither. Every distance is still in the sheet the line
+ *  opens. One other place has no range, and two at the same distance read as
+ *  one figure, not as "2.13 km – 2.13 km". `distances` is nearest first. */
+export const PLACES_SEPARATOR = ' · ';
+export const OTHER_PLACES_COUNT = (count: number) =>
+  count === 1 ? '1 other place' : `${count} other places`;
+export const OTHER_PLACES = (distances: string[]) => {
+  const nearest = distances[0];
+  const furthest = distances[distances.length - 1];
+  const range = nearest === furthest ? nearest : `${nearest} – ${furthest}`;
+  return `${OTHER_PLACES_COUNT(distances.length)}${PLACES_SEPARATOR}${range}`;
+};
+export const OTHER_PLACES_TITLE = 'Other places';
+export const SHOW_PLACE = 'Show';
+/** The Show button's name for a screen reader, so five buttons are not all
+ *  called Show. It starts with the visible word (WCAG 2.5.3). */
+export const SHOW_PLACE_NAMED = (site: string) => `Show ${site}`;
+export const CLOSE_OTHER_PLACES = 'Close';
+/** A position, and nothing stored on the phone that can be pointed at. */
+export const NO_PLACE_TO_POINT_AT =
+  'No official place of last resort stored on this phone can be pointed at from here.';
+
+// BS_Enhancement-AC2 say plainly when position or heading cannot be trusted
+export const GPS_SIGNAL_LOST = 'GPS signal lost';
+/** How old the position is, beside the bar's words: seconds, then minutes. */
+export const LAST_POSITION_AGE = (s: number) =>
+  s < 60 ? `last position ${s} s ago` : `last position ${Math.floor(s / 60)} min ago`;
+/** The bar when the position is a mark the person made, not a fix. */
+export const FROM_YOUR_SAVED_PLACE = 'from your saved place';
+/** Before a distance measured from an old, vague or estimated position. */
+export const ABOUT = 'about';
+/** The tag on a dial that nothing is turning. */
+export const NORTH_UP = 'North up';
 
 /** "850 m" under a kilometre, "2.34 km" under ten, "12.3 km" from there. Ten
  *  metre steps within walking range, so the figure is seen to move on foot. */
@@ -373,7 +419,6 @@ export const PHONE_MAY_WORK =
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
-export const NEAREST_OFFICIAL_PLACES = 'Nearest official places of last resort';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack to load';
@@ -401,15 +446,17 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter. Two seconds.';
 export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
-export const LEAVE_BLACKSKY = 'Leave BlackSky';
-/** Said above the Leave control, never over anything else: the phone's back
+/** The label on the compact Leave control in BlackSky's top bar. It says what
+ *  to do, because a pill that size has no room for a second line of help. */
+export const LEAVE_BLACKSKY = 'Hold to leave';
+/** Said under BlackSky's top bar, never over anything else: the phone's back
  *  button was pressed, or the app opened here again because BlackSky was the
  *  last screen open. Both end with the one way out. */
 export const BLACKSKY_BLOCKED = 'BlackSky was not opened. Hold its button for 2 seconds to enter.';
 export const BACK_PRESSED =
-  'You pressed back. BlackSky stays until you hold Leave BlackSky for two seconds.';
+  'You pressed back. BlackSky stays until you hold the Hold to leave button, at the top right, for two seconds.';
 export const BLACKSKY_RESUMED =
-  'BlackSky was open when you last left Cooeee, so it opened again. To leave, hold Leave BlackSky for two seconds.';
+  'BlackSky was open when you last left Cooeee, so it opened again. To leave, hold the Hold to leave button, at the top right, for two seconds.';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 

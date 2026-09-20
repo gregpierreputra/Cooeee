@@ -198,7 +198,12 @@ export type Fix = {
   lat: number; 
   lon: number; 
   accuracyM: number; 
-  at: number };
+  at: number;
+  // The direction of movement (TRUE north) and the speed, from the position
+  // sensor itself. Absent when the browser gives none, which is the usual case
+  // for a phone that is standing still.
+  headingDeg?: number;
+  speedMps?: number };
 
 /** A geographic point in the order this codebase uses everywhere: named fields,
  *  never a positional pair, because the axis-order trap is the defect that
