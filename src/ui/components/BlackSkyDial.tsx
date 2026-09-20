@@ -12,18 +12,22 @@ const POINTS = [
 ] as const;
 const TICKS = [45, 135, 225, 315];
 
-/** The dial: a ring that turns with the phone, the person fixed at the centre,
- *  the place as a pin on the ring, and a notch marking the top of the phone.
+/** The dial: a ring that turns with the phone, the place as a pin on the ring,
+ *  an arrow at the centre pointing at that pin, and a notch marking the top of
+ *  the phone. Turn until the arrow stands straight up and the pin is under the
+ *  notch, and the place lies dead ahead.
  *
- *  It is drawn once. Nothing here reads the heading: the ring and the pin turn
- *  in the stylesheet from `--heading`, which the compass hook writes onto the
- *  document root once per display frame, so the phone can turn sixty times a
- *  second without one React render. The only thing React changes is `--bearing`
- *  when the position moves, and the centre shape when trust in it changes.
- *  With no `--heading` the stylesheet falls back to 0, which is north up.
+ *  It is drawn once. Nothing here reads the heading: the ring, the pin and the
+ *  arrow turn in the stylesheet from `--heading`, which the compass hook writes
+ *  onto the document root once per display frame, so the phone can turn sixty
+ *  times a second without one React render. The only thing React changes is
+ *  `--bearing` when the position moves, and the arrow's fill when trust in the
+ *  position changes. With no `--heading` the stylesheet falls back to 0, which
+ *  is north up.
  *
- *  Deliberately absent: any line from the person to the pin, and any road. The
- *  dial says which way the place lies, never which way to travel. */
+ *  Deliberately absent: a line joining the centre to the pin, and any road. The
+ *  arrow stops well short of the ring. The dial says which way the place lies,
+ *  never which way to travel. */
 export default function BlackSkyDial({
   bearingDeg,
   centre,
@@ -62,22 +66,18 @@ export default function BlackSkyDial({
           </g>
         ))}
       </g>
+      {/* One bearing, set once on the two things that point at the place, so the
+          arrow and the pin can never disagree. */}
       <g className="blacksky-dial-pin" style={{ '--bearing': bearingDeg } as CSSProperties}>
         <circle cy="-78" r="11" />
         <circle className="blacksky-dial-pin-eye" cy="-78" r="4" />
       </g>
-      {/* The person. An arrow claims to know which way they face, so it is
-          drawn only when a heading is turning the dial. */}
-      {centre === 'dot' ? (
-        <circle className="blacksky-dial-person" r="8" />
-      ) : centre === 'saved-place' ? (
-        <path className="blacksky-dial-person hollow" d="M-19 3 0 -16 19 3V21H7V9H-7V21H-19Z" />
-      ) : (
-        <path
-          className={centre === 'outline' ? 'blacksky-dial-person hollow' : 'blacksky-dial-person'}
-          d="M0 -28 17 19 0 9 -17 19Z"
-        />
-      )}
+      {/* The arrow: from the centre toward the pin, long enough to be read at a
+          glance, its tip short of the ring letters so it never covers one and
+          never touches the pin. Hollow when the position is old or marked. */}
+      <g className="blacksky-dial-arrow" style={{ '--bearing': bearingDeg } as CSSProperties}>
+        <path className={centre === 'outline' ? 'hollow' : undefined} d="M0 -46 16 -14H6V18H-6V-14H-16Z" />
+      </g>
     </svg>
   );
 }

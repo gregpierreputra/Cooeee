@@ -578,6 +578,17 @@ describe('the BlackSky dial', () => {
     );
   });
 
+  it('gives the count and the distances apart, and together they are the same words', () => {
+    const distances = ['12.1 km', '13.1 km'];
+    expect(copy.OTHER_PLACES_COUNT(1)).toBe('1 other place');
+    expect(copy.OTHER_PLACES_COUNT(2)).toBe('2 other places');
+    expect(copy.OTHER_PLACES_DISTANCES(distances)).toBe('12.1 km · 13.1 km');
+    expect(copy.OTHER_PLACES(distances)).toBe(
+      copy.OTHER_PLACES_COUNT(2) + copy.PLACES_SEPARATOR + copy.OTHER_PLACES_DISTANCES(distances),
+    );
+    expect(copy.OTHER_PLACES(distances)).toBe('2 other places · 12.1 km · 13.1 km');
+  });
+
   it('names each Show button by its place, starting with the visible word', () => {
     expect(copy.SHOW_PLACE).toBe('Show');
     expect(copy.SHOW_PLACE_NAMED('Community Hall')).toBe('Show Community Hall');

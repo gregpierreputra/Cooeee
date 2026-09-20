@@ -1088,7 +1088,10 @@ input {
   transform: rotate(calc(var(--heading, 0) * -1deg));
 }
 
-.blacksky-dial-pin {
+/* The pin and the centre arrow share one rule, so they always point the same
+   way: at the place. */
+.blacksky-dial-pin,
+.blacksky-dial-arrow {
   transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
 }
 
@@ -1116,7 +1119,7 @@ input {
 
 .blacksky-dial-notch,
 .blacksky-dial-pin circle,
-.blacksky-dial-person {
+.blacksky-dial-arrow path {
   fill: currentColor;
 }
 
@@ -1124,8 +1127,8 @@ input {
   fill: var(--bg);
 }
 
-/* An old position, or a marked one: the person is drawn hollow. */
-.blacksky-dial-person.hollow {
+/* An old position, or a marked one: the arrow is drawn hollow. */
+.blacksky-dial-arrow path.hollow {
   fill: none;
   stroke: currentColor;
   stroke-width: 3;
@@ -1206,17 +1209,63 @@ input {
   text-align: center;
 }
 
-/* Every other place, folded into one line that opens the sheet. One line by
-   the card: a long run of distances is cut with an ellipsis, and the sheet
-   has them all. */
+/* Every other place, folded into one button that opens the sheet. It is one
+   line where that fits and two where it does not, and it is never cut off: a
+   figure ending in an ellipsis is a distance the person was not given. The
+   vertical padding is small so the two-line form costs the one-screen layout
+   almost no height; min-height keeps the target at 48 px either way. */
 .blacksky-others {
   width: 100%;
   min-height: 48px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  padding-block: 0.25rem;
+  /* Narrower sides than other buttons: on a 390 px phone that is what lets
+     four distances share one line under the count, which keeps title to Leave
+     on one screen. */
+  padding-inline: 1rem;
   text-align: left;
+  line-height: 1.25;
   font-variant-numeric: tabular-nums;
+}
+
+/* How it wraps without leaving a dot dangling. Every distance carries its own
+   separator in front of it, as real text (the words do not change) in a box of
+   fixed width. The whole flow is pulled left by that width inside a clipped
+   line, so whatever comes first on ANY line has its separator pushed out of
+   sight, while a separator in the middle of a line shows as usual. The count
+   is padded by the same width so it still starts at the button's edge.
+   The distances are one flex item: if they do not fit beside the count they
+   drop under it together, count on the first line, and only if they are wider
+   than the button do they wrap again among themselves. A single distance never
+   breaks in two. */
+.blacksky-others-line {
+  display: block;
+  overflow: hidden;
+}
+
+.blacksky-others-flow {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -0.75em;
+}
+
+.blacksky-others-count {
+  padding-left: 0.75em;
+}
+
+.blacksky-others-distances {
+  min-width: 0;
+}
+
+.blacksky-others-distance {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.blacksky-others-separator {
+  display: inline-block;
+  width: 0.75em; /* about the dot and its two spaces; 1em would not fit four figures at 390 px */
+  text-align: center;
+  white-space: pre;
 }
 
 /* The sheet: a native dialog pinned to the foot of the screen, at thumb reach,

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { relativeBearing } from '../src/core/blacksky-dial';
 import { COMPASS_SILENT_MS, FIX_STALE_MS, TICK_MS } from '../src/core/constants';
 import { MARK_AT_SAVED_PLACE, TURN_ON_COMPASS } from '../src/core/copy';
-import { magneticDeclinationDeg } from '../src/core/geo';
+import { bearingDeg, magneticDeclinationDeg } from '../src/core/geo';
 import { titleCase } from '../src/core/home';
 import {
   AT_FERNY_CREEK,
@@ -13,6 +13,8 @@ import {
 } from './blacksky-position';
 
 // BS_Enhancement-AC2: say plainly when position or heading cannot be trusted.
+// In every state the centre arrow points AT THE PLACE, exactly as the pin does:
+// each test below asserts the two are drawn at the same angle.
 // One test for the card's Normal state and one for each honest drawing: an old
 // position, a position from a mark, no compass, a silent compass, and movement.
 // (The card's Unavailable state, no position at all, is the no-fix reference
@@ -24,6 +26,11 @@ const figures = (page: Page) => page.locator('.blacksky-dial-figures');
 const centre = (page: Page) => page.locator('.blacksky-dial');
 const heading = (page: Page) =>
   page.evaluate(() => document.documentElement.style.getPropertyValue('--heading'));
+/** The arrow and the pin, which must always point the same way. */
+const arrowAndPin = async (page: Page) => ({
+  arrow: await drawnAngle(page, '.blacksky-dial-arrow'),
+  pin: await drawnAngle(page, '.blacksky-dial-pin'),
+});
 const colour = (page: Page, selector: string) =>
   page.locator(selector).evaluate((el) => getComputedStyle(el).color);
 
@@ -49,7 +56,25 @@ test('Normal: a fresh position and a live heading show no bar and no tag', async
   // the rule puts it: to the left of a person facing east.
   const east = 90 + DECLINATION;
   await expect.poll(() => drawnAngle(page, '.blacksky-dial-ring')).toBe(norm(-east));
-  expect(await drawnAngle(page, '.blacksky-dial-pin')).toBe(norm(relativeBearing(0, east)));
+  const onTheLeft = norm(relativeBearing(0, east));
+  expect(await arrowAndPin(page)).toEqual({ arrow: onTheLeft, pin: onTheLeft });
+  // One arrow, solid, and nothing else at the centre.
+  await expect(page.locator('.blacksky-dial-arrow path')).toHaveCount(1);
+  await expect(page.locator('.blacksky-dial-arrow path.hollow')).toHaveCount(0);
+});
+
+test('facing the place, the arrow stands straight up and the pin sits under the notch', async ({ page }) => {
+  await openDial(page, 'no-pack');
+  const belgrave = { lat: -37.872, lon: 145.362 };
+  const bearing = bearingDeg({ lat: AT_FERNY_CREEK.latitude, lon: AT_FERNY_CREEK.longitude }, belgrave);
+  expect(Math.round(bearing)).not.toBe(0); // north-east of here, so north up would not pass this
+
+  // Moving straight toward the place: the heading equals the bearing.
+  await pushPosition(page, { ...AT_FERNY_CREEK, heading: bearing, speed: 15 });
+  await expect.poll(() => heading(page)).toBe(String(bearing));
+  expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 });
+  // The ring has turned the other way by that much, so N is no longer on top.
+  expect(await drawnAngle(page, '.blacksky-dial-ring')).toBe(norm(-bearing));
 });
 
 test('an old position shows the bar and a dimmed about distance, and a fresh one removes both', async ({
@@ -77,7 +102,10 @@ test('an old position shows the bar and a dimmed about distance, and a fresh one
   // The dial keeps turning on an old position, with the arrow drawn hollow.
   await turnPhone(page, FACING_EAST);
   await expect(centre(page)).toHaveAttribute('data-centre', 'outline');
+  await expect(page.locator('.blacksky-dial-arrow path.hollow')).toHaveCount(1);
   await expect.poll(() => drawnAngle(page, '.blacksky-dial-ring')).toBe(norm(-(90 + DECLINATION)));
+  const stalePointing = norm(relativeBearing(0, 90 + DECLINATION));
+  expect(await arrowAndPin(page)).toEqual({ arrow: stalePointing, pin: stalePointing });
 
   // Location comes back: the bar goes and the distance returns to full
   // strength, with no reload.
@@ -98,7 +126,7 @@ test('a vague position is prefixed about, with no bar while it is fresh', async 
   await expect(bar(page)).toHaveCount(0);
 });
 
-test('a position from a mark shows the bar with from your saved place, and the saved-place glyph', async ({
+test('a position from a mark shows the bar with from your saved place, and a hollow arrow at the place', async ({
   page,
 }) => {
   await openDial(page, 'pack');
@@ -108,7 +136,11 @@ test('a position from a mark shows the bar with from your saved place, and the s
 
   await expect(page.getByText('GPS signal lost', { exact: true })).toBeVisible();
   await expect(page.locator('.blacksky-bar')).toContainText('from your saved place');
-  await expect(centre(page)).toHaveAttribute('data-centre', 'saved-place');
+  // No glyph at the centre: the bar already says where the position is from.
+  // The arrow is hollow and, north up, points at the place (due north of here).
+  await expect(centre(page)).toHaveAttribute('data-centre', 'outline');
+  await expect(page.locator('.blacksky-dial-arrow path.hollow')).toHaveCount(1);
+  expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 });
   await expect(page.getByText('about', { exact: true })).toBeVisible();
   // E3-US1-AC4's own words stay: always ESTIMATE, the uncertainty growing.
   await expect(page.getByText(/^ESTIMATE from your marked position, ± \d+ m and growing$/)).toBeVisible();
@@ -116,22 +148,31 @@ test('a position from a mark shows the bar with from your saved place, and the s
   // A real fix always beats the mark: the bar and the glyph go.
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(bar(page)).toHaveCount(0);
-  await expect(centre(page)).not.toHaveAttribute('data-centre', 'saved-place');
+  await expect(centre(page)).toHaveAttribute('data-centre', 'arrow');
 });
 
-test('with no compass the dial is north up, with a dot and the tag', async ({ page }) => {
-  await openDial(page, 'pack');
+test('with no compass the dial is north up with the tag, and the arrow still points at the place', async ({
+  page,
+}) => {
+  await openDial(page, 'no-pack');
   await pushPosition(page, AT_FERNY_CREEK);
 
   await expect(tag(page)).toBeVisible();
-  await expect(centre(page)).toHaveAttribute('data-centre', 'dot');
   expect(await heading(page)).toBe('');
   expect(await drawnAngle(page, '.blacksky-dial-ring')).toBe(0);
+  // No dot: the arrow points at the place relative to north, as the pin does.
+  // The nearest site lies north-east of here, so this is not simply "up".
+  await expect(centre(page)).toHaveAttribute('data-centre', 'arrow');
+  const bearing = norm(
+    bearingDeg({ lat: AT_FERNY_CREEK.latitude, lon: AT_FERNY_CREEK.longitude }, { lat: -37.872, lon: 145.362 }),
+  );
+  expect(bearing).not.toBe(0);
+  expect(await arrowAndPin(page)).toEqual({ arrow: bearing, pin: bearing });
   // This browser hands the sensor over without asking, so no button is offered.
   await expect(page.getByRole('button', { name: TURN_ON_COMPASS })).toHaveCount(0);
 });
 
-test('with compass permission refused the dial stays north up, with a dot and the tag', async ({ page }) => {
+test('with compass permission refused the dial stays north up, with the tag and the button', async ({ page }) => {
   // An iPhone: the sensor is only handed over after a tap, and may be refused.
   await page.addInitScript(() => {
     (DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> }).requestPermission =
@@ -149,8 +190,8 @@ test('with compass permission refused the dial stays north up, with a dot and th
   // Refused: a reading that arrives anyway is not listened to.
   await turnPhone(page, FACING_EAST);
   await expect(tag(page)).toBeVisible();
-  await expect(centre(page)).toHaveAttribute('data-centre', 'dot');
   expect(await heading(page)).toBe('');
+  expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 }); // the place is due north
   await expect(turnOn).toBeVisible();
 });
 
@@ -163,11 +204,12 @@ test('a compass that goes silent for 3 seconds stops turning the dial', async ({
   expect(await heading(page)).not.toBe('');
 
   // No further reading. Never a turning dial once the sensor has been silent
-  // for COMPASS_SILENT_MS: north up, a dot, the tag.
+  // for COMPASS_SILENT_MS: north up, the tag, and the arrow back to the place's
+  // bearing from north.
   await expect(tag(page)).toBeVisible({ timeout: COMPASS_SILENT_MS + 3_000 });
-  await expect(centre(page)).toHaveAttribute('data-centre', 'dot');
   expect(await heading(page)).toBe('');
   expect(await drawnAngle(page, '.blacksky-dial-ring')).toBe(0);
+  expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 });
 
   // A reading arrives again and the dial turns again.
   await turnPhone(page, FACING_EAST);

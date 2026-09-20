@@ -134,17 +134,21 @@ export const positionTrust = (confidence: Confidence, estimating: boolean): Posi
   about: estimating || confidence.stale || confidence.approximate,
 });
 
-/** What is drawn at the centre of the dial, where the person is.
- *  - 'saved-place' the position is a mark at the saved place, not a fix. The
- *    glyph has no direction, so it is honest with or without a heading.
- *  - 'dot' nothing turns the dial, so which way the person faces is unknown
- *    and an arrow would claim to know it.
- *  - 'outline' a heading but an old position: the arrow, drawn hollow.
- *  - 'arrow' a fresh position and a live heading. */
-export type DialCentre = 'arrow' | 'outline' | 'saved-place' | 'dot';
+/** How the arrow at the centre of the dial is drawn. The arrow points AT THE
+ *  MAIN PLACE, the same way as the pin on the ring, and never at the top of the
+ *  phone. With no map inside the dial, an arrow fixed to the top of the phone
+ *  told the person nothing, and an arrow is read as "this way": pointing
+ *  anywhere but at the place would mislead. When the person turns to face the
+ *  place the arrow stands straight up and the pin sits under the notch. With
+ *  no heading the dial is north up and the arrow points at the place relative
+ *  to north, which is still true; the North up tag says how to read it.
+ *
+ *  So the only thing left to say here is how far to trust the position the
+ *  arrow is drawn from:
+ *  - 'arrow'   a fresh position: drawn solid.
+ *  - 'outline' an old position, or a mark the person made: drawn hollow. The
+ *    bar above already says which ("from your saved place" for a mark). */
+export type DialCentre = 'arrow' | 'outline';
 
-export const dialCentre = (trust: PositionTrust, northUp: boolean): DialCentre => {
-  if (trust.bar === 'mark') return 'saved-place';
-  if (northUp) return 'dot';
-  return trust.bar === 'stale' ? 'outline' : 'arrow';
-};
+export const dialCentre = (trust: PositionTrust): DialCentre =>
+  trust.bar === null ? 'arrow' : 'outline';

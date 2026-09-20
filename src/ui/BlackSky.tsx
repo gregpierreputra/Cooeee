@@ -658,7 +658,7 @@ function DialBody({
       <div className="blacksky-dial-frame">
         <BlackSkyDial
           bearingDeg={first.bearingDeg}
-          centre={dialCentre(trust, !compass.live)}
+          centre={dialCentre(trust)}
           description={copy.DIAL_DESCRIPTION(site, distance, point)}
         />
         {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
@@ -706,8 +706,25 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
   const titleId = useId();
   return (
     <>
+      {/* Never cut off: a distance that ends in "…" is a distance not given.
+          Where the line does not fit (a 360 px phone), the distances drop under
+          the count. The words, read through, are unchanged: the count, then
+          each distance behind a separator (the same string as
+          copy.OTHER_PLACES). */}
       <button type="button" className="blacksky-others" onClick={() => sheet.current?.showModal()}>
-        {copy.OTHER_PLACES(places.map((place) => copy.distanceLabel(place.distanceM)))}
+        <span className="blacksky-others-line">
+          <span className="blacksky-others-flow">
+            <span className="blacksky-others-count">{copy.OTHER_PLACES_COUNT(places.length)}</span>
+            <span className="blacksky-others-distances">
+              {places.map((place) => (
+                <span key={place.id} className="blacksky-others-distance">
+                  <span className="blacksky-others-separator">{copy.PLACES_SEPARATOR}</span>
+                  {copy.distanceLabel(place.distanceM)}
+                </span>
+              ))}
+            </span>
+          </span>
+        </span>
       </button>
       <dialog ref={sheet} className="blacksky-sheet" aria-labelledby={titleId}>
         <h2 id={titleId}>{copy.OTHER_PLACES_TITLE}</h2>

@@ -347,9 +347,15 @@ export const PLACE_OF_LAST_RESORT = 'PLACE OF LAST RESORT';
 /** The dial as words, for a screen reader: the same three facts the eye gets. */
 export const DIAL_DESCRIPTION = (site: string, distance: string, point: string) =>
   `${site}, ${distance}, ${point}`;
-/** Every other place folded into one line: how many, and how far each is. */
+/** Every other place folded into one button: how many, and how far each is.
+ *  The two halves are also given apart, so a narrow phone can put the count on
+ *  one line and the distances under it; read together they are the same words. */
+export const PLACES_SEPARATOR = ' · ';
+export const OTHER_PLACES_COUNT = (count: number) =>
+  count === 1 ? '1 other place' : `${count} other places`;
+export const OTHER_PLACES_DISTANCES = (distances: string[]) => distances.join(PLACES_SEPARATOR);
 export const OTHER_PLACES = (distances: string[]) =>
-  `${distances.length === 1 ? '1 other place' : `${distances.length} other places`} · ${distances.join(' · ')}`;
+  `${OTHER_PLACES_COUNT(distances.length)}${PLACES_SEPARATOR}${OTHER_PLACES_DISTANCES(distances)}`;
 export const OTHER_PLACES_TITLE = 'Other places';
 export const SHOW_PLACE = 'Show';
 /** The Show button's name for a screen reader, so five buttons are not all
