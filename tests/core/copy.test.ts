@@ -599,3 +599,49 @@ describe('the BlackSky dial', () => {
     expect(written).not.toMatch(/unsure|magnetometer|gyroscope|accelerometer/i);
   });
 });
+
+// BS_Enhancement-AC3. Everything the phone speaks, pinned as written: the
+// caption shows these same words, and none of them tells the person where to go.
+describe('the BlackSky voice', () => {
+  it('says distances in words a voice reads well', () => {
+    expect(copy.spokenDistance(4)).toBe('10 metres');
+    expect(copy.spokenDistance(96)).toBe('100 metres');
+    expect(copy.spokenDistance(500)).toBe('500 metres');
+    expect(copy.spokenDistance(994)).toBe('990 metres');
+    expect(copy.spokenDistance(995)).toBe('1 kilometre');
+    expect(copy.spokenDistance(1_049)).toBe('1 kilometre');
+    expect(copy.spokenDistance(1_960)).toBe('2 kilometres');
+    expect(copy.spokenDistance(12_140)).toBe('12.1 kilometres');
+  });
+
+  it('says where the place is, never what to do about it', () => {
+    expect(copy.SPOKEN_SIDES).toEqual({
+      ahead: 'Ahead of you',
+      right: 'On your right',
+      behind: 'Behind you',
+      left: 'On your left',
+    });
+    const everything = [
+      ...Object.values(copy.SPOKEN_SIDES),
+      copy.VOICE_LONG('Community Hall', copy.VOICE_SHORT('500 metres', 'North', 'On your left', true)),
+      copy.VOICE_SIGNAL_LOST,
+      copy.VOICE_SIGNAL_BACK(''),
+      copy.VOICE_AT_PLACE('Community Hall', 50),
+    ].join(' ');
+    expect(everything).not.toMatch(/\b(turn|go|head|drive|walk|travel|continue|keep|take|follow)\b/i);
+  });
+
+  it('builds the short form, the long form and the three one-off messages', () => {
+    expect(copy.VOICE_SHORT('12.1 kilometres', 'North-east', 'On your right', false)).toBe(
+      '12.1 kilometres. North-east. On your right.',
+    );
+    expect(copy.VOICE_SHORT('500 metres', 'South', null, true)).toBe('About 500 metres. South.');
+    expect(copy.VOICE_LONG('Community Hall', '500 metres. South.')).toBe(
+      'Community Hall, place of last resort. 500 metres. South.',
+    );
+    expect(copy.VOICE_SIGNAL_LOST).toBe('GPS signal lost.');
+    expect(copy.VOICE_SIGNAL_BACK('500 metres. South.')).toBe('GPS signal is back. 500 metres. South.');
+    expect(copy.VOICE_AT_PLACE('Community Hall', 50)).toBe('Community Hall is within 50 metres.');
+    expect(copy.VOICE_BUTTON).toBe('Speak the distance aloud');
+  });
+});
