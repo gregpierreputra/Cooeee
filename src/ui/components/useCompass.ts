@@ -40,6 +40,10 @@ export function useCompass(declinationDeg: number) {
   // Asks for one paint on the next frame. Filled in by the effect below, so
   // that readings arriving before it runs are simply kept for the first paint.
   const requestPaint = useRef(() => {});
+  // The heading last written to the stylesheet, for the one reader that is not
+  // the stylesheet: the voice, which needs it about once a second to say which
+  // side the place is on. A ref read on demand, so it costs no render either.
+  const painted = useRef<number | null>(null);
 
   useEffect(() => {
     const target = document.documentElement;
@@ -55,6 +59,7 @@ export function useCompass(declinationDeg: number) {
         freshHeading(movement.current, now),
         movement.current?.speedMps,
       );
+      painted.current = deg;
       if (deg === null) target.style.removeProperty('--heading');
       else target.style.setProperty('--heading', String(deg));
       if (turning !== (deg !== null)) {
@@ -74,6 +79,7 @@ export function useCompass(declinationDeg: number) {
       clearInterval(watchdog);
       cancelAnimationFrame(frame);
       requestPaint.current = () => {};
+      painted.current = null;
       target.style.removeProperty('--heading');
     };
   }, []);
@@ -113,5 +119,9 @@ export function useCompass(declinationDeg: number) {
     if (request && (await request()) === 'granted') setGranted(true);
   };
 
-  return { live, needsPermission: !granted, enable, setMovement };
+  /** The heading turning the dial right now, TRUE north, or null when the dial
+   *  is north up. */
+  const headingDeg = useCallback(() => painted.current, []);
+
+  return { live, needsPermission: !granted, enable, setMovement, headingDeg };
 }
