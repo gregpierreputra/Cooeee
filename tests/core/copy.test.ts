@@ -575,22 +575,21 @@ describe('the BlackSky dial', () => {
     );
   });
 
-  it('folds the other places into one line, one place or several', () => {
+  it('folds the other places into one line: the count, and the range nearest to furthest', () => {
     expect(copy.OTHER_PLACES(['850 m'])).toBe('1 other place · 850 m');
-    expect(copy.OTHER_PLACES(['850 m', '2.13 km', '12.3 km'])).toBe(
-      '3 other places · 850 m · 2.13 km · 12.3 km',
+    expect(copy.OTHER_PLACES(['12.1 km', '13.1 km'])).toBe('2 other places · 12.1 km – 13.1 km');
+    expect(copy.OTHER_PLACES(['850 m', '2.13 km', '4.09 km', '12.3 km'])).toBe(
+      '4 other places · 850 m – 12.3 km',
     );
+    // Two places the same distance away are one figure, not a range of nothing.
+    expect(copy.OTHER_PLACES(['2.13 km', '2.13 km'])).toBe('2 other places · 2.13 km');
+    expect(copy.OTHER_PLACES_COUNT(1)).toBe('1 other place');
+    expect(copy.OTHER_PLACES_COUNT(3)).toBe('3 other places');
   });
 
-  it('gives the count and the distances apart, and together they are the same words', () => {
-    const distances = ['12.1 km', '13.1 km'];
-    expect(copy.OTHER_PLACES_COUNT(1)).toBe('1 other place');
-    expect(copy.OTHER_PLACES_COUNT(2)).toBe('2 other places');
-    expect(copy.OTHER_PLACES_DISTANCES(distances)).toBe('12.1 km · 13.1 km');
-    expect(copy.OTHER_PLACES(distances)).toBe(
-      copy.OTHER_PLACES_COUNT(2) + copy.PLACES_SEPARATOR + copy.OTHER_PLACES_DISTANCES(distances),
-    );
-    expect(copy.OTHER_PLACES(distances)).toBe('2 other places · 12.1 km · 13.1 km');
+  it('prints the eight compass points as their letters, in the same order as the words', () => {
+    expect([...copy.CARDINAL_POINTS_SHORT]).toEqual(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']);
+    expect(copy.CARDINAL_POINTS_SHORT).toHaveLength(copy.CARDINAL_POINTS.length);
   });
 
   it('names each Show button by its place, starting with the visible word', () => {

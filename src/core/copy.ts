@@ -31,8 +31,8 @@ export const NOT_RECENTLY_VERIFIED = (days: number) =>
 
 // Shared vocabulary
 /** The eight compass points by name, index 0 = north, one every 45 degrees.
- *  Read by core/geo.ts cardinalPoint(). Names, not letters: the point is read
- *  under the arrow at arm's length, and "NE" is an abbreviation. */
+ *  Read by core/geo.ts cardinalPoint(). The full word is what a screen reader
+ *  is given and what the voice says: "NE" read aloud is two letters. */
 export const CARDINAL_POINTS = [
   'North',
   'North-east',
@@ -43,6 +43,12 @@ export const CARDINAL_POINTS = [
   'West',
   'North-west',
 ] as const;
+/** The same eight points as the letters printed on any compass, in the same
+ *  order. Read by core/geo.ts cardinalPointShort(). Used in one place: beside
+ *  BlackSky's big distance, where the full word ("NORTH-EAST") left no room on
+ *  the row for the speaker button on a narrow phone. The full word still
+ *  travels with it for anyone who cannot see the letters. */
+export const CARDINAL_POINTS_SHORT = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
 
 // Application shell
 export const APP_NAME = 'Cooeee';
@@ -347,15 +353,21 @@ export const PLACE_OF_LAST_RESORT = 'PLACE OF LAST RESORT';
 /** The dial as words, for a screen reader: the same three facts the eye gets. */
 export const DIAL_DESCRIPTION = (site: string, distance: string, point: string) =>
   `${site}, ${distance}, ${point}`;
-/** Every other place folded into one button: how many, and how far each is.
- *  The two halves are also given apart, so a narrow phone can put the count on
- *  one line and the distances under it; read together they are the same words. */
+/** Every other place folded into one line: how many, and the range they lie
+ *  in, nearest to furthest. A range, not a list, because the line must stay one
+ *  line on the narrowest phone and must never be cut off: a list of four
+ *  distances could do neither. Every distance is still in the sheet the line
+ *  opens. One other place has no range, and two at the same distance read as
+ *  one figure, not as "2.13 km – 2.13 km". `distances` is nearest first. */
 export const PLACES_SEPARATOR = ' · ';
 export const OTHER_PLACES_COUNT = (count: number) =>
   count === 1 ? '1 other place' : `${count} other places`;
-export const OTHER_PLACES_DISTANCES = (distances: string[]) => distances.join(PLACES_SEPARATOR);
-export const OTHER_PLACES = (distances: string[]) =>
-  `${OTHER_PLACES_COUNT(distances.length)}${PLACES_SEPARATOR}${OTHER_PLACES_DISTANCES(distances)}`;
+export const OTHER_PLACES = (distances: string[]) => {
+  const nearest = distances[0];
+  const furthest = distances[distances.length - 1];
+  const range = nearest === furthest ? nearest : `${nearest} – ${furthest}`;
+  return `${OTHER_PLACES_COUNT(distances.length)}${PLACES_SEPARATOR}${range}`;
+};
 export const OTHER_PLACES_TITLE = 'Other places';
 export const SHOW_PLACE = 'Show';
 /** The Show button's name for a screen reader, so five buttons are not all

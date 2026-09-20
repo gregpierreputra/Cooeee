@@ -40,14 +40,15 @@ export default function BlackSkyDial({
   return (
     <svg
       className="blacksky-dial"
-      viewBox="-92 -100 184 192"
+      viewBox="-96 -100 192 192"
       role="img"
       aria-label={description}
       data-centre={centre}
     >
-      {/* The viewBox is cut close to the ring (radius 78, plus the pin) so the
-          drawing wastes no height; its centre, 0 0, is still where everything
-          turns. The top of the phone: fixed, outside the ring. */}
+      {/* A square drawing, cut close to the ring (radius 78, plus the pin and
+          the notch above it), so the dial fills the width it is given; its
+          centre, 0 0, is where everything turns. The top of the phone: fixed,
+          outside the ring. */}
       <path className="blacksky-dial-notch" d="M-8 -100H8L0 -88Z" />
       <g className="blacksky-dial-ring">
         <circle r="78" />

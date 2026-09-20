@@ -41,17 +41,18 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
 
   // The chosen place at 2.60 km, not the state-wide site at 2.13 km.
   await expect(label(page)).toHaveText('YOUR CHOSEN PLACE');
-  // Site name first and large, suburb second, split from the official name,
-  // whose own brackets survive the split.
-  await expect(name(page)).toHaveText('Village Green (car park)');
-  await expect(page.locator('.blacksky-dial-head p')).toHaveText('Sassafras');
+  // Site name first and large, split from the official name; its trailing
+  // qualifier goes down to the suburb line, so the name stays short.
+  await expect(name(page)).toHaveText('Village Green');
+  await expect(page.locator('.blacksky-dial-head p')).toHaveText('Sassafras · car park');
   await expect(distance(page)).toHaveText('2.60 km');
-  await expect(page.locator('.blacksky-figure-point')).toHaveText('North');
+  // The compass point as its letters on the row; the word travels with them.
+  await expect(page.locator('.blacksky-figure-point')).toHaveText('N');
+  await expect(page.locator('.blacksky-figure-point')).toHaveAttribute('title', 'North');
 
-  // WCAG 1.1.1: the dial's text equivalent is the same three facts.
-  await expect(
-    page.getByRole('img', { name: 'Village Green (car park), 2.60 km, North' }),
-  ).toBeVisible();
+  // WCAG 1.1.1: the dial's text equivalent is the same three facts, the
+  // compass point in full.
+  await expect(page.getByRole('img', { name: 'Village Green, 2.60 km, North' })).toBeVisible();
   // One pin, in the true direction of the place: due north, drawn north up.
   await expect(page.locator('.blacksky-dial-pin')).toHaveCount(1);
   expect(await drawnAngle(page, '.blacksky-dial-pin')).toBe(relativeBearing(0, 0));
@@ -62,16 +63,24 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   await expect(page.locator('.blacksky-arrow')).toHaveCount(0);
   await expect(page.getByText(/Official place of last resort ·/)).toHaveCount(0);
 
-  // Every other place is one line: how many, and how far.
-  await expect(othersLine(page)).toHaveText(/^4 other places · 2\.13 km · 3\.50 km/);
+  // Every other place is one line: how many, and the range they lie in.
+  await expect(othersLine(page)).toHaveText('4 other places · 2.13 km – 5.07 km');
   // No list of places is on screen yet, so the mandated phrase is not either.
   await expect(page.getByText(SORTED_BY_DISTANCE)).toBeHidden();
 
-  // The notes are readable without a tap, and the whole screen, Leave in its
-  // top bar included, fits 390 by 844.
+  // The notes are readable without a tap. Now that the dial takes the width
+  // they may start below the fold, which the team accepted; the glance, label
+  // to dial, and Leave in its top bar are all on the first screen.
   await expect(page.getByText('Gas is off at the meter.')).toBeVisible();
   await expect(page.getByRole('button', { name: LEAVE_BLACKSKY })).toBeInViewport({ ratio: 1 });
-  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(844);
+  await expect(page.locator('.blacksky-dial')).toBeInViewport({ ratio: 1 });
+  // Order down the screen: name block, distance row, dial, other places, notes.
+  const tops = await page.evaluate(() =>
+    ['.blacksky-topbar', '.blacksky-dial-head', '.blacksky-dial-figures', '.blacksky-dial', '.blacksky-others', '.blacksky-notes'].map(
+      (selector) => document.querySelector(selector)!.getBoundingClientRect().top,
+    ),
+  );
+  expect(tops).toEqual([...tops].sort((a, b) => a - b));
 
   // Sizes: the distance is at least 56 px and the largest text on the screen;
   // nothing but the small labels is under 16 px; every target is at least 44 px.
@@ -184,74 +193,80 @@ test('Leave sits in the top bar, clear of the top edge, and its hint never moves
   expect(await hint.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
 });
 
-// A Samsung in Chrome is about 360 px wide, and there the line used to read
-// "2 other places · 12.1 km · 13.1…". It must never be cut off: where it does
-// not fit, the distances go under the count, in the same one button.
-for (const [mode, count] of [['no-pack', 2], ['pack', 4]] as const) {
-  test(`at 360 px the ${count} other places are never cut off`, async ({ page }) => {
-    await openDial(page, mode);
+// A Samsung in Chrome is about 360 px wide: the narrowest phone the layout is
+// held to. 12.3 km to the north-east is the widest the distance row gets (a
+// three-digit figure, a two-letter point) short of a hundred kilometres.
+test.describe('at 360 px wide', () => {
+  const FAR_SOUTH_WEST = { latitude: -37.95024, longitude: 145.26284 };
+
+  test.beforeEach(async ({ page }) => {
+    await openDial(page, 'no-pack');
     await page.setViewportSize({ width: 360, height: 800 });
-    // Far enough away that every distance is a long one ("12.3 km").
-    await pushPosition(page, mode === 'pack' ? AT_FERNY_CREEK : AT_MELBOURNE);
+    await pushPosition(page, FAR_SOUTH_WEST);
+    await expect(distance(page)).toHaveText('12.3 km');
+    await expect(page.locator('.blacksky-figure-point')).toHaveText('NE');
+  });
 
+  test('the other-places summary is one line and not clipped', async ({ page }) => {
     const line = othersLine(page);
-    // The words are unchanged, whatever line they fall on.
-    const words = (await line.textContent())!;
-    expect(words).toMatch(new RegExp(`^${count} other places( · [\\d.]+ k?m){${count}}$`));
-
-    // Every part that is meant to be read lies wholly inside the box that clips
-    // the line, so nothing is cut off; nothing uses an ellipsis; and no line
-    // begins or ends with a separator that can be seen.
+    await expect(line).toHaveText(/^2 other places · \d+\.\d km – \d+\.\d km$/);
     const fit = await line.evaluate((button) => {
-      const clip = button.querySelector('.blacksky-others-line')!.getBoundingClientRect();
-      // The words themselves, not their boxes: the count's box carries empty
-      // padding, and a distance's box carries its separator, both of which are
-      // meant to hang outside the clip.
-      const wordsOf = (node: Node) => {
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        return range.getBoundingClientRect();
-      };
-      const inside = (box: DOMRect) =>
-        box.left >= clip.left - 0.5 && box.right <= clip.right + 0.5 && box.bottom <= clip.bottom + 0.5;
-      const count = button.querySelector('.blacksky-others-count')!;
-      const distances = [...button.querySelectorAll('.blacksky-others-distance')];
-      const figures = distances.map((el) => wordsOf(el.lastChild!));
-      const lines = new Map<number, DOMRect[]>();
-      for (const box of figures) lines.set(Math.round(box.top), [...(lines.get(Math.round(box.top)) ?? []), box]);
-      const separators = [...button.querySelectorAll('.blacksky-others-separator')].map((el) => el.getBoundingClientRect());
-      const visibleSeparators = separators.filter((box) => box.left >= clip.left - 0.5);
+      const range = document.createRange();
+      range.selectNodeContents(button);
+      const style = getComputedStyle(button);
       return {
-        ellipsis: [button, ...button.querySelectorAll('*')].filter((el) => getComputedStyle(el).textOverflow === 'ellipsis').length,
-        clippedParts: [count, ...distances].filter((el) => el.scrollWidth > el.clientWidth).length,
-        countInside: inside(wordsOf(count)),
-        figuresInside: figures.every(inside),
-        // A separator that shows always has a figure to its right on its own line.
-        danglingSeparators: visibleSeparators.filter(
-          (sep) => !figures.some((fig) => Math.abs(fig.top - sep.top) < 4 && fig.left >= sep.right - 1),
-        ).length,
-        hiddenSeparators: separators.length - visibleSeparators.length,
-        lines: lines.size,
+        clipped: button.scrollWidth > button.clientWidth,
+        ellipsis: style.textOverflow === 'ellipsis',
+        lines: new Set([...range.getClientRects()].map((box) => Math.round(box.top))).size,
+        textInside: range.getBoundingClientRect().right <= button.getBoundingClientRect().right - parseFloat(style.paddingRight) + 0.5,
         height: button.getBoundingClientRect().height,
-        wrapped: figures[0].top > count.getBoundingClientRect().top + 4,
       };
     });
-    expect(fit.ellipsis).toBe(0);
-    expect(fit.clippedParts).toBe(0);
-    expect(fit.countInside).toBe(true);
-    expect(fit.figuresInside).toBe(true);
-    expect(fit.danglingSeparators).toBe(0);
+    expect(fit).toEqual({ clipped: false, ellipsis: false, lines: 1, textInside: true, height: fit.height });
     expect(fit.height).toBeGreaterThanOrEqual(44);
-    // Wrapped: the count has the first line to itself, and the separator in
-    // front of each line's first distance is out of sight.
-    if (fit.wrapped) expect(fit.hiddenSeparators).toBe(fit.lines);
-    // Still one button, and it still opens the sheet.
-    await expect(page.getByRole('button', { name: /other place/ })).toHaveCount(1);
+    // The full list is still one tap away, under the mandated phrase.
     await line.click();
-    await expect(sheet(page).getByRole('listitem')).toHaveCount(count);
-    if (mode === 'pack') expect(fit.wrapped).toBe(true); // four distances cannot share the count's line
+    await expect(sheet(page).getByText(SORTED_BY_DISTANCE, { exact: true })).toBeVisible();
+    await expect(sheet(page).getByRole('listitem')).toHaveCount(2);
   });
-}
+
+  test('the dial takes the width: at least 300 px, square, with nothing beside it', async ({ page }) => {
+    const dial = (await page.locator('.blacksky-dial').boundingBox())!;
+    const content = await page.locator('.blacksky-dial-body').evaluate((el) => el.getBoundingClientRect().width);
+    expect(dial.width).toBeGreaterThanOrEqual(300);
+    expect(dial.width).toBeCloseTo(content, 0);
+    expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
+    // The North up tag stays inside the dial's own corner.
+    const tag = (await page.getByText('North up', { exact: true }).boundingBox())!;
+    expect(tag.x).toBeGreaterThanOrEqual(dial.x - 1);
+    expect(tag.y).toBeGreaterThanOrEqual(dial.y - 1);
+    expect(tag.y + tag.height).toBeLessThan(dial.y + dial.height / 2);
+  });
+
+  test('the distance row keeps 48 px free at its end, and nothing on it overlaps or wraps', async ({ page }) => {
+    const row = await page.locator('.blacksky-dial-figures').evaluate((el) => {
+      const box = (selector: string) => el.querySelector(selector)!.getBoundingClientRect();
+      const [figure, beside, readout] = [box('.blacksky-figure-main'), box('.blacksky-dial-beside'), box('.blacksky-dial-readout')];
+      const words = document.createRange();
+      words.selectNodeContents(el.querySelector('.blacksky-dial-readout')!);
+      return {
+        rowRight: el.getBoundingClientRect().right,
+        figureRight: figure.right,
+        besideLeft: beside.left,
+        besideRight: Math.max(beside.right, words.getBoundingClientRect().right),
+        readoutLines: new Set([...words.getClientRects()].map((r) => Math.round(r.top))).size,
+        readoutBottom: readout.bottom,
+        rowBottom: el.getBoundingClientRect().bottom,
+        overflow: el.scrollWidth > el.clientWidth,
+      };
+    });
+    expect(row.besideLeft).toBeGreaterThanOrEqual(row.figureRight); // the point never sits on the figure
+    expect(row.besideRight).toBeLessThanOrEqual(row.rowRight - 48); // the speaker button's place
+    expect(row.readoutLines).toBe(1); // "± 10 m" on one line under the point
+    expect(row.readoutBottom).toBeLessThanOrEqual(row.rowBottom + 0.5);
+    expect(row.overflow).toBe(false);
+  });
+});
 
 test('Normal, no pack: the nearest state-wide site is the subject', async ({ page }) => {
   await openDial(page, 'no-pack');
@@ -262,7 +277,7 @@ test('Normal, no pack: the nearest state-wide site is the subject', async ({ pag
   await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
   await expect(page.locator('.blacksky-dial-head p')).toHaveCount(0);
   await expect(distance(page)).toHaveText('2.13 km');
-  await expect(othersLine(page)).toHaveText(/^2 other places · /);
+  await expect(othersLine(page)).toHaveText('2 other places · 4.09 km – 5.07 km');
   // E3-US2-AC2's rule is unchanged: the screen still says no pack covers this.
   await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
 });
