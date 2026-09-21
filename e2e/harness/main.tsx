@@ -18,6 +18,8 @@ import Recover from '../../src/ui/Recover';
 import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import { startRun } from '../../src/ui/Rehearsal/run-state';
+import Drill from '../../src/ui/Drill/Drill';
+import { markDrilled } from '../../src/ui/Drill/drill-state';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BackBar from '../../src/ui/components/BackBar';
 import BottomNav from '../../src/ui/components/BottomNav';
@@ -688,6 +690,12 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
   rehearseFlow = <RehearsalHarness />;
 }
 if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
+// E7. The drill stands in front of every rehearsal. The rehearsal's own specs
+// step past it here, as a person who skipped it would; ?drill=1 keeps it.
+if (new URLSearchParams(window.location.search).get('drill') !== '1') {
+  markDrilled('rehearse-pack');
+  markDrilled('saved-pack');
+}
 
 
 // The remount control is HARNESS FURNITURE, not product UI. It is rendered
@@ -794,6 +802,13 @@ if (window.location.pathname === '/rehearse-choose') {
   );
 }
 
+// E7. The drill on its own, with a minute as short as the spec asks for.
+// ?seconds=3 ends it almost at once; the app never passes this.
+const drillSeconds = Number(new URLSearchParams(window.location.search).get('seconds')) || undefined;
+const drillFlow = (
+  <Drill packId="saved-pack" seconds={drillSeconds} onDone={() => { document.title = 'drill done'; }} />
+);
+
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
@@ -827,6 +842,7 @@ createRoot(root).render(
         : window.location.pathname === '/recover' ? recoverFlow
         : window.location.pathname === '/rehearse' ? rehearseFlow
         : window.location.pathname === '/rehearse-choose' ? chooseFlow
+        : window.location.pathname === '/drill' ? drillFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

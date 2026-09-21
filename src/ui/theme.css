@@ -2559,3 +2559,300 @@ input {
   font-size: var(--step-s);
   margin: 0;
 }
+
+/* ── E7 the drill ──────────────────────────────────────────────────────────── */
+
+/* The label and the sound control share the top row of the first screen. */
+.drill-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.drill-sound {
+  width: auto;
+  min-height: 44px;
+  padding: 0.25rem 1rem;
+  font-size: var(--step-s);
+}
+
+/* While the film and the minute run, the drill is the whole screen: the
+   app's bars step aside and the page behind cannot scroll. */
+body.drill-open {
+  overflow: hidden;
+}
+body.drill-open .app-header,
+body.drill-open .back-bar,
+body.drill-open .bottom-nav,
+body.drill-open .notice-bar,
+body.drill-open .notice-sliver,
+body.drill-open .banner {
+  display: none;
+}
+
+/* The picture fills the screen inside the phone's safe edges, and every
+   control floats over it like a phone game. touch-action none so no thumb on
+   the stage scrolls or zooms the page. */
+.drill-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #06070c;
+  color: #f4f1ea;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  outline: none;
+}
+.drill-stage canvas {
+  position: absolute;
+  top: env(safe-area-inset-top);
+  bottom: env(safe-area-inset-bottom);
+  left: env(safe-area-inset-left);
+  right: env(safe-area-inset-right);
+  width: calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right));
+  height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: block;
+}
+
+/* Frosted chips over the picture: legible on flame and on floorboards alike. */
+.drill-top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.drill-counts,
+.drill-chip,
+.drill-room {
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.drill-counts {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--r-pill);
+}
+.drill-counts p {
+  margin: 0;
+}
+.drill-timer {
+  font-size: var(--step-2);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1;
+}
+/* The last ten seconds borrow BlackSky's amber: the one colour this product
+   already uses for "now". The clock still reads without it. */
+.drill-timer.late {
+  color: var(--blacksky-accent);
+}
+.drill-bag {
+  font-size: var(--step-s);
+  opacity: 0.85;
+}
+.drill-top-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.drill-chip {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: var(--r-pill);
+  color: inherit;
+  font: inherit;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  cursor: pointer;
+}
+.drill-close {
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.drill-room {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 4.25rem);
+  left: calc(env(safe-area-inset-left) + 1rem);
+  margin: 0;
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--r-pill);
+  font-size: var(--step-s);
+}
+.drill-room::first-letter {
+  text-transform: uppercase;
+}
+
+/* The film's words: one line at a time, low on the picture, large and quiet. */
+.drill-film {
+  position: absolute;
+  left: calc(env(safe-area-inset-left) + 1.5rem);
+  right: calc(env(safe-area-inset-right) + 1.5rem);
+  bottom: calc(env(safe-area-inset-bottom) + 2rem);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.drill-fact {
+  max-width: 30rem;
+  animation: drill-fact-in 1.2s ease-out both;
+}
+.drill-fact-text {
+  margin: 0;
+  font-size: clamp(1.4rem, 5.6vw, 2.25rem);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1.12;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
+}
+.drill-fact-source {
+  margin: 0.6rem 0 0;
+  font-size: var(--step-s);
+  letter-spacing: 0.04em;
+  opacity: 0.78;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
+}
+@keyframes drill-fact-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-fact {
+    animation: none;
+  }
+}
+.drill-next {
+  flex: none;
+}
+
+/* The thumb controls float over the lower corners, just above the bag strip. */
+.drill-controls {
+  position: absolute;
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.75rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  pointer-events: none;
+}
+.drill-controls > * {
+  pointer-events: auto;
+}
+/* The stick is a button so it is named and reachable; the arrow keys do the
+   same job from a keyboard. */
+.drill-stick {
+  position: relative;
+  width: 7.5rem;
+  height: 7.5rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 10, 18, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  touch-action: none;
+  cursor: pointer;
+}
+.drill-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3rem;
+  height: 3rem;
+  margin: -1.5rem 0 0 -1.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+.drill-pack {
+  width: min(11rem, 44vw);
+  min-height: 5.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  font: inherit;
+  font-weight: var(--w-bold);
+  line-height: 1.2;
+  touch-action: none;
+  cursor: pointer;
+}
+.drill-pack:disabled {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(8, 10, 18, 0.55);
+  color: rgba(244, 241, 234, 0.72);
+  cursor: default;
+}
+
+.drill-score {
+  font-size: 3.5rem;
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1;
+}
+
+/* The why behind the score: one row per kind of thing, then the total. */
+.drill-breakdown h2 {
+  margin-top: 0;
+}
+.drill-breakdown table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.drill-breakdown th,
+.drill-breakdown td {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.drill-breakdown th {
+  text-align: left;
+  font-weight: var(--w-bold);
+}
+.drill-breakdown th .muted {
+  display: block;
+  font-weight: normal;
+}
+.drill-breakdown td {
+  text-align: right;
+  white-space: nowrap;
+  padding-left: 1rem;
+}
+.drill-breakdown-total th,
+.drill-breakdown-total td {
+  border-bottom: 0;
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+}
+
+/* Read by a screen reader, drawn nowhere. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

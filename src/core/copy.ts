@@ -1227,3 +1227,80 @@ export const WAY_NOTE_DETAIL =
   "If you like, write what the app cannot tell you: the turns, what you met on the way, what you would do differently. It is kept with this pack's notes, which BlackSky shows you without a connection.";
 /** [DRAFT] pending Sharon's copy review. */
 export const WAY_NOTE_LABEL = 'Your note about the way';
+
+// ── E7 the drill ──────────────────────────────────────────────────────────
+// A game played before the rehearsal. It has a clock and a score, which the
+// rehearsal never has (E5-US2-AC2 keeps that rule for the rehearsal alone).
+// Every number here is about the bag, never about the person.
+export const DRILL_LABEL = 'Drill';
+export const DRILL_INTRO_HEADING = 'One minute to leave';
+export const DRILL_STAT_DETAIL =
+  'This drill gives you one minute in a house. Pack ten things and be at the front door when the time ends. Then it says how ready your bag was.';
+export const START_DRILL = 'Start the drill';
+export const SKIP_DRILL = 'Skip the drill';
+export const SKIP_CUTSCENE = 'Skip';
+export const NEXT_STAGE = 'Next';
+export const LEAVE_DRILL = 'Leave the drill';
+/** The facts shown over the fire as it worsens, each with its publisher. Every
+ *  line was checked against the page it is credited to (21 September 2026). */
+export const DRILL_FACTS = [
+  { text: 'Grassfires can travel 25 kilometres an hour. Faster than you can run.', source: 'Country Fire Authority' },
+  { text: 'On Black Saturday, embers lit fires more than 30 kilometres ahead.', source: 'Country Fire Authority' },
+  { text: 'Within minutes of starting, the Kilmore East fire could not be contained.', source: '2009 Victorian Bushfires Royal Commission' },
+  { text: 'A wind change turned its side into a front 50 kilometres wide.', source: 'Country Fire Authority' },
+  { text: 'Black Saturday, 7 February 2009, took 173 lives.', source: '2009 Victorian Bushfires Royal Commission' },
+];
+/** The two lines once the film cuts inside the house. */
+export const DRILL_INSIDE_LINES = [
+  'Inside, the news is on. The light at the window turns orange.',
+  'The power goes out. You have one minute.',
+];
+export const CUTSCENE_LABEL = 'A home among gum trees as a bushfire arrives and grows, then its living room.';
+export const DRILL_SCENE_LABEL = 'A house seen from above, with the person you are steering.';
+export const DRILL_HINT = 'Be at the front door when the time ends.';
+export const BAG_COUNT = (count: number, limit: number) => `Bag ${count} of ${limit}`;
+export const PACK_ITEM = (name: string) => `Pack the ${name}`;
+export const BAG_FULL = 'Bag full';
+export const NOTHING_IN_REACH = 'Nothing in reach';
+export const SECONDS_LEFT = (seconds: number) => `${seconds} seconds left`;
+export const IN_ROOM = (room: string) => `In the ${room}`;
+export const SOUND_ON = 'Sound on';
+export const SOUND_OFF = 'Sound off';
+export const STICK_LABEL = 'Move. Drag here, or use the arrow keys.';
+export const DEBRIEF_HEADING = 'You were at the door';
+export const DEBRIEF_LEAD = 'How ready your bag was, from what you packed.';
+export const DEBRIEF_SCORE = (score: number) => `${score} out of 100`;
+export const OVER_HEADING = 'The minute ended away from the door';
+export const OVER_DETAIL =
+  'Nothing in the bag counts if you are still inside. Try again, and head for the door before the time ends.';
+export const ROW_ADDED = 'Added to the score';
+export const ROW_TOOK = 'Took from the score';
+export const ROW_NOTHING = 'Changed nothing';
+export const NOTHING_PACKED = 'Nothing was packed.';
+export const DRILL_SOURCE =
+  'The points follow what the Country Fire Authority says to take with you, from its Fire Ready Kit.';
+export const LEFT_IN_HOUSE = 'Left in the house';
+export const BREAKDOWN_HEADING = (score: number) => `Why your bag scored ${score}`;
+export const BREAKDOWN_GROUPS = {
+  essential: 'Essentials the CFA says to take first',
+  listed: 'Also on the CFA list',
+  neutral: 'Neither help nor harm',
+  bulky: 'Bulky things that cost time and room',
+};
+export const BREAKDOWN_COUNT = (count: number) => (count === 1 ? '1 thing' : `${count} things`);
+export const BREAKDOWN_POINTS = (points: number) => (points > 0 ? `plus ${points}` : points < 0 ? `minus ${-points}` : 'no points');
+export const BREAKDOWN_OF = (count: number, total: number) => `${count} of ${total}`;
+export const BREAKDOWN_TOTAL = 'Your bag';
+export const BREAKDOWN_FLOOR = 'The score never goes below nought.';
+export const BREAKDOWN_TOP = 'A bag of the ten essentials scores 100.';
+export const HIGHEST_SO_FAR = (score: number) => `Your highest so far is ${score} out of 100.`;
+export const PLAY_AGAIN = 'Play again';
+export const GO_ON_TO_REHEARSAL = 'Go on to the rehearsal';
+export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures, so the rehearsal opens instead.';
+export const DRILLS = 'Drills';
+export const NOT_YET_DRILLED = 'Not yet drilled.';
+export const DRILL_ROW_DOOR = (score: number) => `At the door, ${score} out of 100`;
+export const DRILL_ROW_AWAY = 'Away from the door when the minute ended';
+export const DRILL_ROW_PACKED = (count: number) =>
+  count === 1 ? '1 thing packed' : `${count} things packed`;
+export const DRILL_ART_CREDIT = 'The drill is drawn with Modern Interiors by LimeZu, limezu.itch.io.';

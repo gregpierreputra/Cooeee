@@ -1,4 +1,5 @@
 import Dexie, { liveQuery, type Table } from 'dexie';
+import { BAG_LIMIT, DRILL_ITEM_IDS } from '../core/drill-items';
 import { NOTE_MAX_CHARS } from '../core/constants';
 import { isRehearsalEnding, isUnfinished } from '../core/rehearsal-ending';
 import type { RehearsalInput } from '../core/rehearsal-entry';
@@ -8,6 +9,7 @@ import type {
   BundlePostcode,
   CompletePackContent,
   Destination,
+  Drill,
   ExposureLayer,
   NspSnapshot,
   Pack,
@@ -49,6 +51,8 @@ class CooeeeDb extends Dexie {
   rehearsals!: Table<StoredRehearsal, string>;
   // The reader's own record of the actions they have taken, per pack.
   actionCompletions!: Table<ActionCompletion, string>;
+  // E7: finished drills, the timed packing game played before a rehearsal.
+  drills!: Table<Drill, string>;
   // The CFA site list, for BlackSky's nearest-places pointer.
   snapshots!: Table<StoredSnapshot, string>;
 
@@ -111,6 +115,10 @@ class CooeeeDb extends Dexie {
     // Keyed by pack and action rather than by rehearsal, so a completion
     // outlives the run that raised the gap.
     this.version(9).stores({ actionCompletions: 'id, packId' });
+
+    // Version 10 adds the drills store: one row per finished drill, indexed by
+    // pack and by finish time for the pack page's newest first list.
+    this.version(10).stores({ drills: 'id, packId, finishedAt' });
   }
 }
 
@@ -153,7 +161,7 @@ export const actionCompletionId = (packId: string, actionId: string): string =>
  *  belongs to the place rather than to the row that happened to hold it. So the
  *  replacement path moves these rather than deleting them (see
  *  carryHistoryToNewPack). An outright delete still takes them. */
-export const historyTables = () => [db.rehearsals, db.actionCompletions];
+export const historyTables = () => [db.rehearsals, db.actionCompletions, db.drills];
 
 /** Move one pack's rehearsals to another. The row's key is its own id, which
  *  says nothing about the pack, so only the field changes. */
@@ -192,6 +200,8 @@ async function carryCompletions(oldId: string, newId: string): Promise<void> {
 export async function carryHistoryToNewPack(oldId: string, newId: string): Promise<void> {
   await carryRehearsals(oldId, newId);
   await carryCompletions(oldId, newId);
+  // A drill's key is its own id too, so only the field changes.
+  await db.drills.where('packId').equals(oldId).modify({ packId: newId });
   // The reader's own notes are theirs, about the place, and nothing can write
   // them again. They move with the history instead of going with the old rows.
   // A note's key is its own id, so only the field changes. The caller's
@@ -487,3 +497,31 @@ export async function deleteCompletePack(id: string): Promise<void> {
 // functions above. A new raw read here is how a partial pack becomes visible.
 // (The status checks inside sweepBuilding and deleteCompletePack are write-path
 // guards, not read APIs.)
+
+/** E7 — whether a stored row is a drill this app wrote. A row that fails is
+ *  dropped on read rather than rendered, so nothing altered on the device can
+ *  put an unknown item or an impossible score on the pack page. */
+export const isDrill = (row: unknown): row is Drill => {
+  if (typeof row !== 'object' || row === null) return false;
+  const drill = row as Record<string, unknown>;
+  return (
+    typeof drill.id === 'string' &&
+    typeof drill.packId === 'string' &&
+    typeof drill.finishedAt === 'number' && Number.isFinite(drill.finishedAt) && drill.finishedAt > 0 &&
+    typeof drill.reachedDoor === 'boolean' &&
+    Number.isInteger(drill.score) && (drill.score as number) >= 0 && (drill.score as number) <= 100 &&
+    Array.isArray(drill.packed) && drill.packed.length <= BAG_LIMIT &&
+    drill.packed.every((id) => typeof id === 'string' && DRILL_ITEM_IDS.has(id))
+  );
+};
+
+/** Record one finished drill. The same checks as the read, so a bad row is
+ *  never written in the first place. */
+export async function saveDrill(drill: Drill): Promise<void> {
+  if (!isDrill(drill)) throw new RangeError('a drill is kept only as the game could have produced it');
+  await db.drills.add(drill);
+}
+
+/** Every drill for one pack that passes isDrill, in store order. */
+export const listDrills = async (packId: string): Promise<Drill[]> =>
+  (await db.drills.where('packId').equals(packId).toArray()).filter(isDrill);

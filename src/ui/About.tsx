@@ -18,6 +18,7 @@ export default function About() {
           ))}
         </ul>
       </section>
+      <p className="muted">{copy.DRILL_ART_CREDIT}</p>
     </main>
   );
 }

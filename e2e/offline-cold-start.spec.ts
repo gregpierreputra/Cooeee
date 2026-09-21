@@ -35,6 +35,13 @@ test('the shell cold-starts with the radios off, and nothing reaches for the net
   await expect(page.locator('.notice-bar')).toBeVisible();
   await expect(page.locator('.app-header-age')).toHaveCount(0);
 
+  // E7: the drill's two pictures ship with the app, so they too are served
+  // with the radios off.
+  const drillArt = await page.evaluate(() =>
+    Promise.all(['/drill/house.png', '/drill/sprites.png'].map((path) => fetch(path).then((r) => r.ok))),
+  );
+  expect(drillArt).toEqual([true, true]);
+
   // Every byte the offline page needed was already on the device.
   expect(failed).toEqual([]);
 

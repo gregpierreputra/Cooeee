@@ -512,3 +512,16 @@ export type SyncMetaRow = { key: string; value: string };
 /** One data source as a screen names it: what the list is, and in plain words
  *  how it read when last checked. */
 export type SourceLine = { lead: string; text: string };
+
+/** E7 — ONE FINISHED drill: the timed packing game played before a rehearsal.
+ *  Kept on the phone so the pack page can list it. The score is about the bag
+ *  and is 0 when the door was not reached, which the page never shows as a
+ *  number. */
+export type Drill = {
+  id: string;          // crypto.randomUUID()
+  packId: string;
+  finishedAt: number;  // epoch ms
+  reachedDoor: boolean;
+  score: number;       // 0 to 100, whole
+  packed: string[];    // drill item ids, at most BAG_LIMIT
+};
