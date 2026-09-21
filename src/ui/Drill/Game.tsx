@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import * as copy from '../../core/copy';
 import { SPAWN, onDoorMat, roomAt } from '../../core/drill-house';
 import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
-import { DOWN, facing, haze, nearestItem, speedFor, step } from '../../core/drill-play';
+import { DOWN, EARLY_EXIT_HOLD, facing, haze, leavingEarly, nearestItem, speedFor, step } from '../../core/drill-play';
 import * as audio from './audio';
 import { BEATS, CUTSCENE_SECONDS, OUTSIDE_SECONDS, POWER_OFF_AT, beatAt, beatStart, drawOutside, insideScene, stillAt } from './cutscene';
 import { attachKeys, stickVector } from './input';
@@ -25,6 +25,7 @@ type World = {
   opening: number; // seconds into the opening film
   elapsed: number; // seconds of the minute used
   leaving: number; // seconds since the minute ended on the mat
+  onMat: number; // seconds stood on the mat, ready to leave early
   x: number;
   y: number;
   facing: number;
@@ -39,7 +40,7 @@ type World = {
 
 const freshWorld = (opening: boolean): World => ({
   phase: opening ? 'opening' : 'play',
-  clock: 0, opening: 0, elapsed: 0, leaving: 0,
+  clock: 0, opening: 0, elapsed: 0, leaving: 0, onMat: 0,
   x: SPAWN.x, y: SPAWN.y, facing: DOWN, stickX: 0, stickY: 0, moving: false, pickUntil: 0,
   packed: [], packedAt: 0, near: null,
 });
@@ -177,6 +178,8 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
             w.facing = facing(w.stickX, w.stickY, w.facing);
           }
           w.near = nearestItem(w.x, w.y, w.packed);
+          const ready = leavingEarly(w.packed.length, seconds - w.elapsed, onDoorMat(w.x, w.y));
+          w.onMat = ready ? w.onMat + dt : 0;
         } else {
           w.leaving += dt;
         }
@@ -189,6 +192,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
           packed: w.packed, packedAt: w.packedAt, near: w.phase === 'play' ? w.near : null,
           powered: false, glow: 1, smoke, dark, door: Math.min(1, w.leaving / 0.6),
           late: left <= LATE_SECONDS, doorArrow: left <= DOOR_ARROW_SECONDS, showBag: true, outlines: w.phase === 'play', calm,
+          matHold: w.phase === 'play' ? w.onMat / EARLY_EXIT_HOLD : 0,
         });
       }
 
@@ -205,6 +209,11 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         setHud(next);
       }
 
+      // A full bag, the last seconds, and a moment on the mat: out the door now.
+      if (w.phase === 'play' && w.onMat >= EARLY_EXIT_HOLD) {
+        w.phase = 'leaving';
+        audio.thud();
+      }
       if (w.phase === 'play' && w.elapsed >= seconds) {
         // The minute always runs to its end. Where the figure stands now decides.
         if (!onDoorMat(w.x, w.y)) {

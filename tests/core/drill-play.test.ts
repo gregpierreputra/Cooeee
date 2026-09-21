@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SPAWN } from '../../src/core/drill-house';
 import { DRILL_ITEMS } from '../../src/core/drill-items';
-import { DOWN, LEFT, RIGHT, SPEED, UP, facing, haze, nearestItem, speedFor, step } from '../../src/core/drill-play';
+import { DOWN, LEFT, RIGHT, SPEED, UP, facing, haze, leavingEarly, nearestItem, speedFor, step } from '../../src/core/drill-play';
 
 const bulky = DRILL_ITEMS.filter((item) => item.weight < 0).map((item) => item.id);
 
@@ -45,5 +45,13 @@ describe('E7 the drill rules of movement', () => {
     expect(haze(30, 60).dark).toBeLessThan(haze(60, 60).dark);
     expect(haze(60, 60).dark).toBeLessThan(1);
     expect(haze(999, 60)).toEqual(haze(60, 60));
+  });
+
+  it('lets a full bag leave early from the mat in the last ten seconds only', () => {
+    expect(leavingEarly(10, 9.5, true)).toBe(true);
+    expect(leavingEarly(10, 10, true)).toBe(true);
+    expect(leavingEarly(10, 10.5, true)).toBe(false);
+    expect(leavingEarly(9, 5, true)).toBe(false);
+    expect(leavingEarly(10, 5, false)).toBe(false);
   });
 });

@@ -1,11 +1,44 @@
+import { useState } from 'react';
 import * as copy from '../../core/copy';
-import { ESSENTIAL_COUNT, debriefRows, leftBehind, scoreBreakdown, scoreDrill } from '../../core/drill-score';
+import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
+import { debriefRows, kindOf, leftBehind, scoreBreakdown, scoreDrill } from '../../core/drill-score';
+import Glyph from '../components/Glyph';
+import { ATLAS, SHEET } from './atlas';
 import type { DrillOutcome } from './Game';
 
-const EFFECT = { added: copy.ROW_ADDED, took: copy.ROW_TOOK, nothing: copy.ROW_NOTHING };
+const TILE_SIZE = 40; // css pixels a thing's picture fits inside
 
-/** E7-US3 — the score and why, item by item. Away from the door there is no
- *  score: the bag did not leave the house. */
+/** One thing's own picture from the game, drawn from the sprite sheet. */
+function Sprite({ id }: { id: string }) {
+  const [x, y, w, h] = ATLAS[id];
+  const scale = Math.min(TILE_SIZE / w, TILE_SIZE / h, 3);
+  return (
+    <span
+      className="debrief-sprite"
+      aria-hidden="true"
+      style={{
+        width: w * scale,
+        height: h * scale,
+        backgroundSize: `${SHEET[0] * scale}px ${SHEET[1] * scale}px`,
+        backgroundPosition: `${-x * scale}px ${-y * scale}px`,
+      }}
+    />
+  );
+}
+
+/** The score as a ring filled to the score, green, amber or red. */
+function ScoreRing({ score }: { score: number }) {
+  const band = score >= 80 ? 'good' : score >= 50 ? 'fair' : 'poor';
+  const length = 2 * Math.PI * 52;
+  return (
+    <svg className={`debrief-ring ${band}`} viewBox="0 0 120 120" role="img" aria-label={copy.DEBRIEF_SCORE(score)}>
+      <circle className="track" cx="60" cy="60" r="52" />
+      {score > 0 ? <circle className="fill" cx="60" cy="60" r="52" strokeDasharray={`${(length * score) / 100} ${length}`} /> : null}
+      <text x="60" y="68" textAnchor="middle">{score}</text>
+    </svg>
+  );
+}
+
 type Props = {
   outcome: DrillOutcome;
   /** The highest score of this pack's drills that reached the door, this one included. */
@@ -14,90 +47,115 @@ type Props = {
   onDone: () => void;
 };
 
+/** E7-US3 — the report after the minute, read at a glance: a ring for the
+ *  score, the bag as pictures edged by what each did, a bar of how the points
+ *  add up, and the essentials left behind. Each reason is one tap away rather
+ *  than printed. Away from the door there is no number anywhere. */
 export default function Debrief({ outcome, highest, onAgain, onDone }: Props) {
-  const rows = debriefRows(outcome.packed);
-  const left = leftBehind(outcome.packed);
+  const [chosen, setChosen] = useState<DrillItem | null>(null);
+  const scored = outcome.reachedDoor;
   const score = scoreDrill(outcome.packed);
+  const packed = debriefRows(outcome.packed).map((row) => row.item);
+  const left = leftBehind(outcome.packed);
   const groups = scoreBreakdown(outcome.packed);
-  const raw = groups.reduce((sum, group) => sum + group.points, 0);
+  const gained = groups.filter((group) => group.points > 0).reduce((sum, group) => sum + group.points, 0);
+  const lost = -groups.filter((group) => group.points < 0).reduce((sum, group) => sum + group.points, 0);
+
+  const tile = (item: DrillItem, faded = false) => {
+    const points = copy.SIGNED_POINTS(item.weight);
+    return (
+      <li key={item.id}>
+        <button
+          type="button"
+          className={`debrief-tile kind-${kindOf(item.weight)}${faded ? ' faded' : ''}`}
+          aria-label={scored && !faded ? copy.TILE_LABEL(item.name, points) : item.name}
+          aria-pressed={chosen?.id === item.id}
+          onClick={() => setChosen(chosen?.id === item.id ? null : item)}
+        >
+          <Sprite id={item.id} />
+          {scored && !faded ? <span className="debrief-points figure">{points}</span> : null}
+        </button>
+      </li>
+    );
+  };
+
   return (
     <>
-      <div className="hero">
-        <h1>{outcome.reachedDoor ? copy.DEBRIEF_HEADING : copy.OVER_HEADING}</h1>
-        {outcome.reachedDoor ? (
-          <>
-            <p className="drill-score figure" role="status">{copy.DEBRIEF_SCORE(score)}</p>
-            <p className="muted">{copy.DEBRIEF_LEAD}</p>
-            {highest !== null ? <p className="muted">{copy.HIGHEST_SO_FAR(highest)}</p> : null}
-          </>
+      <section className={`debrief-hero ${scored ? 'scored' : 'over'}`}>
+        {scored ? (
+          <ScoreRing score={score} />
         ) : (
-          <p>{copy.OVER_DETAIL}</p>
+          <span className="debrief-over-mark">
+            <Glyph kind="door" />
+          </span>
         )}
-      </div>
-      {/* The why behind the number: what each kind of thing added or took,
-          adding up to the score. Only when there is a score to explain. */}
-      {outcome.reachedDoor ? (
-        <section className="card drill-breakdown" aria-labelledby="drill-breakdown">
-          <h2 id="drill-breakdown">{copy.BREAKDOWN_HEADING(score)}</h2>
-          <table>
-            <tbody>
-              {groups.map((group) => (
-                <tr key={group.kind}>
-                  <th scope="row">
-                    {copy.BREAKDOWN_GROUPS[group.kind]}
-                    <span className="muted">
-                      {group.kind === 'essential'
-                        ? copy.BREAKDOWN_OF(group.items.length, ESSENTIAL_COUNT)
-                        : copy.BREAKDOWN_COUNT(group.items.length)}
-                    </span>
-                  </th>
-                  <td className={`figure points-${group.kind}`}>{copy.BREAKDOWN_POINTS(group.points)}</td>
-                </tr>
-              ))}
-              <tr className="drill-breakdown-total">
-                <th scope="row">{copy.BREAKDOWN_TOTAL}</th>
-                <td className="figure">{copy.DEBRIEF_SCORE(score)}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p className="muted">{raw < 0 ? copy.BREAKDOWN_FLOOR : copy.BREAKDOWN_TOP}</p>
-        </section>
-      ) : null}
-      {rows.length === 0 ? (
-        <p>{copy.NOTHING_PACKED}</p>
-      ) : (
-        <ul className="list">
-          {rows.map(({ item, effect }) => (
-            <li key={item.id} className="card history-row">
-              <p className="history-date">{item.name}</p>
-              {outcome.reachedDoor ? <p className="muted">{`${EFFECT[effect]}, ${copy.BREAKDOWN_POINTS(item.weight)}`}</p> : null}
-              <p>{item.why}</p>
+        {/* A live region round the heading, so the outcome is read out when the
+            report opens, while the heading stays a heading. */}
+        <div role="status">
+          <h1>{scored ? copy.VERDICT(score) : copy.OVER_HEADING}</h1>
+          {scored ? (
+            highest !== null ? <p className="muted">{copy.HIGHEST_SO_FAR(highest)}</p> : null
+          ) : (
+            <p className="muted">{copy.OVER_DETAIL}</p>
+          )}
+        </div>
+      </section>
+
+      <section className="debrief-block" aria-labelledby="debrief-bag">
+        <h2 id="debrief-bag" className="debrief-label">
+          <Glyph kind="bag" />
+          {copy.IN_YOUR_BAG}
+          <span className="figure">{copy.OF_LIMIT(packed.length, BAG_LIMIT)}</span>
+        </h2>
+        <ul className="debrief-tiles">
+          {packed.map((item) => tile(item))}
+          {Array.from({ length: BAG_LIMIT - packed.length }, (_, i) => (
+            <li key={`empty-${i}`} className="debrief-empty" aria-hidden="true" />
+          ))}
+        </ul>
+        {scored ? (
+          <div className="debrief-bar" aria-hidden="true">
+            <span className="gained" style={{ width: `${Math.min(100, gained)}%` }} />
+            <span className="lost" style={{ width: `${Math.min(100, lost)}%` }} />
+          </div>
+        ) : null}
+        <ul className="debrief-key" aria-hidden="true">
+          {(['essential', 'listed', 'neutral', 'bulky'] as const).map((kind) => (
+            <li key={kind} className={`kind-${kind}`}>
+              {copy.KIND_LABELS[kind]}
             </li>
           ))}
         </ul>
-      )}
-      {/* What stayed behind is half of the lesson: a bag of three good things
-          says nothing about the seven that were never picked up. */}
+      </section>
+
       {left.length > 0 ? (
-        <>
-          <h2>{copy.LEFT_IN_HOUSE}</h2>
-          <ul className="list">
-            {left.map((item) => (
-              <li key={item.id} className="card history-row">
-                <p className="history-date">{item.name}</p>
-                <p>{item.why}</p>
-              </li>
-            ))}
-          </ul>
-        </>
+        <section className="debrief-block" aria-labelledby="debrief-left">
+          <h2 id="debrief-left" className="debrief-label">
+            <Glyph kind="stay" />
+            {copy.LEFT_BEHIND}
+          </h2>
+          <ul className="debrief-tiles">{left.map((item) => tile(item, true))}</ul>
+        </section>
       ) : null}
-      <p className="muted">{copy.DRILL_SOURCE}</p>
+
+      {/* The one reason in view: the thing last tapped, or the hint to tap. */}
+      <p className="debrief-why" aria-live="polite">
+        {chosen ? (
+          <>
+            <b>{chosen.name}</b> {chosen.why}
+          </>
+        ) : (
+          copy.TAP_FOR_WHY
+        )}
+      </p>
+      <p className="muted debrief-source">{copy.DRILL_SOURCE}</p>
+
       <div className="actions">
         <button type="button" className="action main-action" onClick={onDone}>
           {copy.GO_ON_TO_REHEARSAL}
         </button>
         <button type="button" className="action" onClick={onAgain}>
-          {outcome.reachedDoor ? copy.PLAY_AGAIN : copy.TRY_AGAIN}
+          {scored ? copy.PLAY_AGAIN : copy.TRY_AGAIN}
         </button>
       </div>
     </>

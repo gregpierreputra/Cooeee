@@ -35,11 +35,11 @@ export const topTenTotal = (): number =>
     .slice(0, BAG_LIMIT)
     .reduce((sum, item) => sum + item.weight, 0);
 
-/** Up to three essentials (the heaviest weight) that stayed in the house, for
- *  the debrief: what was packed is only half of the lesson. */
+/** Every essential (the heaviest weight) that stayed in the house, for the
+ *  debrief: what was packed is only half of the lesson. */
 export const leftBehind = (packedIds: string[]): DrillItem[] => {
   const heaviest = Math.max(...DRILL_ITEMS.map((item) => item.weight));
-  return DRILL_ITEMS.filter((item) => item.weight === heaviest && !packedIds.includes(item.id)).slice(0, 3);
+  return DRILL_ITEMS.filter((item) => item.weight === heaviest && !packedIds.includes(item.id));
 };
 
 export type ScoreGroup = {
@@ -51,9 +51,11 @@ export type ScoreGroup = {
 
 /** The bag sorted into what counted and how much: the "why" behind the score.
  *  Every group is returned, empty ones too, so the debrief can say "0 of 10". */
+/** Which kind a thing is, from its points: the colour it wears on the debrief. */
+export const kindOf = (weight: number): ScoreGroup['kind'] =>
+  weight >= 10 ? 'essential' : weight > 0 ? 'listed' : weight < 0 ? 'bulky' : 'neutral';
+
 export function scoreBreakdown(packedIds: string[]): ScoreGroup[] {
-  const kindOf = (weight: number): ScoreGroup['kind'] =>
-    weight >= 10 ? 'essential' : weight > 0 ? 'listed' : weight < 0 ? 'bulky' : 'neutral';
   const groups: ScoreGroup[] = (['essential', 'listed', 'neutral', 'bulky'] as const).map((kind) => ({ kind, items: [], points: 0 }));
   for (const { item } of debriefRows(packedIds.slice(0, BAG_LIMIT))) {
     const group = groups.find((candidate) => candidate.kind === kindOf(item.weight))!;

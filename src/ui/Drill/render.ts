@@ -41,6 +41,8 @@ export type Scene = {
   showBag: boolean;
   /** A yellow line round every thing that can be packed. Off in the film. */
   outlines: boolean;
+  /** 0 to 1: how far the wait on the mat has gone towards leaving early. */
+  matHold: number;
   /** The phone asked for less motion: nothing pulses, shakes or drifts. */
   calm: boolean;
 };
@@ -209,6 +211,24 @@ function drawMat(view: View, scene: Scene): void {
   GRID.forEach((row, y) => [...row].forEach((cell, x) => cell === MAT && view.ctx.fillRect(x * TILE, y * TILE, TILE, TILE)));
 }
 
+/** A ring filling round the door mat while a ready person waits on it, so
+ *  they can see the drill is about to end, and why. */
+function drawMatHold(view: View, hold: number): void {
+  const { ctx } = view;
+  const x = MAT_CENTRE.x * TILE;
+  const y = MAT_CENTRE.y * TILE;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+  ctx.beginPath();
+  ctx.arc(x, y, 20, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = '#5be38a';
+  ctx.beginPath();
+  ctx.arc(x, y, 20, -Math.PI / 2, -Math.PI / 2 + Math.min(1, hold) * Math.PI * 2);
+  ctx.stroke();
+}
+
 /** A bobbing arrow over the thing in reach. Drawn over the smoke and the dark,
  *  so what can be packed is never lost in them. */
 function drawNearArrow(view: View, art: Art, scene: Scene, left: number, top: number): void {
@@ -366,6 +386,7 @@ export function drawScene(view: View, art: Art, scene: Scene): void {
   world();
   drawGlow(view, scene.glow, scene.time, scene.calm);
   if (scene.dark > 0) drawMat(view, scene);
+  if (scene.matHold > 0) drawMatHold(view, scene.matHold);
   if (scene.outlines) {
     for (const item of DRILL_ITEMS) {
       if (scene.packed.includes(item.id)) continue;

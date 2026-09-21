@@ -34,8 +34,9 @@ describe('E7 the drill score', () => {
     expect(rows.map((row) => [row.item.id, row.effect])).toEqual([[distraction, 'took'], [neutral, 'nothing']]);
   });
 
-  it('names up to three essentials that stayed in the house', () => {
-    expect(leftBehind([])).toHaveLength(3);
+  it('names every essential that stayed in the house', () => {
+    expect(leftBehind([])).toHaveLength(10);
+    expect(leftBehind(['torch'])).toHaveLength(9);
     expect(leftBehind([]).every((item) => item.weight === 10)).toBe(true);
     expect(leftBehind(ids((w) => w === 10))).toEqual([]);
   });

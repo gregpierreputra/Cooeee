@@ -98,3 +98,6 @@ export const ATLAS: Record<string, Frame> = {
   guitar: [1, 2041, 15, 30],
   football: [1, 2073, 11, 11],
 };
+
+/** The size of the whole sheet, for drawing one sprite as a css background. */
+export const SHEET = [1154, 2086] as const;

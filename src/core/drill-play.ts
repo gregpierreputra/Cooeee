@@ -2,13 +2,23 @@
 // can be tested without one. Positions are in tiles, time in seconds.
 
 import { blocked, REACH } from './drill-house';
-import { DRILL_ITEMS, itemById, type DrillItem } from './drill-items';
+import { BAG_LIMIT, DRILL_ITEMS, itemById, type DrillItem } from './drill-items';
 
 /** Walking pace with an empty bag, in tiles per second. */
 export const SPEED = 6.5;
 /** Each bulky thing carried costs a tenth of the pace, down to this floor. */
 const BULKY_COST = 0.1;
 const SLOWEST = 0.6;
+
+/** The early way out: with a full bag, in the last ten seconds, standing on
+ *  the door mat this long ends the drill at once. A person who is ready is
+ *  never left waiting at the door, unsure what happens next. */
+export const EARLY_EXIT_HOLD = 1.5;
+const EARLY_EXIT_WINDOW = 10;
+
+/** Whether the time on the mat counts towards leaving early. */
+export const leavingEarly = (packedCount: number, secondsLeft: number, onMat: boolean): boolean =>
+  onMat && packedCount >= BAG_LIMIT && secondsLeft <= EARLY_EXIT_WINDOW;
 
 /** Which way the figure looks, in the order the sprite sheet holds them. */
 export const RIGHT = 0;

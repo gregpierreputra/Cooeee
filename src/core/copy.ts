@@ -1270,32 +1270,21 @@ export const IN_ROOM = (room: string) => `In the ${room}`;
 export const SOUND_ON = 'Sound on';
 export const SOUND_OFF = 'Sound off';
 export const STICK_LABEL = 'Move. Drag here, or use the arrow keys.';
-export const DEBRIEF_HEADING = 'You were at the door';
-export const DEBRIEF_LEAD = 'How ready your bag was, from what you packed.';
 export const DEBRIEF_SCORE = (score: number) => `${score} out of 100`;
 export const OVER_HEADING = 'The minute ended away from the door';
-export const OVER_DETAIL =
-  'Nothing in the bag counts if you are still inside. Try again, and head for the door before the time ends.';
-export const ROW_ADDED = 'Added to the score';
-export const ROW_TOOK = 'Took from the score';
-export const ROW_NOTHING = 'Changed nothing';
-export const NOTHING_PACKED = 'Nothing was packed.';
+export const OVER_DETAIL = 'Nothing counts if you are still inside.';
 export const DRILL_SOURCE =
   'The points follow what the Country Fire Authority says to take with you, from its Fire Ready Kit.';
-export const LEFT_IN_HOUSE = 'Left in the house';
-export const BREAKDOWN_HEADING = (score: number) => `Why your bag scored ${score}`;
-export const BREAKDOWN_GROUPS = {
-  essential: 'Essentials the CFA says to take first',
-  listed: 'Also on the CFA list',
-  neutral: 'Neither help nor harm',
-  bulky: 'Bulky things that cost time and room',
-};
-export const BREAKDOWN_COUNT = (count: number) => (count === 1 ? '1 thing' : `${count} things`);
-export const BREAKDOWN_POINTS = (points: number) => (points > 0 ? `plus ${points}` : points < 0 ? `minus ${-points}` : 'no points');
-export const BREAKDOWN_OF = (count: number, total: number) => `${count} of ${total}`;
-export const BREAKDOWN_TOTAL = 'Your bag';
-export const BREAKDOWN_FLOOR = 'The score never goes below nought.';
-export const BREAKDOWN_TOP = 'A bag of the ten essentials scores 100.';
+/** The debrief's word for a score, beside the ring. */
+export const VERDICT = (score: number) => (score >= 80 ? 'Well packed' : score >= 50 ? 'Partly packed' : 'Poorly packed');
+/** The four kinds of thing, as the debrief's colour key names them. */
+export const KIND_LABELS = { essential: 'Essential', listed: 'Useful', neutral: 'No effect', bulky: 'Cost you' };
+export const IN_YOUR_BAG = 'In your bag';
+export const LEFT_BEHIND = 'Left behind';
+export const OF_LIMIT = (count: number, limit: number) => `${count} of ${limit}`;
+export const TAP_FOR_WHY = 'Tap a thing to see why.';
+export const SIGNED_POINTS = (points: number) => (points > 0 ? `+${points}` : points < 0 ? `\u2212${-points}` : '0');
+export const TILE_LABEL = (name: string, points: string) => `${name}, ${points}`;
 export const HIGHEST_SO_FAR = (score: number) => `Your highest so far is ${score} out of 100.`;
 export const PLAY_AGAIN = 'Play again';
 export const GO_ON_TO_REHEARSAL = 'Go on to the rehearsal';

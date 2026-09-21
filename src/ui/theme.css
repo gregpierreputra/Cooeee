@@ -2824,45 +2824,196 @@ body.drill-open .banner {
   cursor: default;
 }
 
-.drill-score {
-  font-size: 3.5rem;
+/* The report: read by shape and colour first, words second. The four kinds
+   of thing each keep one colour everywhere on it. */
+.drill-page {
+  --kind-essential: #5be38a;
+  --kind-listed: #3fc8d8;
+  --kind-neutral: #8a94a6;
+  --kind-bulky: #ff5a4f;
+}
+.debrief-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin: 0.5rem 0 1.5rem;
+}
+.debrief-hero h1 {
+  margin: 0 0 0.25rem;
+}
+.debrief-hero p {
+  margin: 0;
+}
+.debrief-ring {
+  flex: none;
+  width: 7rem;
+  height: 7rem;
+}
+.debrief-ring circle {
+  fill: none;
+  stroke-width: 10;
+}
+.debrief-ring .track {
+  stroke: var(--surface-2);
+}
+.debrief-ring .fill {
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+  animation: debrief-ring-in 1s ease-out both;
+}
+.debrief-ring.good .fill { stroke: var(--kind-essential); }
+.debrief-ring.fair .fill { stroke: var(--blacksky-accent); }
+.debrief-ring.poor .fill { stroke: var(--kind-bulky); }
+.debrief-ring text {
+  fill: var(--ink);
+  font-size: 34px;
   font-weight: var(--w-heavy);
-  letter-spacing: var(--track-tight);
-  line-height: 1;
+  letter-spacing: -0.02em;
+}
+@keyframes debrief-ring-in {
+  from { stroke-dasharray: 0 400; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .debrief-ring .fill { animation: none; }
+}
+.debrief-over-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  background: rgba(255, 90, 79, 0.16);
+  border: 2px solid var(--kind-bulky);
+  color: var(--kind-bulky);
+}
+.debrief-over-mark .glyph {
+  background: none;
+  color: inherit;
+}
+.debrief-over-mark svg {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
-/* The why behind the score: one row per kind of thing, then the total. */
-.drill-breakdown h2 {
-  margin-top: 0;
+.debrief-block {
+  margin-bottom: 1.25rem;
 }
-.drill-breakdown table {
+.debrief-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  font-size: var(--step-s);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.debrief-label .figure {
+  margin-left: auto;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.debrief-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.debrief-tile,
+.debrief-empty {
+  position: relative;
+  display: grid;
+  place-items: center;
   width: 100%;
-  border-collapse: collapse;
+  aspect-ratio: 1;
+  min-height: 44px;
+  border-radius: 0.75rem;
 }
-.drill-breakdown th,
-.drill-breakdown td {
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
+.debrief-tile {
+  padding: 0;
+  border: 2px solid var(--kind, var(--line));
+  background: color-mix(in srgb, var(--kind, transparent) 14%, var(--surface));
+  cursor: pointer;
 }
-.drill-breakdown th {
-  text-align: left;
-  font-weight: var(--w-bold);
+.debrief-tile[aria-pressed='true'] {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
 }
-.drill-breakdown th .muted {
+.debrief-tile.faded {
+  border-style: dashed;
+  background: var(--surface);
+}
+.debrief-tile.faded .debrief-sprite {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.debrief-empty {
+  border: 2px dashed var(--line);
+  opacity: 0.6;
+}
+.kind-essential { --kind: var(--kind-essential); }
+.kind-listed { --kind: var(--kind-listed); }
+.kind-neutral { --kind: var(--kind-neutral); }
+.kind-bulky { --kind: var(--kind-bulky); }
+.debrief-sprite {
   display: block;
-  font-weight: normal;
+  background-image: url('/drill/sprites.png');
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
 }
-.drill-breakdown td {
-  text-align: right;
-  white-space: nowrap;
-  padding-left: 1rem;
-}
-.drill-breakdown-total th,
-.drill-breakdown-total td {
-  border-bottom: 0;
-  font-size: var(--step-1);
+.debrief-points {
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.15rem;
+  font-size: 0.75rem;
   font-weight: var(--w-heavy);
+  color: var(--kind);
+}
+.debrief-bar {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.9rem 0 0.6rem;
+}
+.debrief-bar span {
+  display: block;
+  height: 0.5rem;
+  min-width: 0;
+  border-radius: 1rem;
+}
+.debrief-bar .gained { background: var(--kind-essential); }
+.debrief-bar .lost { background: var(--kind-bulky); }
+.debrief-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.debrief-key li::before {
+  content: '';
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: var(--kind);
+}
+.debrief-why {
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.debrief-source {
+  font-size: var(--step-s);
 }
 
 /* The way into the drill from the Rehearse screens: amber and warm where

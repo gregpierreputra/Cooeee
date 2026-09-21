@@ -395,6 +395,7 @@ export function insideScene(t: number, calm: boolean): Scene {
     doorArrow: false,
     showBag: false,
     outlines: false,
+    matHold: 0,
     calm,
   };
 }

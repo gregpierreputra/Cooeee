@@ -278,6 +278,7 @@ const baked = await page.evaluate(
 
     return {
       atlas,
+      sheet: [width, height],
       house: house.canvas.toDataURL('image/png'),
       sprites: sprites.canvas.toDataURL('image/png'),
       preview: preview.canvas.toDataURL('image/png'),
@@ -311,6 +312,9 @@ export type Frame = readonly [number, number, number, number, number?];
 export const ATLAS: Record<string, Frame> = {
 ${lines.join('\n')}
 };
+
+/** The size of the whole sheet, for drawing one sprite as a css background. */
+export const SHEET = [${baked.sheet.join(', ')}] as const;
 `,
 );
 console.log('src/ui/Drill/atlas.ts', lines.length, 'sprites');

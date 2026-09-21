@@ -30,7 +30,9 @@ test.describe('E7 the drill in front of the rehearsal', () => {
     await expect(page.locator('main')).toContainText('Bag 0 of 10');
     await expect(page.getByRole('heading', { name: 'The minute ended away from the door' })).toBeVisible();
     await expect(page.locator('main')).not.toContainText('out of 100');
-    await expect(page.getByRole('heading', { name: 'Left in the house' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Left behind' })).toBeVisible();
+    await page.getByRole('button', { name: 'torch' }).click();
+    await expect(page.locator('.debrief-why')).toContainText('Smoke makes midday dark.');
     await page.getByRole('button', { name: 'Try again' }).click();
     await expect(page.locator('main')).toContainText('Bag 0 of 10');
   });
