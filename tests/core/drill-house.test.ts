@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLS, MAT_CENTRE, REACH, ROWS, SPAWN, blocked, onDoorMat, roomAt } from '../../src/core/drill-house';
+import { COLS, MAT_CENTRE, REACH, ROWS, SPAWN, blocked, onDoorMat, restingOrder, roomAt } from '../../src/core/drill-house';
 import { DRILL_ITEMS } from '../../src/core/drill-items';
 import { GRID, ROOM_OF } from '../../src/core/drill-layout';
 
@@ -28,7 +28,7 @@ describe('E7 the drill house', () => {
     expect(blocked(0.5, 0.5)).toBe(true);
     expect(blocked(-1, 5)).toBe(true);
     expect(blocked(5, ROWS + 1)).toBe(true);
-    expect(blocked(20.5, 7.5)).toBe(true); // the sofa
+    expect(blocked(20.5, 6.5)).toBe(true); // the sofa
     expect(roomAt(0.5, 0.5)).toBeNull();
   });
 
@@ -49,5 +49,12 @@ describe('E7 the drill house', () => {
       });
       expect(inReach, item.id).toBe(true);
     }
+  });
+
+  it('draws a thing on furniture just after the furniture, and stops at a wall', () => {
+    expect(restingOrder(21.5, 20.5)).toBe(20.5); // open floor sorts where it stands
+    expect(restingOrder(2.6, 17.9)).toBeCloseTo(19.01); // a pillow on the two row bed
+    expect(restingOrder(25.6, 8.2)).toBeCloseTo(9.01); // photos on a sideboard above a wall
+    expect(restingOrder(0.5, 0.5)).toBeCloseTo(1.01); // inside a wall, with wall below
   });
 });

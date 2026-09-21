@@ -54,9 +54,10 @@ export function nearestItem(x: number, y: number, packed: string[]): DrillItem |
   return nearest;
 }
 
-/** How thick the smoke and the dark are, 0 to 1, as the minute runs. Smoke
- *  arrives before flame and the power goes first, so both only ever grow. */
+/** How thick the smoke and the dark are, 0 to 1, as the minute runs. The
+ *  power is already out, so the dark starts deep and only grows, and smoke
+ *  arrives before flame. Neither is ever total: the game stays playable. */
 export function haze(elapsed: number, seconds: number) {
   const progress = Math.min(1, Math.max(0, elapsed / seconds));
-  return { smoke: 0.35 * progress, dark: 0.2 + 0.35 * progress };
+  return { smoke: 0.08 + 0.22 * progress, dark: 0.62 + 0.12 * progress };
 }

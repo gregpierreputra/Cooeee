@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DRILL_FACTS } from '../../src/core/copy';
 import { BAG_LIMIT, DRILL_ITEMS } from '../../src/core/drill-items';
 import { debriefRows, leftBehind, scoreBreakdown, scoreDrill, topTenTotal } from '../../src/core/drill-score';
 
@@ -46,5 +47,9 @@ describe('E7 the drill score', () => {
       ['essential', 1, 10], ['listed', 1, 8], ['neutral', 1, 0], ['bulky', 1, -10],
     ]);
     expect(groups.reduce((sum, group) => sum + group.points, 0)).toBe(scoreDrill(bag));
+  });
+
+  it('highlights only phrases that are in the fact, word for word', () => {
+    for (const fact of DRILL_FACTS) for (const key of fact.key) expect(fact.text, key).toContain(key);
   });
 });

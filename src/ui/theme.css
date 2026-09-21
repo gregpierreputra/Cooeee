@@ -2694,16 +2694,28 @@ body.drill-open .banner {
   text-transform: uppercase;
 }
 
-/* The film's words: one line at a time, low on the picture, large and quiet. */
+/* The film's words: one line at a time, low on the picture, on a dark fade
+   that rises from the bottom so they read over any flame. */
 .drill-film {
   position: absolute;
-  left: calc(env(safe-area-inset-left) + 1.5rem);
-  right: calc(env(safe-area-inset-right) + 1.5rem);
-  bottom: calc(env(safe-area-inset-bottom) + 2rem);
+  inset: 0;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
+  padding: 0 calc(env(safe-area-inset-right) + 1.5rem) calc(env(safe-area-inset-bottom) + 2.25rem)
+    calc(env(safe-area-inset-left) + 1.5rem);
+  pointer-events: none;
+}
+.drill-film > * {
+  position: relative;
+  pointer-events: auto;
+}
+.drill-film > .drill-scrim {
+  position: absolute;
+  inset: 45% 0 0 0;
+  background: linear-gradient(to bottom, rgba(4, 3, 6, 0), rgba(4, 3, 6, 0.72) 38%, rgba(4, 3, 6, 0.94));
+  pointer-events: none;
 }
 .drill-fact {
   max-width: 30rem;
@@ -2715,14 +2727,21 @@ body.drill-open .banner {
   font-weight: var(--w-heavy);
   letter-spacing: var(--track-tight);
   line-height: 1.12;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
+  color: #ffffff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+.drill-fact-figure {
+  color: #ffb54a;
+  font-weight: inherit;
+  white-space: nowrap; /* a date or a distance is never split across lines */
 }
 .drill-fact-source {
-  margin: 0.6rem 0 0;
-  font-size: var(--step-s);
-  letter-spacing: 0.04em;
-  opacity: 0.78;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  font-weight: var(--w-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
 }
 @keyframes drill-fact-in {
   from {
@@ -2844,6 +2863,60 @@ body.drill-open .banner {
   border-bottom: 0;
   font-size: var(--step-1);
   font-weight: var(--w-heavy);
+}
+
+/* The way into the drill from the Rehearse screens: amber and warm where
+   every other row there is neutral, with a flame and a way on, so it reads as
+   a different thing to do, not one more choice. */
+.drill-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  min-height: 72px;
+  margin: 0.25rem 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--blacksky-accent);
+  border-radius: var(--r-card);
+  background: linear-gradient(135deg, rgba(255, 150, 40, 0.22), rgba(255, 90, 30, 0.08));
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.drill-tile:hover {
+  background: linear-gradient(135deg, rgba(255, 150, 40, 0.3), rgba(255, 90, 30, 0.12));
+}
+.drill-tile .glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--blacksky-accent);
+  color: #1a0d04;
+}
+.drill-tile-text {
+  display: grid;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drill-tile-title {
+  font-weight: var(--w-heavy);
+  font-size: var(--step-1);
+}
+.drill-tile-detail {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.drill-tile-go {
+  flex: none;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--blacksky-accent);
 }
 
 /* Read by a screen reader, drawn nowhere. */

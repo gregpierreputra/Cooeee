@@ -11,7 +11,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { DRILL_ITEMS } from '../src/core/drill-items.ts';
-import { FURNITURE, GRID, ROOM_OF, TILE } from '../src/core/drill-layout.ts';
+import { FURNITURE, GRID, ROOM_OF, TILE, WALL_LIFT } from '../src/core/drill-layout.ts';
 
 const pack = new URL('../game-assets/', import.meta.url);
 if (!existsSync(pack)) throw new Error('game-assets/ is missing. The pack is bought from limezu.itch.io.');
@@ -56,8 +56,8 @@ const SOURCES = {
   window: ['generic', 131, 695, 25, 20],
   curtains: ['generic', 87, 727, 35, 27],
   landscape: ['generic', 5, 218, 21, 13],
-  frameA: ['living', 2, 426, 13, 15],
-  frameB: ['living', 18, 426, 13, 15],
+  frameA: ['living', 2, 490, 13, 15],
+  frameB: ['living', 2, 522, 13, 15],
   frameC: ['living', 34, 426, 13, 15],
   worldMap: ['living', 160, 361, 32, 19],
   hangingPlant: ['bathroom', 0, 22, 16, 18],
@@ -71,8 +71,7 @@ const SOURCES = {
   toyCar: ['bedroom', 99, 1205, 9, 7],
   tvUnit: ['living', 80, 245, 32, 21],
   table: ['basement', 20, 8, 24, 23],
-  sofa: ['basement', 97, 32, 31, 26],
-  cushion: ['living', 201, 482, 13, 13],
+  sofa: ['basement', 193, 182, 47, 20],
   armchair: ['basement', 43, 532, 19, 26],
   bookshelf: ['classroom', 131, 315, 25, 30],
   fern: ['living', 192, 8, 16, 30],
@@ -90,8 +89,8 @@ const SOURCES = {
   sink: ['kitchen', 133, 113, 24, 14],
   stove: ['kitchen', 128, 178, 16, 28],
   dining: ['kitchen', 57, 240, 30, 41],
-  chair: ['kitchen', 65, 209, 13, 21],
-  chairLeft: ['kitchen', 81, 209, 13, 21],
+  chair: ['kitchen', 66, 177, 13, 21],
+  chairLeft: ['kitchen', 65, 209, 13, 21],
   washer: ['bathroom', 198, 12, 20, 28],
   shelf: ['bathroom', 194, 151, 28, 33],
   washing: ['bathroom', 227, 53, 27, 26],
@@ -100,9 +99,7 @@ const SOURCES = {
   towels: ['bathroom', 226, 155, 28, 29],
   tub: ['bathroom', 99, 195, 25, 37],
   bench: ['fishing', 33, 180, 46, 24],
-  hallBench: ['generic', 1, 254, 30, 18],
   rods: ['fishing', 152, 204, 32, 30],
-  esky: ['fishing', 48, 25, 16, 14],
   pingPong: ['basement', 7, 195, 33, 52],
   boxes: ['hospital', 32, 147, 15, 25],
   bed: ['generic', 124, 0, 40, 32],
@@ -131,14 +128,14 @@ const SOURCES = {
   toolbox: ['fishing', 1, 193, 30, 15],
   medicines: ['hospital', 132, 496, 11, 11],
   overnight: ['clothing', 225, 209, 14, 14],
-  pillow: ['bedroom', 0, 800, 16, 16],
+  pillow: ['living', 233, 482, 13, 13],
   clothes: ['clothing', 98, 253, 13, 16],
   firstaid: ['jail', 225, 73, 14, 13],
   masks: ['bathroom', 51, 2, 11, 8],
   papers: ['hospital', 48, 41, 16, 12],
   laptop: ['jail', 144, 231, 15, 12],
   memorystick: ['hospital', 185, 501, 11, 10],
-  books: ['classroom', 194, 246, 18, 22],
+  books: ['classroom', 194, 246, 13, 11],
   cash: ['clothing', 195, 211, 10, 6],
   charger: ['generic', 167, 665, 16, 12],
   guitar: ['music', 112, 45, 15, 30],
@@ -173,7 +170,7 @@ const images = Object.fromEntries(
 const browser = await chromium.launch();
 const page = await browser.newPage();
 const baked = await page.evaluate(
-  async ({ images, SOURCES, STYLES, GRID, ROOM_OF, FURNITURE, ITEMS, TILE }) => {
+  async ({ images, SOURCES, STYLES, GRID, ROOM_OF, FURNITURE, ITEMS, TILE, WALL_LIFT }) => {
     const sheets = {};
     for (const [key, data] of Object.entries(images)) {
       sheets[key] = new Image();
@@ -190,15 +187,17 @@ const baked = await page.evaluate(
     };
 
     // ── the sprite sheet: one row per sprite, packed top to bottom ──
-    const width = Math.max(...Object.values(SOURCES).map(([, , , w, , frames = 1]) => w * frames));
-    const height = Object.values(SOURCES).reduce((sum, [, , , , h]) => sum + h, 0);
+    // Two clear pixels round every row, so the game's one pixel outline of
+    // one sprite never picks up the edge of the next.
+    const width = Math.max(...Object.values(SOURCES).map(([, , , w, , frames = 1]) => w * frames)) + 2;
+    const height = Object.values(SOURCES).reduce((sum, [, , , , h]) => sum + h + 2, 1);
     const sprites = canvasOf(width, height);
     const atlas = {};
-    let top = 0;
+    let top = 1;
     for (const [key, [sheet, x, y, w, h, frames = 1]] of Object.entries(SOURCES)) {
-      sprites.ctx.drawImage(sheets[sheet], x, y, w * frames, h, 0, top, w * frames, h);
-      atlas[key] = frames > 1 ? [0, top, w, h, frames] : [0, top, w, h];
-      top += h;
+      sprites.ctx.drawImage(sheets[sheet], x, y, w * frames, h, 1, top, w * frames, h);
+      atlas[key] = frames > 1 ? [1, top, w, h, frames] : [1, top, w, h];
+      top += h + 2;
     }
 
     // ── the house: floors, wall faces, wall tops, then the flat rugs ──
@@ -263,7 +262,7 @@ const baked = await page.evaluate(
       ctx.drawImage(sprites.canvas, x, y, w, h, Math.round(centreX - w / 2), Math.round(bottomY - h), w, h);
     };
     const drawPiece = (ctx, piece) =>
-      place(ctx, piece.sprite, (piece.x + piece.w / 2) * TILE, (piece.y + piece.h) * TILE);
+      place(ctx, piece.sprite, (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0), (piece.y + piece.h) * TILE - (piece.wall ? WALL_LIFT : 0));
     for (const piece of FURNITURE) if (piece.flat) drawPiece(house.ctx, piece);
 
     // ── the preview: the house as the game will compose it ──
@@ -284,7 +283,7 @@ const baked = await page.evaluate(
       preview: preview.canvas.toDataURL('image/png'),
     };
   },
-  { images, SOURCES, STYLES, GRID, ROOM_OF, FURNITURE, ITEMS: DRILL_ITEMS, TILE },
+  { images, SOURCES, STYLES, GRID, ROOM_OF, FURNITURE, ITEMS: DRILL_ITEMS, TILE, WALL_LIFT },
 );
 await browser.close();
 

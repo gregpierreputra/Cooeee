@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import Head from './Head';
+import DrillTile from '../Drill/DrillTile';
 import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
 
 /** E5-US1-AC1 — the user says what the rehearsal is run without.
@@ -21,13 +22,17 @@ import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-con
 export default function Condition({
   packId,
   onChoose,
+  onDrill,
 }: {
   packId: string;
   onChoose: (condition: RehearsalCondition) => void;
+  /** Play the drill again, before choosing. */
+  onDrill: () => void;
 }) {
   return (
     <main className="page rehearsal-condition">
       <Head />
+      <DrillTile onPlay={onDrill} />
       <h2>{copy.CHOOSE_CONDITION_HEADING}</h2>
 
       <ul className="list condition-list">

@@ -8,7 +8,7 @@ export type GlyphKind =
   | Choice
   | 'map' | 'layer' | 'place' | 'note'
   | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate'
-  | 'rehearse' | 'go' | 'found';
+  | 'rehearse' | 'go' | 'found' | 'drill';
 
 const GLYPH_PATHS: Record<GlyphKind, string> = {
   stay: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
@@ -34,6 +34,7 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   rehearse: 'M4 12a8 8 0 1 1 2.3 5.7M4 18v-4h4M12 8v4l2.5 2.5',
   // Going: an arrow leaving a starting point.
   go: 'M5 12h13M13 6l6 6-6 6M5 7v10',
+  drill: 'M12 21c-3.9 0-6.5-2.7-6.5-6.2 0-3.3 2.4-5.4 3.8-8.3.5 2 1.6 3.2 2.9 3.8.3-2.7 1.4-4.8 3.3-6.3.2 3.3 3 5.5 3 9.2 0 4.3-2.6 7.8-6.5 7.8zM12 21c-1.7 0-3-1.3-3-3 0-1.9 1.6-2.8 2.4-4.4.9 1.1 3.6 2.2 3.6 4.5 0 1.6-1.2 2.9-3 2.9z',
   // What was found: a magnifier.
   found: 'M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13M15.5 15.5 20 20',
   calls: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z',

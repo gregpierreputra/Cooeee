@@ -45,4 +45,11 @@ test.describe('E7 the drill in front of the rehearsal', () => {
     await page.getByRole('button', { name: /Show Drills/ }).click();
     await expect(page.locator('main')).toContainText('Not yet drilled.');
   });
+
+  test('the Rehearse screen offers the drill again at any time', async ({ page }) => {
+    await page.goto(`${HARNESS}/rehearse?mode=rehearsable`);
+    await expect(page.getByRole('heading', { name: 'What are we rehearsing without?' })).toBeVisible();
+    await page.getByRole('button', { name: /Play the drill/ }).click();
+    await expect(page.getByRole('heading', { name: 'One minute to leave' })).toBeVisible();
+  });
 });

@@ -5,8 +5,8 @@
 // whole number so every pixel of the art stays square.
 
 import { BAG_LIMIT, DRILL_ITEMS, itemById, type DrillItem } from '../../core/drill-items';
-import { MAT_CENTRE } from '../../core/drill-house';
-import { FURNITURE, GRID, MAT, TILE } from '../../core/drill-layout';
+import { MAT_CENTRE, restingOrder } from '../../core/drill-house';
+import { FURNITURE, GRID, MAT, TILE, WALL_LIFT } from '../../core/drill-layout';
 import { ATLAS } from './atlas';
 
 /** The two baked pictures, and a copy of the sprite sheet with every pixel
@@ -74,16 +74,19 @@ const loadImage = (name: string): Promise<HTMLImageElement> =>
 
 export const loadArt = async (): Promise<Art> => {
   const [house, sprites] = await Promise.all([loadImage('house'), loadImage('sprites')]);
+  // The outline sheet: every sprite's shape grown by one pixel each way, less
+  // the shape itself, in yellow. What is left is a one pixel rim.
   const outline = document.createElement('canvas');
   outline.width = sprites.width;
   outline.height = sprites.height;
   const ctx = outline.getContext('2d');
   if (!ctx) throw new Error('no 2d canvas');
-  ctx.drawImage(sprites, 0, 0);
-  // Keep each sprite's shape and replace its colour.
+  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(sprites, dx, dy);
   ctx.globalCompositeOperation = 'source-in';
   ctx.fillStyle = '#ffd34d';
   ctx.fillRect(0, 0, outline.width, outline.height);
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.drawImage(sprites, 0, 0);
   return { house, sprites, outline };
 };
 
@@ -115,11 +118,10 @@ export function drawSprite(view: View, art: Art, key: string, x: number, y: numb
   );
 }
 
-/** A one pixel yellow line round a thing that can be packed: its yellow shape
- *  drawn a pixel up, down, left and right, under the thing itself. */
+/** A one pixel yellow line round a thing that can be packed. */
 function drawOutline(view: View, art: Art, key: string, x: number, y: number, strength: number): void {
   view.ctx.globalAlpha = strength;
-  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) drawSprite(view, art, key, x + dx, y + dy, 0, 0, art.outline);
+  drawSprite(view, art, key, x, y, 0, 0, art.outline);
   view.ctx.globalAlpha = 1;
 }
 
@@ -142,12 +144,6 @@ function drawFigure(view: View, art: Art, figure: Figure): void {
 }
 
 function drawItem(view: View, art: Art, item: DrillItem, scene: Scene): void {
-  // Every thing that can be packed is outlined, and the one in reach glows.
-  if (scene.outlines) {
-    const inReach = scene.near?.id === item.id;
-    const glow = inReach && !scene.calm ? 0.8 + 0.2 * Math.sin(scene.time * 8) : inReach ? 1 : 0.85;
-    drawOutline(view, art, item.id, item.x * TILE, item.y * TILE, glow);
-  }
   if (item.id !== 'television') {
     drawSprite(view, art, item.id, item.x * TILE, item.y * TILE);
     return;
@@ -168,17 +164,15 @@ function drawStanding(view: View, art: Art, scene: Scene): void {
     const frame = piece.sprite === 'door' ? Math.round(scene.door * 4) : 0;
     things.push({
       order: piece.y + piece.h,
-      draw: () => drawSprite(view, art, piece.sprite, (piece.x + piece.w / 2) * TILE, (piece.y + piece.h) * TILE, frame),
+      draw: () => drawSprite(view, art, piece.sprite, (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0), (piece.y + piece.h) * TILE - (piece.wall ? WALL_LIFT : 0), frame),
     });
   }
   for (const item of DRILL_ITEMS) {
     if (scene.packed.includes(item.id)) continue;
-    // A thing sorts one tile lower than it stands, so it shows on top of the
-    // bench it sits on, yet still behind a person standing in front of it.
-    things.push({ order: item.y + 1, draw: () => drawItem(view, art, item, scene) });
+    things.push({ order: restingOrder(item.x, item.y), draw: () => drawItem(view, art, item, scene) });
     if (item.id === 'pet') {
       const frame = scene.calm ? 0 : Math.floor(scene.time * 6) % (ATLAS.cat[4] ?? 1);
-      things.push({ order: item.y + 1, draw: () => drawSprite(view, art, 'cat', (item.x + 1.2) * TILE, item.y * TILE, frame) });
+      things.push({ order: item.y, draw: () => drawSprite(view, art, 'cat', (item.x + 1.2) * TILE, item.y * TILE, frame) });
     }
   }
   const figure = scene.figure;
@@ -187,23 +181,24 @@ function drawStanding(view: View, art: Art, scene: Scene): void {
   for (const thing of things) thing.draw();
 }
 
-/** Orange at every window and spilling onto the floor under it. */
+/** Fire light at every window, pulsing, and spilling onto the floor under
+ *  it. Drawn after the dark, so it is the brightest thing in a dark room. */
 function drawGlow(view: View, glow: number, time: number, calm: boolean): void {
   if (glow <= 0) return;
   const { ctx } = view;
-  const flicker = calm ? 1 : 0.85 + 0.15 * Math.sin(time * 9);
   ctx.globalCompositeOperation = 'lighter';
-  for (const piece of WINDOWS) {
+  WINDOWS.forEach((piece, i) => {
+    const flicker = calm ? 0.85 : 0.7 + 0.3 * Math.sin(time * 9 + i) * Math.sin(time * 3.7 + i * 2);
     const x = (piece.x + piece.w / 2) * TILE;
-    const y = (piece.y + piece.h) * TILE;
-    ctx.fillStyle = `rgba(255, 110, 20, ${0.55 * glow * flicker})`;
+    const y = (piece.y + piece.h) * TILE - WALL_LIFT;
+    ctx.fillStyle = `rgba(255, 110, 20, ${0.6 * glow * flicker})`;
     ctx.fillRect(x - 11, y - 18, 22, 16);
-    const spill = ctx.createRadialGradient(x, y, 4, x, y, 56);
-    spill.addColorStop(0, `rgba(255, 120, 30, ${0.4 * glow * flicker})`);
+    const spill = ctx.createRadialGradient(x, y, 4, x, y, 64);
+    spill.addColorStop(0, `rgba(255, 120, 30, ${0.5 * glow * flicker})`);
     spill.addColorStop(1, 'rgba(255, 120, 30, 0)');
     ctx.fillStyle = spill;
-    ctx.fillRect(x - 56, y, 112, 56);
-  }
+    ctx.fillRect(x - 64, y - 8, 128, 72);
+  });
   ctx.globalCompositeOperation = 'source-over';
 }
 
@@ -223,29 +218,39 @@ function drawNearArrow(view: View, art: Art, scene: Scene, left: number, top: nu
   drawSprite(view, art, 'arrow', scene.near.x * TILE - left, itemTop - top - 2 + bob);
 }
 
-/** Smoke over the whole picture, then the dark, with a pool of light round a
- *  person who packed the torch. */
+/** Smoke over the whole picture and rolling under the ceiling, then the
+ *  dark, with a pool of sight round the person: wider for one carrying the
+ *  torch. The last seconds redden the edges. */
 function drawHaze(view: View, scene: Scene, figureX: number, figureY: number): void {
   const { ctx, width, height } = view;
+  const drift = scene.calm ? 0 : scene.time;
   if (scene.smoke > 0) {
-    ctx.fillStyle = `rgba(120, 104, 96, ${scene.smoke})`;
+    ctx.fillStyle = `rgba(96, 76, 70, ${scene.smoke * 0.6})`;
     ctx.fillRect(0, 0, width, height);
-    for (let i = 0; i < 4; i++) {
-      const drift = scene.calm ? 0 : scene.time * (5 + i * 2);
-      const x = ((i * 67 + drift) % (width + 120)) - 60;
-      const y = height * (0.15 + 0.22 * i) + (scene.calm ? 0 : Math.sin(scene.time * 0.6 + i) * 6);
-      const wisp = ctx.createRadialGradient(x, y, 0, x, y, 60);
-      wisp.addColorStop(0, `rgba(200, 190, 180, ${scene.smoke * 0.8})`);
-      wisp.addColorStop(1, 'rgba(200, 190, 180, 0)');
+    const ceiling = ctx.createLinearGradient(0, 0, 0, height * 0.45);
+    ceiling.addColorStop(0, `rgba(58, 46, 46, ${0.3 + scene.smoke})`);
+    ceiling.addColorStop(1, 'rgba(58, 46, 46, 0)');
+    ctx.fillStyle = ceiling;
+    ctx.fillRect(0, 0, width, height * 0.45);
+    for (let i = 0; i < 7; i++) {
+      const x = ((i * 53 + drift * (6 + i)) % (width + 120)) - 60;
+      const y = height * (0.05 + 0.05 * (i % 3)) + Math.sin(drift * 0.5 + i) * 6;
+      const wisp = ctx.createRadialGradient(x, y, 0, x, y, 54);
+      wisp.addColorStop(0, `rgba(84, 70, 68, ${0.25 + scene.smoke})`);
+      wisp.addColorStop(1, 'rgba(84, 70, 68, 0)');
       ctx.fillStyle = wisp;
-      ctx.fillRect(x - 60, y - 60, 120, 120);
+      ctx.fillRect(x - 54, y - 54, 108, 108);
     }
   }
   if (scene.dark > 0) {
-    const dark = `rgba(6, 8, 20, ${scene.dark})`;
-    if (scene.figure && scene.packed.includes('torch')) {
-      const pool = ctx.createRadialGradient(figureX, figureY, 14, figureX, figureY, 64);
-      pool.addColorStop(0, 'rgba(6, 8, 20, 0)');
+    const torch = scene.packed.includes('torch');
+    const flicker = scene.calm ? 1 : 1 + 0.04 * Math.sin(scene.time * 11);
+    const inner = (torch ? 34 : 16) * flicker;
+    const outer = (torch ? 100 : 58) * flicker;
+    const dark = `rgba(4, 5, 14, ${scene.dark})`;
+    if (scene.figure) {
+      const pool = ctx.createRadialGradient(figureX, figureY, inner, figureX, figureY, outer);
+      pool.addColorStop(0, 'rgba(4, 5, 14, 0)');
       pool.addColorStop(1, dark);
       ctx.fillStyle = pool;
     } else {
@@ -253,14 +258,39 @@ function drawHaze(view: View, scene: Scene, figureX: number, figureY: number): v
     }
     ctx.fillRect(0, 0, width, height);
   }
-  if (scene.late) {
-    const beat = scene.calm ? 0.4 : 0.35 + 0.15 * Math.sin(scene.time * 7);
-    const red = ctx.createRadialGradient(width / 2, height / 2, height * 0.3, width / 2, height / 2, height * 0.75);
-    red.addColorStop(0, 'rgba(200, 30, 20, 0)');
-    red.addColorStop(1, `rgba(200, 30, 20, ${beat})`);
-    ctx.fillStyle = red;
-    ctx.fillRect(0, 0, width, height);
+}
+
+/** Embers that got in, drifting across the room with short glowing trails. */
+function drawEmbers(view: View, scene: Scene): void {
+  const { ctx, width, height } = view;
+  const count = scene.calm ? 8 : Math.round(12 + 30 * scene.smoke);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 0.9;
+  for (let i = 0; i < count; i++) {
+    const seed = Math.abs(Math.sin(i * 127.1) * 43758.5453) % 1;
+    const speed = 10 + seed * 18;
+    const t = scene.calm ? 0 : scene.time;
+    const x = (seed * 997 + t * speed) % (width + 20) - 10;
+    const y = ((seed * 571 + t * speed * 0.45) % (height + 20)) - 10 + Math.sin(t * 2 + i) * 4;
+    ctx.strokeStyle = i % 3 === 0 ? 'rgba(255, 220, 120, 0.9)' : 'rgba(255, 120, 40, 0.8)';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 2.5, y - 1.2);
+    ctx.stroke();
   }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/** The last seconds: the edges redden and beat. */
+function drawLate(view: View, scene: Scene): void {
+  const { ctx, width, height } = view;
+  const beat = scene.calm ? 0.4 : 0.35 + 0.15 * Math.sin(scene.time * 7);
+  const red = ctx.createRadialGradient(width / 2, height / 2, height * 0.3, width / 2, height / 2, height * 0.75);
+  red.addColorStop(0, 'rgba(200, 30, 20, 0)');
+  red.addColorStop(1, `rgba(200, 30, 20, ${beat})`);
+  ctx.fillStyle = red;
+  ctx.fillRect(0, 0, width, height);
 }
 
 /** Ten slots along the bottom holding what is packed. The newest thing flies
@@ -312,23 +342,42 @@ function drawDoorArrow(view: View, art: Art, scene: Scene, left: number, top: nu
 /** One whole frame of the house. */
 export function drawScene(view: View, art: Art, scene: Scene): void {
   const { ctx, width, height, scale } = view;
-  const shake = scene.late && !scene.calm ? Math.sin(scene.time * 40) * 0.5 : 0;
+  const shake = scene.late && !scene.calm ? Math.sin(scene.time * 40) : 0;
   const toSource = view.ratio / scale;
   const left = edge(scene.camX * TILE + shake, width, HOUSE_WIDTH, scale);
   const top = edge(scene.camY * TILE, height, HOUSE_HEIGHT, scale, HUD_HEIGHT * toSource, CONTROLS_HEIGHT * toSource + BAG_STRIP);
+  const world = () => ctx.setTransform(scale, 0, 0, scale, -left * scale, -top * scale);
+  const screen = () => ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  screen();
   ctx.fillStyle = '#e4dcc8';
   ctx.fillRect(0, 0, width, height);
-  ctx.translate(-left, -top);
+  world();
   ctx.drawImage(art.house, 0, 0);
   drawMat(view, scene);
   drawStanding(view, art, scene);
-  drawGlow(view, scene.glow, scene.time, scene.calm);
 
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  screen();
   const figure = scene.figure;
   drawHaze(view, scene, figure ? figure.x * TILE - left : 0, figure ? figure.y * TILE - top - 8 : 0);
+
+  // Above the dark: the fire at the windows, the mat, and the yellow line
+  // round every thing that can be packed, so none is lost in it.
+  world();
+  drawGlow(view, scene.glow, scene.time, scene.calm);
+  if (scene.dark > 0) drawMat(view, scene);
+  if (scene.outlines) {
+    for (const item of DRILL_ITEMS) {
+      if (scene.packed.includes(item.id)) continue;
+      const inReach = scene.near?.id === item.id;
+      const strength = inReach ? (scene.calm ? 1 : 0.8 + 0.2 * Math.sin(scene.time * 8)) : 0.75;
+      drawOutline(view, art, item.id, item.x * TILE, item.y * TILE, strength);
+    }
+  }
+
+  screen();
+  if (scene.smoke > 0) drawEmbers(view, scene);
+  if (scene.late) drawLate(view, scene);
   drawNearArrow(view, art, scene, left, top);
   if (scene.doorArrow) drawDoorArrow(view, art, scene, left, top);
   if (scene.showBag) drawBag(view, art, scene, left, top);

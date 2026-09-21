@@ -28,14 +28,15 @@ export const stillAt = (beat: number): number =>
   beat < DRILL_FACTS.length ? (beat + 0.8) * FACT_SECONDS : beat === DRILL_FACTS.length ? 33 : 37.5;
 
 type Colour = [number, number, number];
-// The sky from top to horizon, at four stages: calm, smoke, fire, firestorm.
+// The sky from the top down to the horizon at each stage: a calm afternoon,
+// smoke, the fire front, and the firestorm.
 const SKIES: Colour[][] = [
-  [[104, 170, 222], [140, 196, 232], [186, 222, 240], [232, 238, 226]],
-  [[150, 104, 70], [206, 130, 60], [240, 160, 64], [250, 200, 110]],
-  [[38, 14, 16], [86, 22, 18], [160, 44, 20], [236, 110, 30]],
-  [[8, 4, 6], [30, 8, 8], [96, 20, 10], [214, 72, 16]],
+  [[92, 156, 214], [150, 198, 232], [226, 236, 228]],
+  [[128, 92, 72], [206, 132, 66], [248, 196, 112]],
+  [[40, 16, 18], [120, 34, 20], [236, 108, 34]],
+  [[10, 5, 7], [52, 12, 10], [210, 70, 18]],
 ];
-const CHAR: Colour = [22, 12, 14];
+const CHAR: Colour = [24, 14, 16];
 
 const mix = (a: Colour, b: Colour, t: number): Colour => [
   a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t,
@@ -45,211 +46,328 @@ const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 /** A steady pseudo random number from 0 to 1 for any seed. */
 const chance = (seed: number) => Math.abs(Math.sin(seed * 127.1) * 43758.5453) % 1;
 
-/** A filled circle made of whole pixel rows, so it stays pixel art. */
-function blob(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-  const radius = Math.round(size);
-  for (let row = -radius; row <= radius; row++) {
-    const half = Math.round(Math.sqrt(radius * radius - row * row));
-    ctx.fillRect(Math.round(x) - half, Math.round(y) + row, half * 2, 1);
+/** The four stages of the fire, each easing from 0 to 1 at its own time. */
+type Stage = { smoke: number; fire: number; storm: number; end: number };
+const stageAt = (t: number): Stage => ({
+  smoke: clamp01((t - 2) / 6), // the sky browns and smoke rises
+  fire: clamp01((t - 8) / 8), // the front comes over the ridge
+  storm: clamp01((t - 15) / 9), // spot fires, the neighbour's place, crowning trees
+  end: clamp01((t - 23) / 7), // flames close in and the light goes
+});
+const tint = (stops: Colour[][], row: number, s: Stage): Colour =>
+  mix(mix(mix(stops[0][row], stops[1][row], s.smoke), stops[2][row], s.fire), stops[3][row], s.storm);
+
+/** A soft round puff: solid in the middle, fading to nothing at the edge. */
+function puff(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, colour: Colour, alpha: number): void {
+  if (alpha <= 0.01 || radius <= 0) return;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  g.addColorStop(0, rgb(colour, alpha));
+  g.addColorStop(0.55, rgb(colour, alpha * 0.7));
+  g.addColorStop(1, rgb(colour, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+}
+
+/** One flame: a tapering tongue, white hot at the root and red at the tip. */
+function tongue(ctx: CanvasRenderingContext2D, x: number, base: number, w: number, h: number, lean: number): void {
+  const g = ctx.createLinearGradient(0, base, 0, base - h);
+  g.addColorStop(0, 'rgba(255, 238, 170, 0.95)');
+  g.addColorStop(0.3, 'rgba(255, 164, 48, 0.92)');
+  g.addColorStop(0.7, 'rgba(222, 58, 22, 0.75)');
+  g.addColorStop(1, 'rgba(150, 20, 10, 0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, base);
+  ctx.quadraticCurveTo(x - w * 0.6, base - h * 0.45, x + lean, base - h);
+  ctx.quadraticCurveTo(x + w * 0.6, base - h * 0.45, x + w / 2, base);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** A line of flame from `from` to `to`, standing on `baseAt(x)`, with the
+ *  glow it throws above it. Every tongue flickers on its own rhythm. */
+function fireLine(ctx: CanvasRenderingContext2D, from: number, to: number, baseAt: (x: number) => number, height: number, t: number, seed: number, spacing = 5): void {
+  if (height < 0.5) return;
+  ctx.globalCompositeOperation = 'lighter';
+  const glow = ctx.createLinearGradient(0, baseAt((from + to) / 2), 0, baseAt((from + to) / 2) - height * 2.2);
+  glow.addColorStop(0, 'rgba(255, 110, 30, 0.35)');
+  glow.addColorStop(1, 'rgba(255, 110, 30, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(from, baseAt((from + to) / 2) - height * 2.2, to - from, height * 2.2);
+  ctx.globalCompositeOperation = 'source-over';
+  for (let x = from; x < to; x += spacing) {
+    const k = x * 0.37 + seed;
+    const flicker = 0.62 + 0.38 * Math.sin(t * 9 + k * 3) * Math.sin(t * 5.3 + k);
+    const tall = height * flicker * (0.55 + 0.45 * chance(Math.floor(x) + seed));
+    tongue(ctx, x, baseAt(x) + 1, spacing * 2.3, tall, Math.sin(t * 6 + k) * tall * 0.16);
   }
 }
 
-/** A row of flame tongues standing on `base`, yellow at the root, red at the tip. */
-function flames(ctx: CanvasRenderingContext2D, from: number, to: number, base: number, height: number, t: number, seed: number): void {
-  if (height <= 0) return;
-  for (let x = Math.round(from); x < to; x += 2) {
-    const flicker = 0.55 + 0.45 * Math.sin(t * 11 + x * 0.9 + seed) * Math.sin(t * 7 + x * 0.37);
-    const tall = Math.max(2, height * flicker * (0.6 + 0.4 * chance(x + seed)));
-    ctx.fillStyle = '#d8341c';
-    ctx.fillRect(x, base - tall, 2, tall);
-    ctx.fillStyle = '#f08a24';
-    ctx.fillRect(x, base - tall * 0.66, 2, tall * 0.66);
-    ctx.fillStyle = '#fbd65a';
-    ctx.fillRect(x, base - tall * 0.3, 2, tall * 0.3);
-  }
-}
-
+/** A gum tree: a pale tapering trunk, a loose crown of soft leaf clumps, and
+ *  a crown fire once it has caught. */
 function gumTree(ctx: CanvasRenderingContext2D, x: number, ground: number, size: number, sway: number, leaf: Colour, burn: number, t: number): void {
-  ctx.fillStyle = rgb(mix([214, 204, 188], CHAR, burn));
-  ctx.fillRect(Math.round(x) - 1, ground - size * 2.2, 3, size * 2.2);
-  ctx.fillRect(Math.round(x) + 1, ground - size * 1.6, size * 0.6, 2);
-  ctx.fillStyle = rgb(leaf);
-  blob(ctx, x + sway, ground - size * 2.6, size * 0.9);
-  blob(ctx, x - size * 0.7 + sway, ground - size * 2.1, size * 0.6);
-  blob(ctx, x + size * 0.8 + sway, ground - size * 2.0, size * 0.65);
-  // The crown catches: flames stand on the canopy and grow with the burn.
-  if (burn > 0.45) flames(ctx, x - size * 1.3, x + size * 1.4, ground - size * 2.4, size * 2.6 * (burn - 0.35), t, x);
+  const bark = mix([222, 212, 196], CHAR, burn);
+  ctx.fillStyle = rgb(bark);
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.16, ground);
+  ctx.quadraticCurveTo(x - size * 0.08, ground - size * 1.2, x + sway * 0.4 - size * 0.05, ground - size * 2.2);
+  ctx.lineTo(x + sway * 0.4 + size * 0.05, ground - size * 2.2);
+  ctx.quadraticCurveTo(x + size * 0.1, ground - size * 1.2, x + size * 0.16, ground);
+  ctx.fill();
+  const clumps = [[-0.75, 2.05, 0.62], [0.7, 1.95, 0.6], [0, 2.55, 0.8], [-0.35, 2.9, 0.55], [0.45, 2.85, 0.55]];
+  for (const [dx, dy, r] of clumps) {
+    const cx = x + dx * size + sway;
+    const cy = ground - dy * size;
+    const g = ctx.createRadialGradient(cx - r * size * 0.3, cy - r * size * 0.4, r * size * 0.1, cx, cy, r * size);
+    g.addColorStop(0, rgb(mix(leaf, [255, 255, 220], 0.18 * (1 - burn))));
+    g.addColorStop(1, rgb(mix(leaf, [0, 0, 0], 0.25)));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r * size, r * size * 0.78, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (burn > 0.45) fireLine(ctx, x - size * 1.2 + sway, x + size * 1.2 + sway, () => ground - size * 2.2, size * 2.4 * (burn - 0.35), t, x, 3);
 }
 
-/** A low brick house with a steel roof, a verandah and a water tank. */
-function house(ctx: CanvasRenderingContext2D, x: number, ground: number, shade: number, glow: number): void {
+/** A brick home with a hipped steel roof, a verandah and a water tank. */
+function house(ctx: CanvasRenderingContext2D, x: number, ground: number, u: number, shade: number, glow: number, flicker: number): void {
   const dim = (c: Colour) => rgb(mix(c, CHAR, shade));
-  ctx.fillStyle = dim([120, 132, 140]); // water tank
-  ctx.fillRect(x - 20, ground - 22, 16, 22);
-  ctx.fillStyle = dim([150, 162, 170]);
-  ctx.fillRect(x - 20, ground - 24, 16, 3);
-  ctx.fillStyle = dim([222, 206, 182]); // brick wall
-  ctx.fillRect(x, ground - 30, 84, 30);
-  ctx.fillStyle = dim([92, 108, 122]); // steel roof
-  for (let step = 0; step < 7; step++) ctx.fillRect(x - 6 + step * 3, ground - 32 - step * 2, 96 - step * 6, 2);
-  ctx.fillStyle = dim([70, 84, 96]);
-  ctx.fillRect(x - 6, ground - 31, 96, 2);
-  ctx.fillStyle = dim([168, 118, 78]); // door
-  ctx.fillRect(x + 38, ground - 22, 11, 22);
-  ctx.fillStyle = dim([250, 244, 232]); // verandah posts
-  for (const post of [4, 30, 56, 80]) ctx.fillRect(x + post, ground - 30, 2, 30);
-  for (const pane of [10, 60]) {
+  const w = 84 * u;
+  const wallH = 24 * u;
+  // the water tank, a corrugated cylinder
+  ctx.fillStyle = dim([128, 140, 148]);
+  ctx.fillRect(x - 20 * u, ground - 20 * u, 15 * u, 20 * u);
+  ctx.fillStyle = dim([160, 172, 180]);
+  ctx.beginPath();
+  ctx.ellipse(x - 12.5 * u, ground - 20 * u, 7.5 * u, 2 * u, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = dim([104, 116, 124]);
+  for (let ring = 1; ring < 5; ring++) ctx.fillRect(x - 20 * u, ground - ring * 4 * u, 15 * u, 0.6 * u);
+  // the walls
+  ctx.fillStyle = dim([214, 190, 160]);
+  ctx.fillRect(x, ground - wallH, w, wallH);
+  ctx.fillStyle = dim([188, 160, 128]);
+  for (let row = 1; row < 6; row++) ctx.fillRect(x, ground - row * 4 * u, w, 0.5 * u);
+  // the hipped roof
+  const roof = ctx.createLinearGradient(0, ground - wallH - 16 * u, 0, ground - wallH);
+  roof.addColorStop(0, rgb(mix([120, 138, 154], CHAR, shade)));
+  roof.addColorStop(1, rgb(mix([78, 92, 106], CHAR, shade)));
+  ctx.fillStyle = roof;
+  ctx.beginPath();
+  ctx.moveTo(x - 6 * u, ground - wallH);
+  ctx.lineTo(x + 16 * u, ground - wallH - 16 * u);
+  ctx.lineTo(x + w - 16 * u, ground - wallH - 16 * u);
+  ctx.lineTo(x + w + 6 * u, ground - wallH);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = dim([60, 70, 80]);
+  ctx.fillRect(x - 6 * u, ground - wallH - 1 * u, w + 12 * u, 1.6 * u);
+  // the verandah roof and posts
+  ctx.fillStyle = dim([236, 230, 218]);
+  for (const post of [3, 29, 55, 79]) ctx.fillRect(x + post * u, ground - wallH + 1 * u, 1.6 * u, wallH - 1 * u);
+  // the windows, glowing as the fire nears, and the door
+  for (const pane of [9, 58]) {
     ctx.fillStyle = dim([70, 58, 52]);
-    ctx.fillRect(x + pane - 1, ground - 23, 18, 13);
-    ctx.fillStyle = rgb(mix([168, 210, 232], [255, 138, 40], glow));
-    ctx.fillRect(x + pane, ground - 22, 16, 11);
+    ctx.fillRect(x + pane * u - u, ground - 19 * u, 19 * u, 12 * u);
+    const lit = mix([176, 212, 232], [255, 150, 50], glow);
+    ctx.fillStyle = rgb(mix(lit, [255, 200, 90], glow * flicker * 0.3));
+    ctx.fillRect(x + pane * u, ground - 18 * u, 17 * u, 10 * u);
     ctx.fillStyle = dim([70, 58, 52]);
-    ctx.fillRect(x + pane + 7, ground - 22, 1, 11);
+    ctx.fillRect(x + pane * u + 8 * u, ground - 18 * u, 0.8 * u, 10 * u);
   }
+  ctx.fillStyle = dim([150, 100, 64]);
+  ctx.fillRect(x + 38 * u, ground - 19 * u, 11 * u, 19 * u);
+  ctx.fillStyle = dim([230, 196, 120]);
+  ctx.fillRect(x + 46 * u, ground - 10 * u, 1.4 * u, 1.4 * u);
 }
 
-/** The neighbour's place on the rise: it burns first, then its roof falls in. */
-function neighbour(ctx: CanvasRenderingContext2D, x: number, base: number, burn: number, t: number): void {
+/** The neighbour's place on the rise: it catches first, then its roof falls in. */
+function neighbour(ctx: CanvasRenderingContext2D, x: number, base: number, u: number, burn: number, t: number): void {
   const fallen = burn > 0.75;
-  ctx.fillStyle = rgb(mix([196, 180, 160], CHAR, clamp01(burn * 1.5)));
-  ctx.fillRect(x, base - 12, 26, 12);
-  ctx.fillStyle = rgb(mix([120, 84, 70], CHAR, clamp01(burn * 1.5)));
-  if (!fallen) for (let step = 0; step < 4; step++) ctx.fillRect(x - 2 + step * 3, base - 14 - step * 2, 30 - step * 6, 2);
-  ctx.fillStyle = rgb(mix([168, 210, 232], [255, 150, 40], clamp01(burn * 3)));
-  ctx.fillRect(x + 4, base - 9, 6, 5);
-  ctx.fillRect(x + 16, base - 9, 6, 5);
-  flames(ctx, x - 2, x + 28, base - (fallen ? 6 : 14), 34 * burn, t, 21);
+  ctx.fillStyle = rgb(mix([200, 184, 162], CHAR, clamp01(burn * 1.5)));
+  ctx.fillRect(x, base - 10 * u, 26 * u, 10 * u);
+  if (!fallen) {
+    ctx.fillStyle = rgb(mix([126, 90, 76], CHAR, clamp01(burn * 1.5)));
+    ctx.beginPath();
+    ctx.moveTo(x - 2 * u, base - 10 * u);
+    ctx.lineTo(x + 6 * u, base - 16 * u);
+    ctx.lineTo(x + 20 * u, base - 16 * u);
+    ctx.lineTo(x + 28 * u, base - 10 * u);
+    ctx.fill();
+  }
+  ctx.fillStyle = rgb(mix([176, 212, 232], [255, 160, 50], clamp01(burn * 3)));
+  ctx.fillRect(x + 4 * u, base - 8 * u, 6 * u, 4 * u);
+  ctx.fillRect(x + 16 * u, base - 8 * u, 6 * u, 4 * u);
+  fireLine(ctx, x - 2 * u, x + 28 * u, () => base - (fallen ? 4 : 12) * u, 30 * u * burn, t, 21, 3);
 }
 
-/** A power pole and its wire. The wire sparks once the fire is among the houses. */
-function powerPole(ctx: CanvasRenderingContext2D, x: number, ground: number, width: number, shade: number, sparks: number, t: number): void {
-  ctx.fillStyle = rgb(mix([96, 74, 58], CHAR, shade));
-  ctx.fillRect(x, ground - 58, 3, 58);
-  ctx.fillRect(x - 7, ground - 54, 17, 2);
-  for (let wire = x + 3; wire < width; wire += 2) ctx.fillRect(wire, ground - 53 + Math.round(((wire - x) / width) * 10), 2, 1);
-  if (sparks <= 0 || Math.sin(t * 23) < 0.2) return;
-  ctx.fillStyle = '#fff4b0';
-  for (let i = 0; i < 6; i++) ctx.fillRect(x + 1 + Math.round((chance(i + Math.floor(t * 12)) - 0.5) * 16), ground - 56 + Math.round(chance(i * 3 + Math.floor(t * 12)) * 12), 1, 1);
+/** A timber power pole and its sagging line, sparking once the fire arrives. */
+function powerPole(ctx: CanvasRenderingContext2D, x: number, ground: number, u: number, width: number, shade: number, sparks: number, t: number): void {
+  ctx.strokeStyle = rgb(mix([96, 76, 60], CHAR, shade));
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 2.4 * u;
+  ctx.beginPath();
+  ctx.moveTo(x, ground);
+  ctx.lineTo(x, ground - 60 * u);
+  ctx.moveTo(x - 7 * u, ground - 55 * u);
+  ctx.lineTo(x + 7 * u, ground - 55 * u);
+  ctx.stroke();
+  ctx.lineWidth = 0.7 * u;
+  ctx.strokeStyle = rgb(mix([60, 60, 66], CHAR, shade), 0.9);
+  for (const dy of [0, 3]) {
+    ctx.beginPath();
+    ctx.moveTo(x + 6 * u, ground - (55 - dy) * u);
+    ctx.quadraticCurveTo((x + width) / 2, ground - (40 - dy) * u, width + 4, ground - (50 - dy) * u);
+    ctx.stroke();
+  }
+  if (sparks <= 0 || Math.sin(t * 23) < 0.25) return;
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 7; i++) {
+    const seed = i + Math.floor(t * 12);
+    puff(ctx, x + 6 * u + (chance(seed) - 0.3) * 14 * u, ground - 55 * u + chance(seed * 3) * 10 * u, 1.6 * u, [255, 244, 190], 0.9);
+  }
+  ctx.globalCompositeOperation = 'source-over';
 }
 
-/** The outside of the home at second `t` of the opening, 0 to OUTSIDE_SECONDS. */
+/** The outside of the home at second `t` of the opening, 0 to OUTSIDE_SECONDS.
+ *  Drawn with smooth shapes and soft light, in the picture's own units. */
 export function drawOutside(view: View, art: Art, t: number, calm: boolean): void {
-  const { ctx, width, height, scale } = view;
-  const smoke = clamp01((t - 3) / 6); // the sky browns and columns rise
-  const fire = clamp01((t - 9) / 8); // the front comes over the ridge
-  const storm = clamp01((t - 16) / 10); // spot fires, the neighbour's place, crowning trees
-  const end = clamp01((t - 24) / 6); // flames close in and the light goes
+  const { ctx, width: W, height: H, scale } = view;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const s = stageAt(t);
   const wind = calm ? 0 : t;
-  const ground = Math.round(height * 0.74);
+  // One unit keeps the scene in proportion from a tall phone to a wide screen.
+  const u = Math.min(W, H * 0.8) / 190;
+  const horizon = H * 0.54;
+  const ground = H * 0.64;
 
-  // A slow push in on the house, and a shudder once the storm arrives.
-  const zoom = 1 + 0.16 * (t / OUTSIDE_SECONDS);
-  const shakeX = calm ? 0 : Math.sin(t * 37) * storm * 1.5;
-  ctx.setTransform(scale * zoom, 0, 0, scale * zoom, (-(zoom - 1) * width * 0.45 + shakeX) * scale, -(zoom - 1) * ground * 0.9 * scale);
+  // The sky, one smooth gradient, and the sun turning red behind the smoke.
+  const sky = ctx.createLinearGradient(0, 0, 0, horizon);
+  sky.addColorStop(0, rgb(tint(SKIES, 0, s)));
+  sky.addColorStop(0.6, rgb(tint(SKIES, 1, s)));
+  sky.addColorStop(1, rgb(tint(SKIES, 2, s)));
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, horizon + 2);
+  const sunColour = mix([255, 246, 210], [230, 64, 30], s.smoke);
+  puff(ctx, W * 0.74, H * 0.13, 22 * u, sunColour, 0.35 * (1 - s.storm));
+  ctx.fillStyle = rgb(sunColour, 1 - s.fire * 0.6 - s.storm * 0.35);
+  ctx.beginPath();
+  ctx.arc(W * 0.74, H * 0.13, 8 * u, 0, Math.PI * 2);
+  ctx.fill();
 
-  // The sky in flat bands, as pixel art skies are: twelve of them, blended
-  // from the four stops of each stage, so a tall phone gets a smooth sky.
-  const bands = 12;
-  const band = Math.ceil(ground / bands);
-  const stage = (stops: Colour[], at: number) => {
-    const i = Math.min(2, Math.floor(at * 3));
-    return mix(stops[i], stops[i + 1], at * 3 - i);
-  };
-  for (let i = 0; i < bands; i++) {
-    const at = i / (bands - 1);
-    const sky = mix(mix(mix(stage(SKIES[0], at), stage(SKIES[1], at), smoke), stage(SKIES[2], at), fire), stage(SKIES[3], at), storm);
-    ctx.fillStyle = rgb(sky);
-    ctx.fillRect(-8, i * band, width + 16, band);
-  }
-  ctx.fillStyle = rgb(mix([255, 246, 200], [226, 60, 30], smoke), 1 - fire * 0.7 - storm * 0.3);
-  blob(ctx, width * 0.76, height * 0.14, 9);
-
-  // Far hills, the glow behind them, then the front coming over the ridge.
-  const ridge = (x: number) => ground - 40 - Math.sin(x * 0.045) * 10 - Math.sin(x * 0.11 + 2) * 4;
-  if (smoke > 0) {
-    ctx.fillStyle = rgb([255, 150, 40], 0.5 * smoke);
-    ctx.fillRect(-8, ground - 90, width + 16, 56);
-    for (let x = -8; x < width + 8; x += 8) flames(ctx, x, x + 8, ridge(x) + 2, 8 * smoke + 40 * fire + 46 * storm, wind, 3);
-  }
-  ctx.fillStyle = rgb(mix(mix([108, 142, 96], [84, 80, 60], smoke), CHAR, clamp01(fire + storm)));
-  for (let x = -8; x < width + 8; x += 2) ctx.fillRect(x, ridge(x), 2, ground - ridge(x));
-  neighbour(ctx, Math.round(width * 0.68), Math.round(ridge(width * 0.74)) + 8, storm, wind);
-
-  // Smoke columns rising off the ridge and leaning with the wind.
+  // The smoke plume: soft puffs rising from behind the ridge and leaning with
+  // the wind, pale at first, then brown, then black.
+  const smokeColour = mix(mix([214, 206, 196], [120, 96, 84], s.fire), [30, 22, 24], s.storm);
   for (let column = 0; column < 5; column++) {
-    for (let puff = 0; puff < 8; puff++) {
-      const rise = (wind * (0.3 + 0.2 * storm) + puff / 8 + column * 0.13) % 1;
-      const x = width * (0.04 + column * 0.22) + rise * (46 + 40 * storm);
-      const y = ridge(x) - rise * ground * 0.9;
-      ctx.fillStyle = rgb(mix([196, 186, 176], [34, 26, 28], clamp01(fire + storm)), smoke * (1 - rise) * 0.85);
-      blob(ctx, x, y, 5 + Math.round(rise * (12 + 8 * storm)));
+    for (let p = 0; p < 9; p++) {
+      const rise = (wind * (0.028 + 0.015 * s.storm) + p / 9 + column * 0.17) % 1;
+      const x = W * (0.02 + column * 0.24) + rise * (40 + 50 * s.storm) * u + Math.sin(wind * 0.7 + p + column) * 3 * u;
+      const y = horizon - rise * H * 0.62;
+      puff(ctx, x, y, (10 + rise * 26 + 10 * s.storm) * u, smokeColour, s.smoke * (1 - rise * 0.8) * 0.55);
     }
   }
 
-  // Dry grass, the pole, the trees and the house.
-  ctx.fillStyle = rgb(mix(mix([196, 178, 96], [170, 140, 78], smoke), [44, 24, 18], clamp01(fire * 0.8 + storm * 0.4)));
-  ctx.fillRect(-8, ground, width + 16, height - ground + 40);
-  ctx.fillStyle = rgb(mix([226, 214, 170], [80, 46, 30], fire));
-  for (let x = 0; x < width; x += 5) ctx.fillRect(x, ground + 2 + ((x * 7) % 9), 2, 1);
-  powerPole(ctx, Math.round(width * 0.04), ground + 4, width, clamp01(fire), storm - 0.35, wind);
-  const leaf = mix(mix([104, 138, 92], [96, 104, 66], smoke), [34, 22, 20], fire);
-  const sway = Math.round(Math.sin(wind * (2 + smoke * 4 + storm * 5)) * (1 + smoke * 2 + storm * 2));
-  gumTree(ctx, width * 0.12, ground + 2, 13, sway, leaf, clamp01(fire * 0.5 + storm), wind);
-  gumTree(ctx, width * 0.92, ground + 6, 16, sway, leaf, clamp01(fire * 0.4 + storm * 0.9), wind);
-  const houseX = Math.round(width * 0.27);
-  house(ctx, houseX, ground + 8, clamp01(fire * 0.45 + storm * 0.3), clamp01(smoke * 0.4 + fire));
-  gumTree(ctx, width * 0.24, ground + 1, 9, sway, leaf, clamp01(fire * 0.6 + storm * 1.2), wind);
-  // Embers land on the roof and in the gutters and take hold.
-  if (end > 0) flames(ctx, houseX + 10, houseX + 10 + 60 * end, ground - 28, 10 * end, wind, 5);
+  // The far ridge with the fire glowing behind it, then the front over its crest.
+  const ridge = (x: number) => horizon - 6 * u - Math.sin(x * 0.03 / u) * 7 * u - Math.sin(x * 0.083 / u + 2) * 3 * u;
+  const behind = ctx.createLinearGradient(0, horizon - 60 * u, 0, horizon);
+  behind.addColorStop(0, 'rgba(255, 120, 30, 0)');
+  behind.addColorStop(1, `rgba(255, 130, 40, ${0.7 * s.smoke})`);
+  ctx.fillStyle = behind;
+  ctx.fillRect(0, horizon - 60 * u, W, 60 * u);
+  fireLine(ctx, -4, W + 4, ridge, (4 * s.smoke + 26 * s.fire + 30 * s.storm) * u, wind, 3);
+  ctx.fillStyle = rgb(mix(mix([112, 138, 100], [92, 86, 66], s.smoke), CHAR, clamp01(s.fire + s.storm * 0.5)));
+  ctx.beginPath();
+  ctx.moveTo(0, ground);
+  for (let x = 0; x <= W; x += 2) ctx.lineTo(x, ridge(x));
+  ctx.lineTo(W, ground);
+  ctx.fill();
+  neighbour(ctx, W * 0.72, ridge(W * 0.78) + 5 * u, u, s.storm, wind);
 
-  // Spot fires start in the yard ahead of the front, one after another.
-  for (let spot = 0; spot < 14; spot++) {
-    const lit = clamp01(storm * 14 - spot);
-    if (lit <= 0) continue;
-    const x = chance(spot + 0.7) * width;
-    const y = ground + 10 + chance(spot + 0.2) * (height - ground - 8);
-    flames(ctx, x - 5 - 6 * end, x + 5 + 6 * end, y, (6 + 10 * end) * lit, wind, spot);
-  }
-  // The fence along the front, then flames closing in from both sides.
-  ctx.fillStyle = rgb(mix([232, 224, 206], CHAR, clamp01(storm * 1.4)));
-  for (let x = 0; x < width; x += 6) ctx.fillRect(x, height - 16, 3, 12);
-  ctx.fillRect(-8, height - 12, width + 16, 2);
-  flames(ctx, -8, width + 8, height + 2, 10 * fire + 26 * end, wind, 9);
-  flames(ctx, -8, width * 0.16 * end, height - 4, 70 * end, wind, 13);
-  flames(ctx, width - width * 0.16 * end, width + 8, height - 4, 70 * end, wind, 17);
+  // The paddock: dry grass that scorches as the fire runs through it.
+  const grass = ctx.createLinearGradient(0, horizon, 0, H);
+  grass.addColorStop(0, rgb(mix(mix([200, 180, 104], [176, 144, 80], s.smoke), [60, 30, 20], s.fire * 0.7 + s.storm * 0.3)));
+  grass.addColorStop(1, rgb(mix(mix([168, 148, 78], [140, 110, 60], s.smoke), [34, 18, 14], s.fire * 0.6 + s.storm * 0.4)));
+  ctx.fillStyle = grass;
+  ctx.fillRect(0, ground - 1, W, H - ground + 1);
+  ctx.fillStyle = rgb(mix([230, 216, 170], [96, 54, 34], s.fire), 0.6);
+  for (let i = 0; i < 40; i++) ctx.fillRect(chance(i + 0.3) * W, ground + chance(i + 0.8) * (H - ground), 2 * u, 0.7 * u);
 
-  // The person watches it come, then runs for the door. From the art pack.
+  // The pole, the trees and the home.
+  const leaf = mix(mix([96, 132, 86], [98, 104, 68], s.smoke), [34, 22, 20], s.fire * 0.7 + s.storm * 0.3);
+  const sway = Math.sin(wind * (1.6 + s.smoke * 3 + s.storm * 4)) * (0.5 + s.smoke + s.storm * 2) * u;
+  const homeX = W * 0.5 - 38 * u;
+  powerPole(ctx, W * 0.06, ground + 4 * u, u, W, s.fire, s.storm - 0.35, wind);
+  gumTree(ctx, W * 0.1, ground + 3 * u, 13 * u, sway, leaf, clamp01(s.fire * 0.5 + s.storm), wind);
+  gumTree(ctx, W * 0.92, ground + 6 * u, 15 * u, sway, leaf, clamp01(s.fire * 0.4 + s.storm * 0.9), wind);
+  const flicker = calm ? 0.5 : 0.5 + 0.5 * Math.sin(t * 13);
+  house(ctx, homeX, ground + 10 * u, u, clamp01(s.fire * 0.4 + s.storm * 0.3), clamp01(s.smoke * 0.4 + s.fire), flicker);
+  gumTree(ctx, homeX - 4 * u, ground + 11 * u, 9 * u, sway, leaf, clamp01(s.fire * 0.6 + s.storm * 1.2), wind);
+  // Embers land in the gutters and take hold along the roof.
+  fireLine(ctx, homeX, homeX + 84 * u * s.end, () => ground + 10 * u - 24 * u, 12 * u * s.end, wind, 5, 3);
+
+  // The person watches it come, then runs for the front door. From the art pack.
   const run = clamp01((t - 19) / 3);
   if (run < 1) {
-    const fromX = width * 0.62;
-    const x = fromX + (houseX + 43 - fromX) * run;
-    const frame = run > 0 && !calm ? Math.floor(t * 10) % 6 : calm ? 0 : Math.floor(t * 4) % 6;
-    drawSprite(view, art, run > 0 ? 'walk' : 'idle', x, ground + 24 - 12 * run, UP * 6 + frame);
+    const standX = W * 0.76;
+    const doorX = homeX + 43.5 * u;
+    const x = standX + (doorX - standX) * run;
+    const feet = ground + 30 * u - 20 * u * run;
+    const frame = calm ? 0 : Math.floor(t * (run > 0 ? 10 : 4)) % 6;
+    ctx.save();
+    ctx.translate(x, feet);
+    ctx.scale(u, u);
+    drawSprite(view, art, run > 0 ? 'walk' : 'idle', 0, 0, UP * 6 + frame);
+    ctx.restore();
   }
 
-  // Embers on the wind, then ash: more of them, and faster, as the fire nears.
-  const embers = Math.round(60 * clamp01(smoke * 0.4 + fire) + 120 * storm);
-  for (let i = 0; i < embers; i++) {
-    const speed = (40 + chance(i) * 70) * (1 + storm);
-    const x = (chance(i + 0.5) * width + wind * speed) % width;
-    const y = (chance(i + 0.25) * height + wind * speed * 0.35 + Math.sin(wind * 3 + i) * 6) % height;
-    ctx.fillStyle = i % 3 === 0 ? '#fbd65a' : '#f0641e';
-    ctx.fillRect(Math.round(x), Math.round(y), i % 5 === 0 ? 2 : 1, 1);
+  // Spot fires start in the yard ahead of the front, one after another.
+  for (let spot = 0; spot < 10; spot++) {
+    const lit = clamp01(s.storm * 10 - spot);
+    if (lit <= 0) continue;
+    const x = chance(spot + 0.7) * W;
+    const y = ground + 16 * u + chance(spot + 0.2) * (H - ground - 20 * u);
+    fireLine(ctx, x - (5 + 6 * s.end) * u, x + (5 + 6 * s.end) * u, () => y, (6 + 10 * s.end) * u * lit, wind, spot, 3);
   }
-  ctx.fillStyle = 'rgba(190, 186, 180, 0.8)';
-  for (let i = 0; i < 50 * end; i++) {
-    ctx.fillRect(Math.round((chance(i + 9.5) * width + Math.sin(wind + i) * 8) % width), Math.round((chance(i + 4.25) * height + wind * 14) % height), 1, 1);
+  // The front fence, then flames closing in from both sides.
+  ctx.fillStyle = rgb(mix([236, 228, 210], CHAR, clamp01(s.storm * 1.4)));
+  const fence = ground + 44 * u;
+  for (let x = 0; x < W; x += 6 * u) ctx.fillRect(x, fence - 9 * u, 2.2 * u, 9 * u);
+  ctx.fillRect(0, fence - 7 * u, W, 1.4 * u);
+  fireLine(ctx, -4, W + 4, () => H + 2, (8 * s.fire + 24 * s.end) * u, wind, 9);
+  fireLine(ctx, -4, W * 0.18 * s.end, () => H - 2, 60 * u * s.end, wind, 13);
+  fireLine(ctx, W - W * 0.18 * s.end, W + 4, () => H - 2, 60 * u * s.end, wind, 17);
+
+  // Embers on the wind, with short glowing trails; then ash as the light goes.
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  const embers = Math.round(50 * clamp01(s.smoke * 0.4 + s.fire) + 90 * s.storm);
+  for (let i = 0; i < embers; i++) {
+    const speed = (26 + chance(i) * 44) * (1 + s.storm) * u;
+    const x = (chance(i + 0.5) * W + wind * speed) % W;
+    const y = (chance(i + 0.25) * H + wind * speed * 0.3 + Math.sin(wind * 3 + i) * 5 * u) % H;
+    ctx.strokeStyle = i % 3 === 0 ? 'rgba(255, 220, 120, 0.9)' : 'rgba(255, 110, 40, 0.85)';
+    ctx.lineWidth = (i % 4 === 0 ? 1.2 : 0.8) * u;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - (calm ? 0 : 3 * u), y - (calm ? 0 : 1 * u));
+    ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(200, 196, 190, 0.75)';
+  for (let i = 0; i < 60 * s.end; i++) {
+    ctx.beginPath();
+    ctx.arc((chance(i + 9.5) * W + Math.sin(wind + i) * 8 * u) % W, (chance(i + 4.25) * H + wind * 12 * u) % H, 0.7 * u, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   // The light goes: a red wash, then the dark closing in from the edges.
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  ctx.fillStyle = rgb([120, 30, 10], 0.22 * fire + 0.1 * storm);
-  ctx.fillRect(0, 0, width, height);
-  const dark = ctx.createRadialGradient(width / 2, height * 0.6, height * 0.2, width / 2, height * 0.6, height * 0.8);
+  ctx.fillStyle = `rgba(130, 30, 10, ${0.18 * s.fire + 0.1 * s.storm})`;
+  ctx.fillRect(0, 0, W, H);
+  const dark = ctx.createRadialGradient(W / 2, H * 0.55, H * 0.18, W / 2, H * 0.55, H * 0.85);
   dark.addColorStop(0, 'rgba(6, 2, 4, 0)');
-  dark.addColorStop(1, `rgba(6, 2, 4, ${0.35 * fire + 0.5 * storm})`);
+  dark.addColorStop(1, `rgba(6, 2, 4, ${0.3 * s.fire + 0.45 * s.storm})`);
   ctx.fillStyle = dark;
-  ctx.fillRect(0, 0, width, height);
+  ctx.fillRect(0, 0, W, H);
 }
 
 /** The inside of the house at second `t`: the news on, the window light
@@ -271,7 +389,7 @@ export function insideScene(t: number, calm: boolean): Scene {
     powered,
     glow: clamp01(0.5 + inside / 8),
     smoke: 0.14 * clamp01(inside / 6),
-    dark: powered ? 0 : 0.2,
+    dark: powered ? 0 : 0.5 * clamp01((t - POWER_OFF_AT) / 1.5),
     door: 0,
     late: false,
     doorArrow: false,

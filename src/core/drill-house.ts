@@ -10,7 +10,7 @@ export const COLS = GRID[0].length;
 
 /** Half the width of the figure's feet, and how far an arm reaches. */
 export const PERSON_RADIUS = 0.3;
-export const REACH = 1.5;
+export const REACH = 1.8;
 
 /** True for every cell the figure cannot enter: wall, or under furniture. */
 const SOLID: boolean[][] = GRID.map((row) => [...row].map((cell) => !(cell in ROOM_OF)));
@@ -23,14 +23,29 @@ for (const piece of FURNITURE) {
 
 const cellAt = (x: number, y: number): string => GRID[Math.floor(y)]?.[Math.floor(x)] ?? '#';
 
-const solidAt = (x: number, y: number): boolean => SOLID[Math.floor(y)]?.[Math.floor(x)] ?? true;
+/** Whether (x, y) is on a cell nothing can stand in: furniture or wall. A
+ *  thing that sits there is on a bench, a shelf or hung on the wall. */
+export const onSolid = (x: number, y: number): boolean => SOLID[Math.floor(y)]?.[Math.floor(x)] ?? true;
+
+/** Where a thing standing at (x, y) sorts when the picture is drawn back to
+ *  front. On the floor it sorts by where it stands, like a person. On a bench,
+ *  a bed or a wall it sorts just after the whole piece it rests on, so it is
+ *  drawn on top of that piece, however many rows the piece covers. */
+export function restingOrder(x: number, y: number): number {
+  if (!onSolid(x, y)) return y;
+  // Walk down through the piece it rests on, stopping at the first cell that
+  // is not furniture on a floor: open floor, a wall, or the edge of the house.
+  let row = Math.floor(y);
+  while (cellAt(x, row + 1) in ROOM_OF && onSolid(x, row + 1)) row += 1;
+  return row + 1.01;
+}
 
 /** Whether feet of this radius at (x, y) would overlap a wall or furniture. */
 export const blocked = (x: number, y: number, radius = PERSON_RADIUS): boolean =>
-  solidAt(x - radius, y - radius) ||
-  solidAt(x + radius, y - radius) ||
-  solidAt(x - radius, y + radius) ||
-  solidAt(x + radius, y + radius);
+  onSolid(x - radius, y - radius) ||
+  onSolid(x + radius, y - radius) ||
+  onSolid(x - radius, y + radius) ||
+  onSolid(x + radius, y + radius);
 
 export const onDoorMat = (x: number, y: number): boolean => cellAt(x, y) === MAT;
 

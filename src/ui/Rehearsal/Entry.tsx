@@ -14,7 +14,7 @@ import Unfinished from './Unfinished';
 import { currentRun, endRun, useRehearsalRun } from './run-state';
 import StatusPage from '../components/StatusPage';
 import Drill from '../Drill/Drill';
-import { markDrilled, useDrilled } from '../Drill/drill-state';
+import { markDrilled, replayDrill, useDrilled } from '../Drill/drill-state';
 
 type EntryProps = {
   packId: string;
@@ -143,7 +143,7 @@ export default function RehearsalEntry({
     return chosen !== null ? (
       <JourneyBefore packId={gate.packId} condition={chosen} onGone={() => setChosen(null)} />
     ) : (
-      <Condition packId={gate.packId} onChoose={setChosen} />
+      <Condition packId={gate.packId} onChoose={setChosen} onDrill={() => replayDrill(gate.packId)} />
     );
   }
 

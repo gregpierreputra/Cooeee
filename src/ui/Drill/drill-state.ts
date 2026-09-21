@@ -23,3 +23,10 @@ export function markDrilled(packId: string): void {
 
 export const useDrilled = (packId: string): boolean =>
   useSyncExternalStore(subscribe, () => drilled.has(packId));
+
+/** Play the drill again for this pack, now: the Rehearse screen's own button.
+ *  Clearing the mark brings the drill back in front of the rehearsal. */
+export function replayDrill(packId: string): void {
+  drilled.delete(packId);
+  listeners.forEach((listener) => listener());
+}

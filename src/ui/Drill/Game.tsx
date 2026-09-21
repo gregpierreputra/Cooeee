@@ -44,11 +44,19 @@ const freshWorld = (opening: boolean): World => ({
   packed: [], packedAt: 0, near: null,
 });
 
+/** A fact with its key phrases (a date, a distance, a count) set in the
+ *  accent colour, so they are what the eye lands on first. */
+function withKeys(text: string, keys: string[]) {
+  if (keys.length === 0) return text;
+  const pattern = new RegExp(`(${keys.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`);
+  return text.split(pattern).map((part, i) => (keys.includes(part) ? <strong key={i} className="drill-fact-figure">{part}</strong> : part));
+}
+
 /** The lines over the film: a fact with its publisher, then the two inside. */
 const lineAt = (beat: number) =>
   beat < copy.DRILL_FACTS.length
     ? copy.DRILL_FACTS[beat]
-    : { text: copy.DRILL_INSIDE_LINES[Math.min(1, beat - copy.DRILL_FACTS.length)], source: '' };
+    : { text: copy.DRILL_INSIDE_LINES[Math.min(1, beat - copy.DRILL_FACTS.length)], key: [] as string[], source: '' };
 
 type Props = {
   /** Show the opening film first. Play again goes straight to the minute. */
@@ -324,10 +332,11 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         </>
       ) : (
         <div className="drill-film">
+          <div className="drill-scrim" aria-hidden="true" />
           {/* One stable live region, so each new line is read out as it lands. */}
           <div role="status" aria-live="polite">
             <div key={hud.beat} className="drill-fact">
-              <p className="drill-fact-text">{line.text}</p>
+              <p className="drill-fact-text">{withKeys(line.text, line.key)}</p>
               {line.source ? <p className="drill-fact-source">{line.source}</p> : null}
             </div>
           </div>

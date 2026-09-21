@@ -1241,14 +1241,17 @@ export const SKIP_DRILL = 'Skip the drill';
 export const SKIP_CUTSCENE = 'Skip';
 export const NEXT_STAGE = 'Next';
 export const LEAVE_DRILL = 'Leave the drill';
-/** The facts shown over the fire as it worsens, each with its publisher. Every
+export const DRILL_TILE_TITLE = 'Play the drill';
+export const DRILL_TILE_DETAIL = 'One minute to pack ten things and reach the front door.';
+/** The facts shown over the fire as it worsens, each with its publisher and
+ *  the phrases set in the accent colour. Every
  *  line was checked against the page it is credited to (21 September 2026). */
 export const DRILL_FACTS = [
-  { text: 'Grassfires can travel 25 kilometres an hour. Faster than you can run.', source: 'Country Fire Authority' },
-  { text: 'On Black Saturday, embers lit fires more than 30 kilometres ahead.', source: 'Country Fire Authority' },
-  { text: 'Within minutes of starting, the Kilmore East fire could not be contained.', source: '2009 Victorian Bushfires Royal Commission' },
-  { text: 'A wind change turned its side into a front 50 kilometres wide.', source: 'Country Fire Authority' },
-  { text: 'Black Saturday, 7 February 2009, took 173 lives.', source: '2009 Victorian Bushfires Royal Commission' },
+  { text: 'Grassfires can travel 25 kilometres an hour. Faster than you can run.', key: ['25 kilometres an hour'], source: 'Country Fire Authority' },
+  { text: 'On Black Saturday, embers lit fires more than 30 kilometres ahead.', key: ['30 kilometres'], source: 'Country Fire Authority' },
+  { text: 'Within minutes of starting, the Kilmore East fire could not be contained.', key: ['Within minutes'], source: '2009 Victorian Bushfires Royal Commission' },
+  { text: 'A wind change turned its side into a front 50 kilometres wide.', key: ['50 kilometres wide'], source: 'Country Fire Authority' },
+  { text: 'Black Saturday, 7 February 2009, took 173 lives.', key: ['7 February 2009', '173 lives'], source: '2009 Victorian Bushfires Royal Commission' },
 ];
 /** The two lines once the film cuts inside the house. */
 export const DRILL_INSIDE_LINES = [
