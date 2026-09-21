@@ -6,7 +6,7 @@
 
 import { BAG_LIMIT, DRILL_ITEMS, itemById, type DrillItem } from '../../core/drill-items';
 import { MAT_CENTRE, restingOrder } from '../../core/drill-house';
-import { FURNITURE, GRID, MAT, TILE, WALL_LIFT } from '../../core/drill-layout';
+import { FURNITURE, GRID, MAT, TILE, wallLift } from '../../core/drill-layout';
 import { ATLAS } from './atlas';
 
 /** The two baked pictures, and a copy of the sprite sheet with every pixel
@@ -166,7 +166,7 @@ function drawStanding(view: View, art: Art, scene: Scene): void {
     const frame = piece.sprite === 'door' ? Math.round(scene.door * 4) : 0;
     things.push({
       order: piece.y + piece.h,
-      draw: () => drawSprite(view, art, piece.sprite, (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0), (piece.y + piece.h) * TILE - (piece.wall ? WALL_LIFT : 0), frame),
+      draw: () => drawSprite(view, art, piece.sprite, (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0), (piece.y + piece.h) * TILE - (piece.wall ? wallLift(ATLAS[piece.sprite][3]) : 0), frame),
     });
   }
   for (const item of DRILL_ITEMS) {
@@ -174,7 +174,7 @@ function drawStanding(view: View, art: Art, scene: Scene): void {
     things.push({ order: restingOrder(item.x, item.y), draw: () => drawItem(view, art, item, scene) });
     if (item.id === 'pet') {
       const frame = scene.calm ? 0 : Math.floor(scene.time * 6) % (ATLAS.cat[4] ?? 1);
-      things.push({ order: item.y, draw: () => drawSprite(view, art, 'cat', (item.x + 1.2) * TILE, item.y * TILE, frame) });
+      things.push({ order: item.y, draw: () => drawSprite(view, art, 'cat', (item.x + 1.5) * TILE, item.y * TILE, frame) });
     }
   }
   const figure = scene.figure;
@@ -192,7 +192,7 @@ function drawGlow(view: View, glow: number, time: number, calm: boolean): void {
   WINDOWS.forEach((piece, i) => {
     const flicker = calm ? 0.85 : 0.7 + 0.3 * Math.sin(time * 9 + i) * Math.sin(time * 3.7 + i * 2);
     const x = (piece.x + piece.w / 2) * TILE;
-    const y = (piece.y + piece.h) * TILE - WALL_LIFT;
+    const y = (piece.y + piece.h) * TILE - wallLift(ATLAS[piece.sprite][3]);
     ctx.fillStyle = `rgba(255, 110, 20, ${0.6 * glow * flicker})`;
     ctx.fillRect(x - 11, y - 18, 22, 16);
     const spill = ctx.createRadialGradient(x, y, 4, x, y, 64);

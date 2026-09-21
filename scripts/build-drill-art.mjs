@@ -11,7 +11,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { DRILL_ITEMS } from '../src/core/drill-items.ts';
-import { FURNITURE, GRID, ROOM_OF, TILE, WALL_LIFT } from '../src/core/drill-layout.ts';
+import { FURNITURE, GRID, ROOM_OF, TILE, wallLift } from '../src/core/drill-layout.ts';
 
 const pack = new URL('../game-assets/', import.meta.url);
 if (!existsSync(pack)) throw new Error('game-assets/ is missing. The pack is bought from limezu.itch.io.');
@@ -54,7 +54,6 @@ const SOURCES = {
   // furniture and the things that make a home look lived in
   door: ['door', 0, 0, 16, 48, 5],
   window: ['generic', 131, 695, 25, 20],
-  curtains: ['generic', 87, 727, 35, 27],
   landscape: ['generic', 5, 218, 21, 13],
   frameA: ['living', 2, 490, 13, 15],
   frameB: ['living', 2, 522, 13, 15],
@@ -83,7 +82,6 @@ const SOURCES = {
   globe: ['living', 193, 360, 13, 13],
   sideboard: ['living', 19, 245, 27, 23],
   nightstand: ['living', 16, 213, 16, 20],
-  wardrobe: ['living', 114, 68, 27, 38],
   fridge: ['kitchen', 208, 602, 13, 37],
   cabinet: ['kitchen', 162, 118, 29, 14],
   sink: ['kitchen', 133, 113, 24, 14],
@@ -96,7 +94,6 @@ const SOURCES = {
   washing: ['bathroom', 227, 53, 27, 26],
   bucket: ['fishing', 241, 25, 13, 13],
   toilet: ['bathroom', 161, 7, 14, 33],
-  towels: ['bathroom', 226, 155, 28, 29],
   tub: ['bathroom', 99, 195, 25, 37],
   bench: ['fishing', 33, 180, 46, 24],
   rods: ['fishing', 152, 204, 32, 30],
@@ -170,7 +167,7 @@ const images = Object.fromEntries(
 const browser = await chromium.launch();
 const page = await browser.newPage();
 const baked = await page.evaluate(
-  async ({ images, SOURCES, STYLES, GRID, ROOM_OF, FURNITURE, ITEMS, TILE, WALL_LIFT }) => {
+  async ({ images, SOURCES, STYLES, GRID, ROOM_OF, FURNITURE, ITEMS, TILE, LIFTS }) => {
     const sheets = {};
     for (const [key, data] of Object.entries(images)) {
       sheets[key] = new Image();
@@ -262,7 +259,7 @@ const baked = await page.evaluate(
       ctx.drawImage(sprites.canvas, x, y, w, h, Math.round(centreX - w / 2), Math.round(bottomY - h), w, h);
     };
     const drawPiece = (ctx, piece) =>
-      place(ctx, piece.sprite, (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0), (piece.y + piece.h) * TILE - (piece.wall ? WALL_LIFT : 0));
+      place(ctx, piece.sprite, (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0), (piece.y + piece.h) * TILE - (piece.wall ? LIFTS[piece.sprite] : 0));
     for (const piece of FURNITURE) if (piece.flat) drawPiece(house.ctx, piece);
 
     // ── the preview: the house as the game will compose it ──
@@ -284,7 +281,7 @@ const baked = await page.evaluate(
       preview: preview.canvas.toDataURL('image/png'),
     };
   },
-  { images, SOURCES, STYLES, GRID, ROOM_OF, FURNITURE, ITEMS: DRILL_ITEMS, TILE, WALL_LIFT },
+  { images, SOURCES, STYLES, GRID, ROOM_OF, FURNITURE, ITEMS: DRILL_ITEMS, TILE, LIFTS: Object.fromEntries(Object.entries(SOURCES).map(([key, source]) => [key, wallLift(source[4])])) },
 );
 await browser.close();
 
