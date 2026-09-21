@@ -2637,17 +2637,20 @@ body.drill-open .banner {
 }
 .drill-counts {
   display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
   margin: 0;
-  padding: 0.4rem 0.9rem;
+  padding: 0.5rem 1.1rem 0.6rem;
+  border-radius: 1.25rem;
   border-radius: var(--r-pill);
 }
 .drill-counts p {
   margin: 0;
 }
 .drill-timer {
-  font-size: var(--step-2);
+  /* Big enough to read at a glance, mid game, on a small phone. */
+  font-size: clamp(2.1rem, 9vw, 2.75rem);
   font-weight: var(--w-heavy);
   letter-spacing: var(--track-tight);
   line-height: 1;
@@ -2659,6 +2662,7 @@ body.drill-open .banner {
 }
 .drill-bag {
   font-size: var(--step-s);
+  white-space: nowrap;
   opacity: 0.85;
 }
 .drill-top-actions {
@@ -2668,7 +2672,8 @@ body.drill-open .banner {
 .drill-chip {
   min-width: 44px;
   min-height: 44px;
-  padding: 0 1rem;
+  padding: 0 0.9rem;
+  white-space: nowrap;
   border-radius: var(--r-pill);
   color: inherit;
   font: inherit;
@@ -2683,7 +2688,7 @@ body.drill-open .banner {
 }
 .drill-room {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + 4.25rem);
+  top: calc(env(safe-area-inset-top) + 6.1rem);
   left: calc(env(safe-area-inset-left) + 1rem);
   margin: 0;
   padding: 0.2rem 0.75rem;
@@ -2760,6 +2765,20 @@ body.drill-open .banner {
 }
 .drill-next {
   flex: none;
+}
+/* The last line of the film sits over the person, large, just before the
+   clock starts: a gentle cue that play is about to begin. */
+.drill-fact.ready {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 40%;
+  max-width: none;
+  text-align: center;
+}
+.drill-fact.ready .drill-fact-text {
+  font-size: clamp(2rem, 9vw, 2.75rem);
+  letter-spacing: 0.02em;
 }
 
 /* The thumb controls float over the lower corners, just above the bag strip. */

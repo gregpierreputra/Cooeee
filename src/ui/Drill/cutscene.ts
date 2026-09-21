@@ -6,26 +6,35 @@
 // Everything is worked out from the time alone (no stored particles), so any
 // moment can also be drawn as a still picture when the phone asks for less motion.
 
-import { DRILL_FACTS } from '../../core/copy';
+import { DRILL_FACTS, DRILL_INSIDE_LINE, DRILL_READY, DRILL_TOUR_LINES } from '../../core/copy';
 import { SPAWN } from '../../core/drill-house';
 import { UP } from '../../core/drill-play';
 import { drawSprite, type Art, type Scene, type View } from './render';
 
 export const OUTSIDE_SECONDS = 30;
 export const POWER_OFF_AT = 36;
-export const CUTSCENE_SECONDS = 40;
+const TOUR_SECONDS = 20;
+const READY_AT = POWER_OFF_AT + TOUR_SECONDS;
+export const CUTSCENE_SECONDS = READY_AT + 2;
 const FACT_SECONDS = OUTSIDE_SECONDS / DRILL_FACTS.length;
+const TOUR_LINE_SECONDS = TOUR_SECONDS / DRILL_TOUR_LINES.length;
 
-/** Which line is on screen: a fact while outside, then the two lines inside. */
-export const beatAt = (t: number): number =>
-  t < OUTSIDE_SECONDS ? Math.floor(t / FACT_SECONDS) : t < POWER_OFF_AT ? DRILL_FACTS.length : DRILL_FACTS.length + 1;
-export const BEATS = DRILL_FACTS.length + 2;
-/** When each beat begins. Next jumps here. */
-export const beatStart = (beat: number): number =>
-  beat < DRILL_FACTS.length ? beat * FACT_SECONDS : beat === DRILL_FACTS.length ? OUTSIDE_SECONDS : POWER_OFF_AT;
-/** The moment shown for each beat as a still picture under reduced motion. */
-export const stillAt = (beat: number): number =>
-  beat < DRILL_FACTS.length ? (beat + 0.8) * FACT_SECONDS : beat === DRILL_FACTS.length ? 33 : 37.5;
+/** Every line of the film in order, with the second it appears. */
+export const LINES = [
+  ...DRILL_FACTS.map((fact, i) => ({ ...fact, at: i * FACT_SECONDS })),
+  { ...DRILL_INSIDE_LINE, source: '', at: OUTSIDE_SECONDS },
+  ...DRILL_TOUR_LINES.map((line, i) => ({ ...line, source: '', at: POWER_OFF_AT + i * TOUR_LINE_SECONDS })),
+  { text: DRILL_READY, key: [] as string[], source: '', at: READY_AT },
+];
+export const BEATS = LINES.length;
+
+/** Which line is on screen at second `t`. */
+export const beatAt = (t: number): number => LINES.reduce((last, line, i) => (line.at <= t ? i : last), 0);
+/** When each line appears. Next jumps here. */
+export const beatStart = (beat: number): number => LINES[beat]?.at ?? CUTSCENE_SECONDS;
+/** The moment shown for each line as a still picture under reduced motion:
+ *  late in its stretch, so the fire has grown and the camera has arrived. */
+export const stillAt = (beat: number): number => beatStart(beat) + 0.8 * (beatStart(beat + 1) - beatStart(beat));
 
 type Colour = [number, number, number];
 // The sky from the top down to the horizon at each stage: a calm afternoon,
@@ -370,31 +379,61 @@ export function drawOutside(view: View, art: Art, t: number, calm: boolean): voi
   ctx.fillRect(0, 0, W, H);
 }
 
-/** The inside of the house at second `t`: the news on, the window light
- *  turning, the power going, then the picture settling on the start. */
+/** Where the camera looks on the tour, one stop per room, ending on the
+ *  person where the game begins. In tiles. */
+const TOUR: [number, number][] = [
+  [18.5, 4.2], // the kitchen window and the television
+  [15, 5.5], // kitchen
+  [8.5, 5.5], // laundry
+  [3.5, 6], // garage
+  [5, 12.5], // hall
+  [4, 19], // main bedroom
+  [10.5, 19], // bathroom
+  [16.5, 19], // study
+  [23.5, 19], // second bedroom
+  [21, 12.5], // back up the hall
+  [SPAWN.x, SPAWN.y - 1], // the person, as the game frames them
+];
+
+const smooth = (x: number) => x * x * (3 - 2 * x);
+
+/** The camera partway along the tour, 0 to 1. Each leg eases in and out, so
+ *  the camera pauses on every room before moving on. */
+function tourAt(progress: number): [number, number] {
+  const along = clamp01(progress) * (TOUR.length - 1);
+  const leg = Math.min(TOUR.length - 2, Math.floor(along));
+  const f = smooth(along - leg);
+  const [x0, y0] = TOUR[leg];
+  const [x1, y1] = TOUR[leg + 1];
+  return [x0 + (x1 - x0) * f, y0 + (y1 - y0) * f];
+}
+
+/** The inside of the house at second `t`: the news on and the window light
+ *  turning, then the power failing and the camera touring every room while
+ *  the instructions appear, then settling on the person, ready. */
 export function insideScene(t: number, calm: boolean): Scene {
-  const inside = t - OUTSIDE_SECONDS;
-  const settle = clamp01((t - POWER_OFF_AT) / (CUTSCENE_SECONDS - POWER_OFF_AT));
-  const ease = settle * settle * (3 - 2 * settle);
   const powered = t < POWER_OFF_AT;
+  const [camX, camY] = powered ? TOUR[0] : tourAt((t - POWER_OFF_AT) / TOUR_SECONDS);
+  // A little dim with the lights on, so the orange at the window shows; darker
+  // once they go; and at the end as dark as the minute starts.
+  const dark = powered ? 0.3 : t < READY_AT ? 0.45 : 0.45 + 0.17 * clamp01((t - READY_AT) / 1.5);
   return {
     time: t,
-    // From the television and the window, across to where the figure stands.
-    camX: SPAWN.x - 2 + 2 * ease,
-    camY: SPAWN.y - 2 + 3 * ease,
+    camX,
+    camY,
     figure: { x: SPAWN.x, y: SPAWN.y, facing: UP, pose: 'idle', poseTime: t },
     packed: [],
     packedAt: 0,
     near: null,
     powered,
-    glow: clamp01(0.5 + inside / 8),
-    smoke: 0.14 * clamp01(inside / 6),
-    dark: powered ? 0 : 0.5 * clamp01((t - POWER_OFF_AT) / 1.5),
+    glow: clamp01(0.4 + (t - OUTSIDE_SECONDS) / 4),
+    smoke: powered ? 0.08 : 0.14,
+    dark,
     door: 0,
     late: false,
     doorArrow: false,
     showBag: false,
-    outlines: false,
+    outlines: !powered,
     matHold: 0,
     calm,
   };

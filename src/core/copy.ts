@@ -1253,12 +1253,18 @@ export const DRILL_FACTS = [
   { text: 'A wind change turned its side into a front 50 kilometres wide.', key: ['50 kilometres wide'], source: 'Country Fire Authority' },
   { text: 'Black Saturday, 7 February 2009, took 173 lives.', key: ['7 February 2009', '173 lives'], source: '2009 Victorian Bushfires Royal Commission' },
 ];
-/** The two lines once the film cuts inside the house. */
-export const DRILL_INSIDE_LINES = [
-  'Inside, the news is on. The light at the window turns orange.',
-  'The power goes out. You have one minute.',
+/** The line once the film cuts inside the house, with the lights still on. */
+export const DRILL_INSIDE_LINE = { text: 'Inside, the news is on. The light at the window turns orange.', key: ['turns orange'] };
+/** The instructions, shown while the camera tours the dark house. */
+export const DRILL_TOUR_LINES = [
+  { text: 'The power is out. You have one minute.', key: ['one minute'] },
+  { text: 'Find and pack ten things. Each one is outlined in yellow.', key: ['ten things', 'yellow'] },
+  { text: 'Then get out the front door before the minute is up.', key: ['front door'] },
 ];
-export const CUTSCENE_LABEL = 'A home among gum trees as a bushfire arrives and grows, then its living room.';
+/** The last line, over the person, just before the clock starts. */
+export const DRILL_READY = 'Get ready.';
+export const EXIT_LABEL = 'EXIT';
+export const CUTSCENE_LABEL = 'A home among gum trees as a bushfire arrives and grows, then a tour of every room inside it.';
 export const DRILL_SCENE_LABEL = 'A house seen from above, with the person you are steering.';
 export const DRILL_HINT = 'Be at the front door when the time ends.';
 export const BAG_COUNT = (count: number, limit: number) => `Bag ${count} of ${limit}`;

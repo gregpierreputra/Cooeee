@@ -4,6 +4,7 @@
 // front is not. All drawing is in source pixels (16 to a tile), scaled up by a
 // whole number so every pixel of the art stays square.
 
+import { EXIT_LABEL } from '../../core/copy';
 import { BAG_LIMIT, DRILL_ITEMS, itemById, type DrillItem } from '../../core/drill-items';
 import { MAT_CENTRE, restingOrder } from '../../core/drill-house';
 import { FURNITURE, GRID, MAT, TILE, wallLift } from '../../core/drill-layout';
@@ -53,7 +54,7 @@ const TILES_ACROSS = 11;
 const TILES_DOWN = 13;
 /** Room kept clear at the top of the picture for the clock, and at the
  *  bottom for the thumb controls, in css pixels. Arrows stay out of both. */
-const HUD_HEIGHT = 64;
+const HUD_HEIGHT = 110;
 const CONTROLS_HEIGHT = 140;
 const HOUSE_WIDTH = GRID[0].length * TILE;
 const HOUSE_HEIGHT = GRID.length * TILE;
@@ -193,13 +194,13 @@ function drawGlow(view: View, glow: number, time: number, calm: boolean): void {
     const flicker = calm ? 0.85 : 0.7 + 0.3 * Math.sin(time * 9 + i) * Math.sin(time * 3.7 + i * 2);
     const x = (piece.x + piece.w / 2) * TILE;
     const y = (piece.y + piece.h) * TILE - wallLift(ATLAS[piece.sprite][3]);
-    ctx.fillStyle = `rgba(255, 110, 20, ${0.6 * glow * flicker})`;
+    ctx.fillStyle = `rgba(255, 110, 20, ${0.9 * glow * flicker})`;
     ctx.fillRect(x - 11, y - 18, 22, 16);
-    const spill = ctx.createRadialGradient(x, y, 4, x, y, 64);
-    spill.addColorStop(0, `rgba(255, 120, 30, ${0.5 * glow * flicker})`);
+    const spill = ctx.createRadialGradient(x, y, 4, x, y, 80);
+    spill.addColorStop(0, `rgba(255, 120, 30, ${0.75 * glow * flicker})`);
     spill.addColorStop(1, 'rgba(255, 120, 30, 0)');
     ctx.fillStyle = spill;
-    ctx.fillRect(x - 64, y - 8, 128, 72);
+    ctx.fillRect(x - 80, y - 8, 160, 88);
   });
   ctx.globalCompositeOperation = 'source-over';
 }
@@ -207,7 +208,8 @@ function drawGlow(view: View, glow: number, time: number, calm: boolean): void {
 /** A soft pulse on the door mat, so it is the one bright thing on the floor. */
 function drawMat(view: View, scene: Scene): void {
   const pulse = scene.calm ? 0.35 : 0.25 + 0.2 * Math.sin(scene.time * 4);
-  view.ctx.fillStyle = `rgba(255, 224, 130, ${pulse})`;
+  // Green, like the exit arrow, once the arrow is showing the way.
+  view.ctx.fillStyle = scene.doorArrow ? `rgba(91, 227, 138, ${pulse + 0.2})` : `rgba(255, 224, 130, ${pulse})`;
   GRID.forEach((row, y) => [...row].forEach((cell, x) => cell === MAT && view.ctx.fillRect(x * TILE, y * TILE, TILE, TILE)));
 }
 
@@ -268,7 +270,9 @@ function drawHaze(view: View, scene: Scene, figureX: number, figureY: number): v
     const inner = (torch ? 34 : 16) * flicker;
     const outer = (torch ? 100 : 58) * flicker;
     const dark = `rgba(4, 5, 14, ${scene.dark})`;
-    if (scene.figure) {
+    // With the lights on the room dims evenly; once they fail, sight shrinks
+    // to a pool round the person.
+    if (scene.figure && !scene.powered) {
       const pool = ctx.createRadialGradient(figureX, figureY, inner, figureX, figureY, outer);
       pool.addColorStop(0, 'rgba(4, 5, 14, 0)');
       pool.addColorStop(1, dark);
@@ -338,24 +342,58 @@ function drawBag(view: View, art: Art, scene: Scene, left: number, top: number):
   }
 }
 
-/** An arrow to the front door: over the mat when it is in view, otherwise at
- *  the edge of the picture pointing the way. */
-function drawDoorArrow(view: View, art: Art, scene: Scene, left: number, top: number): void {
+/** A large green arrow to the front door, with EXIT beside it: bouncing
+ *  over the mat when it is in view, otherwise at the edge of the picture,
+ *  turned to point the way. Kept clear of the clock and the thumb controls. */
+function drawDoorArrow(view: View, scene: Scene, left: number, top: number): void {
   const { ctx, width, height } = view;
-  const matX = MAT_CENTRE.x * TILE - left;
-  const matY = MAT_CENTRE.y * TILE - top;
-  const bob = scene.calm ? 0 : Math.sin(scene.time * 8) * 2;
-  const inset = 14;
-  const x = clamp(matX, inset, width - inset);
   const toSource = view.ratio / view.scale;
-  const y = clamp(matY - 10, HUD_HEIGHT * toSource + 10, height - CONTROLS_HEIGHT * toSource - BAG_STRIP);
-  const onScreen = x === matX && y === matY - 10;
+  const matX = MAT_CENTRE.x * TILE - left;
+  const matY = MAT_CENTRE.y * TILE - top - 8;
+  const pad = 30;
+  const x = clamp(matX, pad, width - pad);
+  const y = clamp(matY, HUD_HEIGHT * toSource + pad + 14, height - CONTROLS_HEIGHT * toSource - BAG_STRIP - pad);
+  const onScreen = x === matX && y === matY;
+  const angle = onScreen ? 0 : Math.atan2(matY - y, matX - x) - Math.PI / 2;
+  const pulse = scene.calm ? 1 : 1 + 0.12 * Math.sin(scene.time * 6);
+  const bob = onScreen && !scene.calm ? Math.sin(scene.time * 6) * 3 - 3 : 0;
+
+  // The arrow: a shaft and a head pointing down, tip at the origin.
   ctx.save();
-  ctx.translate(x, y + (onScreen ? bob : 0));
-  // The arrow sprite points down. Turn it to point from here to the mat.
-  if (!onScreen) ctx.rotate(Math.atan2(matY - y, matX - x) - Math.PI / 2);
-  ctx.scale(1.5, 1.5);
-  drawSprite(view, art, 'arrow', 0, ATLAS.arrow[3] / 2);
+  ctx.translate(x, y + bob);
+  ctx.rotate(angle);
+  ctx.scale(pulse, pulse);
+  ctx.shadowColor = 'rgba(91, 227, 138, 0.9)';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = '#5be38a';
+  ctx.strokeStyle = '#0b2a16';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-5, -36);
+  ctx.lineTo(5, -36);
+  ctx.lineTo(5, -16);
+  ctx.lineTo(13, -16);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(-13, -16);
+  ctx.lineTo(-5, -16);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
+  ctx.restore();
+
+  // EXIT past the tail of the arrow, always upright.
+  const labelX = clamp(x + 47 * Math.sin(angle), 16, width - 16);
+  const labelY = clamp(y + bob - 47 * Math.cos(angle) + 3, HUD_HEIGHT * toSource + 10, height - BAG_STRIP - 4);
+  ctx.save();
+  ctx.font = '800 10px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#0b2a16';
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeText(EXIT_LABEL, labelX, labelY);
+  ctx.fillText(EXIT_LABEL, labelX, labelY);
   ctx.restore();
 }
 
@@ -400,6 +438,6 @@ export function drawScene(view: View, art: Art, scene: Scene): void {
   if (scene.smoke > 0) drawEmbers(view, scene);
   if (scene.late) drawLate(view, scene);
   drawNearArrow(view, art, scene, left, top);
-  if (scene.doorArrow) drawDoorArrow(view, art, scene, left, top);
+  if (scene.doorArrow) drawDoorArrow(view, scene, left, top);
   if (scene.showBag) drawBag(view, art, scene, left, top);
 }

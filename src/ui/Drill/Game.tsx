@@ -4,7 +4,7 @@ import { SPAWN, onDoorMat, roomAt } from '../../core/drill-house';
 import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
 import { DOWN, EARLY_EXIT_HOLD, facing, haze, leavingEarly, nearestItem, speedFor, step } from '../../core/drill-play';
 import * as audio from './audio';
-import { BEATS, CUTSCENE_SECONDS, OUTSIDE_SECONDS, POWER_OFF_AT, beatAt, beatStart, drawOutside, insideScene, stillAt } from './cutscene';
+import { BEATS, CUTSCENE_SECONDS, LINES, OUTSIDE_SECONDS, POWER_OFF_AT, beatAt, beatStart, drawOutside, insideScene, stillAt } from './cutscene';
 import { attachKeys, stickVector } from './input';
 import { startLoop } from './loop';
 import { BAG_STRIP, drawScene, fitCanvas, loadArt, type Art } from './render';
@@ -52,12 +52,6 @@ function withKeys(text: string, keys: string[]) {
   const pattern = new RegExp(`(${keys.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`);
   return text.split(pattern).map((part, i) => (keys.includes(part) ? <strong key={i} className="drill-fact-figure">{part}</strong> : part));
 }
-
-/** The lines over the film: a fact with its publisher, then the two inside. */
-const lineAt = (beat: number) =>
-  beat < copy.DRILL_FACTS.length
-    ? copy.DRILL_FACTS[beat]
-    : { text: copy.DRILL_INSIDE_LINES[Math.min(1, beat - copy.DRILL_FACTS.length)], key: [] as string[], source: '' };
 
 type Props = {
   /** Show the opening film first. Play again goes straight to the minute. */
@@ -270,7 +264,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
   const late = hud.seconds <= LATE_SECONDS;
   const clock = `${Math.floor(hud.seconds / 60)}:${String(hud.seconds % 60).padStart(2, '0')}`;
   const full = hud.packed >= BAG_LIMIT;
-  const line = lineAt(hud.beat);
+  const line = LINES[hud.beat];
 
   return (
     <div ref={stageRef} className="drill-stage" tabIndex={-1} aria-label={copy.DRILL_LABEL}>
@@ -344,7 +338,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
           <div className="drill-scrim" aria-hidden="true" />
           {/* One stable live region, so each new line is read out as it lands. */}
           <div role="status" aria-live="polite">
-            <div key={hud.beat} className="drill-fact">
+            <div key={hud.beat} className={hud.beat === BEATS - 1 ? 'drill-fact ready' : 'drill-fact'}>
               <p className="drill-fact-text">{withKeys(line.text, line.key)}</p>
               {line.source ? <p className="drill-fact-source">{line.source}</p> : null}
             </div>
