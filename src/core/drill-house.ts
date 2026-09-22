@@ -2,20 +2,39 @@
 // layout the picture is painted from, so a wall on screen is a wall underfoot.
 // Positions are in tiles: x across, y down, fractions allowed.
 
+import { ATLAS } from './drill-atlas';
 import type { DrillRoom } from './drill-items';
-import { FURNITURE, GRID, MAT, ROOM_OF, START } from './drill-layout';
+import { FURNITURE, GRID, MAT, ROOM_OF, START, TILE } from './drill-layout';
 
 export const ROWS = GRID.length;
 export const COLS = GRID[0].length;
 
-/** Half the width of the figure's feet, and how far an arm reaches. */
-export const PERSON_RADIUS = 0.3;
+/** How far an arm reaches. */
 export const REACH = 1.8;
 
-/** True for every cell the figure cannot enter: wall, or under furniture. */
+/** The figure's feet, as a small box round the point it stands on, in tiles:
+ *  as wide as the drawn feet, and only a little deep, so it can pass close in
+ *  front of furniture the way the picture suggests it can. */
+const FEET = { side: 0.25, back: 0.2, front: 0.08 };
+
+/** The floor each piece of furniture really covers: the width of its picture,
+ *  and a depth at its base no deeper than its footprint. So what stops the
+ *  figure is exactly what the picture shows standing there, never more. Flat
+ *  pieces, wall pieces and loose clutter cover no floor. */
+type Box = { x0: number; y0: number; x1: number; y1: number };
+const BLOCKS: Box[] = FURNITURE.filter((piece) => !piece.flat && !piece.wall && !piece.loose).map((piece) => {
+  const [, , width, height] = ATLAS[piece.sprite];
+  const centre = (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0);
+  const bottom = (piece.y + piece.h) * TILE;
+  const depth = Math.min(height, piece.h * TILE - 4);
+  return { x0: (centre - width / 2) / TILE, y0: (bottom - depth) / TILE, x1: (centre + width / 2) / TILE, y1: bottom / TILE };
+});
+
+/** True for every cell under a piece of furniture or wall: used only to tell
+ *  whether a thing rests on something, for the order things are drawn in. */
 const SOLID: boolean[][] = GRID.map((row) => [...row].map((cell) => !(cell in ROOM_OF)));
 for (const piece of FURNITURE) {
-  if (piece.flat) continue;
+  if (piece.flat || piece.loose) continue;
   for (let y = piece.y; y < piece.y + piece.h; y++) {
     for (let x = piece.x; x < piece.x + piece.w; x++) SOLID[y][x] = true;
   }
@@ -40,12 +59,17 @@ export function restingOrder(x: number, y: number): number {
   return row + 1.01;
 }
 
-/** Whether feet of this radius at (x, y) would overlap a wall or furniture. */
-export const blocked = (x: number, y: number, radius = PERSON_RADIUS): boolean =>
-  onSolid(x - radius, y - radius) ||
-  onSolid(x + radius, y - radius) ||
-  onSolid(x - radius, y + radius) ||
-  onSolid(x + radius, y + radius);
+const isWall = (x: number, y: number): boolean => !(cellAt(x, y) in ROOM_OF);
+
+/** Whether the figure's feet at (x, y) would overlap a wall or furniture. */
+export function blocked(x: number, y: number): boolean {
+  const x0 = x - FEET.side;
+  const x1 = x + FEET.side;
+  const y0 = y - FEET.back;
+  const y1 = y + FEET.front;
+  if (isWall(x0, y0) || isWall(x1, y0) || isWall(x0, y1) || isWall(x1, y1)) return true;
+  return BLOCKS.some((box) => x0 < box.x1 && x1 > box.x0 && y0 < box.y1 && y1 > box.y0);
+}
 
 export const onDoorMat = (x: number, y: number): boolean => cellAt(x, y) === MAT;
 

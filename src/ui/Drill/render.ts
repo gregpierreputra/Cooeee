@@ -8,7 +8,7 @@ import { EXIT_LABEL } from '../../core/copy';
 import { BAG_LIMIT, DRILL_ITEMS, itemById, type DrillItem } from '../../core/drill-items';
 import { MAT_CENTRE, restingOrder } from '../../core/drill-house';
 import { FURNITURE, GRID, MAT, TILE, wallLift } from '../../core/drill-layout';
-import { ATLAS } from './atlas';
+import { ATLAS } from '../../core/drill-atlas';
 
 /** The two baked pictures, and a copy of the sprite sheet with every pixel
  *  turned yellow: the outline drawn round each thing that can be packed. */

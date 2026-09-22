@@ -39,10 +39,11 @@ test.describe('E7 the drill in front of the rehearsal', () => {
 
   test('the sound control says its state and the pack page lists no drill yet', async ({ page }) => {
     await page.goto(`${HARNESS}/drill`);
-    const sound = page.getByRole('button', { name: 'Sound on' });
+    const sound = page.getByRole('button', { name: 'Sound', exact: true });
     await expect(sound).toHaveAttribute('aria-pressed', 'true');
     await sound.click();
-    await expect(page.getByRole('button', { name: 'Sound off' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(sound).toHaveAttribute('aria-pressed', 'false');
+    await expect(sound).toHaveClass(/off/);
     await page.goto(`${HARNESS}/detail`);
     await page.getByRole('button', { name: /Show Drills/ }).click();
     await expect(page.locator('main')).toContainText('Not yet drilled.');

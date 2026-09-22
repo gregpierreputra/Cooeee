@@ -2570,10 +2570,26 @@ input {
   gap: 1rem;
 }
 .drill-sound {
-  width: auto;
-  min-height: 44px;
-  padding: 0.25rem 1rem;
-  font-size: var(--step-s);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  cursor: pointer;
+}
+/* On: filled in the accent. Off: an outline in the quiet colour, so the two
+   states differ in shape and weight, not only in colour. */
+.drill-sound.on {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.drill-sound.off {
+  background: rgba(8, 10, 18, 0.62);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(244, 241, 234, 0.8);
 }
 
 /* While the film and the minute run, the drill is the whole screen: the
@@ -2835,6 +2851,20 @@ body.drill-open .banner {
   line-height: 1.2;
   touch-action: none;
   cursor: pointer;
+}
+.drill-pack {
+  animation: drill-pack-in 0.18s ease-out both;
+}
+@keyframes drill-pack-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-pack {
+    animation: none;
+  }
 }
 .drill-pack:disabled {
   border-color: rgba(255, 255, 255, 0.18);

@@ -3,7 +3,7 @@ import * as copy from '../../core/copy';
 import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
 import { debriefRows, kindOf, leftBehind, scoreBreakdown, scoreDrill } from '../../core/drill-score';
 import Glyph from '../components/Glyph';
-import { ATLAS, SHEET } from './atlas';
+import { ATLAS, SHEET } from '../../core/drill-atlas';
 import type { DrillOutcome } from './Game';
 
 const TILE_SIZE = 40; // css pixels a thing's picture fits inside

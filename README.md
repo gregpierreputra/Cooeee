@@ -47,7 +47,7 @@ refuses any other copy.
 
 `npm run build:drill:art` bakes the pictures for the Drill, the timed packing game shown before a
 rehearsal. It reads the Modern Interiors art pack by LimeZu from a `game-assets` folder at the
-repository root and writes `public/drill` and `src/ui/Drill/atlas.ts`. The pack is bought from
+repository root and writes `public/drill` and `src/core/drill-atlas.ts`. The pack is bought from
 limezu.itch.io and its licence forbids passing it on, so `game-assets` is ignored by git and only
 the baked pictures of the frames the game uses are committed. LimeZu is credited on the About
 screen. Run the script again after any change to `src/core/drill-layout.ts` or to the list of

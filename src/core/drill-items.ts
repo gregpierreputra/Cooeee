@@ -48,22 +48,22 @@ export const DRILL_ITEMS: DrillItem[] = [
   { id: 'torch', name: 'torch', room: 'garage', weight: 10, why: 'A powerful torch is on the CFA list. Smoke makes midday dark.', x: 1.6, y: 3.5 },
   { id: 'radio', name: 'battery radio', room: 'garage', weight: 10, why: 'A battery radio is on the CFA list. It works when the phone network does not.', x: 2.9, y: 3.5 },
   { id: 'toolbox', name: 'toolbox', room: 'garage', weight: 0, why: 'A toolbox does nothing for the drive out.', x: 5.0, y: 4.95 },
+  { id: 'masks', name: 'P2 masks', room: 'garage', weight: 10, why: 'P2 masks are on the CFA list. Smoke arrives long before flame.', x: 4.6, y: 3.4 },
   // main bedroom
-  { id: 'medicines', name: 'medicines', room: 'main bedroom', weight: 10, why: 'Medicines are the first thing on the CFA list. A pharmacy may be closed for days.', x: 1.5, y: 17.3 },
   { id: 'overnight', name: 'overnight bag and toiletries', room: 'main bedroom', weight: 8, why: 'A change of clothes and toiletries are on the CFA list.', x: 5.4, y: 21.7 },
   { id: 'pillow', name: 'pillow', room: 'main bedroom', weight: 0, why: 'A pillow is comfort, not readiness.', x: 3.0, y: 17.6 },
   { id: 'clothes', name: 'long sleeved cotton clothes', room: 'main bedroom', weight: 10, why: 'The CFA says to wear long sleeves in natural fibres. Radiant heat burns through thin clothes.', x: 7.5, y: 17.2 },
+  { id: 'charger', name: 'phone and charger', room: 'main bedroom', weight: 10, why: 'The CFA says to take your phone and charger. It is how you hear what is happening.', x: 1.5, y: 17.3 },
   // bathroom
+  { id: 'medicines', name: 'medicines', room: 'bathroom', weight: 10, why: 'Medicines are the first thing on the CFA list. A pharmacy may be closed for days.', x: 9.5, y: 21.3 },
   { id: 'firstaid', name: 'first aid kit', room: 'bathroom', weight: 10, why: 'A first aid kit is on the CFA list. Help can be hours away.', x: 12.5, y: 17.3 },
-  { id: 'masks', name: 'P2 masks', room: 'bathroom', weight: 10, why: 'P2 masks are on the CFA list. Smoke arrives long before flame.', x: 9.5, y: 21.3 },
   // study
-  { id: 'papers', name: 'passport and papers', room: 'study', weight: 10, why: 'Passports, wills and insurance papers are on the CFA list and are hard to replace.', x: 14.57, y: 17.4 },
-  { id: 'laptop', name: 'computer', room: 'study', weight: 0, why: 'A computer is neither help nor harm.', x: 15.66, y: 17.4 },
+  { id: 'papers', name: 'passport and papers', room: 'study', weight: 10, why: 'Passports, wills and insurance papers are on the CFA list and are hard to replace.', x: 14.5, y: 17.4 },
+  { id: 'laptop', name: 'computer', room: 'study', weight: 0, why: 'A computer is neither help nor harm.', x: 15.5, y: 17.4 },
   { id: 'memorystick', name: 'memory stick of scanned papers', room: 'study', weight: 8, why: 'The CFA says to scan papers and photos onto a memory stick.', x: 14.5, y: 21.3 },
   { id: 'books', name: 'books', room: 'study', weight: 0, why: 'Books are replaceable and take no real space.', x: 18.9, y: 17.4 },
   { id: 'cash', name: 'cash and cards', room: 'study', weight: 8, why: 'Cash and cards are on the CFA list. Power and card readers may be out.', x: 15.3, y: 21.3 },
   // second bedroom
-  { id: 'charger', name: 'phone and charger', room: 'second bedroom', weight: 10, why: 'The CFA says to take your phone and charger. It is how you hear what is happening.', x: 22.5, y: 17.3 },
   { id: 'guitar', name: 'guitar', room: 'second bedroom', weight: -10, why: 'A guitar takes a whole seat.', x: 26.4, y: 19.2 },
   { id: 'football', name: 'ball', room: 'second bedroom', weight: 0, why: 'A ball is harmless and useless here.', x: 23.6, y: 20.6 },
 ];

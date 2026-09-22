@@ -18,6 +18,16 @@ describe('E7 the drill rules of movement', () => {
     expect(moved.y).toBeGreaterThan(6.5);
   });
 
+  it('eases round the corner of the sofa instead of catching on it', () => {
+    const moved = step(19.6, 7.05, 1, 0, 0.1, SPEED);
+    expect(moved.x).toBe(19.6);
+    expect(moved.y).toBeGreaterThan(7.05);
+    let x = 19.6;
+    let y = 7.05;
+    for (let frame = 0; frame < 20; frame += 1) ({ x, y } = step(x, y, 1, 0, 0.05, SPEED));
+    expect(x).toBeGreaterThan(22);
+  });
+
   it('slows for each bulky thing, down to a floor', () => {
     expect(speedFor([])).toBe(SPEED);
     expect(speedFor([bulky[0]])).toBeCloseTo(SPEED * 0.9);

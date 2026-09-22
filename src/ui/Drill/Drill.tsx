@@ -8,6 +8,7 @@ import Glyph from '../components/Glyph';
 import * as audio from './audio';
 import Debrief from './Debrief';
 import Game, { type DrillOutcome } from './Game';
+import SoundButton from './SoundButton';
 import Statline from './Statline';
 
 type Stage = 'statline' | 'game' | 'again' | 'debrief' | 'unavailable';
@@ -31,7 +32,6 @@ export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props
   const [stage, setStage] = useState<Stage>('statline');
   const [outcome, setOutcome] = useState<DrillOutcome | null>(null);
   const [highest, setHighest] = useState<number | null>(null);
-  const muted = audio.useMuted();
 
   const unavailable = useCallback(() => setStage('unavailable'), []);
   // The sound stops with the drill, however it is left.
@@ -69,9 +69,9 @@ export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props
           <Glyph kind="rehearse" />
           <span className="kicker">{copy.DRILL_LABEL}</span>
         </p>
-        <button type="button" className="action drill-sound" aria-pressed={!muted} onClick={audio.toggleMuted}>
-          {muted ? copy.SOUND_OFF : copy.SOUND_ON}
-        </button>
+        {/* Sound plays only from the film on, so the control sits where it
+            matters: on this first screen and over the game, not the report. */}
+        {stage === 'statline' ? <SoundButton /> : null}
       </div>
       {stage === 'statline' ? <Statline onStart={() => start('game')} onSkip={onDone} /> : null}
       {stage === 'game' || stage === 'again' ? (

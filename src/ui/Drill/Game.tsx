@@ -6,6 +6,7 @@ import { DOWN, EARLY_EXIT_HOLD, facing, haze, leavingEarly, nearestItem, speedFo
 import * as audio from './audio';
 import { BEATS, CUTSCENE_SECONDS, LINES, OUTSIDE_SECONDS, POWER_OFF_AT, beatAt, beatStart, drawOutside, insideScene, stillAt } from './cutscene';
 import { attachKeys, stickVector } from './input';
+import SoundButton from './SoundButton';
 import { startLoop } from './loop';
 import { BAG_STRIP, drawScene, fitCanvas, loadArt, type Art } from './render';
 
@@ -72,7 +73,6 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
   const knobRef = useRef<HTMLSpanElement>(null);
   const world = useRef<World>(freshWorld(opening));
   const [calm] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const muted = audio.useMuted();
   const [hud, setHud] = useState({
     playing: !opening, beat: 0, seconds, packed: 0, near: null as DrillItem | null, room: roomAt(SPAWN.x, SPAWN.y),
   });
@@ -279,9 +279,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
           <span />
         )}
         <div className="drill-top-actions">
-          <button type="button" className="drill-chip" aria-pressed={!muted} onClick={audio.toggleMuted}>
-            {muted ? copy.SOUND_OFF : copy.SOUND_ON}
-          </button>
+          <SoundButton />
           {hud.playing ? null : (
             <button type="button" className="drill-chip" onClick={skipOpening}>
               {copy.SKIP_CUTSCENE}
@@ -320,17 +318,23 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
             {/* Packs on the press, not the release: a second thumb landing while
                 the first holds the stick often gets no click on a phone. The
                 click only serves the keyboard, where detail is 0. */}
-            <button
-              type="button"
-              className="drill-pack"
-              disabled={!hud.near || full}
-              onPointerDown={pack}
-              onClick={(event) => {
-                if (event.detail === 0) pack();
-              }}
-            >
-              {full ? copy.BAG_FULL : hud.near ? copy.PACK_ITEM(hud.near.name) : copy.NOTHING_IN_REACH}
-            </button>
+            {/* Only there when something is in reach, named after it, so the
+                button itself says there is something to pack here. Enter
+                packs from a keyboard at any time. */}
+            {hud.near ? (
+              <button
+                key={hud.near.id}
+                type="button"
+                className="drill-pack"
+                disabled={full}
+                onPointerDown={pack}
+                onClick={(event) => {
+                  if (event.detail === 0) pack();
+                }}
+              >
+                {full ? copy.BAG_FULL : copy.PACK_ITEM(hud.near.name)}
+              </button>
+            ) : null}
           </div>
         </>
       ) : (

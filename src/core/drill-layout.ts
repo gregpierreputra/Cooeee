@@ -59,9 +59,11 @@ export const ROOM_OF: Record<string, DrillRoom> = {
  *  on its bottom edge, so a tall piece rises over the cells behind it. A flat
  *  piece (a rug) is painted into the floor and blocks nothing. A wall piece
  *  (a picture, a window) sits on a wall cell and is centred on the wall face.
+ *  A loose piece (a bucket, a pot plant, a toy) is small clutter the person
+ *  steps round or over, so it blocks nothing.
  *  `nudge` moves only the picture sideways, in pixels, for a sprite wider than
  *  its footprint that would otherwise overhang a wall. */
-export type Piece = { sprite: string; x: number; y: number; w: number; h: number; flat?: true; wall?: true; nudge?: number };
+export type Piece = { sprite: string; x: number; y: number; w: number; h: number; flat?: true; wall?: true; loose?: true; nudge?: number };
 
 /** How far above the floor line a thing of this height hung on a wall is
  *  drawn, in pixels: centred on the two tile wall face, so every picture and
@@ -75,12 +77,12 @@ export const FURNITURE: Piece[] = [
   { sprite: 'doormat', x: 24, y: 3, w: 1, h: 1, flat: true },
   { sprite: 'doormat', x: 25, y: 3, w: 1, h: 1, flat: true },
   { sprite: 'rug', x: 20, y: 4, w: 3, h: 2, flat: true },
-  { sprite: 'fern', x: 19, y: 3, w: 1, h: 1 },
+  { sprite: 'fern', x: 19, y: 3, w: 1, h: 1, loose: true },
   { sprite: 'tvUnit', x: 20, y: 3, w: 2, h: 1 },
   { sprite: 'sofa', x: 20, y: 6, w: 3, h: 1 },
   { sprite: 'armchair', x: 26, y: 5, w: 1, h: 1, nudge: -2 },
   { sprite: 'sideboard', x: 25, y: 8, w: 2, h: 1 },
-  { sprite: 'palm', x: 19, y: 8, w: 1, h: 1 },
+  { sprite: 'palm', x: 19, y: 8, w: 1, h: 1, loose: true },
   // kitchen
   { sprite: 'window', x: 15, y: 2, w: 2, h: 1, wall: true },
   { sprite: 'fridge', x: 12, y: 3, w: 1, h: 1 },
@@ -93,14 +95,14 @@ export const FURNITURE: Piece[] = [
   // laundry
   { sprite: 'washer', x: 7, y: 3, w: 1, h: 1, nudge: 2 },
   { sprite: 'shelf', x: 9, y: 3, w: 2, h: 1 },
-  { sprite: 'bucket', x: 10, y: 8, w: 1, h: 1 },
+  { sprite: 'bucket', x: 10, y: 8, w: 1, h: 1, loose: true },
   // garage
   { sprite: 'bench', x: 1, y: 3, w: 3, h: 1 },
   { sprite: 'rods', x: 4, y: 3, w: 2, h: 1 },
   { sprite: 'pingPong', x: 1, y: 5, w: 2, h: 3 },
-  { sprite: 'boxes', x: 5, y: 8, w: 1, h: 1 },
+  { sprite: 'boxes', x: 5, y: 8, w: 1, h: 1, loose: true },
   // hall: pictures on the walls and a runner on the floor, nothing in the way
-  { sprite: 'fern', x: 1, y: 12, w: 1, h: 1 },
+  { sprite: 'fern', x: 1, y: 12, w: 1, h: 1, loose: true },
   { sprite: 'landscape', x: 6, y: 11, w: 1, h: 1, wall: true },
   { sprite: 'frameA', x: 10, y: 11, w: 1, h: 1, wall: true, nudge: 8 },
   { sprite: 'frameB', x: 12, y: 11, w: 1, h: 1, wall: true, nudge: 8 },
@@ -109,15 +111,15 @@ export const FURNITURE: Piece[] = [
   { sprite: 'rug', x: 11, y: 12, w: 3, h: 2, flat: true },
   { sprite: 'rug', x: 18, y: 12, w: 3, h: 2, flat: true },
   { sprite: 'shoes', x: 25, y: 12, w: 1, h: 1, flat: true },
-  { sprite: 'smallPlant', x: 26, y: 12, w: 1, h: 1 },
+  { sprite: 'smallPlant', x: 26, y: 12, w: 1, h: 1, loose: true },
   // main bedroom
   { sprite: 'window', x: 2, y: 16, w: 2, h: 1, wall: true },
   { sprite: 'greenRug', x: 3, y: 20, w: 2, h: 2, flat: true },
   { sprite: 'nightstand', x: 1, y: 17, w: 1, h: 1 },
   { sprite: 'bed', x: 2, y: 17, w: 3, h: 2 },
   { sprite: 'dresser', x: 7, y: 17, w: 1, h: 1 },
-  { sprite: 'basket', x: 1, y: 21, w: 1, h: 1 },
-  { sprite: 'standMirror', x: 7, y: 21, w: 1, h: 1, nudge: -3 },
+  { sprite: 'basket', x: 1, y: 21, w: 1, h: 1, loose: true },
+  { sprite: 'standMirror', x: 7, y: 21, w: 1, h: 1, nudge: -2 },
   // bathroom
   { sprite: 'bathMat', x: 10, y: 18, w: 2, h: 1, flat: true },
   { sprite: 'toilet', x: 9, y: 17, w: 1, h: 1 },
@@ -126,11 +128,11 @@ export const FURNITURE: Piece[] = [
   { sprite: 'dresser', x: 9, y: 21, w: 1, h: 1 },
   // study
   { sprite: 'rug', x: 16, y: 19, w: 3, h: 2, flat: true },
-  { sprite: 'desk', x: 14, y: 17, w: 2, h: 1, nudge: 3 },
+  { sprite: 'tvUnit', x: 14, y: 17, w: 2, h: 1 },
   { sprite: 'officeChair', x: 15, y: 19, w: 1, h: 1 },
   { sprite: 'bookshelf', x: 18, y: 17, w: 2, h: 1 },
   { sprite: 'sideboard', x: 14, y: 21, w: 2, h: 1 },
-  { sprite: 'globe', x: 19, y: 21, w: 1, h: 1 },
+  { sprite: 'globe', x: 19, y: 21, w: 1, h: 1, loose: true },
   { sprite: 'frameC', x: 14, y: 16, w: 1, h: 1, wall: true, nudge: 8 },
   // second bedroom
   { sprite: 'worldMap', x: 25, y: 16, w: 2, h: 1, wall: true },
@@ -138,7 +140,7 @@ export const FURNITURE: Piece[] = [
   { sprite: 'singleBed', x: 21, y: 17, w: 1, h: 2 },
   { sprite: 'nightstand', x: 22, y: 17, w: 1, h: 1 },
   { sprite: 'dresser', x: 25, y: 17, w: 1, h: 1 },
-  { sprite: 'drum', x: 26, y: 21, w: 1, h: 1, nudge: -2 },
-  { sprite: 'teddy', x: 21, y: 21, w: 1, h: 1 },
+  { sprite: 'drum', x: 26, y: 21, w: 1, h: 1, nudge: -2, loose: true },
+  { sprite: 'teddy', x: 21, y: 21, w: 1, h: 1, loose: true },
   { sprite: 'toyCar', x: 24, y: 21, w: 1, h: 1, flat: true },
 ];

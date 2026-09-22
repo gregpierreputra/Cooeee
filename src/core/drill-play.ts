@@ -33,14 +33,43 @@ export function speedFor(packed: string[]): number {
   return SPEED * Math.max(SLOWEST, 1 - BULKY_COST * bulky);
 }
 
+/** How far sideways the figure is eased to slip round a corner it clips. */
+const SLIDE = 0.3;
+
+/** The smallest sideways shift, up to SLIDE, that would let a blocked move of
+ *  (dx, dy) along one axis go through, or 0 when none does. */
+function clearance(x: number, y: number, dx: number, dy: number): number {
+  for (let shift = 0.05; shift <= SLIDE + 1e-9; shift += 0.05) {
+    for (const side of [shift, -shift]) {
+      const ox = dx === 0 ? side : 0;
+      const oy = dx === 0 ? 0 : side;
+      if (!blocked(x + ox, y + oy) && !blocked(x + ox + dx, y + oy + dy)) return side;
+    }
+  }
+  return 0;
+}
+
+/** Move towards a sideways shift, no faster than the figure is walking. */
+const ease = (shift: number, move: number): number => Math.sign(shift) * Math.min(Math.abs(shift), Math.abs(move));
+
 /** One move. The stick (sx, sy) is at most one long. Each axis moves on its
- *  own, so the figure slides along a wall rather than sticking to it. */
+ *  own, so the figure slides along a wall rather than sticking to it, and a
+ *  move straight into the corner of something eases round it. */
 export function step(x: number, y: number, sx: number, sy: number, dt: number, speed: number) {
   const length = Math.max(1, Math.hypot(sx, sy));
-  const nextX = x + (sx / length) * speed * dt;
-  const nextY = y + (sy / length) * speed * dt;
-  const movedX = blocked(nextX, y) ? x : nextX;
-  return { x: movedX, y: blocked(movedX, nextY) ? y : nextY };
+  const dx = (sx / length) * speed * dt;
+  const dy = (sy / length) * speed * dt;
+  let nextX = x;
+  let nextY = y;
+  if (dx !== 0) {
+    if (!blocked(x + dx, y)) nextX = x + dx;
+    else if (dy === 0) nextY = y + ease(clearance(x, y, dx, 0), dx);
+  }
+  if (dy !== 0) {
+    if (!blocked(nextX, y + dy)) nextY = y + dy;
+    else if (dx === 0) nextX = x + ease(clearance(x, y, 0, dy), dy);
+  }
+  return { x: nextX, y: nextY };
 }
 
 /** The way the stick points, or the way already faced when it is at rest. */

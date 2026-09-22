@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COLS, MAT_CENTRE, REACH, ROWS, SPAWN, blocked, onDoorMat, restingOrder, roomAt } from '../../src/core/drill-house';
 import { DRILL_ITEMS } from '../../src/core/drill-items';
-import { GRID, ROOM_OF } from '../../src/core/drill-layout';
+import { FURNITURE, GRID, ROOM_OF } from '../../src/core/drill-layout';
 
 // Every cell centre a person can walk to from the start, by flood fill.
 function walkable(): Set<string> {
@@ -29,6 +29,9 @@ describe('E7 the drill house', () => {
     expect(blocked(-1, 5)).toBe(true);
     expect(blocked(5, ROWS + 1)).toBe(true);
     expect(blocked(20.5, 6.5)).toBe(true); // the sofa
+    expect(blocked(10.5, 8.5)).toBe(false); // the bucket is clutter, stepped round
+    expect(blocked(13.5, 4.25)).toBe(false); // right up against the kitchen bench
+    expect(blocked(13.5, 4.1)).toBe(true); // but not into it
     expect(roomAt(0.5, 0.5)).toBeNull();
   });
 
@@ -56,5 +59,18 @@ describe('E7 the drill house', () => {
     expect(restingOrder(2.6, 17.9)).toBeCloseTo(19.01); // a pillow on the two row bed
     expect(restingOrder(25.6, 8.2)).toBeCloseTo(9.01); // photos on a sideboard above a wall
     expect(restingOrder(0.5, 0.5)).toBeCloseTo(1.01); // inside a wall, with wall below
+  });
+
+  it('never blocks the middle of a floor tile that has no furniture on it', () => {
+    const covered = new Set<string>();
+    for (const piece of FURNITURE) {
+      if (piece.flat || piece.wall || piece.loose) continue;
+      for (let y = piece.y; y < piece.y + piece.h; y++) for (let x = piece.x; x < piece.x + piece.w; x++) covered.add(`${x},${y}`);
+    }
+    const pinched: string[] = [];
+    GRID.forEach((row, y) => [...row].forEach((cell, x) => {
+      if (cell in ROOM_OF && !covered.has(`${x},${y}`) && blocked(x + 0.5, y + 0.5)) pinched.push(`${x},${y}`);
+    }));
+    expect(pinched).toEqual([]);
   });
 });
