@@ -36,7 +36,9 @@ export function useCompass(declinationDeg: number) {
       target.style.setProperty('--heading', String(heading));
     };
     const onReading = (event: DeviceOrientationEvent) => {
-      const magnetic = compassHeading(event, screen.orientation?.angle ?? 0);
+      // iOS before 16.4 has no screen.orientation, only the older window.orientation.
+      const angle = screen.orientation?.angle ?? (window as { orientation?: number }).orientation ?? 0;
+      const magnetic = compassHeading(event, angle);
       if (magnetic === null) return;
       const next = (magnetic + declination.current + 360) % 360;
       if (!announced) {

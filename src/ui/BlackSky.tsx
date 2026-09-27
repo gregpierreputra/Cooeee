@@ -76,8 +76,8 @@ export default function BlackSky({
   // US3-AC2, the power rule: GPS samples land in this ref (no render). A sample
   // FIX_PUBLISH_M or more from the position on screen is shown at once, so the
   // distance follows a person who is moving; anything smaller is sensor noise
-  // and waits for the TICK_MS interval below, so a phone held still renders
-  // once per tick. The arrows turn with the phone by CSS, not by a render.
+  // and waits for the TICK_MS interval below (one second), so a phone held
+  // still renders once per tick. The arrows turn with the phone by CSS, not by a render.
   const latestFix = useRef<Fix | null>(null);
 
   useEffect(() => {
@@ -160,11 +160,24 @@ export default function BlackSky({
         navigator.geolocation.clearWatch(watch);
         startWatch();
       }, WATCH_RESTART_MS);
-      if (!('wakeLock' in navigator)) return;
+      if ('wakeLock' in navigator) hold();
+    };
+    // The phone may drop the lock on its own (power saving) while the screen is
+    // still in use, so a release that sleep() did not ask for asks again. A lock
+    // granted after sleep(), or while one is already held, is let go.
+    const hold = () => {
       navigator.wakeLock.request('screen').then(
         (held) => {
-          if (watch === null) void held.release(); // granted after sleep(): let it go
-          else lock = held;
+          if (watch === null || lock) {
+            void held.release();
+            return;
+          }
+          lock = held;
+          held.addEventListener('release', () => {
+            if (lock !== held) return;
+            lock = null;
+            if (!document.hidden && watch !== null) hold();
+          });
         },
         () => {},
       );
@@ -208,16 +221,20 @@ export default function BlackSky({
 
   // The tick: publishes the clock AND the newest fix together, once per
   // TICK_MS. The fix's age needs the clock to move (an old fix must be called
-  // old), and publishing both in one place keeps renders to one per tick.
+  // old), and publishing both in one place keeps renders to one per tick. A
+  // hidden page is not drawn: the next tick after it returns catches up.
   useEffect(() => {
     const timer = setInterval(() => {
+      if (document.hidden) return;
       setNow(Date.now());
       setFix(latestFix.current);
     }, TICK_MS);
     return () => clearInterval(timer);
   }, []);
 
-  if (packs === null) return null;
+  // The page itself, empty, while the store answers: the route's focus lands on
+  // it, and the same element carries the screen once it arrives.
+  if (packs === null) return <main className="page blacksky" />;
 
   // One pack needs no choosing. With several, only the chosen one is loaded,
   // and a remembered id that matches no saved pack loads nothing.
@@ -288,7 +305,7 @@ export default function BlackSky({
         // Several packs and none chosen yet: only the live pointer to the
         // nearest official places, from the position, until one is chosen.
         from ? (
-          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+          <NearbyList places={screen.nearby} confidence={screen.confidence} estimating={estimate !== null} />
         ) : (
           <p className="muted">{copy.NO_GPS_YET}</p>
         )
@@ -406,7 +423,7 @@ function ScreenBody({
               </li>
             ))}
           </ul>
-          <NearbyList places={screen.nearby} confidence={screen.confidence} />
+          <NearbyList places={screen.nearby} confidence={screen.confidence} estimating={estimating} />
           <section className="card blacksky-guidance emergency-line">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
             <a className="with-glyph call-link" href="tel:000">
@@ -500,7 +517,15 @@ function ConfidenceLines({
 /** The nearest official places on the state-wide list, from the live fix.
  *  Nothing when there is no fix or no stored list. The confidence lines travel
  *  with it on the screens that have no other figure to hang them on. */
-function NearbyList({ places, confidence }: { places: Placed[]; confidence?: Confidence }) {
+function NearbyList({
+  places,
+  confidence,
+  estimating = false,
+}: {
+  places: Placed[];
+  confidence?: Confidence;
+  estimating?: boolean;
+}) {
   if (places.length === 0) return null;
   return (
     <section className="blacksky-nearby">
@@ -511,7 +536,7 @@ function NearbyList({ places, confidence }: { places: Placed[]; confidence?: Con
           <PlacedRow key={place.id} place={place} />
         ))}
       </ul>
-      {confidence ? <ConfidenceLines confidence={confidence} estimating={false} /> : null}
+      {confidence ? <ConfidenceLines confidence={confidence} estimating={estimating} /> : null}
     </section>
   );
 }

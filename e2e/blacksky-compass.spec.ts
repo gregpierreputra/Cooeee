@@ -8,6 +8,8 @@ import { acknowledgeFirstOpen } from './helpers';
 test('the arrows turn with the phone and stay drawn from a vague fix', async ({ page, context }) => {
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({ latitude: -37.817939, longitude: 145.36594, accuracy: 350 });
+  // A controllable clock, running in real time until the last step pauses it.
+  await page.clock.install();
   await acknowledgeFirstOpen(page);
   await page.goto('/');
   await page.waitForTimeout(1000); // the site list is copied into IndexedDB on app start
@@ -46,9 +48,12 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   await expect.poll(async () => norm(await rotation())).toBe(norm(bearing - 90 - declination));
 
   // The figure follows the phone: a fix from two kilometres further north
-  // changes the distance at once, well inside the five second tick.
+  // changes the distance at once. The clock is paused first, so the one-second
+  // tick cannot be what moves it; only the immediate path for a move of
+  // FIX_PUBLISH_M or more can.
   const figure = page.locator('.blacksky-figure-main').first();
   const before = (await figure.textContent()) ?? '';
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1_000);
   await context.setGeolocation({ latitude: -37.8, longitude: 145.36594, accuracy: 350 });
   await expect(figure).not.toHaveText(before, { timeout: 2_000 });
 });

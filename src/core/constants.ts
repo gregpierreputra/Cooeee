@@ -128,9 +128,12 @@ export const HOLD_MS = 2_000;
 export const HOLD_LEAVE_MARGIN_PX = 24;
 // How long the line saying BlackSky was not opened stays on screen.
 export const BLOCKED_NOTICE_MS = 8_000;
-export const TICK_MS = 5_000;
+// BlackSky's clock: the fix's age, a small move and a marked estimate's growing
+// uncertainty all catch up within one tick, so what is on screen is never more
+// than a second behind a person who is walking.
+export const TICK_MS = 1_000;
 // A position this far from the one on screen is shown at once, not at the next
-// tick. Smaller moves are sensor noise and wait, which saves the battery.
+// tick. Smaller moves are sensor noise and wait for the tick.
 export const FIX_PUBLISH_M = 5;
 // A position watch that has said nothing for this long is started again: some
 // phones stop delivering positions without reporting any error.
