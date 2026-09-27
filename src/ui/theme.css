@@ -1286,6 +1286,90 @@ input {
   color: var(--ink-2);
 }
 
+/* ── Roads inside the dial (BS_Enhancement-AC5) ───────────────────────────
+   The roads are context, not a way to go: every road of a kind is drawn alike,
+   in the mode's dim amber, well below the ring, the arrow and the pin. Only a
+   freeway is a little brighter, because it is the road people recognise first.
+   Contrast on the black ground, WCAG 1.4.11 (3 to 1 for graphics): roads at
+   #8A5F10, 0.9 opacity, come to 3.2 to 1; freeways #B8862B 6.5 to 1; names
+   #D4A531 9.2 to 1, with a black halo so a road under a name never
+   cuts through its letters. */
+.blacksky-road {
+  fill: none;
+  stroke: #8a5f10;
+  stroke-opacity: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.blacksky-road.freeway {
+  stroke: #b8862b;
+  stroke-opacity: 1;
+}
+
+.blacksky-road-label text {
+  font-size: 12px;
+  font-weight: var(--w-med);
+  fill: #d4a531;
+  stroke: #000000;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* A name reads the right way up while its stretch, as the dial has turned it,
+   points anywhere from straight down to straight up through the right-hand
+   side: the cosine of that angle is positive. Past that its twin, set along the
+   same stretch the other way, takes over. The small bias gives a name standing
+   exactly upright (a cosine of 0) to the first copy, so one of the two always
+   shows. The angle comes from --heading, so this follows the phone at display
+   rate with no render. */
+.blacksky-road-label .upright {
+  opacity: clamp(0, calc((cos((var(--label-deg) - var(--heading, 0)) * 1deg) + 0.0001) * 100000), 1);
+}
+
+.blacksky-road-label .turned {
+  opacity: clamp(0, calc((cos((var(--label-deg) - var(--heading, 0)) * 1deg) + 0.0001) * -100000), 1);
+}
+
+/* The view tag, in the other top corner from North up. */
+.blacksky-tag.blacksky-view-tag {
+  left: auto;
+  right: 0;
+}
+
+/* The whole dial is the view switch (WCAG 2.5.8: far larger than 24 by 24): a
+   clear button over the round of it. The dial underneath keeps its own text
+   equivalent; the button has its own name. */
+.blacksky-dial-switch {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+/* The hint sits over the foot of the dial for its first few seconds, where the
+   voice caption also sits, rather than in a row of its own: a row that came and
+   went would move the Notes heading, and on a short screen shrink the dial. */
+.blacksky-map-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink-2);
+  font-size: var(--step-s);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* ── Voice (BS_Enhancement-AC3) ────────────────────────────────────────────
    The speaker button: round, 48 px, at the right-hand end of the distance row,
    in the 48 px the row keeps for it. Outlined when off, filled in the mode's

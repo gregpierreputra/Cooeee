@@ -18,6 +18,10 @@ export default function About() {
           ))}
         </ul>
       </section>
+      {/* BS_Enhancement-AC5: the road layer is published under CC BY 4.0, which
+          asks for this attribution wherever the roads are shown. BlackSky
+          itself has no room for it, so it stands here, a tap away. */}
+      <p className="muted about-attribution">{copy.ROADS_ATTRIBUTION}</p>
     </main>
   );
 }

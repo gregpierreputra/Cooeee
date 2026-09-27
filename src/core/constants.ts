@@ -182,6 +182,49 @@ export const VOICE_CHECK_MS = 1_000;
  *  walk is about 1.4 m/s; a phone lying still reports 0 or nothing. Starting value. */
 export const AWAKE_MOVING_MPS = 1;
 
+// Roads inside the dial (BS_Enhancement-AC5). Every figure here is a starting
+// value, to be tuned on a real phone and in user testing, not a measured one.
+/** "Whole way": the view reaches the place and this share beyond it, so the pin
+ *  sits inside the ring with some road around it. Starting value. */
+export const ROADS_WHOLE_WAY_MARGIN = 0.15;
+/** The smallest and largest radius the dial ever shows. Below 1.5 km a road
+ *  map on a 340 px dial is a handful of lines; above 30 km even the main roads
+ *  run together and nothing can be named. Starting values. */
+export const ROADS_MIN_RADIUS_M = 1_500;
+export const ROADS_MAX_RADIUS_M = 30_000;
+/** "Near me": the ground a person on foot can see around them. Starting value. */
+export const ROADS_NEAR_RADIUS_M = 1_500;
+/** The map is drawn again once the person has moved this far from where it was
+ *  last drawn; below it the change is under a pixel or two at every view, and
+ *  a redraw per GPS sample would cost power for nothing. Starting value. */
+export const ROADS_REDRAW_M = 50;
+/** A freeway line shorter than this is an on or off ramp, drawn thin so the
+ *  carriageways read as the road. Starting value. */
+export const ROADS_RAMP_MAX_M = 1_000;
+/** Line widths in screen pixels, by kind. Starting values. */
+export const ROADS_WIDTH_PX = { freeway: 3, ramp: 1.5, main: 2, collector: 1.25 } as const;
+/** At most this many road names in view: more and the dial reads as a street
+ *  map, which it is not. Starting value. */
+export const ROADS_LABEL_COUNT = 6;
+/** Road names, in screen pixels. The card asks 13 px or larger; the reduced
+ *  build was asked for 12 px, so this is flagged for the card owner. Starting
+ *  value. */
+export const ROADS_LABEL_PX = 12;
+/** A name sits in the straightest stretch this share of its line's length in
+ *  view, so it follows the road without bending round a corner. Starting value. */
+export const ROADS_LABEL_STRETCH = 0.6;
+/** Stretches that bend within this many degrees of the straightest count as
+ *  equally straight, so a name can move off the arrow or a letter onto a
+ *  stretch that is nearly as good. Starting value. */
+export const ROADS_LABEL_BEND_SLACK_DEG = 10;
+/** The room a name needs beyond its own width, each end, and the clear space
+ *  between two names. Starting values. */
+export const ROADS_LABEL_PAD_PX = 4;
+export const ROADS_LABEL_GAP_PX = 3;
+/** How long "Tap the dial to zoom" stays under the dial once roads are drawn.
+ *  Starting value. */
+export const ROADS_HINT_MS = 5_000;
+
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion
 // sensors, the holder may be walking the whole time. ACCURACY_MAX_M above is

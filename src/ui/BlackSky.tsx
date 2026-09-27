@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useNavigate } from 'react-router';
 import {
   deriveState,
@@ -38,6 +48,9 @@ import {
 import {
   FIX_PUBLISH_M,
   FIX_STALE_MS,
+  ROADS_HINT_MS,
+  ROADS_LABEL_PX,
+  ROADS_REDRAW_M,
   TICK_MS,
   VOICE_CHECK_MS,
   WATCH_RESTART_MS,
@@ -45,10 +58,25 @@ import {
 import * as copy from '../core/copy';
 import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { titleCase } from '../core/home';
-import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
+import {
+  decodeRoads,
+  drawRoads,
+  placeInView,
+  viewRadiusM,
+  type MapView,
+  type Obstacle,
+  type RoadMap,
+} from '../core/roads';
+import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
-import BlackSkyDial from './components/BlackSkyDial';
+import { readRoadsFile } from '../data/roads';
+import BlackSkyDial, {
+  DIAL_UNITS,
+  LETTER_R,
+  RING_R,
+  type DialMapLayer,
+} from './components/BlackSkyDial';
 import HoldButton from './components/HoldButton';
 import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
@@ -58,7 +86,35 @@ import { useWakeLock } from './components/useWakeLock';
 type BlackSkyProps = {
   loadPacks?: () => Promise<PackWithPlaces[]>;
   loadSites?: () => Promise<NspSnapshot | undefined>;
+  /** BS_Enhancement-AC5: the roads file's bytes, or undefined when the phone
+   *  does not hold it. Read from the precache only, never the network. */
+  loadRoads?: () => Promise<ArrayBuffer | undefined>;
 };
+
+// The roads file is decoded once per loader, however often BlackSky opens: the
+// decoded lines do not change while the app runs.
+const decodedRoads = new WeakMap<() => Promise<ArrayBuffer | undefined>, Promise<RoadMap | null>>();
+
+function holdRoads(load: () => Promise<ArrayBuffer | undefined>): Promise<RoadMap | null> {
+  let held = decodedRoads.get(load);
+  if (!held) {
+    held = load()
+      .then((bytes) => {
+        if (!bytes) return null;
+        // Measured so the time can be read on a real phone in the browser's
+        // performance panel, not guessed.
+        const start = performance.now();
+        const map = decodeRoads(bytes);
+        performance.measure('cooeee:roads-decode', { start, end: performance.now() });
+        return map;
+      })
+      // A file that cannot be read or is not whole is the same as no file: the
+      // plain dial, and nothing else on the screen changes.
+      .catch(() => null);
+    decodedRoads.set(load, held);
+  }
+  return held;
+}
 
 /** The BlackSky screen. Every word on it comes from the local pack store and the
  *  locally stored CFA site list; the ONLY other inputs are the device's own
@@ -68,6 +124,7 @@ type BlackSkyProps = {
 export default function BlackSky({
   loadPacks = listCompletePacksWithPlaces,
   loadSites = getNspSnapshot,
+  loadRoads = readRoadsFile,
 }: BlackSkyProps) {
   const [packs, setPacks] = useState<PackWithPlaces[] | null>(null);
   const [sites, setSites] = useState<NspSnapshot | null>(null);
@@ -111,6 +168,24 @@ export default function BlackSky({
   // and waits for the TICK_MS interval below, so a phone held still renders
   // once per tick. The dial turns with the phone by CSS, not by a render.
   const latestFix = useRef<Fix | null>(null);
+
+  // BS_Enhancement-AC5: the roads, loaded lazily once BlackSky is open, so the
+  // file costs nothing on any other screen. Which view the dial shows is memory
+  // only, like the Show pick: every visit opens on "whole way". The hint under
+  // the dial is shown once per visit.
+  const [roads, setRoads] = useState<RoadMap | null>(null);
+  const [mapView, setMapView] = useState<MapView>('whole');
+  const [hintDone, setHintDone] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void holdRoads(loadRoads).then((map) => {
+      if (live) setRoads(map);
+    });
+    return () => {
+      live = false;
+    };
+  }, [loadRoads]);
+  const endHint = useCallback(() => setHintDone(true), []);
 
   useEffect(() => {
     let live = true;
@@ -400,6 +475,18 @@ export default function BlackSky({
         }
         caption={voice.caption}
         onShow={setShownId}
+        roads={
+          roads && here
+            ? {
+                map: roads,
+                here,
+                view: mapView,
+                onToggle: () => setMapView((view) => (view === 'whole' ? 'near' : 'whole')),
+                hint: !hintDone,
+                endHint,
+              }
+            : undefined
+        }
       />
     ) : trust ? (
       // Empty: a position, and nothing stored that can be pointed at.
@@ -653,6 +740,7 @@ function DialBody({
   rowEnd,
   caption,
   onShow,
+  roads,
 }: {
   model: DialModel;
   trust: PositionTrust;
@@ -665,8 +753,19 @@ function DialBody({
   /** The words being spoken, shown over the foot of the dial while they last. */
   caption?: string | null;
   onShow: (id: string) => void;
+  /** BS_Enhancement-AC5: the roads and the view, when the phone holds them. */
+  roads?: DialRoads;
 }) {
   const { first, label, others } = model;
+  const frame = useRef<HTMLDivElement>(null);
+  const map = useDialMap(roads, first, useFrameWidth(frame, roads !== undefined));
+  const endHint = roads?.endHint;
+  const hint = roads?.hint === true && map.layer !== null;
+  useEffect(() => {
+    if (!hint || !endHint) return;
+    const timer = setTimeout(endHint, ROADS_HINT_MS);
+    return () => clearTimeout(timer);
+  }, [hint, endHint]);
   const { site, line } = siteNameBlock(first.name);
   const distance = copy.distanceLabel(first.distanceM);
   const [figure, unit] = distance.split(' '); // "12.3 km": always a number, a space, a unit
@@ -714,13 +813,33 @@ function DialBody({
           inside it is the dial's own square, as big as the slot allows, so the
           North up tag still sits in the dial's corner, not the slot's. */}
       <div className="blacksky-dial-slot">
-        <div className="blacksky-dial-frame">
+        <div className="blacksky-dial-frame" ref={frame}>
           <BlackSkyDial
             bearingDeg={first.bearingDeg}
             centre={dialCentre(trust)}
             description={copy.DIAL_DESCRIPTION(site, distance, point)}
+            map={map.layer ?? undefined}
+            pinAtR={map.layer ? map.pinAtR : undefined}
           />
           {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
+          {/* BS_Enhancement-AC5: with roads, the whole dial is one large switch
+              between the two views, the tag in the other top corner says which
+              is showing, and for the first seconds a hint says the dial can be
+              tapped. Without roads none of the three is drawn. */}
+          {roads && map.layer ? (
+            <>
+              <span className="blacksky-tag blacksky-view-tag" data-view={roads.view}>
+                {copy.MAP_VIEW_TAG[roads.view]}
+              </span>
+              <button
+                type="button"
+                className="blacksky-dial-switch"
+                aria-label={copy.MAP_VIEW_BUTTON}
+                onClick={roads.onToggle}
+              />
+              {hint && !caption ? <p className="blacksky-map-hint">{copy.MAP_ZOOM_HINT}</p> : null}
+            </>
+          ) : null}
           {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
               over the foot of the dial, for as long as they are being said. Not
               a live region: a screen reader would say them on top of the voice. */}
@@ -737,6 +856,133 @@ function DialBody({
       {others.length > 0 ? <OtherPlaces places={others} onShow={onShow} /> : null}
     </section>
   );
+}
+
+/** What the screen hands the dial for its map: the decoded roads, where the
+ *  person is, the view, and the hint's state. */
+type DialRoads = {
+  map: RoadMap;
+  here: LatLon;
+  view: MapView;
+  onToggle: () => void;
+  hint: boolean;
+  endHint: () => void;
+};
+
+/** Where the map was last drawn from. Kept until the person has moved
+ *  ROADS_REDRAW_M from it, or the view or the place changes; the rest of the
+ *  time the drawn map is reused as it is and only the ring turns. */
+type MapAnchor = LatLon & {
+  view: MapView;
+  placeId: string;
+  radiusM: number;
+  distanceM: number;
+  bearingDeg: number;
+};
+
+/** The dial frame's width in CSS pixels, followed as the layout resizes it:
+ *  the map's lines and names are set in real pixels, so it must know. */
+function useFrameWidth(frame: RefObject<HTMLDivElement | null>, on: boolean): number {
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const element = frame.current;
+    if (!on || !element) return;
+    const read = () => setWidth(Math.round(element.getBoundingClientRect().width));
+    read();
+    const observer = new ResizeObserver(read);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [frame, on]);
+  return width;
+}
+
+/** The width of a road name in the dial's own font, so the label rule fits
+ *  real text, not an estimate. */
+function useLabelMeasure(): ((name: string) => number) | undefined {
+  return useMemo(() => {
+    const context = document.createElement('canvas').getContext('2d');
+    if (!context) return undefined;
+    context.font = `600 ${ROADS_LABEL_PX}px ${getComputedStyle(document.body).fontFamily}`;
+    return (name: string) => context.measureText(name).width;
+  }, []);
+}
+
+/** What a name must keep clear of, in the map's pixels, north up. The map turns
+ *  with the ring, and so do the letters; the arrow and the pin turn by the
+ *  place's bearing on top of that, so against the map they stand still at that
+ *  bearing. All three are therefore fixed in the map's own frame, and can be
+ *  worked out when it is drawn. Circles that cover each shape, in drawing units
+ *  first. */
+function dialObstacles(bearingDeg: number, pinR: number, pxPerUnit: number): Obstacle[] {
+  const rad = (bearingDeg * Math.PI) / 180;
+  const along = (d: number, r: number) => ({ x: d * Math.sin(rad), y: -d * Math.cos(rad), r });
+  const units = [
+    along(37, 9), // the arrow's head: tip 46 from the centre, base 32 wide at 14
+    along(22, 18),
+    along(5, 8), // its shaft, 12 wide, back to 18 behind the centre
+    along(-10, 9),
+    along(pinR, 12), // the pin, radius 11
+    // The letters, 17 units high, drawn upright at 57 from the centre.
+    ...[0, 90, 180, 270].map((deg) => ({
+      x: LETTER_R * Math.sin((deg * Math.PI) / 180),
+      y: -LETTER_R * Math.cos((deg * Math.PI) / 180),
+      r: 9,
+    })),
+  ];
+  return units.map(({ x, y, r }) => ({ x: x * pxPerUnit, y: y * pxPerUnit, r: r * pxPerUnit }));
+}
+
+/** BS_Enhancement-AC5: the drawn map for the dial, and where the pin sits.
+ *  The map is worked out again only when the anchor moves or the dial changes
+ *  size, never per render and never per sensor reading. */
+function useDialMap(
+  roads: DialRoads | undefined,
+  first: Placed,
+  frameWidth: number,
+): { layer: DialMapLayer | null; pinAtR: number | undefined } {
+  const anchor = useRef<MapAnchor | null>(null);
+  const measure = useLabelMeasure();
+  let at = anchor.current;
+  if (roads) {
+    const { here, view } = roads;
+    if (!at || at.view !== view || at.placeId !== first.id || distanceM(at, here) > ROADS_REDRAW_M) {
+      at = {
+        lat: here.lat,
+        lon: here.lon,
+        view,
+        placeId: first.id,
+        radiusM: viewRadiusM(view, first.distanceM),
+        distanceM: first.distanceM,
+        bearingDeg: first.bearingDeg,
+      };
+      anchor.current = at;
+    }
+  }
+  const map = roads?.map;
+  const pxPerUnit = frameWidth / DIAL_UNITS;
+  const drawStart = useRef(0);
+  const layer = useMemo(() => {
+    if (!map || !at || pxPerUnit <= 0) return null;
+    drawStart.current = performance.now();
+    const pin = placeInView(at.distanceM, at.bearingDeg, at.radiusM, RING_R);
+    const drawn = drawRoads(
+      map,
+      at,
+      at.radiusM,
+      RING_R * pxPerUnit,
+      dialObstacles(at.bearingDeg, pin?.r ?? RING_R, pxPerUnit),
+      measure,
+    );
+    return { map: drawn, pxPerUnit };
+  }, [map, at, pxPerUnit, measure]);
+  // Measured from the start of the work to the moment React has put the paths
+  // in the page, so it can be read on a phone in the performance panel.
+  useLayoutEffect(() => {
+    if (layer) performance.measure('cooeee:roads-draw', { start: drawStart.current, end: performance.now() });
+  }, [layer]);
+  // The pin follows the person between redraws, against the drawn view's scale.
+  const pin = at ? placeInView(first.distanceM, first.bearingDeg, at.radiusM, RING_R) : null;
+  return { layer, pinAtR: pin?.r };
 }
 
 /** Every other place: one line that says how many and how far, and the sheet
