@@ -23,6 +23,8 @@ import {
   ROADS_MIN_RADIUS_M,
   ROADS_NEAR_RADIUS_M,
   ROADS_RAMP_MAX_M,
+  ROADS_REDRAW_M,
+  ROADS_REDRAW_SHARE,
   ROADS_WHOLE_WAY_MARGIN,
   ROADS_WIDTH_PX,
 } from './constants';
@@ -112,6 +114,13 @@ export function viewRadiusM(view: MapView, distanceM: number): number {
   const wanted = distanceM * (1 + ROADS_WHOLE_WAY_MARGIN);
   return Math.min(ROADS_MAX_RADIUS_M, Math.max(ROADS_MIN_RADIUS_M, wanted));
 }
+
+/** How far the person may move before the map is drawn again: 50 m, or 1 % of
+ *  the view's radius when that is more. A fixed distance would redraw the far
+ *  view for movements it cannot show; a share alone would redraw the near view
+ *  for every wobble of the GPS. Redraw only when the move is MORE than this. */
+export const redrawDistanceM = (radiusM: number): number =>
+  Math.max(ROADS_REDRAW_M, ROADS_REDRAW_SHARE * radiusM);
 
 /** Where the place's pin sits when the place is inside the view: along its
  *  bearing, at its true distance. The same bearing the arrow uses, so the two
@@ -290,7 +299,7 @@ export const estimateTextPx = (name: string): number => name.length * ROADS_LABE
 const named = (name: string) => name !== '' && name.toLowerCase() !== 'unnamed';
 
 /** THE LABEL RULE. Lines in view, longest first; each named line's straightest
- *  60 % must have room for its name at 12 px, or it is passed over. Room means
+ *  60 % must have room for its name at 13 px, or it is passed over. Room means
  *  length, and a spot in such a stretch clear of the ring's edge, the pin, the
  *  arrow, the letters and every name already placed: each equally straight
  *  stretch is tried, nearest the middle of the road first, and in each the name

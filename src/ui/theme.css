@@ -1308,7 +1308,7 @@ input {
 }
 
 .blacksky-road-label text {
-  font-size: 12px;
+  /* The size is set on the label from ROADS_LABEL_PX, not here. */
   font-weight: var(--w-med);
   fill: #d4a531;
   stroke: #000000;

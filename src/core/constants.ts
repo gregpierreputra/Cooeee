@@ -194,10 +194,17 @@ export const ROADS_MIN_RADIUS_M = 1_500;
 export const ROADS_MAX_RADIUS_M = 30_000;
 /** "Near me": the ground a person on foot can see around them. Starting value. */
 export const ROADS_NEAR_RADIUS_M = 1_500;
-/** The map is drawn again once the person has moved this far from where it was
- *  last drawn; below it the change is under a pixel or two at every view, and
- *  a redraw per GPS sample would cost power for nothing. Starting value. */
+/** The map is drawn again once the person has moved more than this far from
+ *  where it was last drawn, or more than ROADS_REDRAW_SHARE of the view's
+ *  radius, whichever is larger (see redrawDistanceM in core/roads.ts). Below it
+ *  the change is under a pixel or two, and a redraw per GPS sample would cost
+ *  power for nothing. Starting value. */
 export const ROADS_REDRAW_M = 50;
+/** The share of the view's radius the person must move before a redraw. In the
+ *  30 km view 50 m is a fifth of a pixel, and a redraw every 50 m in a car
+ *  would redraw two thousand roads every two seconds; 1 % is about a pixel and
+ *  a half at every view. Starting value. */
+export const ROADS_REDRAW_SHARE = 0.01;
 /** A freeway line shorter than this is an on or off ramp, drawn thin so the
  *  carriageways read as the road. Starting value. */
 export const ROADS_RAMP_MAX_M = 1_000;
@@ -206,10 +213,9 @@ export const ROADS_WIDTH_PX = { freeway: 3, ramp: 1.5, main: 2, collector: 1.25 
 /** At most this many road names in view: more and the dial reads as a street
  *  map, which it is not. Starting value. */
 export const ROADS_LABEL_COUNT = 6;
-/** Road names, in screen pixels. The card asks 13 px or larger; the reduced
- *  build was asked for 12 px, so this is flagged for the card owner. Starting
- *  value. */
-export const ROADS_LABEL_PX = 12;
+/** Road names, in screen pixels: 13, the smallest the card allows. The label
+ *  rule fits names at this size and the dial draws them at it. Starting value. */
+export const ROADS_LABEL_PX = 13;
 /** A name sits in the straightest stretch this share of its line's length in
  *  view, so it follows the road without bending round a corner. Starting value. */
 export const ROADS_LABEL_STRETCH = 0.6;

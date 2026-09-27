@@ -4,6 +4,8 @@ import {
   ROADS_MAX_RADIUS_M,
   ROADS_MIN_RADIUS_M,
   ROADS_NEAR_RADIUS_M,
+  ROADS_REDRAW_M,
+  ROADS_REDRAW_SHARE,
 } from '../../src/core/constants';
 import {
   chooseLabels,
@@ -17,6 +19,7 @@ import {
   placeInView,
   polylineLength,
   project,
+  redrawDistanceM,
   roadWidthPx,
   viewRadiusM,
   type RoadLine,
@@ -128,6 +131,18 @@ describe('the view', () => {
     expect(viewRadiusM('whole', 26_000)).toBeCloseTo(29_900, 6);
     expect(viewRadiusM('whole', 26_100)).toBe(ROADS_MAX_RADIUS_M);
     expect(viewRadiusM('whole', 200_000)).toBe(ROADS_MAX_RADIUS_M);
+  });
+
+  it('redraws after 50 m, or 1 % of the view radius once that is more', () => {
+    expect(ROADS_REDRAW_M).toBe(50);
+    expect(ROADS_REDRAW_SHARE).toBe(0.01);
+    // The floor: in the near view 1 % is 15 m, so 50 m holds.
+    expect(redrawDistanceM(ROADS_NEAR_RADIUS_M)).toBe(50);
+    // Where the two meet: 1 % of 5 km is exactly 50 m.
+    expect(redrawDistanceM(5_000)).toBe(50);
+    expect(redrawDistanceM(5_100)).toBe(51);
+    // The ceiling: in the widest view 1 % is 300 m.
+    expect(redrawDistanceM(ROADS_MAX_RADIUS_M)).toBe(300);
   });
 
   it('the pin comes inside at its true spot when the place is in view, and stays on the ring when not', () => {

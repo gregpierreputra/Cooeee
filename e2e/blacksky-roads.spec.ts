@@ -66,6 +66,11 @@ test('Normal: the roads are drawn inside the ring, turning with it, each at its 
     'Fixture Arterial Road',
   ]);
 
+  // Names are drawn at 13 px, the card's smallest.
+  expect(
+    await page.locator('.blacksky-road-label .upright').first().evaluate((el) => getComputedStyle(el).fontSize),
+  ).toBe('13px');
+
   // WCAG 1.1.1: the dial's text equivalent is exactly what it was without roads.
   await expect(page.getByRole('img', { name: 'Village Green, 2.60 km, North' })).toBeVisible();
 });

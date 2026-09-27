@@ -1,5 +1,6 @@
 import { useId, type CSSProperties } from 'react';
 import type { DialCentre } from '../../core/blacksky-dial';
+import { ROADS_LABEL_PX } from '../../core/constants';
 import type { DialMap } from '../../core/roads';
 
 // The compass points on the ring: a letter and where it sits, in degrees. Drawn
@@ -145,6 +146,9 @@ function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: st
           <g
             key={label.name}
             className="blacksky-road-label"
+            // The size comes from the same constant the label rule fits names
+            // at, so what is drawn is what was measured.
+            fontSize={ROADS_LABEL_PX}
             style={{ '--label-deg': label.angleDeg } as CSSProperties}
           >
             <defs>

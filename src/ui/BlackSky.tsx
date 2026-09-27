@@ -50,7 +50,6 @@ import {
   FIX_STALE_MS,
   ROADS_HINT_MS,
   ROADS_LABEL_PX,
-  ROADS_REDRAW_M,
   TICK_MS,
   VOICE_CHECK_MS,
   WATCH_RESTART_MS,
@@ -62,6 +61,7 @@ import {
   decodeRoads,
   drawRoads,
   placeInView,
+  redrawDistanceM,
   viewRadiusM,
   type MapView,
   type Obstacle,
@@ -869,8 +869,8 @@ type DialRoads = {
   endHint: () => void;
 };
 
-/** Where the map was last drawn from. Kept until the person has moved
- *  ROADS_REDRAW_M from it, or the view or the place changes; the rest of the
+/** Where the map was last drawn from. Kept until the person has moved more than
+ *  redrawDistanceM for its view, or the view or the place changes; the rest of the
  *  time the drawn map is reused as it is and only the ring turns. */
 type MapAnchor = LatLon & {
   view: MapView;
@@ -945,7 +945,7 @@ function useDialMap(
   let at = anchor.current;
   if (roads) {
     const { here, view } = roads;
-    if (!at || at.view !== view || at.placeId !== first.id || distanceM(at, here) > ROADS_REDRAW_M) {
+    if (!at || at.view !== view || at.placeId !== first.id || distanceM(at, here) > redrawDistanceM(at.radiusM)) {
       at = {
         lat: here.lat,
         lon: here.lon,
