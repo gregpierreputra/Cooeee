@@ -11,7 +11,9 @@ import {
 import { formatIsoDateShort, nspListDateLabel } from '../../core/nsp';
 import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
+import Glyph from '../components/Glyph';
 import StateCard from '../components/StateCard';
+import FlowSteps from './FlowSteps';
 
 type DestinationsProps = {
   /** The nearest NSP rows to the saved place, ordered strictly ascending by distance
@@ -36,17 +38,18 @@ type DestinationsProps = {
 type RowSelection = { chosen: boolean; onToggle: () => void };
 
 /** What every official place states about itself, in the wizard list and in the
- *  saved pack alike: its kind, address, council, the CFA's dates, and provenance. */
+ *  saved pack alike: its address, then council and the CFA's dates on one quiet
+ *  line, then provenance. The kind is the heading of the list it sits in. */
 export function PlaceFacts({ place, now }: { place: Destination; now: number }) {
+  const meta = [
+    place.council ? copy.NSP_COUNCIL_LABEL(place.council) : null,
+    place.designatedAt ? copy.NSP_DESIGNATED_ON(formatIsoDateShort(place.designatedAt)) : null,
+    place.listAsAt ? nspListDateLabel(place.listAsAt) : null,
+  ].filter(Boolean);
   return (
     <>
-      <p>{copy.NSP_KIND_LABEL}</p>
       {place.addressText ? <p className="muted">{place.addressText}</p> : null}
-      {place.council ? <p>{copy.NSP_COUNCIL_LABEL(place.council)}</p> : null}
-      {place.designatedAt ? (
-        <p className="figure">{copy.NSP_DESIGNATED_ON(formatIsoDateShort(place.designatedAt))}</p>
-      ) : null}
-      {place.listAsAt ? <p className="figure">{nspListDateLabel(place.listAsAt)}</p> : null}
+      {meta.length > 0 ? <p className="muted figure place-meta">{meta.join(' · ')}</p> : null}
       <ProvenanceLine source={place.source} now={now} />
     </>
   );
@@ -79,7 +82,12 @@ function DestinationRow({
         ) : null}
         <h2>{selection ? <label htmlFor={inputId}>{name}</label> : name}</h2>
       </div>
-      {distance ? <p className="figure">{distance}</p> : null}
+      {distance ? (
+        <p className="figure with-glyph place-distance">
+          <Glyph kind="go" line />
+          {distance}
+        </p>
+      ) : null}
       <PlaceFacts place={place} now={now} />
     </li>
   );
@@ -124,6 +132,7 @@ export function Destinations({
   if (statement) {
     return (
       <main className="page destinations-page">
+        <FlowSteps at={2} />
         <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
         <StateCard heading={statement} />
         {continueAction}
@@ -167,6 +176,7 @@ export function Destinations({
 
   return (
     <main className="page destinations-page">
+      <FlowSteps at={2} />
       <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
 
       {nonePublished ? (

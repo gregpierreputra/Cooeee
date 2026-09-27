@@ -125,7 +125,10 @@ export default function Recover({
         <header className="hero">
           <span className="kicker">{copy.NAV_RECOVER}</span>
           <h1>{copy.RECOVER_QUESTION}</h1>
-          <p className="muted">{copy.RECOVER_PRIVACY_LINE}</p>
+          <p className="muted with-glyph">
+            <Glyph kind="lock" line />
+            {copy.RECOVER_PRIVACY_LINE}
+          </p>
         </header>
         <ul className="list">
           {rows.map((row) => (
@@ -152,14 +155,20 @@ export default function Recover({
         <header className="hero">
           <span className="kicker">{copy.NAV_RECOVER}</span>
           <h1>{copy.WHO_TO_CALL}</h1>
-          <p className="muted">{copy.CALLS_LINE}</p>
+          <p className="muted with-glyph">
+            <Glyph kind="calls" line />
+            {copy.CALLS_LINE}
+          </p>
         </header>
         <ul className="list">
           {callList(programs).map((entry) => (
             <li key={entry.number} className="card">
               <h2>{entry.label}</h2>
               {entry.org ? <p>{entry.org}</p> : null}
-              <a href={`tel:${entry.number.replaceAll(' ', '')}`}>{copy.CALL_LINE(entry.number)}</a>
+              <a className="with-glyph call-link" href={`tel:${entry.number.replaceAll(' ', '')}`}>
+                <Glyph kind="calls" line />
+                {copy.CALL_LINE(entry.number)}
+              </a>
             </li>
           ))}
         </ul>
@@ -200,7 +209,12 @@ export default function Recover({
         <h1>{heading}</h1>
         <p className="caveat">{copy.RECOVER_MAY_MATCH}</p>
         <p className="muted">{anyKeptShown ? copy.RECOVER_ORDER_LINE_KEPT : copy.RECOVER_ORDER_LINE}</p>
-        {stale ? <p>{copy.RECOVER_STALE_LINE}</p> : null}
+        {stale ? (
+          <p className="with-glyph tone-amber">
+            <Glyph kind="caution" line />
+            {copy.RECOVER_STALE_LINE}
+          </p>
+        ) : null}
       </header>
       <ul className="list">
         {shown.map((program) => {
@@ -227,23 +241,33 @@ export default function Recover({
               <p className="muted">{program.covers}</p>
               <ProvenanceLine source={program.source} now={now} />
               <p className="figure">{copy.LICENCE_LINE(program.source.licence)}</p>
-              {saved.includes(program.id) ? <p className="figure in-packs">{copy.IN_YOUR_PACKS}</p> : null}
-              <a href={program.officialUrl} target="_blank" rel="noopener noreferrer">
-                {copy.OPEN_ORIGINAL_SOURCE}
-              </a>
-              {program.telephone ? (
-                <a href={`tel:${program.telephone.replaceAll(' ', '')}`}>
-                  {copy.CALL_LINE(program.telephone)}
-                </a>
+              {saved.includes(program.id) ? (
+                <p className="figure in-packs with-glyph">
+                  <Glyph kind="offline" line />
+                  {copy.IN_YOUR_PACKS}
+                </p>
               ) : null}
-              <button
-                type="button"
-                className="keep-button"
-                aria-pressed={isKept}
-                onClick={() => setKept(toggleKept(localFlagStore(), kept, program.id))}
-              >
-                {isKept ? copy.KEPT : copy.KEEP}
-              </button>
+              <div className="source-links">
+                <a className="action with-glyph" href={program.officialUrl} target="_blank" rel="noopener noreferrer">
+                  <Glyph kind="web" line />
+                  {copy.OPEN_ORIGINAL_SOURCE}
+                </a>
+                {program.telephone ? (
+                  <a className="action with-glyph" href={`tel:${program.telephone.replaceAll(' ', '')}`}>
+                    <Glyph kind="calls" line />
+                    {copy.CALL_LINE(program.telephone)}
+                  </a>
+                ) : null}
+                <button
+                  type="button"
+                  className="keep-button with-glyph"
+                  aria-pressed={isKept}
+                  onClick={() => setKept(toggleKept(localFlagStore(), kept, program.id))}
+                >
+                  <Glyph kind="kept" line />
+                  {isKept ? copy.KEPT : copy.KEEP}
+                </button>
+              </div>
             </li>
           );
         })}
@@ -252,10 +276,14 @@ export default function Recover({
         <p className="muted" role="status" aria-live="polite">
           {shared === 'copied' ? copy.COPIED_LINE : shared === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
         </p>
-        <button type="button" onClick={() => void share(shareText(heading, shown))}>
+        <button type="button" className="with-glyph" onClick={() => void share(shareText(heading, shown))}>
+          <Glyph kind="share" line />
           {copy.SHARE_LIST}
         </button>
-        <button type="button" onClick={() => window.print()}>{copy.PRINT_LIST}</button>
+        <button type="button" className="with-glyph" onClick={() => window.print()}>
+          <Glyph kind="print" line />
+          {copy.PRINT_LIST}
+        </button>
         {chooseAgain}
       </div>
     </main>

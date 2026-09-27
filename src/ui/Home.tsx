@@ -8,10 +8,8 @@ import { localFlagStore } from '../data/acknowledgement';
 import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
 import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
+import Hint from './components/Hint';
 import HoldButton from './components/HoldButton';
-import InfoGlyph from './components/InfoGlyph';
-import { useRevealedPanel } from './components/useRevealedPanel';
-import StateCard from './components/StateCard';
 import { startTour } from './components/Tour';
 
 /** E1-US2-AC6 — where someone who set up a place some time ago lands when they
@@ -78,23 +76,26 @@ export default function Home({ now }: { now?: number }) {
 
   return (
     <main className="page home">
-      {/* One preparation line under its own eyebrow, so it reads as the day's
-          reminder rather than as an explanation of the app; beneath it, a line
-          for the reader it was not written for, then the guidance it is drawn
-          from. It says nothing about a particular place, and nothing about
-          what is happening outside. */}
+      {/* One preparation line under its own eyebrow, with the guidance it is
+          drawn from; the line for a reader it was not written for waits behind
+          the ring. It says nothing about a particular place, and nothing about
+          what is happening outside. The Tour pill starts the guided tour. */}
       {view === null ? null : (
         <section className="preparation">
-          {/* The ring beside the label starts the guided tour of every screen. */}
           <div className="preparation-head">
-            <button type="button" className="info-ring" aria-label={copy.TOUR_HINT} onClick={startTour}>
-              <InfoGlyph />
-            </button>
             <span className="kicker">{copy.PREPARATION_LABEL}</span>
+            <button type="button" className="tour-pill with-glyph" onClick={startTour}>
+              <Glyph kind="tour" line />
+              {copy.TOUR_HINT}
+            </button>
           </div>
           <p>{view.preparation.text}</p>
-          <p className="muted">{view.preparation.context}</p>
-          <p className="muted preparation-source">{view.preparation.source}</p>
+          <Hint
+            label={copy.PREPARATION_MORE}
+            head={<p className="muted preparation-source">{view.preparation.source}</p>}
+          >
+            <p>{view.preparation.context}</p>
+          </Hint>
         </section>
       )}
 
@@ -104,18 +105,21 @@ export default function Home({ now }: { now?: number }) {
         <section className="card nudge">
           <div className="card-head">
             <Glyph kind="kept" />
-            <div>
-              <span className="kicker">{copy.NUDGE_KICKER}</span>
-              <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
-            </div>
+            <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
           </div>
-          <p className="muted">{copy.KEPT_NOT_SAVED_LINE}</p>
-          <Link className="action" to="/packs/new">{copy.BUILD_A_PACK}</Link>
+          <Link className="action with-glyph" to="/packs/new">
+            <Glyph kind="plus" line />
+            {copy.BUILD_A_PACK}
+          </Link>
         </section>
       ) : null}
 
       {view === null ? null : view.packs.length === 0 ? (
-        <StateCard heading={copy.NO_PACK_SAVED} detail={copy.NO_PACKS_HINT} />
+        <section className="card empty-state">
+          <Glyph kind="layer" />
+          <h2>{copy.NO_PACK_SAVED}</h2>
+          <p className="muted">{copy.NO_PACKS_HINT}</p>
+        </section>
       ) : (
         view.packs.map(({ pack, ageLine }) =>
           confirming === pack.id ? (
@@ -132,17 +136,18 @@ export default function Home({ now }: { now?: number }) {
                 </button>
                 <button
                   type="button"
-                  className="card-confirm-yes"
+                  className="card-confirm-yes with-glyph"
                   onClick={() => void removePack(pack.id)}
                 >
+                  <Glyph kind="trash" line />
                   {copy.CONFIRM_DELETE_PACK}
                 </button>
               </div>
             </section>
           ) : (
             <section key={pack.id} className="card pack-card saved-place">
-              <span className="kicker">{copy.SAVED_PLACE_LABEL}</span>
               <div className="saved-place-title">
+                <Glyph kind="place" />
                 {/* Cased by the same rule as the address line below, so the two
                     read alike: the name defaults to the locality the geocoder
                     returned, and arrives in the same capitals. Storage keeps the
@@ -171,7 +176,8 @@ export default function Home({ now }: { now?: number }) {
               {/* Title-cased for reading only. The pack still stores the address
                   exactly as the custodian returned it. */}
               <p className="muted">{titleCase(pack.address)}</p>
-              <p className="muted figure saved-place-footer">
+              <p className="muted figure saved-place-footer with-glyph">
+                <Glyph kind="offline" line />
                 {ageLine}
                 {copy.OPENS_WITHOUT_SIGNAL}
               </p>
@@ -182,7 +188,8 @@ export default function Home({ now }: { now?: number }) {
 
       <div className="actions">
         {/* One more pack, in every state: the list grows from here. */}
-        <Link className="action main-action" to="/packs/new">
+        <Link className="action main-action with-glyph" to="/packs/new">
+          <Glyph kind="plus" line />
           {copy.BUILD_A_PACK}
         </Link>
         {/* Reachable in both states, including with no pack saved. The ring to
@@ -201,44 +208,24 @@ export default function Home({ now }: { now?: number }) {
 }
 
 /** The hold control with the information ring to its left and, after a tap
- *  or click on the ring, the panel that says what BlackSky is. The panel opens
- *  in flow beneath the pair (see .blacksky-hold-row), so it covers nothing; a
- *  second tap closes it. Never on hover: a pointer passing over the ring must
- *  not open it, on a phone or a PC alike. */
+ *  on the ring, the panel that says what BlackSky does, one glyph per line. */
 function BlackSkyHoldRow({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const panel = useRevealedPanel<HTMLElement>(open);
-
   return (
-    <div className="blacksky-hold-row">
-      <button
-        type="button"
-        className="info-ring blacksky-info"
-        aria-label={copy.ABOUT_BLACKSKY}
-        aria-expanded={open}
-        aria-controls="blacksky-info-panel"
-        onClick={() => setOpen((value) => !value)}
-      >
-        <InfoGlyph />
-      </button>
-      {children}
-      {open ? (
-        <section
-          id="blacksky-info-panel"
-          ref={panel}
-          tabIndex={-1}
-          className="blacksky-info-panel info-panel"
-        >
-          <span className="kicker">{copy.ABOUT_BLACKSKY}</span>
-          <ul className="info-lines">
-            {copy.BLACKSKY_INFO_LINES.map((line) => (
-              <li key={line.lead}>
-                <b>{line.lead}</b> {line.text}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-    </div>
+    <Hint
+      className="blacksky-hold-row"
+      ringClass="blacksky-info"
+      panelClass="blacksky-info-panel"
+      label={copy.ABOUT_BLACKSKY}
+      head={children}
+    >
+      <ul className="info-lines glyph-lines">
+        {copy.BLACKSKY_INFO_LINES.map((line) => (
+          <li key={line.glyph}>
+            <Glyph kind={line.glyph} line />
+            {line.text}
+          </li>
+        ))}
+      </ul>
+    </Hint>
   );
 }

@@ -1,7 +1,9 @@
 import { areaCheckView } from '../../core/area-check';
 import * as copy from '../../core/copy';
 import type { BushfireAreaResult, PendingPlace } from '../../core/types';
+import Glyph from '../components/Glyph';
 import StatusPage from '../components/StatusPage';
+import FlowSteps from './FlowSteps';
 
 export type AreaCheckState =
   | { kind: 'checking' }
@@ -23,7 +25,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
     return (
       <StatusPage
         page="area-page"
-        kicker={copy.EYEBROW_AREA_RESULT}
+        kicker={<FlowSteps at={1} />}
         card={<p>{copy.AREA_CHECK_IN_PROGRESS}</p>}
       />
     );
@@ -33,7 +35,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
     return (
       <StatusPage
         page="area-page"
-        kicker={copy.EYEBROW_AREA_RESULT}
+        kicker={<FlowSteps at={1} />}
         cardClass="area-content"
         card={
           <>
@@ -60,13 +62,26 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
   return (
     <StatusPage
       page="area-page"
-      kicker={copy.EYEBROW_AREA_RESULT}
+      kicker={<FlowSteps at={1} />}
       cardClass="area-result"
       card={
         <>
-          <h1>{view.resultLine}</h1>
-          <p>{view.publisherLine}</p>
-          <p>{view.priorityLine}</p>
+          {/* The flame in amber marks a designated area; every other answer
+              shares the neutral layer drawing, so an absence never reads as
+              reassurance. The words carry the meaning either way. */}
+          <div className="card-head">
+            {state.result.status === 'present' ? (
+              <span className="tone-amber"><Glyph kind="drill" /></span>
+            ) : (
+              <Glyph kind="layer" />
+            )}
+            <h1>{view.resultLine}</h1>
+          </div>
+          <p className="muted">{view.publisherLine}</p>
+          <p className="with-glyph">
+            <Glyph kind="calls" line />
+            {view.priorityLine}
+          </p>
         </>
       }
       actions={

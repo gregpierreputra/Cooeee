@@ -12,7 +12,6 @@ import { bpaExposureLayer } from '../../core/area-check';
 import {
   ADDRESS_QUERY_DEBOUNCE_MS,
   ADDRESS_QUERY_MAX_CHARS,
-  ADDRESS_RESULT_LIMIT,
   isInsideVictoria,
   NEARBY_FIX_MAX_AGE_MS,
   NEARBY_FIX_TIMEOUT_MS,
@@ -50,12 +49,14 @@ import {
   fetchBushfireAreaResult,
 } from '../../data/wfs';
 import Glyph from '../components/Glyph';
+import Hint from '../components/Hint';
 import StatusPage from '../components/StatusPage';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
 import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
+import FlowSteps from './FlowSteps';
 import { Note } from './Note';
 import { Programs } from './Programs';
 import { Size } from './Size';
@@ -415,7 +416,7 @@ export function Search({
     return (
       <StatusPage
         page="conflict-page"
-        kicker={copy.EYEBROW_SET_UP_YOUR_PLACE}
+        kicker={<FlowSteps at={0} />}
         card={<p>{copy.CHECKING_SAVED_PLACE}</p>}
       />
     );
@@ -442,7 +443,7 @@ export function Search({
     return (
       <StatusPage
         page="conflict-page"
-        kicker={copy.EYEBROW_SET_UP_YOUR_PLACE}
+        kicker={<FlowSteps at={0} />}
         cardClass="conflict-content"
         card={
           <>
@@ -464,7 +465,7 @@ export function Search({
       return (
         <StatusPage
           page="size-page"
-          kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+          kicker={<FlowSteps at={5} />}
           card={<p>{copy.PREPARING_PACK_OFFER}</p>}
         />
       );
@@ -474,7 +475,7 @@ export function Search({
       return (
         <StatusPage
           page="size-page"
-          kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+          kicker={<FlowSteps at={5} />}
           card={<p>{copy.PACK_OFFER_FAILED}</p>}
           actions={
             <>
@@ -553,7 +554,7 @@ export function Search({
       return (
         <StatusPage
           page="places-page"
-          kicker={copy.DESTINATIONS_STEP_TITLE}
+          kicker={<FlowSteps at={2} />}
           card={<p>{copy.LOADING_LAST_RESORT_PLACES}</p>}
         />
       );
@@ -563,7 +564,7 @@ export function Search({
       return (
         <StatusPage
           page="places-page"
-          kicker={copy.DESTINATIONS_STEP_TITLE}
+          kicker={<FlowSteps at={2} />}
           card={<p>{copy.OFFICIAL_LIST_UNAVAILABLE}</p>}
           actions={
             <>
@@ -631,28 +632,36 @@ export function Search({
       <form className="search-form" onSubmit={handleSubmit}>
         <div className="search-content">
           <header className="hero">
-            <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
+            <FlowSteps at={0} />
             <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
-            <p className="muted">{copy.ADDRESS_SEARCH_DISCLOSURE}</p>
           </header>
-          <label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>
-          <p id="address-hint" className="muted search-hint">
-            {copy.ADDRESS_FIELD_HINT}
-          </p>
+          {/* Why the exact address matters, and that some have no place close
+              by, wait behind the ring beside the label. */}
+          <Hint label={copy.ABOUT_ADDRESS} head={<label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>}>
+            <ul className="info-lines glyph-lines">
+              <li><Glyph kind="place" line />{copy.ADDRESS_FIELD_HINT}</li>
+              <li><Glyph kind="found" line />{copy.ADDRESS_SEARCH_DISCLOSURE}</li>
+            </ul>
+          </Hint>
           <input
             id="address-query"
             name="addressQuery"
+            type="search"
             value={query}
             autoComplete="off"
             maxLength={ADDRESS_QUERY_MAX_CHARS}
-            aria-describedby="address-hint address-result"
+            aria-describedby="address-result"
             onChange={handleQueryChange}
           />
           <button type="button" className="search-locate" onClick={locate} disabled={locating}>
             <Glyph kind="locate" />
             {locating ? copy.LOCATING : copy.USE_MY_LOCATION}
           </button>
-          <p className="muted search-hint">{copy.ADDRESS_LOCATE_DISCLOSURE}</p>
+          {/* Said before the tap, because the position leaves the phone. */}
+          <p className="muted search-hint with-glyph">
+            <Glyph kind="lock" line />
+            {copy.ADDRESS_LOCATE_DISCLOSURE}
+          </p>
 
           {/* One polite live region for the field. It carries the count when the
               list changes under a screen reader, which the list markup alone
@@ -667,10 +676,8 @@ export function Search({
             {live.kind === 'no-match' ? <p>{copy.NO_ADDRESS_MATCH}</p> : null}
             {live.kind === 'candidates' ? (
               <>
-                <p>{copy.ADDRESS_RESULT_COUNT(live.returnedCount, live.candidates.length)}</p>
-                {addressResultsAtLimit(live.returnedCount) ? (
-                  <p>{copy.ADDRESS_RESULT_CAPPED(ADDRESS_RESULT_LIMIT)}</p>
-                ) : null}
+                <p>{copy.ADDRESS_RESULT_COUNT(live.candidates.length)}</p>
+                {addressResultsAtLimit(live.returnedCount) ? <p>{copy.ADDRESS_RESULT_CAPPED}</p> : null}
               </>
             ) : null}
             {live.kind === 'unavailable' ? (

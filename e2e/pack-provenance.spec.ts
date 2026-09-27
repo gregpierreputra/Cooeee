@@ -8,7 +8,7 @@ const SIZE_URL = `${HARNESS}/size`;
 test('US2 AC1 lists every available stored item with grouped publisher and full saved date', async ({ page }) => {
   await page.goto(DETAIL_URL);
 
-  await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
   // The saved programs section is closed: its card is in the page but hidden.
   const items = page.locator('.provenance-item').locator('visible=true');
   await expect(items.locator('visible=true')).toHaveCount(2);
@@ -16,8 +16,8 @@ test('US2 AC1 lists every available stored item with grouped publisher and full 
     /Published by .+ · Saved 27 August 2026/,
   ).locator('visible=true')).toHaveCount(2);
   await expect(items.getByText('2 days ago', { exact: true }).locator('visible=true')).toHaveCount(2);
-  await expect(page.getByRole('link', { name: 'Open original source (web)' }).locator('visible=true')).toHaveCount(2);
-  await expect(page.getByRole('link', { name: 'Open original source (web)' }).first())
+  await expect(page.getByRole('link', { name: 'Web page' }).locator('visible=true')).toHaveCount(2);
+  await expect(page.getByRole('link', { name: 'Web page' }).first())
     .toHaveAttribute('href', DTP_DATASET_URL);
   await expect(page.locator('main')).not.toContainText(
     /Unknown publisher|Unknown|Source unavailable|n\/a/i,
@@ -39,14 +39,14 @@ test('US2 AC2 leaves missing-provenance content out of both storage and the save
   await page.goto(`${SIZE_URL}?mode=omission`);
   await page.getByRole('button', { name: 'Save this pack' }).click();
 
-  await expect(page.getByRole('heading', { name: 'One item was left out of your pack.' }))
+  await expect(page.getByRole('heading', { name: 'One item left out' }))
     .toBeVisible();
   await expect(page.getByText(
-    'It did not name who published it or when it was published, so it was not saved.',
+    'No publisher or date was given.',
     { exact: true },
   )).toBeVisible();
   await expect(page.getByText(
-    'Cooeee only stores information it can show you the source for.',
+    'Cooeee keeps only information with a source.',
     { exact: true },
   )).toBeVisible();
   expect(await page.evaluate(() => window.__readDestinations())).toEqual([]);
@@ -81,10 +81,10 @@ test('US2 AC4 labels day 31 without disabling or hiding pack functions', async (
   await expect(page.getByText('31 days ago', { exact: true }).locator('visible=true')).toHaveCount(2);
   await expect(page.getByText('Not recently verified', { exact: true }).locator('visible=true')).toHaveCount(2);
   await expect(page.getByText(
-    'This pack still works. Refresh it when you are next online.',
+    'Still works. Refresh it when next online.',
     { exact: true },
   ).locator('visible=true')).toHaveCount(2);
-  await expect(page.getByRole('link', { name: 'Open original source (web)' }).locator('visible=true')).toHaveCount(2);
+  await expect(page.getByRole('link', { name: 'Web page' }).locator('visible=true')).toHaveCount(2);
   expect(await page.locator('.provenance-item').evaluateAll(
     (items) => items.every((item) => !item.classList.contains('disabled')),
   )).toBe(true);
@@ -97,14 +97,11 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
     requests += 1;
     await route.continue();
   });
-  await page.getByRole('link', { name: 'Open original source (web)' }).first().click();
+  await page.getByRole('link', { name: 'Web page' }).first().click();
 
   const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText('This source is on the web.');
-  await expect(dialog).toContainText(
-    'The publisher and the saved date below are stored on this device and stay readable.',
-  );
-  await expect(dialog).toContainText('Opening it may use your connection and leave Cooeee.');
+  await expect(dialog).toContainText('Opens on the web');
+  await expect(dialog).toContainText('May use your connection and leave Cooeee.');
   await expect(dialog).toContainText('Published by Department of Transport and Planning');
   // The stored citation, so the raw response behind the link is no longer the
   // only way to read what was checked.
@@ -114,10 +111,10 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
   );
   // The publisher's readable page for the dataset, not the stored WFS query URL,
   // which answers in raw JSON and is never a page.
-  await expect(dialog.getByRole('link', { name: "Continue to the publisher's dataset page (web)" }))
+  await expect(dialog.getByRole('link', { name: "Continue to the publisher's dataset page" }))
     .toHaveAttribute('href', DTP_DATASET_URL);
   await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
-  await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
   expect(requests).toBe(0);
 
   await dialog.getByRole('button', { name: 'Close' }).click();
@@ -127,12 +124,12 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
 
 test('US2 AC5 leaves the sheet as it was for an item with no citation to state', async ({ page }) => {
   await page.goto(DETAIL_URL);
-  await page.getByRole('link', { name: 'Open original source (web)' }).nth(1).click();
+  await page.getByRole('link', { name: 'Web page' }).nth(1).click();
 
   const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText('This source is on the web.');
+  await expect(dialog).toContainText('Opens on the web');
   await expect(dialog).not.toContainText('Bushfire Prone Area plan');
   // The second item is the saved place, whose page is the CFA list page.
-  await expect(dialog.getByRole('link', { name: 'Continue to original source (web)' }))
+  await expect(dialog.getByRole('link', { name: 'Continue to the web page' }))
     .toHaveAttribute('href', 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places');
 });

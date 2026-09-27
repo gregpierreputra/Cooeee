@@ -19,6 +19,7 @@ import {
 import type { LatLon } from '../core/types';
 import { readNearbyCache, syncNearby } from '../data/nearby';
 import Glyph from './components/Glyph';
+import Hint from './components/Hint';
 import StateCard from './components/StateCard';
 
 type Origin = LatLon & { label: string };
@@ -187,11 +188,17 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
               <p className="muted">{copy.DISTANCES_NOTE}</p>
               {view.groups.map((group) => (
                 <section key={group.heading} className="nearby-group">
-                  <div className="pack-section-head">
-                    <Glyph kind={group.kind === 'bushfire' ? 'place' : 'relief'} />
-                    <h2>{group.heading}</h2>
-                  </div>
-                  <p className="muted">{group.note}</p>
+                  <Hint
+                    label={copy.ABOUT_GROUP(group.heading)}
+                    head={
+                      <div className="pack-section-head">
+                        <Glyph kind={group.kind === 'bushfire' ? 'place' : 'relief'} />
+                        <h2>{group.heading}</h2>
+                      </div>
+                    }
+                  >
+                    <p>{group.note}</p>
+                  </Hint>
                   <ul className="list">
                     {group.rows.map((row) => (
                       <PlaceRow key={row.type} row={row} />
@@ -226,7 +233,10 @@ function PlaceRow({ row }: { row: NearbyRow }) {
             <p className="nearby-place-name">{row.place.name}</p>
             {row.place.address ? <p className="muted">{row.place.address}</p> : null}
           </div>
-          <p className="figure nearby-distance">{row.place.distance}</p>
+          <p className="figure nearby-distance with-glyph">
+            <Glyph kind="go" line />
+            {row.place.distance}
+          </p>
         </div>
       ) : null}
       {row.timestamp ? <p className="muted figure">{row.timestamp}</p> : null}

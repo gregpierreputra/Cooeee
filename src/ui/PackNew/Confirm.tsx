@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 
 import * as copy from '../../core/copy';
+import Glyph from '../components/Glyph';
+import FlowSteps from './FlowSteps';
 import type { AddressCandidate, PendingPlace } from '../../core/types';
 
 type ConfirmProps = {
@@ -27,10 +29,11 @@ export function Confirm({ candidate, onConfirm, onSearchAgain }: ConfirmProps) {
       <form className="confirm-form" onSubmit={handleSubmit}>
         <div className="confirm-content">
           <header className="hero">
-            <span className="kicker">{copy.EYEBROW_CONFIRM_ADDRESS}</span>
+            <FlowSteps at={0} />
             <h1>{copy.CONFIRM_ADDRESS_QUESTION}</h1>
           </header>
-          <p className="returned-address" data-testid="returned-address">
+          <p className="returned-address with-glyph" data-testid="returned-address">
+            <Glyph kind="place" line />
             {candidate.address}
           </p>
           <label htmlFor="place-name">{copy.PLACE_NAME_LABEL}</label>

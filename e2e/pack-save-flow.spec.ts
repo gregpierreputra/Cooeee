@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK, SAVED_PLACE_LABEL } from '../src/core/copy';
+import { PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import {
   acknowledgeFirstOpen,
@@ -55,7 +55,7 @@ function bpaHitFeature(lgaName: string) {
 
 async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   await page.goto('/packs/new');
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByLabel('Place name').fill(name);
@@ -85,7 +85,7 @@ test('the wizard carries a ticked program into the saved pack', async ({ page })
     bpaHits: [bpaHitFeature(LGA_NAME)],
   });
   await page.goto('/packs/new');
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByLabel('Place name').fill('Kalorama');
@@ -98,7 +98,7 @@ test('the wizard carries a ticked program into the saved pack', async ({ page })
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
   await page.getByRole('button', { name: 'Keep this note' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Carry support programs in this pack?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Carry support programs?' })).toBeVisible();
   await page.getByRole('checkbox', { name: 'Crisis Payment for extreme circumstances' }).check();
   await page.getByRole('button', { name: 'Carry 1 program' }).click();
   await expect(page.getByRole('heading')).toHaveText('Ready to download');
@@ -110,7 +110,7 @@ test('the wizard carries a ticked program into the saved pack', async ({ page })
   const section = page.locator('.pack-section', { hasText: 'Saved programs' });
   await expect(section.locator('.section-count')).toHaveText('1');
   await section.getByRole('button', { name: 'Show Saved programs' }).click();
-  await expect(section.getByRole('link', { name: 'Open original source as a file' })).toHaveAttribute('download', /crisis-payment/);
+  await expect(section.getByRole('link', { name: 'Saved PDF' })).toHaveAttribute('download', /crisis-payment/);
 });
 
 test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ page }) => {
@@ -126,7 +126,7 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
   await page.getByRole('button', { name: 'Open saved pack' }).click();
-  await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible(); // the bar follows to every page
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
   await expect(page.getByRole('heading', { name: 'Designated Bushfire Prone Area' })).toBeVisible();
@@ -136,13 +136,13 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(savedPlaces).toHaveCount(2);
   // The map of the area, from the bytes stored with the pack.
   await expect(page.locator('.area-map img')).toBeVisible();
-  await expect(savedPlaces.getByText(/^Responsible council: /)).toHaveCount(2);
+  await expect(savedPlaces.locator('.place-meta')).toHaveCount(2);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   // AC1 TC-1.1.1-B: a full close and reopen still shows the saved place.
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
 
   await page.goto('/');
@@ -161,7 +161,7 @@ test('AC8 the same address asks, and replace atomically supersedes the previous 
   const firstPackUrl = page.url();
 
   await page.goto('/packs/new');
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
@@ -201,7 +201,7 @@ test('a second address becomes a second pack beside the first, with no question 
     bpaHits: [bpaHitFeature(LGA_NAME)],
   });
   await page.goto('/packs/new');
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('button', { name: NEW_ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
@@ -233,7 +233,7 @@ async function saveAPackAndOpenIt(page: Page) {
   await searchConfirmAndReachOffer(page);
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
-  await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
 }
 
 test('US2 the global Back bar works offline and the stored pack survives it', async ({ page, context }) => {
@@ -246,12 +246,12 @@ test('US2 the global Back bar works offline and the stored pack survives it', as
   await context.setOffline(true);
 
   await page.goto(packUrl);
-  await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
   // A fresh document load has history position 0, so the Back bar lands on the
   // pack list via a client-side route change — no document request offline.
   await page.getByRole('button', { name: 'Back' }).click();
 
-  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
+  await expect(page.locator('.pack-card')).toBeVisible();
   await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();
   await expect(page.locator('main')).not.toContainText(/Loading|Reconnect|not available/i);
   expect(failed).toEqual([]);
@@ -264,11 +264,11 @@ test('US2 the pack reopens unchanged after returning to the pack list', async ({
   const before = await page.locator('.pack-detail').innerText();
 
   await page.goto('/');
-  await expect(page.getByText(SAVED_PLACE_LABEL)).toBeVisible();
+  await expect(page.locator('.pack-card')).toBeVisible();
 
   // The pack card is the way in: its name link stretches over the whole card.
   await page.locator('.pack-card h2 a').click();
-  await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
   expect(await page.locator('.pack-detail').innerText()).toBe(before);
 
   // A full reload of the detail route is still the same stored pack.

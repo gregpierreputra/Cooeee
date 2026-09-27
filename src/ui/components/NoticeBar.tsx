@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as copy from '../../core/copy';
+import Glyph from './Glyph';
 import { useOnline } from './useOnline';
 
 /** The connection notice, pinned above everything at the top of the page.
@@ -29,7 +30,10 @@ export default function NoticeBar() {
 
   return (
     <div className={`notice-bar ${tone}`} role="status">
-      <span>{line}</span>
+      <span className="with-glyph">
+        <Glyph kind={online ? 'online' : 'offline'} line />
+        {line}
+      </span>
       <button type="button" onClick={() => setOpen(false)} aria-label={copy.DISMISS_NOTICE}>
         ×
       </button>

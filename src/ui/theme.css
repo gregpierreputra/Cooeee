@@ -65,6 +65,9 @@
   --online-ink: #04211c;
   --offline: #f87171;
   --offline-ink: #2a0a0a;
+  /* Keep, the choice that changes nothing, beside the red of Delete. */
+  --keep: #4ade80;
+  --keep-ink: #052e14;
   /* Data-age tier from the mockups' freshness screen: marks a cached row, never a hazard. */
   --stale: #fbbf24;
   --stale-fill: #1f1809;
@@ -420,14 +423,24 @@ a {
   font-size: var(--step-s);
 }
 
+/* Keep is green and Delete is red, each filled, so the choice reads at a
+   glance. The words say the same, so colour is never the only cue. */
 .card-confirm-no {
-  color: var(--offline);
-  border-color: var(--offline);
+  color: var(--keep-ink);
+  background: var(--keep);
+  border-color: var(--keep);
 }
 
 .card-confirm-yes {
-  color: var(--online);
-  border-color: var(--online);
+  color: var(--offline-ink);
+  background: var(--offline);
+  border-color: var(--offline);
+}
+@media (hover: hover) {
+  .card-confirm-no:hover,
+  .card-confirm-yes:hover {
+    border-color: var(--ink);
+  }
 }
 
 /* Primary action sits at the bottom of the viewport, within thumb reach. */
@@ -1197,12 +1210,19 @@ input {
   border-color: var(--accent);
   color: var(--accent);
 }
-/* The ring leads the label, as the BlackSky ring leads its hold control. */
+/* The day's label, and the Tour pill at the far end of the same row. */
 .preparation-head {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.75rem;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+}
+.tour-pill {
+  min-height: 44px;
+  padding: 0.25rem 1rem;
+  font-size: var(--step-s);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ── The guided tour ──────────────────────────────────────────────────────── */
@@ -1551,6 +1571,7 @@ input {
 }
 .saved-place-title h2 {
   min-width: 0; /* a long name wraps rather than pushing the delete control out */
+  flex: 1;
 }
 
 /* The freshness line sits below a hairline, as a footer to the card rather than
@@ -1976,15 +1997,25 @@ input {
   font-weight: var(--w-heavy);
 }
 
-.data-sources {
-  display: grid;
-  gap: 0.75rem;
-}
-.data-sources-head {
+/* The information ring and whatever sits beside it; the panel it opens takes
+   the full row beneath, so it covers nothing. */
+.hint {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.75rem;
   align-items: center;
+}
+.hint > .hint-panel {
+  grid-column: 1 / -1;
+}
+/* A long word beside the ring wraps at large text rather than pushing past
+   the screen edge. */
+.hint > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hint > .info-ring:only-of-type:last-child {
+  justify-self: start;
 }
 .info-ring[aria-expanded='true'] {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
@@ -2196,6 +2227,15 @@ input {
 .about .info-lines .glyph svg {
   width: 18px;
   height: 18px;
+}
+.about .info-lines p {
+  margin: 0;
+}
+.about-line-title {
+  margin: 0 0 0.125rem;
+  font-size: var(--step-0);
+  font-weight: var(--w-bold);
+  color: var(--ink);
 }
 
 /* Nearby and the address search: the locate control carries its glyph inside
@@ -3128,4 +3168,223 @@ body.drill-open .banner {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* ── Show, don't tell ──────────────────────────────────────────────────────── */
+
+/* A glyph inside a control or a line: no circle, the text's own colour. Named
+   twice so it outranks every tinted .glyph rule above. */
+.glyph.line-glyph {
+  width: auto;
+  height: auto;
+  background: none;
+  color: inherit;
+}
+.glyph.line-glyph svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+/* A control or a line led by its glyph. */
+.with-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+p.with-glyph {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+}
+/* State is told by the word and the glyph together, the colour only adds. */
+.tone-amber {
+  color: var(--stale);
+}
+/* Lines led by a glyph instead of a bold lead word. */
+.glyph-lines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+.glyph-lines .line-glyph {
+  margin-top: 0.1em;
+}
+/* Nothing saved yet: the pack drawing says what is missing before the words do. */
+.empty-state {
+  justify-items: center;
+  text-align: center;
+}
+/* The pack builder's step strip: small rings joined by a line, done steps
+   filled, the current one ringed and named. */
+.flow-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.flow-steps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.flow-steps .glyph {
+  width: 30px;
+  height: 30px;
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+.flow-steps .done .glyph {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.flow-steps .now .glyph {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.flow-steps li + li::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 2px;
+  margin-right: 0.375rem;
+  vertical-align: middle;
+  background: var(--line);
+}
+.flow-steps li {
+  display: flex;
+  align-items: center;
+}
+.tone-amber .glyph {
+  background: color-mix(in srgb, var(--stale) 16%, transparent);
+  color: var(--stale);
+}
+/* The map's key: the map's own colours as swatches, the words beside them. */
+.map-key {
+  list-style: none;
+  margin: 0 0 0.375rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  font-size: var(--step-s);
+}
+.map-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.swatch {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+}
+.swatch-inside {
+  background: #f2d64b;
+}
+.swatch-outside {
+  background: #ffffff;
+}
+.swatch-place {
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.6);
+}
+.source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.place-meta {
+  font-size: var(--step-s);
+}
+.place-distance {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  color: var(--ink);
+}
+/* After the minute: one figure over true black, a flame crossing a 400 metre
+   track, the reason in the amber of BlackSky, and one way on. */
+.minute-fact {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  overflow-y: auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1rem;
+  padding: max(1.5rem, env(safe-area-inset-top)) 1.5rem max(1.5rem, env(safe-area-inset-bottom));
+  background: #000000;
+  text-align: center;
+}
+.minute-fact-figure {
+  margin: 0;
+  font-size: clamp(4rem, 22vw, 7rem);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1;
+  color: var(--offline);
+  outline: none;
+}
+.minute-fact-track {
+  position: relative;
+  width: min(100%, 22rem);
+  height: 2.5rem;
+  border-bottom: 3px solid var(--line);
+}
+.minute-fact-track::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 3px;
+  width: 100%;
+  background: var(--offline);
+  transform-origin: left;
+  animation: minute-burn 1.6s ease-in forwards;
+}
+.minute-fact-flame {
+  position: absolute;
+  bottom: 0.25rem;
+  left: calc(100% - 28px);
+  color: var(--stale);
+  animation: minute-run 1.6s ease-in forwards;
+}
+@keyframes minute-burn {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes minute-run {
+  from {
+    left: 0;
+  }
+}
+.minute-fact-line {
+  margin: 0;
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  max-width: 22rem;
+}
+.minute-fact-run {
+  margin: 0;
+  color: var(--ink-2);
+}
+.minute-fact-call {
+  margin: 0.5rem 0;
+  max-width: 22rem;
+  font-size: var(--step-2);
+  font-weight: var(--w-heavy);
+  color: var(--blacksky-accent);
+}
+.minute-fact .main-action {
+  width: min(100%, 22rem);
+}
+.minute-fact-source {
+  font-size: var(--step-xs);
+  max-width: 22rem;
 }

@@ -42,9 +42,8 @@ test('AC1 lists only the official in-range places, each with its council and the
   await expect(cards).toHaveCount(BY_DISTANCE.length + 1); // + the un-located Wandin North row
 
   for (const text of [
-    'Bushfire place of last resort',
-    'Responsible council: Yarra Ranges Shire',
-    'Country Fire Authority state-wide list as at 18 Aug 2026',
+    'Yarra Ranges Shire council',
+    'Country Fire Authority list, 18 Aug 2026',
   ]) {
     await expect(page.getByText(text).first()).toBeVisible();
     expect(await page.getByText(text).count()).toBe(BY_DISTANCE.length + 1);
@@ -64,7 +63,7 @@ test('AC1 keeps an un-located published place, under its own heading', async ({ 
 
   const section = page.locator('.destination-unlocated');
   await expect(
-    section.getByRole('heading', { name: 'On the Country Fire Authority list but not located to a point on the map' }),
+    section.getByRole('heading', { name: 'Listed, but not on the map' }),
   ).toBeVisible();
   await expect(section.getByRole('heading', { name: UNLOCATED_SAME_LGA, exact: true })).toBeVisible();
 });
@@ -160,7 +159,7 @@ test('US2-AC1 a third choice is refused with a reason; the two stay chosen', asy
   await boxes.nth(2).click(); // a click that must be refused, not a state change
 
   await expect(
-    page.getByText('Two places are already chosen. Unchoose one to change your selection.'),
+    page.getByText('Two chosen. Untick one to change.'),
   ).toBeVisible();
   await expect(boxes.nth(2)).not.toBeChecked();
   await expect(boxes.nth(0)).toBeChecked();

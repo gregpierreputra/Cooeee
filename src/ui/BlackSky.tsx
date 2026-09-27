@@ -23,6 +23,7 @@ import { titleCase } from '../core/home';
 import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
+import Glyph from './components/Glyph';
 import HoldButton from './components/HoldButton';
 import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
@@ -251,7 +252,10 @@ export default function BlackSky({
                   <span>{titleCase(pack.name)}</span>
                   <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
                   {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
-                    <span className="blacksky-pack-here">{copy.PACK_COVERS_HERE}</span>
+                    <span className="blacksky-pack-here with-glyph">
+                      <Glyph kind="locate" line />
+                      {copy.PACK_COVERS_HERE}
+                    </span>
                   ) : null}
                 </button>
               </li>
@@ -263,7 +267,10 @@ export default function BlackSky({
           the orientation sensor turn them. Under the title, as the screen's mode. */}
       {hasArrows ? (
         <>
-          <p className="muted">{compass.live ? copy.COMPASS_LIVE : copy.COMPASS_NORTH_UP}</p>
+          <p className="muted with-glyph">
+            <Glyph kind="locate" line />
+            {compass.live ? copy.COMPASS_LIVE : copy.COMPASS_NORTH_UP}
+          </p>
           {compass.needsPermission ? (
             <button type="button" onClick={() => void compass.enable()}>
               {copy.TURN_ON_COMPASS}
@@ -368,10 +375,12 @@ function ScreenBody({
           <p className="muted">{copy.MARK_HINT}</p>
           <button
             type="button"
+            className="with-glyph"
             onClick={() =>
               onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
             }
           >
+            <Glyph kind="place" line />
             {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
           </button>
         </>
@@ -397,8 +406,14 @@ function ScreenBody({
           <NearbyList places={screen.nearby} confidence={screen.confidence} />
           <section className="card blacksky-guidance">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
-            <a href="tel:000">{copy.CALL_TRIPLE_ZERO}</a>
-            <a href="tel:1800226226">{copy.VICEMERGENCY_HOTLINE}</a>
+            <a className="with-glyph call-link" href="tel:000">
+              <Glyph kind="calls" line />
+              {copy.CALL_TRIPLE_ZERO}
+            </a>
+            <a className="with-glyph call-link" href="tel:1800226226">
+              <Glyph kind="calls" line />
+              {copy.VICEMERGENCY_HOTLINE}
+            </a>
             <p>{copy.EMERGENCY_BROADCASTER}</p>
             <p className="muted">{copy.PHONE_MAY_WORK}</p>
             <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>

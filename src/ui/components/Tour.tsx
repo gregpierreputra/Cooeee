@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
+import Glyph from './Glyph';
 
 export const TOUR_EVENT = 'cooeee:tour';
 
@@ -19,7 +20,7 @@ const TRIES = 30; // a screen has 3 s to render its target before the card shows
 const CHROME = 112; // px of notice, header and back bar fixed above the page
 
 /** The guided tour: one overlay that greys the screen, surrounds one feature
- *  at a time and explains it, across every screen. A stop whose screen is not
+ *  at a time and names it with a glyph and one line, across every screen. A stop whose screen is not
  *  open first moves there, then waits for its target to render. The grey never
  *  lifts between stops, and the page beneath still scrolls with the box
  *  following, so a feature taller than the room beside the card can be brought
@@ -127,7 +128,7 @@ export default function Tour() {
 
   if (step === null || pathname.startsWith('/blacksky')) return null;
 
-  const { title, lines } = STEPS[step];
+  const { title, line, glyph } = STEPS[step];
   const last = step === STEPS.length - 1;
 
   return (
@@ -157,14 +158,11 @@ export default function Tour() {
             {step + 1}/{STEPS.length}
           </span>
         </div>
-        <h2 id="tour-title">{title}</h2>
-        <ul className="info-lines">
-          {lines.map((text, i) => (
-            <li key={copy.TOUR_LEADS[i]}>
-              <b>{copy.TOUR_LEADS[i]}</b> {text}
-            </li>
-          ))}
-        </ul>
+        <div className="card-head">
+          <Glyph kind={glyph} />
+          <h2 id="tour-title">{title}</h2>
+        </div>
+        <p className="muted">{line}</p>
         <div className="tour-actions">
           <button type="button" disabled={step === 0} onClick={() => setStep(step - 1)}>
             {copy.TOUR_BACK}

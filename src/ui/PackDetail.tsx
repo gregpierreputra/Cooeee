@@ -136,12 +136,14 @@ export default function PackDetail({
 
   return (
     <main className="page pack-detail">
-      <header>
+      <header className="hero">
         <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
-        <h1>{copy.YOUR_PACK}</h1>
+        <div className="card-head">
+          <Glyph kind="place" />
+          <h1>{content.pack.name}</h1>
+        </div>
+        <p className="muted">{content.pack.address}</p>
       </header>
-
-      <StateCard heading={content.pack.name} detail={content.pack.address} />
 
       {/* The map of the pack's own area, from the bytes stored with the pack.
           The saved place is the centre of the picture by construction, so the
@@ -155,7 +157,13 @@ export default function PackDetail({
               <span className="area-map-pin" aria-hidden="true" />
             </div>
             <figcaption className="muted">
-              {copy.AREA_MAP_LINE(formatSavedDate(areaMap.retrievedAt))}
+              <ul className="map-key">
+                <li><span className="swatch swatch-inside" aria-hidden="true" />{copy.AREA_MAP_KEY.inside}</li>
+                <li><span className="swatch swatch-outside" aria-hidden="true" />{copy.AREA_MAP_KEY.outside}</li>
+                <li><span className="swatch swatch-place" aria-hidden="true" />{copy.AREA_MAP_KEY.place}</li>
+                <li>{copy.AREA_MAP_ACROSS}</li>
+              </ul>
+              <p>{copy.AREA_MAP_SOURCE(formatSavedDate(areaMap.retrievedAt))}</p>
             </figcaption>
           </figure>
         </Section>
@@ -204,7 +212,10 @@ export default function PackDetail({
                 <li key={place.id} className="card provenance-item">
                   <h2>{item.name}</h2>
                   {typeof place.distanceM === 'number' ? (
-                    <p className="figure">{formatDistanceM(place.distanceM)}</p>
+                    <p className="figure with-glyph place-distance">
+                      <Glyph kind="go" line />
+                      {formatDistanceM(place.distanceM)}
+                    </p>
                   ) : null}
                   <PlaceFacts place={place} now={now} />
                   {sourceLinks(item)}
@@ -294,7 +305,8 @@ export default function PackDetail({
           rehearsal: whether one can start at all is decided there, from what
           this pack actually holds. */}
       <div className="actions">
-        <Link className="action" to={`/rehearse/${content.pack.id}`}>
+        <Link className="action with-glyph" to={`/rehearse/${content.pack.id}`}>
+          <Glyph kind="rehearse" line />
           {copy.REHEARSE_THIS_PACK}
         </Link>
       </div>
@@ -307,10 +319,12 @@ export default function PackDetail({
             aria-modal="true"
             aria-labelledby="offline-source-heading"
           >
-            <h2 id="offline-source-heading">{copy.SOURCE_IS_ON_WEB}</h2>
-            <p>{copy.STORED_PROVENANCE_REMAINS}</p>
+            <div className="card-head">
+              <Glyph kind="web" />
+              <h2 id="offline-source-heading">{copy.SOURCE_IS_ON_WEB}</h2>
+            </div>
             <ProvenanceLine source={offlineSource.source} now={now} />
-            <p>{copy.EXTERNAL_SOURCE_NOTICE}</p>
+            <p className="muted">{copy.EXTERNAL_SOURCE_NOTICE}</p>
             {/* The stored citation answers "what was checked" here, in the app.
                 Where there is one, the link behind it is the publisher's account
                 of the dataset rather than the only readable statement of the
@@ -359,22 +373,26 @@ function SourceLinks({
 }) {
   return (
     <>
-      {file && href ? (
-        <>
-          <a className="action" href={href} download={file.name}>
+      {/* The saved copy opens with no signal, so it leads; the web page
+          follows. Each is told apart by its glyph. */}
+      <div className="source-links">
+        {file && href ? (
+          <a className="action with-glyph" href={href} download={file.name}>
+            <Glyph kind="documents" line />
             {copy.OPEN_SOURCE_FILE}
           </a>
-          <p className="muted">{copy.SOURCE_FILE_LINE(formatSavedDate(file.retrievedAt))}</p>
-        </>
-      ) : null}
-      <a
-        href={item.pageUrl ?? DTP_DATASET_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(event) => onWeb(event, item)}
-      >
-        {copy.OPEN_ORIGINAL_SOURCE}
-      </a>
+        ) : null}
+        <a
+          className="action with-glyph"
+          href={item.pageUrl ?? DTP_DATASET_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(event) => onWeb(event, item)}
+        >
+          <Glyph kind="web" line />
+          {copy.OPEN_ORIGINAL_SOURCE}
+        </a>
+      </div>
     </>
   );
 }

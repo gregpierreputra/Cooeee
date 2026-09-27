@@ -1,7 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import {
   ABOUT_DATA_SOURCES,
-  DATA_SOURCES_PLAIN,
   FIRST_RUN_LINE,
   FIRST_RUN_TITLE,
   HOURS_AGO,
@@ -21,7 +20,7 @@ async function openOffline(page: Page, context: BrowserContext, mode: string) {
 }
 
 async function findPostcode(page: Page) {
-  await page.getByLabel('Or a Victorian postcode').fill('3766');
+  await page.getByLabel('Or a postcode').fill('3766');
   await page.getByRole('button', { name: 'Find' }).click();
 }
 
@@ -43,20 +42,20 @@ test('AC4 offline, static places come from IndexedDB labelled cached with their 
   await expect(relief).toContainText(STATE_CACHED(MINUTES_AGO(10)));
   await expect(relief).toContainText(MAY_BE_OUTDATED);
   // E1-US3-AC7: one drawing per group head.
-  await expect(page.locator('.nearby-group .glyph')).toHaveCount(2);
+  await expect(page.locator('.nearby-group .pack-section-head .glyph')).toHaveCount(2);
 
   // The data sources sit behind the information ring: closed until tapped,
   // then plain words naming each list and when it was last checked.
   const ring = page.getByRole('button', { name: ABOUT_DATA_SOURCES });
   await expect(ring).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.getByText(DATA_SOURCES_PLAIN)).toHaveCount(0);
+  await expect(page.locator('.data-sources .hint-panel')).toHaveCount(0);
   await ring.click();
-  await expect(page.getByText(DATA_SOURCES_PLAIN)).toBeVisible();
+  await expect(page.locator('.data-sources .hint-panel')).toBeVisible();
   await expect(page.locator('.data-sources .info-lines li')).toContainText([
     /Country Fire Authority Neighbourhood Safer Places list\. Reachable when last checked/,
   ]);
   await ring.click();
-  await expect(page.getByText(DATA_SOURCES_PLAIN)).toHaveCount(0);
+  await expect(page.locator('.data-sources .hint-panel')).toHaveCount(0);
 });
 
 test('AC5 offline with a snapshot past the threshold, no relief centre is shown — only the stale line and the hotline', async ({ page, context }) => {
@@ -75,5 +74,5 @@ test('AC6 offline and never synced, the first-run state is stated rather than a 
   await openOffline(page, context, 'empty');
   await expect(page.getByRole('heading', { name: FIRST_RUN_TITLE })).toBeVisible();
   await expect(page.getByText(FIRST_RUN_LINE)).toBeVisible();
-  await expect(page.getByLabel('Or a Victorian postcode')).toHaveCount(0);
+  await expect(page.getByLabel('Or a postcode')).toHaveCount(0);
 });

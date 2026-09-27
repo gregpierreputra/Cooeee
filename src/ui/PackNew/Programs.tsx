@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 import * as copy from '../../core/copy';
 import { monogram } from '../../core/recover';
+import Glyph from '../components/Glyph';
+import FlowSteps from './FlowSteps';
 import type { RecoveryProgram } from '../../core/types';
 
 type ProgramsProps = {
@@ -22,9 +24,12 @@ export function Programs({ programs, kept, onContinue, onSkip }: ProgramsProps) 
   return (
     <main className="page programs-page">
       <header className="hero">
-        <span className="kicker">{copy.PROGRAMS_STEP_KICKER}</span>
+        <FlowSteps at={4} />
         <h1>{copy.PROGRAMS_STEP_TITLE}</h1>
-        <p className="muted">{copy.PROGRAMS_STEP_LINE}</p>
+        <p className="muted with-glyph">
+          <Glyph kind="offline" line />
+          {copy.PROGRAMS_STEP_LINE}
+        </p>
       </header>
       <ul className="list">
         {programs.map((program) => {

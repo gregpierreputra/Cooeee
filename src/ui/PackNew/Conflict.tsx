@@ -1,5 +1,7 @@
 import * as copy from '../../core/copy';
 import BackHomeLink from '../components/BackHomeLink';
+import Glyph from '../components/Glyph';
+import FlowSteps from './FlowSteps';
 
 type ConflictProps = {
   savedAddress: string;
@@ -15,7 +17,7 @@ export function Conflict({ savedAddress, onKeep, onReplace }: ConflictProps) {
     <main className="page conflict-page">
       <div className="conflict-content">
         <header className="hero">
-          <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
+          <FlowSteps at={0} />
           <h1>{copy.PLACE_ALREADY_SAVED}</h1>
         </header>
         <section className="card" aria-labelledby="saved-address-label">
@@ -24,8 +26,14 @@ export function Conflict({ savedAddress, onKeep, onReplace }: ConflictProps) {
         </section>
       </div>
       <div className="actions conflict-actions">
-        <button type="button" onClick={onKeep}>{copy.KEEP_SAVED_PACK}</button>
-        <button type="button" onClick={onReplace}>{copy.REPLACE_SAVED_PACK}</button>
+        <button type="button" className="with-glyph" onClick={onKeep}>
+          <Glyph kind="kept" line />
+          {copy.KEEP_SAVED_PACK}
+        </button>
+        <button type="button" className="with-glyph" onClick={onReplace}>
+          <Glyph kind="rehearse" line />
+          {copy.REPLACE_SAVED_PACK}
+        </button>
         <BackHomeLink />
       </div>
     </main>

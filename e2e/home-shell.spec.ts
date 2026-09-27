@@ -23,6 +23,7 @@ import {
   ONLINE_NOTICE,
   OPENS_WITHOUT_SIGNAL,
   PREPARATION_LINES,
+  PREPARATION_MORE,
   PREPARATION_SOURCE,
   SAVED_DAYS_AGO,
 } from '../src/core/copy';
@@ -128,7 +129,7 @@ test.describe('the returning-user home screen', () => {
     await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
 
     await cards.first().getByRole('button', { name: DELETE_PACK }).click();
-    await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
+    await page.getByRole('button', { name: CONFIRM_DELETE_PACK, exact: true }).click();
     await expect(cards).toHaveCount(1);
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
     expect((await storageCounts(page)).packs).toBe(1);
@@ -139,7 +140,9 @@ test.describe('the returning-user home screen', () => {
     const preparation = page.locator('.preparation');
     await expect(preparation.getByText(PREPARATION_SOURCE)).toBeVisible();
 
-    // Exactly one of the eight, never none and never two.
+    // Exactly one of the eight, never none and never two. The line for a
+    // reader it was not written for waits behind the ring.
+    await preparation.getByRole('button', { name: PREPARATION_MORE }).click();
     const text = (await preparation.textContent()) ?? '';
     expect(PREPARATION_LINES.filter((line) => text.includes(line.text))).toHaveLength(1);
     expect(PREPARATION_LINES.filter((line) => text.includes(line.context))).toHaveLength(1);
@@ -193,7 +196,7 @@ test.describe('the returning-user home screen', () => {
     await ring.click();
     await expect(ring).toHaveAttribute('aria-expanded', 'true');
     await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
-    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].lead);
+    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].text);
     // Both edges are read in one frame: opening the panel scrolls it into view,
     // so two separate measurements would straddle that scroll and compare
     // positions taken at different offsets.
@@ -297,7 +300,7 @@ test('delete removes the pack from the device after the confirmation', async ({ 
   await page.goto(home('?days=3'));
   await expect(page.locator('.app-header-age')).toHaveText(CHECKED_DAYS_AGO(3));
   await page.getByRole('button', { name: DELETE_PACK }).click();
-  await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
+  await page.getByRole('button', { name: CONFIRM_DELETE_PACK, exact: true }).click();
   await expect(page.getByText(NO_PACK_SAVED)).toBeVisible();
   // The header outlives the screen. It must stop stating the age of a pack
   // that is gone, with no reload.

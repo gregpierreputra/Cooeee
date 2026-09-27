@@ -19,10 +19,10 @@ test.describe('AC3 a first rehearsal of this pack this way', () => {
 
     await expect(
       progress(page).getByRole('heading', {
-        name: 'This is your first rehearsal of this pack this way',
+        name: 'Your first rehearsal like this',
       }),
     ).toBeVisible();
-    await expect(page.getByText('There is nothing earlier to compare it with yet.')).toBeVisible();
+    await expect(page.getByText('Nothing earlier to compare with yet.')).toBeVisible();
 
     // A first rehearsal is a whole result, not a partial one.
     await expect(page.locator('.gap-row')).not.toHaveCount(0);
@@ -49,9 +49,9 @@ test.describe('AC2 what changed since the last rehearsal', () => {
     await rehearseToResult(page, NO_FIX, url('changed'));
 
     await expect(
-      progress(page).getByRole('heading', { name: 'Since you last rehearsed this pack this way' }),
+      progress(page).getByRole('heading', { name: 'Since your last rehearsal like this' }),
     ).toBeVisible();
-    await expect(progress(page)).toContainText('Compared with your rehearsal of 1 March 2026');
+    await expect(progress(page)).toContainText('Compared with 1 March 2026');
 
     // The earlier run found only the contingency, so the pack-content gap is
     // one it did not find.
@@ -67,7 +67,7 @@ test.describe('AC2 what changed since the last rehearsal', () => {
 
     await expect(
       progress(page).getByRole('heading', {
-        name: 'This is your first rehearsal of this pack this way',
+        name: 'Your first rehearsal like this',
       }),
     ).toBeVisible();
     await expect(progress(page)).not.toContainText('Compared with your rehearsal');
@@ -93,10 +93,10 @@ test.describe('AC4 a comparison across a pack that changed', () => {
     await rehearseToResult(page, NO_FIX, url('changed'));
 
     await expect(progress(page).locator('.progress-pack-change')).toContainText(
-      'You built this pack again on 3 March 2026',
+      'You rebuilt this pack on 3 March 2026',
     );
     // Annotated, never suppressed.
-    await expect(progress(page)).toContainText('Compared with your rehearsal of');
+    await expect(progress(page)).toContainText('Compared with');
     await expect(progress(page).locator('.progress-group')).not.toHaveCount(0);
   });
 
@@ -104,7 +104,7 @@ test.describe('AC4 a comparison across a pack that changed', () => {
     await rehearseToResult(page, NO_FIX, url('changed'));
 
     await expect(progress(page).locator('.progress-pack-change')).toContainText(
-      'What changed between them is not only what you did.',
+      'not only from you.',
     );
     const text = (await progress(page).innerText()).toLowerCase();
     ['your fault', 'you failed', 'you did not', 'well done'].forEach((phrase) =>
@@ -115,7 +115,7 @@ test.describe('AC4 a comparison across a pack that changed', () => {
   test('says nothing about the pack when it did not change', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, url('same'));
 
-    await expect(progress(page)).toContainText('Compared with your rehearsal of');
+    await expect(progress(page)).toContainText('Compared with');
     await expect(progress(page).locator('.progress-pack-change')).toHaveCount(0);
   });
 
@@ -124,7 +124,7 @@ test.describe('AC4 a comparison across a pack that changed', () => {
     await rehearseToResult(page, NO_FIX, url('unknown'));
 
     await expect(progress(page).locator('.progress-pack-change')).toContainText(
-      'was not recorded, so it cannot be said either way',
+      'Whether the pack changed between them was not recorded.',
     );
     const text = (await progress(page).innerText()).toLowerCase();
     ['unchanged', 'no change', 'the same pack'].forEach((phrase) =>

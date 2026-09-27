@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 import { NOTE_MAX_CHARS } from '../../core/constants';
 import * as copy from '../../core/copy';
+import Glyph from '../components/Glyph';
+import FlowSteps from './FlowSteps';
 
 type NoteProps = {
   example: string;
@@ -19,9 +21,12 @@ export function Note({ example, onContinue }: NoteProps) {
     <main className="page note-page">
       <div className="confirm-content">
         <header className="hero">
-          <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
+          <FlowSteps at={3} />
           <h1>{copy.NOTE_STEP_TITLE}</h1>
-          <p className="muted">{copy.NOTE_DISCLOSURE}</p>
+          <p className="muted with-glyph">
+            <Glyph kind="lock" line />
+            {copy.NOTE_DISCLOSURE}
+          </p>
         </header>
         <label htmlFor="pack-note">{copy.NOTE_LABEL}</label>
         <textarea

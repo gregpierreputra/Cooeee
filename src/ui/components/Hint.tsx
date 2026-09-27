@@ -1,0 +1,46 @@
+import { useId, useState, type ReactNode } from 'react';
+import InfoGlyph from './InfoGlyph';
+import { useRevealedPanel } from './useRevealedPanel';
+
+type HintProps = {
+  /** The ring's accessible name, and the kicker over the panel. */
+  label: string;
+  /** What sits beside the ring: a label or a control. */
+  head?: ReactNode;
+  /** The detail the ring opens. */
+  children: ReactNode;
+  className?: string;
+  ringClass?: string;
+  panelClass?: string;
+};
+
+/** The one information ring. A screen shows its short line, and the detail
+ *  behind it opens beneath on a tap and closes on a second one. Never on hover,
+ *  so a passing pointer opens nothing. The panel opens in flow, covering
+ *  nothing, and is brought into view and focused as it opens. */
+export default function Hint({ label, head, children, className = 'hint', ringClass, panelClass = 'card' }: HintProps) {
+  const [open, setOpen] = useState(false);
+  const panel = useRevealedPanel<HTMLElement>(open);
+  const id = useId();
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        className={ringClass ? `info-ring ${ringClass}` : 'info-ring'}
+        aria-label={label}
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <InfoGlyph />
+      </button>
+      {head}
+      {open ? (
+        <section id={id} ref={panel} tabIndex={-1} className={`${panelClass} hint-panel info-panel`}>
+          <span className="kicker">{label}</span>
+          {children}
+        </section>
+      ) : null}
+    </div>
+  );
+}

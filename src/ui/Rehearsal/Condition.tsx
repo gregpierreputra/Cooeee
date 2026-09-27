@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
+import Glyph from '../components/Glyph';
 import Head from './Head';
 import DrillTile from '../Drill/DrillTile';
 import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
@@ -47,7 +48,10 @@ export default function Condition({
               className="candidate-action condition-action"
               onClick={() => onChoose(row.condition)}
             >
-              <span className="condition-label">{row.label}</span>
+              <span className="condition-label with-glyph">
+                <Glyph kind={row.condition === 'no-data' ? 'offline' : 'locate'} line />
+                {row.label}
+              </span>
               <span className="condition-detail">{row.detail}</span>
             </button>
           </li>

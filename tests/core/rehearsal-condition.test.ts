@@ -54,12 +54,12 @@ describe('the supported conditions', () => {
       {
         condition: 'no-data',
         label: 'No mobile data',
-        detail: 'Nothing loads. Anything the phone did not already have is not there.',
+        detail: 'Only what is saved on the phone works.',
       },
       {
         condition: 'no-location-fix',
         label: 'No location fix',
-        detail: 'The phone cannot work out where it is.',
+        detail: 'The phone cannot tell where it is.',
       },
     ]);
   });
@@ -122,8 +122,8 @@ describe('the chosen condition', () => {
 });
 
 describe('the wording of this screen', () => {
-  it('asks the question the criterion sets, pending the copy review', () => {
-    expect(copy.CHOOSE_CONDITION_HEADING).toBe('What are we rehearsing without?');
+  it('names what the rehearsal runs without, pending the copy review', () => {
+    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse without…');
   });
 
   it('names no hazard: a condition is a way the phone fails, not a way a hazard behaves', () => {
@@ -179,8 +179,11 @@ describe('E5-US6 making the condition real on the phone', () => {
   it('gives one phone instruction per condition, about the phone and not the person', () => {
     expect(howToLine('no-data')).toContain('aeroplane mode');
     expect(howToLine('no-location-fix')).toContain('location off');
+    // The instruction is the phone step alone; "as on the day" now sits on the
+    // offline line that confirms it took.
+    expect(copy.PHONE_IS_OFFLINE).toContain('as on the day');
     for (const line of [howToLine('no-data'), howToLine('no-location-fix')]) {
-      expect(line).toContain('as on the day');
+      expect(line).toMatch(/^Turn /);
       expect(line).not.toMatch(/you must|you should|fail/i);
     }
   });

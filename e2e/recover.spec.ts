@@ -180,7 +180,6 @@ test('Home nudges towards a pack while a kept program is not saved offline', asy
   await page.evaluate(() => window.localStorage.setItem('cooeee.kept.v1', '["services-australia-crisis-payment"]'));
   await page.goto('/');
   await expect(page.locator('.nudge')).toContainText(copy.KEPT_NOT_SAVED(1));
-  await expect(page.locator('.nudge .kicker')).toHaveText(copy.NUDGE_KICKER);
   await expect(page.locator('.nudge').getByRole('link', { name: copy.BUILD_A_PACK })).toBeVisible();
 });
 

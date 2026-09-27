@@ -104,7 +104,7 @@ test('AC4 every action meets the minimum target size', async ({ page }) => {
   await page.goto(`${ORIGIN}/rehearse?mode=empty`);
   await cardHeading(page).waitFor();
 
-  for (const name of ['Back to this pack', 'Build an offline pack', 'Back to Home']) {
+  for (const name of ['Back to this pack', 'New offline pack', 'Back to Home']) {
     const box = await page.getByRole('link', { name }).boundingBox();
     expect(box, `${name} has no box`).not.toBeNull();
     expect(box!.width, `${name} width`).toBeGreaterThanOrEqual(24);
@@ -129,7 +129,7 @@ test('AC4 heading, detail and actions are in reading order', async ({ page }) =>
 
   const kicker = order.findIndex((entry) => entry.text.includes('Rehearsal'));
   const head = order.findIndex((entry) => entry.tag === 'H2');
-  const detail = order.findIndex((entry) => entry.text.includes('holds no designation'));
+  const detail = order.findIndex((entry) => entry.text.includes('has no area designation'));
   const action = order.findIndex((entry) => entry.tag === 'A');
 
   // kicker · heading · detail · what would make a rehearsal possible · actions.
@@ -216,7 +216,7 @@ test('AC4 could not be read fills the action that would fix it', async ({ page }
   await cardHeading(page).waitFor();
 
   await expect(page.locator('.actions .main-action')).toHaveCount(1);
-  await expect(page.locator('.actions .main-action')).toHaveText('Build an offline pack');
+  await expect(page.locator('.actions .main-action')).toHaveText('New offline pack');
 });
 
 test('AC4 nothing to rehearse fills no action, because none of them fixes it', async ({ page }) => {
@@ -227,7 +227,7 @@ test('AC4 nothing to rehearse fills no action, because none of them fixes it', a
   // All three are still there, and still in order: only the weight changed.
   await expect(page.locator('.actions a')).toHaveText([
     'Back to this pack',
-    'Build an offline pack',
+    'New offline pack',
     'Back to Home',
   ]);
 });
@@ -237,7 +237,7 @@ test('AC4 nothing to rehearse fills no action, because none of them fixes it', a
 // than a heading and paragraphs), so it is measured on its own terms rather
 // than folded into the loops above.
 const CONDITION = `${ORIGIN}/rehearse?mode=rehearsable`;
-const CHOOSE_HEADING = 'What are we rehearsing without?';
+const CHOOSE_HEADING = 'Rehearse without…';
 
 test('AC1 the choice survives 200% text with no clipping or overlap', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });

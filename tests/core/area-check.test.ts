@@ -123,11 +123,9 @@ describe('E1-US1-AC5–AC7 exact copy', () => {
   });
 
   it('keeps failed-check wording distinct from absence', () => {
-    expect(copy.AREA_CHECK_COULD_NOT_RUN).toBe(
-      'We could not check the bushfire area for this address right now.',
-    );
+    expect(copy.AREA_CHECK_COULD_NOT_RUN).toBe('The bushfire area check is unavailable right now.');
     expect(copy.AREA_NOT_SAVED).toBe(
-      'Nothing has been saved. Your address is still here. Try again when you have a connection.',
+      'Nothing saved. Your address is still here. Try again with a connection.',
     );
   });
 });

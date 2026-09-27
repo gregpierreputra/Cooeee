@@ -7,7 +7,7 @@ const SEARCH_URL = `${HARNESS}/search`;
 // Search button remains and is exercised separately, below.
 async function search(page: Page, query = 'RIDGE') {
   await page.goto(SEARCH_URL);
-  await page.getByLabel('Address').fill(query);
+  await page.getByLabel('Street address').fill(query);
 }
 
 /** Count every request that reaches the address service, and answer them all
@@ -24,7 +24,7 @@ async function countAddressRequests(page: Page, features: unknown[] = []) {
 /** The address input. Explicit, because the candidate list and its section are
  * also labelled with the word 'Address' once results are on screen. */
 function addressField(page: Page) {
-  return page.getByLabel('Address', { exact: true });
+  return page.getByLabel('Street address');
 }
 
 
@@ -59,7 +59,7 @@ test('AC2 keeps a single result as an unselected one-item list', async ({ page }
 
   await search(page);
   await expect(page.getByRole('listitem')).toHaveCount(1);
-  await expect(page.getByRole('heading', { name: 'Is this the place you want to save?' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Is this the place?' })).toHaveCount(0);
 });
 
 test('AC2 none-of-these returns to editable search and retains nothing', async ({ page }) => {
@@ -69,9 +69,9 @@ test('AC2 none-of-these returns to editable search and retains nothing', async (
   } }));
 
   await search(page);
-  await page.getByRole('button', { name: 'None of these is my address' }).click();
+  await page.getByRole('button', { name: 'Not my address' }).click();
 
-  await expect(page.getByLabel('Address')).toHaveValue('RIDGE');
+  await expect(page.getByLabel('Street address')).toHaveValue('RIDGE');
   expect(await storageState(page)).toEqual({
     indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
   });
@@ -87,9 +87,9 @@ test('AC3 distinguishes a valid empty response and retains the typed text', asyn
   await search(page, 'NOT A REGISTER ADDRESS');
 
   await expect(page.getByRole('status')).toHaveText(
-    'No matching address found. Check the spelling or try the nearest cross street.',
+    'No match. Check the spelling or try a cross street.',
   );
-  await expect(page.getByLabel('Address')).toHaveValue('NOT A REGISTER ADDRESS');
+  await expect(page.getByLabel('Street address')).toHaveValue('NOT A REGISTER ADDRESS');
   await expect(page.getByRole('button', { name: 'Search again' })).toBeVisible();
   await expect(page.getByText(/Did you mean|locality|parent suburb/i)).toHaveCount(0);
   // Asked as typed, then loosely, then by place name, before saying no match.
@@ -113,12 +113,12 @@ test('AC4 maps a service failure to both honesty sentences and no saved place', 
   await search(page);
 
   const status = page.getByRole('status');
-  await expect(status).toContainText('We could not search for this address right now.');
+  await expect(status).toContainText('Search is unavailable right now.');
   await expect(status).toContainText(
-    'This is not the same as saying the address is not there. Try again when you have a connection.',
+    'The address may still exist. Try again with a connection.',
   );
   await expect(status).not.toContainText(/no results|none found|not found|no match/i);
-  await expect(page.getByLabel('Address')).toHaveValue('RIDGE');
+  await expect(page.getByLabel('Street address')).toHaveValue('RIDGE');
   expect(await storageState(page)).toEqual({
     indexedDbNames: [], localStorageLength: 0, sessionStorageLength: 0,
   });
@@ -129,10 +129,10 @@ test('AC4 maps genuine browser offline mode to the same state', async ({ page, c
   // Offline BEFORE the first keystroke: typing is what sends the request now, so
   // going offline afterwards would race the search it is meant to prevent.
   await context.setOffline(true);
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
 
   await expect(page.getByRole('status')).toContainText(
-    'We could not search for this address right now.',
+    'Search is unavailable right now.',
   );
   await context.setOffline(false);
 });
@@ -154,7 +154,7 @@ test('AC4 retry is explicit and issues exactly one new request', async ({ page }
   await expect(tryAgain).toBeVisible();
   expect(requests).toBe(2);
   await tryAgain.click();
-  await expect(page.getByRole('status')).toContainText('No matching address found');
+  await expect(page.getByRole('status')).toContainText('No match. Check the spelling');
   // One explicit retry. 'RIDGE' holds no number, so its empty answer is asked
   // three ways (as typed, loosely, by place name) before no match is stated.
   expect(requests).toBe(5);
@@ -226,7 +226,7 @@ test('AC2 an address the register holds at two unflagged points can still be cho
 
   // Choosing it goes on to the confirm step like any other address.
   await page.getByRole('button', { name: DUP }).click();
-  await expect(page.getByRole('heading', { name: 'Is this the place you want to save?' }))
+  await expect(page.getByRole('heading', { name: 'Is this the place?' }))
     .toBeVisible();
 });
 
@@ -250,7 +250,7 @@ test('AC2 two flagged records at conflicting points are offered once, never rank
 // exist while it is still asking.
 
 const NO_MATCH_SENTENCE =
-  'No matching address found. Check the spelling or try the nearest cross street.';
+  'No match. Check the spelling or try a cross street.';
 
 test('AC2 searches while typing, with no submit', async ({ page }) => {
   const requests = await countAddressRequests(page, [
@@ -258,7 +258,7 @@ test('AC2 searches while typing, with no submit', async ({ page }) => {
   ]);
 
   await page.goto(SEARCH_URL);
-  await page.getByLabel('Address').pressSequentially('RIDGE', { delay: 30 });
+  await page.getByLabel('Street address').pressSequentially('RIDGE', { delay: 30 });
 
   await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
     .toHaveText(['6 RIDGE ROAD KALORAMA 3766']);
@@ -274,7 +274,7 @@ test('AC2 sends nothing below the minimum, and says what to do instead', async (
   await page.goto(SEARCH_URL);
   await expect(page.getByRole('status')).toHaveText('Enter at least 3 characters.');
 
-  await page.getByLabel('Address').pressSequentially('RI', { delay: 30 });
+  await page.getByLabel('Street address').pressSequentially('RI', { delay: 30 });
   await page.waitForTimeout(600);
 
   await expect(page.getByRole('status')).toHaveText('Enter at least 3 characters.');
@@ -290,7 +290,7 @@ test('AC2 debounce collapses a typing burst into one request', async ({ page }) 
   ]);
 
   await page.goto(SEARCH_URL);
-  await page.getByLabel('Address').pressSequentially('RIDGE ROAD KALORAMA', { delay: 20 });
+  await page.getByLabel('Street address').pressSequentially('RIDGE ROAD KALORAMA', { delay: 20 });
   await expect(page.getByRole('list', { name: 'Address candidates' })).toBeVisible();
   await page.waitForTimeout(600);
 
@@ -310,10 +310,10 @@ test('AC2 state (a): while a search is pending, nothing is claimed about a resul
   });
 
   await page.goto(SEARCH_URL);
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
 
   const status = page.getByRole('status');
-  await expect(status).toHaveText('Searching for addresses.');
+  await expect(status).toHaveText('Searching…');
   await expect(status).not.toContainText(NO_MATCH_SENTENCE);
   await expect(status).not.toContainText('We could not search');
   await expect(status).not.toContainText('returned');
@@ -330,7 +330,7 @@ test('AC2 state (b): a search that ran and returned nothing gets the mandated se
   await search(page, 'NOT A REGISTER ADDRESS');
 
   await expect(page.getByRole('status')).toHaveText(NO_MATCH_SENTENCE);
-  await expect(page.getByLabel('Address')).toHaveValue('NOT A REGISTER ADDRESS');
+  await expect(page.getByLabel('Street address')).toHaveValue('NOT A REGISTER ADDRESS');
 });
 
 test('AC2 state (c): a search that could not run never borrows the no-match sentence', async ({ page }) => {
@@ -338,12 +338,12 @@ test('AC2 state (c): a search that could not run never borrows the no-match sent
   await search(page);
 
   const status = page.getByRole('status');
-  await expect(status).toContainText('We could not search for this address right now.');
+  await expect(status).toContainText('Search is unavailable right now.');
   await expect(status).toContainText(
-    'This is not the same as saying the address is not there. Try again when you have a connection.',
+    'The address may still exist. Try again with a connection.',
   );
   await expect(status).not.toContainText(NO_MATCH_SENTENCE);
-  await expect(status).not.toContainText('No matching address found');
+  await expect(status).not.toContainText('No match. Check the spelling');
 });
 
 test('AC2 a stale response can never overwrite a newer one', async ({ page }) => {
@@ -392,7 +392,7 @@ test('AC2 a stale response can never overwrite a newer one', async ({ page }) =>
     .toHaveText([FRESH]);
   await expect(page.getByText(STALE)).toHaveCount(0);
   await expect(page.getByRole('status'))
-    .toContainText('returned 1 record; 1 distinct address is listed below.');
+    .toContainText('1 address found');
 
   // And it was cancelled on the wire, not merely ignored on arrival: the browser
   // recorded the superseded request as aborted the moment the query changed.
@@ -408,11 +408,10 @@ test('AC2 states how many records the register returned and that ten is a cap', 
 
   const status = page.getByRole('status');
   await expect(status).toContainText(
-    'The address register returned 10 records; 10 distinct addresses are listed below.',
+    '10 addresses found',
   );
   await expect(status).toContainText(
-    'Cooeee asks the register for at most 10 records, so there may be more. '
-    + 'Type more of the address to shorten the list.',
+    'There may be more. Type more of the address.',
   );
   // The stated number of lines is the number of lines.
   await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('listitem'))
@@ -427,7 +426,7 @@ test('AC2 a short result names its own size and claims no cap', async ({ page })
 
   const status = page.getByRole('status');
   await expect(status).toContainText(
-    'The address register returned 1 record; 1 distinct address is listed below.',
+    '1 address found',
   );
   await expect(status).not.toContainText('at most');
 });
@@ -445,13 +444,13 @@ test('AC2 the count is announced in a polite live region when the list changes',
   const status = page.getByRole('status');
   await expect(status).toHaveAttribute('aria-live', 'polite');
 
-  await page.getByLabel('Address').fill('RIDGE');
-  await expect(status).toContainText('returned 3 records; 3 distinct addresses are listed below.');
+  await page.getByLabel('Street address').fill('RIDGE');
+  await expect(status).toContainText('3 addresses found');
 
   // The list changes under the user's hands; the region carries the new count so
   // a screen-reader user is told the list changed without moving focus to it.
   await addressField(page).fill('RIDGE R');
-  await expect(status).toContainText('returned 1 record; 1 distinct address is listed below.');
+  await expect(status).toContainText('1 address found');
 });
 
 test('AC2 dismissal lasts until the query changes', async ({ page }) => {
@@ -462,15 +461,15 @@ test('AC2 dismissal lasts until the query changes', async ({ page }) => {
 
   const list = page.getByRole('list', { name: 'Address candidates' });
   await expect(list).toBeVisible();
-  await page.getByRole('button', { name: 'None of these is my address' }).click();
+  await page.getByRole('button', { name: 'Not my address' }).click();
 
   // Dismissed: no list, no claim about a result either way, and the typed text
   // is still there to correct.
   await expect(list).toHaveCount(0);
   await expect(page.getByRole('status')).toHaveText(
-    'Check or add a unit or street number, then search again.',
+    'Add a unit or street number, then search again.',
   );
-  await expect(page.getByLabel('Address')).toHaveValue('RIDGE');
+  await expect(page.getByLabel('Street address')).toHaveValue('RIDGE');
 
   // One more character is a new query, so the list comes back.
   await addressField(page).pressSequentially(' R', { delay: 30 });
@@ -483,7 +482,7 @@ test('AC2 the Search button still forces the search, without doubling requests',
   ]);
 
   await page.goto(SEARCH_URL);
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page.getByRole('list', { name: 'Address candidates' })).toBeVisible();
   await page.waitForTimeout(600);
@@ -515,7 +514,7 @@ test('AC2 typing sends the query and nothing else, to nowhere else', async ({ pa
 
   await page.goto(SEARCH_URL);
   await addressField(page).pressSequentially('6 RIDGE ROAD', { delay: 20 });
-  await expect(page.getByRole('status')).toContainText('No matching address found');
+  await expect(page.getByRole('status')).toContainText('No match. Check the spelling');
 
   // One endpoint, one method, no body: the address register's own WFS. An
   // empty answer is asked once more loosely, to the same place and no other.
@@ -539,7 +538,7 @@ test('AC2 nothing typed, returned or rejected is written to the device', async (
     await field.fill(query);
     await expect(page.getByRole('list', { name: 'Address candidates' })).toBeVisible();
   }
-  await page.getByRole('button', { name: 'None of these is my address' }).click();
+  await page.getByRole('button', { name: 'Not my address' }).click();
   await field.fill('RIDGE');
 
   expect(await storageState(page)).toEqual({
@@ -558,7 +557,7 @@ test('Use my location lists the nearest register addresses, and typing takes the
   await page.getByRole('button', { name: 'Use my location' }).click();
 
   // Nearest first, whatever order the register answered in.
-  await expect(page.getByRole('status')).toContainText('nearest your position');
+  await expect(page.getByRole('status')).toContainText('Addresses nearest you');
   await expect(page.getByRole('listitem').first()).toContainText('1774-1776 DANDENONG ROAD');
   expect(requests).toEqual([
     // The smallest radius first, and it found addresses, so nothing wider is asked.
@@ -566,5 +565,5 @@ test('Use my location lists the nearest register addresses, and typing takes the
   ]);
 
   await addressField(page).fill('RIDGE');
-  await expect(page.getByRole('status')).not.toContainText('nearest your position');
+  await expect(page.getByRole('status')).not.toContainText('Addresses nearest you');
 });

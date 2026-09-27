@@ -6,7 +6,7 @@ const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 
 async function reachAreaCheck(page: Page, mode: string, context?: BrowserContext) {
   await page.goto(`${AREA_URL}?mode=${mode}`);
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('button', { name: ADDRESS }).click();
   if (context) await context.setOffline(true);
@@ -51,10 +51,10 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
   await reachAreaCheck(page, 'retry');
   const state = page.getByRole('status');
   await expect(state.locator('h1')).toHaveText(
-    'We could not check the bushfire area for this address right now.',
+    'The bushfire area check is unavailable right now.',
   );
   await expect(state).toContainText(
-    'Nothing has been saved. Your address is still here. Try again when you have a connection.',
+    'Nothing saved. Your address is still here. Try again with a connection.',
   );
   await expect(page.getByTestId('pending-address')).toHaveText(ADDRESS);
   expect(await deviceStorage(page)).toEqual({
@@ -89,7 +89,7 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
 test('AC7 maps genuine browser offline mode to the same state', async ({ page, context }) => {
   await reachAreaCheck(page, 'offline', context);
   await expect(page.getByRole('heading')).toHaveText(
-    'We could not check the bushfire area for this address right now.',
+    'The bushfire area check is unavailable right now.',
   );
   await expect(page.getByTestId('pending-address')).toHaveText(ADDRESS);
   await context.setOffline(false);
@@ -97,14 +97,14 @@ test('AC7 maps genuine browser offline mode to the same state', async ({ page, c
 
 test('AC9 an offer that could not be prepared offers Try again and Search again, and Search again writes nothing', async ({ page }) => {
   await page.goto(`${AREA_URL}?mode=present&offer=fail`);
-  await page.getByLabel('Address').fill('RIDGE');
+  await page.getByLabel('Street address').fill('RIDGE');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await chooseLastResortPlaces(page);
 
-  await expect(page.getByText('We could not prepare this pack right now.')).toBeVisible();
+  await expect(page.getByText('This pack could not be prepared right now.')).toBeVisible();
   const tryAgain = page.getByRole('button', { name: 'Try again' });
   const searchAgain = page.getByRole('button', { name: 'Search again' });
   await expect(tryAgain).toBeVisible();
@@ -112,13 +112,13 @@ test('AC9 an offer that could not be prepared offers Try again and Search again,
 
   // Try again re-attempts and fails again the same way — still no write.
   await tryAgain.click();
-  await expect(page.getByText('We could not prepare this pack right now.')).toBeVisible();
+  await expect(page.getByText('This pack could not be prepared right now.')).toBeVisible();
   expect(await deviceStorage(page)).toMatchObject({
     recordCounts: { packs: 0, layers: 0, destinations: 0, tiles: 0 },
   });
 
   await searchAgain.click();
-  await expect(page.getByRole('heading', { name: 'Search for your address' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your address', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
   expect(await deviceStorage(page)).toMatchObject({
     recordCounts: { packs: 0, layers: 0, destinations: 0, tiles: 0 },

@@ -40,7 +40,7 @@ describe('E5-US5 the rehearsal history on the pack page', () => {
         id: 'older',
         date: '25 August 2025',
         condition: 'No mobile data',
-        ending: 'This was a dry run: you ended it without going.',
+        ending: 'A dry run. You ended it without going.',
         gaps: '1 gap found',
       },
     ]);

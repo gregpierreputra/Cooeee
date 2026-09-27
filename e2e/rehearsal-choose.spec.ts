@@ -27,6 +27,6 @@ test.describe('AC2 which pack to rehearse', () => {
 
   test('no pack shows the gate\'s own words', async ({ page }) => {
     await page.goto(`${HARNESS}/rehearse-choose?packs=0`);
-    await expect(page.getByRole('heading', { name: 'No pack is stored on this device' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'No pack saved yet' })).toBeVisible();
   });
 });

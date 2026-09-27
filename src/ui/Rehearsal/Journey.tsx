@@ -13,6 +13,7 @@ import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types';
 import { getCompletePackContent, saveStartedRehearsal } from '../../data/db';
 import Glyph from '../components/Glyph';
+import Hint from '../components/Hint';
 import HoldButton from '../components/HoldButton';
 import { useOnline } from '../components/useOnline';
 import Head from './Head';
@@ -108,11 +109,17 @@ export function JourneyBefore({
   return (
     <main className="page rehearsal-journey">
       <Head />
-      <h2>{copy.JOURNEY_BEFORE_HEADING}</h2>
+      <Hint label={copy.ABOUT_REHEARSAL} head={<h2>{copy.JOURNEY_BEFORE_HEADING}</h2>}>
+        <ul className="info-lines glyph-lines">
+          <li><Glyph kind="go" line />{copy.JOURNEY_WHAT_IT_IS}</li>
+          <li><Glyph kind="clock" line />{copy.JOURNEY_WHAT_IT_IS_FOR}</li>
+        </ul>
+      </Hint>
       <p>{copy.JOURNEY_CONDITION_LINE(conditionWithout(condition))}</p>
-      <p>{copy.JOURNEY_WHAT_IT_IS}</p>
-      <p>{copy.JOURNEY_WHAT_IT_IS_FOR}</p>
-      <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+      <p className="with-glyph">
+        <Glyph kind="calls" line />
+        {copy.OFFICIAL_INSTRUCTIONS_FIRST}
+      </p>
       {/* E5-US6 — the condition is made on the phone, not pretended. */}
       <section className="card condition-how-to">
         <Glyph kind="not" />
@@ -125,13 +132,14 @@ export function JourneyBefore({
       <div className="actions">
         <button
           type="button"
-          className="action journey-go"
+          className="action journey-go with-glyph"
           onClick={() => {
             onGone();
             const run = startRun(packId, condition);
             keep(unfinishedFrom(run)).catch(() => undefined);
           }}
         >
+          <Glyph kind="go" line />
           {copy.I_AM_GOING_NOW}
         </button>
       </div>

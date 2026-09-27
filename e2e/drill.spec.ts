@@ -28,6 +28,9 @@ test.describe('E7 the drill in front of the rehearsal', () => {
     await expect(page.getByRole('img', { name: /bushfire arrives/ })).toBeVisible();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await expect(page.locator('main')).toContainText('Bag 0 of 10');
+    // Every minute ends on what a minute means in a real fire, then the report.
+    await expect(page.getByRole('heading', { name: 'In one minute, a grassfire can travel 400 metres.' })).toBeFocused();
+    await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByRole('heading', { name: 'The minute ended away from the door' })).toBeVisible();
     await expect(page.locator('main')).not.toContainText('out of 100');
     await expect(page.getByRole('heading', { name: 'Left behind' })).toBeVisible();
@@ -51,7 +54,7 @@ test.describe('E7 the drill in front of the rehearsal', () => {
 
   test('the Rehearse screen offers the drill again at any time', async ({ page }) => {
     await page.goto(`${HARNESS}/rehearse?mode=rehearsable`);
-    await expect(page.getByRole('heading', { name: 'What are we rehearsing without?' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Rehearse without…' })).toBeVisible();
     await page.getByRole('button', { name: /Play the drill/ }).click();
     await expect(page.getByRole('heading', { name: 'One minute to leave' })).toBeVisible();
   });

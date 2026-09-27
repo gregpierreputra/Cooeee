@@ -25,14 +25,14 @@ describe('the words that offer it', () => {
   it('are exactly the draft wording, pending the copy review', () => {
     expect(words).toEqual([
       'What you learnt about the way',
-      "If you like, write what the app cannot tell you: the turns, what you met on the way, what you would do differently. It is kept with this pack's notes, which BlackSky shows you without a connection.",
+      'Optional. The turns, what you met, what you would change. BlackSky shows it offline.',
       'Your note about the way',
     ]);
   });
 
   it('say it is optional, and where it goes', () => {
-    expect(copy.WAY_NOTE_DETAIL.startsWith('If you like,')).toBe(true);
-    expect(copy.WAY_NOTE_DETAIL).toContain("this pack's notes");
+    expect(copy.WAY_NOTE_DETAIL.startsWith('Optional.')).toBe(true);
+    expect(copy.WAY_NOTE_DETAIL).toContain('shows it offline');
     expect(copy.WAY_NOTE_DETAIL).toContain('BlackSky');
   });
 

@@ -6,7 +6,7 @@ const HARNESS_URL = `${HARNESS}/`;
 test('AC1 renders the confirmation order and immutable address', async ({ page }) => {
   await page.goto(HARNESS_URL);
 
-  const heading = page.getByRole('heading', { name: 'Is this the place you want to save?' });
+  const heading = page.getByRole('heading', { name: 'Is this the place?' });
   const address = page.getByTestId('returned-address');
   const name = page.getByLabel('Place name');
   const save = page.getByRole('button', { name: 'Save this place' });

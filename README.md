@@ -49,8 +49,7 @@ refuses any other copy.
 rehearsal. It reads the Modern Interiors art pack by LimeZu from a `game-assets` folder at the
 repository root and writes `public/drill` and `src/core/drill-atlas.ts`. The pack is bought from
 limezu.itch.io and its licence forbids passing it on, so `game-assets` is ignored by git and only
-the baked pictures of the frames the game uses are committed. LimeZu is credited on the About
-screen. Run the script again after any change to `src/core/drill-layout.ts` or to the list of
+the baked pictures of the frames the game uses are committed. Run the script again after any change to `src/core/drill-layout.ts` or to the list of
 things in `src/core/drill-items.ts`.
 
 ## Rules that are enforced
