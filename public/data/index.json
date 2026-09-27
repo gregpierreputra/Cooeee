@@ -10,5 +10,10 @@
   "recovery": {
     "file": "recovery.v2026-09-11.json",
     "retrievedAt": 1789123463200
+  },
+  "roads": {
+    "file": "roads-vic.bin",
+    "sidecar": "roads-vic.json",
+    "retrievedAt": 1790515007922
   }
 }
