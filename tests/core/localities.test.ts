@@ -3,9 +3,16 @@ import {
   ROADS_LOCALITY_CENTRE_PX,
   ROADS_LOCALITY_COUNT,
   ROADS_LOCALITY_EDGE_PX,
+  ROADS_LOCALITY_PAD_PX,
   ROADS_LOCALITY_SPACING_PX,
 } from '../../src/core/constants';
-import { chooseLocalities, decodeLocalities, localityWidthPx, type Locality } from '../../src/core/localities';
+import {
+  chooseLocalities,
+  decodeLocalities,
+  estimateLocalityPx,
+  localityAt,
+  type Locality,
+} from '../../src/core/localities';
 import type { Obstacle } from '../../src/core/roads';
 
 // BS_Enhancement-AC5: locality names on the map disc, "Whole way" only.
@@ -68,20 +75,51 @@ describe('the locality rule', () => {
     expect(choose([at('FURTHER', 0, 100), at('NEARER', 0, 60)])).toEqual(['NEARER']);
   });
 
-  it('never sets a name where it could touch a road name: road names win', () => {
-    const place = at('HAMPTON', 80, 0);
-    const reach = localityWidthPx('HAMPTON') / 2;
-    // A road name's point just inside the circle the name sweeps as the map
-    // turns (its half width, and half a road name's height): skipped.
-    expect(choose([place], [[80, reach + 6.9]])).toEqual([]);
-    expect(choose([place], [[80, reach + 7.1]])).toEqual(['HAMPTON']);
+  // Every name 60 px wide as drawn, so the box is plain to work out: 30 px
+  // each side of its point and 4.75 px above and below, and 4 px round that.
+  const sixty = () => 60;
+  const halfW = 30 + ROADS_LOCALITY_PAD_PX;
+  const halfH = 9.5 / 2 + ROADS_LOCALITY_PAD_PX;
+  const withBox = (samples: [number, number][], obstacles: Obstacle[] = []) =>
+    chooseLocalities([at('HAMPTON', 80, 0)], HERE, MPP, R, samples, obstacles, { measure: sixty }).map(
+      (p) => p.name,
+    );
+
+  it('keeps its upright box, with 4 px round it, clear of every road name: road names win', () => {
+    expect(ROADS_LOCALITY_PAD_PX).toBe(4);
+    // A road name is a band 14 px high along its points: 7 px either side.
+    expect(withBox([[80 + halfW + 6.9, 0]])).toEqual([]);
+    expect(withBox([[80 + halfW + 7.1, 0]])).toEqual(['HAMPTON']);
+    expect(withBox([[80, halfH + 6.9]])).toEqual([]);
+    expect(withBox([[80, halfH + 7.1]])).toEqual(['HAMPTON']);
+    // Above the name, inside its half width but outside its box: clear. The
+    // old rule, a half width every way, would have skipped it.
+    expect(withBox([[80, -25]])).toEqual(['HAMPTON']);
   });
 
-  it('keeps clear of an obstacle, the pin', () => {
-    const place = at('HALLAM', 80, 0);
-    const reach = localityWidthPx('HALLAM') / 2;
-    expect(choose([place], [], [{ x: 80, y: -(reach + 23), r: 24 }])).toEqual([]);
-    expect(choose([place], [], [{ x: 80, y: -(reach + 25), r: 24 }])).toEqual(['HALLAM']);
+  it('keeps its box clear of an obstacle, the pin', () => {
+    expect(withBox([], [{ x: 80, y: -(halfH + 23.9), r: 24 }])).toEqual([]);
+    expect(withBox([], [{ x: 80, y: -(halfH + 24.1), r: 24 }])).toEqual(['HAMPTON']);
+    // Off a corner of the box, by the true distance to the corner.
+    const corner = 24 / Math.SQRT2;
+    expect(withBox([], [{ x: 80 + halfW + corner - 0.1, y: halfH + corner - 0.1, r: 24 }])).toEqual([]);
+    expect(withBox([], [{ x: 80 + halfW + corner + 0.1, y: halfH + corner + 0.1, r: 24 }])).toEqual(['HAMPTON']);
+  });
+
+  it("tries the chosen place's own locality first, then the rest nearest first", () => {
+    const near = at('NEAR', 60, 0);
+    const home = at('HOME', 100, 0); // 40 px from NEAR: only one of the two can be named
+    expect(choose([near, home])).toEqual(['NEAR']);
+    // The place lies in HOME (its point is the nearest to the place): HOME wins.
+    const place = { lat: home.lat + 0.0001, lon: home.lon };
+    const names = chooseLocalities([near, home], HERE, MPP, R, [], [], { place }).map((p) => p.name);
+    expect(names).toEqual(['HOME']);
+    expect(localityAt([near, home], place)).toBe(home);
+    expect(localityAt([], place)).toBeNull();
+  });
+
+  it('estimates a name at 9.5 px capitals with 1 px spacing when no measure is given', () => {
+    expect(estimateLocalityPx('ABCD')).toBeCloseTo(4 * 9.5 * 0.68 + 4, 9);
   });
 
   it('names at most eight', () => {

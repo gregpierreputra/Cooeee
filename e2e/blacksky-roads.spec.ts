@@ -19,7 +19,12 @@ const map = (page: Page) => page.locator('.blacksky-dial-map');
 const roads = (page: Page) => page.locator('.blacksky-dial-map .blacksky-road');
 const tag = (page: Page) => page.locator('.blacksky-view-tag');
 // Where the pin sits: on the ring, or inside the view as the drop, and how far
-// from the centre, in the dial's units (ring 78, the map's edge 70).
+// from the centre, in the dial's units. The dial's circles are shares of its
+// 212-unit box (see BlackSkyDial.tsx): the map disc 82.5 %, the ring's line
+// placed so its outer edge is 96.5 %.
+const HALF = 212 / 2;
+const MAP_R = HALF * 0.825;
+const RING_R = HALF * 0.965 - 1;
 const pinAt = (page: Page) => page.locator('.blacksky-dial-pin').getAttribute('data-at');
 const pinR = (page: Page) =>
   page.locator('.blacksky-dial-pin').evaluate((el) => Number(el.getAttribute('data-r')));
@@ -36,9 +41,10 @@ test('Normal: the roads are drawn inside the ring, turning with it, each at its 
   await openRoads(page, 'fixture');
   await pushPosition(page, AT_FERNY_CREEK);
 
-  // Five of the six fixture roads are in the whole-way view, which never draws
-  // the collector, each as two strokes, a casing and a fill.
-  await expect(roads(page)).toHaveCount(10);
+  // Four of the six fixture roads are in the whole-way view, which draws
+  // neither the collector nor the freeway's ramp, each as two strokes, a
+  // casing and a fill.
+  await expect(roads(page)).toHaveCount(8);
   // A light disc under them, filling the map circle.
   await expect(page.locator('.blacksky-dial-map .blacksky-map-disc')).toHaveCount(1);
   // The map is inside the ring's own group, so --heading turns it with the ring.
@@ -53,25 +59,26 @@ test('Normal: the roads are drawn inside the ring, turning with it, each at its 
   expect(drawn!.x + drawn!.width).toBeLessThanOrEqual(ring!.x + ring!.width + 1);
   expect(drawn!.y + drawn!.height).toBeLessThanOrEqual(ring!.y + ring!.height + 1);
 
-  // The whole-way widths and the draw order: arterials (one unnamed), the
-  // highway, then the freeway and its ramp under a kilometre (drawn at the
-  // arterial width), every casing of a class before its fills. Each stroke
-  // carries its class and pass for the stylesheet's colours.
+  // The whole-way widths and the draw order: arterials (one unnamed) at 1.6,
+  // the highway at 2.8, the freeway at 5.5, every casing of a class before its
+  // fills. Each stroke carries its class and pass for the stylesheet's colours.
   const strokes = await roads(page).evaluateAll((paths) =>
     paths.map((p) => `${p.classList[1]} ${p.classList[2]} ${Number(Number(p.getAttribute('stroke-width')).toFixed(2))}`),
   );
   expect(strokes).toEqual([
-    'arterial casing 2.2',
-    'arterial casing 2.2',
-    'arterial fill 1',
-    'arterial fill 1',
-    'highway casing 4',
-    'highway fill 2.8',
+    'arterial casing 1.6',
+    'arterial casing 1.6',
+    'arterial fill 0.4',
+    'arterial fill 0.4',
+    'highway casing 2.8',
+    'highway fill 1.6',
     'freeway casing 5.5',
-    'freeway casing 2.2',
     'freeway fill 3.85',
-    'freeway fill 1',
   ]);
+  // The whole way's highway fill is the paler one.
+  expect(
+    await page.locator('.blacksky-road.highway.fill').evaluate((el) => getComputedStyle(el).stroke),
+  ).toBe('rgb(255, 241, 184)');
   // Names along the road, never an unnamed one, none on the arrow, the freeway
   // first: the highway runs under the arrow and the rest of it is too short
   // for its name; the freeway's and the arterial's clear ends are long enough.
@@ -106,14 +113,18 @@ test('a tap on the dial switches the view, the tag says which, and the hint goes
   await toggle.click();
   await expect(tag(page)).toHaveText(MAP_VIEW_TAG.near);
   // Near me is 1.5 km round the person: the unnamed road 1.76 km east, and the
-  // collector 1.50 km south (a metre past the edge), drop out; four roads, two
-  // strokes each, at the near widths.
+  // collector 1.50 km south (a metre past the edge), drop out; four roads, the
+  // ramp among them, two strokes each, at the near widths: the freeway 11, its
+  // ramp at the collector width in the freeway's colours.
   await expect(roads(page)).toHaveCount(8);
-  const nearFreeway = page.locator('.blacksky-road.freeway.casing').first();
-  expect(Number(await nearFreeway.getAttribute('stroke-width'))).toBe(11);
+  const freewayCasings = await page
+    .locator('.blacksky-road.freeway.casing')
+    .evaluateAll((paths) => paths.map((p) => Number(p.getAttribute('stroke-width'))));
+  expect(freewayCasings).toEqual([11, 4]);
   await toggle.click();
   await expect(tag(page)).toHaveText(MAP_VIEW_TAG.whole);
-  await expect(roads(page)).toHaveCount(10);
+  await expect(roads(page)).toHaveCount(8);
+  await expect(page.locator('.blacksky-road.freeway.casing')).toHaveCount(1);
 
   await expect(page.getByText(MAP_ZOOM_HINT)).toBeHidden({ timeout: 7_000 });
 });
@@ -124,9 +135,9 @@ test('the pin leaves the ring for its true spot when the place is inside the vie
   const toggle = page.getByRole('button', { name: MAP_VIEW_BUTTON });
 
   // Whole way reaches 2.60 km and 15 % more: the pin is the drop, at 2.60 /
-  // 2.99 of the map's radius, 70.
+  // 2.99 of the map's radius.
   await expect.poll(() => pinAt(page)).toBe('inside');
-  await expect.poll(() => pinR(page)).toBeCloseTo(70 / 1.15, 1);
+  await expect.poll(() => pinR(page)).toBeCloseTo(MAP_R / 1.15, 1);
   // The drop with its hole, 22 px tall on the screen, standing upright; the
   // browser's box also takes in its 2.5 px amber edge.
   const drop = page.locator('.blacksky-dial-drop');
@@ -139,14 +150,14 @@ test('the pin leaves the ring for its true spot when the place is inside the vie
   // Near me is 1.5 km: the place is outside it, so the marker is on the ring.
   await toggle.click();
   await expect.poll(() => pinAt(page)).toBe('ring');
-  expect(await pinR(page)).toBe(78);
+  expect(await pinR(page)).toBeCloseTo(RING_R, 6);
   await expect(page.locator('.blacksky-dial-pin circle')).toHaveCount(2);
 
   // About a kilometre south of the place: inside 1.5 km, so the drop comes in.
   await pushPosition(page, { latitude: -37.8656, longitude: 145.34 });
   await expect(page.locator('.blacksky-figure-main')).toHaveText('1.00 km');
   await expect.poll(() => pinAt(page)).toBe('inside');
-  await expect.poll(() => pinR(page)).toBeCloseTo(70 / 1.5, 0);
+  await expect.poll(() => pinR(page)).toBeCloseTo(MAP_R / 1.5, 0);
   // The arrow still points at it, the same bearing as the pin.
   const bearings = await page
     .locator('.blacksky-dial-pin, .blacksky-dial-arrow')
@@ -160,9 +171,9 @@ test('locality names are set in the whole way, upright, and not in near me', asy
   const places = page.locator('.blacksky-dial-map .blacksky-locality');
 
   // The fixture's six localities lie 1.8 km out at every 60 degrees. In the
-  // whole way some are named, in capitals; ALPHA, due north, is under the pin
-  // (the chosen place is 2.6 km north), and a name never touches a road name,
-  // so not all six are.
+  // whole way they are named in capitals, the chosen place's own locality
+  // first: the place is 2.6 km north, and ALPHA's point is the nearest to it.
+  // A name never touches a road name, so not always all six.
   await expect(places.first()).toBeVisible();
   const names = await places.allTextContents();
   expect(names.length).toBeGreaterThan(0);
@@ -170,7 +181,8 @@ test('locality names are set in the whole way, upright, and not in near me', asy
   for (const name of names) {
     expect(['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT']).toContain(name);
   }
-  expect(names).not.toContain('ALPHA');
+  expect(names[0]).toBe('ALPHA');
+  expect(names.length).toBeGreaterThanOrEqual(4);
   // Upright: turned back by the heading, like the ring's letters.
   const style = await places.first().evaluate((el) => {
     const css = getComputedStyle(el);

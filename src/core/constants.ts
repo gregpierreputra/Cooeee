@@ -205,9 +205,12 @@ export const ROADS_REDRAW_M = 50;
  *  would redraw two thousand roads every two seconds; 1 % is about a pixel and
  *  a half at every view. Starting value. */
 export const ROADS_REDRAW_SHARE = 0.01;
-/** A freeway line shorter than this is an on or off ramp, drawn thin so the
- *  carriageways read as the road. Starting value. */
+/** A freeway line shorter than this is an on or off ramp. Starting value. */
 export const ROADS_RAMP_MAX_M = 1_000;
+/** Ramps are drawn only in "Near me", thin, in the freeway's colours. In the
+ *  whole way they were most of the lines drawn (593 of 804 round Clayton
+ *  South) and turned every interchange into a knot. */
+export const ROADS_RAMP_IN_WHOLE_WAY = false;
 /** Which road classes the dial draws. Drawn all at one weight, the state's
  *  roads were an unreadable mesh on a phone (Samsung S26 test), so each view
  *  draws only the roads a person would recognise at its scale:
@@ -220,19 +223,19 @@ export const ROADS_RAMP_MAX_M = 1_000;
  *  Starting values. */
 export const ROADS_CLASS_LIMITS = { mainUpToM: 10_000, sparseLines: 40 } as const;
 /** Line widths in screen pixels, by kind and view: the whole width of a road,
- *  its casing. Wide enough in "Near me" to read as streets on the light disc.
- *  A freeway ramp (a class 0 line shorter than ROADS_RAMP_MAX_M) is drawn at
- *  the arterial width, so the carriageways read as the freeway. Starting
- *  values. */
+ *  its casing. Wide enough in "Near me" to read as streets on the light disc;
+ *  in the whole way the freeway stands well above the highway and the
+ *  arterial, so the hierarchy reads at a glance. A freeway ramp is drawn in
+ *  "Near me" only, at the collector width. Starting values. */
 export const ROADS_WIDTH_PX = {
-  whole: { freeway: 5.5, highway: 4, arterial: 2.2, collector: 1.2 },
+  whole: { freeway: 5.5, highway: 2.8, arterial: 1.6, collector: 1.2 },
   near: { freeway: 11, highway: 9, arterial: 6, collector: 4 },
 } as const;
 /** The centre arrow's size, as a share of the arrow first built for the plain
  *  dial: smaller, so it covers less of the map it sits on (at full size it hid
  *  the middle of the map, where the roads through the person run). Starting
  *  value. */
-export const DIAL_ARROW_SCALE = 0.6;
+export const DIAL_ARROW_SCALE = 0.5;
 /** Each road is drawn twice, a darker casing at its full width and its fill on
  *  top; the fill is narrower by this edge on each side: a share of the width,
  *  never under `minPx`, so the edge shows on the thinnest road. Starting
@@ -278,6 +281,9 @@ export const ROADS_LOCALITY_COUNT = 8;
 export const ROADS_LOCALITY_CENTRE_PX = 46;
 export const ROADS_LOCALITY_EDGE_PX = 30;
 export const ROADS_LOCALITY_SPACING_PX = 62;
+/** A locality name keeps this much clear round its own upright box, of road
+ *  names and of the pin. Screen pixels. Starting value. */
+export const ROADS_LOCALITY_PAD_PX = 4;
 /** How long "Tap the dial to zoom" stays under the dial once roads are drawn.
  *  Starting value. */
 export const ROADS_HINT_MS = 5_000;

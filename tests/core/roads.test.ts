@@ -6,6 +6,7 @@ import {
   ROADS_MAX_RADIUS_M,
   ROADS_MIN_RADIUS_M,
   ROADS_NEAR_RADIUS_M,
+  ROADS_RAMP_IN_WHOLE_WAY,
   ROADS_REDRAW_M,
   ROADS_REDRAW_SHARE,
 } from '../../src/core/constants';
@@ -16,10 +17,13 @@ import {
   cutPolyline,
   decodeRoads,
   drawRoads,
+  drawnInView,
   estimateTextPx,
   fillWidthPx,
   highestClassDrawn,
+  isRamp,
   linesNear,
+  offsetLatLon,
   pathData,
   placeInView,
   polylineLength,
@@ -120,6 +124,19 @@ describe('the projection', () => {
   });
 });
 
+describe('where the place is', () => {
+  it("lies at its distance along its bearing, on the projection's own scale", () => {
+    const east = offsetLatLon(HERE, 1_000, 90);
+    const [ex, ey] = project(HERE, 10, east.lon, east.lat);
+    expect(ex).toBeCloseTo(100, 6);
+    expect(ey).toBeCloseTo(0, 6);
+    const north = offsetLatLon(HERE, 500, 0);
+    const [nx, ny] = project(HERE, 10, north.lon, north.lat);
+    expect(nx).toBeCloseTo(0, 6);
+    expect(ny).toBeCloseTo(-50, 6);
+  });
+});
+
 describe('the view', () => {
   it('near me is always the same ground', () => {
     expect(viewRadiusM('near', 100)).toBe(ROADS_NEAR_RADIUS_M);
@@ -165,7 +182,7 @@ describe('the view', () => {
 });
 
 describe('the width rule', () => {
-  it('steps down from freeway to collector, wider near the person, with a freeway ramp at the arterial width', () => {
+  it('steps down from freeway to collector, wider near the person, with a freeway ramp at the collector width', () => {
     const widths = (view: 'whole' | 'near') => [
       roadWidthPx({ cls: 0, lengthM: 12_000 }, view),
       roadWidthPx({ cls: 0, lengthM: 1_000 }, view),
@@ -174,8 +191,21 @@ describe('the width rule', () => {
       roadWidthPx({ cls: 2, lengthM: 5_000 }, view),
       roadWidthPx({ cls: 3, lengthM: 5_000 }, view),
     ];
-    expect(widths('whole')).toEqual([5.5, 5.5, 2.2, 4, 2.2, 1.2]);
-    expect(widths('near')).toEqual([11, 11, 6, 9, 6, 4]);
+    // In the whole way the freeway stands well above the highway (2.8) and
+    // the arterial (1.6); "Near me" is unchanged.
+    expect(widths('whole')).toEqual([5.5, 5.5, 1.2, 2.8, 1.6, 1.2]);
+    expect(widths('near')).toEqual([11, 11, 4, 9, 6, 4]);
+  });
+
+  it('draws a ramp in near me only: a freeway line under 1 km is left out of the whole way', () => {
+    expect(ROADS_RAMP_IN_WHOLE_WAY).toBe(false);
+    expect(isRamp({ cls: 0, lengthM: 999 })).toBe(true);
+    expect(isRamp({ cls: 0, lengthM: 1_000 })).toBe(false);
+    expect(isRamp({ cls: 1, lengthM: 200 })).toBe(false); // only freeways have ramps
+    expect(drawnInView({ cls: 0, lengthM: 999 }, 'near')).toBe(true);
+    expect(drawnInView({ cls: 0, lengthM: 999 }, 'whole')).toBe(false);
+    expect(drawnInView({ cls: 0, lengthM: 1_000 }, 'whole')).toBe(true);
+    expect(drawnInView({ cls: 1, lengthM: 200 }, 'whole')).toBe(true);
   });
 
   it('draws the fill narrower than its casing by an edge each side, never under 0.6 px', () => {
@@ -395,9 +425,9 @@ describe('drawing one view', () => {
         "2 casing 6",
         "2 fill 4.2",
         "0 casing 11",
-        "0 casing 6",
+        "0 casing 4",
         "0 fill 7.7",
-        "0 fill 4.2",
+        "0 fill 2.8",
       ]
     `);
     // Every point drawn is inside the map circle.
@@ -412,12 +442,12 @@ describe('drawing one view', () => {
     expect(drawn.labelSamples.length).toBeGreaterThan(0);
   });
 
-  it('draws the whole way at its own widths, without the collector', () => {
+  it('draws the whole way at its own widths, without the collector or the ramp', () => {
     const drawn = drawRoads(map, HERE, { view: 'whole', radiusM: 1_500, radiusPx: 150 });
+    expect(drawn.view).toBe('whole');
     expect(drawn.roads.filter((r) => r.pass === 'casing').map((r) => [r.cls, r.widthPx])).toEqual([
-      [2, 2.2],
+      [2, 1.6],
       [0, 5.5],
-      [0, 2.2],
     ]);
   });
 

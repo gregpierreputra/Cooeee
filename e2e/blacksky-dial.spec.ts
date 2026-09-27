@@ -86,8 +86,13 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   // figure was 56 px and more; it gave up size so the dial fills the width.)
   const sizes = await page.evaluate(() => {
     const px = (el: Element) => parseFloat(getComputedStyle(el).fontSize);
-    const withText = [...document.querySelectorAll('main *')].filter((el) =>
-      [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim()),
+    // The dial's compass letters are left out: they are drawn in the dial's own
+    // units (12.4 of its 212) and scale with it, about 19 px on a 328 px dial,
+    // so their computed size says nothing about how large they are seen.
+    const withText = [...document.querySelectorAll('main *')].filter(
+      (el) =>
+        !el.closest('.blacksky-dial') &&
+        [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim()),
     );
     return {
       distance: px(document.querySelector('.blacksky-figure-main')!),

@@ -20,18 +20,30 @@ const POINTS = [
 ] as const;
 const TICKS = [45, 135, 225, 315];
 
-/** The dial's circles, in the drawing's own units. The map is cut to MAP_R and
- *  its view's radius is drawn at MAP_R; the ring stands outside it at RING_R,
- *  with the ticks and the compass letters beyond it, so a road or a name never
- *  runs under a letter (the phone test found the letters inside the map were
- *  lost in it). The pin sits on the ring when the place is outside the view. */
-export const MAP_R = 70;
-export const RING_R = 78;
-const TICK_R = [78, 84] as const;
-const LETTER_R = 86;
-/** The drawing's width in its own units: the viewBox below, square, cut close
- *  to the letters, the pin on the ring and the notch above the N. */
+/** The drawing's width in its own units: the viewBox below, square, centred
+ *  on 0 0. Every circle of the dial is a share of it, so it is the one number
+ *  the geometry comes from. */
 export const DIAL_UNITS = 212;
+const HALF = DIAL_UNITS / 2;
+/** The ring's line, in the drawing's units; its outer edge is RING_R + half. */
+const RING_LINE = 2;
+/** The ring fills the dial's box: its outer edge at 96 % of the box's width or
+ *  more (the phone test found the old dial left a wide black margin). */
+export const RING_R = HALF * 0.965 - RING_LINE / 2;
+/** The map disc, 82 % of the box or more. The map is cut to MAP_R and its
+ *  view's radius is drawn at MAP_R. */
+export const MAP_R = HALF * 0.825;
+/** The compass letters sit in the black band between the disc and the ring,
+ *  as the design has them: amber on black, never on the map, so a road or a
+ *  name never runs under a letter. Set to fit the band. */
+export const LETTER_R = (MAP_R + RING_R - RING_LINE / 2) / 2;
+const LETTER_SIZE = (RING_R - MAP_R) * 0.9;
+/** The ticks, in the same band, reaching in from the ring. */
+const TICK_R = [RING_R - (RING_R - MAP_R) / 2, RING_R] as const;
+/** The marker on the ring, when the place is outside the view. It sits across
+ *  the ring and so reaches a little outside the box; the gap round the dial
+ *  takes that. */
+export const MARKER_R = 9;
 /** The pin drawn at the place's own spot when it is inside the view: a drop
  *  with a hole, its tip on the spot. Drawn in screen pixels, 22 px tall and
  *  16 wide at any dial size. */
@@ -88,16 +100,15 @@ export default function BlackSkyDial({
   return (
     <svg
       className="blacksky-dial"
-      viewBox={`-106 -107 ${DIAL_UNITS} ${DIAL_UNITS}`}
+      viewBox={`${-HALF} ${-HALF} ${DIAL_UNITS} ${DIAL_UNITS}`}
       role="img"
       aria-label={description}
       data-centre={centre}
     >
-      {/* A square drawing, cut close to the letters (radius 86 and their own
-          height), the pin on the ring and the notch above the N, so the dial
-          fills the width it is given; its centre, 0 0, is where everything
-          turns. The top of the phone: fixed, above the letters. */}
-      <path className="blacksky-dial-notch" d="M-8 -106H8L0 -95Z" />
+      {/* A square drawing, the ring near its edge, so the dial fills the width
+          it is given; its centre, 0 0, is where everything turns. The top of
+          the phone: fixed, a notch from the box's edge into the ring. */}
+      <path className="blacksky-dial-notch" d={`M-7 ${-HALF}H7L0 ${-(RING_R - RING_LINE)}Z`} />
       <g className="blacksky-dial-ring">
         {/* BS_Enhancement-AC5: the map is the first thing inside the ring's
             group, so it turns with the ring by the same --heading, under the
@@ -113,7 +124,12 @@ export default function BlackSkyDial({
           // inner one (in the stylesheet) keeps it upright as the ring turns.
           <g key={letter} transform={`rotate(${deg}) translate(0 ${-LETTER_R})`}>
             <g transform={`rotate(${-deg})`}>
-              <text className="blacksky-dial-letter" textAnchor="middle" dominantBaseline="central">
+              <text
+                className="blacksky-dial-letter"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={LETTER_SIZE}
+              >
                 {letter}
               </text>
             </g>
@@ -150,8 +166,8 @@ export default function BlackSkyDial({
           </g>
         ) : (
           <>
-            <circle cy={-RING_R} r="11" />
-            <circle className="blacksky-dial-pin-eye" cy={-RING_R} r="4" />
+            <circle cy={-RING_R} r={MARKER_R} />
+            <circle className="blacksky-dial-pin-eye" cy={-RING_R} r={MARKER_R * 0.36} />
           </>
         )}
       </g>
@@ -168,7 +184,7 @@ const ROAD_KIND: Record<number, string> = { 0: 'freeway', 1: 'highway', 2: 'arte
 function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: string; idPrefix: string }) {
   const { map, places = [], pxPerUnit } = layer;
   return (
-    <g className="blacksky-dial-map" clipPath={`url(#${clipId})`}>
+    <g className="blacksky-dial-map" clipPath={`url(#${clipId})`} data-view={map.view}>
       <defs>
         <clipPath id={clipId}>
           <circle r={MAP_R} />

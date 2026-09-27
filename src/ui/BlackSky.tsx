@@ -51,6 +51,8 @@ import {
   FIX_STALE_MS,
   ROADS_HINT_MS,
   ROADS_LABEL_PX,
+  ROADS_LOCALITY_LETTER_SPACING_PX,
+  ROADS_LOCALITY_PX,
   TICK_MS,
   VOICE_CHECK_MS,
   WATCH_RESTART_MS,
@@ -61,6 +63,7 @@ import { titleCase } from '../core/home';
 import {
   decodeRoads,
   drawRoads,
+  offsetLatLon,
   placeInView,
   redrawDistanceM,
   viewRadiusM,
@@ -76,7 +79,9 @@ import { readLocalitiesFile } from '../data/localities';
 import { readRoadsFile } from '../data/roads';
 import BlackSkyDial, {
   DIAL_UNITS,
+  LETTER_R,
   MAP_R,
+  MARKER_R,
   RING_R,
   type DialMapLayer,
 } from './components/BlackSkyDial';
@@ -964,12 +969,26 @@ function useLabelMeasure(): ((name: string) => number) | undefined {
   }, []);
 }
 
+/** The width of a locality name in the dial's own font, capitals, with its
+ *  letter-spacing, so the locality rule keeps the real box clear. */
+function useLocalityMeasure(): ((name: string) => number) | undefined {
+  return useMemo(() => {
+    const context = document.createElement('canvas').getContext('2d');
+    if (!context) return undefined;
+    context.font = `600 ${ROADS_LOCALITY_PX}px ${getComputedStyle(document.body).fontFamily}`;
+    return (name: string) => context.measureText(name).width + name.length * ROADS_LOCALITY_LETTER_SPACING_PX;
+  }, []);
+}
+
 /** What a name must keep clear of, in the map's pixels, north up. The map turns
- *  with the ring; the arrow and the pin turn by the place's bearing on top of
- *  that, so against the map they stand still at that bearing, and can be
- *  worked out when it is drawn. The letters stand outside the map now, so they
- *  are not in the way. Circles that cover each shape, in drawing units first,
- *  but for the drop, which is sized in screen pixels. */
+ *  with the ring, and so do the letters; the arrow and the pin turn by the
+ *  place's bearing on top of that, so against the map they stand still at that
+ *  bearing. All are therefore fixed in the map's own frame and can be worked
+ *  out when it is drawn. Circles that cover each shape, in drawing units first,
+ *  but for the drop, which is sized in screen pixels. (The letters and the
+ *  ring's marker sit in the band outside the map disc, so today they only
+ *  matter if the geometry changes; they are kept in the list so a change there
+ *  cannot put a name under them.) */
 function dialObstacles(bearingDeg: number, pinInsideR: number | null, pxPerUnit: number): Obstacle[] {
   const rad = (bearingDeg * Math.PI) / 180;
   const along = (d: number, r: number) => ({ x: d * Math.sin(rad), y: -d * Math.cos(rad), r });
@@ -982,10 +1001,16 @@ function dialObstacles(bearingDeg: number, pinInsideR: number | null, pxPerUnit:
     [5, 8],
     [-10, 9],
   ].map(([d, r]) => along(d * DIAL_ARROW_SCALE, r * DIAL_ARROW_SCALE + 1));
+  const letters = [0, 90, 180, 270].map((deg) => ({
+    x: LETTER_R * Math.sin((deg * Math.PI) / 180),
+    y: -LETTER_R * Math.cos((deg * Math.PI) / 180),
+    r: (RING_R - MAP_R) / 2,
+  }));
   const units = [
     ...arrow,
-    // The marker on the ring, radius 11, reaches into the map's edge.
-    ...(pinInsideR === null ? [along(RING_R, 12)] : []),
+    ...letters,
+    // The marker on the ring, when the place is outside the view.
+    ...(pinInsideR === null ? [along(RING_R, MARKER_R + 1)] : []),
   ];
   const obstacles = units.map(({ x, y, r }) => ({ x: x * pxPerUnit, y: y * pxPerUnit, r: r * pxPerUnit }));
   if (pinInsideR !== null) {
@@ -1007,6 +1032,7 @@ function useDialMap(
 ): { layer: DialMapLayer | null; pinAtR: number | undefined } {
   const anchor = useRef<MapAnchor | null>(null);
   const measure = useLabelMeasure();
+  const measureLocality = useLocalityMeasure();
   let at = anchor.current;
   if (roads) {
     const { here, view } = roads;
@@ -1038,10 +1064,13 @@ function useDialMap(
     // names win. In "Whole way" only: near the person the streets say enough.
     const places =
       at.view === 'whole' && localities
-        ? chooseLocalities(localities, at, drawn.metresPerPx, radiusPx, drawn.labelSamples, obstacles)
+        ? chooseLocalities(localities, at, drawn.metresPerPx, radiusPx, drawn.labelSamples, obstacles, {
+            place: offsetLatLon(at, at.distanceM, at.bearingDeg),
+            measure: measureLocality,
+          })
         : [];
     return { map: drawn, places, pxPerUnit };
-  }, [map, localities, at, pxPerUnit, measure]);
+  }, [map, localities, at, pxPerUnit, measure, measureLocality]);
   // Measured from the start of the work to the moment React has put the paths
   // in the page, so it can be read on a phone in the performance panel.
   useLayoutEffect(() => {

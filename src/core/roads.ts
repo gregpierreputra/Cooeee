@@ -25,6 +25,7 @@ import {
   ROADS_MAX_RADIUS_M,
   ROADS_MIN_RADIUS_M,
   ROADS_NEAR_RADIUS_M,
+  ROADS_RAMP_IN_WHOLE_WAY,
   ROADS_RAMP_MAX_M,
   ROADS_REDRAW_M,
   ROADS_REDRAW_SHARE,
@@ -108,6 +109,15 @@ export function project(centre: LatLon, metresPerPx: number, lon: number, lat: n
   return [((lon - centre.lon) * mx) / metresPerPx, (-(lat - centre.lat) * M_PER_DEG) / metresPerPx];
 }
 
+/** The spot `distanceM` from `from` along `bearingDeg`, on the same flat scale
+ *  as the projection: where the place is, from its distance and bearing. */
+export function offsetLatLon(from: LatLon, distanceM: number, bearingDeg: number): LatLon {
+  const rad = (bearingDeg * Math.PI) / 180;
+  const lat = from.lat + (distanceM * Math.cos(rad)) / M_PER_DEG;
+  const lon = from.lon + (distanceM * Math.sin(rad)) / (M_PER_DEG * Math.cos((from.lat * Math.PI) / 180));
+  return { lat, lon };
+}
+
 /** The ground the dial shows, as a radius in metres. "Near me" is fixed.
  *  "Whole way" reaches the place and a margin beyond it, within the limits, so
  *  a close place still has road round it and a far one never shrinks every road
@@ -140,13 +150,23 @@ export function placeInView(
   return { x: r * Math.sin(rad), y: -r * Math.cos(rad), r };
 }
 
+/** A freeway ramp: a class 0 line under ROADS_RAMP_MAX_M. Ramps are freeway
+ *  class too, and drawn as freeway they turned every interchange into a knot. */
+export const isRamp = (line: Pick<RoadLine, 'cls' | 'lengthM'>): boolean =>
+  line.cls === 0 && line.lengthM < ROADS_RAMP_MAX_M;
+
+/** Whether a view draws a line at all, before the class rule: in the whole way
+ *  no ramps (ROADS_RAMP_IN_WHOLE_WAY). */
+export const drawnInView = (line: Pick<RoadLine, 'cls' | 'lengthM'>, view: MapView): boolean =>
+  view === 'near' || ROADS_RAMP_IN_WHOLE_WAY || !isRamp(line);
+
 /** The width a line is drawn at in a view, its casing, in screen pixels. A
- *  freeway is the widest line on the dial, but its ramps are freeway class too,
- *  and at full width they would read as more freeway: a class 0 line under a
- *  kilometre is a ramp, drawn at the view's arterial width. */
+ *  freeway is the widest line on the dial; its ramps, drawn near the person
+ *  only, take the collector width in the freeway's colours, so the
+ *  carriageways read as the freeway. */
 export function roadWidthPx(line: Pick<RoadLine, 'cls' | 'lengthM'>, view: MapView): number {
   const widths = ROADS_WIDTH_PX[view];
-  if (line.cls === 0) return line.lengthM < ROADS_RAMP_MAX_M ? widths.arterial : widths.freeway;
+  if (line.cls === 0) return isRamp(line) ? widths.collector : widths.freeway;
   if (line.cls === 1) return widths.highway;
   if (line.cls === 2) return widths.arterial;
   return widths.collector;
@@ -469,6 +489,8 @@ export function pathData(...runs: Point[][]): string {
 /** One stroke of one road: its casing, or the fill drawn over it. */
 export type DialRoad = { d: string; widthPx: number; cls: number; pass: 'casing' | 'fill' };
 export type DialMap = {
+  /** The view drawn: the stylesheet weighs some roads by it. */
+  view: MapView;
   roads: DialRoad[];
   labels: RoadLabel[];
   /** Points along every name placed, so nothing else is set on top of one. */
@@ -488,7 +510,8 @@ export type DrawOptions = {
 
 /** Everything the dial draws for one position and one view: every line in view
  *  of the classes the view allows (highestClassDrawn), clipped to the map's
- *  circle, and the names. Each road is two strokes, a casing and a fill, in
+ *  circle (in the whole way, no ramps), and the names. Each road is two
+ *  strokes, a casing and a fill, in
  *  this order: collectors, arterials, highways, freeways, and within each class
  *  every casing before any fill, so the fills of one class join up where its
  *  roads meet and a lesser road never cuts across a greater one. */
@@ -500,7 +523,7 @@ export function drawRoads(map: RoadMap, centre: LatLon, options: DrawOptions): D
   const mostClasses = highestClassDrawn(view, radiusM, 0);
   let drawn: { line: RoadLine; runs: Point[][] }[] = [];
   for (const line of linesNear(map, centre, radiusM)) {
-    if (line.cls > mostClasses) continue;
+    if (line.cls > mostClasses || !drawnInView(line, view)) continue;
     const points: Point[] = [];
     for (let k = 0; k < line.lonLat.length; k += 2) {
       points.push(project(centre, metresPerPx, line.lonLat[k], line.lonLat[k + 1]));
@@ -523,5 +546,5 @@ export function drawRoads(map: RoadMap, centre: LatLon, options: DrawOptions): D
     obstacles,
     measure,
   );
-  return { roads, labels, labelSamples: samples, metresPerPx };
+  return { view, roads, labels, labelSamples: samples, metresPerPx };
 }
