@@ -395,6 +395,8 @@ export const MAP_ZOOM_HINT = 'Tap the dial to zoom';
 export const MAP_VIEW_BUTTON = 'Switch the map between near me and the whole way';
 /** The attribution the road layer's licence asks for, on the About screen. */
 export const ROADS_ATTRIBUTION = 'Roads: Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
+/** The same for the locality names on the map disc, under the roads line. */
+export const LOCALITIES_ATTRIBUTION = 'Localities: Vicmap Admin, Department of Transport and Planning, CC BY 4.0';
 
 // BS_Enhancement-AC3 say the place, distance and side aloud
 // Everything the phone speaks, and the caption shows the same words. Each

@@ -264,6 +264,20 @@ export const ROADS_LABEL_MIN_STRAIGHT = 0.9;
  *  between two names. Starting values. */
 export const ROADS_LABEL_PAD_PX = 4;
 export const ROADS_LABEL_GAP_PX = 3;
+/** Locality names on the map disc, "Whole way" only: the suburbs and towns a
+ *  person knows, so the far view says where the place lies among them.
+ *  Upper case at this size in screen pixels, with this much letter-spacing.
+ *  Starting values. */
+export const ROADS_LOCALITY_PX = 9.5;
+export const ROADS_LOCALITY_LETTER_SPACING_PX = 1;
+/** At most this many locality names on the disc. Starting value. */
+export const ROADS_LOCALITY_COUNT = 8;
+/** A locality is not named closer than this to the centre, where the arrow is,
+ *  nor this close to the disc's edge, where the name would be cut off, nor
+ *  this close to a locality already named. Screen pixels. Starting values. */
+export const ROADS_LOCALITY_CENTRE_PX = 46;
+export const ROADS_LOCALITY_EDGE_PX = 30;
+export const ROADS_LOCALITY_SPACING_PX = 62;
 /** How long "Tap the dial to zoom" stays under the dial once roads are drawn.
  *  Starting value. */
 export const ROADS_HINT_MS = 5_000;

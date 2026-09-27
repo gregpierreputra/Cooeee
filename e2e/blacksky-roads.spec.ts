@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  LOCALITIES_ATTRIBUTION,
   MAP_VIEW_BUTTON,
   MAP_VIEW_TAG,
   MAP_ZOOM_HINT,
@@ -153,6 +154,45 @@ test('the pin leaves the ring for its true spot when the place is inside the vie
   expect(new Set(bearings).size).toBe(1);
 });
 
+test('locality names are set in the whole way, upright, and not in near me', async ({ page }) => {
+  await openRoads(page, 'fixture');
+  await pushPosition(page, AT_FERNY_CREEK);
+  const places = page.locator('.blacksky-dial-map .blacksky-locality');
+
+  // The fixture's six localities lie 1.8 km out at every 60 degrees. In the
+  // whole way some are named, in capitals; ALPHA, due north, is under the pin
+  // (the chosen place is 2.6 km north), and a name never touches a road name,
+  // so not all six are.
+  await expect(places.first()).toBeVisible();
+  const names = await places.allTextContents();
+  expect(names.length).toBeGreaterThan(0);
+  expect(names.length).toBeLessThanOrEqual(6);
+  for (const name of names) {
+    expect(['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT']).toContain(name);
+  }
+  expect(names).not.toContain('ALPHA');
+  // Upright: turned back by the heading, like the ring's letters.
+  const style = await places.first().evaluate((el) => {
+    const css = getComputedStyle(el);
+    return { size: css.fontSize, spacing: css.letterSpacing };
+  });
+  expect(style).toEqual({ size: '9.5px', spacing: '1px' });
+  await turnPhone(page, 180);
+  await expect
+    .poll(() =>
+      places.first().evaluate((el) => {
+        const m = new DOMMatrix(getComputedStyle(el).transform);
+        return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI);
+      }),
+    )
+    .not.toBe(0);
+
+  // Near me names the streets, not the localities.
+  await page.getByRole('button', { name: MAP_VIEW_BUTTON }).click();
+  await expect(tag(page)).toHaveText(MAP_VIEW_TAG.near);
+  await expect(places).toHaveCount(0);
+});
+
 test('a name the dial has turned upside down gives way to its twin, with no redraw', async ({ page }) => {
   await openRoads(page, 'fixture');
   await pushPosition(page, AT_FERNY_CREEK);
@@ -193,6 +233,7 @@ test('About names the road data under its licence', async ({ page }) => {
   await acknowledgeFirstOpen(page);
   await page.goto('/about');
   await expect(page.getByText(ROADS_ATTRIBUTION)).toBeVisible();
+  await expect(page.getByText(LOCALITIES_ATTRIBUTION)).toBeVisible();
 });
 
 // The real bundle: the roads file is precached with the shell, and BlackSky

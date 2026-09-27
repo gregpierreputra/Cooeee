@@ -68,9 +68,11 @@ import {
   type Obstacle,
   type RoadMap,
 } from '../core/roads';
+import { chooseLocalities, decodeLocalities, type Locality } from '../core/localities';
 import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
+import { readLocalitiesFile } from '../data/localities';
 import { readRoadsFile } from '../data/roads';
 import BlackSkyDial, {
   DIAL_UNITS,
@@ -90,7 +92,25 @@ type BlackSkyProps = {
   /** BS_Enhancement-AC5: the roads file's bytes, or undefined when the phone
    *  does not hold it. Read from the precache only, never the network. */
   loadRoads?: () => Promise<ArrayBuffer | undefined>;
+  /** The locality names' parsed JSON, or undefined when the phone does not
+   *  hold it. Read from the precache only, never the network. */
+  loadLocalities?: () => Promise<unknown>;
 };
+
+// The locality names likewise, once per loader. Without them the map is drawn
+// as it is, just with no place names on it.
+const decodedLocalities = new WeakMap<() => Promise<unknown>, Promise<Locality[] | null>>();
+
+function holdLocalities(load: () => Promise<unknown>): Promise<Locality[] | null> {
+  let held = decodedLocalities.get(load);
+  if (!held) {
+    held = load()
+      .then((raw) => (raw === undefined ? null : decodeLocalities(raw)))
+      .catch(() => null);
+    decodedLocalities.set(load, held);
+  }
+  return held;
+}
 
 // The roads file is decoded once per loader, however often BlackSky opens: the
 // decoded lines do not change while the app runs.
@@ -126,6 +146,7 @@ export default function BlackSky({
   loadPacks = listCompletePacksWithPlaces,
   loadSites = getNspSnapshot,
   loadRoads = readRoadsFile,
+  loadLocalities = readLocalitiesFile,
 }: BlackSkyProps) {
   const [packs, setPacks] = useState<PackWithPlaces[] | null>(null);
   const [sites, setSites] = useState<NspSnapshot | null>(null);
@@ -175,6 +196,7 @@ export default function BlackSky({
   // only, like the Show pick: every visit opens on "whole way". The hint under
   // the dial is shown once per visit.
   const [roads, setRoads] = useState<RoadMap | null>(null);
+  const [localities, setLocalities] = useState<Locality[] | null>(null);
   const [mapView, setMapView] = useState<MapView>('whole');
   const [hintDone, setHintDone] = useState(false);
   useEffect(() => {
@@ -182,10 +204,13 @@ export default function BlackSky({
     void holdRoads(loadRoads).then((map) => {
       if (live) setRoads(map);
     });
+    void holdLocalities(loadLocalities).then((rows) => {
+      if (live) setLocalities(rows);
+    });
     return () => {
       live = false;
     };
-  }, [loadRoads]);
+  }, [loadRoads, loadLocalities]);
   const endHint = useCallback(() => setHintDone(true), []);
 
   useEffect(() => {
@@ -493,6 +518,7 @@ export default function BlackSky({
           roads && here
             ? {
                 map: roads,
+                localities,
                 here,
                 view: mapView,
                 onToggle: () => setMapView((view) => (view === 'whole' ? 'near' : 'whole')),
@@ -891,6 +917,8 @@ function OutsideArea({ packs }: { packs: { pack: Pack; distanceKm: number }[] })
  *  person is, the view, and the hint's state. */
 type DialRoads = {
   map: RoadMap;
+  /** The locality names, when the phone holds them: set in "Whole way" only. */
+  localities: Locality[] | null;
   here: LatLon;
   view: MapView;
   onToggle: () => void;
@@ -996,21 +1024,24 @@ function useDialMap(
     }
   }
   const map = roads?.map;
+  const localities = roads?.localities ?? null;
   const pxPerUnit = frameWidth / DIAL_UNITS;
   const drawStart = useRef(0);
   const layer = useMemo(() => {
     if (!map || !at || pxPerUnit <= 0) return null;
     drawStart.current = performance.now();
     const pin = placeInView(at.distanceM, at.bearingDeg, at.radiusM, MAP_R);
-    const drawn = drawRoads(map, at, {
-      view: at.view,
-      radiusM: at.radiusM,
-      radiusPx: MAP_R * pxPerUnit,
-      obstacles: dialObstacles(at.bearingDeg, pin ? pin.r : null, pxPerUnit),
-      measure,
-    });
-    return { map: drawn, pxPerUnit };
-  }, [map, at, pxPerUnit, measure]);
+    const obstacles = dialObstacles(at.bearingDeg, pin ? pin.r : null, pxPerUnit);
+    const radiusPx = MAP_R * pxPerUnit;
+    const drawn = drawRoads(map, at, { view: at.view, radiusM: at.radiusM, radiusPx, obstacles, measure });
+    // Place names after the road names, which they must keep clear of: road
+    // names win. In "Whole way" only: near the person the streets say enough.
+    const places =
+      at.view === 'whole' && localities
+        ? chooseLocalities(localities, at, drawn.metresPerPx, radiusPx, drawn.labelSamples, obstacles)
+        : [];
+    return { map: drawn, places, pxPerUnit };
+  }, [map, localities, at, pxPerUnit, measure]);
   // Measured from the start of the work to the moment React has put the paths
   // in the page, so it can be read on a phone in the performance panel.
   useLayoutEffect(() => {

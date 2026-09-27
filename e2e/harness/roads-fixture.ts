@@ -22,3 +22,16 @@ export const ROADS_FIXTURE_LINES: SourceLine[] = [
 
 export const roadsFixture = (): ArrayBuffer =>
   encodeRoads(ROADS_FIXTURE_LINES, 25, { gridM: 5, lon0: 145, lat0: -37 }).bytes.buffer as ArrayBuffer;
+
+// Six synthetic localities, 1.8 km from the pack centre at every 60 degrees
+// from north, as the file holds them: [name, lat, lon]. At the whole-way view
+// they fall in the band the locality rule names (clear of the arrow and of the
+// disc's edge); in "Near me" none is drawn.
+export const LOCALITIES_FIXTURE: [string, number, number][] = [
+  ['ALPHA', -37.8638, 145.34],
+  ['BRAVO', -37.8719, 145.3578],
+  ['CHARLIE', -37.8881, 145.3578],
+  ['DELTA', -37.8962, 145.34],
+  ['ECHO', -37.8881, 145.3222],
+  ['FOXTROT', -37.8719, 145.3222],
+];

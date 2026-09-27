@@ -15,5 +15,15 @@
     "file": "roads-vic.bin",
     "sidecar": "roads-vic.json",
     "retrievedAt": 1790515007922
+  },
+  "localities": {
+    "file": "localities-vic.json",
+    "retrievedAt": 1790523525511,
+    "source": {
+      "publisher": "Department of Transport and Planning",
+      "dataset": "Vicmap Admin, locality polygons (locality_polygon)",
+      "url": "https://opendata.maps.vic.gov.au/geoserver/wfs",
+      "licence": "CC BY 4.0"
+    }
   }
 }

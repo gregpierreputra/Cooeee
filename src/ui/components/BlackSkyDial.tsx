@@ -1,6 +1,12 @@
 import { useId, type CSSProperties } from 'react';
 import type { DialCentre } from '../../core/blacksky-dial';
-import { DIAL_ARROW_SCALE, ROADS_LABEL_PX } from '../../core/constants';
+import {
+  DIAL_ARROW_SCALE,
+  ROADS_LABEL_PX,
+  ROADS_LOCALITY_LETTER_SPACING_PX,
+  ROADS_LOCALITY_PX,
+} from '../../core/constants';
+import type { PlaceName } from '../../core/localities';
 import type { DialMap } from '../../core/roads';
 
 // The compass points on the ring: a letter and where it sits, in degrees. Drawn
@@ -41,7 +47,7 @@ const ARROW = `M0 ${a(-46)} ${a(16)} ${a(-14)}H${a(6)}V${a(18)}H${a(-6)}V${a(-14
 /** The map inside the ring: roads and names in screen pixels, north up, and
  *  how many screen pixels one unit of the drawing is, so they can be set at
  *  their true pixel sizes whatever size the dial is drawn at. */
-export type DialMapLayer = { map: DialMap; pxPerUnit: number };
+export type DialMapLayer = { map: DialMap; places?: PlaceName[]; pxPerUnit: number };
 
 /** The dial: a ring that turns with the phone, the place as a pin on the ring,
  *  an arrow at the centre pointing at that pin, and a notch marking the top of
@@ -160,7 +166,7 @@ const ROAD_KIND: Record<number, string> = { 0: 'freeway', 1: 'highway', 2: 'arte
  *  is 2 px however large the dial is; the inner group scales them back into
  *  the drawing's units. One path per road. */
 function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: string; idPrefix: string }) {
-  const { map, pxPerUnit } = layer;
+  const { map, places = [], pxPerUnit } = layer;
   return (
     <g className="blacksky-dial-map" clipPath={`url(#${clipId})`}>
       <defs>
@@ -205,6 +211,22 @@ function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: st
               <textPath href={`#${idPrefix}-r${i}`} startOffset="50%" textAnchor="middle">
                 {label.name}
               </textPath>
+            </text>
+          </g>
+        ))}
+        {places.map((place) => (
+          // A locality name: carried round with the map to its point, and
+          // turned back by the stylesheet about its own centre, so it always
+          // reads upright, like the ring's letters.
+          <g key={place.name} transform={`translate(${place.x} ${place.y})`}>
+            <text
+              className="blacksky-locality"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={ROADS_LOCALITY_PX}
+              letterSpacing={ROADS_LOCALITY_LETTER_SPACING_PX}
+            >
+              {place.name}
             </text>
           </g>
         ))}

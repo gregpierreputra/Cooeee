@@ -1347,6 +1347,8 @@ input {
   --map-collector-fill: #ffffff;
   --map-label: #333333;
   --map-label-halo: #ffffff;
+  --map-locality: #4a4a4a;
+  --map-locality-halo: #f2efe9;
   --map-mark: #111111;
   --map-mark-edge: #fbbf24;
 }
@@ -1403,6 +1405,21 @@ input {
   stroke-width: 3px;
   stroke-linejoin: round;
   paint-order: stroke;
+}
+
+/* Locality names, "Whole way" only: quiet capitals in grey with a halo of the
+   disc's own colour, upright whichever way the map has turned (the same turn
+   back as the ring's letters). Size and spacing come from constants.ts. */
+.blacksky-locality {
+  font-weight: var(--w-med);
+  fill: var(--map-locality);
+  stroke: var(--map-locality-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotate(calc(var(--heading, 0) * 1deg));
 }
 
 /* On the disc the arrow is dark with an amber edge: amber alone would be 1.4

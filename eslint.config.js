@@ -102,8 +102,10 @@ export default tseslint.config(
       'src/ui/Recover.tsx',
       'src/ui/PackNew/Destinations.tsx',
       'src/ui/components/**',
-      // BlackSky's roads reader: cache only, so it is held to the same rule.
+      // BlackSky's roads and locality readers: cache only, so they are held
+      // to the same rule.
       'src/data/roads.ts',
+      'src/data/localities.ts',
     ],
     rules: {
       'no-restricted-imports': [

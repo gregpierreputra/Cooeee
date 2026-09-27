@@ -22,6 +22,7 @@ export default function About() {
           asks for this attribution wherever the roads are shown. BlackSky
           itself has no room for it, so it stands here, a tap away. */}
       <p className="muted about-attribution">{copy.ROADS_ATTRIBUTION}</p>
+      <p className="muted about-attribution">{copy.LOCALITIES_ATTRIBUTION}</p>
     </main>
   );
 }
