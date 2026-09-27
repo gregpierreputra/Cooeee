@@ -1031,18 +1031,18 @@ input {
    is the one flexible row (1fr). Every other row keeps its own height, so
    whatever they need (a name on two lines, "about", the compass button) comes
    out of the dial and nothing else. dvh, not vh, so the browser's bars count.
-   240 px is the floor: smaller than that the ring letters and the arrow stop
-   being readable at arm's length. The floor is the row's minimum, and
+   300 px is the floor: smaller than that the roads and names inside the map
+   circle stop being readable at arm's length. The floor is the row's minimum, and
    min-height: min-content makes the body at least its rows tall, so on a
    screen too short even for that the body grows, the page scrolls, and nothing
    overlaps.
    On a taller screen (over 700 px) none of this applies: the dial is simply
-   the content width up to 340 px, and the heading is in view anyway. Without
+   the content width up to 360 px, and the heading is in view anyway. Without
    that limit a tall screen would stretch the body and leave a hole round the
    dial. With no notes there is no heading to keep in view, so less is taken
    off and the dial takes the room. */
 .blacksky {
-  --bs-gap: 0.75rem;
+  --bs-gap: 6px;
   /* Above the body: the page's top padding, the top bar (its 44 px target, its
      padding and rule), and the gap under it. */
   --bs-above: calc(max(1.5rem, env(safe-area-inset-top) + 1rem) + 44px + 0.25rem + 1px + var(--bs-gap));
@@ -1070,16 +1070,24 @@ input {
   gap: var(--bs-gap);
 }
 
+/* The dial takes the full content width, the screen less 16 px each side, up
+   to 360 px: BlackSky's page runs closer to the edges than the other screens,
+   because on a phone the dial is the screen. */
+.page.blacksky:has(.blacksky-dial-body) {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
 .blacksky-dial-body {
   display: grid;
-  gap: 0.5rem;
-  grid-template-rows: auto auto min(340px, calc(100vw - 3.5rem));
+  gap: 6px;
+  grid-template-rows: auto auto min(360px, calc(100vw - 2rem));
   grid-auto-rows: auto;
 }
 
 @media (max-height: 700px) {
   .blacksky-dial-body {
-    grid-template-rows: auto auto minmax(240px, 1fr);
+    grid-template-rows: auto auto minmax(300px, 1fr);
     height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
@@ -1091,8 +1099,14 @@ input {
   gap: 0.125rem;
 }
 
+/* The name block is set tight, so the dial can have the room: the label at
+   12 px, the site at 22 and the suburb at 15, all on a line-height of 1.1. */
+.blacksky-dial-head .kicker {
+  line-height: 1.1;
+}
+
 .blacksky-dial-head h2 {
-  font-size: var(--step-2);
+  font-size: 22px;
   font-weight: var(--w-heavy);
   line-height: 1.1;
   overflow-wrap: anywhere;
@@ -1100,8 +1114,8 @@ input {
 
 .blacksky-dial-head p {
   margin: 0;
-  font-size: var(--step-1);
-  line-height: 1.25;
+  font-size: 15px;
+  line-height: 1.1;
 }
 
 /* The distance row: the figure on the left; beside it the compass point over
@@ -1112,6 +1126,9 @@ input {
   margin: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) 48px;
+  /* 48 px high, the speaker button's height; a marked position's longer
+     readout takes a row of its own below. */
+  grid-template-rows: 48px;
   align-items: end;
   gap: 0 0.5rem;
   color: var(--accent);
@@ -1147,14 +1164,15 @@ input {
   grid-column: 1 / -1;
 }
 
-/* The distance is the largest text on the screen: never under 56 px. */
+/* The distance is the largest text on the screen, 44 px, the height of its
+   48 px row: it gave up size so the dial could fill the width. */
 .blacksky-figure-main {
-  font-size: clamp(3.5rem, 15vw, 4.5rem);
+  font-size: 44px;
   line-height: 1;
   letter-spacing: -0.04em;
 }
 
-/* The unit, at half the number's size: still 28 px, well over the 16 px floor. */
+/* The unit, at half the number's size: 22 px, over the 16 px floor. */
 .blacksky-figure-unit {
   font-size: 0.5em;
   letter-spacing: 0;
@@ -1189,7 +1207,7 @@ input {
 }
 
 /* The dial takes the room it is given: the slot is the grid row above (the
-   content width up to 340 px, less whatever a short screen cannot spare), and
+   content width up to 360 px, less whatever a short screen cannot spare), and
    the frame is the largest square that fits the slot, measured with container
    units because only the slot knows both its width and its height. It is the
    largest element on the screen, and it is sized for the map that is to go
@@ -1204,7 +1222,7 @@ input {
 
 .blacksky-dial-frame {
   position: relative;
-  width: min(100cqw, 100cqh);
+  width: min(100cqw, 100cqh, 360px);
   aspect-ratio: 1;
 }
 
@@ -1288,29 +1306,46 @@ input {
 
 /* ── Roads inside the dial (BS_Enhancement-AC5) ───────────────────────────
    The roads are context, not a way to go: every road of a kind is drawn alike,
-   in the mode's dim amber, well below the ring, the arrow and the pin. Only a
-   freeway is a little brighter, because it is the road people recognise first.
-   Contrast on the black ground, WCAG 1.4.11 (3 to 1 for graphics): roads at
-   #8A5F10, 0.9 opacity, come to 3.2 to 1; freeways #B8862B 6.5 to 1; names
-   #D4A531 9.2 to 1, with a black halo so a road under a name never
-   cuts through its letters. */
+   in the mode's ambers, well below the ring, the arrow and the pin. Drawn at
+   one weight they were an unreadable mesh on a phone, so each class steps down
+   in width (ROADS_WIDTH_PX) and here in brightness: the freeways and highways
+   people recognise stand out, arterials and collectors recede.
+   Contrast on the black ground, WCAG 1.4.11 (3 to 1 for graphics): freeways
+   #C89A2E 8.1 to 1; highways #A8791A at 0.9, 4.5 to 1; arterials #8A5F10 at
+   0.6, 2.0 to 1, and collectors at 0.45, 1.6 to 1, BELOW 3 to 1 on purpose, as
+   quiet context: flagged for the accessibility check on the card. Names
+   #F2C94C 13.2 to 1, with a black halo so a road under a name never cuts
+   through its letters. */
 .blacksky-road {
   fill: none;
-  stroke: #8a5f10;
-  stroke-opacity: 0.9;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .blacksky-road.freeway {
-  stroke: #b8862b;
+  stroke: #c89a2e;
   stroke-opacity: 1;
+}
+
+.blacksky-road.highway {
+  stroke: #a8791a;
+  stroke-opacity: 0.9;
+}
+
+.blacksky-road.arterial {
+  stroke: #8a5f10;
+  stroke-opacity: 0.6;
+}
+
+.blacksky-road.collector {
+  stroke: #8a5f10;
+  stroke-opacity: 0.45;
 }
 
 .blacksky-road-label text {
   /* The size is set on the label from ROADS_LABEL_PX, not here. */
   font-weight: var(--w-med);
-  fill: #d4a531;
+  fill: #f2c94c;
   stroke: #000000;
   stroke-width: 3px;
   stroke-linejoin: round;
@@ -1330,6 +1365,20 @@ input {
 
 .blacksky-road-label .turned {
   opacity: clamp(0, calc((cos((var(--label-deg) - var(--heading, 0)) * 1deg) + 0.0001) * -100000), 1);
+}
+
+/* The place's pin inside the view: a drop in the mode's amber, its tip on the
+   spot, with a black edge so it stands clear of the roads under it. The pin's
+   group turns by the bearing to carry it out along it; the drop turns back by
+   the same angle about its own tip, so it always stands upright. */
+.blacksky-dial-drop {
+  fill: currentColor;
+  stroke: var(--bg);
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transform: rotate(calc((var(--heading, 0) - var(--bearing)) * 1deg));
 }
 
 /* The view tag, in the other top corner from North up. */

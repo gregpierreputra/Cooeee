@@ -208,21 +208,43 @@ export const ROADS_REDRAW_SHARE = 0.01;
 /** A freeway line shorter than this is an on or off ramp, drawn thin so the
  *  carriageways read as the road. Starting value. */
 export const ROADS_RAMP_MAX_M = 1_000;
-/** Line widths in screen pixels, by kind. Starting values. */
-export const ROADS_WIDTH_PX = { freeway: 3, ramp: 1.5, main: 2, collector: 1.25 } as const;
+/** Which road classes the dial draws, by the view's radius. Drawn all at one
+ *  weight, the state's roads were an unreadable mesh on a phone (Samsung S26
+ *  test): the wider the view, the fewer classes, so what is left is the few
+ *  roads a person recognises.
+ *  - under `allBelowM` every class, 0 to 3, collectors included;
+ *  - from there up to and including `mainUpToM`, classes 0 to 2;
+ *  - beyond it freeways and highways (0 and 1) only, unless the ground is so
+ *    empty of main roads that fewer than `sparseLines` lines of classes 0 to 2
+ *    are in view: then the arterials come back, or a country view would be
+ *    nearly blank.
+ *  Starting values. */
+export const ROADS_CLASS_LIMITS = { allBelowM: 3_000, mainUpToM: 10_000, sparseLines: 40 } as const;
+/** Line widths in screen pixels, by kind: a clear step between each, so the
+ *  freeway and the highway read first. Starting values. */
+export const ROADS_WIDTH_PX = { freeway: 3.5, highway: 2.5, arterial: 1.5, collector: 1, ramp: 1.25 } as const;
 /** At most this many road names in view: more and the dial reads as a street
  *  map, which it is not. Starting value. */
-export const ROADS_LABEL_COUNT = 6;
-/** Road names, in screen pixels: 13, the smallest the card allows. The label
- *  rule fits names at this size and the dial draws them at it. Starting value. */
-export const ROADS_LABEL_PX = 13;
-/** A name sits in the straightest stretch this share of its line's length in
- *  view, so it follows the road without bending round a corner. Starting value. */
-export const ROADS_LABEL_STRETCH = 0.6;
-/** Stretches that bend within this many degrees of the straightest count as
- *  equally straight, so a name can move off the arrow or a letter onto a
- *  stretch that is nearly as good. Starting value. */
-export const ROADS_LABEL_BEND_SLACK_DEG = 10;
+export const ROADS_LABEL_COUNT = 4;
+/** Road names, in screen pixels: over the card's 13 px floor, so they read at
+ *  arm's length. The label rule fits names at this size and the dial draws
+ *  them at it. Starting value. */
+export const ROADS_LABEL_PX = 14;
+/** A name may take up to this share of its line's visible length (the longest
+ *  run in view), placed on the line's straightest stretches. Starting value. */
+export const ROADS_LABEL_STRETCH = 0.9;
+/** How straight a stretch is: the straight-line distance between its ends over
+ *  its length, 1 for a straight line. Summing the turns instead counted every
+ *  pixel's wobble, so a road that was plainly straight at the dial's scale
+ *  scored as bent. Stretches within this much of the straightest count as
+ *  equally straight, so a name can move off the arrow onto a stretch that is
+ *  nearly as good. Starting value. */
+export const ROADS_LABEL_STRAIGHT_SLACK = 0.02;
+/** The least straightness the stretch under a name may have. Round a hairpin,
+ *  or along a road that wiggles, a name reads as broken letters with part of
+ *  it upside down (seen in the 20 km view): such a stretch is no room at all.
+ *  Starting value. */
+export const ROADS_LABEL_MIN_STRAIGHT = 0.9;
 /** The room a name needs beyond its own width, each end, and the clear space
  *  between two names. Starting values. */
 export const ROADS_LABEL_PAD_PX = 4;

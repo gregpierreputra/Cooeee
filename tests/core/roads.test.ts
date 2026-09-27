@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ROADS_CLASS_LIMITS,
   ROADS_LABEL_COUNT,
+  ROADS_LABEL_STRETCH,
   ROADS_MAX_RADIUS_M,
   ROADS_MIN_RADIUS_M,
   ROADS_NEAR_RADIUS_M,
@@ -8,12 +10,14 @@ import {
   ROADS_REDRAW_SHARE,
 } from '../../src/core/constants';
 import {
+  chainRuns,
   chooseLabels,
   clipToCircle,
   cutPolyline,
   decodeRoads,
   drawRoads,
   estimateTextPx,
+  highestClassDrawn,
   linesNear,
   pathData,
   placeInView,
@@ -21,6 +25,7 @@ import {
   project,
   redrawDistanceM,
   roadWidthPx,
+  straightness,
   viewRadiusM,
   type RoadLine,
   type RoadMap,
@@ -159,13 +164,55 @@ describe('the view', () => {
 });
 
 describe('the width rule', () => {
-  it('draws a freeway widest, its ramps thin, main roads in between and collectors thinnest', () => {
-    expect(roadWidthPx({ cls: 0, lengthM: 12_000 })).toBe(3);
-    expect(roadWidthPx({ cls: 0, lengthM: 1_000 })).toBe(3);
-    expect(roadWidthPx({ cls: 0, lengthM: 999 })).toBe(1.5);
-    expect(roadWidthPx({ cls: 1, lengthM: 200 })).toBe(2);
-    expect(roadWidthPx({ cls: 2, lengthM: 5_000 })).toBe(2);
-    expect(roadWidthPx({ cls: 3, lengthM: 5_000 })).toBe(1.25);
+  it('steps down from freeway to collector, with a freeway ramp thin', () => {
+    expect(roadWidthPx({ cls: 0, lengthM: 12_000 })).toBe(3.5);
+    expect(roadWidthPx({ cls: 0, lengthM: 1_000 })).toBe(3.5);
+    expect(roadWidthPx({ cls: 0, lengthM: 999 })).toBe(1.25);
+    expect(roadWidthPx({ cls: 1, lengthM: 200 })).toBe(2.5);
+    expect(roadWidthPx({ cls: 2, lengthM: 5_000 })).toBe(1.5);
+    expect(roadWidthPx({ cls: 3, lengthM: 5_000 })).toBe(1);
+  });
+});
+
+describe('the classes by view', () => {
+  const { allBelowM, mainUpToM, sparseLines } = ROADS_CLASS_LIMITS;
+
+  it('draws every class under 3 km, classes 0 to 2 from 3 km to 10 km, and 0 to 1 beyond', () => {
+    expect([allBelowM, mainUpToM, sparseLines]).toEqual([3_000, 10_000, 40]);
+    expect(highestClassDrawn(1_500, 500)).toBe(3);
+    expect(highestClassDrawn(2_999, 500)).toBe(3);
+    expect(highestClassDrawn(3_000, 500)).toBe(2); // 3 km itself is the middle band
+    expect(highestClassDrawn(10_000, 500)).toBe(2); // and so is 10 km
+    expect(highestClassDrawn(10_001, 500)).toBe(1);
+    expect(highestClassDrawn(30_000, 500)).toBe(1);
+  });
+
+  it('beyond 10 km brings the arterials back only where fewer than 40 main lines are in view', () => {
+    expect(highestClassDrawn(20_000, 39)).toBe(2);
+    expect(highestClassDrawn(20_000, 40)).toBe(1);
+    expect(highestClassDrawn(20_000, 0)).toBe(2);
+  });
+
+  // Lines across the view, each class at its own offset north of the person.
+  const across = (count: number, cls: number, north: number) =>
+    Array.from({ length: count }, (_, i) =>
+      lineAt(`Road ${cls}-${i}`, cls, [[-40_000, north + i * 10], [40_000, north + i * 10]]),
+    );
+  const classesDrawn = (lines: RoadLine[], radiusM: number) =>
+    [...new Set(drawRoads({ lines }, HERE, radiusM, 100).roads.map((r) => r.cls))].sort();
+
+  it('drops the classes the view does not draw', () => {
+    const lines = [...across(1, 0, 0), ...across(1, 1, 200), ...across(1, 2, 400), ...across(1, 3, 600)];
+    expect(classesDrawn(lines, 2_000)).toEqual([0, 1, 2, 3]);
+    expect(classesDrawn(lines, 5_000)).toEqual([0, 1, 2]);
+    // Beyond 10 km with only three main lines in view: the arterial stays.
+    expect(classesDrawn(lines, 20_000)).toEqual([0, 1, 2]);
+    // Forty main lines in view: the arterials go, the freeway and highway stay.
+    const busy = [...across(1, 0, 0), ...across(1, 1, 200), ...across(38, 2, 400), ...across(5, 3, 1_000)];
+    expect(classesDrawn(busy, 20_000)).toEqual([0, 1]);
+    // Thirty-nine: they come back.
+    const quiet = [...across(1, 0, 0), ...across(1, 1, 200), ...across(37, 2, 400)];
+    expect(classesDrawn(quiet, 20_000)).toEqual([0, 1, 2]);
   });
 });
 
@@ -199,12 +246,13 @@ describe('polylines', () => {
 
 describe('the label rule', () => {
   const R = 140;
-  const straight = (name: string, y: number, half = 130) => ({
+  const straight = (name: string, y: number, half = 130, cls = 2) => ({
     name,
+    cls,
     runs: [[[-half, y], [0, y], [half, y]] as [number, number][]],
   });
 
-  it('names a long straight road inside its straightest 60 %, reading left to right', () => {
+  it('names a long straight road inside its straightest stretch, reading left to right', () => {
     const [label] = chooseLabels([straight('Long Road', 60)], R, []);
     expect(label.name).toBe('Long Road');
     expect(label.angleDeg).toBeCloseTo(0, 9);
@@ -214,14 +262,15 @@ describe('the label rule', () => {
   });
 
   it('turns a stretch drawn right to left so the name reads left to right', () => {
-    const [label] = chooseLabels([{ name: 'Back Road', runs: [[[100, 40], [-100, 40]]] }], R, []);
+    const [label] = chooseLabels([{ name: 'Back Road', cls: 2, runs: [[[100, 40], [-100, 40]]] }], R, []);
     expect(label.d.startsWith('M-')).toBe(true);
   });
 
-  it('passes over a line whose straightest 60 % is shorter than its name', () => {
+  it('passes over a line whose visible 90 % is shorter than its name', () => {
+    expect(ROADS_LABEL_STRETCH).toBe(0.9);
     const need = estimateTextPx('Short Road') + 8;
-    // 60 % of the run is just under what the name needs.
-    const half = (need / 0.6 - 1) / 2;
+    // 90 % of the run is just under what the name needs.
+    const half = (need / ROADS_LABEL_STRETCH - 1) / 2;
     expect(chooseLabels([straight('Short Road', 0, half)], R, [])).toEqual([]);
     expect(chooseLabels([straight('Short Road', 0, half + 2)], R, [])).toHaveLength(1);
   });
@@ -246,7 +295,8 @@ describe('the label rule', () => {
     expect(chooseLabels([straight('Rim Road', 136, 30)], R, [])).toEqual([]);
   });
 
-  it('takes the longest lines first, names each road once, never an unnamed one, and at most six', () => {
+  it('longest first, names each road once, never an unnamed one, and at most four', () => {
+    expect(ROADS_LABEL_COUNT).toBe(4);
     const lines = [
       straight('Unnamed', -120, 60),
       straight('', -100, 60),
@@ -254,16 +304,56 @@ describe('the label rule', () => {
       straight('Road 8', 110, 50),
     ];
     const names = chooseLabels(lines, 500, []).map((l) => l.name);
-    expect(names).toHaveLength(ROADS_LABEL_COUNT);
-    expect(names).toEqual(['Road 8', 'Road 7', 'Road 6', 'Road 5', 'Road 4', 'Road 3']);
+    expect(names).toEqual(['Road 8', 'Road 7', 'Road 6', 'Road 5']);
+  });
+
+  it('names freeways first, then highways, then the rest, longest first within each', () => {
+    const lines = [
+      straight('Long Arterial', -90, 200, 2),
+      straight('Longer Collector', -60, 220, 3),
+      straight('Short Freeway', -30, 80, 0),
+      straight('Long Freeway', 0, 120, 0),
+      straight('Short Highway', 30, 70, 1),
+    ];
+    const names = chooseLabels(lines, 500, []).map((l) => l.name);
+    expect(names).toEqual(['Long Freeway', 'Short Freeway', 'Short Highway', 'Longer Collector']);
   });
 
   it('prefers the straight stretch of a road with a bend', () => {
     // Straight for 200 px, then a zigzag for 40: the name sits on the straight.
     const run: [number, number][] = [[-120, 0], [80, 0], [90, 10], [100, 0], [110, 10], [120, 0]];
-    const [label] = chooseLabels([{ name: 'Bend Road', runs: [run] }], R, []);
+    const [label] = chooseLabels([{ name: 'Bend Road', cls: 2, runs: [run] }], R, []);
     const xs = label.d.slice(1).split('L').map((pair) => Number(pair.split(' ')[0]));
     expect(Math.max(...xs)).toBeLessThanOrEqual(80);
+  });
+
+  it('joins the pieces of one road that meet end to end, whichever way each was drawn', () => {
+    const a: [number, number][] = [[-100, 0], [-40, 0]];
+    const b: [number, number][] = [[40, 0], [-40, 0]]; // drawn the other way
+    const c: [number, number][] = [[100, 0], [40, 0]];
+    const [chain, ...rest] = chainRuns([b, a, c]);
+    expect(rest).toEqual([]);
+    expect(polylineLength(chain)).toBe(200);
+    // Four ways a run can meet the chain: each end to each end.
+    expect(chainRuns([[[0, 0], [10, 0]], [[20, 0], [10, 0]]])).toHaveLength(1);
+    expect(chainRuns([[[10, 0], [20, 0]], [[0, 0], [10, 0]]])).toHaveLength(1);
+    expect(chainRuns([[[10, 0], [20, 0]], [[10, 0], [0, 0]]])).toHaveLength(1);
+  });
+
+  it('never joins two carriageways round the end where they meet', () => {
+    // Out along one and back along the other: a hairpin, left as two runs.
+    const out: [number, number][] = [[0, 0], [100, 0]];
+    const back: [number, number][] = [[100, 0], [0, 4]];
+    expect(chainRuns([out, back])).toHaveLength(2);
+  });
+
+  it('measures straightness end to end, and names nothing round a hairpin', () => {
+    expect(straightness([[0, 0], [10, 0], [20, 0]])).toBe(1);
+    expect(straightness([[0, 0], [0, 0]])).toBe(1);
+    expect(straightness([[0, 0], [50, 0], [0, 10]])).toBeLessThan(0.2);
+    const hairpin = { name: 'Hairpin Road', cls: 2, runs: [[[-120, 0], [120, 0], [-120, 20]] as [number, number][]] };
+    // 480 px of road but every stretch long enough for the name doubles back.
+    expect(chooseLabels([hairpin], 500, [], () => 400)).toEqual([]);
   });
 
   it('uses the measure it is given', () => {
@@ -286,10 +376,10 @@ describe('drawing one view', () => {
     const drawn = drawRoads(map, HERE, 1_500, 150);
     expect(drawn.metresPerPx).toBe(10);
     expect(drawn.roads.map((r) => [r.cls, r.widthPx])).toEqual([
-      [3, 1.25],
-      [2, 2],
-      [0, 3],
-      [0, 1.5],
+      [3, 1],
+      [2, 1.5],
+      [0, 3.5],
+      [0, 1.25],
     ]);
     // Every point drawn is inside the ring.
     for (const road of drawn.roads) {

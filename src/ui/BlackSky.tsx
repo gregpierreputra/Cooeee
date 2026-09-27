@@ -73,7 +73,7 @@ import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import { readRoadsFile } from '../data/roads';
 import BlackSkyDial, {
   DIAL_UNITS,
-  LETTER_R,
+  MAP_R,
   RING_R,
   type DialMapLayer,
 } from './components/BlackSkyDial';
@@ -908,12 +908,12 @@ function useLabelMeasure(): ((name: string) => number) | undefined {
 }
 
 /** What a name must keep clear of, in the map's pixels, north up. The map turns
- *  with the ring, and so do the letters; the arrow and the pin turn by the
- *  place's bearing on top of that, so against the map they stand still at that
- *  bearing. All three are therefore fixed in the map's own frame, and can be
- *  worked out when it is drawn. Circles that cover each shape, in drawing units
- *  first. */
-function dialObstacles(bearingDeg: number, pinR: number, pxPerUnit: number): Obstacle[] {
+ *  with the ring; the arrow and the pin turn by the place's bearing on top of
+ *  that, so against the map they stand still at that bearing, and can be
+ *  worked out when it is drawn. The letters stand outside the map now, so they
+ *  are not in the way. Circles that cover each shape, in drawing units first,
+ *  but for the drop, which is sized in screen pixels. */
+function dialObstacles(bearingDeg: number, pinInsideR: number | null, pxPerUnit: number): Obstacle[] {
   const rad = (bearingDeg * Math.PI) / 180;
   const along = (d: number, r: number) => ({ x: d * Math.sin(rad), y: -d * Math.cos(rad), r });
   const units = [
@@ -921,15 +921,17 @@ function dialObstacles(bearingDeg: number, pinR: number, pxPerUnit: number): Obs
     along(22, 18),
     along(5, 8), // its shaft, 12 wide, back to 18 behind the centre
     along(-10, 9),
-    along(pinR, 12), // the pin, radius 11
-    // The letters, 17 units high, drawn upright at 57 from the centre.
-    ...[0, 90, 180, 270].map((deg) => ({
-      x: LETTER_R * Math.sin((deg * Math.PI) / 180),
-      y: -LETTER_R * Math.cos((deg * Math.PI) / 180),
-      r: 9,
-    })),
+    // The marker on the ring, radius 11, reaches into the map's edge.
+    ...(pinInsideR === null ? [along(RING_R, 12)] : []),
   ];
-  return units.map(({ x, y, r }) => ({ x: x * pxPerUnit, y: y * pxPerUnit, r: r * pxPerUnit }));
+  const obstacles = units.map(({ x, y, r }) => ({ x: x * pxPerUnit, y: y * pxPerUnit, r: r * pxPerUnit }));
+  if (pinInsideR !== null) {
+    // The drop stands upright on the screen whichever way the map has turned,
+    // so all of its 22 px round its tip is kept clear.
+    const tip = along(pinInsideR * pxPerUnit, 0);
+    obstacles.push({ x: tip.x, y: tip.y, r: 24 });
+  }
+  return obstacles;
 }
 
 /** BS_Enhancement-AC5: the drawn map for the dial, and where the pin sits.
@@ -964,13 +966,13 @@ function useDialMap(
   const layer = useMemo(() => {
     if (!map || !at || pxPerUnit <= 0) return null;
     drawStart.current = performance.now();
-    const pin = placeInView(at.distanceM, at.bearingDeg, at.radiusM, RING_R);
+    const pin = placeInView(at.distanceM, at.bearingDeg, at.radiusM, MAP_R);
     const drawn = drawRoads(
       map,
       at,
       at.radiusM,
-      RING_R * pxPerUnit,
-      dialObstacles(at.bearingDeg, pin?.r ?? RING_R, pxPerUnit),
+      MAP_R * pxPerUnit,
+      dialObstacles(at.bearingDeg, pin ? pin.r : null, pxPerUnit),
       measure,
     );
     return { map: drawn, pxPerUnit };
@@ -981,7 +983,7 @@ function useDialMap(
     if (layer) performance.measure('cooeee:roads-draw', { start: drawStart.current, end: performance.now() });
   }, [layer]);
   // The pin follows the person between redraws, against the drawn view's scale.
-  const pin = at ? placeInView(first.distanceM, first.bearingDeg, at.radiusM, RING_R) : null;
+  const pin = at ? placeInView(first.distanceM, first.bearingDeg, at.radiusM, MAP_R) : null;
   return { layer, pinAtR: pin?.r };
 }
 

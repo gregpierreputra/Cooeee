@@ -13,11 +13,13 @@
 // line from the person to the place, and any word about which way to travel.
 
 import {
-  ROADS_LABEL_BEND_SLACK_DEG,
+  ROADS_CLASS_LIMITS,
   ROADS_LABEL_COUNT,
   ROADS_LABEL_GAP_PX,
+  ROADS_LABEL_MIN_STRAIGHT,
   ROADS_LABEL_PAD_PX,
   ROADS_LABEL_PX,
+  ROADS_LABEL_STRAIGHT_SLACK,
   ROADS_LABEL_STRETCH,
   ROADS_MAX_RADIUS_M,
   ROADS_MIN_RADIUS_M,
@@ -142,8 +144,18 @@ export function placeInView(
  *  would read as more freeway: a class 0 line under a kilometre is a ramp. */
 export function roadWidthPx(line: Pick<RoadLine, 'cls' | 'lengthM'>): number {
   if (line.cls === 0) return line.lengthM < ROADS_RAMP_MAX_M ? ROADS_WIDTH_PX.ramp : ROADS_WIDTH_PX.freeway;
-  if (line.cls === 3) return ROADS_WIDTH_PX.collector;
-  return ROADS_WIDTH_PX.main;
+  if (line.cls === 1) return ROADS_WIDTH_PX.highway;
+  if (line.cls === 2) return ROADS_WIDTH_PX.arterial;
+  return ROADS_WIDTH_PX.collector;
+}
+
+/** The highest road class the dial draws at this radius (see
+ *  ROADS_CLASS_LIMITS). `mainLinesInView` is how many lines of classes 0 to 2
+ *  the view holds; it matters only in the widest views. */
+export function highestClassDrawn(radiusM: number, mainLinesInView: number): number {
+  if (radiusM < ROADS_CLASS_LIMITS.allBelowM) return 3;
+  if (radiusM <= ROADS_CLASS_LIMITS.mainUpToM) return 2;
+  return mainLinesInView < ROADS_CLASS_LIMITS.sparseLines ? 2 : 1;
 }
 
 /** A polyline cut to the parts inside the circle of `r` round 0 0: a list of
@@ -239,38 +251,32 @@ function resample(run: Point[], step: number): Point[] {
   return out;
 }
 
-/** How much a polyline bends: the sum of its changes of direction, degrees. */
-function turning(run: Point[]): number {
-  const points = resample(run, 4);
-  let total = 0;
-  let previous: number | null = null;
-  for (let k = 1; k < points.length; k++) {
-    const heading = Math.atan2(points[k][1] - points[k - 1][1], points[k][0] - points[k - 1][0]);
-    if (previous !== null) {
-      const d = ((heading - previous + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
-      total += Math.abs(d);
-    }
-    previous = heading;
-  }
-  return (total * 180) / Math.PI;
+/** How straight a polyline is: the distance between its ends over its length,
+ *  1 for a straight line, near 0 for a hairpin. */
+export function straightness(run: Point[]): number {
+  const length = polylineLength(run);
+  if (length === 0) return 1;
+  const [ax, ay] = run[0];
+  const [bx, by] = run[run.length - 1];
+  return Math.hypot(bx - ax, by - ay) / length;
 }
 
 /** The straightest stretches of `length` pixels along a run, tried every few
- *  pixels, best first. Bends within ROADS_LABEL_BEND_SLACK_DEG of the least
- *  count as equally straight, and of those the ones nearer the middle of the run come
- *  first: on a straight road every stretch ties, and the first would sit at the
- *  ring's edge. */
+ *  pixels, best first. Stretches within ROADS_LABEL_STRAIGHT_SLACK of the
+ *  straightest count as equally straight, and of those the ones nearer the
+ *  middle of the run come first: on a straight road every stretch ties, and
+ *  the first would sit at the map's edge. */
 function straightestStretches(run: Point[], length: number): Point[][] {
   const total = polylineLength(run);
-  const tried: { from: number; bend: number }[] = [];
+  const tried: { from: number; straight: number }[] = [];
   for (let from = 0; from + length <= total; from += 4) {
-    tried.push({ from, bend: turning(cutPolyline(run, from, from + length)) });
+    tried.push({ from, straight: straightness(cutPolyline(run, from, from + length)) });
   }
   if (tried.length === 0) return [cutPolyline(run, 0, total)];
-  const least = Math.min(...tried.map((t) => t.bend));
+  const best = Math.max(...tried.map((t) => t.straight));
   const middle = (total - length) / 2;
   return tried
-    .filter((t) => t.bend <= least + ROADS_LABEL_BEND_SLACK_DEG)
+    .filter((t) => t.straight >= best - ROADS_LABEL_STRAIGHT_SLACK)
     .sort((a, b) => Math.abs(a.from - middle) - Math.abs(b.from - middle))
     .map((t) => cutPolyline(run, t.from, t.from + length));
 }
@@ -298,36 +304,99 @@ export const estimateTextPx = (name: string): number => name.length * ROADS_LABE
 
 const named = (name: string) => name !== '' && name.toLowerCase() !== 'unnamed';
 
-/** THE LABEL RULE. Lines in view, longest first; each named line's straightest
- *  60 % must have room for its name at 13 px, or it is passed over. Room means
- *  length, and a spot in such a stretch clear of the ring's edge, the pin, the
- *  arrow, the letters and every name already placed: each equally straight
- *  stretch is tried, nearest the middle of the road first, and in each the name
- *  from the stretch's middle outwards. A road through the person's own spot
- *  would otherwise never be named, since its middle is under the arrow. Nowhere
- *  clear, and the line is skipped. One
- *  name once: the two carriageways of one road are two lines. At most six. */
+/** The runs of one road joined where they meet end to end on the dial and
+ *  carry on the same way. The file's lines break wherever a divided road splits
+ *  into its carriageways, so a freeway in view is many short runs; a name needs
+ *  the road, not a piece of it. Two runs that meet but double back (the two
+ *  carriageways of one road where they rejoin) are not joined: a name set round
+ *  that hairpin would fold on itself. Only for placing names: the roads are
+ *  drawn as they are. */
+export function chainRuns(runs: Point[][]): Point[][] {
+  const direction = (from: Point, to: Point) => Math.atan2(to[1] - from[1], to[0] - from[0]);
+  // Leaving `a` by its last step and entering `b` by its first: joined only if
+  // the turn between them is under a right angle.
+  const carriesOn = (a: Point[], b: Point[]) => {
+    const out = direction(a[a.length - 2], a[a.length - 1]);
+    const into = direction(b[0], b[1]);
+    return Math.cos(into - out) > 0;
+  };
+  const near = (a: Point, b: Point) => Math.hypot(a[0] - b[0], a[1] - b[1]) <= 1.5;
+  const reversed = (run: Point[]) => [...run].reverse();
+  const left = runs.map((run) => [...run]);
+  const chains: Point[][] = [];
+  while (left.length > 0) {
+    let chain = left.shift()!;
+    for (let grew = true; grew; ) {
+      grew = false;
+      for (let i = 0; i < left.length; i++) {
+        const run = left[i];
+        const head = chain[0];
+        const tail = chain[chain.length - 1];
+        if (near(tail, run[0]) && carriesOn(chain, run)) chain = chain.concat(run.slice(1));
+        else if (near(tail, run[run.length - 1]) && carriesOn(chain, reversed(run)))
+          chain = chain.concat(reversed(run).slice(1));
+        else if (near(head, run[run.length - 1]) && carriesOn(run, chain)) chain = run.concat(chain.slice(1));
+        else if (near(head, run[0]) && carriesOn(reversed(run), chain)) chain = reversed(run).concat(chain.slice(1));
+        else continue;
+        left.splice(i, 1);
+        grew = true;
+        break;
+      }
+    }
+    chains.push(chain);
+  }
+  return chains;
+}
+
+/** Freeways first, then highways, then every other class together: the roads
+ *  people recognise get named before a longer arterial does. */
+const labelRank = (cls: number) => Math.min(cls, 2);
+
+/** THE LABEL RULE. Named roads in view (a road's lines of one name, their runs
+ *  chained where they meet), freeways first, then highways, then the rest, and
+ *  longest first within each; the name may take up to 90 % of the road's
+ *  longest chain, on its straightest stretches, at 14 px, on a stretch at least
+ *  90 % straight (no hairpin, no wiggle), or it is passed over. Room means length, and a
+ *  spot in such a stretch clear of the map's edge, the pin, the arrow and every
+ *  name already placed: each equally straight stretch is tried, nearest the
+ *  middle of the road first, and in each the name from the stretch's middle
+ *  outwards. A road through the person's own spot would otherwise never be
+ *  named, since its middle is under the arrow. Nowhere clear, and the line is
+ *  skipped. One name once: the two carriageways of one road are two lines. At
+ *  most four. */
 export function chooseLabels(
-  drawn: { name: string; runs: Point[][] }[],
+  drawn: { name: string; cls: number; runs: Point[][] }[],
   radiusPx: number,
   obstacles: Obstacle[],
   measure: (name: string) => number = estimateTextPx,
 ): RoadLabel[] {
   const labels: RoadLabel[] = [];
   const taken: Point[] = [];
-  const ranked = drawn
-    .filter((line) => named(line.name) && line.runs.length > 0)
-    .map((line) => {
-      const runs = line.runs.map((run) => ({ run, length: polylineLength(run) }));
-      const longest = runs.reduce((a, b) => (b.length > a.length ? b : a));
-      return { name: line.name, visible: runs.reduce((sum, r) => sum + r.length, 0), longest };
-    })
-    .sort((a, b) => b.visible - a.visible);
+  const roads = new Map<string, { rank: number; runs: Point[][] }>();
+  for (const line of drawn) {
+    if (!named(line.name) || line.runs.length === 0) continue;
+    const road = roads.get(line.name);
+    if (road) {
+      road.rank = Math.min(road.rank, labelRank(line.cls));
+      road.runs.push(...line.runs);
+    } else {
+      roads.set(line.name, { rank: labelRank(line.cls), runs: [...line.runs] });
+    }
+  }
+  const ranked = [...roads].map(([name, { rank, runs }]) => {
+    const chains = chainRuns(runs).map((run) => ({ run, length: polylineLength(run) }));
+    return {
+      name,
+      rank,
+      visible: chains.reduce((sum, c) => sum + c.length, 0),
+      longest: chains.reduce((a, b) => (b.length > a.length ? b : a)),
+    };
+  })
+    .sort((a, b) => a.rank - b.rank || b.visible - a.visible);
   const half = ROADS_LABEL_PX / 2;
 
   for (const { name, longest } of ranked) {
     if (labels.length === ROADS_LABEL_COUNT) break;
-    if (labels.some((label) => label.name === name)) continue;
     const need = measure(name) + 2 * ROADS_LABEL_PAD_PX;
     const stretchLength = longest.length * ROADS_LABEL_STRETCH;
     if (stretchLength < need) continue; // no room
@@ -343,7 +412,7 @@ export function chooseLabels(
         for (const offset of shift === 0 ? [0] : [-shift, shift]) {
           const candidate = cutPolyline(stretch, slack + offset, slack + offset + need);
           const points = resample(candidate, 3);
-          if (points.every(clear)) {
+          if (straightness(candidate) >= ROADS_LABEL_MIN_STRAIGHT && points.every(clear)) {
             span = candidate;
             samples = points;
             break;
@@ -380,8 +449,9 @@ export type DialRoad = { d: string; widthPx: number; cls: number };
 export type DialMap = { roads: DialRoad[]; labels: RoadLabel[]; metresPerPx: number };
 
 /** Everything the dial draws for one position and one view: one path per line
- *  in view, clipped to the ring, narrow roads first so the freeways lie on top,
- *  and the names. `radiusPx` is the ring's radius in screen pixels. */
+ *  in view of the classes the view's radius allows (highestClassDrawn), clipped
+ *  to the map's circle, narrow roads first so the freeways lie on top, and the
+ *  names. `radiusPx` is the map circle's radius in screen pixels. */
 export function drawRoads(
   map: RoadMap,
   centre: LatLon,
@@ -391,8 +461,12 @@ export function drawRoads(
   measure?: (name: string) => number,
 ): DialMap {
   const metresPerPx = radiusM / radiusPx;
-  const drawn: { line: RoadLine; runs: Point[][] }[] = [];
+  // Collectors are only ever drawn in the closest views, so they are not even
+  // projected in the others: in a 30 km view they are most of the lines.
+  const mostClasses = highestClassDrawn(radiusM, 0);
+  let drawn: { line: RoadLine; runs: Point[][] }[] = [];
   for (const line of linesNear(map, centre, radiusM)) {
+    if (line.cls > mostClasses) continue;
     const points: Point[] = [];
     for (let k = 0; k < line.lonLat.length; k += 2) {
       points.push(project(centre, metresPerPx, line.lonLat[k], line.lonLat[k + 1]));
@@ -400,13 +474,15 @@ export function drawRoads(
     const runs = clipToCircle(points, radiusPx);
     if (runs.length > 0) drawn.push({ line, runs });
   }
+  const highest = highestClassDrawn(radiusM, drawn.filter(({ line }) => line.cls <= 2).length);
+  drawn = drawn.filter(({ line }) => line.cls <= highest);
   // Collectors, then arterials and highways, then freeways: the widest and most
   // recognisable lines are never cut through by a lesser one.
   drawn.sort((a, b) => b.line.cls - a.line.cls);
   return {
     roads: drawn.map(({ line, runs }) => ({ d: pathData(...runs), widthPx: roadWidthPx(line), cls: line.cls })),
     labels: chooseLabels(
-      drawn.map(({ line, runs }) => ({ name: line.name, runs })),
+      drawn.map(({ line, runs }) => ({ name: line.name, cls: line.cls, runs })),
       radiusPx,
       obstacles,
       measure,

@@ -81,8 +81,9 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   );
   expect(tops).toEqual([...tops].sort((a, b) => a - b));
 
-  // Sizes: the distance is at least 56 px and the largest text on the screen;
-  // nothing but the small labels is under 16 px; every target is at least 44 px.
+  // Sizes: the distance is 44 px and the largest text on the screen; nothing
+  // but the small labels is under 16 px; every target is at least 44 px. (The
+  // figure was 56 px and more; it gave up size so the dial fills the width.)
   const sizes = await page.evaluate(() => {
     const px = (el: Element) => parseFloat(getComputedStyle(el).fontSize);
     const withText = [...document.querySelectorAll('main *')].filter((el) =>
@@ -91,18 +92,20 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
     return {
       distance: px(document.querySelector('.blacksky-figure-main')!),
       largest: Math.max(...withText.map(px)),
-      // Under 16 px on purpose: the small labels, and the two things set quiet
-      // at 14 px so they never compete with the figure, the Leave pill and the
-      // compass point. Anything else under 16 px is a mistake.
+      // Under 16 px on purpose: the small labels, the things set quiet at 14 px
+      // so they never compete with the figure (the Leave pill and the compass
+      // point), and the suburb line, set at 15 px so the dial can fill the
+      // width. Anything else under 16 px is a mistake.
       smallNotLabels: withText.filter(
-        (el) => px(el) < 16 && !el.closest('.kicker, .blacksky-leave-pill, .blacksky-figure-point'),
+        (el) =>
+          px(el) < 16 && !el.closest('.kicker, .blacksky-leave-pill, .blacksky-figure-point, .blacksky-dial-head p'),
       ).length,
       smallTargets: [...document.querySelectorAll('main button, main summary')]
         .map((el) => el.getBoundingClientRect())
         .filter((box) => box.width > 0 && (box.width < 44 || box.height < 44)).length,
     };
   });
-  expect(sizes.distance).toBeGreaterThanOrEqual(56);
+  expect(sizes.distance).toBe(44);
   expect(sizes.largest).toBe(sizes.distance);
   expect(sizes.smallNotLabels).toBe(0);
   expect(sizes.smallTargets).toBe(0);
@@ -282,7 +285,7 @@ test.describe('on a 360 by 660 screen', () => {
     await expect(page.locator('.blacksky-dial')).toBeVisible();
   };
 
-  test('the Notes heading is on the first screen, and the dial is still at least 240 px and square', async ({
+  test('the Notes heading is on the first screen, and the dial is the full width, square', async ({
     page,
   }) => {
     await open(page, 'pack', AT_FERNY_CREEK);
@@ -291,8 +294,10 @@ test.describe('on a 360 by 660 screen', () => {
     await expect(heading).toBeInViewport({ ratio: 1 });
     expect(await page.evaluate(() => window.scrollY)).toBe(0); // on load, not after a scroll
 
+    // The dial is the screen less 16 px each side, and still leaves the heading
+    // on the first screen: nothing had to give.
     const dial = (await page.locator('.blacksky-dial').boundingBox())!;
-    expect(dial.width).toBeGreaterThanOrEqual(240);
+    expect(Math.round(dial.width)).toBe(360 - 32);
     expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
     // Nothing sits on anything: name block, row, dial, other places, heading.
     const edges = await page.evaluate(() =>
@@ -305,15 +310,18 @@ test.describe('on a 360 by 660 screen', () => {
     );
     for (let i = 1; i < edges.length; i += 1) expect(edges[i][0]).toBeGreaterThanOrEqual(edges[i - 1][1] - 0.5);
 
-    // A shorter screen still: the dial gives up height, down to its floor, and
-    // after that the page scrolls rather than squeeze or overlap anything.
+    // A shorter screen still: the dial gives up height, only as far as the
+    // heading needs, down to its 300 px floor, and after that the page scrolls
+    // rather than squeeze or overlap anything.
     await page.setViewportSize({ width: 360, height: 620 });
     await expect(heading).toBeInViewport({ ratio: 1 });
-    expect((await page.locator('.blacksky-dial').boundingBox())!.width).toBeGreaterThanOrEqual(240);
+    const shrunk = (await page.locator('.blacksky-dial').boundingBox())!;
+    expect(shrunk.width).toBeGreaterThanOrEqual(300);
+    expect(shrunk.width).toBeLessThan(328);
     await page.setViewportSize({ width: 360, height: 540 });
     const floor = (await page.locator('.blacksky-dial').boundingBox())!;
-    expect(Math.round(floor.width)).toBe(240);
-    expect(Math.round(floor.height)).toBe(240);
+    expect(Math.round(floor.width)).toBe(300);
+    expect(Math.round(floor.height)).toBe(300);
     const others = (await othersLine(page).boundingBox())!;
     expect((await heading.boundingBox())!.y).toBeGreaterThanOrEqual(others.y + others.height);
   });
@@ -332,7 +340,7 @@ test.describe('on a 360 by 660 screen', () => {
     });
     expect(Math.abs(foot.others - foot.room)).toBeLessThanOrEqual(1);
     const dial = (await page.locator('.blacksky-dial').boundingBox())!;
-    expect(dial.width).toBeGreaterThanOrEqual(240);
+    expect(dial.width).toBeGreaterThanOrEqual(300);
     expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
   });
 
@@ -391,7 +399,9 @@ test.describe('on a 360 by 660 screen', () => {
     expect(row).toEqual({
       fontSize: 14,
       uppercase: true,
-      lines: 2, // NORTH- / EAST: a two-word point breaks at its hyphen
+      // One line: beside the 44 px figure there is room for NORTH-EAST whole.
+      // (Beside the old 56 px figure it broke at its hyphen, which it still may.)
+      lines: 1,
       clearOfDistance: true,
       clearOfSpeakerPlace: true,
       aboveTheAccuracy: true,
