@@ -208,21 +208,36 @@ export const ROADS_REDRAW_SHARE = 0.01;
 /** A freeway line shorter than this is an on or off ramp, drawn thin so the
  *  carriageways read as the road. Starting value. */
 export const ROADS_RAMP_MAX_M = 1_000;
-/** Which road classes the dial draws, by the view's radius. Drawn all at one
- *  weight, the state's roads were an unreadable mesh on a phone (Samsung S26
- *  test): the wider the view, the fewer classes, so what is left is the few
- *  roads a person recognises.
- *  - under `allBelowM` every class, 0 to 3, collectors included;
- *  - from there up to and including `mainUpToM`, classes 0 to 2;
- *  - beyond it freeways and highways (0 and 1) only, unless the ground is so
- *    empty of main roads that fewer than `sparseLines` lines of classes 0 to 2
- *    are in view: then the arterials come back, or a country view would be
- *    nearly blank.
+/** Which road classes the dial draws. Drawn all at one weight, the state's
+ *  roads were an unreadable mesh on a phone (Samsung S26 test), so each view
+ *  draws only the roads a person would recognise at its scale:
+ *  - "Near me" draws every class, 0 to 3, collectors included;
+ *  - "Whole way" never draws collectors: classes 0 to 2 up to and including
+ *    `mainUpToM`, and beyond it freeways and highways (0 and 1) only, unless
+ *    the ground is so empty of main roads that fewer than `sparseLines` lines
+ *    of classes 0 to 2 are in view: then the arterials come back, or a country
+ *    view would be nearly blank.
  *  Starting values. */
-export const ROADS_CLASS_LIMITS = { allBelowM: 3_000, mainUpToM: 10_000, sparseLines: 40 } as const;
-/** Line widths in screen pixels, by kind: a clear step between each, so the
- *  freeway and the highway read first. Starting values. */
-export const ROADS_WIDTH_PX = { freeway: 3.5, highway: 2.5, arterial: 1.5, collector: 1, ramp: 1.25 } as const;
+export const ROADS_CLASS_LIMITS = { mainUpToM: 10_000, sparseLines: 40 } as const;
+/** Line widths in screen pixels, by kind and view: the whole width of a road,
+ *  its casing. Wide enough in "Near me" to read as streets on the light disc.
+ *  A freeway ramp (a class 0 line shorter than ROADS_RAMP_MAX_M) is drawn at
+ *  the arterial width, so the carriageways read as the freeway. Starting
+ *  values. */
+export const ROADS_WIDTH_PX = {
+  whole: { freeway: 5.5, highway: 4, arterial: 2.2, collector: 1.2 },
+  near: { freeway: 11, highway: 9, arterial: 6, collector: 4 },
+} as const;
+/** The centre arrow's size, as a share of the arrow first built for the plain
+ *  dial: smaller, so it covers less of the map it sits on (at full size it hid
+ *  the middle of the map, where the roads through the person run). Starting
+ *  value. */
+export const DIAL_ARROW_SCALE = 0.6;
+/** Each road is drawn twice, a darker casing at its full width and its fill on
+ *  top; the fill is narrower by this edge on each side: a share of the width,
+ *  never under `minPx`, so the edge shows on the thinnest road. Starting
+ *  values. */
+export const ROADS_CASING_EDGE = { share: 0.15, minPx: 0.6 } as const;
 /** At most this many road names in view: more and the dial reads as a street
  *  map, which it is not. Starting value. */
 export const ROADS_LABEL_COUNT = 4;

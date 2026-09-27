@@ -35,8 +35,11 @@ test('Normal: the roads are drawn inside the ring, turning with it, each at its 
   await openRoads(page, 'fixture');
   await pushPosition(page, AT_FERNY_CREEK);
 
-  // All six fixture roads are in the whole-way view, one path each.
-  await expect(roads(page)).toHaveCount(6);
+  // Five of the six fixture roads are in the whole-way view, which never draws
+  // the collector, each as two strokes, a casing and a fill.
+  await expect(roads(page)).toHaveCount(10);
+  // A light disc under them, filling the map circle.
+  await expect(page.locator('.blacksky-dial-map .blacksky-map-disc')).toHaveCount(1);
   // The map is inside the ring's own group, so --heading turns it with the ring.
   await expect(page.locator('.blacksky-dial-ring > .blacksky-dial-map')).toHaveCount(1);
   // Everything drawn lies inside the ring.
@@ -49,25 +52,32 @@ test('Normal: the roads are drawn inside the ring, turning with it, each at its 
   expect(drawn!.x + drawn!.width).toBeLessThanOrEqual(ring!.x + ring!.width + 1);
   expect(drawn!.y + drawn!.height).toBeLessThanOrEqual(ring!.y + ring!.height + 1);
 
-  // Under 3 km every class is drawn. The width rule, a step between each kind:
-  // collector 1, the two arterials (one unnamed) 1.5, highway 2.5, the freeway
-  // 3.5 and its ramp under a kilometre 1.25. Freeways last, so they lie on top,
-  // and each kind carries its class for the stylesheet's weights.
-  const widths = await roads(page).evaluateAll((paths) =>
-    paths.map((p) => [p.classList[1], Number(p.getAttribute('stroke-width'))]),
+  // The whole-way widths and the draw order: arterials (one unnamed), the
+  // highway, then the freeway and its ramp under a kilometre (drawn at the
+  // arterial width), every casing of a class before its fills. Each stroke
+  // carries its class and pass for the stylesheet's colours.
+  const strokes = await roads(page).evaluateAll((paths) =>
+    paths.map((p) => `${p.classList[1]} ${p.classList[2]} ${Number(Number(p.getAttribute('stroke-width')).toFixed(2))}`),
   );
-  expect(widths).toEqual([
-    ['collector', 1],
-    ['arterial', 1.5],
-    ['arterial', 1.5],
-    ['highway', 2.5],
-    ['freeway', 3.5],
-    ['freeway', 1.25],
+  expect(strokes).toEqual([
+    'arterial casing 2.2',
+    'arterial casing 2.2',
+    'arterial fill 1',
+    'arterial fill 1',
+    'highway casing 4',
+    'highway fill 2.8',
+    'freeway casing 5.5',
+    'freeway casing 2.2',
+    'freeway fill 3.85',
+    'freeway fill 1',
   ]);
-  // Names along the road, never an unnamed one, none on the arrow: the
-  // freeway, highway and arterial all run under the arrow here, and the rest of
-  // each is too short for its name, so only the collector south of it is named.
-  await expect(page.locator('.blacksky-road-label .upright')).toHaveText(['Fixture Collector Street']);
+  // Names along the road, never an unnamed one, none on the arrow, the freeway
+  // first: the highway runs under the arrow and the rest of it is too short
+  // for its name; the freeway's and the arterial's clear ends are long enough.
+  await expect(page.locator('.blacksky-road-label .upright')).toHaveText([
+    'Fixture Freeway',
+    'Fixture Arterial Road',
+  ]);
 
   // Names are drawn at 14 px, over the card's 13 px floor.
   expect(
@@ -95,11 +105,14 @@ test('a tap on the dial switches the view, the tag says which, and the hint goes
   await toggle.click();
   await expect(tag(page)).toHaveText(MAP_VIEW_TAG.near);
   // Near me is 1.5 km round the person: the unnamed road 1.76 km east, and the
-  // collector 1.50 km south (a metre past the edge), drop out.
-  await expect(roads(page)).toHaveCount(4);
+  // collector 1.50 km south (a metre past the edge), drop out; four roads, two
+  // strokes each, at the near widths.
+  await expect(roads(page)).toHaveCount(8);
+  const nearFreeway = page.locator('.blacksky-road.freeway.casing').first();
+  expect(Number(await nearFreeway.getAttribute('stroke-width'))).toBe(11);
   await toggle.click();
   await expect(tag(page)).toHaveText(MAP_VIEW_TAG.whole);
-  await expect(roads(page)).toHaveCount(6);
+  await expect(roads(page)).toHaveCount(10);
 
   await expect(page.getByText(MAP_ZOOM_HINT)).toBeHidden({ timeout: 7_000 });
 });
@@ -114,13 +127,13 @@ test('the pin leaves the ring for its true spot when the place is inside the vie
   await expect.poll(() => pinAt(page)).toBe('inside');
   await expect.poll(() => pinR(page)).toBeCloseTo(70 / 1.15, 1);
   // The drop with its hole, 22 px tall on the screen, standing upright; the
-  // browser's box also takes in its 1.5 px black edge.
+  // browser's box also takes in its 2.5 px amber edge.
   const drop = page.locator('.blacksky-dial-drop');
   await expect(drop).toHaveCount(1);
   await expect(page.locator('.blacksky-dial-pin circle')).toHaveCount(0);
   const dropBox = (await drop.boundingBox())!;
   expect(dropBox.height).toBeGreaterThanOrEqual(22);
-  expect(dropBox.height).toBeLessThanOrEqual(24);
+  expect(dropBox.height).toBeLessThanOrEqual(25);
   expect(dropBox.height).toBeGreaterThan(dropBox.width); // a drop, taller than wide: upright
   // Near me is 1.5 km: the place is outside it, so the marker is on the ring.
   await toggle.click();
@@ -143,12 +156,12 @@ test('the pin leaves the ring for its true spot when the place is inside the vie
 test('a name the dial has turned upside down gives way to its twin, with no redraw', async ({ page }) => {
   await openRoads(page, 'fixture');
   await pushPosition(page, AT_FERNY_CREEK);
-  const collector = page.locator('.blacksky-road-label').filter({ hasText: 'Fixture Collector Street' });
+  const freeway = page.locator('.blacksky-road-label').filter({ hasText: 'Fixture Freeway' });
   const opacity = (which: string) =>
-    collector.locator(which).evaluate((el) => Number(getComputedStyle(el).opacity));
+    freeway.locator(which).evaluate((el) => Number(getComputedStyle(el).opacity));
   const drawn = await roads(page).first().elementHandle();
 
-  // North up, the collector runs left to right and reads the right way up.
+  // North up, the freeway runs up to the right and reads the right way up.
   expect(await opacity('.upright')).toBe(1);
   expect(await opacity('.turned')).toBe(0);
 

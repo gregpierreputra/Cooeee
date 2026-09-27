@@ -47,6 +47,7 @@ import {
 } from '../core/blacksky-voice';
 import {
   FIX_PUBLISH_M,
+  DIAL_ARROW_SCALE,
   FIX_STALE_MS,
   ROADS_HINT_MS,
   ROADS_LABEL_PX,
@@ -448,11 +449,24 @@ export default function BlackSky({
         // The error of the position, stated beside the figure it qualifies. A
         // marked position keeps E3-US1-AC4's own words: always ESTIMATE, and
         // the uncertainty growing.
+        // Outside the pack's area, E3-US2-AC1's line (the pack, and how far to
+        // its area) takes this place instead, under the figures, so it costs
+        // the dial no height: above the dial it shrank the dial on a 360 px
+        // phone. The accuracy is still stated in the lines below the dial; a
+        // marked position's ESTIMATE sentence is never dropped.
         readout={
-          estimate
-            ? copy.ESTIMATE_READOUT(estimate.accuracyM)
-            : copy.ACCURACY_READOUT(confidence!.accuracyM)
+          screen.kind === 'OUT_OF_AREA' ? (
+            <>
+              {estimate ? <span>{copy.ESTIMATE_READOUT(estimate.accuracyM)}</span> : null}
+              <OutsideArea packs={screen.packs} />
+            </>
+          ) : estimate ? (
+            copy.ESTIMATE_READOUT(estimate.accuracyM)
+          ) : (
+            copy.ACCURACY_READOUT(confidence!.accuracyM)
+          )
         }
+        readoutLong={screen.kind === 'OUT_OF_AREA'}
         compass={compass}
         // BS_Enhancement-AC3: the speaker button, at the right-hand end of the
         // distance row, outlined when off and filled when on. Unavailable: no
@@ -680,17 +694,8 @@ function ScreenBody({
     case 'OUT_OF_AREA':
       return (
         <>
-          <p className="muted">{copy.OUTSIDE_AREAS}</p>
-          <ul className="list">
-            {screen.packs.map(({ pack, distanceKm }) => (
-              <li key={pack.id} className="blacksky-place">
-                <h2>{titleCase(pack.name)}</h2>
-                <p className="muted figure">
-                  {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
-                </p>
-              </li>
-            ))}
-          </ul>
+          {/* The pack and its distance are stated in the dial's own distance
+              row (see OutsideArea), not here above it. */}
           {dial}
           {notes}
           <ConfidenceLines confidence={screen.confidence} />
@@ -736,6 +741,7 @@ function DialBody({
   model,
   trust,
   readout,
+  readoutLong = false,
   compass,
   rowEnd,
   caption,
@@ -744,7 +750,10 @@ function DialBody({
 }: {
   model: DialModel;
   trust: PositionTrust;
-  readout: string;
+  readout: ReactNode;
+  /** The readout is a sentence or two, not "± 10 m": it takes the full width
+   *  under the figures. */
+  readoutLong?: boolean;
   compass: { live: boolean; needsPermission: boolean; enable: () => Promise<void> };
   /** What sits at the right-hand end of the distance row: the speaker button,
    *  where there is one. The row keeps that 48 px free either way, so the
@@ -798,7 +807,7 @@ function DialBody({
           <span className="blacksky-figure-point">{point}</span>
           {/* The short "± 10 m" sits under the point; a marked position's
               longer sentence takes the full width below. */}
-          <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark'}>
+          <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark' || readoutLong}>
             {readout}
           </span>
         </span>
@@ -837,7 +846,6 @@ function DialBody({
                 aria-label={copy.MAP_VIEW_BUTTON}
                 onClick={roads.onToggle}
               />
-              {hint && !caption ? <p className="blacksky-map-hint">{copy.MAP_ZOOM_HINT}</p> : null}
             </>
           ) : null}
           {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
@@ -845,6 +853,11 @@ function DialBody({
               a live region: a screen reader would say them on top of the voice. */}
           {caption ? <p className="blacksky-caption">{caption}</p> : null}
         </div>
+        {/* The hint, centred under the dial for its first seconds, clear of the
+            S and of the voice caption over the dial's foot. It sits in the
+            dial's own slot, so on a short screen it takes the slot's spare
+            height rather than a row of its own out of the dial. */}
+        {roads && map.layer && hint ? <p className="blacksky-map-hint">{copy.MAP_ZOOM_HINT}</p> : null}
       </div>
       {/* On an iPhone that is usually because the compass has not been allowed
           yet, which is one tap. */}
@@ -855,6 +868,22 @@ function DialBody({
       ) : null}
       {others.length > 0 ? <OtherPlaces places={others} onShow={onShow} /> : null}
     </section>
+  );
+}
+
+/** E3-US2-AC1, outside the loaded pack's area: the pack named with the
+ *  distance to its area's edge, an informational line, never a bearing to it.
+ *  Set in the dial's readout place under the figures. */
+function OutsideArea({ packs }: { packs: { pack: Pack; distanceKm: number }[] }) {
+  return (
+    <>
+      <span className="blacksky-outside">{copy.OUTSIDE_AREAS}</span>
+      {packs.map(({ pack, distanceKm }) => (
+        <span key={pack.id} className="blacksky-outside-pack">
+          <b>{titleCase(pack.name)}</b> · {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
+        </span>
+      ))}
+    </>
   );
 }
 
@@ -916,11 +945,17 @@ function useLabelMeasure(): ((name: string) => number) | undefined {
 function dialObstacles(bearingDeg: number, pinInsideR: number | null, pxPerUnit: number): Obstacle[] {
   const rad = (bearingDeg * Math.PI) / 180;
   const along = (d: number, r: number) => ({ x: d * Math.sin(rad), y: -d * Math.cos(rad), r });
+  // The arrow as drawn at full size (tip 46 from the centre, head 32 wide at
+  // 14, shaft 12 wide back to 18 behind), scaled with it, and a unit more for
+  // its outline.
+  const arrow = [
+    [37, 9],
+    [22, 18],
+    [5, 8],
+    [-10, 9],
+  ].map(([d, r]) => along(d * DIAL_ARROW_SCALE, r * DIAL_ARROW_SCALE + 1));
   const units = [
-    along(37, 9), // the arrow's head: tip 46 from the centre, base 32 wide at 14
-    along(22, 18),
-    along(5, 8), // its shaft, 12 wide, back to 18 behind the centre
-    along(-10, 9),
+    ...arrow,
     // The marker on the ring, radius 11, reaches into the map's edge.
     ...(pinInsideR === null ? [along(RING_R, 12)] : []),
   ];
@@ -967,14 +1002,13 @@ function useDialMap(
     if (!map || !at || pxPerUnit <= 0) return null;
     drawStart.current = performance.now();
     const pin = placeInView(at.distanceM, at.bearingDeg, at.radiusM, MAP_R);
-    const drawn = drawRoads(
-      map,
-      at,
-      at.radiusM,
-      MAP_R * pxPerUnit,
-      dialObstacles(at.bearingDeg, pin ? pin.r : null, pxPerUnit),
+    const drawn = drawRoads(map, at, {
+      view: at.view,
+      radiusM: at.radiusM,
+      radiusPx: MAP_R * pxPerUnit,
+      obstacles: dialObstacles(at.bearingDeg, pin ? pin.r : null, pxPerUnit),
       measure,
-    );
+    });
     return { map: drawn, pxPerUnit };
   }, [map, at, pxPerUnit, measure]);
   // Measured from the start of the work to the moment React has put the paths

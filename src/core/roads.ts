@@ -13,6 +13,7 @@
 // line from the person to the place, and any word about which way to travel.
 
 import {
+  ROADS_CASING_EDGE,
   ROADS_CLASS_LIMITS,
   ROADS_LABEL_COUNT,
   ROADS_LABEL_GAP_PX,
@@ -139,21 +140,30 @@ export function placeInView(
   return { x: r * Math.sin(rad), y: -r * Math.cos(rad), r };
 }
 
-/** The width a line is drawn at, in screen pixels. A freeway is the widest line
- *  on the dial, but its ramps are freeway class too, and at full width they
- *  would read as more freeway: a class 0 line under a kilometre is a ramp. */
-export function roadWidthPx(line: Pick<RoadLine, 'cls' | 'lengthM'>): number {
-  if (line.cls === 0) return line.lengthM < ROADS_RAMP_MAX_M ? ROADS_WIDTH_PX.ramp : ROADS_WIDTH_PX.freeway;
-  if (line.cls === 1) return ROADS_WIDTH_PX.highway;
-  if (line.cls === 2) return ROADS_WIDTH_PX.arterial;
-  return ROADS_WIDTH_PX.collector;
+/** The width a line is drawn at in a view, its casing, in screen pixels. A
+ *  freeway is the widest line on the dial, but its ramps are freeway class too,
+ *  and at full width they would read as more freeway: a class 0 line under a
+ *  kilometre is a ramp, drawn at the view's arterial width. */
+export function roadWidthPx(line: Pick<RoadLine, 'cls' | 'lengthM'>, view: MapView): number {
+  const widths = ROADS_WIDTH_PX[view];
+  if (line.cls === 0) return line.lengthM < ROADS_RAMP_MAX_M ? widths.arterial : widths.freeway;
+  if (line.cls === 1) return widths.highway;
+  if (line.cls === 2) return widths.arterial;
+  return widths.collector;
 }
 
-/** The highest road class the dial draws at this radius (see
- *  ROADS_CLASS_LIMITS). `mainLinesInView` is how many lines of classes 0 to 2
- *  the view holds; it matters only in the widest views. */
-export function highestClassDrawn(radiusM: number, mainLinesInView: number): number {
-  if (radiusM < ROADS_CLASS_LIMITS.allBelowM) return 3;
+/** The fill drawn over a casing of `casingPx`: narrower by the edge each side. */
+export function fillWidthPx(casingPx: number): number {
+  const edge = Math.max(ROADS_CASING_EDGE.minPx, casingPx * ROADS_CASING_EDGE.share);
+  return Math.max(0, casingPx - 2 * edge);
+}
+
+/** The highest road class the dial draws (see ROADS_CLASS_LIMITS): every class
+ *  near the person; in the whole way no collectors, and in its widest views
+ *  only freeways and highways unless main roads are scarce there.
+ *  `mainLinesInView` is how many lines of classes 0 to 2 the view holds. */
+export function highestClassDrawn(view: MapView, radiusM: number, mainLinesInView: number): number {
+  if (view === 'near') return 3;
   if (radiusM <= ROADS_CLASS_LIMITS.mainUpToM) return 2;
   return mainLinesInView < ROADS_CLASS_LIMITS.sparseLines ? 2 : 1;
 }
@@ -370,6 +380,17 @@ export function chooseLabels(
   obstacles: Obstacle[],
   measure: (name: string) => number = estimateTextPx,
 ): RoadLabel[] {
+  return placeLabels(drawn, radiusPx, obstacles, measure).labels;
+}
+
+/** The label rule, and the points sampled along every name it placed, which
+ *  the locality names must keep clear of: road names win. */
+export function placeLabels(
+  drawn: { name: string; cls: number; runs: Point[][] }[],
+  radiusPx: number,
+  obstacles: Obstacle[],
+  measure: (name: string) => number = estimateTextPx,
+): { labels: RoadLabel[]; samples: Point[] } {
   const labels: RoadLabel[] = [];
   const taken: Point[] = [];
   const roads = new Map<string, { rank: number; runs: Point[][] }>();
@@ -433,7 +454,7 @@ export function chooseLabels(
       angleDeg: (Math.atan2(ey - sy, ex - sx) * 180) / Math.PI,
     });
   }
-  return labels;
+  return { labels, samples: taken };
 }
 
 // ------------------------------------------------------------------ draw
@@ -445,25 +466,38 @@ export function pathData(...runs: Point[][]): string {
   return runs.map((run) => 'M' + run.map(([x, y]) => `${fmt(x)} ${fmt(y)}`).join('L')).join('');
 }
 
-export type DialRoad = { d: string; widthPx: number; cls: number };
-export type DialMap = { roads: DialRoad[]; labels: RoadLabel[]; metresPerPx: number };
+/** One stroke of one road: its casing, or the fill drawn over it. */
+export type DialRoad = { d: string; widthPx: number; cls: number; pass: 'casing' | 'fill' };
+export type DialMap = {
+  roads: DialRoad[];
+  labels: RoadLabel[];
+  /** Points along every name placed, so nothing else is set on top of one. */
+  labelSamples: Point[];
+  metresPerPx: number;
+};
 
-/** Everything the dial draws for one position and one view: one path per line
- *  in view of the classes the view's radius allows (highestClassDrawn), clipped
- *  to the map's circle, narrow roads first so the freeways lie on top, and the
- *  names. `radiusPx` is the map circle's radius in screen pixels. */
-export function drawRoads(
-  map: RoadMap,
-  centre: LatLon,
-  radiusM: number,
-  radiusPx: number,
-  obstacles: Obstacle[] = [],
-  measure?: (name: string) => number,
-): DialMap {
+/** What one view of the map needs besides the roads and where the person is. */
+export type DrawOptions = {
+  view: MapView;
+  radiusM: number;
+  /** The map circle's radius in screen pixels. */
+  radiusPx: number;
+  obstacles?: Obstacle[];
+  measure?: (name: string) => number;
+};
+
+/** Everything the dial draws for one position and one view: every line in view
+ *  of the classes the view allows (highestClassDrawn), clipped to the map's
+ *  circle, and the names. Each road is two strokes, a casing and a fill, in
+ *  this order: collectors, arterials, highways, freeways, and within each class
+ *  every casing before any fill, so the fills of one class join up where its
+ *  roads meet and a lesser road never cuts across a greater one. */
+export function drawRoads(map: RoadMap, centre: LatLon, options: DrawOptions): DialMap {
+  const { view, radiusM, radiusPx, obstacles = [], measure } = options;
   const metresPerPx = radiusM / radiusPx;
-  // Collectors are only ever drawn in the closest views, so they are not even
-  // projected in the others: in a 30 km view they are most of the lines.
-  const mostClasses = highestClassDrawn(radiusM, 0);
+  // Collectors are only ever drawn near the person, so in the whole way they
+  // are not even projected: in a 30 km view they are most of the lines.
+  const mostClasses = highestClassDrawn(view, radiusM, 0);
   let drawn: { line: RoadLine; runs: Point[][] }[] = [];
   for (const line of linesNear(map, centre, radiusM)) {
     if (line.cls > mostClasses) continue;
@@ -474,19 +508,20 @@ export function drawRoads(
     const runs = clipToCircle(points, radiusPx);
     if (runs.length > 0) drawn.push({ line, runs });
   }
-  const highest = highestClassDrawn(radiusM, drawn.filter(({ line }) => line.cls <= 2).length);
+  const highest = highestClassDrawn(view, radiusM, drawn.filter(({ line }) => line.cls <= 2).length);
   drawn = drawn.filter(({ line }) => line.cls <= highest);
-  // Collectors, then arterials and highways, then freeways: the widest and most
-  // recognisable lines are never cut through by a lesser one.
-  drawn.sort((a, b) => b.line.cls - a.line.cls);
-  return {
-    roads: drawn.map(({ line, runs }) => ({ d: pathData(...runs), widthPx: roadWidthPx(line), cls: line.cls })),
-    labels: chooseLabels(
-      drawn.map(({ line, runs }) => ({ name: line.name, cls: line.cls, runs })),
-      radiusPx,
-      obstacles,
-      measure,
-    ),
-    metresPerPx,
-  };
+  const roads: DialRoad[] = [];
+  for (let cls = 3; cls >= 0; cls--) {
+    const ofClass = drawn.filter(({ line }) => line.cls === cls);
+    const strokes = ofClass.map(({ line, runs }) => ({ d: pathData(...runs), widthPx: roadWidthPx(line, view) }));
+    for (const { d, widthPx } of strokes) roads.push({ d, widthPx, cls, pass: 'casing' });
+    for (const { d, widthPx } of strokes) roads.push({ d, widthPx: fillWidthPx(widthPx), cls, pass: 'fill' });
+  }
+  const { labels, samples } = placeLabels(
+    drawn.map(({ line, runs }) => ({ name: line.name, cls: line.cls, runs })),
+    radiusPx,
+    obstacles,
+    measure,
+  );
+  return { roads, labels, labelSamples: samples, metresPerPx };
 }

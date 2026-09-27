@@ -17,6 +17,7 @@ import {
   decodeRoads,
   drawRoads,
   estimateTextPx,
+  fillWidthPx,
   highestClassDrawn,
   linesNear,
   pathData,
@@ -164,33 +165,43 @@ describe('the view', () => {
 });
 
 describe('the width rule', () => {
-  it('steps down from freeway to collector, with a freeway ramp thin', () => {
-    expect(roadWidthPx({ cls: 0, lengthM: 12_000 })).toBe(3.5);
-    expect(roadWidthPx({ cls: 0, lengthM: 1_000 })).toBe(3.5);
-    expect(roadWidthPx({ cls: 0, lengthM: 999 })).toBe(1.25);
-    expect(roadWidthPx({ cls: 1, lengthM: 200 })).toBe(2.5);
-    expect(roadWidthPx({ cls: 2, lengthM: 5_000 })).toBe(1.5);
-    expect(roadWidthPx({ cls: 3, lengthM: 5_000 })).toBe(1);
+  it('steps down from freeway to collector, wider near the person, with a freeway ramp at the arterial width', () => {
+    const widths = (view: 'whole' | 'near') => [
+      roadWidthPx({ cls: 0, lengthM: 12_000 }, view),
+      roadWidthPx({ cls: 0, lengthM: 1_000 }, view),
+      roadWidthPx({ cls: 0, lengthM: 999 }, view), // a ramp
+      roadWidthPx({ cls: 1, lengthM: 200 }, view),
+      roadWidthPx({ cls: 2, lengthM: 5_000 }, view),
+      roadWidthPx({ cls: 3, lengthM: 5_000 }, view),
+    ];
+    expect(widths('whole')).toEqual([5.5, 5.5, 2.2, 4, 2.2, 1.2]);
+    expect(widths('near')).toEqual([11, 11, 6, 9, 6, 4]);
+  });
+
+  it('draws the fill narrower than its casing by an edge each side, never under 0.6 px', () => {
+    expect(fillWidthPx(11)).toBeCloseTo(7.7, 9); // edge 15 % of 11 = 1.65
+    expect(fillWidthPx(5.5)).toBeCloseTo(3.85, 9);
+    expect(fillWidthPx(2.2)).toBeCloseTo(1, 9); // the 0.6 px floor
+    expect(fillWidthPx(1)).toBe(0);
   });
 });
 
 describe('the classes by view', () => {
-  const { allBelowM, mainUpToM, sparseLines } = ROADS_CLASS_LIMITS;
+  const { mainUpToM, sparseLines } = ROADS_CLASS_LIMITS;
 
-  it('draws every class under 3 km, classes 0 to 2 from 3 km to 10 km, and 0 to 1 beyond', () => {
-    expect([allBelowM, mainUpToM, sparseLines]).toEqual([3_000, 10_000, 40]);
-    expect(highestClassDrawn(1_500, 500)).toBe(3);
-    expect(highestClassDrawn(2_999, 500)).toBe(3);
-    expect(highestClassDrawn(3_000, 500)).toBe(2); // 3 km itself is the middle band
-    expect(highestClassDrawn(10_000, 500)).toBe(2); // and so is 10 km
-    expect(highestClassDrawn(10_001, 500)).toBe(1);
-    expect(highestClassDrawn(30_000, 500)).toBe(1);
+  it('near me draws every class; the whole way never a collector', () => {
+    expect([mainUpToM, sparseLines]).toEqual([10_000, 40]);
+    expect(highestClassDrawn('near', 1_500, 500)).toBe(3);
+    expect(highestClassDrawn('whole', 1_500, 500)).toBe(2);
+    expect(highestClassDrawn('whole', 10_000, 500)).toBe(2); // 10 km itself keeps the arterials
+    expect(highestClassDrawn('whole', 10_001, 500)).toBe(1);
+    expect(highestClassDrawn('whole', 30_000, 500)).toBe(1);
   });
 
-  it('beyond 10 km brings the arterials back only where fewer than 40 main lines are in view', () => {
-    expect(highestClassDrawn(20_000, 39)).toBe(2);
-    expect(highestClassDrawn(20_000, 40)).toBe(1);
-    expect(highestClassDrawn(20_000, 0)).toBe(2);
+  it('beyond 10 km the whole way brings the arterials back only where fewer than 40 main lines are in view', () => {
+    expect(highestClassDrawn('whole', 20_000, 39)).toBe(2);
+    expect(highestClassDrawn('whole', 20_000, 40)).toBe(1);
+    expect(highestClassDrawn('whole', 20_000, 0)).toBe(2);
   });
 
   // Lines across the view, each class at its own offset north of the person.
@@ -198,21 +209,22 @@ describe('the classes by view', () => {
     Array.from({ length: count }, (_, i) =>
       lineAt(`Road ${cls}-${i}`, cls, [[-40_000, north + i * 10], [40_000, north + i * 10]]),
     );
-  const classesDrawn = (lines: RoadLine[], radiusM: number) =>
-    [...new Set(drawRoads({ lines }, HERE, radiusM, 100).roads.map((r) => r.cls))].sort();
+  const classesDrawn = (lines: RoadLine[], view: 'whole' | 'near', radiusM: number) =>
+    [...new Set(drawRoads({ lines }, HERE, { view, radiusM, radiusPx: 100 }).roads.map((r) => r.cls))].sort();
 
   it('drops the classes the view does not draw', () => {
     const lines = [...across(1, 0, 0), ...across(1, 1, 200), ...across(1, 2, 400), ...across(1, 3, 600)];
-    expect(classesDrawn(lines, 2_000)).toEqual([0, 1, 2, 3]);
-    expect(classesDrawn(lines, 5_000)).toEqual([0, 1, 2]);
+    expect(classesDrawn(lines, 'near', 1_500)).toEqual([0, 1, 2, 3]);
+    expect(classesDrawn(lines, 'whole', 1_500)).toEqual([0, 1, 2]);
+    expect(classesDrawn(lines, 'whole', 5_000)).toEqual([0, 1, 2]);
     // Beyond 10 km with only three main lines in view: the arterial stays.
-    expect(classesDrawn(lines, 20_000)).toEqual([0, 1, 2]);
+    expect(classesDrawn(lines, 'whole', 20_000)).toEqual([0, 1, 2]);
     // Forty main lines in view: the arterials go, the freeway and highway stay.
     const busy = [...across(1, 0, 0), ...across(1, 1, 200), ...across(38, 2, 400), ...across(5, 3, 1_000)];
-    expect(classesDrawn(busy, 20_000)).toEqual([0, 1]);
+    expect(classesDrawn(busy, 'whole', 20_000)).toEqual([0, 1]);
     // Thirty-nine: they come back.
     const quiet = [...across(1, 0, 0), ...across(1, 1, 200), ...across(37, 2, 400)];
-    expect(classesDrawn(quiet, 20_000)).toEqual([0, 1, 2]);
+    expect(classesDrawn(quiet, 'whole', 20_000)).toEqual([0, 1, 2]);
   });
 });
 
@@ -372,16 +384,23 @@ describe('drawing one view', () => {
     ],
   };
 
-  it('draws one path per line in view, collectors first and freeways last, at their widths', () => {
-    const drawn = drawRoads(map, HERE, 1_500, 150);
+  it('draws every road as a casing then a fill, class by class, collectors first, freeways last', () => {
+    const drawn = drawRoads(map, HERE, { view: 'near', radiusM: 1_500, radiusPx: 150 });
     expect(drawn.metresPerPx).toBe(10);
-    expect(drawn.roads.map((r) => [r.cls, r.widthPx])).toEqual([
-      [3, 1],
-      [2, 1.5],
-      [0, 3.5],
-      [0, 1.25],
-    ]);
-    // Every point drawn is inside the ring.
+    // The draw order, stroke by stroke: [class, pass, width].
+    expect(drawn.roads.map((r) => `${r.cls} ${r.pass} ${Number(r.widthPx.toFixed(2))}`)).toMatchInlineSnapshot(`
+      [
+        "3 casing 4",
+        "3 fill 2.8",
+        "2 casing 6",
+        "2 fill 4.2",
+        "0 casing 11",
+        "0 casing 6",
+        "0 fill 7.7",
+        "0 fill 4.2",
+      ]
+    `);
+    // Every point drawn is inside the map circle.
     for (const road of drawn.roads) {
       const numbers = road.d.replace(/[ML]/g, ' ').trim().split(/\s+/).map(Number);
       for (let k = 0; k < numbers.length; k += 2) {
@@ -389,11 +408,28 @@ describe('drawing one view', () => {
       }
     }
     expect(drawn.labels.length).toBeGreaterThan(0);
+    // The points under the names are handed back, for the place names to avoid.
+    expect(drawn.labelSamples.length).toBeGreaterThan(0);
+  });
+
+  it('draws the whole way at its own widths, without the collector', () => {
+    const drawn = drawRoads(map, HERE, { view: 'whole', radiusM: 1_500, radiusPx: 150 });
+    expect(drawn.roads.filter((r) => r.pass === 'casing').map((r) => [r.cls, r.widthPx])).toEqual([
+      [2, 2.2],
+      [0, 5.5],
+      [0, 2.2],
+    ]);
   });
 
   it('keeps names off what it is told to', () => {
-    const everywhere = drawRoads(map, HERE, 1_500, 150, [{ x: 0, y: 0, r: 400 }]);
+    const everywhere = drawRoads(map, HERE, {
+      view: 'near',
+      radiusM: 1_500,
+      radiusPx: 150,
+      obstacles: [{ x: 0, y: 0, r: 400 }],
+    });
     expect(everywhere.labels).toEqual([]);
-    expect(everywhere.roads).toHaveLength(4);
+    expect(everywhere.labelSamples).toEqual([]);
+    expect(everywhere.roads).toHaveLength(8);
   });
 });

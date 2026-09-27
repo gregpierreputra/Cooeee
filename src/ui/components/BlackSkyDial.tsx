@@ -1,6 +1,6 @@
 import { useId, type CSSProperties } from 'react';
 import type { DialCentre } from '../../core/blacksky-dial';
-import { ROADS_LABEL_PX } from '../../core/constants';
+import { DIAL_ARROW_SCALE, ROADS_LABEL_PX } from '../../core/constants';
 import type { DialMap } from '../../core/roads';
 
 // The compass points on the ring: a letter and where it sits, in degrees. Drawn
@@ -32,6 +32,11 @@ export const DIAL_UNITS = 212;
 const DROP =
   'M0 0C-3 -5 -8 -8.6 -8 -14A8 8 0 1 1 8 -14C8 -8.6 3 -5 0 0Z' +
   'M3.4 -14A3.4 3.4 0 1 0 -3.4 -14A3.4 3.4 0 1 0 3.4 -14Z';
+
+/** The centre arrow, at DIAL_ARROW_SCALE of the arrow first drawn (tip 46 from
+ *  the centre, head 32 wide at 14, shaft 12 wide back to 18 behind). */
+const a = (n: number) => Math.round(n * DIAL_ARROW_SCALE * 100) / 100;
+const ARROW = `M0 ${a(-46)} ${a(16)} ${a(-14)}H${a(6)}V${a(18)}H${a(-6)}V${a(-14)}H${a(-16)}Z`;
 
 /** The map inside the ring: roads and names in screen pixels, north up, and
  *  how many screen pixels one unit of the drawing is, so they can be set at
@@ -112,8 +117,13 @@ export default function BlackSkyDial({
       {/* The arrow: from the centre toward the pin, long enough to be read at a
           glance, its tip well short of the ring so it never touches the pin
           there. Hollow when the position is old or marked. */}
-      <g className="blacksky-dial-arrow" style={{ '--bearing': bearingDeg } as CSSProperties}>
-        <path className={centre === 'outline' ? 'hollow' : undefined} d="M0 -46 16 -14H6V18H-6V-14H-16Z" />
+      {/* On the light map disc the arrow is dark with an amber edge, so it
+          keeps its contrast against the disc and against the roads. */}
+      <g
+        className={map ? 'blacksky-dial-arrow on-map' : 'blacksky-dial-arrow'}
+        style={{ '--bearing': bearingDeg } as CSSProperties}
+      >
+        <path className={centre === 'outline' ? 'hollow' : undefined} d={ARROW} />
       </g>
       {/* One bearing, set once on the two things that point at the place, so the
           arrow and the pin can never disagree. Drawn after the arrow: with roads,
@@ -158,11 +168,14 @@ function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: st
           <circle r={MAP_R} />
         </clipPath>
       </defs>
+      {/* A light map on the black screen: the disc, then every road as its
+          casing and its fill, in the order the rule gives. */}
+      <circle className="blacksky-map-disc" r={MAP_R} />
       <g transform={`scale(${1 / pxPerUnit})`}>
         {map.roads.map((road, i) => (
           <path
             key={i}
-            className={`blacksky-road ${ROAD_KIND[road.cls] ?? 'collector'}`}
+            className={`blacksky-road ${ROAD_KIND[road.cls] ?? 'collector'} ${road.pass}`}
             d={road.d}
             strokeWidth={road.widthPx}
           />

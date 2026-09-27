@@ -1079,15 +1079,21 @@ input {
 }
 
 .blacksky-dial-body {
+  /* The hint under the dial, while it shows (see .blacksky-map-hint). */
+  --hint-h: 0px;
   display: grid;
   gap: 6px;
-  grid-template-rows: auto auto min(360px, calc(100vw - 2rem));
+  grid-template-rows: auto auto calc(min(360px, 100vw - 2rem) + var(--hint-h));
   grid-auto-rows: auto;
+}
+
+.blacksky-dial-body:has(.blacksky-map-hint) {
+  --hint-h: 16px;
 }
 
 @media (max-height: 700px) {
   .blacksky-dial-body {
-    grid-template-rows: auto auto minmax(300px, 1fr);
+    grid-template-rows: auto auto minmax(calc(300px + var(--hint-h)), 1fr);
     height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
@@ -1135,8 +1141,11 @@ input {
   font-weight: var(--w-heavy);
 }
 
+/* Row 1 always: a long readout spans the row below, and without a row the
+   button was placed after it, on a row of its own. */
 .blacksky-dial-row-end {
   grid-column: 3;
+  grid-row: 1;
   align-self: center;
   display: grid;
 }
@@ -1162,6 +1171,13 @@ input {
 
 .blacksky-dial-readout[data-long='true'] {
   grid-column: 1 / -1;
+}
+
+/* Outside the pack's area, the readout is E3-US2-AC1's line, one fact a line. */
+.blacksky-outside,
+.blacksky-outside-pack {
+  display: block;
+  line-height: 1.2;
 }
 
 /* The distance is the largest text on the screen, 44 px, the height of its
@@ -1218,11 +1234,12 @@ input {
   min-height: 0;
   display: grid;
   place-items: center;
+  place-content: center;
 }
 
 .blacksky-dial-frame {
   position: relative;
-  width: min(100cqw, 100cqh, 360px);
+  width: min(100cqw, calc(100cqh - var(--hint-h)), 360px);
   aspect-ratio: 1;
 }
 
@@ -1305,51 +1322,104 @@ input {
 }
 
 /* ── Roads inside the dial (BS_Enhancement-AC5) ───────────────────────────
-   The roads are context, not a way to go: every road of a kind is drawn alike,
-   in the mode's ambers, well below the ring, the arrow and the pin. Drawn at
-   one weight they were an unreadable mesh on a phone, so each class steps down
-   in width (ROADS_WIDTH_PX) and here in brightness: the freeways and highways
-   people recognise stand out, arterials and collectors recede.
-   Contrast on the black ground, WCAG 1.4.11 (3 to 1 for graphics): freeways
-   #C89A2E 8.1 to 1; highways #A8791A at 0.9, 4.5 to 1; arterials #8A5F10 at
-   0.6, 2.0 to 1, and collectors at 0.45, 1.6 to 1, BELOW 3 to 1 on purpose, as
-   quiet context: flagged for the accessibility check on the card. Names
-   #F2C94C 13.2 to 1, with a black halo so a road under a name never cuts
-   through its letters. */
+   The map is a light disc inside the dark ring, like a paper map held up on
+   the black screen: the ring, its ticks and letters, and every word outside
+   the disc stay in the mode's amber on black. The roads are context, not a
+   way to go: every road of a kind is drawn alike, as a casing with a fill on
+   top, each class a clear step up from the one below (ROADS_WIDTH_PX), so the
+   freeways and highways a person recognises read first. All the map's colours
+   are here, as custom properties on the dial.
+   Contrast on the disc #F2EFE9, WCAG 1.4.11 asks 3 to 1 for graphics: the
+   freeway casing #D98B21 2.4 to 1, the highway casing #D9B84A 1.7 to 1, the
+   arterial casing #C9C9C9 1.4 to 1, all BELOW it, as specified for this
+   build and flagged for the accessibility check on the card. Road names
+   #333333 on their white halo 12.6 to 1; the arrow and the drop #111111 on
+   the disc 16.5 to 1, their amber edge #FBBF24 12.6 to 1 on the black. */
+.blacksky-dial {
+  --map-disc: #f2efe9;
+  --map-freeway-casing: #d98b21;
+  --map-freeway-fill: #f2a33a;
+  --map-highway-casing: #d9b84a;
+  --map-highway-fill: #ffe082;
+  --map-arterial-casing: #c9c9c9;
+  --map-arterial-fill: #ffffff;
+  --map-collector-casing: #dddddd;
+  --map-collector-fill: #ffffff;
+  --map-label: #333333;
+  --map-label-halo: #ffffff;
+  --map-mark: #111111;
+  --map-mark-edge: #fbbf24;
+}
+
+/* Beats the ring's own circle rule: the disc is filled, with no stroke. */
+.blacksky-dial-ring .blacksky-map-disc {
+  fill: var(--map-disc);
+  stroke: none;
+}
+
 .blacksky-road {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.blacksky-road.freeway {
-  stroke: #c89a2e;
-  stroke-opacity: 1;
+.blacksky-road.freeway.casing {
+  stroke: var(--map-freeway-casing);
 }
 
-.blacksky-road.highway {
-  stroke: #a8791a;
-  stroke-opacity: 0.9;
+.blacksky-road.freeway.fill {
+  stroke: var(--map-freeway-fill);
 }
 
-.blacksky-road.arterial {
-  stroke: #8a5f10;
-  stroke-opacity: 0.6;
+.blacksky-road.highway.casing {
+  stroke: var(--map-highway-casing);
 }
 
-.blacksky-road.collector {
-  stroke: #8a5f10;
-  stroke-opacity: 0.45;
+.blacksky-road.highway.fill {
+  stroke: var(--map-highway-fill);
+}
+
+.blacksky-road.arterial.casing {
+  stroke: var(--map-arterial-casing);
+}
+
+.blacksky-road.arterial.fill {
+  stroke: var(--map-arterial-fill);
+}
+
+.blacksky-road.collector.casing {
+  stroke: var(--map-collector-casing);
+}
+
+.blacksky-road.collector.fill {
+  stroke: var(--map-collector-fill);
 }
 
 .blacksky-road-label text {
   /* The size is set on the label from ROADS_LABEL_PX, not here. */
   font-weight: var(--w-med);
-  fill: #f2c94c;
-  stroke: #000000;
+  fill: var(--map-label);
+  stroke: var(--map-label-halo);
   stroke-width: 3px;
   stroke-linejoin: round;
   paint-order: stroke;
+}
+
+/* On the disc the arrow is dark with an amber edge: amber alone would be 1.4
+   to 1 against the light map. The edge is set in screen pixels, whatever size
+   the dial is drawn at. Hollow (an old or marked position): the dark edge
+   alone. */
+.blacksky-dial-arrow.on-map path {
+  fill: var(--map-mark);
+  stroke: var(--map-mark-edge);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.blacksky-dial-arrow.on-map path.hollow {
+  fill: none;
+  stroke: var(--map-mark);
 }
 
 /* A name reads the right way up while its stretch, as the dial has turned it,
@@ -1367,14 +1437,14 @@ input {
   opacity: clamp(0, calc((cos((var(--label-deg) - var(--heading, 0)) * 1deg) + 0.0001) * -100000), 1);
 }
 
-/* The place's pin inside the view: a drop in the mode's amber, its tip on the
-   spot, with a black edge so it stands clear of the roads under it. The pin's
+/* The place's pin inside the view: a dark drop with the mode's amber edge, its
+   tip on the spot, so it stands clear of the light disc and the roads on it. The pin's
    group turns by the bearing to carry it out along it; the drop turns back by
    the same angle about its own tip, so it always stands upright. */
 .blacksky-dial-drop {
-  fill: currentColor;
-  stroke: var(--bg);
-  stroke-width: 1.5px;
+  fill: var(--map-mark);
+  stroke: var(--map-mark-edge);
+  stroke-width: 2.5px;
   stroke-linejoin: round;
   transform-box: fill-box;
   transform-origin: 50% 100%;
@@ -1401,20 +1471,19 @@ input {
   background: transparent;
 }
 
-/* The hint sits over the foot of the dial for its first few seconds, where the
-   voice caption also sits, rather than in a row of its own: a row that came and
-   went would move the Notes heading, and on a short screen shrink the dial. */
+/* The hint, a pill centred under the dial for its first few seconds, clear of
+   the S and of the voice caption over the dial's foot. */
 .blacksky-map-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
+  box-sizing: border-box;
+  height: var(--hint-h);
   margin: 0;
-  padding: 0.25rem 0.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--ink-2);
   border-radius: 999px;
   background: var(--bg);
   color: var(--ink-2);
-  font-size: var(--step-s);
+  font-size: var(--step-xs);
+  line-height: 14px;
   white-space: nowrap;
   pointer-events: none;
 }
