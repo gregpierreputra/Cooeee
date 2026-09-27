@@ -224,10 +224,6 @@ a {
   min-height: 44px;
   cursor: pointer;
 }
-.destination-choose-hint {
-  margin: 0;
-  color: var(--ink-2);
-}
 
 /* ── Cards and lists ───────────────────────────────────────────────────────── */
 
@@ -517,8 +513,10 @@ button,
 }
 
 @media (hover: hover) {
-  button:not(:disabled):hover,
-  .action:hover {
+  /* Controls whose border colour carries meaning (red ends something, amber
+     is BlackSky, a debrief tile's kind) keep it under the pointer. */
+  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold):hover,
+  .action:not(.leave-action):hover {
     border-color: var(--accent);
   }
   .main-action:hover {
@@ -1459,6 +1457,16 @@ main:focus {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* The splash's wait is a delay, which the durations above leave alone: it
+     goes on the first frame, as promised. */
+  .splash {
+    animation-delay: 0s !important;
+  }
+  /* The hold's fill is a progress bar, not motion. On iOS, with no vibration,
+     it is the only sign of how long is left, so it keeps its two seconds. */
+  .blacksky-hold:active {
+    transition-duration: 2s !important;
   }
 }
 
@@ -2756,7 +2764,6 @@ body.drill-open .banner {
   gap: 0.15rem;
   margin: 0;
   padding: 0.5rem 1.1rem 0.6rem;
-  border-radius: 1.25rem;
   border-radius: var(--r-pill);
 }
 .drill-counts p {

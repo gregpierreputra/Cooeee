@@ -5,6 +5,7 @@ import { highestScore } from '../../core/drill-history';
 import { scoreDrill } from '../../core/drill-score';
 import { listDrills, saveDrill } from '../../data/db';
 import Glyph from '../components/Glyph';
+import { focusMain } from '../components/focusMain';
 import * as audio from './audio';
 import Debrief from './Debrief';
 import Game, { type DrillOutcome } from './Game';
@@ -37,6 +38,11 @@ export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props
   const unavailable = useCallback(() => setStage('unavailable'), []);
   // The sound stops with the drill, however it is left.
   useEffect(() => audio.suspend, []);
+  // The report and the unavailable card replace the control that led to them.
+  // The film and the minute place their own focus.
+  useEffect(() => {
+    if (stage === 'debrief' || stage === 'unavailable') focusMain();
+  }, [stage]);
 
   const finish = async (result: DrillOutcome) => {
     setOutcome(result);

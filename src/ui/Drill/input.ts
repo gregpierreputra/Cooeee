@@ -21,10 +21,13 @@ export function attachKeys(onSteer: (x: number, y: number) => void): () => void 
     onSteer(Math.sign(x), Math.sign(y));
   };
   const onKey = (event: KeyboardEvent) => {
-    if (!(event.key in KEYS)) return;
+    // Letters in one case, so Caps Lock steers too, and a key let go while
+    // Shift is down ('D') still releases the one pressed ('d').
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    if (!(key in KEYS)) return;
     event.preventDefault();
-    if (event.type === 'keydown') held.add(event.key);
-    else held.delete(event.key);
+    if (event.type === 'keydown') held.add(key);
+    else held.delete(key);
     report();
   };
   // A tab that loses focus never hears the key come up.

@@ -243,6 +243,8 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
       document.removeEventListener('visibilitychange', onVisibility);
       document.body.classList.remove('drill-open');
       audio.fire(0);
+      // Nothing plays on the screens after the minute; Play again resumes it.
+      audio.suspend();
     };
     // The loop owns its own state; it starts once with the canvas.
   }, []);

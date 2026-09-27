@@ -13,6 +13,7 @@ import Run from './Run';
 import Unfinished from './Unfinished';
 import { currentRun, endRun, useRehearsalRun } from './run-state';
 import StatusPage from '../components/StatusPage';
+import { focusMain } from '../components/focusMain';
 import Drill from '../Drill/Drill';
 import { markDrilled, replayDrill, useDrilled } from '../Drill/drill-state';
 
@@ -105,6 +106,16 @@ export default function RehearsalEntry({
       live = false;
     };
   }, [loadSource, packId, openedAt]);
+
+  // Every screen below replaces the control that led to it under the same path,
+  // so focus moves to the new page whenever the screen changes. Keyed on what
+  // picks the screen, not on anything inside one, so the film and the minute
+  // keep the focus they place themselves.
+  const screen = [
+    gate?.state, isRunFor(run, packId), run?.ending !== undefined,
+    unfinished === undefined, unfinished?.id, drilled, chosen,
+  ].join();
+  useEffect(focusMain, [screen]);
 
   if (gate === null) return null;
 

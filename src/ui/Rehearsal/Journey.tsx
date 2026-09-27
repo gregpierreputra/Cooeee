@@ -15,6 +15,7 @@ import { getCompletePackContent, saveStartedRehearsal } from '../../data/db';
 import Glyph from '../components/Glyph';
 import Hint from '../components/Hint';
 import HoldButton from '../components/HoldButton';
+import { focusMain } from '../components/focusMain';
 import { useOnline } from '../components/useOnline';
 import Head from './Head';
 import { endWith, startRun } from './run-state';
@@ -104,6 +105,11 @@ export function JourneyBefore({
   keep?: (started: UnfinishedRehearsal) => Promise<void>;
 }) {
   const journey = useJourney(packId, loadContent);
+  // Drawn only once the pack is read, after the choice that led here has gone.
+  const ready = journey !== null;
+  useEffect(() => {
+    if (ready) focusMain();
+  }, [ready]);
   if (journey === null) return null;
 
   return (
