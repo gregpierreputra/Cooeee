@@ -218,3 +218,19 @@ test('the results screen offers to print the list', async ({ page }) => {
   await page.getByRole('button', { name: copy.PRINT_LIST }).click();
   expect(await page.evaluate(() => (window as Window & { __printed?: number }).__printed)).toBe(1);
 });
+
+// The pressed control is gone once the page changes, so focus moves to the page
+// itself rather than dropping to the document, where the next Tab would restart
+// from the top.
+test('focus stays on the page when a need is chosen and when choosing again', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.NEED_PHRASE.money }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: copy.NEED_PHRASE.money })).toBeVisible();
+  await expect(page.locator('main')).toBeFocused();
+
+  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
+  await expect(page.locator('main')).toBeFocused();
+});

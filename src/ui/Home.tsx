@@ -11,6 +11,7 @@ import Glyph from './components/Glyph';
 import Hint from './components/Hint';
 import HoldButton from './components/HoldButton';
 import { startTour } from './components/Tour';
+import { focusMain } from './components/focusMain';
 
 /** E1-US2-AC6 — where someone who set up a place some time ago lands when they
  *  open Cooeee again.
@@ -47,6 +48,15 @@ export default function Home({ now }: { now?: number }) {
 
   useEffect(() => {
     let live = true;
+    // The cards come straight from the store; the sync below can wait on a
+    // page copy, and the screen must not stay empty for it. The nudge waits for
+    // the sync, so it never counts a program that is about to be carried.
+    listCompletePacks().then(
+      (rows) => {
+        if (live) setView((shown) => shown ?? homeView(seed, rows));
+      },
+      () => {},
+    );
     load().then(
       (loaded) => {
         if (!live) return;
@@ -69,8 +79,19 @@ export default function Home({ now }: { now?: number }) {
   // untouched. The id names which card is asking.
   const [confirming, setConfirming] = useState<string | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  // Once the question closes, focus returns to that card's delete control, or
+  // to the page when the card has gone with the pack.
+  const asked = useRef<string | null>(null);
   useEffect(() => {
-    if (confirming) cancelRef.current?.focus();
+    if (confirming) {
+      asked.current = confirming;
+      cancelRef.current?.focus();
+    } else if (asked.current) {
+      const control = document.getElementById(`delete-${asked.current}`);
+      if (control) control.focus();
+      else focusMain();
+      asked.current = null;
+    }
   }, [confirming]);
 
   const removePack = async (id: string) => {
@@ -167,6 +188,7 @@ export default function Home({ now }: { now?: number }) {
                 </h2>
                 <button
                   type="button"
+                  id={`delete-${pack.id}`}
                   className="card-delete"
                   aria-label={copy.DELETE_PACK}
                   onClick={() => setConfirming(pack.id)}

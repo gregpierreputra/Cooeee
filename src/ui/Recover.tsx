@@ -9,6 +9,7 @@ import { callList, isNeed, monogram, NEEDS, parseChoice, recoveryStale, selectPr
 import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { listPrograms, listSavedProgramIds } from '../data/db';
+import { focusMain } from './components/focusMain';
 import Glyph from './components/Glyph';
 import { canStepBack } from './components/history';
 import ProvenanceLine from './components/ProvenanceLine';
@@ -65,8 +66,12 @@ export default function Recover({
   }, [loadPrograms, loadSaved]);
 
   // Any change of category, however it was reached (the app's own controls or
-  // the browser's Back and Forward), clears the note the last one left behind.
-  useEffect(() => setShared(null), [choice]);
+  // the browser's Back and Forward), clears the note the last one left behind,
+  // and moves focus to the page, since the control that was pressed is gone.
+  useEffect(() => {
+    setShared(null);
+    focusMain();
+  }, [choice]);
 
   const choose = (next: Choice) => setParams({ need: next });
 
@@ -102,7 +107,8 @@ export default function Recover({
     }
   }
 
-  if (programs === null) return null;
+  // The page itself, empty, while the store answers, so focus has somewhere to land.
+  if (programs === null) return <main className="page" />;
 
   if (programs.length === 0) {
     return (

@@ -106,18 +106,25 @@ export default function PackDetail({
     };
   }, [loadDrills, packId]);
 
-  // The sheet takes focus while it is open, and Escape closes it.
+  // The sheet takes focus while it is open, Escape closes it, and closing it
+  // hands focus back to the link that opened it.
   useEffect(() => {
     if (!offlineSource) return;
+    const opener = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOfflineSource(null);
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      opener?.focus();
+    };
   }, [offlineSource]);
 
-  if (content === null) return null;
+  // The page itself, empty, while the store answers: the route's focus lands on
+  // it, and the same element carries the pack once it arrives.
+  if (content === null) return <main className="page" />;
   if (content === undefined) {
     return (
       <StatusPage

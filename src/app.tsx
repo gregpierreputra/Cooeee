@@ -31,6 +31,7 @@ import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
 import Splash from './ui/components/Splash';
 import Tour, { startTour } from './ui/components/Tour';
+import { focusMain } from './ui/components/focusMain';
 import PackDetail from './ui/PackDetail';
 import Recover from './ui/Recover';
 import Choose from './ui/Rehearsal/Choose';
@@ -144,13 +145,7 @@ function ModeSwitch() {
     document.documentElement.dataset.mode = pathname.startsWith('/blacksky')
       ? 'blacksky'
       : 'prepare';
-    // Focus follows the screen, so a keyboard or screen reader lands on the new
-    // page rather than staying on a control that has just gone.
-    const main = document.querySelector('main');
-    if (main) {
-      main.tabIndex = -1;
-      main.focus({ preventScroll: true });
-    }
+    focusMain();
   }, [pathname]);
   return null;
 }

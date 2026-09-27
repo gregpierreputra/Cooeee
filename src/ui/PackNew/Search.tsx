@@ -51,6 +51,7 @@ import {
 import Glyph from '../components/Glyph';
 import Hint from '../components/Hint';
 import StatusPage from '../components/StatusPage';
+import { focusMain } from '../components/focusMain';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
@@ -239,8 +240,13 @@ export function Search({
     // and the cancellation at once.
   }, [trimmedQuery, attempt]);
 
-  // Leaving the screen stops a nearby lookup still on the wire.
-  useEffect(() => () => locateAbortRef.current?.abort(), []);
+  // Leaving the screen stops a nearby lookup still on the wire, and drops a
+  // position still to come: the fix must not reach the register after the
+  // user has left.
+  useEffect(() => () => {
+    locateIdRef.current += 1;
+    locateAbortRef.current?.abort();
+  }, []);
 
   function clearLocated() {
     locateIdRef.current += 1;
@@ -411,6 +417,14 @@ export function Search({
     setNote(undefined);
     setPrograms(null);
   }
+
+  // Each step replaces the page under the same path, so focus is moved to it
+  // here; the route change that would otherwise do it never happens.
+  const step = [
+    !!candidate, !!pendingPlace, conflictState?.kind, areaState?.kind,
+    placesState?.kind, !!chosenPlaces, !!programs, offerState?.kind,
+  ].join();
+  useEffect(focusMain, [step]);
 
   if (pendingPlace && conflictState?.kind === 'checking') {
     return (
