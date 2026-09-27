@@ -20,7 +20,6 @@ describe('the supported conditions', () => {
   });
 
   it('are offered in a fixed order, so the list cannot reshuffle between mounts', () => {
-    expect(conditionRows().map((row) => row.condition)).toEqual(conditionRows().map((row) => row.condition));
     expect(conditionRows().map((row) => row.condition)).toEqual(['no-data', 'no-location-fix']);
   });
 
@@ -99,20 +98,6 @@ describe('a value that is not a supported condition', () => {
 // shape in the type for a second to occupy, so "never two" holds by
 // construction rather than by a check that could be forgotten.
 describe('the chosen condition', () => {
-  it('is a single value, and choosing again replaces rather than accumulates', () => {
-    let chosen: RehearsalCondition | null = null;
-    expect(chosen).toBeNull();
-
-    chosen = 'no-data';
-    expect(chosen).toBe('no-data');
-    expect(Array.isArray(chosen)).toBe(false);
-
-    chosen = 'no-location-fix';
-    expect(chosen).toBe('no-location-fix');
-    // The condition it replaced is gone, not held alongside.
-    expect(chosen).not.toBe('no-data');
-  });
-
   it('names one condition only, whichever was chosen', () => {
     REHEARSAL_CONDITIONS.forEach((condition) => {
       const others = REHEARSAL_CONDITIONS.filter((other) => other !== condition);

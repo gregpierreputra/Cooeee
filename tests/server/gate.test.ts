@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { checkGate } from '../../server/gate';
+import type { IncomingMessage } from 'node:http';
+import { Readable } from 'node:stream';
+import { checkGate, readJson } from '../../server/gate';
 
 describe('the development gate', () => {
   const secret = 'right';
@@ -35,5 +37,16 @@ describe('the development gate', () => {
     expect(refused.body.retryAfterSeconds).toBe(59);
     // The next minute opens again.
     expect(checkGate(secret, '198.51.100.200', 'right', later + 60_000).status).toBe(200);
+  });
+});
+
+// The gate's body is read from anyone on the internet: past its cap it is
+// refused, not buffered.
+describe('readJson', () => {
+  const body = (text: string) => Readable.from([Buffer.from(text)]) as unknown as IncomingMessage;
+
+  it('reads a small JSON body and refuses one past the cap', async () => {
+    await expect(readJson(body('{"password":"x"}'))).resolves.toEqual({ password: 'x' });
+    await expect(readJson(body(`{"password":"${'x'.repeat(2048)}"}`))).rejects.toThrow(RangeError);
   });
 });

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { SEARCH_COULD_NOT_RUN } from '../src/core/copy';
 import { addressFeature, HARNESS, storageState, WFS_PATTERN } from './helpers';
 
 const SEARCH_URL = `${HARNESS}/search`;
@@ -315,7 +316,7 @@ test('AC2 state (a): while a search is pending, nothing is claimed about a resul
   const status = page.getByRole('status');
   await expect(status).toHaveText('Searching…');
   await expect(status).not.toContainText(NO_MATCH_SENTENCE);
-  await expect(status).not.toContainText('We could not search');
+  await expect(status).not.toContainText(SEARCH_COULD_NOT_RUN);
   await expect(status).not.toContainText('returned');
   await expect(page.getByRole('list', { name: 'Address candidates' })).toHaveCount(0);
   // No spinner, anywhere, in any state of this screen.

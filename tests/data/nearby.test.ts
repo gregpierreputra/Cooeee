@@ -1,6 +1,8 @@
+import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { MAX_SYNC_ROWS } from '../../src/core/constants';
-import { assertStaticBundle } from '../../src/data/nearby';
+import { db } from '../../src/data/db';
+import { assertStaticBundle, DYNAMIC_SNAPSHOT_PATH, readNearbyCache, syncNearby } from '../../src/data/nearby';
 
 const facility = (facility_id: number) => ({
   facility_id, type: 'NSP', name: 'Olinda Recreation Reserve', address: null,
@@ -24,5 +26,27 @@ describe('assertStaticBundle', () => {
     const health = (last_success_at: unknown) => ({ ...bundle([]), data_health: { feed: { status: 'healthy', last_success_at } } });
     expect(() => assertStaticBundle(health('n/a'))).toThrow(/last_success_at must be a date/);
     expect(assertStaticBundle(health(null)).data_health.feed.last_success_at).toBeNull();
+  });
+});
+
+// Spec §7.4: the two endpoints sync independently, so a failing feed never
+// takes the stored list of places with it.
+describe('syncNearby', () => {
+  const snapshot = { generated_at: '2026-09-02T00:00:00Z', source_status: 'healthy', source_last_success_at: null, activations: [] };
+  const serve = (dynamicOk: boolean): typeof fetch => async (input) =>
+    String(input).startsWith(DYNAMIC_SNAPSHOT_PATH)
+      ? dynamicOk ? Response.json(snapshot) : new Response('down', { status: 503 })
+      : Response.json(bundle([facility(1), facility(2)]));
+
+  it('stores both, then keeps the stored places when only the feed fails', async () => {
+    await db.delete();
+    await db.open();
+    expect(await syncNearby(serve(true))).toEqual({ staticSyncedNow: true, dynamicSyncedNow: true });
+    expect((await readNearbyCache()).facilities).toHaveLength(2);
+
+    expect(await syncNearby(serve(false))).toEqual({ staticSyncedNow: true, dynamicSyncedNow: false });
+    const cache = await readNearbyCache();
+    expect(cache.facilities).toHaveLength(2);
+    expect(cache.meta.dynamic_source_status).toBe('healthy'); // the last good snapshot stands
   });
 });

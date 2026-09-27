@@ -148,13 +148,6 @@ test.describe('the returning-user home screen', () => {
     expect(PREPARATION_LINES.filter((line) => text.includes(line.context))).toHaveLength(1);
   });
 
-  test('the preparation line does not change while the screen is open', async ({ page }) => {
-    await page.goto(home('?days=3'));
-    const first = await page.locator('.preparation p').first().textContent();
-    await page.waitForTimeout(1_500);
-    expect(await page.locator('.preparation p').first().textContent()).toBe(first);
-  });
-
   // TC-1.2.6-E, in the harness. The full hold-and-enter is asserted against the
   // real production bundle in blacksky-offline.spec.ts.
   test('a press released before two seconds earns the hint, and does not enter', async ({

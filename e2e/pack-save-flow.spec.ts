@@ -158,6 +158,9 @@ test('AC8 the same address asks, and replace atomically supersedes the previous 
   await searchConfirmAndReachOffer(page);
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
+  // Sampled only once the pack's own address is showing, never the wizard's.
+  const PACK_URL = /\/packs\/(?!new$)[^/]+$/;
+  await expect(page).toHaveURL(PACK_URL);
   const firstPackUrl = page.url();
 
   await page.goto('/packs/new');
@@ -178,7 +181,8 @@ test('AC8 the same address asks, and replace atomically supersedes the previous 
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await page.getByRole('button', { name: 'Open saved pack' }).click();
 
-  expect(page.url()).not.toBe(firstPackUrl);
+  await expect(page).toHaveURL(PACK_URL);
+  await expect(page).not.toHaveURL(firstPackUrl);
   await page.goto('/');
   await expect(page.locator('.pack-card')).toHaveCount(1);
   await expect(page.getByText(displayAddress(ADDRESS))).toBeVisible();

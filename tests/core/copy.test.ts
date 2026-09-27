@@ -148,6 +148,7 @@ describe('BlackSky bearing and distance figures', () => {
   it('shows metres under a kilometre, ten metre steps under ten, one decimal above', () => {
     expect(copy.distanceLabel(850)).toBe('850 m');
     expect(copy.distanceLabel(999.4)).toBe('999 m');
+    expect(copy.distanceLabel(999.6)).toBe('1.00 km'); // never '1000 m'
     expect(copy.distanceLabel(1120)).toBe('1.12 km');
     expect(copy.distanceLabel(2700)).toBe('2.70 km');
     expect(copy.distanceLabel(12_340)).toBe('12.3 km');

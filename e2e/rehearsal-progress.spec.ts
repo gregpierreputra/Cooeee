@@ -70,7 +70,7 @@ test.describe('AC2 what changed since the last rehearsal', () => {
         name: 'Your first rehearsal like this',
       }),
     ).toBeVisible();
-    await expect(progress(page)).not.toContainText('Compared with your rehearsal');
+    await expect(progress(page)).not.toContainText('Compared with');
   });
 
   // Every group is told apart by its heading, so removing colour removes

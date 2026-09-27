@@ -62,8 +62,10 @@ describe('formatDistanceM', () => {
     expect(formatDistanceM(850)).toBe('850 m');
   });
 
-  it('switches to kilometres at exactly 1000 m (inclusive)', () => {
-    expect(formatDistanceM(999)).toBe('1000 m'); // still the metres branch
+  it('switches to kilometres once the figure would read 1000 m', () => {
+    expect(formatDistanceM(994)).toBe('990 m');
+    expect(formatDistanceM(995)).toBe('1.0 km'); // never '1000 m'
+    expect(formatDistanceM(999)).toBe('1.0 km');
     expect(formatDistanceM(1000)).toBe('1.0 km');
     expect(formatDistanceM(1001)).toBe('1.0 km');
   });

@@ -12,7 +12,27 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   await page.clock.install();
   await acknowledgeFirstOpen(page);
   await page.goto('/');
-  await page.waitForTimeout(1000); // the site list is copied into IndexedDB on app start
+  // The site list is copied into IndexedDB on app start, and BlackSky reads it
+  // once, on arrival: wait for the copy itself rather than for a fixed time.
+  await expect.poll(() => page.evaluate(async () => {
+    // Opening a database the app has not made yet would make an empty one.
+    if (!(await indexedDB.databases()).some((db) => db.name === 'cooeee')) return false;
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open('cooeee');
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    try {
+      if (!database.objectStoreNames.contains('snapshots')) return false;
+      const count = database.transaction('snapshots').objectStore('snapshots').count();
+      return await new Promise<boolean>((resolve, reject) => {
+        count.onsuccess = () => resolve(count.result > 0);
+        count.onerror = () => reject(count.error);
+      });
+    } finally {
+      database.close();
+    }
+  })).toBe(true);
   // A typed address opens BlackSky only for a visit that never ended.
   await page.evaluate(() => localStorage.setItem('cooeee.blacksky.v1', 'latched'));
   await page.goto('/blacksky');

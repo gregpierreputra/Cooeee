@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as copy from '../../src/core/copy';
 import { REHEARSAL_CONDITIONS, conditionLabel } from '../../src/core/rehearsal-condition';
 import { barParts, isRunFor, type RehearsalRun } from '../../src/core/rehearsal-run';
+import { endRun, startRun } from '../../src/ui/Rehearsal/run-state';
 
 const run = (over: Partial<RehearsalRun> = {}): RehearsalRun => ({
   id: 'run-1',
@@ -76,11 +77,11 @@ describe('the shape of a run', () => {
   // written under. Neither is stored while the run is in progress, and there is
   // no progress field: progress that outlived the page would be a partial
   // result, which E5-US1-AC3 forbids.
+  // Asked of the run the app actually starts, not of this file's own factory.
   it('carries only what a finished record needs, and no progress', () => {
-    expect(Object.keys(run()).sort()).toEqual(['condition', 'id', 'packId', 'startedAt']);
-    expect(run()).not.toHaveProperty('progress');
-    expect(run()).not.toHaveProperty('finishedAt');
-    expect(run()).not.toHaveProperty('gaps');
+    const started = startRun('pack-1', 'no-data', 'run-1', 1);
+    endRun();
+    expect(Object.keys(started).sort()).toEqual(['condition', 'id', 'packId', 'startedAt']);
   });
 
   it('has no field for a second condition', () => {
