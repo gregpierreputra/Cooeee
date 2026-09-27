@@ -65,5 +65,3 @@ export function scoreBreakdown(packedIds: string[]): ScoreGroup[] {
   return groups;
 }
 
-/** How many essentials the house holds in all. */
-export const ESSENTIAL_COUNT = DRILL_ITEMS.filter((item) => item.weight >= 10).length;

@@ -96,13 +96,22 @@ describe('the pack the header reports', () => {
   });
 });
 
-// The line is chosen from whole days since the epoch, so every mount on the
-// same day returns the same line: navigating away and back cannot reshuffle it.
+// The line is chosen from whole Melbourne days since the epoch, so every mount
+// on the same day returns the same line: navigating away and back cannot
+// reshuffle it, and it moves on at local midnight rather than at 10 am.
 describe('preparation line selection', () => {
-  it('is stable for every instant within one day', () => {
-    const start = 12 * MS_PER_DAY;
-    expect(preparationLineIndex(start, 8)).toBe(4);
-    expect(preparationLineIndex(start + MS_PER_DAY - 1, 8)).toBe(4);
+  it('is stable for every instant within one Melbourne day', () => {
+    const midnight = Date.parse('2026-09-26T14:00:00Z'); // 00:00 AEST, 27 September
+    const index = preparationLineIndex(midnight, 8);
+    expect(preparationLineIndex(midnight + 10 * 3_600_000, 8)).toBe(index); // 10:00, when UTC turns
+    expect(preparationLineIndex(midnight + MS_PER_DAY - 1, 8)).toBe(index);
+    expect(preparationLineIndex(midnight + MS_PER_DAY, 8)).toBe((index + 1) % 8);
+    expect(preparationLineIndex(midnight - 1, 8)).toBe((index + 7) % 8);
+  });
+
+  it('turns at midnight in daylight saving time too', () => {
+    const midnight = Date.parse('2026-10-04T13:00:00Z'); // 00:00 AEDT, 5 October
+    expect(preparationLineIndex(midnight, 8)).toBe((preparationLineIndex(midnight - 1, 8) + 1) % 8);
   });
 
   it('moves on by one at the day boundary, and wraps at the end of the set', () => {

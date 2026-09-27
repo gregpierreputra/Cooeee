@@ -78,6 +78,8 @@ test('AC1 abandonment retains no edited or pending value', async ({ page }) => {
 
 test('AC1 keyboard order, focus and targets are accessible', async ({ page }) => {
   await page.goto(HARNESS_URL);
+  // React renders after the load event; a Tab pressed before then lands nowhere.
+  await expect(page.getByLabel('Place name')).toBeVisible();
 
   for (const target of [
     page.getByLabel('Place name'),

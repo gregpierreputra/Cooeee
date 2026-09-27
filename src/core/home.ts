@@ -40,14 +40,19 @@ export function headerAge(now: number, verifiedAt: number | null): HeaderAge {
     : { kind: 'checked', days, text: copy.CHECKED_DAYS_AGO(days) };
 }
 
+const melbourneDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Melbourne' });
+
 /** Which preparation line is shown, from a seed the screen captures once.
  *
- *  Whole days since the epoch, so the choice is the same for every mount on the
- *  same day: navigating away and back cannot reshuffle it, and no random source
- *  makes the screen untestable. Written to survive a seed before 1970 rather
- *  than return a negative index. */
+ *  Whole Melbourne calendar days since the epoch, so the choice is the same for
+ *  every mount on the same day and moves on at local midnight, not at 10 am when
+ *  the UTC day turns: navigating away and back cannot reshuffle it, and no
+ *  random source makes the screen untestable. Written to survive a seed before
+ *  1970 rather than return a negative index. */
 export function preparationLineIndex(seed: number, count: number): number {
-  return (((Math.floor(seed / MS_PER_DAY) % count) + count) % count);
+  // en-CA formats as YYYY-MM-DD, which parses back as that day's UTC midnight.
+  const day = Date.parse(melbourneDate.format(seed)) / MS_PER_DAY;
+  return ((day % count) + count) % count;
 }
 
 type PreparationLine = { text: string; context: string; source: string };

@@ -21,5 +21,8 @@ describe('assertStaticBundle', () => {
     expect(() => assertStaticBundle(bundle([{ ...facility(1), last_verified_at: 'last Tuesday' }])))
       .toThrow(/last_verified_at must be a date/);
     expect(() => assertStaticBundle({ ...bundle([]), generated_at: 'soon' })).toThrow(/generated_at must be a date/);
+    const health = (last_success_at: unknown) => ({ ...bundle([]), data_health: { feed: { status: 'healthy', last_success_at } } });
+    expect(() => assertStaticBundle(health('n/a'))).toThrow(/last_success_at must be a date/);
+    expect(assertStaticBundle(health(null)).data_health.feed.last_success_at).toBeNull();
   });
 });

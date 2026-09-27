@@ -1,4 +1,4 @@
-import { canonicalJson, exactTextBytes, offerMatchesStoredSize } from '../core/pack-offer';
+import { canonicalJson, canonicalOrder, exactTextBytes, offerMatchesStoredSize } from '../core/pack-offer';
 import { hasCompleteSource, prepareProvenancedContent, type OmittedItem } from '../core/provenance';
 import type {
   Pack,
@@ -53,7 +53,7 @@ async function createPreparedPackOffer(
     // In id order. The verification rebuilds this offer from the stored rows,
     // so both sides sort the same way and the order the files arrived in never
     // matters.
-    files: files.map(fileMeta).sort((left, right) => left.id.localeCompare(right.id)),
+    files: files.map(fileMeta).sort((left, right) => canonicalOrder(left.id, right.id)),
     fileBytes: files.reduce((sum, file) => sum + file.sizeBytes, 0),
     omittedItems,
     textManifest: await textManifest(content),

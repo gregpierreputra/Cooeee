@@ -1,6 +1,12 @@
 import * as copy from './copy';
 import type { Pack, PackOffer, TextPackContent } from './types';
 
+/** The one order every hashed or canonical form sorts by. Pinned to 'en', not the
+ *  device's language: a collation that follows the language (Czech sorts 'ch'
+ *  after 'h') would make a saved pack fail its check after a language change.
+ *  'en' is the root order the existing hashes were made with, so they stay valid. */
+export const canonicalOrder = new Intl.Collator('en').compare;
+
 type JsonValue = null | boolean | number | string | JsonValue[] | { 
   [key: string]: JsonValue 
 };
@@ -16,7 +22,7 @@ function canonicalValue(value: unknown): JsonValue {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
         .filter(([, child]) => child !== undefined)
-        .sort(([left], [right]) => left.localeCompare(right))
+        .sort(([left], [right]) => canonicalOrder(left, right))
         .map(([key, child]) => [key, canonicalValue(child)]),
     );
   }

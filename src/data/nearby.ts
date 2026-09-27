@@ -75,7 +75,9 @@ function assertHealth(value: unknown): DataHealth {
         id,
         {
           status: oneOf(r.status, STATUSES, `data_health.${id}.status`),
-          last_success_at: nullableText(r.last_success_at, `data_health.${id}.last_success_at`),
+          last_success_at: r.last_success_at === null || r.last_success_at === undefined
+            ? null
+            : dateText(r.last_success_at, `data_health.${id}.last_success_at`),
         },
       ];
     }),

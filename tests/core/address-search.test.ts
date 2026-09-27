@@ -51,6 +51,9 @@ describe('address search decisions', () => {
     ['AB', false],
     ['ABC', true],
     ['ABCD', true],
+    // Punctuation cleans to nothing, which would match every address.
+    ['!!!', false],
+    ['(a)', false],
   ])('requires at least three trimmed characters for %j', (query, expected) => {
     expect(addressQueryCanRun(query)).toBe(expected);
   });
