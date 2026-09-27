@@ -3,7 +3,7 @@
 // CFA. Writes public/data/nsp.v<date>.json and registers it in index.json.
 // Run: npm run build:data:nsp (only when the CFA list changes).
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 
 // The CFA's own page for the list: the source a saved place opens. The layer
 // behind it is what the script reads.
@@ -106,6 +106,9 @@ writeFileSync(new URL(file, outputDir), `${JSON.stringify(snapshot)}\n`);
 // index.json is shared with build-extent.mjs: merge this script's key, keep the rest.
 const indexUrl = new URL('index.json', outputDir);
 const index = existsSync(indexUrl) ? JSON.parse(readFileSync(indexUrl, 'utf8')) : {};
+// The file this one replaces is removed: the service worker precaches every
+// json under public/data, so a stale one would ride along on every device.
+if (index.nsp?.file && index.nsp.file !== file) rmSync(new URL(index.nsp.file, outputDir), { force: true });
 index.nsp = { file, retrievedAt };
 writeFileSync(indexUrl, `${JSON.stringify(index, null, 2)}\n`);
 

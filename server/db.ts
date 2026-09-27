@@ -46,16 +46,21 @@ const SOURCES: [id: string, name: string, kind: 'static' | 'dynamic', url: strin
 export function openDb(path: string): Db {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
-  // Per-connection settings (schema.sql repeats the first three for a plain
-  // `sqlite3 db < schema.sql` bootstrap). Incremental auto_vacuum only takes
-  // effect on an empty file, which is exactly when a new database gets it.
+  // Per-connection settings (schema.sql repeats journal_mode, foreign_keys and
+  // synchronous for a plain `sqlite3 db < schema.sql` bootstrap). auto_vacuum
+  // comes first: it only takes on a file whose header is not yet written, and
+  // switching to WAL writes it.
   db.exec(`
+    PRAGMA auto_vacuum = INCREMENTAL;
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
     PRAGMA synchronous = NORMAL;
     PRAGMA journal_size_limit = 1048576;
-    PRAGMA auto_vacuum = INCREMENTAL;
   `);
+  // A file made before that order was fixed has auto_vacuum off, so the daily
+  // incremental_vacuum did nothing. One VACUUM converts it, once.
+  const vacuum = db.prepare('PRAGMA auto_vacuum').get() as { auto_vacuum: number };
+  if (path !== ':memory:' && vacuum.auto_vacuum === 0) db.exec('PRAGMA auto_vacuum = INCREMENTAL; VACUUM');
   const exists = db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'facilities'").get();
   if (!exists) db.exec(readFileSync(SCHEMA_URL, 'utf8'));
   const seed = db.prepare(

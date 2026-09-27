@@ -137,9 +137,17 @@ export function applyFeed(db: Db, features: Feature[]): SyncCounts {
  *  failing, so a struggling feed is not hammered. */
 export function startPoller(db: Db, fetcher: typeof fetch = fetch): void {
   const tick = async (): Promise<void> => {
-    const ok = await runSync(db, SOURCE_ID, () => pollOnce(db, fetcher));
-    const delay = ok ? POLL_MS : Math.min(POLL_MS * 2 ** consecutiveFailures(db, SOURCE_ID), POLL_MAX_MS);
-    setTimeout(() => void tick(), delay);
+    // The next poll is scheduled whatever happens: a locked or full database
+    // throws out of runSync itself, and must not stop polling until a restart.
+    let delay = POLL_MAX_MS;
+    try {
+      const ok = await runSync(db, SOURCE_ID, () => pollOnce(db, fetcher));
+      delay = ok ? POLL_MS : Math.min(POLL_MS * 2 ** consecutiveFailures(db, SOURCE_ID), POLL_MAX_MS);
+    } catch (error) {
+      console.error('[poll]', error);
+    } finally {
+      setTimeout(() => void tick(), delay);
+    }
   };
   void tick();
 }

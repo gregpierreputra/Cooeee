@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 
 const WFS_URL = 'https://opendata.maps.vic.gov.au/geoserver/wfs';
 // Safety margin above the current 76 features so the layer can grow.
@@ -68,6 +68,9 @@ writeFileSync(new URL(file, outputDir), `${JSON.stringify(snapshot, null, 2)}\n`
 // index.json is shared with build-nsp.mjs: merge this script's key, keep the rest.
 const indexUrl = new URL('index.json', outputDir);
 const index = existsSync(indexUrl) ? JSON.parse(readFileSync(indexUrl, 'utf8')) : {};
+// The file this one replaces is removed: the service worker precaches every
+// json under public/data, so a stale one would ride along on every device.
+if (index.layerExtent?.file && index.layerExtent.file !== file) rmSync(new URL(index.layerExtent.file, outputDir), { force: true });
 index.layerExtent = { file, retrievedAt };
 writeFileSync(indexUrl, `${JSON.stringify(index, null, 2)}\n`);
 
