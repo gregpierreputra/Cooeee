@@ -26,6 +26,7 @@ import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
 import { Size } from '../../src/ui/PackNew/Size';
 import nspFixture from './nsp-fixture.json';
+import { roadsFixture } from './roads-fixture';
 import '../../src/ui/theme.css';
 
 declare global {
@@ -462,10 +463,21 @@ if (window.location.pathname === '/blacksky') {
     notes: [{ id: 'dial-note', packId: 'saved-pack', text: 'Gas is off at the meter.', updatedAt: savedPack.createdAt }],
     placesVerified: true,
   }];
+  // BS_Enhancement-AC5. `roads=fixture` hands the dial the synthetic roads file
+  // above; `roads=real` the committed state-wide file, for timing. Without it
+  // the screen uses its own cache-only reader, which finds nothing here (the
+  // harness has no service worker), so every other spec sees the plain dial.
+  const roadsMode = new URLSearchParams(window.location.search).get('roads');
+  const loadRoads = roadsMode === 'fixture'
+    ? async () => roadsFixture()
+    : roadsMode === 'real'
+      ? async () => (await fetch('/data/roads-vic.bin')).arrayBuffer()
+      : undefined;
   blackSkyFlow = (
     <>
       {dialMode ? (
         <BlackSky
+          {...(loadRoads ? { loadRoads } : {})}
           loadPacks={async () =>
             dialMode === 'pack' ? dialPacks
               : dialMode === 'pack-only' ? [{ ...dialPacks[0], places: [] }]
