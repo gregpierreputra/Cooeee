@@ -1576,6 +1576,8 @@ input {
   fill: currentColor;
   stroke: var(--map-mark);
   stroke-width: 1.5px;
+  /* 1.5 screen pixels, however the drop is scaled to the ring pin's size. */
+  vector-effect: non-scaling-stroke;
 }
 
 /* The disc is where the map is dragged: a clear layer the size of the disc (88 %

@@ -255,6 +255,12 @@ export const DIAL_ARROW_SCALE = 0.5;
  *  that share of the dial. */
 export const DIAL_LETTER_PX = 13;
 export const DIAL_PHONE_PX = 328;
+/** The place's pin on the ring, tip to top, on the phone's dial: 30 px. At
+ *  22 px, the size of the drop inside the disc, the ring pin read smaller than
+ *  a compass letter on the phone (28 Sep), and it is what the person turns to
+ *  bring under the notch. The drop inside the disc stays 22 px: there it sits
+ *  on the map among the roads. */
+export const DIAL_RING_PIN_PX = 30;
 /** Looking around the map by dragging it. The map may be moved at most this
  *  far from the person: far enough to see the next suburb, not so far that the
  *  person loses the map (the view itself is 1.5 km round them). */

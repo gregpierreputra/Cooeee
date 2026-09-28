@@ -136,8 +136,20 @@ test('the pin leaves the ring for its true spot when the place is inside the vie
   // The place is 2.60 km away, outside the 1.5 km view: the marker is on the ring.
   await expect.poll(() => pinAt(page)).toBe('ring');
   expect(await pinR(page)).toBeCloseTo(RING_R, 6);
-  // On the ring the pin is the same drop, amber, tip on the ring's line.
+  // On the ring the pin is the same drop, amber, tip on the ring's line: 30 px
+  // tall on the phone's 328 px dial (larger than the 22 px drop inside the
+  // disc), and in proportion on this one.
   await expect(page.locator('.blacksky-dial-pin .blacksky-dial-drop.on-ring')).toHaveCount(1);
+  const ringPin = await page.evaluate(() => {
+    const pin = document.querySelector('.blacksky-dial-drop.on-ring')!.getBoundingClientRect();
+    const notch = document.querySelector('.blacksky-dial-notch')!.getBoundingClientRect();
+    const dial = document.querySelector('.blacksky-dial')!.getBoundingClientRect();
+    return { height: pin.height, top: pin.top, notchBottom: notch.bottom, dial: dial.width };
+  });
+  expect(Math.abs(ringPin.height - (30 * ringPin.dial) / 328)).toBeLessThanOrEqual(1);
+  // The place is due north and the dial north up, so the pin is under the
+  // notch: tip meets tip on the ring's line, and the pin never rises into it.
+  expect(ringPin.top).toBeGreaterThanOrEqual(ringPin.notchBottom - 0.5);
 
   // About a kilometre south of the place: inside 1.5 km, so the drop comes in,
   // at 1.0 / 1.5 of the map's radius.

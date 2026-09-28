@@ -4,6 +4,7 @@ import {
   DIAL_ARROW_SCALE,
   DIAL_LETTER_PX,
   DIAL_PHONE_PX,
+  DIAL_RING_PIN_PX,
   ROADS_LABEL_PX,
   ROADS_LOCALITY_LETTER_SPACING_PX,
   ROADS_LOCALITY_PX,
@@ -50,10 +51,14 @@ const LETTER_SIZE = (DIAL_LETTER_PX * DIAL_UNITS) / DIAL_PHONE_PX;
 /** The ticks, in the same band, reaching in from the ring. */
 const TICK_R = [MAP_R + (RING_R - MAP_R) / 3, RING_R] as const;
 /** The pin on the ring, when the place is outside the view: the same drop as
- *  the one inside the disc, 22 px tall on the phone's dial, its tip on the
- *  ring's line and its body pointing in over the band (there is no room
- *  outside). Its height in the drawing's units, so it scales with the dial. */
-export const RING_DROP_UNITS = (22 * DIAL_UNITS) / DIAL_PHONE_PX;
+ *  the one inside the disc, DIAL_RING_PIN_PX tall on the phone's dial, its tip
+ *  on the ring's line and its body pointing in over the band and the disc's
+ *  edge (there is no room outside). Its height in the drawing's units, so it
+ *  scales with the dial. */
+export const RING_DROP_UNITS = (DIAL_RING_PIN_PX * DIAL_UNITS) / DIAL_PHONE_PX;
+/** The drop's path is drawn 22 units tall (see DROP); this scales it to the
+ *  ring pin's height. */
+const RING_DROP_SCALE = RING_DROP_UNITS / 22;
 /** The pin drawn at the place's own spot when it is inside the view: a drop
  *  with a hole, its tip on the spot. Drawn in screen pixels, 22 px tall and
  *  16 wide at any dial size. */
@@ -206,11 +211,11 @@ export default function BlackSkyDial({
             </g>
           </g>
         ) : (
-          // On the ring: the drop drawn in screen pixels at the phone's scale,
+          // On the ring: the drop at DIAL_RING_PIN_PX on the phone's dial,
           // turned tip out, so its point touches the ring at the bearing and
           // its body lies over the band. It turns with the bearing, like the
           // marker it replaced.
-          <g transform={`translate(0 ${-RING_R}) scale(${DIAL_UNITS / DIAL_PHONE_PX} ${-DIAL_UNITS / DIAL_PHONE_PX})`}>
+          <g transform={`translate(0 ${-RING_R}) scale(${RING_DROP_SCALE} ${-RING_DROP_SCALE})`}>
             <path className="blacksky-dial-drop on-ring" d={DROP} fillRule="evenodd" />
           </g>
         )}
