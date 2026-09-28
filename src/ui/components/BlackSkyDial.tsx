@@ -49,10 +49,11 @@ export const LETTER_R = MAP_R + 2.5;
 const LETTER_SIZE = (DIAL_LETTER_PX * DIAL_UNITS) / DIAL_PHONE_PX;
 /** The ticks, in the same band, reaching in from the ring. */
 const TICK_R = [MAP_R + (RING_R - MAP_R) / 3, RING_R] as const;
-/** The marker on the ring, when the place is outside the view. It sits across
- *  the ring and so reaches a little outside the box; the gap round the dial
- *  takes that. */
-export const MARKER_R = 9;
+/** The pin on the ring, when the place is outside the view: the same drop as
+ *  the one inside the disc, 22 px tall on the phone's dial, its tip on the
+ *  ring's line and its body pointing in over the band (there is no room
+ *  outside). Its height in the drawing's units, so it scales with the dial. */
+export const RING_DROP_UNITS = (22 * DIAL_UNITS) / DIAL_PHONE_PX;
 /** The pin drawn at the place's own spot when it is inside the view: a drop
  *  with a hole, its tip on the spot. Drawn in screen pixels, 22 px tall and
  *  16 wide at any dial size. */
@@ -205,10 +206,13 @@ export default function BlackSkyDial({
             </g>
           </g>
         ) : (
-          <>
-            <circle cy={-RING_R} r={MARKER_R} />
-            <circle className="blacksky-dial-pin-eye" cy={-RING_R} r={MARKER_R * 0.36} />
-          </>
+          // On the ring: the drop drawn in screen pixels at the phone's scale,
+          // turned tip out, so its point touches the ring at the bearing and
+          // its body lies over the band. It turns with the bearing, like the
+          // marker it replaced.
+          <g transform={`translate(0 ${-RING_R}) scale(${DIAL_UNITS / DIAL_PHONE_PX} ${-DIAL_UNITS / DIAL_PHONE_PX})`}>
+            <path className="blacksky-dial-drop on-ring" d={DROP} fillRule="evenodd" />
+          </g>
         )}
       </g>
     </svg>

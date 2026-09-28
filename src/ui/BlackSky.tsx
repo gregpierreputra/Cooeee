@@ -49,6 +49,7 @@ import {
   FIX_PUBLISH_M,
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
+  HOLD_LEAVE_VIBRATE_MS,
   ROADS_LABEL_PX,
   ROADS_PAN_RETURN_MS,
   ROADS_PAN_TAP_PX,
@@ -78,7 +79,7 @@ import BlackSkyDial, {
   DIAL_UNITS,
   LETTER_R,
   MAP_R,
-  MARKER_R,
+  RING_DROP_UNITS,
   RING_R,
   type DialMapLayer,
 } from './components/BlackSkyDial';
@@ -521,18 +522,18 @@ export default function BlackSky({
 
   return (
     <main className="page blacksky">
-      {/* The top bar: the mode's name, and the one way out at its right-hand end.
-          US3-AC1: leaving demands the same deliberate 2s hold as entering, so a
-          pocket press cannot silently drop the emergency screen.
-          The control used to be a full-width bar at the foot of the screen, at
-          thumb reach. It moved up here because the foot of the screen is worth
-          more to the person than to the exit: that is where the other places
-          and their own notes are read. A top corner is easier to brush by
-          accident than the foot, but it is the 2s hold, not the position, that
-          guards a pocket press, and the hold is unchanged: the same HoldButton,
-          the same fill, the same hint. The bar stands clear of the top edge of
-          the phone (see .blacksky in the stylesheet), where the system's own
-          pull-down lives.
+      {/* The top bar: the one way out, a full-width hold, with the mode's name
+          over its right-hand end. US3-AC1: leaving demands the same deliberate
+          2s hold as entering, so a pocket press cannot silently drop the
+          emergency screen. The control was a full-width bar at the foot of the
+          screen, then a small pill at the top right to leave the foot to the
+          places and notes; on a phone a finger on the pill hid it, so nobody
+          could see whether the hold was working (phone test, 28 Sep). It is a
+          full-width bar again, at the top, where the pill's row was, and the
+          fill sweeping past both sides of the thumb shows the hold going. The
+          same HoldButton, the same 2s, the same drift margin, the same hint.
+          The bar stands clear of the top edge of the phone (see .blacksky in
+          the stylesheet), where the system's own pull-down lives.
           The hint, and the notice that says why BlackSky is still open, are
           laid out UNDER the bar by the stylesheet. Appearing there they push
           the page down, never the button: a hint that moved the button would
@@ -543,6 +544,9 @@ export default function BlackSky({
           leaves to Home; the kept rehearsal is asked about on the pack's next
           visit. Upgrade path: look the unfinished row up on leave. */}
       <header className="blacksky-topbar">
+        {/* The mode's name sits over the bar's right-hand end: seen, never
+            touched (the whole bar is the hold), and not part of the button's
+            name. */}
         <h1 className="kicker blacksky-title">{copy.BLACKSKY_TITLE}</h1>
         <HoldButton
           onHold={() => {
@@ -551,11 +555,13 @@ export default function BlackSky({
             navigate(run ? `/rehearse/${run.packId}` : '/', { replace: true });
           }}
           hint={copy.HOLD_TO_LEAVE}
+          className="blacksky-leave-bar"
+          vibrateMs={HOLD_LEAVE_VIBRATE_MS}
         >
-          {/* The pill is what is SEEN: small, quiet, never louder than the title
-              beside it, because leaving is the last thing this screen is for.
-              The button around it is what is TOUCHED, and stays 44 px high. */}
-          <span className="blacksky-leave-pill">{copy.LEAVE_BLACKSKY}</span>
+          {/* E3-US3-AC1, restored after the phone test: the full width of the
+              screen is the hold, so a thumb on it covers only a part and the
+              fill can be seen sweeping past both sides of it. */}
+          <span className="blacksky-leave-label">{copy.LEAVE_BLACKSKY}</span>
         </HoldButton>
         {notice ? (
           <p className="muted blacksky-hold-hint" role="status">
@@ -1048,7 +1054,9 @@ function dialObstacles(
       y: -LETTER_R * Math.cos((deg * Math.PI) / 180),
       r: (RING_R - MAP_R) / 2 + 1,
     })),
-    ...(placePx === null ? [along(RING_R, MARKER_R + 1)] : []),
+    // The drop on the ring, tip on the ring's line and body pointing in: it
+    // reaches over the band into the disc's edge.
+    ...(placePx === null ? [along(RING_R - RING_DROP_UNITS / 2, RING_DROP_UNITS / 2 + 1)] : []),
   ].map(({ x, y, r }) => ({ x: x * pxPerUnit, y: y * pxPerUnit, r: r * pxPerUnit }));
   // The drop stands upright on the screen whichever way the map has turned,
   // so all of its 22 px round its tip is kept clear.

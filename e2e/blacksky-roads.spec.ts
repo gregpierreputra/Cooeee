@@ -136,7 +136,8 @@ test('the pin leaves the ring for its true spot when the place is inside the vie
   // The place is 2.60 km away, outside the 1.5 km view: the marker is on the ring.
   await expect.poll(() => pinAt(page)).toBe('ring');
   expect(await pinR(page)).toBeCloseTo(RING_R, 6);
-  await expect(page.locator('.blacksky-dial-pin circle')).toHaveCount(2);
+  // On the ring the pin is the same drop, amber, tip on the ring's line.
+  await expect(page.locator('.blacksky-dial-pin .blacksky-dial-drop.on-ring')).toHaveCount(1);
 
   // About a kilometre south of the place: inside 1.5 km, so the drop comes in,
   // at 1.0 / 1.5 of the map's radius.
@@ -148,7 +149,7 @@ test('the pin leaves the ring for its true spot when the place is inside the vie
   // browser's box also takes in its 2.5 px amber edge.
   const drop = page.locator('.blacksky-dial-drop');
   await expect(drop).toHaveCount(1);
-  await expect(page.locator('.blacksky-dial-pin circle')).toHaveCount(0);
+  await expect(page.locator('.blacksky-dial-drop.on-ring')).toHaveCount(0);
   const dropBox = (await drop.boundingBox())!;
   expect(dropBox.height).toBeGreaterThanOrEqual(22);
   expect(dropBox.height).toBeLessThanOrEqual(25);
@@ -269,7 +270,9 @@ test('Empty: without the roads file the dial is the plain dial, and nothing else
   await expect(page.locator('.blacksky-dial-frame button')).toHaveCount(0);
   await expect(page.locator('.blacksky-dial-pan')).toHaveCount(0);
   expect(await pinAt(page)).toBe('ring');
-  await expect(page.locator('.blacksky-dial-drop')).toHaveCount(0);
+  // The place's pin is the drop on the ring, as on the plain dial it always is.
+  await expect(page.locator('.blacksky-dial-drop.on-ring')).toHaveCount(1);
+  await expect(page.locator('.blacksky-dial-drop:not(.on-ring)')).toHaveCount(0);
 });
 
 test('About names the road data under its licence', async ({ page }) => {

@@ -126,6 +126,12 @@ export const HOLD_MS = 2_000;
 // real phones. 24 px is about half a fingertip, and the smallest target WCAG
 // 2.5.8 accepts: a pointer further off than that is no longer on this control.
 export const HOLD_LEAVE_MARGIN_PX = 24;
+// The buzz when a hold completes, where the phone has one: the cue for a finger
+// that cannot see the control under it. Entering is a longer buzz, a door into
+// another screen; leaving BlackSky a short one, so it is felt, not startling
+// (from the phone test, 28 Sep).
+export const HOLD_VIBRATE_MS = 100;
+export const HOLD_LEAVE_VIBRATE_MS = 40;
 // How long the line saying BlackSky was not opened stays on screen.
 export const BLOCKED_NOTICE_MS = 8_000;
 export const TICK_MS = 5_000;

@@ -99,13 +99,13 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
     return {
       distance: px(document.querySelector('.blacksky-figure-main')!),
       largest: Math.max(...withText.map(px)),
-      // Under 16 px on purpose: the small labels, the things set quiet at 14 px
-      // so they never compete with the figure (the Leave pill and the compass
-      // point), and the suburb line, set at 15 px so the dial can fill the
-      // width. Anything else under 16 px is a mistake.
+      // Under 16 px on purpose: the small labels (the mode's name over the
+      // Leave bar among them), the compass point, set quiet at 14 px so it
+      // never competes with the figure, and the suburb line, set at 15 px so
+      // the dial can fill the width. Anything else under 16 px is a mistake.
       smallNotLabels: withText.filter(
         (el) =>
-          px(el) < 16 && !el.closest('.kicker, .blacksky-leave-pill, .blacksky-figure-point, .blacksky-dial-head p'),
+          px(el) < 16 && !el.closest('.kicker, .blacksky-figure-point, .blacksky-dial-head p'),
       ).length,
       smallTargets: [...document.querySelectorAll('main button, main summary')]
         .map((el) => el.getBoundingClientRect())
@@ -165,37 +165,56 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
   await expect(label(page)).toHaveText('PLACE OF LAST RESORT');
 });
 
-// The Leave control is a compact pill in the top bar, not a bar at the foot of
-// the screen: the foot goes to the places and the notes. What guards a pocket
-// press is the two-second hold, which is unchanged (blacksky-offline,
-// blacksky-history and rehearsal-journey hold it to leave; here, its place).
-test('Leave sits in the top bar, clear of the top edge, and its hint never moves it', async ({ page }) => {
+// The Leave control is a hold across the full width of the top bar (E3-US3-AC1,
+// restored after the phone test of 28 Sep: a finger on the old pill hid it).
+// What guards a pocket press is the two-second hold, which is unchanged
+// (blacksky-offline, blacksky-history and rehearsal-journey hold it to leave;
+// here, its place and its look).
+test('Leave is the full-width bar at the top, clear of the top edge, and its hint never moves it', async ({
+  page,
+}) => {
   await openDial(page, 'pack');
   await pushPosition(page, AT_FERNY_CREEK);
 
   const leave = page.getByRole('button', { name: 'Hold to leave', exact: true });
   await expect(leave).toHaveCount(1); // the one way out, and no second one at the foot
   await expect(leave).toHaveText(LEAVE_BLACKSKY);
+  await expect(page.locator('.blacksky-leave-pill')).toHaveCount(0);
   const before = (await leave.boundingBox())!;
-  const title = (await page.getByRole('heading', { name: 'BlackSky', level: 1 }).boundingBox())!;
+  // The words of the title, not its box: the box spans the bar, so its sweep
+  // lines up with the fill's.
+  const title = await page.getByRole('heading', { name: 'BlackSky', level: 1 }).evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const box = range.getBoundingClientRect();
+    return { x: box.x, y: box.y, width: box.width, height: box.height };
+  });
   const dial = (await page.locator('.blacksky-dial').boundingBox())!;
   const main = await page.locator('main').evaluate((el) => {
     const box = el.getBoundingClientRect();
     const style = getComputedStyle(el);
-    return { right: box.right - parseFloat(style.paddingRight) };
+    return { left: box.left + parseFloat(style.paddingLeft), right: box.right - parseFloat(style.paddingRight) };
   });
 
-  // Beside the title, at the right-hand end of the bar, above everything else.
-  expect(before.y + before.height / 2).toBeGreaterThan(title.y);
-  expect(before.y + before.height / 2).toBeLessThan(title.y + title.height);
-  expect(before.x).toBeGreaterThan(title.x + 60);
+  // The full content width, 48 px high, above everything else, with a gap
+  // from the top edge of the phone, where the system's pull-down lives.
+  expect(Math.abs(before.x - main.left)).toBeLessThanOrEqual(1);
   expect(Math.abs(before.x + before.width - main.right)).toBeLessThanOrEqual(1);
-  expect(before.y + before.height).toBeLessThan(dial.y);
-  // A compact pill, still a full-size target, with a gap from the top edge of
-  // the phone, where the system's pull-down lives.
-  expect(before.height).toBeGreaterThanOrEqual(44);
-  expect(before.width).toBeLessThan(200);
+  expect(Math.round(before.height)).toBe(48);
   expect(before.y).toBeGreaterThanOrEqual(24);
+  expect(before.y + before.height).toBeLessThan(dial.y);
+  // The mode's name sits over the bar's right-hand end, and is not in its way:
+  // a press there is a press on the bar.
+  expect(title.x).toBeGreaterThan(before.x + before.width / 2);
+  expect(title.y).toBeGreaterThanOrEqual(before.y);
+  expect(title.y + title.height).toBeLessThanOrEqual(before.y + before.height);
+  expect(
+    await page.getByRole('heading', { name: 'BlackSky', level: 1 }).evaluate((el) => getComputedStyle(el).pointerEvents),
+  ).toBe('none');
+  // One line, 16 px, on the bar.
+  expect(
+    await page.locator('.blacksky-leave-label').evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
+  ).toBe(16);
 
   // A tap is not a hold: it earns the hint, under the bar, and the button has
   // not moved by a pixel, so a finger that then holds is still on it.
@@ -205,6 +224,61 @@ test('Leave sits in the top bar, clear of the top edge, and its hint never moves
   expect(await leave.boundingBox()).toEqual(before);
   expect((await hint.boundingBox())!.y).toBeGreaterThanOrEqual(before.y + before.height);
   expect(await hint.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
+});
+
+test('while held, the fill sweeps the whole bar at 3 to 1 or more, and the phone buzzes 40 ms on leaving', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    (window as unknown as { __buzz: number[] }).__buzz = [];
+    Object.defineProperty(Navigator.prototype, 'vibrate', {
+      configurable: true,
+      value: (ms: number) => {
+        (window as unknown as { __buzz: number[] }).__buzz.push(ms);
+        return true;
+      },
+    });
+  });
+  await openDial(page, 'pack');
+  await pushPosition(page, AT_FERNY_CREEK);
+  const leave = page.getByRole('button', { name: 'Hold to leave', exact: true });
+  const box = (await leave.boundingBox())!;
+
+  // The fill: the full height of the bar, from its left end, in the mode's
+  // amber against the bar's black.
+  const look = await leave.evaluate((el) => {
+    const style = getComputedStyle(el);
+    const rgb = (text: string) => text.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+    const luminance = ([r, g, b]: number[]) => {
+      const lin = (c: number) => (c / 255 <= 0.03928 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    };
+    const fill = luminance(rgb(style.backgroundImage));
+    const bar = luminance(rgb(style.backgroundColor));
+    return {
+      contrast: (Math.max(fill, bar) + 0.05) / (Math.min(fill, bar) + 0.05),
+      size: style.backgroundSize,
+      position: style.backgroundPosition,
+    };
+  });
+  expect(look.contrast).toBeGreaterThanOrEqual(3);
+  expect(look.size).toBe('0% 100%');
+  expect(look.position).toBe('0% 50%');
+
+  // Half way through the hold the fill is part of the way across, both ends of
+  // the bar in view beside the finger.
+  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(1_000);
+  const part = await leave.evaluate((el) => parseFloat(getComputedStyle(el).backgroundSize));
+  expect(part).toBeGreaterThan(20);
+  expect(part).toBeLessThan(80);
+  // Held on to the end: the hold completes with one short buzz, and BlackSky
+  // is left (blacksky-offline and blacksky-history see the leaving itself).
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz), { timeout: 5_000 })
+    .toEqual([40]);
+  await page.mouse.up();
 });
 
 // A Samsung in Chrome is about 360 px wide: the narrowest phone the layout is
@@ -351,30 +425,11 @@ test.describe('on a 360 by 660 screen', () => {
     expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
   });
 
-  test('the Leave pill looks quiet and is still a 44 px target', async ({ page }) => {
+  test('the Leave bar is a full-width 48 px target', async ({ page }) => {
     await open(page, 'pack', AT_FERNY_CREEK);
     const target = (await page.getByRole('button', { name: LEAVE_BLACKSKY, exact: true }).boundingBox())!;
-    expect(target.height).toBeGreaterThanOrEqual(44);
-    const look = await page.locator('.blacksky-leave-pill').evaluate((pill) => {
-      const style = getComputedStyle(pill);
-      const title = getComputedStyle(document.querySelector('.blacksky-title')!);
-      return {
-        fontSize: parseFloat(style.fontSize),
-        fontWeight: Number(style.fontWeight),
-        titleWeight: Number(title.fontWeight),
-        sameColourAsMuted: style.color === getComputedStyle(document.querySelector('.blacksky-dial-head p')!).color,
-        borderWidth: style.borderTopWidth,
-        filled: style.backgroundSize !== '0% 100%',
-        height: pill.getBoundingClientRect().height,
-      };
-    });
-    expect(look.fontSize).toBe(14);
-    expect(look.fontWeight).toBe(400);
-    expect(look.fontWeight).toBeLessThan(look.titleWeight); // never louder than the title
-    expect(look.sameColourAsMuted).toBe(true);
-    expect(look.borderWidth).toBe('1px');
-    expect(look.filled).toBe(false); // no fill until pressed
-    expect(look.height).toBeLessThan(target.height); // the look is smaller than the target
+    expect(Math.round(target.height)).toBe(48);
+    expect(Math.round(target.width)).toBe(360 - 32);
   });
 
   test('the compass point is a full word that overlaps nothing beside 12.3 km', async ({ page }) => {
