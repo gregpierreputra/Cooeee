@@ -132,6 +132,13 @@ export const TICK_MS = 5_000;
 // A position this far from the one on screen is shown at once, not at the next
 // tick. Smaller moves are sensor noise and wait, which saves the battery.
 export const FIX_PUBLISH_M = 5;
+/** The readout's steadiness (28 Sep review): the distance and the compass point
+ *  on screen change only when the place, as seen from the new position, has
+ *  moved by more than the position's own error (its accuracy), and never for
+ *  less than this. Below that the change is the fix wobbling, and a figure
+ *  that flickers between 2.60 and 2.61 km while the phone lies still reads as
+ *  movement that is not there. The voice keeps its own rule. */
+export const READOUT_MIN_CHANGE_M = FIX_PUBLISH_M;
 // A position watch that has said nothing for this long is started again: some
 // phones stop delivering positions without reporting any error.
 export const WATCH_RESTART_MS = 15_000;

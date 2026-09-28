@@ -484,3 +484,40 @@ test('Unavailable: with no position the no-fix reference screen shows, unchanged
   await expect(page.getByText('GPS signal lost')).toBeHidden();
   await expect(page.getByText('Gas is off at the meter.')).toBeHidden();
 });
+
+// A laptop or a tablet (28 Sep review). A laptop's position is usually vague,
+// so the figure carries "about" over it; in a fixed 48 px row that spilled up
+// over the place's name. And the dial grows past a phone's 360 px, up to the
+// height the other rows leave, so it is not a small circle in a large window.
+for (const size of [
+  { width: 1280, height: 800 },
+  { width: 1024, height: 768 },
+]) {
+  test(`at ${size.width} by ${size.height}, nothing overlaps and the dial is larger than a phone's`, async ({
+    page,
+  }) => {
+    await openDial(page, 'pack');
+    await page.setViewportSize(size);
+    await pushPosition(page, { ...AT_FERNY_CREEK, accuracy: 400 });
+    await expect(page.locator('.blacksky-dial-about')).toBeVisible();
+    const edges = await page.evaluate(() =>
+      ['.blacksky-dial-head', '.blacksky-dial-figures', '.blacksky-dial', '.blacksky-others', '.blacksky-notes summary'].map(
+        (selector) => {
+          const box = document.querySelector(selector)!.getBoundingClientRect();
+          return [box.top, box.bottom];
+        },
+      ),
+    );
+    for (let i = 1; i < edges.length; i += 1) expect(edges[i][0]).toBeGreaterThanOrEqual(edges[i - 1][1] - 0.5);
+    // "about" sits inside its row, under the name block.
+    const [about, head] = await Promise.all([
+      page.locator('.blacksky-dial-about').boundingBox(),
+      page.locator('.blacksky-dial-head').boundingBox(),
+    ]);
+    expect(about!.y).toBeGreaterThanOrEqual(head!.y + head!.height - 0.5);
+    const dial = (await page.locator('.blacksky-dial').boundingBox())!;
+    expect(dial.width).toBeGreaterThan(400);
+    expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
+    await expect(page.locator('.blacksky-notes summary')).toBeInViewport({ ratio: 1 });
+  });
+}

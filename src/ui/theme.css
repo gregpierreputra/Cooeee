@@ -1100,6 +1100,26 @@ input {
   }
 }
 
+/* A screen wider than any phone (a laptop, a tablet): the dial grows past
+   360 px, up to the height the other rows leave and the page's width, so it is
+   not a small circle in a large window. The body takes the screen's height as
+   on a short phone, and the dial's row is the flexible one. Phones never see
+   this: their layout is the one above. */
+@media (min-width: 701px) {
+  .blacksky-dial-body {
+    grid-template-rows: auto auto minmax(calc(300px + var(--under-h)), 1fr);
+    height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    min-height: min-content;
+  }
+
+  /* The slot in the selector: this must beat the frame's own rule, later in
+     the file, which holds a phone's dial to 360 px. */
+  .blacksky-dial-slot .blacksky-dial-frame {
+    width: min(100cqw, calc(100cqh - var(--under-h)));
+  }
+}
+
 .blacksky-dial-head {
   display: grid;
   gap: 0.125rem;
@@ -1132,9 +1152,12 @@ input {
   margin: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) 48px;
-  /* 48 px high, the speaker button's height; a marked position's longer
-     readout takes a row of its own below. */
-  grid-template-rows: 48px;
+  /* 48 px high, the speaker button's height, and taller only when it must:
+     with "about" over the figure the cell is taller than 48 px, and a fixed
+     row let it spill upwards over the place's name (found on a laptop, whose
+     position is usually vague). A marked position's longer readout takes a
+     row of its own below. */
+  grid-template-rows: minmax(48px, auto);
   align-items: end;
   gap: 0 0.5rem;
   color: var(--accent);

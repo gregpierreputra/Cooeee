@@ -60,6 +60,7 @@ import * as copy from '../core/copy';
 import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { titleCase } from '../core/home';
 import { isPanned, NO_PAN, panOffset, panShouldReturn, type PanOffset } from '../core/pan';
+import { steadyReadout, type ShownReadout } from '../core/readout';
 import {
   decodeRoads,
   drawRoads,
@@ -472,6 +473,7 @@ export default function BlackSky({
           )
         }
         readoutLong={screen.kind === 'OUT_OF_AREA'}
+        accuracyM={estimate ? estimate.accuracyM : confidence!.accuracyM}
         compass={compass}
         // BS_Enhancement-AC3: the speaker button, at the right-hand end of the
         // distance row, outlined when off and filled when on. Unavailable: no
@@ -736,6 +738,7 @@ function DialBody({
   trust,
   readout,
   readoutLong = false,
+  accuracyM,
   compass,
   rowEnd,
   caption,
@@ -748,6 +751,8 @@ function DialBody({
   /** The readout is a sentence or two, not "± 10 m": it takes the full width
    *  under the figures. */
   readoutLong?: boolean;
+  /** How far the position may be out, metres: the readout holds still within it. */
+  accuracyM: number;
   compass: {
     live: boolean;
     needsPermission: boolean;
@@ -784,9 +789,19 @@ function DialBody({
     return () => clearTimeout(timer);
   }, [panned, offset, lastTouchAt]);
   const { site, line } = siteNameBlock(first.name);
-  const distance = copy.distanceLabel(first.distanceM);
+  // The distance and the compass point hold still while the position only
+  // wobbles within its error (core/readout.ts); the arrow and the pin follow
+  // every fix, and the voice keeps its own rule.
+  const shownRef = useRef<ShownReadout | null>(null);
+  const shown = steadyReadout(
+    shownRef.current,
+    { placeId: first.id, distanceM: first.distanceM, bearingDeg: first.bearingDeg },
+    accuracyM,
+  );
+  shownRef.current = shown;
+  const distance = copy.distanceLabel(shown.distanceM);
   const [figure, unit] = distance.split(' '); // "12.3 km": always a number, a space, a unit
-  const point = cardinalPoint(first.bearingDeg);
+  const point = cardinalPoint(shown.bearingDeg);
   return (
     <section className="blacksky-dial-body">
       <div className="blacksky-dial-head">
