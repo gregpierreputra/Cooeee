@@ -198,12 +198,19 @@ const backToMe = (page: Page) => page.getByRole('button', { name: MAP_RETURN_BUT
 const arrowAt = (page: Page) =>
   page.locator('.blacksky-dial-at').first().evaluate((el) => getComputedStyle(el).transform);
 
+const dialBox = (page: Page) =>
+  page.locator('.blacksky-dial').evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    return [box.x, box.y, box.width, box.height].map((v) => Math.round(v * 10) / 10);
+  });
+
 test('a drag moves the map and the arrow with it; Back to me puts the person back', async ({ page }) => {
   await openRoads(page, 'fixture');
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(roads(page).first()).toBeAttached();
   await expect.poll(() => panOf(page)).toBe('0 0');
   await expect(backToMe(page)).toHaveCount(0);
+  const still = await dialBox(page);
 
   // A small move is a tap, and a tap does nothing.
   await drag(page, 4, 0);
@@ -222,10 +229,49 @@ test('a drag moves the map and the arrow with it; Back to me puts the person bac
   await expect(backToMe(page)).toBeVisible();
   // The ring's pin keeps its bearing from the person: the compass does not pan.
   expect(await page.locator('.blacksky-dial-pin').getAttribute('data-at')).toBe('ring');
+  // The dial is exactly where and as large as it was: the button lies over its
+  // foot, centred, its bottom on the frame's, 44 px high, and takes no room.
+  expect(await dialBox(page)).toEqual(still);
+  const [frame, button] = await Promise.all([
+    page.locator('.blacksky-dial-frame').boundingBox(),
+    backToMe(page).boundingBox(),
+  ]);
+  expect(Math.round(button!.height)).toBe(44);
+  expect(Math.abs(button!.y + button!.height - (frame!.y + frame!.height))).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(button!.x + button!.width / 2 - (frame!.x + frame!.width / 2))).toBeLessThanOrEqual(0.5);
+  // Reached from the keyboard too: it is an ordinary button in the tab order.
+  await backToMe(page).focus();
+  await expect(backToMe(page)).toBeFocused();
 
   await backToMe(page).click();
   await expect.poll(() => panOf(page)).toBe('0 0');
   await expect(backToMe(page)).toHaveCount(0);
+  expect(await dialBox(page)).toEqual(still);
+});
+
+// On a 360 by 660 phone the button once took a row out of the dial's slot, and
+// the dial shrank from 328 to 302 px as a drag began. Never again: before, during
+// and after, the dial's box is the same.
+test('on a 360 by 660 phone the dial keeps its size through a drag and Back to me', async ({ page }) => {
+  await openRoads(page, 'fixture');
+  await page.setViewportSize({ width: 360, height: 660 });
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(roads(page).first()).toBeAttached();
+  const before = await dialBox(page);
+  expect(before[2]).toBe(328);
+  const disc = (await page.locator('.blacksky-dial-pan').boundingBox())!;
+  const x = disc.x + disc.width / 2;
+  const y = disc.y + disc.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 40, y, { steps: 4 });
+  await expect(backToMe(page)).toBeVisible();
+  expect(await dialBox(page)).toEqual(before); // during the drag
+  await page.mouse.up();
+  expect(await dialBox(page)).toEqual(before);
+  await backToMe(page).click();
+  await expect(backToMe(page)).toHaveCount(0);
+  expect(await dialBox(page)).toEqual(before); // after Back to me
 });
 
 test('a new position while dragged leaves the map where it was dragged', async ({ page }) => {

@@ -1114,21 +1114,15 @@ input {
 }
 
 .blacksky-dial-body {
-  /* The "Back to me" button under the dial, while it shows. */
-  --under-h: 0px;
   display: grid;
   gap: 6px;
-  grid-template-rows: auto auto calc(min(360px, 100vw - 2rem) + var(--under-h));
+  grid-template-rows: auto auto min(360px, calc(100vw - 2rem));
   grid-auto-rows: auto;
-}
-
-.blacksky-dial-body:has(.blacksky-map-return) {
-  --under-h: 44px;
 }
 
 @media (max-height: 700px) {
   .blacksky-dial-body {
-    grid-template-rows: auto auto minmax(calc(300px + var(--under-h)), 1fr);
+    grid-template-rows: auto auto minmax(300px, 1fr);
     height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
@@ -1142,7 +1136,7 @@ input {
    this: their layout is the one above. */
 @media (min-width: 701px) {
   .blacksky-dial-body {
-    grid-template-rows: auto auto minmax(calc(300px + var(--under-h)), 1fr);
+    grid-template-rows: auto auto minmax(300px, 1fr);
     height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
@@ -1151,7 +1145,7 @@ input {
   /* The slot in the selector: this must beat the frame's own rule, later in
      the file, which holds a phone's dial to 360 px. */
   .blacksky-dial-slot .blacksky-dial-frame {
-    width: min(100cqw, calc(100cqh - var(--under-h)));
+    width: min(100cqw, 100cqh);
   }
 }
 
@@ -1297,7 +1291,7 @@ input {
 
 .blacksky-dial-frame {
   position: relative;
-  width: min(100cqw, calc(100cqh - var(--under-h)), 360px);
+  width: min(100cqw, 100cqh, 360px);
   aspect-ratio: 1;
 }
 
@@ -1600,11 +1594,19 @@ input {
   cursor: grabbing;
 }
 
-/* "Back to me", a pill under the dial while the map is dragged, in the dial's
-   own slot; 44 px high, the smallest target on this screen. */
+/* "Back to me", a pill over the dial's foot while the map is dragged: centred,
+   its bottom edge on the frame's, over the black band under the S. Out of the
+   page's flow, so the dial never changes size for it. The ring's line may pass
+   behind it; the solid ground the tags have keeps the line out of the words.
+   44 px high, the smallest target on this screen. */
 .blacksky-map-return {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 1;
   box-sizing: border-box;
-  height: var(--under-h);
+  height: 44px;
   min-height: 0;
   padding: 0 1.25rem;
   border: 1px solid var(--accent);
@@ -1612,6 +1614,7 @@ input {
   background: var(--bg);
   color: var(--accent);
   font-size: var(--step-0);
+  white-space: nowrap;
 }
 
 /* ── Voice (BS_Enhancement-AC3) ────────────────────────────────────────────

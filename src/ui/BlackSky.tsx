@@ -868,14 +868,18 @@ function DialBody({
               over the foot of the dial, for as long as they are being said. Not
               a live region: a screen reader would say them on top of the voice. */}
           {caption ? <p className="blacksky-caption">{caption}</p> : null}
+          {/* While the map is dragged away from the person: one tap puts them
+              back at the centre. Over the dial's foot, not in a row of its own:
+              a row that came and went took its height out of the dial, which
+              shrank as a drag began and jumped back on the tap. After the drag
+              layer in the page, so it sits above it and takes its own tap, and
+              in the tab order after the dial. */}
+          {panned ? (
+            <button type="button" className="blacksky-map-return" onClick={() => setOffset(NO_PAN)}>
+              {copy.MAP_RETURN_BUTTON}
+            </button>
+          ) : null}
         </div>
-        {/* While the map is dragged away from the person: one tap puts them
-            back at the centre. In the dial's own slot, under the dial. */}
-        {panned ? (
-          <button type="button" className="blacksky-map-return" onClick={() => setOffset(NO_PAN)}>
-            {copy.MAP_RETURN_BUTTON}
-          </button>
-        ) : null}
       </div>
       {/* On an iPhone that is usually because the compass has not been allowed
           yet, which is one tap. */}
