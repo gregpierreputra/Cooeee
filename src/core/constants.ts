@@ -236,6 +236,18 @@ export const ROADS_WIDTH_PX = {
  *  the middle of the map, where the roads through the person run). Starting
  *  value. */
 export const DIAL_ARROW_SCALE = 0.5;
+/** The compass letters' size on the phone's dial: 13 px on the 328 px dial of
+ *  a 360 px phone, the card's floor for any text a person must read there.
+ *  The dial is drawn in its own units and scales, so the letters are sized as
+ *  that share of the dial. */
+export const DIAL_LETTER_PX = 13;
+export const DIAL_PHONE_PX = 328;
+/** The scale bar on the map disc: this many metres, a round figure a person
+ *  can pace out, short enough to sit in the disc's corner in "Near me". */
+export const ROADS_SCALE_BAR_M = 500;
+/** Its label, in screen pixels: as quiet as the map's own names. Starting
+ *  value. */
+export const ROADS_SCALE_LABEL_PX = 11;
 /** Each road is drawn twice, a darker casing at its full width and its fill on
  *  top; the fill is narrower by this edge on each side: a share of the width,
  *  never under `minPx`, so the edge shows on the thinnest road. Starting
@@ -284,9 +296,6 @@ export const ROADS_LOCALITY_SPACING_PX = 62;
 /** A locality name keeps this much clear round its own upright box, of road
  *  names and of the pin. Screen pixels. Starting value. */
 export const ROADS_LOCALITY_PAD_PX = 4;
-/** How long "Tap the dial to zoom" stays under the dial once roads are drawn.
- *  Starting value. */
-export const ROADS_HINT_MS = 5_000;
 
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion

@@ -49,10 +49,7 @@ import {
   FIX_PUBLISH_M,
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
-  ROADS_HINT_MS,
   ROADS_LABEL_PX,
-  ROADS_LOCALITY_LETTER_SPACING_PX,
-  ROADS_LOCALITY_PX,
   TICK_MS,
   VOICE_CHECK_MS,
   WATCH_RESTART_MS,
@@ -63,7 +60,6 @@ import { titleCase } from '../core/home';
 import {
   decodeRoads,
   drawRoads,
-  offsetLatLon,
   placeInView,
   redrawDistanceM,
   viewRadiusM,
@@ -71,11 +67,9 @@ import {
   type Obstacle,
   type RoadMap,
 } from '../core/roads';
-import { chooseLocalities, decodeLocalities, type Locality } from '../core/localities';
 import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
-import { readLocalitiesFile } from '../data/localities';
 import { readRoadsFile } from '../data/roads';
 import BlackSkyDial, {
   DIAL_UNITS,
@@ -97,25 +91,14 @@ type BlackSkyProps = {
   /** BS_Enhancement-AC5: the roads file's bytes, or undefined when the phone
    *  does not hold it. Read from the precache only, never the network. */
   loadRoads?: () => Promise<ArrayBuffer | undefined>;
-  /** The locality names' parsed JSON, or undefined when the phone does not
-   *  hold it. Read from the precache only, never the network. */
-  loadLocalities?: () => Promise<unknown>;
 };
 
-// The locality names likewise, once per loader. Without them the map is drawn
-// as it is, just with no place names on it.
-const decodedLocalities = new WeakMap<() => Promise<unknown>, Promise<Locality[] | null>>();
-
-function holdLocalities(load: () => Promise<unknown>): Promise<Locality[] | null> {
-  let held = decodedLocalities.get(load);
-  if (!held) {
-    held = load()
-      .then((raw) => (raw === undefined ? null : decodeLocalities(raw)))
-      .catch(() => null);
-    decodedLocalities.set(load, held);
-  }
-  return held;
-}
+/** The one view the screen draws. From the development team's review of 28
+ *  Sep: "Near me" only, no switch. Core keeps both views and their rules
+ *  (tested), so "Whole way" can come back for a user test; the screen never
+ *  draws it. The locality names are drawn in "Whole way" only, so they are
+ *  not loaded either. */
+const MAP_VIEW: MapView = 'near';
 
 // The roads file is decoded once per loader, however often BlackSky opens: the
 // decoded lines do not change while the app runs.
@@ -151,7 +134,6 @@ export default function BlackSky({
   loadPacks = listCompletePacksWithPlaces,
   loadSites = getNspSnapshot,
   loadRoads = readRoadsFile,
-  loadLocalities = readLocalitiesFile,
 }: BlackSkyProps) {
   const [packs, setPacks] = useState<PackWithPlaces[] | null>(null);
   const [sites, setSites] = useState<NspSnapshot | null>(null);
@@ -197,26 +179,17 @@ export default function BlackSky({
   const latestFix = useRef<Fix | null>(null);
 
   // BS_Enhancement-AC5: the roads, loaded lazily once BlackSky is open, so the
-  // file costs nothing on any other screen. Which view the dial shows is memory
-  // only, like the Show pick: every visit opens on "whole way". The hint under
-  // the dial is shown once per visit.
+  // file costs nothing on any other screen.
   const [roads, setRoads] = useState<RoadMap | null>(null);
-  const [localities, setLocalities] = useState<Locality[] | null>(null);
-  const [mapView, setMapView] = useState<MapView>('whole');
-  const [hintDone, setHintDone] = useState(false);
   useEffect(() => {
     let live = true;
     void holdRoads(loadRoads).then((map) => {
       if (live) setRoads(map);
     });
-    void holdLocalities(loadLocalities).then((rows) => {
-      if (live) setLocalities(rows);
-    });
     return () => {
       live = false;
     };
-  }, [loadRoads, loadLocalities]);
-  const endHint = useCallback(() => setHintDone(true), []);
+  }, [loadRoads]);
 
   useEffect(() => {
     let live = true;
@@ -519,19 +492,7 @@ export default function BlackSky({
         }
         caption={voice.caption}
         onShow={setShownId}
-        roads={
-          roads && here
-            ? {
-                map: roads,
-                localities,
-                here,
-                view: mapView,
-                onToggle: () => setMapView((view) => (view === 'whole' ? 'near' : 'whole')),
-                hint: !hintDone,
-                endHint,
-              }
-            : undefined
-        }
+        roads={roads && here ? { map: roads, here } : undefined}
       />
     ) : trust ? (
       // Empty: a position, and nothing stored that can be pointed at.
@@ -799,13 +760,6 @@ function DialBody({
   const { first, label, others } = model;
   const frame = useRef<HTMLDivElement>(null);
   const map = useDialMap(roads, first, useFrameWidth(frame, roads !== undefined));
-  const endHint = roads?.endHint;
-  const hint = roads?.hint === true && map.layer !== null;
-  useEffect(() => {
-    if (!hint || !endHint) return;
-    const timer = setTimeout(endHint, ROADS_HINT_MS);
-    return () => clearTimeout(timer);
-  }, [hint, endHint]);
   const { site, line } = siteNameBlock(first.name);
   const distance = copy.distanceLabel(first.distanceM);
   const [figure, unit] = distance.split(' '); // "12.3 km": always a number, a space, a unit
@@ -862,33 +816,11 @@ function DialBody({
             pinAtR={map.layer ? map.pinAtR : undefined}
           />
           {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
-          {/* BS_Enhancement-AC5: with roads, the whole dial is one large switch
-              between the two views, the tag in the other top corner says which
-              is showing, and for the first seconds a hint says the dial can be
-              tapped. Without roads none of the three is drawn. */}
-          {roads && map.layer ? (
-            <>
-              <span className="blacksky-tag blacksky-view-tag" data-view={roads.view}>
-                {copy.MAP_VIEW_TAG[roads.view]}
-              </span>
-              <button
-                type="button"
-                className="blacksky-dial-switch"
-                aria-label={copy.MAP_VIEW_BUTTON}
-                onClick={roads.onToggle}
-              />
-            </>
-          ) : null}
           {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
               over the foot of the dial, for as long as they are being said. Not
               a live region: a screen reader would say them on top of the voice. */}
           {caption ? <p className="blacksky-caption">{caption}</p> : null}
         </div>
-        {/* The hint, centred under the dial for its first seconds, clear of the
-            S and of the voice caption over the dial's foot. It sits in the
-            dial's own slot, so on a short screen it takes the slot's spare
-            height rather than a row of its own out of the dial. */}
-        {roads && map.layer && hint ? <p className="blacksky-map-hint">{copy.MAP_ZOOM_HINT}</p> : null}
       </div>
       {/* On an iPhone that is usually because the compass has not been allowed
           yet, which is one tap. */}
@@ -918,17 +850,11 @@ function OutsideArea({ packs }: { packs: { pack: Pack; distanceKm: number }[] })
   );
 }
 
-/** What the screen hands the dial for its map: the decoded roads, where the
- *  person is, the view, and the hint's state. */
+/** What the screen hands the dial for its map: the decoded roads and where
+ *  the person is. */
 type DialRoads = {
   map: RoadMap;
-  /** The locality names, when the phone holds them: set in "Whole way" only. */
-  localities: Locality[] | null;
   here: LatLon;
-  view: MapView;
-  onToggle: () => void;
-  hint: boolean;
-  endHint: () => void;
 };
 
 /** Where the map was last drawn from. Kept until the person has moved more than
@@ -966,17 +892,6 @@ function useLabelMeasure(): ((name: string) => number) | undefined {
     if (!context) return undefined;
     context.font = `600 ${ROADS_LABEL_PX}px ${getComputedStyle(document.body).fontFamily}`;
     return (name: string) => context.measureText(name).width;
-  }, []);
-}
-
-/** The width of a locality name in the dial's own font, capitals, with its
- *  letter-spacing, so the locality rule keeps the real box clear. */
-function useLocalityMeasure(): ((name: string) => number) | undefined {
-  return useMemo(() => {
-    const context = document.createElement('canvas').getContext('2d');
-    if (!context) return undefined;
-    context.font = `600 ${ROADS_LOCALITY_PX}px ${getComputedStyle(document.body).fontFamily}`;
-    return (name: string) => context.measureText(name).width + name.length * ROADS_LOCALITY_LETTER_SPACING_PX;
   }, []);
 }
 
@@ -1032,10 +947,10 @@ function useDialMap(
 ): { layer: DialMapLayer | null; pinAtR: number | undefined } {
   const anchor = useRef<MapAnchor | null>(null);
   const measure = useLabelMeasure();
-  const measureLocality = useLocalityMeasure();
   let at = anchor.current;
   if (roads) {
-    const { here, view } = roads;
+    const { here } = roads;
+    const view = MAP_VIEW;
     if (!at || at.view !== view || at.placeId !== first.id || distanceM(at, here) > redrawDistanceM(at.radiusM)) {
       at = {
         lat: here.lat,
@@ -1050,7 +965,6 @@ function useDialMap(
     }
   }
   const map = roads?.map;
-  const localities = roads?.localities ?? null;
   const pxPerUnit = frameWidth / DIAL_UNITS;
   const drawStart = useRef(0);
   const layer = useMemo(() => {
@@ -1060,17 +974,8 @@ function useDialMap(
     const obstacles = dialObstacles(at.bearingDeg, pin ? pin.r : null, pxPerUnit);
     const radiusPx = MAP_R * pxPerUnit;
     const drawn = drawRoads(map, at, { view: at.view, radiusM: at.radiusM, radiusPx, obstacles, measure });
-    // Place names after the road names, which they must keep clear of: road
-    // names win. In "Whole way" only: near the person the streets say enough.
-    const places =
-      at.view === 'whole' && localities
-        ? chooseLocalities(localities, at, drawn.metresPerPx, radiusPx, drawn.labelSamples, obstacles, {
-            place: offsetLatLon(at, at.distanceM, at.bearingDeg),
-            measure: measureLocality,
-          })
-        : [];
-    return { map: drawn, places, pxPerUnit };
-  }, [map, localities, at, pxPerUnit, measure, measureLocality]);
+    return { map: drawn, pxPerUnit };
+  }, [map, at, pxPerUnit, measure]);
   // Measured from the start of the work to the moment React has put the paths
   // in the page, so it can be read on a phone in the performance panel.
   useLayoutEffect(() => {

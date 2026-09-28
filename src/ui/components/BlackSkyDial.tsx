@@ -2,10 +2,15 @@ import { useId, type CSSProperties } from 'react';
 import type { DialCentre } from '../../core/blacksky-dial';
 import {
   DIAL_ARROW_SCALE,
+  DIAL_LETTER_PX,
+  DIAL_PHONE_PX,
   ROADS_LABEL_PX,
   ROADS_LOCALITY_LETTER_SPACING_PX,
   ROADS_LOCALITY_PX,
+  ROADS_SCALE_BAR_M,
+  ROADS_SCALE_LABEL_PX,
 } from '../../core/constants';
+import { distanceLabel } from '../../core/copy';
 import type { PlaceName } from '../../core/localities';
 import type { DialMap } from '../../core/roads';
 
@@ -27,19 +32,23 @@ export const DIAL_UNITS = 212;
 const HALF = DIAL_UNITS / 2;
 /** The ring's line, in the drawing's units; its outer edge is RING_R + half. */
 const RING_LINE = 2;
-/** The ring fills the dial's box: its outer edge at 96 % of the box's width or
- *  more (the phone test found the old dial left a wide black margin). */
-export const RING_R = HALF * 0.965 - RING_LINE / 2;
-/** The map disc, 82 % of the box or more. The map is cut to MAP_R and its
- *  view's radius is drawn at MAP_R. */
-export const MAP_R = HALF * 0.825;
-/** The compass letters sit in the black band between the disc and the ring,
- *  as the design has them: amber on black, never on the map, so a road or a
- *  name never runs under a letter. Set to fit the band. */
-export const LETTER_R = (MAP_R + RING_R - RING_LINE / 2) / 2;
-const LETTER_SIZE = (RING_R - MAP_R) * 0.9;
+/** The ring fills the dial's box: its outer edge at 97 % of the box's width
+ *  (the phone test found the old dial left a wide black margin). */
+export const RING_R = HALF * 0.97 - RING_LINE / 2;
+/** The map disc, 88 % of the box: as much map as the band for the letters
+ *  leaves. The map is cut to MAP_R and its view's radius is drawn at MAP_R. */
+export const MAP_R = HALF * 0.88;
+/** The compass letters, in the band between the disc and the ring. At
+ *  DIAL_LETTER_PX on the phone's dial the band (7.5 units) holds an N or an S
+ *  (capitals 6.1 units high) but not an E or a W, which lie across it and are
+ *  7.7 units wide. So the letters sit across the disc's edge, a little over
+ *  the map and clear of the ring, and on the map they take the arrow's dark
+ *  fill and amber edge, so they keep their contrast on the disc and on the
+ *  black. */
+export const LETTER_R = MAP_R + 2.5;
+const LETTER_SIZE = (DIAL_LETTER_PX * DIAL_UNITS) / DIAL_PHONE_PX;
 /** The ticks, in the same band, reaching in from the ring. */
-const TICK_R = [RING_R - (RING_R - MAP_R) / 2, RING_R] as const;
+const TICK_R = [MAP_R + (RING_R - MAP_R) / 3, RING_R] as const;
 /** The marker on the ring, when the place is outside the view. It sits across
  *  the ring and so reaches a little outside the box; the gap round the dial
  *  takes that. */
@@ -108,8 +117,8 @@ export default function BlackSkyDial({
       {/* A square drawing, the ring near its edge, so the dial fills the width
           it is given; its centre, 0 0, is where everything turns. The top of
           the phone: fixed, a notch from the box's edge into the ring. */}
-      <path className="blacksky-dial-notch" d={`M-7 ${-HALF}H7L0 ${-(RING_R - RING_LINE)}Z`} />
-      <g className="blacksky-dial-ring">
+      <path className="blacksky-dial-notch" d={`M-8 ${-HALF}H8L0 ${-RING_R}Z`} />
+      <g className={map ? 'blacksky-dial-ring on-map' : 'blacksky-dial-ring'}>
         {/* BS_Enhancement-AC5: the map is the first thing inside the ring's
             group, so it turns with the ring by the same --heading, under the
             ring, the letters, the arrow and the pin, and is never redrawn per
@@ -129,6 +138,8 @@ export default function BlackSkyDial({
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontSize={LETTER_SIZE}
+                // On the map, the amber edge is 2.5 screen pixels at any size.
+                strokeWidth={map ? 2.5 / map.pxPerUnit : undefined}
               >
                 {letter}
               </text>
@@ -139,6 +150,10 @@ export default function BlackSkyDial({
       {/* The arrow: from the centre toward the pin, long enough to be read at a
           glance, its tip well short of the ring so it never touches the pin
           there. Hollow when the position is old or marked. */}
+      {/* The scale bar: fixed to the dial's frame, outside the turning group,
+          so it never turns; in the disc's lower left, where the ring leaves
+          the most map free of the arrow and the pin. */}
+      {map ? <ScaleBar metresPerPx={map.map.metresPerPx} pxPerUnit={map.pxPerUnit} /> : null}
       {/* On the light map disc the arrow is dark with an amber edge, so it
           keeps its contrast against the disc and against the roads. */}
       <g
@@ -175,6 +190,27 @@ export default function BlackSkyDial({
   );
 }
 
+/** A bar ROADS_SCALE_BAR_M long at the map's scale, with its length above it,
+ *  in the map's label colours. Drawn in screen pixels, like the roads. */
+function ScaleBar({ metresPerPx, pxPerUnit }: { metresPerPx: number; pxPerUnit: number }) {
+  const length = ROADS_SCALE_BAR_M / metresPerPx;
+  // The bar's left end, in the drawing's units: down and left of the centre,
+  // well inside the disc (0.83 of its radius).
+  const x = -MAP_R * 0.55;
+  const y = MAP_R * 0.62;
+  // End ticks set a pixel in, so the bar's box is exactly its length.
+  const bar = `M0 0H${length}M1 -5V0M${length - 1} -5V0`;
+  return (
+    <g className="blacksky-scale" transform={`translate(${x} ${y}) scale(${1 / pxPerUnit})`}>
+      <path className="blacksky-scale-halo" d={bar} />
+      <path className="blacksky-scale-bar" d={bar} data-metres={ROADS_SCALE_BAR_M} />
+      <text className="blacksky-scale-label" x="0" y="-8" fontSize={ROADS_SCALE_LABEL_PX}>
+        {distanceLabel(ROADS_SCALE_BAR_M)}
+      </text>
+    </g>
+  );
+}
+
 /** The class names the stylesheet weighs each road by. */
 const ROAD_KIND: Record<number, string> = { 0: 'freeway', 1: 'highway', 2: 'arterial', 3: 'collector' };
 
@@ -184,7 +220,12 @@ const ROAD_KIND: Record<number, string> = { 0: 'freeway', 1: 'highway', 2: 'arte
 function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: string; idPrefix: string }) {
   const { map, places = [], pxPerUnit } = layer;
   return (
-    <g className="blacksky-dial-map" clipPath={`url(#${clipId})`} data-view={map.view}>
+    <g
+      className="blacksky-dial-map"
+      clipPath={`url(#${clipId})`}
+      data-view={map.view}
+      data-metres-per-px={map.metresPerPx}
+    >
       <defs>
         <clipPath id={clipId}>
           <circle r={MAP_R} />

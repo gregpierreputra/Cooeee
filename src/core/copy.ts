@@ -386,13 +386,6 @@ export const NORTH_UP = 'North up';
 
 // BS_Enhancement-AC5 roads inside the dial. The roads are there to be
 // recognised, never followed: no word here names a road to take or a way to go.
-/** The tag inside the dial that says which of the two views is showing. */
-export const MAP_VIEW_TAG = { whole: 'Whole way', near: 'Near me' } as const;
-/** The one-line hint under the dial for its first few seconds with roads. */
-export const MAP_ZOOM_HINT = 'Tap the dial to zoom';
-/** The name of the dial as a button: the whole dial switches the view. The
- *  dial's own text equivalent is unchanged and says nothing about roads. */
-export const MAP_VIEW_BUTTON = 'Switch the map between near me and the whole way';
 /** The attribution the road layer's licence asks for, on the About screen. */
 export const ROADS_ATTRIBUTION = 'Roads: Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
 /** The same for the locality names on the map disc, under the roads line. */

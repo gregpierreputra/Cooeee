@@ -26,7 +26,7 @@ import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
 import { Size } from '../../src/ui/PackNew/Size';
 import nspFixture from './nsp-fixture.json';
-import { LOCALITIES_FIXTURE, roadsFixture } from './roads-fixture';
+import { roadsFixture } from './roads-fixture';
 import '../../src/ui/theme.css';
 
 declare global {
@@ -473,18 +473,11 @@ if (window.location.pathname === '/blacksky') {
     : roadsMode === 'real'
       ? async () => (await fetch('/data/roads-vic.bin')).arrayBuffer()
       : undefined;
-  // The locality names go with the roads: the fixture's six, or the real file.
-  const loadLocalities = roadsMode === 'fixture'
-    ? async () => LOCALITIES_FIXTURE
-    : roadsMode === 'real'
-      ? async () => (await fetch('/data/localities-vic.json')).json()
-      : undefined;
   blackSkyFlow = (
     <>
       {dialMode ? (
         <BlackSky
           {...(loadRoads ? { loadRoads } : {})}
-          {...(loadLocalities ? { loadLocalities } : {})}
           loadPacks={async () =>
             dialMode === 'pack' ? dialPacks
               : dialMode === 'pack-only' ? [{ ...dialPacks[0], places: [] }]

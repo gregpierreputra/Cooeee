@@ -1079,21 +1079,15 @@ input {
 }
 
 .blacksky-dial-body {
-  /* The hint under the dial, while it shows (see .blacksky-map-hint). */
-  --hint-h: 0px;
   display: grid;
   gap: 6px;
-  grid-template-rows: auto auto calc(min(360px, 100vw - 2rem) + var(--hint-h));
+  grid-template-rows: auto auto min(360px, calc(100vw - 2rem));
   grid-auto-rows: auto;
-}
-
-.blacksky-dial-body:has(.blacksky-map-hint) {
-  --hint-h: 16px;
 }
 
 @media (max-height: 700px) {
   .blacksky-dial-body {
-    grid-template-rows: auto auto minmax(calc(300px + var(--hint-h)), 1fr);
+    grid-template-rows: auto auto minmax(300px, 1fr);
     height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
@@ -1239,7 +1233,7 @@ input {
 
 .blacksky-dial-frame {
   position: relative;
-  width: min(100cqw, calc(100cqh - var(--hint-h)), 360px);
+  width: min(100cqw, 100cqh, 360px);
   aspect-ratio: 1;
 }
 
@@ -1416,6 +1410,31 @@ input {
   paint-order: stroke;
 }
 
+/* The scale bar, in the map's label colours: a dark bar on a white halo, its
+   figure like a road name. It stands still while the map turns. */
+.blacksky-scale-halo {
+  fill: none;
+  stroke: var(--map-label-halo);
+  stroke-width: 4px;
+  stroke-linecap: butt;
+}
+
+.blacksky-scale-bar {
+  fill: none;
+  stroke: var(--map-label);
+  stroke-width: 2px;
+  stroke-linecap: butt;
+}
+
+.blacksky-scale-label {
+  font-weight: var(--w-med);
+  fill: var(--map-label);
+  stroke: var(--map-label-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
 /* Locality names, "Whole way" only: quiet capitals in grey with a halo of the
    disc's own colour, upright whichever way the map has turned (the same turn
    back as the ring's letters). Size and spacing come from constants.ts. */
@@ -1429,6 +1448,17 @@ input {
   transform-box: fill-box;
   transform-origin: center;
   transform: rotate(calc(var(--heading, 0) * 1deg));
+}
+
+/* With the map, the compass letters lie across the disc's edge: dark with the
+   arrow's amber edge, the edge drawn outside the letter (paint-order), so a
+   letter reads on the light disc and on the black band alike. */
+.blacksky-dial-ring.on-map .blacksky-dial-letter {
+  /* The edge's width is set on the letter, in the dial's units. */
+  fill: var(--map-mark);
+  stroke: var(--map-mark-edge);
+  stroke-linejoin: round;
+  paint-order: stroke;
 }
 
 /* On the disc the arrow is dark with an amber edge: amber alone would be 1.4
@@ -1475,43 +1505,6 @@ input {
   transform-box: fill-box;
   transform-origin: 50% 100%;
   transform: rotate(calc((var(--heading, 0) - var(--bearing)) * 1deg));
-}
-
-/* The view tag, in the other top corner from North up. */
-.blacksky-tag.blacksky-view-tag {
-  left: auto;
-  right: 0;
-}
-
-/* The whole dial is the view switch (WCAG 2.5.8: far larger than 24 by 24): a
-   clear button over the round of it. The dial underneath keeps its own text
-   equivalent; the button has its own name. */
-.blacksky-dial-switch {
-  position: absolute;
-  inset: 0;
-  min-height: 0;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-}
-
-/* The hint, a pill centred under the dial for its first few seconds, clear of
-   the S and of the voice caption over the dial's foot. */
-.blacksky-map-hint {
-  box-sizing: border-box;
-  height: var(--hint-h);
-  margin: 0;
-  padding: 0 0.75rem;
-  border: 1px solid var(--ink-2);
-  border-radius: 999px;
-  background: var(--bg);
-  color: var(--ink-2);
-  font-size: var(--step-xs);
-  line-height: 14px;
-  white-space: nowrap;
-  pointer-events: none;
 }
 
 /* ── Voice (BS_Enhancement-AC3) ────────────────────────────────────────────
