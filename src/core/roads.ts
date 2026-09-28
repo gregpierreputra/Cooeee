@@ -32,6 +32,7 @@ import {
   ROADS_WHOLE_WAY_MARGIN,
   ROADS_WIDTH_PX,
 } from './constants';
+import type { PanOffset } from './pan';
 import { decodeRoadFile } from './roads-format';
 import type { LatLon } from './types';
 
@@ -116,6 +117,14 @@ export function offsetLatLon(from: LatLon, distanceM: number, bearingDeg: number
   const lat = from.lat + (distanceM * Math.cos(rad)) / M_PER_DEG;
   const lon = from.lon + (distanceM * Math.sin(rad)) / (M_PER_DEG * Math.cos((from.lat * Math.PI) / 180));
   return { lat, lon };
+}
+
+/** The spot `north` and `east` metres from `from`, on the projection's scale. */
+export function shiftLatLon(from: LatLon, { north, east }: PanOffset): LatLon {
+  return {
+    lat: from.lat + north / M_PER_DEG,
+    lon: from.lon + east / (M_PER_DEG * Math.cos((from.lat * Math.PI) / 180)),
+  };
 }
 
 /** The ground the dial shows, as a radius in metres. "Near me" is fixed.
@@ -491,6 +500,11 @@ export type DialRoad = { d: string; widthPx: number; cls: number; pass: 'casing'
 export type DialMap = {
   /** The view drawn: the stylesheet weighs some roads by it. */
   view: MapView;
+  /** Where the person is on the map, in its pixels, north up: the centre, or
+   *  away from it when the map has been dragged. */
+  personPx: Point;
+  /** The drag the map was drawn with (metres north and east of the person). */
+  offset: PanOffset;
   roads: DialRoad[];
   labels: RoadLabel[];
   /** Points along every name placed, so nothing else is set on top of one. */
@@ -506,6 +520,9 @@ export type DrawOptions = {
   radiusPx: number;
   obstacles?: Obstacle[];
   measure?: (name: string) => number;
+  /** How far the map has been dragged from the person: its centre is there.
+   *  None, and the person is the centre. */
+  offset?: PanOffset;
 };
 
 /** Everything the dial draws for one position and one view: every line in view
@@ -515,9 +532,10 @@ export type DrawOptions = {
  *  this order: collectors, arterials, highways, freeways, and within each class
  *  every casing before any fill, so the fills of one class join up where its
  *  roads meet and a lesser road never cuts across a greater one. */
-export function drawRoads(map: RoadMap, centre: LatLon, options: DrawOptions): DialMap {
-  const { view, radiusM, radiusPx, obstacles = [], measure } = options;
+export function drawRoads(map: RoadMap, person: LatLon, options: DrawOptions): DialMap {
+  const { view, radiusM, radiusPx, obstacles = [], measure, offset = { north: 0, east: 0 } } = options;
   const metresPerPx = radiusM / radiusPx;
+  const centre = shiftLatLon(person, offset);
   // Collectors are only ever drawn near the person, so in the whole way they
   // are not even projected: in a 30 km view they are most of the lines.
   const mostClasses = highestClassDrawn(view, radiusM, 0);
@@ -546,5 +564,6 @@ export function drawRoads(map: RoadMap, centre: LatLon, options: DrawOptions): D
     obstacles,
     measure,
   );
-  return { view, roads, labels, labelSamples: samples, metresPerPx };
+  const personPx: Point = [-offset.east / metresPerPx, offset.north / metresPerPx];
+  return { view, personPx, offset, roads, labels, labelSamples: samples, metresPerPx };
 }

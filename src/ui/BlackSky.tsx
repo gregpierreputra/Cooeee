@@ -50,6 +50,8 @@ import {
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
   ROADS_LABEL_PX,
+  ROADS_PAN_RETURN_MS,
+  ROADS_PAN_TAP_PX,
   TICK_MS,
   VOICE_CHECK_MS,
   WATCH_RESTART_MS,
@@ -57,10 +59,10 @@ import {
 import * as copy from '../core/copy';
 import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { titleCase } from '../core/home';
+import { isPanned, NO_PAN, panOffset, panShouldReturn, type PanOffset } from '../core/pan';
 import {
   decodeRoads,
   drawRoads,
-  placeInView,
   redrawDistanceM,
   viewRadiusM,
   type MapView,
@@ -746,7 +748,12 @@ function DialBody({
   /** The readout is a sentence or two, not "± 10 m": it takes the full width
    *  under the figures. */
   readoutLong?: boolean;
-  compass: { live: boolean; needsPermission: boolean; enable: () => Promise<void> };
+  compass: {
+    live: boolean;
+    needsPermission: boolean;
+    enable: () => Promise<void>;
+    headingDeg: () => number | null;
+  };
   /** What sits at the right-hand end of the distance row: the speaker button,
    *  where there is one. The row keeps that 48 px free either way, so the
    *  figures sit in the same place with or without it. */
@@ -759,7 +766,23 @@ function DialBody({
 }) {
   const { first, label, others } = model;
   const frame = useRef<HTMLDivElement>(null);
-  const map = useDialMap(roads, first, useFrameWidth(frame, roads !== undefined));
+  // BS_Enhancement-AC5, from the 28 Sep review: the map can be dragged to look
+  // around, and comes back to the person on "Back to me" or by itself.
+  const [offset, setOffset] = useState<PanOffset>(NO_PAN);
+  const [lastTouchAt, setLastTouchAt] = useState<number | null>(null);
+  const map = useDialMap(roads, first, useFrameWidth(frame, roads !== undefined), offset);
+  const panned = isPanned(offset);
+  const pan = usePan(map.layer?.map.metresPerPx ?? 0, compass.headingDeg, setOffset, setLastTouchAt);
+  useEffect(() => {
+    if (!panned || lastTouchAt === null) return;
+    const timer = setTimeout(
+      () => {
+        if (panShouldReturn(offset, lastTouchAt, Date.now())) setOffset(NO_PAN);
+      },
+      Math.max(0, ROADS_PAN_RETURN_MS - (Date.now() - lastTouchAt)),
+    );
+    return () => clearTimeout(timer);
+  }, [panned, offset, lastTouchAt]);
   const { site, line } = siteNameBlock(first.name);
   const distance = copy.distanceLabel(first.distanceM);
   const [figure, unit] = distance.split(' '); // "12.3 km": always a number, a space, a unit
@@ -813,14 +836,25 @@ function DialBody({
             centre={dialCentre(trust)}
             description={copy.DIAL_DESCRIPTION(site, distance, point)}
             map={map.layer ?? undefined}
-            pinAtR={map.layer ? map.pinAtR : undefined}
+            placeAt={map.placeAt}
           />
+          {/* The disc is where the map is dragged: a clear layer over it, round
+              like it, that takes the pointer and nothing else. It is not a
+              button and has no name; the dial's own text equivalent stands. */}
+          {map.layer ? <div ref={pan} className="blacksky-dial-pan" data-panned={panned} /> : null}
           {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
           {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
               over the foot of the dial, for as long as they are being said. Not
               a live region: a screen reader would say them on top of the voice. */}
           {caption ? <p className="blacksky-caption">{caption}</p> : null}
         </div>
+        {/* While the map is dragged away from the person: one tap puts them
+            back at the centre. In the dial's own slot, under the dial. */}
+        {panned ? (
+          <button type="button" className="blacksky-map-return" onClick={() => setOffset(NO_PAN)}>
+            {copy.MAP_RETURN_BUTTON}
+          </button>
+        ) : null}
       </div>
       {/* On an iPhone that is usually because the compass has not been allowed
           yet, which is one tap. */}
@@ -866,7 +900,76 @@ type MapAnchor = LatLon & {
   radiusM: number;
   distanceM: number;
   bearingDeg: number;
+  /** The drag the map is drawn with, metres north and east of the person. */
+  offset: PanOffset;
 };
+
+/** Dragging the map on the disc. A pointer that moves ROADS_PAN_TAP_PX or more
+ *  moves the map with it; less is a tap and does nothing. The pointer is
+ *  captured, so a drag that leaves the disc still ends here; the disc has
+ *  touch-action none, so the page does not scroll or zoom under the finger.
+ *  No wheel and no pinch: one way to move the map, the same on every phone.
+ *  The listeners are the page's own, not React's, so a drag costs a render
+ *  per move of the map and nothing more. Returns the ref for the disc's layer. */
+function usePan(
+  metresPerPx: number,
+  headingDeg: () => number | null,
+  setOffset: (next: (current: PanOffset) => PanOffset) => void,
+  setLastTouchAt: (at: number | null) => void,
+): RefObject<HTMLDivElement | null> {
+  const layer = useRef<HTMLDivElement>(null);
+  // The scale and the heading at the moment of each move, read through a ref
+  // so the listeners are set once.
+  const now = useRef({ metresPerPx, headingDeg });
+  now.current = { metresPerPx, headingDeg };
+  const on = metresPerPx > 0;
+  useEffect(() => {
+    const element = layer.current;
+    if (!on || !element) return;
+    let start: { x: number; y: number } | null = null;
+    let last: { x: number; y: number } | null = null;
+    let dragging = false;
+    const down = (event: PointerEvent) => {
+      if (!event.isPrimary) return;
+      start = { x: event.clientX, y: event.clientY };
+      last = start;
+      dragging = false;
+      try {
+        element.setPointerCapture(event.pointerId);
+      } catch {
+        // A pointer the browser will not capture still drags while over the disc.
+      }
+      setLastTouchAt(null); // a finger is on the map: no return while it is
+    };
+    const move = (event: PointerEvent) => {
+      if (!start || !last) return;
+      if (!dragging && Math.hypot(event.clientX - start.x, event.clientY - start.y) < ROADS_PAN_TAP_PX) return;
+      dragging = true;
+      const dx = event.clientX - last.x;
+      const dy = event.clientY - last.y;
+      last = { x: event.clientX, y: event.clientY };
+      const { metresPerPx: scale, headingDeg: heading } = now.current;
+      setOffset((current) => panOffset(current, dx, dy, heading() ?? 0, scale));
+    };
+    const up = () => {
+      if (!start) return;
+      start = null;
+      last = null;
+      setLastTouchAt(Date.now());
+    };
+    element.addEventListener('pointerdown', down);
+    element.addEventListener('pointermove', move);
+    element.addEventListener('pointerup', up);
+    element.addEventListener('pointercancel', up);
+    return () => {
+      element.removeEventListener('pointerdown', down);
+      element.removeEventListener('pointermove', move);
+      element.removeEventListener('pointerup', up);
+      element.removeEventListener('pointercancel', up);
+    };
+  }, [on, setOffset, setLastTouchAt]);
+  return layer;
+}
 
 /** The dial frame's width in CSS pixels, followed as the layout resizes it:
  *  the map's lines and names are set in real pixels, so it must know. */
@@ -900,11 +1003,15 @@ function useLabelMeasure(): ((name: string) => number) | undefined {
  *  place's bearing on top of that, so against the map they stand still at that
  *  bearing. All are therefore fixed in the map's own frame and can be worked
  *  out when it is drawn. Circles that cover each shape, in drawing units first,
- *  but for the drop, which is sized in screen pixels. (The letters and the
- *  ring's marker sit in the band outside the map disc, so today they only
- *  matter if the geometry changes; they are kept in the list so a change there
- *  cannot put a name under them.) */
-function dialObstacles(bearingDeg: number, pinInsideR: number | null, pxPerUnit: number): Obstacle[] {
+ *  but for the drop, which is sized in screen pixels. The arrow stands at the
+ *  person (`personPx`), which is away from the centre when the map has been
+ *  dragged; the drop at the place (`placePx`) when it is inside the disc. */
+function dialObstacles(
+  bearingDeg: number,
+  personPx: [number, number],
+  placePx: [number, number] | null,
+  pxPerUnit: number,
+): Obstacle[] {
   const rad = (bearingDeg * Math.PI) / 180;
   const along = (d: number, r: number) => ({ x: d * Math.sin(rad), y: -d * Math.cos(rad), r });
   // The arrow as drawn at full size (tip 46 from the centre, head 32 wide at
@@ -915,43 +1022,63 @@ function dialObstacles(bearingDeg: number, pinInsideR: number | null, pxPerUnit:
     [22, 18],
     [5, 8],
     [-10, 9],
-  ].map(([d, r]) => along(d * DIAL_ARROW_SCALE, r * DIAL_ARROW_SCALE + 1));
-  const letters = [0, 90, 180, 270].map((deg) => ({
-    x: LETTER_R * Math.sin((deg * Math.PI) / 180),
-    y: -LETTER_R * Math.cos((deg * Math.PI) / 180),
-    r: (RING_R - MAP_R) / 2,
-  }));
-  const units = [
-    ...arrow,
-    ...letters,
-    // The marker on the ring, when the place is outside the view.
-    ...(pinInsideR === null ? [along(RING_R, MARKER_R + 1)] : []),
-  ];
-  const obstacles = units.map(({ x, y, r }) => ({ x: x * pxPerUnit, y: y * pxPerUnit, r: r * pxPerUnit }));
-  if (pinInsideR !== null) {
-    // The drop stands upright on the screen whichever way the map has turned,
-    // so all of its 22 px round its tip is kept clear.
-    const tip = along(pinInsideR * pxPerUnit, 0);
-    obstacles.push({ x: tip.x, y: tip.y, r: 24 });
-  }
-  return obstacles;
+  ]
+    .map(([d, r]) => along(d * DIAL_ARROW_SCALE, r * DIAL_ARROW_SCALE + 1))
+    .map(({ x, y, r }) => ({ x: x * pxPerUnit + personPx[0], y: y * pxPerUnit + personPx[1], r: r * pxPerUnit }));
+  // The letters and the ring's marker are at the dial's own centre, not the
+  // map's: they lie across and outside the disc's edge.
+  const fixed = [
+    ...[0, 90, 180, 270].map((deg) => ({
+      x: LETTER_R * Math.sin((deg * Math.PI) / 180),
+      y: -LETTER_R * Math.cos((deg * Math.PI) / 180),
+      r: (RING_R - MAP_R) / 2 + 1,
+    })),
+    ...(placePx === null ? [along(RING_R, MARKER_R + 1)] : []),
+  ].map(({ x, y, r }) => ({ x: x * pxPerUnit, y: y * pxPerUnit, r: r * pxPerUnit }));
+  // The drop stands upright on the screen whichever way the map has turned,
+  // so all of its 22 px round its tip is kept clear.
+  const drop = placePx ? [{ x: placePx[0], y: placePx[1], r: 24 }] : [];
+  return [...arrow, ...fixed, ...drop];
 }
 
-/** BS_Enhancement-AC5: the drawn map for the dial, and where the pin sits.
- *  The map is worked out again only when the anchor moves or the dial changes
- *  size, never per render and never per sensor reading. */
+/** Where the place is on the map, in its pixels, north up: from the person,
+ *  along its bearing, at its distance. Null when it is outside the map's
+ *  circle, and the pin sits on the ring. */
+function placeOnMap(
+  personPx: [number, number],
+  distanceM: number,
+  bearingDeg: number,
+  metresPerPx: number,
+  radiusPx: number,
+): [number, number] | null {
+  const rad = (bearingDeg * Math.PI) / 180;
+  const x = personPx[0] + (distanceM * Math.sin(rad)) / metresPerPx;
+  const y = personPx[1] - (distanceM * Math.cos(rad)) / metresPerPx;
+  return Math.hypot(x, y) < radiusPx ? [x, y] : null;
+}
+
+/** BS_Enhancement-AC5: the drawn map for the dial, and where the place sits on
+ *  it. The map is worked out again only when the anchor moves, the map is
+ *  dragged, or the dial changes size; never per sensor reading. */
 function useDialMap(
   roads: DialRoads | undefined,
   first: Placed,
   frameWidth: number,
-): { layer: DialMapLayer | null; pinAtR: number | undefined } {
+  offset: PanOffset,
+): { layer: DialMapLayer | null; placeAt: [number, number] | undefined } {
   const anchor = useRef<MapAnchor | null>(null);
   const measure = useLabelMeasure();
   let at = anchor.current;
   if (roads) {
     const { here } = roads;
     const view = MAP_VIEW;
-    if (!at || at.view !== view || at.placeId !== first.id || distanceM(at, here) > redrawDistanceM(at.radiusM)) {
+    if (
+      !at ||
+      at.view !== view ||
+      at.placeId !== first.id ||
+      at.offset !== offset ||
+      distanceM(at, here) > redrawDistanceM(at.radiusM)
+    ) {
       at = {
         lat: here.lat,
         lon: here.lon,
@@ -960,6 +1087,7 @@ function useDialMap(
         radiusM: viewRadiusM(view, first.distanceM),
         distanceM: first.distanceM,
         bearingDeg: first.bearingDeg,
+        offset,
       };
       anchor.current = at;
     }
@@ -970,10 +1098,19 @@ function useDialMap(
   const layer = useMemo(() => {
     if (!map || !at || pxPerUnit <= 0) return null;
     drawStart.current = performance.now();
-    const pin = placeInView(at.distanceM, at.bearingDeg, at.radiusM, MAP_R);
-    const obstacles = dialObstacles(at.bearingDeg, pin ? pin.r : null, pxPerUnit);
     const radiusPx = MAP_R * pxPerUnit;
-    const drawn = drawRoads(map, at, { view: at.view, radiusM: at.radiusM, radiusPx, obstacles, measure });
+    const metresPerPx = at.radiusM / radiusPx;
+    const personPx: [number, number] = [-at.offset.east / metresPerPx, at.offset.north / metresPerPx];
+    const place = placeOnMap(personPx, at.distanceM, at.bearingDeg, metresPerPx, radiusPx);
+    const obstacles = dialObstacles(at.bearingDeg, personPx, place, pxPerUnit);
+    const drawn = drawRoads(map, at, {
+      view: at.view,
+      radiusM: at.radiusM,
+      radiusPx,
+      obstacles,
+      measure,
+      offset: at.offset,
+    });
     return { map: drawn, pxPerUnit };
   }, [map, at, pxPerUnit, measure]);
   // Measured from the start of the work to the moment React has put the paths
@@ -981,9 +1118,17 @@ function useDialMap(
   useLayoutEffect(() => {
     if (layer) performance.measure('cooeee:roads-draw', { start: drawStart.current, end: performance.now() });
   }, [layer]);
-  // The pin follows the person between redraws, against the drawn view's scale.
-  const pin = at ? placeInView(first.distanceM, first.bearingDeg, at.radiusM, MAP_R) : null;
-  return { layer, pinAtR: pin?.r };
+  // The place follows the person between redraws, against the drawn map.
+  const place = layer
+    ? placeOnMap(
+        layer.map.personPx,
+        first.distanceM,
+        first.bearingDeg,
+        layer.map.metresPerPx,
+        MAP_R * layer.pxPerUnit,
+      )
+    : null;
+  return { layer, placeAt: place ?? undefined };
 }
 
 /** Every other place: one line that says how many and how far, and the sheet

@@ -92,7 +92,7 @@ export default function BlackSkyDial({
   centre,
   description,
   map,
-  pinAtR,
+  placeAt,
 }: {
   bearingDeg: number;
   centre: DialCentre;
@@ -100,12 +100,17 @@ export default function BlackSkyDial({
   /** BS_Enhancement-AC5: the roads, when the phone holds them. Absent, the
    *  dial is exactly as it was: this card adds, it never takes away. */
   map?: DialMapLayer;
-  /** How far from the centre the pin sits, in drawing units, when the place is
-   *  inside the map's view. Absent, it sits on the ring. */
-  pinAtR?: number;
+  /** Where the place is on the map, in its pixels, north up, when it is inside
+   *  the map's circle. Absent, the pin sits on the ring. */
+  placeAt?: [number, number];
 }) {
   const id = useId();
-  const inside = pinAtR !== undefined && map !== undefined;
+  const inside = placeAt !== undefined && map !== undefined;
+  // The person and the place on the map, in the drawing's units. The person is
+  // the centre unless the map has been dragged.
+  const toUnits = ([x, y]: [number, number]) => (map ? [x / map.pxPerUnit, y / map.pxPerUnit] : [0, 0]);
+  const [personX, personY] = map ? toUnits(map.map.personPx) : [0, 0];
+  const [placeX, placeY] = inside ? toUnits(placeAt) : [0, 0];
   return (
     <svg
       className="blacksky-dial"
@@ -157,13 +162,28 @@ export default function BlackSkyDial({
           line over a dark one a pixel wider each side, which keeps it 3 to 1
           or better on the light disc and on the black alike. Dashed when the
           position is old or marked (dialCentre 'outline'). */}
-      <g
-        className="blacksky-dial-arrow"
-        data-stale={centre === 'outline' ? 'true' : 'false'}
-        style={{ '--bearing': bearingDeg } as CSSProperties}
-      >
-        <path className="blacksky-arrow-edge" d={ARROW} />
-        <path className="blacksky-arrow-line" d={ARROW} />
+      {/* It stands where the person is on the map: the centre, or carried off
+          with the map when it has been dragged, cut off at the disc's edge.
+          Placed like the map (turned by the heading), then pointed at the
+          place by the bearing like the pin. */}
+      <g clipPath={map ? `url(#${id}-disc)` : undefined}>
+        {map ? (
+          <defs>
+            <clipPath id={`${id}-disc`}>
+              <circle r={MAP_R} />
+            </clipPath>
+          </defs>
+        ) : null}
+        <g className="blacksky-dial-at" style={{ '--at-x': personX, '--at-y': personY } as CSSProperties}>
+          <g
+            className="blacksky-dial-arrow"
+            data-stale={centre === 'outline' ? 'true' : 'false'}
+            style={{ '--bearing': bearingDeg } as CSSProperties}
+          >
+            <path className="blacksky-arrow-edge" d={ARROW} />
+            <path className="blacksky-arrow-line" d={ARROW} />
+          </g>
+        </g>
       </g>
       {/* One bearing, set once on the two things that point at the place, so the
           arrow and the pin can never disagree. Drawn after the arrow: with roads,
@@ -173,14 +193,16 @@ export default function BlackSkyDial({
         className="blacksky-dial-pin"
         style={{ '--bearing': bearingDeg } as CSSProperties}
         data-at={inside ? 'inside' : 'ring'}
-        data-r={inside ? pinAtR : RING_R}
+        data-r={inside ? Math.hypot(placeX, placeY) : RING_R}
       >
         {inside ? (
-          // Inside the view: a drop whose tip is the place's true spot. It is
-          // carried out along the bearing like the ring marker, then turned
-          // back by the stylesheet so it always stands upright on the screen.
-          <g transform={`translate(0 ${-pinAtR}) scale(${1 / map.pxPerUnit})`}>
-            <path className="blacksky-dial-drop" d={DROP} fillRule="evenodd" />
+          // Inside the view: a drop whose tip is the place's true spot on the
+          // map, carried with the map as it turns and as it is dragged, and
+          // standing upright on the screen.
+          <g className="blacksky-dial-at" style={{ '--at-x': placeX, '--at-y': placeY } as CSSProperties}>
+            <g transform={`scale(${1 / map.pxPerUnit})`}>
+              <path className="blacksky-dial-drop" d={DROP} fillRule="evenodd" />
+            </g>
           </g>
         ) : (
           <>
@@ -228,6 +250,7 @@ function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: st
       clipPath={`url(#${clipId})`}
       data-view={map.view}
       data-metres-per-px={map.metresPerPx}
+      data-pan={`${Math.round(map.offset.north)} ${Math.round(map.offset.east)}`}
     >
       <defs>
         <clipPath id={clipId}>

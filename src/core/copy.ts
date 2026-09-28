@@ -386,6 +386,9 @@ export const NORTH_UP = 'North up';
 
 // BS_Enhancement-AC5 roads inside the dial. The roads are there to be
 // recognised, never followed: no word here names a road to take or a way to go.
+/** The button under the dial while the map has been dragged away from the
+ *  person: it puts them back at the centre. */
+export const MAP_RETURN_BUTTON = 'Back to me';
 /** The attribution the road layer's licence asks for, on the About screen. */
 export const ROADS_ATTRIBUTION = 'Roads: Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
 /** The same for the locality names on the map disc, under the roads line. */

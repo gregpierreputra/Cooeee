@@ -451,6 +451,24 @@ describe('drawing one view', () => {
     ]);
   });
 
+  it('draws round the dragged centre, with the person off it', () => {
+    const drawn = drawRoads(map, HERE, {
+      view: 'near',
+      radiusM: 1_500,
+      radiusPx: 150,
+      offset: { north: 500, east: -300 },
+    });
+    // The person is 300 m east and 500 m south of the centre: 30 px right and
+    // 50 px down at 10 m a pixel.
+    expect(drawn.personPx[0]).toBeCloseTo(30, 9);
+    expect(drawn.personPx[1]).toBeCloseTo(50, 9);
+    expect(drawn.offset).toEqual({ north: 500, east: -300 });
+    // The arterial 600 m west of the person is 300 m west of the centre now.
+    const still = drawRoads(map, HERE, { view: 'near', radiusM: 1_500, radiusPx: 150 });
+    expect(still.personPx.map((v) => v + 0)).toEqual([0, 0]); // + 0 folds -0 into 0
+    expect(drawn.roads[2].d).not.toBe(still.roads[2].d);
+  });
+
   it('keeps names off what it is told to', () => {
     const everywhere = drawRoads(map, HERE, {
       view: 'near',

@@ -1079,15 +1079,21 @@ input {
 }
 
 .blacksky-dial-body {
+  /* The "Back to me" button under the dial, while it shows. */
+  --under-h: 0px;
   display: grid;
   gap: 6px;
-  grid-template-rows: auto auto min(360px, calc(100vw - 2rem));
+  grid-template-rows: auto auto calc(min(360px, 100vw - 2rem) + var(--under-h));
   grid-auto-rows: auto;
+}
+
+.blacksky-dial-body:has(.blacksky-map-return) {
+  --under-h: 44px;
 }
 
 @media (max-height: 700px) {
   .blacksky-dial-body {
-    grid-template-rows: auto auto minmax(300px, 1fr);
+    grid-template-rows: auto auto minmax(calc(300px + var(--under-h)), 1fr);
     height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
@@ -1233,7 +1239,7 @@ input {
 
 .blacksky-dial-frame {
   position: relative;
-  width: min(100cqw, 100cqh, 360px);
+  width: min(100cqw, calc(100cqh - var(--under-h)), 360px);
   aspect-ratio: 1;
 }
 
@@ -1260,6 +1266,21 @@ input {
 .blacksky-dial-pin,
 .blacksky-dial-arrow {
   transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
+}
+
+/* Something set at a spot on the map (the arrow at the person, the drop at the
+   place): carried round with the map by the heading to its spot, then turned
+   back, so what is inside keeps its own turn (the arrow's bearing, the drop
+   upright). The spot is in the drawing's units, north up. */
+.blacksky-dial-at {
+  transform: rotate(calc(var(--heading, 0) * -1deg)) translate(calc(var(--at-x, 0) * 1px), calc(var(--at-y, 0) * 1px))
+    rotate(calc(var(--heading, 0) * 1deg));
+}
+
+/* Inside the view the pin's own group does not turn: its drop is placed on
+   the map by .blacksky-dial-at. */
+.blacksky-dial-pin[data-at='inside'] {
+  transform: none;
 }
 
 .blacksky-dial-ring circle {
@@ -1493,17 +1514,43 @@ input {
 }
 
 /* The place's pin inside the view: a dark drop with the mode's amber edge, its
-   tip on the spot, so it stands clear of the light disc and the roads on it. The pin's
-   group turns by the bearing to carry it out along it; the drop turns back by
-   the same angle about its own tip, so it always stands upright. */
+   tip on the spot, so it stands clear of the light disc and the roads on it.
+   Placed and kept upright by .blacksky-dial-at. */
 .blacksky-dial-drop {
   fill: var(--map-mark);
   stroke: var(--map-mark-edge);
   stroke-width: 2.5px;
   stroke-linejoin: round;
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  transform: rotate(calc((var(--heading, 0) - var(--bearing)) * 1deg));
+}
+
+/* The disc is where the map is dragged: a clear layer the size of the disc (88 %
+   of the dial's box, so 6 % in from each side), round like it, so the dial's
+   corners and everything outside the disc take no drag. touch-action none: the
+   page neither scrolls nor zooms under a finger on the map. */
+.blacksky-dial-pan {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.blacksky-dial-pan:active {
+  cursor: grabbing;
+}
+
+/* "Back to me", a pill under the dial while the map is dragged, in the dial's
+   own slot; 44 px high, the smallest target on this screen. */
+.blacksky-map-return {
+  box-sizing: border-box;
+  height: var(--under-h);
+  min-height: 0;
+  padding: 0 1.25rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  color: var(--accent);
+  font-size: var(--step-0);
 }
 
 /* ── Voice (BS_Enhancement-AC3) ────────────────────────────────────────────

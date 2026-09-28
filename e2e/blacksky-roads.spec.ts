@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { LOCALITIES_ATTRIBUTION, NO_PACK_HERE, ROADS_ATTRIBUTION } from '../src/core/copy';
+import { LOCALITIES_ATTRIBUTION, MAP_RETURN_BUTTON, NO_PACK_HERE, ROADS_ATTRIBUTION } from '../src/core/copy';
 import { acknowledgeFirstOpen, HARNESS, waitForController } from './helpers';
 import { AT_FERNY_CREEK, PHONE, pushPosition, stubPositions, turnPhone } from './blacksky-position';
 
@@ -180,6 +180,82 @@ test('a name the dial has turned upside down gives way to its twin, with no redr
   expect(await roads(page).first().evaluate((el, before) => el === before, drawn)).toBe(true);
 });
 
+// Dragging the map to look around (28 Sep review). The map group carries the
+// drag it was drawn with, metres north and east of the person.
+const panOf = (page: Page) => map(page).getAttribute('data-pan');
+async function drag(page: Page, dx: number, dy: number) {
+  const disc = (await page.locator('.blacksky-dial-pan').boundingBox())!;
+  const x = disc.x + disc.width / 2;
+  const y = disc.y + disc.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx / 2, y + dy / 2, { steps: 4 });
+  await page.mouse.move(x + dx, y + dy, { steps: 4 });
+  await page.mouse.up();
+}
+const backToMe = (page: Page) => page.getByRole('button', { name: MAP_RETURN_BUTTON });
+const arrowAt = (page: Page) =>
+  page.locator('.blacksky-dial-at').first().evaluate((el) => getComputedStyle(el).transform);
+
+test('a drag moves the map and the arrow with it; Back to me puts the person back', async ({ page }) => {
+  await openRoads(page, 'fixture');
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(roads(page).first()).toBeAttached();
+  await expect.poll(() => panOf(page)).toBe('0 0');
+  await expect(backToMe(page)).toHaveCount(0);
+
+  // A small move is a tap, and a tap does nothing.
+  await drag(page, 4, 0);
+  await expect.poll(() => panOf(page)).toBe('0 0');
+
+  // 80 px to the right, north up: the map follows the finger, so its centre is
+  // now west of the person, and the arrow, at the person, is right of centre.
+  const before = await roads(page).first().getAttribute('d');
+  await drag(page, 80, 0);
+  await expect.poll(() => panOf(page)).not.toBe('0 0');
+  const [north, east] = (await panOf(page))!.split(' ').map(Number);
+  expect(north).toBe(0);
+  expect(east).toBeLessThan(-500);
+  expect(await roads(page).first().getAttribute('d')).not.toBe(before);
+  expect(await arrowAt(page)).not.toBe('none');
+  await expect(backToMe(page)).toBeVisible();
+  // The ring's pin keeps its bearing from the person: the compass does not pan.
+  expect(await page.locator('.blacksky-dial-pin').getAttribute('data-at')).toBe('ring');
+
+  await backToMe(page).click();
+  await expect.poll(() => panOf(page)).toBe('0 0');
+  await expect(backToMe(page)).toHaveCount(0);
+});
+
+test('a new position while dragged leaves the map where it was dragged', async ({ page }) => {
+  await openRoads(page, 'fixture');
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(roads(page).first()).toBeAttached();
+  await drag(page, 0, 60);
+  await expect.poll(() => panOf(page)).not.toBe('0 0');
+  const dragged = await panOf(page);
+  // 200 m further south: the map is drawn again from the new position, and the
+  // drag is kept, metres from the person.
+  await pushPosition(page, { latitude: -37.8818, longitude: 145.34 });
+  await expect(page.locator('.blacksky-figure-main')).toHaveText('2.80 km');
+  expect(await panOf(page)).toBe(dragged);
+  await expect(backToMe(page)).toBeVisible();
+});
+
+test('left alone for 15 seconds, the dragged map comes back to the person by itself', async ({ page }) => {
+  await page.clock.install();
+  await openRoads(page, 'fixture');
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(roads(page).first()).toBeAttached();
+  await drag(page, -70, 0);
+  await expect.poll(() => panOf(page)).not.toBe('0 0');
+  await page.clock.fastForward(14_000);
+  expect(await panOf(page)).not.toBe('0 0'); // not yet
+  await page.clock.fastForward(1_500);
+  await expect.poll(() => panOf(page)).toBe('0 0');
+  await expect(backToMe(page)).toHaveCount(0);
+});
+
 test('Empty: without the roads file the dial is the plain dial, and nothing else is drawn', async ({
   page,
 }) => {
@@ -191,6 +267,7 @@ test('Empty: without the roads file the dial is the plain dial, and nothing else
   await expect(map(page)).toHaveCount(0);
   await expect(page.locator('.blacksky-scale')).toHaveCount(0);
   await expect(page.locator('.blacksky-dial-frame button')).toHaveCount(0);
+  await expect(page.locator('.blacksky-dial-pan')).toHaveCount(0);
   expect(await pinAt(page)).toBe('ring');
   await expect(page.locator('.blacksky-dial-drop')).toHaveCount(0);
 });

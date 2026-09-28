@@ -242,6 +242,18 @@ export const DIAL_ARROW_SCALE = 0.5;
  *  that share of the dial. */
 export const DIAL_LETTER_PX = 13;
 export const DIAL_PHONE_PX = 328;
+/** Looking around the map by dragging it. The map may be moved at most this
+ *  far from the person: far enough to see the next suburb, not so far that the
+ *  person loses the map (the view itself is 1.5 km round them). */
+export const ROADS_PAN_MAX_M = 3_000;
+/** A pointer that moves less than this before it lifts is a tap, and a tap on
+ *  the map does nothing: a finger resting on a phone in a hand moves a few
+ *  pixels. Screen pixels. Starting value. */
+export const ROADS_PAN_TAP_PX = 6;
+/** With the map moved and no touch for this long, it returns to the person by
+ *  itself: someone who looked away and back must find themselves at the
+ *  centre. Starting value. */
+export const ROADS_PAN_RETURN_MS = 15_000;
 /** The scale bar on the map disc: this many metres, a round figure a person
  *  can pace out, short enough to sit in the disc's corner in "Near me". */
 export const ROADS_SCALE_BAR_M = 500;
