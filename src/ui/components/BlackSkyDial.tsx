@@ -147,20 +147,23 @@ export default function BlackSkyDial({
           </g>
         ))}
       </g>
-      {/* The arrow: from the centre toward the pin, long enough to be read at a
-          glance, its tip well short of the ring so it never touches the pin
-          there. Hollow when the position is old or marked. */}
       {/* The scale bar: fixed to the dial's frame, outside the turning group,
           so it never turns; in the disc's lower left, where the ring leaves
           the most map free of the arrow and the pin. */}
       {map ? <ScaleBar metresPerPx={map.map.metresPerPx} pxPerUnit={map.pxPerUnit} /> : null}
-      {/* On the light map disc the arrow is dark with an amber edge, so it
-          keeps its contrast against the disc and against the roads. */}
+      {/* The arrow: from the centre toward the pin, long enough to be read at a
+          glance, its tip well short of the ring so it never touches the pin
+          there. Always an outline, so the map under it shows through: an amber
+          line over a dark one a pixel wider each side, which keeps it 3 to 1
+          or better on the light disc and on the black alike. Dashed when the
+          position is old or marked (dialCentre 'outline'). */}
       <g
-        className={map ? 'blacksky-dial-arrow on-map' : 'blacksky-dial-arrow'}
+        className="blacksky-dial-arrow"
+        data-stale={centre === 'outline' ? 'true' : 'false'}
         style={{ '--bearing': bearingDeg } as CSSProperties}
       >
-        <path className={centre === 'outline' ? 'hollow' : undefined} d={ARROW} />
+        <path className="blacksky-arrow-edge" d={ARROW} />
+        <path className="blacksky-arrow-line" d={ARROW} />
       </g>
       {/* One bearing, set once on the two things that point at the place, so the
           arrow and the pin can never disagree. Drawn after the arrow: with roads,

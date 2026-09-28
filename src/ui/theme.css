@@ -1286,8 +1286,7 @@ input {
 }
 
 .blacksky-dial-notch,
-.blacksky-dial-pin circle,
-.blacksky-dial-arrow path {
+.blacksky-dial-pin circle {
   fill: currentColor;
 }
 
@@ -1295,12 +1294,29 @@ input {
   fill: var(--bg);
 }
 
-/* An old position, or a marked one: the arrow is drawn hollow. */
-.blacksky-dial-arrow path.hollow {
+/* The arrow is an outline, never filled, so the map shows through it: a 2.5 px
+   amber line over a dark line 1 px wider each side. Amber alone is 1.5 to 1 on
+   the light disc; the dark edge is 16.5 to 1 there, and the amber 12.6 to 1 on
+   the black. Widths in screen pixels at any dial size. */
+.blacksky-dial-arrow path {
   fill: none;
-  stroke: currentColor;
-  stroke-width: 3;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.blacksky-dial-arrow .blacksky-arrow-edge {
+  stroke: var(--map-mark);
+  stroke-width: 4.5px;
+}
+
+.blacksky-dial-arrow .blacksky-arrow-line {
+  stroke: var(--map-mark-edge);
+  stroke-width: 2.5px;
+}
+
+/* An old position, or a marked one: the same outline, dashed. */
+.blacksky-dial-arrow[data-stale='true'] path {
+  stroke-dasharray: 6 4;
 }
 
 /* The North up tag sits in the dial's top corner, over the ring's line where
@@ -1459,23 +1475,6 @@ input {
   stroke: var(--map-mark-edge);
   stroke-linejoin: round;
   paint-order: stroke;
-}
-
-/* On the disc the arrow is dark with an amber edge: amber alone would be 1.4
-   to 1 against the light map. The edge is set in screen pixels, whatever size
-   the dial is drawn at. Hollow (an old or marked position): the dark edge
-   alone. */
-.blacksky-dial-arrow.on-map path {
-  fill: var(--map-mark);
-  stroke: var(--map-mark-edge);
-  stroke-width: 2.5px;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.blacksky-dial-arrow.on-map path.hollow {
-  fill: none;
-  stroke: var(--map-mark);
 }
 
 /* A name reads the right way up while its stretch, as the dial has turned it,

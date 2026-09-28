@@ -56,7 +56,9 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   await expect(page.locator('.blacksky-dial-pin')).toHaveCount(1);
   expect(await drawnAngle(page, '.blacksky-dial-pin')).toBe(relativeBearing(0, 0));
   // The one arrow, at the centre, points at the place too, never just "up".
-  await expect(page.locator('.blacksky-dial-arrow path')).toHaveCount(1);
+  await expect(page.locator('.blacksky-dial-arrow .blacksky-arrow-line')).toHaveCount(1);
+  // An outline, never filled, so the map shows through it.
+  expect(await page.locator('.blacksky-arrow-line').evaluate((el) => getComputedStyle(el).fill)).toBe('none');
   expect(await drawnAngle(page, '.blacksky-dial-arrow')).toBe(relativeBearing(0, 0));
   // Never more than one arrow, a source line, or the old arrows list.
   await expect(page.locator('.blacksky-arrow')).toHaveCount(0);
