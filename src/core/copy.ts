@@ -120,6 +120,11 @@ export const NOTHING_MAPPED_AT_ADDRESS =
   'No Designated Bushfire Prone Area is mapped at this address in the current planning scheme.';
 export const AREA_NOT_PUBLISHED =
   'The Designated Bushfire Prone Area is not published for this area (Department of Transport and Planning).';
+/** UAT: people read an absence on the planning map as their place being out of
+ *  a fire's way. The map sets building rules only, so every answer other than
+ *  inside says so. */
+export const AREA_MAP_IS_NOT_FIRE_REACH =
+  'This map only sets building rules. It does not show where fire can go. Bushfire can still reach this address.';
 export const DTP_SAVED_DATE = (date: string) =>
   `Published by the Department of Transport and Planning, saved ${date}.`;
 export const OFFICIAL_INSTRUCTIONS_FIRST =

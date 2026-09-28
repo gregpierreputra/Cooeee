@@ -52,6 +52,7 @@ describe('E1-US1-AC5–AC7 area decisions', () => {
   it('renders all three statuses with publisher/date and priority', () => {
     expect(areaCheckView(result('present'))).toEqual({
       resultLine: copy.INSIDE_BUSHFIRE_AREA,
+      cautionLine: null,
       publisherLine: 'Published by the Department of Transport and Planning, saved 28 August 2026.',
       priorityLine: copy.OFFICIAL_INSTRUCTIONS_FIRST,
     });
@@ -135,5 +136,11 @@ describe('areaResultLine', () => {
       expect(areaResultLine(status)).toBe(areaCheckView(result(status)).resultLine);
     });
     expect(areaResultLine('present')).toBe('This address is inside a Designated Bushfire Prone Area.');
+  });
+
+  it('says fire can still reach every address not inside the area', () => {
+    expect(areaCheckView(result('present')).cautionLine).toBeNull();
+    expect(areaCheckView(result('none-mapped-here')).cautionLine).toBe(copy.AREA_MAP_IS_NOT_FIRE_REACH);
+    expect(areaCheckView(result('not-published')).cautionLine).toBe(copy.AREA_MAP_IS_NOT_FIRE_REACH);
   });
 });

@@ -34,6 +34,9 @@ test('AC6 shows the published-but-nothing-mapped state exactly', async ({ page }
   await expect(state.locator('h1')).toHaveText(
     'No Designated Bushfire Prone Area is mapped at this address in the current planning scheme.',
   );
+  await expect(state.locator('p').nth(0)).toHaveText(
+    'This map only sets building rules. It does not show where fire can go. Bushfire can still reach this address.',
+  );
   await expect(state).toContainText('Published by the Department of Transport and Planning, saved');
   await expect(state).not.toContainText(/not designated|none found|no results|all clear|safe|no risk|low risk/i);
 });
@@ -44,6 +47,7 @@ test('AC6 shows the not-published state separately and reflows at 320px', async 
   await expect(page.getByRole('heading')).toHaveText(
     'The Designated Bushfire Prone Area is not published for this area (Department of Transport and Planning).',
   );
+  await expect(page.getByRole('status')).toContainText('Bushfire can still reach this address.');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= 320)).toBe(true);
 });
 

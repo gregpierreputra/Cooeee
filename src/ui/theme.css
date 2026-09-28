@@ -675,6 +675,16 @@ main:focus {
   color: var(--ink-2);
 }
 
+/* Under an absence: the map is not where fire can go. Amber, the attention
+   colour, at full text strength so it is read with the heading. */
+.area-result p.area-caution {
+  padding: 0.75rem 1rem;
+  border-inline-start: 3px solid var(--stale);
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--stale) 10%, var(--surface));
+  color: var(--ink);
+}
+
 /* ── Conflict ──────────────────────────────────────────────────────────────── */
 
 .conflict-content {
