@@ -115,16 +115,16 @@ export const TRY_AGAIN = 'Try again';
 // E1-US1-AC5–AC7 bushfire-area check
 export const AREA_CHECK_IN_PROGRESS = 'Checking the bushfire area…';
 export const INSIDE_BUSHFIRE_AREA =
-  'This address is inside a Designated Bushfire Prone Area.';
+  'This address is inside a Bushfire Prone Area.';
 export const NOTHING_MAPPED_AT_ADDRESS =
-  'No Designated Bushfire Prone Area is mapped at this address in the current planning scheme.';
+  'No Bushfire Prone Area is mapped here.';
 export const AREA_NOT_PUBLISHED =
-  'The Designated Bushfire Prone Area is not published for this area (Department of Transport and Planning).';
+  'No Bushfire Prone Area map is published here.';
 /** UAT: people read an absence on the planning map as their place being out of
  *  a fire's way. The map sets building rules only, so every answer other than
  *  inside says so. */
 export const AREA_MAP_IS_NOT_FIRE_REACH =
-  'This map only sets building rules. It does not show where fire can go. Bushfire can still reach this address.';
+  'Fire can still reach you. This map only sets building rules.';
 export const DTP_SAVED_DATE = (date: string) =>
   `Published by the Department of Transport and Planning, saved ${date}.`;
 export const OFFICIAL_INSTRUCTIONS_FIRST =

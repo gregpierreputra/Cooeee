@@ -113,13 +113,13 @@ describe('bpaExposureLayer', () => {
 describe('E1-US1-AC5–AC7 exact copy', () => {
   it('keeps presence and absence meanings separate', () => {
     expect(copy.INSIDE_BUSHFIRE_AREA).toBe(
-      'This address is inside a Designated Bushfire Prone Area.',
+      'This address is inside a Bushfire Prone Area.',
     );
     expect(copy.NOTHING_MAPPED_AT_ADDRESS).toBe(
-      'No Designated Bushfire Prone Area is mapped at this address in the current planning scheme.',
+      'No Bushfire Prone Area is mapped here.',
     );
     expect(copy.AREA_NOT_PUBLISHED).toBe(
-      'The Designated Bushfire Prone Area is not published for this area (Department of Transport and Planning).',
+      'No Bushfire Prone Area map is published here.',
     );
   });
 
@@ -135,12 +135,20 @@ describe('areaResultLine', () => {
     (['present', 'none-mapped-here', 'not-published'] as const).forEach((status) => {
       expect(areaResultLine(status)).toBe(areaCheckView(result(status)).resultLine);
     });
-    expect(areaResultLine('present')).toBe('This address is inside a Designated Bushfire Prone Area.');
+    expect(areaResultLine('present')).toBe('This address is inside a Bushfire Prone Area.');
   });
 
   it('says fire can still reach every address not inside the area', () => {
     expect(areaCheckView(result('present')).cautionLine).toBeNull();
     expect(areaCheckView(result('none-mapped-here')).cautionLine).toBe(copy.AREA_MAP_IS_NOT_FIRE_REACH);
     expect(areaCheckView(result('not-published')).cautionLine).toBe(copy.AREA_MAP_IS_NOT_FIRE_REACH);
+  });
+
+  it('keeps each answer and its note under 20 words together', () => {
+    (['none-mapped-here', 'not-published'] as const).forEach((status) => {
+      const view = areaCheckView(result(status));
+      const words = `${view.resultLine} ${view.cautionLine}`.trim().split(/\s+/);
+      expect(words.length).toBeLessThan(20);
+    });
   });
 });

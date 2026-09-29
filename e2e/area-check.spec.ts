@@ -17,7 +17,7 @@ test('AC5 shows designation, publisher/date and instruction priority in order', 
   await reachAreaCheck(page, 'present');
   const state = page.getByRole('status');
   await expect(state.locator('h1')).toHaveText(
-    'This address is inside a Designated Bushfire Prone Area.',
+    'This address is inside a Bushfire Prone Area.',
   );
   await expect(state.locator('p').nth(0)).toHaveText(
     'Published by the Department of Transport and Planning, saved 28 August 2026.',
@@ -32,10 +32,10 @@ test('AC6 shows the published-but-nothing-mapped state exactly', async ({ page }
   await reachAreaCheck(page, 'none');
   const state = page.getByRole('status');
   await expect(state.locator('h1')).toHaveText(
-    'No Designated Bushfire Prone Area is mapped at this address in the current planning scheme.',
+    'No Bushfire Prone Area is mapped here.',
   );
   await expect(state.locator('p').nth(0)).toHaveText(
-    'This map only sets building rules. It does not show where fire can go. Bushfire can still reach this address.',
+    'Fire can still reach you. This map only sets building rules.',
   );
   await expect(state).toContainText('Published by the Department of Transport and Planning, saved');
   await expect(state).not.toContainText(/not designated|none found|no results|all clear|safe|no risk|low risk/i);
@@ -45,9 +45,9 @@ test('AC6 shows the not-published state separately and reflows at 320px', async 
   await page.setViewportSize({ width: 320, height: 800 });
   await reachAreaCheck(page, 'unpublished');
   await expect(page.getByRole('heading')).toHaveText(
-    'The Designated Bushfire Prone Area is not published for this area (Department of Transport and Planning).',
+    'No Bushfire Prone Area map is published here.',
   );
-  await expect(page.getByRole('status')).toContainText('Bushfire can still reach this address.');
+  await expect(page.getByRole('status')).toContainText('Fire can still reach you.');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= 320)).toBe(true);
 });
 
@@ -86,7 +86,7 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
 
   await page.getByRole('button', { name: 'Try again' }).click();
   await expect(page.getByRole('heading')).toHaveText(
-    'This address is inside a Designated Bushfire Prone Area.',
+    'This address is inside a Bushfire Prone Area.',
   );
 });
 

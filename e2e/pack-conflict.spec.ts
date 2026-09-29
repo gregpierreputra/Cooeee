@@ -76,7 +76,7 @@ test('AC8 replace explicitly starts the next stage while the original remains cu
   await page.getByRole('button', { name: REPLACE_SAVED_PACK }).click();
 
   await expect(page.getByRole('heading')).toHaveText(
-    'This address is inside a Designated Bushfire Prone Area.',
+    'This address is inside a Bushfire Prone Area.',
   );
   expect(await page.evaluate(() => window.__areaCheckCount)).toBe(1);
   expect(await packs(page)).toEqual(before);

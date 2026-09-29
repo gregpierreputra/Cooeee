@@ -61,7 +61,7 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   await page.getByLabel('Place name').fill(name);
   await page.getByRole('button', { name: 'Save this place' }).click();
   await expect(page.getByRole('heading')).toHaveText(
-    'This address is inside a Designated Bushfire Prone Area.',
+    'This address is inside a Bushfire Prone Area.',
   );
   await page.getByRole('button', { name: 'Continue' }).click();
   await chooseLastResortPlaces(page);
@@ -174,7 +174,7 @@ test('AC8 the same address asks, and replace atomically supersedes the previous 
   await page.getByRole('button', { name: REPLACE_SAVED_PACK }).click();
 
   await expect(page.getByRole('heading')).toHaveText(
-    'This address is inside a Designated Bushfire Prone Area.',
+    'This address is inside a Bushfire Prone Area.',
   );
   await page.getByRole('button', { name: 'Continue' }).click();
   await chooseLastResortPlaces(page);
@@ -211,7 +211,7 @@ test('a second address becomes a second pack beside the first, with no question 
   await page.getByRole('button', { name: 'Save this place' }).click();
 
   await expect(page.getByRole('heading')).toHaveText(
-    'This address is inside a Designated Bushfire Prone Area.',
+    'This address is inside a Bushfire Prone Area.',
   );
   await page.getByRole('button', { name: 'Continue' }).click();
   await chooseLastResortPlaces(page);
