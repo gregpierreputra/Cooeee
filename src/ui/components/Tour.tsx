@@ -164,9 +164,13 @@ export default function Tour() {
         </div>
         <p className="muted">{line}</p>
         <div className="tour-actions">
-          <button type="button" disabled={step === 0} onClick={() => setStep(step - 1)}>
-            {copy.TOUR_BACK}
-          </button>
+          {/* UAT: a greyed Back and a Skip beside Finish read as broken or doubled,
+              so each shows only where it does something. */}
+          {step > 0 ? (
+            <button type="button" onClick={() => setStep(step - 1)}>
+              {copy.TOUR_BACK}
+            </button>
+          ) : null}
           <button
             type="button"
             className="main-action"
@@ -174,9 +178,11 @@ export default function Tour() {
           >
             {last ? copy.TOUR_FINISH : copy.TOUR_NEXT}
           </button>
-          <button type="button" onClick={end}>
-            {copy.SKIP_TOUR}
-          </button>
+          {last ? null : (
+            <button type="button" onClick={end}>
+              {copy.SKIP_TOUR}
+            </button>
+          )}
         </div>
       </section>
     </div>
