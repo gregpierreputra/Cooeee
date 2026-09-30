@@ -87,7 +87,6 @@ export const ADDRESS_FIELD_HINT = 'Your official places of last resort are measu
  *  never a surprise at the places step. */
 export const ADDRESS_SEARCH_DISCLOSURE =
   'Some addresses have none close by, and some areas have none. Cooeee lists the nearest the Country Fire Authority publishes.';
-export const SEARCH = 'Search';
 /** Use my location on the address search. The position is sent to the address
  *  register, so the screen says so before the button is tapped. */
 export const ADDRESS_LOCATE_DISCLOSURE = 'Sends your position to the Victorian address register. Not stored.';
@@ -97,19 +96,18 @@ export const ADDRESS_LOCATE_OUTSIDE = 'You are outside Victoria. Type a Victoria
 export const ADDRESS_LOCATE_NONE = 'No address near you. Type it instead.';
 export const SEARCH_IN_PROGRESS = 'Searching…';
 export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
-export const CHOOSE_ADDRESS = 'Choose your address from the list.';
 export const CANDIDATE_LIST_LABEL = 'Address candidates';
 export const NONE_OF_THESE = 'Not my address';
 /** The register describes one address at more than one point and does not say
  * which it means. Stated as the limit it is, never as a result. */
-export const REFINE_ADDRESS_HINT = 'Add a unit or street number, then search again.';
+export const REFINE_ADDRESS_HINT = 'Add a unit or street number.';
 /** The count agrees with the list on screen. A capped answer says so on its
- * own line, so the cap is never hidden. */
+ * own sentence, so the cap is never hidden. */
 export const ADDRESS_RESULT_COUNT = (listed: number) =>
   `${listed} ${listed === 1 ? 'address' : 'addresses'} found`;
-export const ADDRESS_RESULT_CAPPED = 'There may be more. Type more of the address.';
+export const ADDRESS_RESULT_CAPPED = 'Type more to narrow it.';
 export const SEARCH_COULD_NOT_RUN = 'Search is unavailable right now.';
-export const SEARCH_FAILURE_MEANING = 'The address may still exist. Try again with a connection.';
+export const SEARCH_FAILURE_MEANING = 'The address may still exist.';
 export const TRY_AGAIN = 'Try again';
 
 // E1-US1-AC5–AC7 bushfire-area check

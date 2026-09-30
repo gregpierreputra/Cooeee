@@ -57,7 +57,7 @@ function bpaHitFeature(lgaName: string) {
 async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   await page.goto('/packs/new');
   await page.getByLabel('Street address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByLabel('Place name').fill(name);
   await page.getByRole('button', { name: 'Save this place' }).click();
@@ -87,7 +87,7 @@ test('the wizard carries a ticked program into the saved pack', async ({ page })
   });
   await page.goto('/packs/new');
   await page.getByLabel('Street address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByLabel('Place name').fill('Kalorama');
   await page.getByRole('button', { name: 'Save this place' }).click();
@@ -167,7 +167,7 @@ test('AC8 the same address asks, and replace atomically supersedes the previous 
 
   await page.goto('/packs/new');
   await page.getByLabel('Street address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
 
@@ -208,7 +208,7 @@ test('a second address becomes a second pack beside the first, with no question 
   });
   await page.goto('/packs/new');
   await page.getByLabel('Street address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: NEW_ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
 

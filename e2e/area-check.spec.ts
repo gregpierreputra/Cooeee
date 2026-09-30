@@ -7,7 +7,7 @@ const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 async function reachAreaCheck(page: Page, mode: string, context?: BrowserContext) {
   await page.goto(`${AREA_URL}?mode=${mode}`);
   await page.getByLabel('Street address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
   if (context) await context.setOffline(true);
   await page.getByRole('button', { name: 'Save this place' }).click();
@@ -107,7 +107,7 @@ test('AC7 maps genuine browser offline mode to the same state', async ({ page, c
 test('AC9 an offer that could not be prepared offers Try again and Search again, and Search again writes nothing', async ({ page }) => {
   await page.goto(`${AREA_URL}?mode=present&offer=fail`);
   await page.getByLabel('Street address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
@@ -128,7 +128,7 @@ test('AC9 an offer that could not be prepared offers Try again and Search again,
 
   await searchAgain.click();
   await expect(page.getByRole('heading', { name: 'Your address', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Street address')).toBeVisible();
   expect(await deviceStorage(page)).toMatchObject({
     recordCounts: { packs: 0, layers: 0, destinations: 0, tiles: 0 },
   });

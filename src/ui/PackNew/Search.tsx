@@ -69,6 +69,26 @@ import { Size } from './Size';
 const searchAddressRegister = (query: string, signal: AbortSignal) =>
   fetchAddressCandidates(query, undefined, signal);
 
+/** The line above the field for the typed search, one short sentence per state. */
+function typedSearchLine(live: ReturnType<typeof liveSearchState>): string {
+  switch (live.kind) {
+    case 'too-short':
+      return copy.ADDRESS_QUERY_TOO_SHORT;
+    case 'pending':
+      return copy.SEARCH_IN_PROGRESS;
+    case 'dismissed':
+      return copy.REFINE_ADDRESS_HINT;
+    case 'no-match':
+      return copy.NO_ADDRESS_MATCH;
+    case 'unavailable':
+      return `${copy.SEARCH_COULD_NOT_RUN} ${copy.SEARCH_FAILURE_MEANING}`;
+    case 'candidates': {
+      const count = copy.ADDRESS_RESULT_COUNT(live.candidates.length);
+      return addressResultsAtLimit(live.returnedCount) ? `${count}. ${copy.ADDRESS_RESULT_CAPPED}` : count;
+    }
+  }
+}
+
 type ConflictState =
   | { kind: 'checking' }
   | { kind: 'conflict'; savedPack: Pack }
@@ -150,7 +170,7 @@ export function Search({
   const [settled, setSettled] = useState<SettledSearch | null>(null);
   const [dismissed, setDismissed] = useState(false);
   // Bumped by every keystroke and by every explicit run, so the debounce restarts
-  // on each. `immediate` is an explicit run — Enter, Search, or Try again — which
+  // on each. `immediate` is an explicit run — Enter or Try again — which
   // does not wait out a pause the user has already ended themselves.
   const [attempt, setAttempt] = useState({ immediate: false });
   const [candidate, setCandidate] = useState<AddressCandidate | null>(null);
@@ -190,6 +210,11 @@ export function Search({
   const live = byPosition
     ? ({ kind: 'dismissed' } as const)
     : liveSearchState(query, settled, dismissed);
+  const statusLine = locating
+    ? copy.LOCATING
+    : located
+      ? copy.ADDRESS_LOCATE_FOUND
+      : (locateNotice ?? typedSearchLine(live));
 
   // Read through a ref so that a caller passing an inline function cannot make
   // the search restart on every render. Only the typed query and an explicit run
@@ -309,7 +334,7 @@ export function Search({
     setAttempt({ immediate: false });
   }
 
-  /** Enter, Search, Search again and Try again: run this query now. A request
+  /** Enter and Try again: run this query now. A request
    * already in flight for this exact text is left to finish, so an explicit tap
    * during the wait cannot double the outbound requests. */
   function runSearchNow() {
@@ -647,59 +672,43 @@ export function Search({
         <div className="search-content">
           <header className="hero">
             <FlowSteps at={0} />
-            <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
+            {/* Why the exact address matters, that some have no place close by,
+                and where a position goes, wait behind the ring beside the title. */}
+            <Hint label={copy.ABOUT_ADDRESS} head={<h1>{copy.ADDRESS_SEARCH_TITLE}</h1>}>
+              <ul className="info-lines glyph-lines">
+                <li><Glyph kind="place" line />{copy.ADDRESS_FIELD_HINT}</li>
+                <li><Glyph kind="found" line />{copy.ADDRESS_SEARCH_DISCLOSURE}</li>
+                <li><Glyph kind="lock" line />{copy.ADDRESS_LOCATE_DISCLOSURE}</li>
+              </ul>
+            </Hint>
           </header>
-          {/* Why the exact address matters, and that some have no place close
-              by, wait behind the ring beside the label. */}
-          <Hint label={copy.ABOUT_ADDRESS} head={<label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>}>
-            <ul className="info-lines glyph-lines">
-              <li><Glyph kind="place" line />{copy.ADDRESS_FIELD_HINT}</li>
-              <li><Glyph kind="found" line />{copy.ADDRESS_SEARCH_DISCLOSURE}</li>
-            </ul>
-          </Hint>
-          <input
-            id="address-query"
-            name="addressQuery"
-            type="search"
-            value={query}
-            autoComplete="off"
-            maxLength={ADDRESS_QUERY_MAX_CHARS}
-            aria-describedby="address-result"
-            onChange={handleQueryChange}
-          />
-          <button type="button" className="search-locate" onClick={locate} disabled={locating}>
-            <Glyph kind="locate" />
-            {locating ? copy.LOCATING : copy.USE_MY_LOCATION}
-          </button>
-          {/* Said before the tap, because the position leaves the phone. */}
-          <p className="muted search-hint with-glyph">
-            <Glyph kind="lock" line />
-            {copy.ADDRESS_LOCATE_DISCLOSURE}
+          {/* One small polite line above the field. It says what to type, then
+              follows the search as the user types, and it is the only place a
+              result is claimed, which the list markup alone does not announce. */}
+          <p id="address-result" className="muted search-hint" role="status" aria-live="polite">
+            {statusLine}
           </p>
-
-          {/* One polite live region for the field. It carries the count when the
-              list changes under a screen reader, which the list markup alone
-              does not announce, and it is the only place a result is claimed. */}
-          <div id="address-result" className="card search-result" role="status" aria-live="polite">
-            {live.kind === 'too-short' ? <p>{copy.ADDRESS_QUERY_TOO_SHORT}</p> : null}
-            {live.kind === 'pending' ? <p>{copy.SEARCH_IN_PROGRESS}</p> : null}
-            {locating ? <p>{copy.LOCATING}</p> : null}
-            {located ? <p>{copy.ADDRESS_LOCATE_FOUND}</p> : null}
-            {locateNotice ? <p>{locateNotice}</p> : null}
-            {live.kind === 'dismissed' && !byPosition ? <p>{copy.REFINE_ADDRESS_HINT}</p> : null}
-            {live.kind === 'no-match' ? <p>{copy.NO_ADDRESS_MATCH}</p> : null}
-            {live.kind === 'candidates' ? (
-              <>
-                <p>{copy.ADDRESS_RESULT_COUNT(live.candidates.length)}</p>
-                {addressResultsAtLimit(live.returnedCount) ? <p>{copy.ADDRESS_RESULT_CAPPED}</p> : null}
-              </>
-            ) : null}
-            {live.kind === 'unavailable' ? (
-              <>
-                <p>{copy.SEARCH_COULD_NOT_RUN}</p>
-                <p>{copy.SEARCH_FAILURE_MEANING}</p>
-              </>
-            ) : null}
+          <div className="search-row">
+            <input
+              id="address-query"
+              name="addressQuery"
+              type="search"
+              value={query}
+              autoComplete="off"
+              maxLength={ADDRESS_QUERY_MAX_CHARS}
+              aria-label={copy.ADDRESS_FIELD_LABEL}
+              aria-describedby="address-result"
+              onChange={handleQueryChange}
+            />
+            <button
+              type="button"
+              className="info-ring search-locate"
+              aria-label={locating ? copy.LOCATING : copy.USE_MY_LOCATION}
+              onClick={locate}
+              disabled={locating}
+            >
+              <Glyph kind="locate" line />
+            </button>
           </div>
 
           {live.kind === 'candidates' ? (
@@ -721,25 +730,16 @@ export function Search({
           ) : null}
         </div>
 
-        {/* One primary action, labelled for the state it is in. It is never
-            disabled: a search that has not answered yet must still be re-runnable
-            by hand, and a tap during a request in flight is a no-op, not a second
-            request. */}
-        <div className="actions search-actions">
-          {live.kind === 'unavailable' ? (
+        {/* The search runs as the user types, and Enter runs it at once, so the
+            only button is Try again when the search could not run: the same
+            text typed again would not ask the register a second time. */}
+        {live.kind === 'unavailable' ? (
+          <div className="actions search-actions">
             <button className="main-action" type="button" onClick={runSearchNow}>
               {copy.TRY_AGAIN}
             </button>
-          ) : live.kind === 'no-match' ? (
-            <button className="main-action" type="button" onClick={runSearchNow}>
-              {copy.SEARCH_AGAIN}
-            </button>
-          ) : (
-            <button className="main-action" type="submit">
-              {copy.SEARCH}
-            </button>
-          )}
-        </div>
+          </div>
+        ) : null}
       </form>
     </main>
   );
