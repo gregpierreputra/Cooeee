@@ -2261,6 +2261,15 @@ p.caution {
   width: 100%;
   text-align: left;
 }
+/* Select all over the pack's programs: a small ghost pill, as Clear all is on
+   the kept list, in the ordinary ink since it saves nothing by itself. */
+.programs-page .select-all {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: var(--step-s);
+}
+
 /* Clear all on the kept list: a small pill in the delete red, so it never
    reads as a neutral action. */
 .recover .clear-kept {

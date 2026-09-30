@@ -100,6 +100,17 @@ test('the wizard carries a ticked program into the saved pack', async ({ page })
   await page.getByRole('button', { name: 'Keep this note' }).click();
 
   await expect(page.getByRole('heading', { name: 'Carry support programs?' })).toBeVisible();
+  // Select all ticks every program, then turns into Select none, which unticks them.
+  // One tick by hand turns it into Select none as well.
+  const programBoxes = page.getByRole('checkbox');
+  await programBoxes.first().check();
+  await page.getByRole('button', { name: 'Select none' }).click();
+  await expect(programBoxes.first()).not.toBeChecked();
+  await page.getByRole('button', { name: 'Select all' }).click();
+  for (const box of await programBoxes.all()) await expect(box).toBeChecked();
+  await expect(page.getByRole('button', { name: `Carry ${await programBoxes.count()} programs` })).toBeVisible();
+  await page.getByRole('button', { name: 'Select none' }).click();
+  for (const box of await programBoxes.all()) await expect(box).not.toBeChecked();
   await page.getByRole('checkbox', { name: 'Crisis Payment for extreme circumstances' }).check();
   await page.getByRole('button', { name: 'Carry 1 program' }).click();
   await expect(page.getByRole('heading')).toHaveText('Ready to download');

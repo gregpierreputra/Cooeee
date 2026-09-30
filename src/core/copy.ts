@@ -473,6 +473,10 @@ export const PROGRAMS_STEP_LINE = 'Ticked programs open with no signal. Nothing 
 export const CARRY_PROGRAMS = (count: number) =>
   count === 0 ? 'Keep none and continue' : `Carry ${count} ${count === 1 ? 'program' : 'programs'}`;
 export const CHOOSE_LATER = 'Not now';
+/** One control over the programs list: ticks every program while none is
+ *  ticked, and unticks them all once any is. Nothing is kept until the step goes on. */
+export const SELECT_ALL = 'Select all';
+export const SELECT_NONE = 'Select none';
 export const CHOOSE_IN_RECOVER = 'Choose programs in Recover';
 export const WHO_TO_CALL = 'Who to call';
 export const HOTLINE_LABEL = 'VicEmergency hotline';

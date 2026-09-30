@@ -20,6 +20,9 @@ export function Programs({ programs, kept, onContinue, onSkip }: ProgramsProps) 
   const [ticked, setTicked] = useState<string[]>(kept.filter((id) => programs.some((p) => p.id === id)));
   const toggle = (id: string) =>
     setTicked(ticked.includes(id) ? ticked.filter((t) => t !== id) : [...ticked, id]);
+  // Any tick turns the control into Select none, so one tap always clears.
+  const anyTicked = ticked.length > 0;
+  const tickAll = () => setTicked(anyTicked ? [] : programs.map((program) => program.id));
 
   return (
     <main className="page programs-page">
@@ -31,6 +34,11 @@ export function Programs({ programs, kept, onContinue, onSkip }: ProgramsProps) 
           {copy.PROGRAMS_STEP_LINE}
         </p>
       </header>
+      {programs.length > 1 ? (
+        <button type="button" className="select-all" onClick={tickAll}>
+          {anyTicked ? copy.SELECT_NONE : copy.SELECT_ALL}
+        </button>
+      ) : null}
       <ul className="list">
         {programs.map((program) => {
           const inputId = `program-${program.id}`;
