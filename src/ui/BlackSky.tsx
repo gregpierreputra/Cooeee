@@ -504,6 +504,7 @@ function ConfidenceLines({
           ? copy.ESTIMATE_READOUT(confidence.accuracyM)
           : copy.ACCURACY_READOUT(confidence.accuracyM)}
       </p>
+      <p className="muted">{copy.DISTANCES_NOTE}</p>
       {!estimating && confidence.approximate ? (
         <p className="muted">{copy.GPS_APPROXIMATE(confidence.accuracyM)}</p>
       ) : null}

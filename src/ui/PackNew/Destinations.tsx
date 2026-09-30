@@ -189,6 +189,7 @@ export function Destinations({
           {ordered.length > 0 ? (
             <>
               <p className="caveat">{copy.CHOOSE_PLACES_HINT(savableCount(ordered.length))} - {copy.SORTED_BY_DISTANCE}</p>
+              <p className="muted">{copy.DISTANCES_NOTE}</p>
               <ul className="list destination-list" data-testid="ordered-destinations">
                 {ordered.map((place) => (
                   <DestinationRow

@@ -663,7 +663,10 @@ export const POSTCODE_UNKNOWN = (postcode: string) =>
   `Postcode ${postcode} is not in the downloaded Victorian list.`;
 export const FROM_POSITION = (accuracy: string) => `From your position, ${accuracy}`;
 export const FROM_POSTCODE = (postcode: string) => `From the centre of postcode ${postcode}`;
-export const DISTANCES_NOTE = 'Straight-line distances. Not a ranking.';
+/** UAT: people could not tell how distances were worked out, so every screen
+ *  that shows one says it is measured in a straight line. */
+export const DISTANCES_NOTE = 'Straight-line distances, not by road.';
+export const NOT_A_RANKING = 'Not a ranking.';
 
 export const DOWNLOADING_PLACES = 'Downloading the official places…';
 export const FIRST_RUN_TITLE = 'Nothing downloaded yet';

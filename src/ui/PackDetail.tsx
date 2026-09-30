@@ -216,6 +216,9 @@ export default function PackDetail({
           Distance is a fact about each; there is no ordinal and no ranking. */}
       {places.length > 0 ? (
         <Section kind="place" title={copy.DESTINATIONS_STEP_TITLE} count={places.length}>
+          {places.some((place) => typeof place.distanceM === 'number') ? (
+            <p className="muted">{copy.DISTANCES_NOTE}</p>
+          ) : null}
           <ul className="list saved-destinations">
             {places.map((place) => {
               const item = {

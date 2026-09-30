@@ -94,6 +94,7 @@ test('AC2 shows the mandated caveat line once, above the list and not inside it'
   await expect(page.locator('p.caveat')).toContainText(CAVEAT);
   expect(await page.getByText(CAVEAT).count()).toBe(1);
   await expect(page.locator('[data-testid=ordered-destinations]')).not.toContainText(CAVEAT);
+  await expect(page.getByText('Straight-line distances, not by road.')).toHaveCount(1);
 });
 
 test('AC2 keeps the un-located group free of distance and ordinals', async ({ page }) => {
