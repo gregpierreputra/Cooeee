@@ -1215,13 +1215,16 @@ p.caution {
   background: var(--blacksky-fill);
 }
 
-/* An information ring: the delete control's shape in the accent. The tour ring
-   beside the daily reminder is the plain one; the BlackSky ring recolours it. */
+/* An information ring: the delete control's shape in the accent, drawn small so
+   it never competes with the screen. The invisible ::after keeps the 44px tap
+   area. The BlackSky ring recolours it; the tour ring carries a question mark. */
 .info-ring {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  min-width: 44px;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  min-width: 32px;
+  flex: none;
   padding: 0;
   display: inline-grid;
   place-items: center;
@@ -1229,9 +1232,14 @@ p.caution {
   border-color: var(--accent);
   color: var(--accent);
 }
+.info-ring::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
 /* The tour ring in the header: the information ring with a question mark. */
 .tour-ring {
-  font-size: var(--step-0);
+  font-size: var(--step-s);
   font-weight: var(--w-heavy);
 }
 
