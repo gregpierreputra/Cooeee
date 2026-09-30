@@ -10,7 +10,6 @@ import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
 import HoldButton from './components/HoldButton';
-import { startTour } from './components/Tour';
 import { focusMain } from './components/focusMain';
 
 /** E1-US2-AC6 — where someone who set up a place some time ago lands when they
@@ -109,16 +108,10 @@ export default function Home({ now }: { now?: number }) {
       {/* One preparation line under its own eyebrow, with the guidance it is
           drawn from; the line for a reader it was not written for waits behind
           the ring. It says nothing about a particular place, and nothing about
-          what is happening outside. The Tour pill starts the guided tour. */}
+          what is happening outside. */}
       {view === null ? null : (
         <section className="preparation">
-          <div className="preparation-head">
-            <span className="kicker">{copy.PREPARATION_LABEL}</span>
-            <button type="button" className="tour-pill with-glyph" onClick={startTour}>
-              <Glyph kind="tour" line />
-              {copy.TOUR_HINT}
-            </button>
-          </div>
+          <span className="kicker">{copy.PREPARATION_LABEL}</span>
           <p>{view.preparation.text}</p>
           <Hint
             label={copy.PREPARATION_MORE}

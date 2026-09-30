@@ -559,7 +559,7 @@ export const COOEEE_INFO_LINES = [
 // One overlay, a stop per feature across every screen. The path is the screen
 // the stop lives on; the target is what the spotlight surrounds.
 export const TOUR_KICKER = 'Tour';
-export const TOUR_HINT = 'Tour';
+export const TOUR_HINT = 'Take the tour';
 export const TOUR_BACK = 'Back';
 export const TOUR_NEXT = 'Next';
 export const TOUR_FINISH = 'Finish';

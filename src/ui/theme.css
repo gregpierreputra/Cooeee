@@ -1229,19 +1229,10 @@ p.caution {
   border-color: var(--accent);
   color: var(--accent);
 }
-/* The day's label, and the Tour pill at the far end of the same row. */
-.preparation-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-}
-.tour-pill {
-  min-height: 44px;
-  padding: 0.25rem 1rem;
-  font-size: var(--step-s);
-  border-color: var(--accent);
-  color: var(--accent);
+/* The tour ring in the header: the information ring with a question mark. */
+.tour-ring {
+  font-size: var(--step-0);
+  font-weight: var(--w-heavy);
 }
 
 /* ── The guided tour ──────────────────────────────────────────────────────── */
@@ -1541,6 +1532,21 @@ p.caution {
   font-size: var(--step-0);
   font-weight: var(--w-heavy);
   letter-spacing: var(--track-tight);
+}
+
+/* The right side: the age pill, then the tour ring at the far edge. */
+.app-header-end {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+/* On the narrowest phones the mark alone returns home, so the age and the
+   ring keep one line. The link's label still names it. */
+@media (max-width: 359px) {
+  .app-header-name {
+    display: none;
+  }
 }
 
 /* The age as a small pill: real text, announced like any other text — never an
