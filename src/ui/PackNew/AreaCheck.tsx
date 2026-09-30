@@ -77,7 +77,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
             )}
             <h1>{view.resultLine}</h1>
           </div>
-          {view.cautionLine && <p className="area-caution">{view.cautionLine}</p>}
+          {view.cautionLine && <p className="caution">{view.cautionLine}</p>}
           <p className="muted">{view.publisherLine}</p>
           <p className="with-glyph">
             <Glyph kind="calls" line />

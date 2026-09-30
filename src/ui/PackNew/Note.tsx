@@ -27,6 +27,7 @@ export function Note({ example, onContinue }: NoteProps) {
             <Glyph kind="lock" line />
             {copy.NOTE_DISCLOSURE}
           </p>
+          <p className="caution">{copy.NOTE_NOT_PROTECTED}</p>
         </header>
         <label htmlFor="pack-note">{copy.NOTE_LABEL}</label>
         <textarea

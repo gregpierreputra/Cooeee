@@ -675,9 +675,9 @@ main:focus {
   color: var(--ink-2);
 }
 
-/* Under an absence: the map is not where fire can go. Amber, the attention
-   colour, at full text strength so it is read with the heading. */
-.area-result p.area-caution {
+/* A caution read with the heading: the map is not where fire can go, or a note
+   has no password. Amber, the attention colour, at full text strength. */
+p.caution {
   padding: 0.75rem 1rem;
   border-inline-start: 3px solid var(--stale);
   border-radius: var(--r-card);
