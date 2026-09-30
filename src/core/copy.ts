@@ -686,7 +686,9 @@ export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
   ASSEMBLY: 'Assembly Area',
 };
 
-export const STATE_LIVE = 'Live';
+/** UAT: "Live" was read as the centre being open. The label is about the
+ *  information, so it says when it was updated. */
+export const STATE_LIVE = 'Updated just now';
 export const STATE_CACHED = (age: string) => `Cached · ${age}`;
 export const STATE_UNAVAILABLE = 'Unavailable';
 export const JUST_NOW = 'just now';

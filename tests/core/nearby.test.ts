@@ -142,6 +142,8 @@ describe('nearbyView', () => {
     expect(row(view, 'NSP').state).toBe('live');
     expect(row(view, 'RELIEF').state).toBe('live');
     expect(row(view, 'RELIEF').stateLabel).toBe(copy.STATE_LIVE);
+    // UAT: the label speaks of the information, never of the centre being open.
+    expect(copy.STATE_LIVE).not.toMatch(/\b(live|open)\b/i);
     expect(row(view, 'RELIEF').note).toBeNull();
   });
 
