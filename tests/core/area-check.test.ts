@@ -53,7 +53,7 @@ describe('E1-US1-AC5–AC7 area decisions', () => {
     expect(areaCheckView(result('present'))).toEqual({
       resultLine: copy.INSIDE_BUSHFIRE_AREA,
       cautionLine: null,
-      publisherLine: 'Published by the Department of Transport and Planning, saved 28 August 2026.',
+      savedOn: '28 August 2026',
       priorityLine: copy.OFFICIAL_INSTRUCTIONS_FIRST,
     });
     expect(areaCheckView(result('none-mapped-here')).resultLine).toBe(

@@ -125,8 +125,6 @@ export const AREA_NOT_PUBLISHED =
  *  inside says so. */
 export const AREA_MAP_IS_NOT_FIRE_REACH =
   'Fire can still reach you. This map only sets building rules.';
-export const DTP_SAVED_DATE = (date: string) =>
-  `Published by the Department of Transport and Planning, saved ${date}.`;
 export const OFFICIAL_INSTRUCTIONS_FIRST =
   'Follow Country Fire Authority and emergency service instructions first.';
 export const AREA_CHECK_COULD_NOT_RUN = 'The bushfire area check is unavailable right now.';
@@ -151,9 +149,17 @@ export const PREVIOUS_PACK_UNTOUCHED = 'Nothing changed. Your previous pack is u
 export const PLACE_SAVED = 'Place saved';
 
 // E1-US2-AC1–AC5 pack provenance and offline source access
+/** The small ring every source sits behind (UAT: publisher lines crowded each card). */
+export const SOURCE_LABEL = 'Source';
+export const ABOUT_SOURCE = 'About the source';
+// The labelled rows inside the Source ring.
+export const SOURCE_PUBLISHED_BY = 'Published by';
+export const SOURCE_SAVED = 'Saved';
+export const SOURCE_LICENCE = 'Licence';
+export const SOURCE_LIST_DATE = 'List date';
+export const SOURCE_TODAY = 'Today';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
-export const SAVED_TODAY = 'Saved today';
 export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;
 export const NOT_RECENTLY_VERIFIED_LABEL = 'Not recently verified';
 export const STALE_PACK_STILL_WORKS = 'Still works. Refresh it when next online.';
@@ -443,7 +449,6 @@ export const COPIED_LINE = 'Copied. Paste it into a message.';
 export const SHARE_UNAVAILABLE = 'Sharing is not available in this browser.';
 export const SHARED_FROM = 'Shared from Cooeee. Programs change, and the organisation decides.';
 export const RECOVER_STALE_LINE = 'Over three months old. Programs change, so check with the organisation.';
-export const LICENCE_LINE = (licence: string) => `Licence · ${licence}`;
 export const CALL_LINE = (number: string) => `Call ${number}`;
 export const RECOVER_NO_MATCH_TITLE = 'This pack holds nothing for that need.';
 export const RECOVER_NO_MATCH_LINE = 'Help may still exist. Try the official channel with a connection.';

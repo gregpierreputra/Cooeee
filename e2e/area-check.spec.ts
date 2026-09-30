@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { chooseLastResortPlaces, deviceStorage, HARNESS } from './helpers';
+import { chooseLastResortPlaces, deviceStorage, HARNESS, openSources } from './helpers';
 
 const AREA_URL = `${HARNESS}/area`;
 const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
@@ -19,10 +19,12 @@ test('AC5 shows designation, publisher/date and instruction priority in order', 
   await expect(state.locator('h1')).toHaveText(
     'This address is inside a Bushfire Prone Area.',
   );
+  await openSources(page);
+  await expect(state.locator('.source-rows dd')).toHaveText([
+    'Department of Transport and Planning',
+    '28 August 2026',
+  ]);
   await expect(state.locator('p').nth(0)).toHaveText(
-    'Published by the Department of Transport and Planning, saved 28 August 2026.',
-  );
-  await expect(state.locator('p').nth(1)).toHaveText(
     'Follow Country Fire Authority and emergency service instructions first.',
   );
   await expect(state).not.toContainText(/safe|protected|low risk|no risk|high risk|danger level/i);
@@ -34,12 +36,13 @@ test('AC6 shows the published-but-nothing-mapped state exactly', async ({ page }
   await expect(state.locator('h1')).toHaveText(
     'No Bushfire Prone Area is mapped here.',
   );
+  await openSources(page);
   await expect(state.locator('p').nth(0)).toHaveText(
     'Fire can still reach you. This map only sets building rules.',
   );
   // UAT: the words that matter stand out in the attention colour.
   await expect(state.locator('.key-term')).toHaveText(['Bushfire Prone Area', 'Fire can still reach you']);
-  await expect(state).toContainText('Published by the Department of Transport and Planning, saved');
+  await expect(state.locator('.source-rows')).toContainText('Department of Transport and Planning');
   await expect(state).not.toContainText(/not designated|none found|no results|all clear|safe|no risk|low risk/i);
 });
 

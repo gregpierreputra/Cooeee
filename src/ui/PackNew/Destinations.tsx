@@ -62,8 +62,7 @@ export function PlaceFacts({ place, now }: { place: Destination; now: number }) 
 function PlaceSource({ place, now }: { place: Destination; now: number }) {
   return (
     <div className="destination-source">
-      {place.listAsAt ? <p className="muted figure">{nspListDateLabel(place.listAsAt)}</p> : null}
-      <ProvenanceLine source={place.source} now={now} />
+      <ProvenanceLine source={place.source} now={now} extra={place.listAsAt ? [{ label: copy.SOURCE_LIST_DATE, value: formatIsoDateShort(place.listAsAt) }] : []} />
     </div>
   );
 }

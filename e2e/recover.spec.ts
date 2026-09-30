@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { NEED_CHANNELS } from '../src/core/constants';
 import * as copy from '../src/core/copy';
-import { acknowledgeFirstOpen, HARNESS } from './helpers';
+import { acknowledgeFirstOpen, HARNESS, openSources } from './helpers';
 
 const RECOVER_URL = `${HARNESS}/recover`;
 
@@ -27,8 +27,11 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   await expect(cards.first().locator('.monogram')).toHaveText('SA');
   await expect(cards.first().locator('.need-pill')).toHaveText([copy.NEED_PHRASE.money, copy.NEED_PHRASE.property]);
   await expect(page.locator('.card.kept')).toHaveCount(0);
-  await expect(cards.first()).toContainText('Published by Services Australia · Saved 9 September 2026');
-  await expect(cards.first()).toContainText(copy.LICENCE_LINE('CC BY 4.0'));
+  await openSources(page);
+  const source = cards.first().locator('.source-rows');
+  await expect(source).toContainText('Services Australia');
+  await expect(source).toContainText('9 September 2026');
+  await expect(source).toContainText('CC BY 4.0');
   await expect(cards.getByRole('link', { name: copy.OPEN_ORIGINAL_SOURCE }))
     .toHaveAttribute('href', 'https://www.servicesaustralia.gov.au/');
   await expect(cards.getByRole('link', { name: copy.CALL_LINE('180 22 66') }))
@@ -62,7 +65,8 @@ test('an old snapshot is labelled in plain words and still shown', async ({ page
 
   await expect(page.getByText(copy.RECOVER_STALE_LINE)).toBeVisible();
   await expect(page.locator('.card')).toHaveCount(1);
-  await expect(page.locator('.card')).toContainText(copy.LICENCE_LINE('Link only, all rights reserved'));
+  await openSources(page);
+  await expect(page.locator('.card .source-rows')).toContainText('Link only, all rights reserved');
 });
 
 // E4-US2-AC6: the source at a glance.

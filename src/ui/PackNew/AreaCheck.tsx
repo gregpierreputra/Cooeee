@@ -1,7 +1,9 @@
 import { areaCheckView } from '../../core/area-check';
+import { DTP_PUBLISHER } from '../../core/constants';
 import * as copy from '../../core/copy';
 import type { BushfireAreaResult, PendingPlace } from '../../core/types';
 import Glyph from '../components/Glyph';
+import { SourceRing } from '../components/ProvenanceLine';
 import KeyTerms from '../components/KeyTerms';
 import StatusPage from '../components/StatusPage';
 import FlowSteps from './FlowSteps';
@@ -79,7 +81,12 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
             <h1><KeyTerms text={view.resultLine} /></h1>
           </div>
           {view.cautionLine && <p className="caution"><KeyTerms text={view.cautionLine} /></p>}
-          <p className="muted">{view.publisherLine}</p>
+          <SourceRing
+            rows={[
+              { label: copy.SOURCE_PUBLISHED_BY, value: DTP_PUBLISHER },
+              { label: copy.SOURCE_SAVED, value: view.savedOn },
+            ]}
+          />
           <p className="with-glyph">
             <Glyph kind="calls" line />
             {view.priorityLine}

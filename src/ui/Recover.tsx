@@ -270,8 +270,7 @@ export default function Recover({
                 ))}
               </ul>
               <p className="muted">{program.covers}</p>
-              <ProvenanceLine source={program.source} now={now} />
-              <p className="figure">{copy.LICENCE_LINE(program.source.licence)}</p>
+              <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} />
               {saved.includes(program.id) ? (
                 <p className="figure in-packs with-glyph">
                   <Glyph kind="offline" line />

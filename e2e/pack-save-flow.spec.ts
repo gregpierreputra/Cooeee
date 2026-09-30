@@ -5,6 +5,7 @@ import {
   acknowledgeFirstOpen,
   addressFeature,
   chooseLastResortPlaces,
+  openSources,
   waitForController,
   WFS_PATTERN,
   WMS_PATTERN,
@@ -130,7 +131,8 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible(); // the bar follows to every page
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
   await expect(page.getByRole('heading', { name: 'Designated Bushfire Prone Area' })).toBeVisible();
-  await expect(page.getByText(/Published by Department of Transport and Planning/)).toBeVisible();
+  await openSources(page);
+  await expect(page.locator('.source-rows', { hasText: 'Department of Transport and Planning' }).first()).toBeVisible();
   // E2-US2: both chosen places are in the saved pack, each with its council.
   const savedPlaces = page.locator('.saved-destinations .card');
   await expect(savedPlaces).toHaveCount(2);

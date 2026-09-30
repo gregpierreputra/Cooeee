@@ -343,7 +343,7 @@ export default function PackDetail({
               <Glyph kind="web" />
               <h2 id="offline-source-heading">{copy.SOURCE_IS_ON_WEB}</h2>
             </div>
-            <ProvenanceLine source={offlineSource.source} now={now} />
+            <ProvenanceLine source={offlineSource.source} now={now} open />
             <p className="muted">{copy.EXTERNAL_SOURCE_NOTICE}</p>
             {/* The stored citation answers "what was checked" here, in the app.
                 Where there is one, the link behind it is the publisher's account

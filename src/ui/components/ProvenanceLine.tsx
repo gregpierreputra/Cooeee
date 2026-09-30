@@ -2,13 +2,60 @@ import * as copy from '../../core/copy';
 import { provenanceView } from '../../core/provenance';
 import type { Source } from '../../core/types';
 import Glyph from './Glyph';
+import Hint from './Hint';
 
-export default function ProvenanceLine({ source, now }: { source: Source; now: number }) {
+/** One labelled fact. `detail` is a quieter second part, such as a date. */
+export type SourceRow = { label: string; value: string; detail?: string };
+
+/** The facts as a list of label and value pairs: the label small and quiet,
+ *  the value at full strength, so each fact is found at a glance. */
+function SourceRows({ rows }: { rows: SourceRow[] }) {
+  return (
+    <dl className="source-rows">
+      {rows.map((row) => (
+        <div key={row.label}>
+          <dt>{row.label}</dt>
+          <dd>
+            {row.value}
+            {row.detail ? <span className="source-detail"> · {row.detail}</span> : null}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** The small Source ring and the facts it opens. */
+export function SourceRing({ rows }: { rows: SourceRow[] }) {
+  return (
+    <Hint label={copy.ABOUT_SOURCE} head={<span className="muted">{copy.SOURCE_LABEL}</span>} panelClass="source-panel" titled={false}>
+      <SourceRows rows={rows} />
+    </Hint>
+  );
+}
+
+type ProvenanceLineProps = {
+  source: Source;
+  now: number;
+  /** More facts for the same panel, such as the licence or list date. */
+  extra?: SourceRow[];
+  /** Shows the facts open, for a screen whose whole job is the source. */
+  open?: boolean;
+};
+
+/** Who published an item and when it was saved. UAT: these lines crowded every
+ *  card, so they sit behind a small Source ring. The old-data warning is never
+ *  hidden: it stays on the card. */
+export default function ProvenanceLine({ source, now, extra = [], open = false }: ProvenanceLineProps) {
   const view = provenanceView(now, source);
+  const rows: SourceRow[] = [
+    { label: copy.SOURCE_PUBLISHED_BY, value: view.publisher },
+    { label: copy.SOURCE_SAVED, value: view.age, detail: view.savedOn },
+    ...extra,
+  ];
   return (
     <div className="provenance">
-      <p>{view.publisherLine}</p>
-      <p className="figure">{view.ageLine}</p>
+      {open ? <SourceRows rows={rows} /> : <SourceRing rows={rows} />}
       {view.stale ? (
         <div className="stale-note">
           <p className="with-glyph">

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openSources } from './helpers';
 
 const URL = 'http://127.0.0.1:4174/destinations';
 const SELECT_URL = 'http://127.0.0.1:4174/destinations?select=1';
@@ -43,9 +44,13 @@ test('AC1 lists only the official in-range places, each with its council, and th
 
   await expect(page.getByText('Yarra Ranges Shire council').first()).toBeVisible();
   expect(await page.getByText('Yarra Ranges Shire council').count()).toBe(BY_DISTANCE.length + 1);
-  // UAT: the list date and publisher were the same on every card, so they are said once.
-  await expect(page.getByText('Country Fire Authority list, 18 Aug 2026')).toHaveCount(1);
-  await expect(page.getByText(/Published by Country Fire Authority/)).toHaveCount(1);
+  // UAT: the list date and publisher were the same on every card, so they are said
+  // once, behind the Source ring under the list.
+  await openSources(page);
+  const source = page.locator('.source-rows');
+  await expect(source).toHaveCount(1);
+  await expect(source).toContainText('Country Fire Authority');
+  await expect(source).toContainText('18 Aug 2026');
 });
 
 test('AC1 never mixes in an un-located place from a neighbouring council', async ({ page }) => {

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DTP_DATASET_URL } from '../src/core/constants';
-import { HARNESS } from './helpers';
+import { HARNESS, openSources } from './helpers';
 
 const DETAIL_URL = `${HARNESS}/detail`;
 const SIZE_URL = `${HARNESS}/size`;
@@ -9,13 +9,14 @@ test('US2 AC1 lists every available stored item with grouped publisher and full 
   await page.goto(DETAIL_URL);
 
   await expect(page.locator('.pack-detail h1')).toBeVisible();
+  await openSources(page);
   // The saved programs section is closed: its card is in the page but hidden.
   const items = page.locator('.provenance-item').locator('visible=true');
   await expect(items.locator('visible=true')).toHaveCount(2);
-  await expect(items.locator('.provenance').getByText(
-    /Published by .+ · Saved 27 August 2026/,
-  ).locator('visible=true')).toHaveCount(2);
-  await expect(items.getByText('2 days ago', { exact: true }).locator('visible=true')).toHaveCount(2);
+  // Each Source ring labels who published the item, then when it was saved.
+  const saved = items.locator('.source-rows dd', { hasText: '27 August 2026' }).locator('visible=true');
+  await expect(saved).toHaveCount(2);
+  await expect(saved.first()).toHaveText('2 days ago · 27 August 2026');
   await expect(page.getByRole('link', { name: 'Web page' }).locator('visible=true')).toHaveCount(2);
   await expect(page.getByRole('link', { name: 'Web page' }).first())
     .toHaveAttribute('href', DTP_DATASET_URL);
@@ -77,8 +78,10 @@ test('US2 AC3 opens the same provenance offline with zero requests and no loadin
 
 test('US2 AC4 labels day 31 without disabling or hiding pack functions', async ({ page }) => {
   await page.goto(`${DETAIL_URL}?mode=stale`);
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
+  await openSources(page);
 
-  await expect(page.getByText('31 days ago', { exact: true }).locator('visible=true')).toHaveCount(2);
+  await expect(page.locator('.source-rows dd', { hasText: '31 days ago' }).locator('visible=true')).toHaveCount(2);
   await expect(page.getByText('Not recently verified', { exact: true }).locator('visible=true')).toHaveCount(2);
   await expect(page.getByText(
     'Still works. Refresh it when next online.',
@@ -102,7 +105,7 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('Opens on the web');
   await expect(dialog).toContainText('May use your connection and leave Cooeee.');
-  await expect(dialog).toContainText('Published by Department of Transport and Planning');
+  await expect(dialog.locator('.source-rows')).toContainText('Department of Transport and Planning');
   // The stored citation, so the raw response behind the link is no longer the
   // only way to read what was checked.
   await expect(dialog).toContainText(

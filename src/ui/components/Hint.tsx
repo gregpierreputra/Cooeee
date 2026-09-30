@@ -12,13 +12,15 @@ type HintProps = {
   className?: string;
   ringClass?: string;
   panelClass?: string;
+  /** False leaves the label off the open panel, where the content needs no title. */
+  titled?: boolean;
 };
 
 /** The one information ring. A screen shows its short line, and the detail
  *  behind it opens beneath on a tap and closes on a second one. Never on hover,
  *  so a passing pointer opens nothing. The panel opens in flow, covering
  *  nothing, and is brought into view and focused as it opens. */
-export default function Hint({ label, head, children, className = 'hint', ringClass, panelClass = 'card' }: HintProps) {
+export default function Hint({ label, head, children, className = 'hint', ringClass, panelClass = 'card', titled = true }: HintProps) {
   const [open, setOpen] = useState(false);
   const panel = useRevealedPanel<HTMLElement>(open);
   const id = useId();
@@ -37,7 +39,7 @@ export default function Hint({ label, head, children, className = 'hint', ringCl
       {head}
       {open ? (
         <section id={id} ref={panel} tabIndex={-1} className={`${panelClass} hint-panel info-panel`}>
-          <span className="kicker">{label}</span>
+          {titled ? <span className="kicker">{label}</span> : null}
           {children}
         </section>
       ) : null}

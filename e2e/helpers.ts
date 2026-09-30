@@ -188,3 +188,10 @@ export async function storedRehearsals(page: Page): Promise<Record<string, unkno
     }
   });
 }
+
+/** Opens every visible Source ring, so the publisher and licence lines it
+ *  holds can be read. Each click opens one, so the closed count falls to zero. */
+export async function openSources(page: Page) {
+  const closed = page.getByRole('button', { name: 'About the source', expanded: false }).locator('visible=true');
+  while ((await closed.count()) > 0) await closed.first().click();
+}

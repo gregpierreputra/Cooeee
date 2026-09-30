@@ -15,7 +15,6 @@ import {
   packDetailPlaces,
   prepareProvenancedContent,
   provenanceView,
-  publisherLine,
   savedAgeDays,
   sourcePageUrls,
 } from '../../src/core/provenance';
@@ -69,17 +68,18 @@ describe('E1-US2 saved date and age', () => {
     expect(provenanceView(NOW, source({ retrievedAt: daysAgo(days) })).stale).toBe(stale);
   });
 
-  it('shows the exact publisher/date line and same-day wording', () => {
+  it('gives the publisher, the saved date and same-day wording as separate facts', () => {
     expect(provenanceView(NOW, source({ retrievedAt: NOW }))).toEqual({
-      publisherLine: `Published by Country Fire Authority · Saved ${formatSavedDate(NOW)}`,
-      ageLine: copy.SAVED_TODAY,
+      publisher: 'Country Fire Authority',
+      savedOn: formatSavedDate(NOW),
+      age: copy.SOURCE_TODAY,
       stale: false,
     });
   });
 
   it('shows whole elapsed days without rounding a partial day up', () => {
     expect(savedAgeDays(NOW, daysAgo(2) + 1)).toBe(1);
-    expect(provenanceView(NOW, source({ retrievedAt: daysAgo(2) })).ageLine).toBe('2 days ago');
+    expect(provenanceView(NOW, source({ retrievedAt: daysAgo(2) })).age).toBe('2 days ago');
   });
 
   it('treats a future device timestamp as today instead of showing a negative age', () => {
@@ -320,15 +320,5 @@ describe('E2-US1-AC3 stored absence row', () => {
         files: [], notes: [], recoveryVerified: true, contentVerified: true,
       }),
     ).toBeNull();
-  });
-});
-
-describe('publisherLine', () => {
-  it('is the publisher-and-saved-date line every provenance view shows', () => {
-    const row = source({ retrievedAt: daysAgo(3) });
-    expect(publisherLine(row)).toBe(provenanceView(NOW, row).publisherLine);
-    expect(publisherLine(row)).toBe(
-      `Published by Country Fire Authority · Saved ${formatSavedDate(daysAgo(3))}`,
-    );
   });
 });
