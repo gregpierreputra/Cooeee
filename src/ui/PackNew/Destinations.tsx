@@ -36,7 +36,9 @@ type DestinationsProps = {
   now?: number;
 };
 
-type RowSelection = { chosen: boolean; onToggle: () => void };
+/** `full` greys a row that is not chosen once the limit is reached. It can
+ *  still be tapped, so the reason it cannot be added is still said. */
+type RowSelection = { chosen: boolean; full: boolean; onToggle: () => void };
 
 /** What every official place states about itself, in the wizard list and in the
  *  saved pack alike: its address, then council and the CFA's dates on one quiet
@@ -56,22 +58,32 @@ export function PlaceFacts({ place, now }: { place: Destination; now: number }) 
   );
 }
 
-function DestinationRow({
-  place,
-  now,
-  selection,
-}: {
-  place: Destination;
-  now: number;
-  selection?: RowSelection;
-}) {
+/** The official list the places come from, and its age, said once. */
+function PlaceSource({ place, now }: { place: Destination; now: number }) {
+  return (
+    <div className="destination-source">
+      {place.listAsAt ? <p className="muted figure">{nspListDateLabel(place.listAsAt)}</p> : null}
+      <ProvenanceLine source={place.source} now={now} />
+    </div>
+  );
+}
+
+function DestinationRow({ place, selection }: { place: Destination; selection?: RowSelection }) {
   const distance =
     typeof place.distanceM === 'number' ? formatDistanceM(place.distanceM) : undefined;
   const name = placeName(place);
   const inputId = `choose-${place.id}`;
 
+  // UAT: the council, list date and publisher were the same on every card, so
+  // a card shows only what tells the places apart. The list's source is said
+  // once, under the list.
+  const where = [place.addressText, place.council ? copy.NSP_COUNCIL_LABEL(place.council) : null]
+    .filter(Boolean)
+    .join(' · ');
+  const greyed = selection?.full && !selection.chosen;
+
   return (
-    <li className="card destination-item">
+    <li className={greyed ? 'card destination-item destination-item-greyed' : 'card destination-item'}>
       <div className="destination-item-head">
         {selection ? (
           <input
@@ -89,8 +101,30 @@ function DestinationRow({
           {distance}
         </p>
       ) : null}
-      <PlaceFacts place={place} now={now} />
+      {where ? <p className="muted place-meta">{where}</p> : null}
     </li>
+  );
+}
+
+/** A ring that fills as places are chosen, with the count inside it. */
+function ChosenRing({ chosen, total }: { chosen: number; total: number }) {
+  const r = 20;
+  const length = 2 * Math.PI * r;
+  return (
+    <svg className="chosen-ring" viewBox="0 0 48 48" role="img" aria-label={copy.PLACES_CHOSEN_COUNT(chosen, total)}>
+      <circle className="chosen-ring-track" cx="24" cy="24" r={r} />
+      <circle
+        className="chosen-ring-fill"
+        cx="24"
+        cy="24"
+        r={r}
+        strokeDasharray={length}
+        strokeDashoffset={length * (1 - chosen / total)}
+      />
+      <text x="24" y="24" dominantBaseline="central" textAnchor="middle" aria-hidden="true">
+        {chosen}/{total}
+      </text>
+    </svg>
   );
 }
 
@@ -153,6 +187,7 @@ export function Destinations({
 
   const nonePublished = ordered.length === 0 && unlocated.length === 0;
   const selectable = Boolean(save) && ordered.length > 0;
+  const limit = savableCount(ordered.length);
 
   const toggle = (id: string) => {
     const next = chooseRules(chosen, id);
@@ -189,17 +224,27 @@ export function Destinations({
         <>
           {ordered.length > 0 ? (
             <>
-              <p className="caveat">{copy.CHOOSE_PLACES_HINT(savableCount(ordered.length))} - {copy.SORTED_BY_DISTANCE}</p>
-              <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
+              <div className="choose-head">
+                {selectable ? <ChosenRing chosen={chosen.length} total={limit} /> : null}
+                <div>
+                  <p className="caveat">
+                    <strong className="choose-hint">{copy.CHOOSE_PLACES_HINT(limit)}</strong> · {copy.SORTED_BY_DISTANCE}
+                  </p>
+                  <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
+                </div>
+              </div>
               <ul className="list destination-list" data-testid="ordered-destinations">
                 {ordered.map((place) => (
                   <DestinationRow
                     key={place.id}
                     place={place}
-                    now={now}
                     selection={
                       selectable
-                        ? { chosen: chosen.includes(place.id), onToggle: () => toggle(place.id) }
+                        ? {
+                            chosen: chosen.includes(place.id),
+                            full: chosen.length >= limit,
+                            onToggle: () => toggle(place.id),
+                          }
                         : undefined
                     }
                   />
@@ -213,11 +258,14 @@ export function Destinations({
               <h2>{copy.NSP_UNLOCATED_HEADING}</h2>
               <ul className="list destination-list" data-testid="unlocated-destinations">
                 {unlocated.map((place) => (
-                  <DestinationRow key={place.id} place={place} now={now} />
+                  <DestinationRow key={place.id} place={place} />
                 ))}
               </ul>
             </section>
           ) : null}
+
+          {/* Said once: every place above comes from the same official list. */}
+          <PlaceSource place={ordered[0] ?? unlocated[0]} now={now} />
 
           {selectable ? null : continueAction}
 

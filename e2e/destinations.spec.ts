@@ -27,7 +27,7 @@ function offOriginRequests(page: Page): string[] {
   return seen;
 }
 
-test('AC1 lists only the official in-range places, each with its council and the list date', async ({
+test('AC1 lists only the official in-range places, each with its council, and the list date once', async ({
   page,
 }) => {
   await page.goto(URL);
@@ -41,16 +41,11 @@ test('AC1 lists only the official in-range places, each with its council and the
   const cards = page.locator('.destination-item');
   await expect(cards).toHaveCount(BY_DISTANCE.length + 1); // + the un-located Wandin North row
 
-  for (const text of [
-    'Yarra Ranges Shire council',
-    'Country Fire Authority list, 18 Aug 2026',
-  ]) {
-    await expect(page.getByText(text).first()).toBeVisible();
-    expect(await page.getByText(text).count()).toBe(BY_DISTANCE.length + 1);
-  }
-  expect(await page.getByText(/Published by Country Fire Authority/).count()).toBe(
-    BY_DISTANCE.length + 1,
-  );
+  await expect(page.getByText('Yarra Ranges Shire council').first()).toBeVisible();
+  expect(await page.getByText('Yarra Ranges Shire council').count()).toBe(BY_DISTANCE.length + 1);
+  // UAT: the list date and publisher were the same on every card, so they are said once.
+  await expect(page.getByText('Country Fire Authority list, 18 Aug 2026')).toHaveCount(1);
+  await expect(page.getByText(/Published by Country Fire Authority/)).toHaveCount(1);
 });
 
 test('AC1 never mixes in an un-located place from a neighbouring council', async ({ page }) => {
@@ -155,8 +150,12 @@ test('US2-AC1 nothing is pre-selected and Save waits for exactly two', async ({ 
 test('US2-AC1 a third choice is refused with a reason; the two stay chosen', async ({ page }) => {
   await page.goto(SELECT_URL);
   const boxes = page.locator('[data-testid=ordered-destinations] input[type=checkbox]');
+  await expect(page.getByRole('img', { name: '0 of 2 chosen' })).toBeVisible();
   await boxes.nth(0).check();
   await boxes.nth(1).check();
+  // UAT: the ring counts the two, and every other place is greyed.
+  await expect(page.getByRole('img', { name: '2 of 2 chosen' })).toBeVisible();
+  await expect(page.locator('.destination-item-greyed')).toHaveCount(BY_DISTANCE.length - 2);
   await boxes.nth(2).click(); // a click that must be refused, not a state change
 
   await expect(

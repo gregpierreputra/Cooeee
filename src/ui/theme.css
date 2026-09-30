@@ -225,6 +225,58 @@ a {
   cursor: pointer;
 }
 
+/* The rule on top: the counter ring, then Choose two in the accent. */
+.choose-head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+.choose-hint {
+  color: var(--accent);
+  font-weight: var(--w-heavy);
+}
+.chosen-ring {
+  inline-size: 48px;
+  block-size: 48px;
+  flex: none;
+}
+.chosen-ring circle {
+  fill: none;
+  stroke-width: 4;
+}
+.chosen-ring-track {
+  stroke: var(--line);
+}
+/* Starts at twelve o'clock and fills clockwise as places are chosen. */
+.chosen-ring-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dashoffset 0.25s ease;
+}
+.chosen-ring text {
+  fill: var(--ink);
+  font-size: 14px;
+  font-weight: var(--w-heavy);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chosen-ring-fill {
+    transition: none;
+  }
+}
+
+/* Once two are chosen, the rest step back. Still tappable, so tapping one
+   still says why it cannot be added. */
+.destination-item-greyed {
+  opacity: 0.45;
+}
+
+.destination-source {
+  display: grid;
+  gap: 0.25rem;
+}
+
 /* ── Cards and lists ───────────────────────────────────────────────────────── */
 
 /* Absence states use the SAME neutral treatment as presence states. Absence must
