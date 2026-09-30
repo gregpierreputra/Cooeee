@@ -2261,6 +2261,15 @@ p.caution {
   width: 100%;
   text-align: left;
 }
+/* Clear all on the kept list: a small pill in the delete red, so it never
+   reads as a neutral action. */
+.recover .clear-kept {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: var(--step-s);
+  color: var(--offline);
+}
 .recover .card a {
   align-self: start;
 }

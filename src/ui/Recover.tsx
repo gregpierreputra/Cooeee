@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 
 import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
-import { readKept, toggleKept } from '../core/kept';
+import { readKept, toggleKept, writeKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
 import { callList, isNeed, monogram, NEEDS, parseChoice, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
 import type { RecoveryProgram } from '../core/types';
@@ -53,6 +53,22 @@ export default function Recover({
   // category it was for. The effect below then clears it on any change of category.
   const [shared, setShared] = useState<{ on: Choice | null; state: 'copied' | 'unavailable' } | null>(null);
   const shareNote = shared?.on === choice ? shared.state : null;
+  // Clear all asks once first. Focus goes to the choice that changes nothing,
+  // and back to Clear all if the person keeps them.
+  const [confirmClear, setConfirmClear] = useState(false);
+  const keepAllRef = useRef<HTMLButtonElement>(null);
+  const askedClear = useRef(false);
+  useEffect(() => {
+    if (confirmClear) {
+      askedClear.current = true;
+      keepAllRef.current?.focus();
+    } else if (askedClear.current) {
+      askedClear.current = false;
+      const control = document.getElementById('clear-kept');
+      if (control) control.focus();
+      else focusMain();
+    }
+  }, [confirmClear]);
 
   useEffect(() => {
     let live = true;
@@ -75,6 +91,7 @@ export default function Recover({
   // and moves focus to the page, since the control that was pressed is gone.
   useEffect(() => {
     setShared(null);
+    setConfirmClear(false);
     setKeptOnEntry(choice === 'kept' ? kept : null);
     focusMain();
   }, [choice]);
@@ -232,6 +249,11 @@ export default function Recover({
   }
 
   const stale = shown.some((program) => recoveryStale(now, program.snapshotDate));
+  const clearKept = () => {
+    writeKept(localFlagStore(), []);
+    setKept([]);
+    setConfirmClear(false);
+  };
   return (
     <main className="page recover">
       <header className="hero">
@@ -245,6 +267,30 @@ export default function Recover({
           </p>
         ) : null}
       </header>
+      {/* The kept list only. Every card stays on screen after a clear, each
+          with its Keep control, so one can be kept again straight away. */}
+      {choice !== 'kept' ? null : confirmClear ? (
+        <section className="card" aria-labelledby="clear-kept-question">
+          <p id="clear-kept-question">{copy.CLEAR_KEPT_QUESTION}</p>
+          <p className="muted">{copy.CLEAR_KEPT_PACKS}</p>
+          <div className="card-confirm-actions">
+            <button ref={keepAllRef} type="button" className="card-confirm-no" onClick={() => setConfirmClear(false)}>
+              {copy.KEEP_KEPT}
+            </button>
+            <button type="button" className="card-confirm-yes with-glyph" onClick={clearKept}>
+              <Glyph kind="trash" line />
+              {copy.CLEAR_KEPT}
+            </button>
+          </div>
+        </section>
+      ) : kept.length > 0 ? (
+        <button id="clear-kept" type="button" className="clear-kept with-glyph" onClick={() => setConfirmClear(true)}>
+          <Glyph kind="trash" line />
+          {copy.CLEAR_KEPT}
+        </button>
+      ) : (
+        <p className="muted" role="status">{copy.KEPT_CLEARED}</p>
+      )}
       <ul className="list">
         {shown.map((program) => {
           const isKept = kept.includes(program.id);

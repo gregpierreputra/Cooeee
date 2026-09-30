@@ -131,6 +131,29 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('[]');
 });
 
+// UR-US33: Clear all on the kept list asks once, and keeps the cards on screen.
+test('Clear all asks first, then releases every kept program', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.evaluate(() => window.localStorage.setItem('cooeee.kept.v1', '["recover:payment"]'));
+  await page.reload();
+  await page.getByRole('button', { name: copy.KEPT_PROGRAMS }).click();
+
+  const clear = page.getByRole('button', { name: copy.CLEAR_KEPT });
+  await clear.click();
+  await expect(page.getByText(copy.CLEAR_KEPT_QUESTION)).toBeVisible();
+  await expect(page.getByRole('button', { name: copy.KEEP_KEPT })).toBeFocused();
+  await page.getByRole('button', { name: copy.KEEP_KEPT }).click();
+  await expect(clear).toBeFocused();
+  expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["recover:payment"]');
+
+  await clear.click();
+  await page.getByRole('button', { name: copy.CLEAR_KEPT }).click();
+  expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('[]');
+  await expect(page.getByRole('status').filter({ hasText: copy.KEPT_CLEARED })).toBeVisible();
+  await expect(page.locator('.card')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: copy.KEEP })).toHaveAttribute('aria-pressed', 'false');
+});
+
 // E4-US5: the list leaves as plain text, with the caveat at the top.
 test('the list is shared as plain text that starts with the caveat', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: HARNESS });

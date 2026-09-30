@@ -438,6 +438,13 @@ export const RECOVER_MAY_MATCH =
   'These may match. The responsible organisation decides who is eligible.';
 export const EVERY_PROGRAM = 'Every program in this pack';
 export const KEPT_PROGRAMS = 'Kept programs';
+/** Clearing the kept list asks once, as deleting a pack does, because every
+ *  saved pack mirrors the kept list and drops the programs with it. */
+export const CLEAR_KEPT = 'Clear all';
+export const CLEAR_KEPT_QUESTION = 'Clear every kept program?';
+export const CLEAR_KEPT_PACKS = 'Your saved packs stop carrying them too.';
+export const KEEP_KEPT = 'Keep them';
+export const KEPT_CLEARED = 'Nothing is kept now. Tap Keep to keep one again.';
 export const KEEP = 'Keep';
 export const KEPT = 'Kept';
 export const SHARE_LIST = 'Share this list';
