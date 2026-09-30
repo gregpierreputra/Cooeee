@@ -240,7 +240,9 @@ export const NSP_BUSHFIRE_ONLY =
 
 export const SAVE_LAST_RESORT_PLACES = 'Save last-resort places';
 export const CHOOSE_PLACES_HINT = (n: number) => (n === 1 ? 'Choose one' : 'Choose two');
-export const TWO_PLACES_ALREADY_CHOSEN = 'Two chosen. Untick one to change.';
+export const TWO_PLACES_ALREADY_CHOSEN = 'Untick to change';
+/** The places step's short order line beside the hint. */
+export const SORTED_SHORT = 'sorted by distance';
 /** Read out for the counter ring beside Choose two. */
 export const PLACES_CHOSEN_COUNT = (chosen: number, total: number) => `${chosen} of ${total} chosen`;
 export const SAVING_LAST_RESORT_PLACES = 'Saving…';

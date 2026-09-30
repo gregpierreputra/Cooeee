@@ -17,7 +17,7 @@ const BY_DISTANCE = [
 ];
 const UNLOCATED_SAME_LGA = 'Wandin North Reserve';
 const UNLOCATED_OTHER_LGA = 'Alexandra Showgrounds';
-const CAVEAT = 'sorted by distance, not a safety ranking';
+const CAVEAT = 'sorted by distance';
 const DISTANCE = /^\d+(\.\d+)?\s(m|km)$/;
 
 function offOriginRequests(page: Page): string[] {
@@ -161,11 +161,13 @@ test('US2-AC1 a third choice is refused with a reason; the two stay chosen', asy
   // UAT: the ring counts the two, and every other place is greyed.
   await expect(page.getByRole('img', { name: '2 of 2 chosen' })).toBeVisible();
   await expect(page.locator('.destination-item-greyed')).toHaveCount(BY_DISTANCE.length - 2);
-  await boxes.nth(2).click(); // a click that must be refused, not a state change
-
-  await expect(
-    page.getByText('Two chosen. Untick one to change.'),
-  ).toBeVisible();
+  // At two the hint over the list says how to change, and the greyed rows say
+  // they are unavailable; nothing pops up at the bottom.
+  await expect(page.locator('.choose-hint')).toHaveText('Untick to change');
+  await expect(boxes.nth(2)).toHaveAttribute('aria-disabled', 'true');
+  // Forced, as a tap reaches a control marked unavailable; it must be refused.
+  await boxes.nth(2).click({ force: true });
+  await expect(page.locator('.choose-hint')).toHaveText('Untick to change');
   await expect(boxes.nth(2)).not.toBeChecked();
   await expect(boxes.nth(0)).toBeChecked();
   await expect(boxes.nth(1)).toBeChecked();

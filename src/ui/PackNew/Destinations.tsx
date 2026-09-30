@@ -36,8 +36,8 @@ type DestinationsProps = {
   now?: number;
 };
 
-/** `full` greys a row that is not chosen once the limit is reached. It can
- *  still be tapped, so the reason it cannot be added is still said. */
+/** `full` greys a row that is not chosen once the limit is reached. It is
+ *  marked unavailable, and the hint over the list says why. */
 type RowSelection = { chosen: boolean; full: boolean; onToggle: () => void };
 
 /** What every official place states about itself, in the wizard list and in the
@@ -89,6 +89,7 @@ function DestinationRow({ place, selection }: { place: Destination; selection?: 
             type="checkbox"
             id={inputId}
             checked={selection.chosen}
+            aria-disabled={greyed || undefined}
             onChange={selection.onToggle}
           />
         ) : null}
@@ -142,7 +143,6 @@ export function Destinations({
   now = Date.now(),
 }: DestinationsProps) {
   const [chosen, setChosen] = useState<string[]>([]);
-  const [capReached, setCapReached] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
 
   // The way on when there is nothing to choose, shared by every such state.
@@ -189,14 +189,12 @@ export function Destinations({
   const limit = savableCount(ordered.length);
 
   const toggle = (id: string) => {
+    // A greyed row refuses the tick; the hint over the list already says why.
     const next = chooseRules(chosen, id);
-    if (next) {
-      setChosen(next);
-      setCapReached(false);
-    } else {
-      setCapReached(true);
-    }
+    if (next) setChosen(next);
   };
+  // At two, the hint over the list says how to change, for as long as it is true.
+  const atTwo = limit === 2 && chosen.length >= limit;
 
   async function runSave() {
     if (!save) return;
@@ -226,8 +224,11 @@ export function Destinations({
               <div className="choose-head">
                 {selectable ? <ChosenRing chosen={chosen.length} total={limit} /> : null}
                 <div>
-                  <p className="caveat">
-                    <strong className="choose-hint">{copy.CHOOSE_PLACES_HINT(limit)}</strong> · {copy.SORTED_BY_DISTANCE}
+                  <p className="caveat" role="status" aria-live="polite">
+                    <strong className="choose-hint">
+                      {atTwo ? copy.TWO_PLACES_ALREADY_CHOSEN : copy.CHOOSE_PLACES_HINT(limit)}
+                    </strong>{' '}
+                    · {copy.SORTED_SHORT}
                   </p>
                   <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
                 </div>
@@ -271,7 +272,6 @@ export function Destinations({
           {selectable ? (
             <>
               <div role="status" aria-live="polite">
-                {capReached ? <p>{copy.TWO_PLACES_ALREADY_CHOSEN}</p> : null}
                 {saveState === 'failed' ? <p>{copy.LAST_RESORT_SAVE_FAILED}</p> : null}
               </div>
               <div className="actions">
