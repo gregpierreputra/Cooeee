@@ -38,7 +38,21 @@ async function finger(page: Page) {
 async function openHome(page: Page) {
   await acknowledgeFirstOpen(page);
   await page.goto('/');
-  await hold(page).scrollIntoViewIfNeeded();
+  // To the foot of the page, as a thumb would. Scrolling only until the button
+  // shows can leave it under the bottom bar, where the touch would miss it.
+  await hold(page).waitFor();
+  // The connection notice can slide in after load and push the page down, so
+  // wait until the page stops growing before aiming at the button.
+  let height = 0;
+  await expect
+    .poll(async () => {
+      const next = await page.evaluate(() => document.documentElement.scrollHeight);
+      const settled = next === height;
+      height = next;
+      return settled;
+    }, { intervals: [300] })
+    .toBe(true);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   expect(await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight)).toBe(true);
   const box = (await hold(page).boundingBox())!;
   return { box, centre: { x: box.x + box.width / 2, y: box.y + box.height / 2 } };
