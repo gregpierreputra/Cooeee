@@ -232,14 +232,12 @@ export default function Recover({
   }
 
   const stale = shown.some((program) => recoveryStale(now, program.snapshotDate));
-  const anyKeptShown = shown.some((program) => kept.includes(program.id));
   return (
     <main className="page recover">
       <header className="hero">
         <span className="kicker">{copy.NAV_RECOVER}</span>
         <h1>{heading}</h1>
         <p className="caveat">{copy.RECOVER_MAY_MATCH}</p>
-        <p className="muted">{anyKeptShown ? copy.RECOVER_ORDER_LINE_KEPT : copy.RECOVER_ORDER_LINE}</p>
         {stale ? (
           <p className="with-glyph tone-amber">
             <Glyph kind="caution" line />

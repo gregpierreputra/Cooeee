@@ -399,12 +399,10 @@ describe('E4 Recover mandated copy', () => {
     expect(copy.RECOVER_MAY_MATCH).toBe(
       'These may match. The responsible organisation decides who is eligible.',
     );
-    expect(copy.RECOVER_ORDER_LINE).toBe('A to Z by organisation');
   });
 
   it('says what is shared, and that the caveat travels with a shared list', () => {
     expect(copy.SHARED_FROM).toBe('Shared from Cooeee. Programs change, and the organisation decides.');
-    expect(copy.RECOVER_ORDER_LINE_KEPT).toBe('Kept first, then A to Z by organisation');
     expect(copy.PREPARATION_LINES.filter((line) => line.source === copy.PREPARATION_SOURCE_RECOVERY)).toHaveLength(2);
   });
 

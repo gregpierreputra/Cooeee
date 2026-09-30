@@ -438,8 +438,6 @@ export const NEED_PHRASE: Record<NeedKey, string> = {
 };
 export const RECOVER_MAY_MATCH =
   'These may match. The responsible organisation decides who is eligible.';
-export const RECOVER_ORDER_LINE = 'A to Z by organisation';
-export const RECOVER_ORDER_LINE_KEPT = 'Kept first, then A to Z by organisation';
 export const EVERY_PROGRAM = 'Every program in this pack';
 export const KEPT_PROGRAMS = 'Kept programs';
 export const KEEP = 'Keep';

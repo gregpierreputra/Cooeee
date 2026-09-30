@@ -20,7 +20,6 @@ test('a need in plain words lists the may-match programs from the pack, with zer
 
   await expect(page.getByRole('heading', { name: copy.NEED_PHRASE.money })).toBeVisible();
   await expect(page.getByText(copy.RECOVER_MAY_MATCH)).toBeVisible();
-  await expect(page.getByText(copy.RECOVER_ORDER_LINE)).toBeVisible();
   const cards = page.locator('.card');
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Example disaster payment');
@@ -104,7 +103,6 @@ test('every program in the pack can be read without choosing a need', async ({ p
   await expect(page.getByRole('heading', { name: copy.EVERY_PROGRAM })).toBeVisible();
   await expect(page.locator('.card')).toHaveCount(2);
   await expect(page.locator('.card').first()).toContainText('Australian Red Cross');
-  await expect(page.getByText(copy.RECOVER_ORDER_LINE)).toBeVisible();
 });
 
 // E4-US6: a kept program is remembered on the phone, listed first, and offered as its own row.
@@ -129,7 +127,6 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
   await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
   await expect(page.locator('.card').first()).toContainText('Example disaster payment');
-  await expect(page.getByText(copy.RECOVER_ORDER_LINE_KEPT)).toBeVisible();
   await page.getByRole('button', { name: copy.KEPT }).click();
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('[]');
 });
