@@ -143,7 +143,6 @@ export default function Recover({
   if (choice === null || (choice === 'kept' && !anyKept)) {
     const rows: { key: Choice; label: string }[] = [
       ...NEEDS.map((key) => ({ key, label: copy.NEED_PHRASE[key] })),
-      { key: 'all', label: copy.EVERY_PROGRAM },
       { key: 'calls', label: copy.WHO_TO_CALL },
     ];
     return (
@@ -156,15 +155,23 @@ export default function Recover({
             {copy.RECOVER_PRIVACY_LINE}
           </p>
         </header>
-        {/* What the person already chose is not one more need to pick from, so
-            it stands outside the list, in the same ring and tint a kept card
-            wears. It is here only while something is kept. */}
-        {anyKept ? (
-          <button type="button" className="need-button kept-button" onClick={() => choose('kept')}>
-            <Glyph kind="kept" />
-            {copy.KEPT_PROGRAMS}
+        {/* The two ways into the programs that are not one need, as tiles over
+            the needs. Kept, in the ring and tint a kept card wears, is here
+            only while something is kept; All then fills the row alone. */}
+        <div className="recover-tiles">
+          {anyKept ? (
+            <button type="button" className="recover-tile kept-button" onClick={() => choose('kept')}>
+              <Glyph kind="kept" />
+              <span className="recover-tile-label">{copy.KEPT_PROGRAMS}</span>{' '}
+              <span className="recover-tile-detail">{copy.KEPT_PROGRAMS_DETAIL}</span>
+            </button>
+          ) : null}
+          <button type="button" className="recover-tile" onClick={() => choose('all')}>
+            <Glyph kind="all" />
+            <span className="recover-tile-label">{copy.ALL_PROGRAMS}</span>{' '}
+            <span className="recover-tile-detail">{copy.ALL_PROGRAMS_DETAIL}</span>
           </button>
-        ) : null}
+        </div>
         <ul className="list">
           {rows.map((row) => (
             <li key={row.key}>
@@ -210,7 +217,7 @@ export default function Recover({
     );
   }
 
-  const heading = choice === 'all' ? copy.EVERY_PROGRAM
+  const heading = choice === 'all' ? copy.ALL_PROGRAMS
     : choice === 'kept' ? copy.KEPT_PROGRAMS
     : copy.NEED_PHRASE[choice];
   const shown = selectPrograms(programs, choice, keptListed);

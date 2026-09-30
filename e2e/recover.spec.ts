@@ -101,8 +101,8 @@ test('the bottom bar opens Recover', async ({ page }) => {
 // E4-US4-AC1: every program, any day, with no need chosen.
 test('every program in the pack can be read without choosing a need', async ({ page }) => {
   await page.goto(RECOVER_URL);
-  await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
-  await expect(page.getByRole('heading', { name: copy.EVERY_PROGRAM })).toBeVisible();
+  await page.getByRole('button', { name: copy.ALL_PROGRAMS }).click();
+  await expect(page.getByRole('heading', { name: copy.ALL_PROGRAMS })).toBeVisible();
   await expect(page.locator('.card')).toHaveCount(2);
   await expect(page.locator('.card').first()).toContainText('Australian Red Cross');
 });
@@ -119,6 +119,9 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["recover:payment"]');
 
   await page.reload();
+  // The two tiles over the needs say the kept list is shared and the programs are on the phone.
+  await expect(page.getByRole('button', { name: `${copy.KEPT_PROGRAMS} ${copy.KEPT_PROGRAMS_DETAIL}` })).toBeVisible();
+  await expect(page.getByRole('button', { name: `${copy.ALL_PROGRAMS} ${copy.ALL_PROGRAMS_DETAIL}` })).toBeVisible();
   await page.getByRole('button', { name: copy.KEPT_PROGRAMS }).click();
   await expect(page.locator('.card')).toHaveCount(1);
   // UAT: releasing it here keeps the card on the list until the person leaves.
@@ -127,7 +130,7 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   await expect(page.getByRole('button', { name: copy.KEEP })).toHaveAttribute('aria-pressed', 'false');
   await page.getByRole('button', { name: copy.KEEP }).click();
   await page.getByRole('button', { name: copy.BACK, exact: true }).click();
-  await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
+  await page.getByRole('button', { name: copy.ALL_PROGRAMS }).click();
   await expect(page.locator('.card').first()).toContainText('Example disaster payment');
   await page.getByRole('button', { name: copy.KEPT }).click();
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('[]');

@@ -438,8 +438,12 @@ export const NEED_PHRASE: Record<NeedKey, string> = {
 };
 export const RECOVER_MAY_MATCH =
   'These may match. The responsible organisation decides who is eligible.';
-export const EVERY_PROGRAM = 'Every program in this pack';
+/** The two tiles over the needs. The programs are on the phone, not in one
+ *  pack, and every saved pack carries the kept ones. */
+export const ALL_PROGRAMS = 'All programs';
+export const ALL_PROGRAMS_DETAIL = 'on this phone';
 export const KEPT_PROGRAMS = 'Kept programs';
+export const KEPT_PROGRAMS_DETAIL = 'in every pack';
 /** Clearing the kept list asks once, as deleting a pack does, because every
  *  saved pack mirrors the kept list and drops the programs with it. */
 export const CLEAR_KEPT = 'Clear all';
