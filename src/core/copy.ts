@@ -458,7 +458,6 @@ export const CALL_LINE = (number: string) => `Call ${number}`;
 export const RECOVER_NO_MATCH_TITLE = 'This pack holds nothing for that need.';
 export const RECOVER_NO_MATCH_LINE = 'Help may still exist. Try the official channel with a connection.';
 export const OFFICIAL_CHANNEL = 'Official channel (web)';
-export const CHOOSE_ANOTHER_NEED = 'Another need';
 export const RECOVER_NONE_TITLE = 'No support information is held on this phone.';
 export const SAVED_PROGRAMS = 'Saved programs';
 export const STORED_INFORMATION = 'Stored information';

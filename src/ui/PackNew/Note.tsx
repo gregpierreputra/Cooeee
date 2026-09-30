@@ -8,6 +8,8 @@ import FlowSteps from './FlowSteps';
 
 type NoteProps = {
   example: string;
+  /** The note written before, when the person comes back to this step. */
+  initial?: string;
   /** The note to keep, or undefined to go on without one. */
   onContinue: (text?: string) => void;
 };
@@ -15,8 +17,8 @@ type NoteProps = {
 /** The personal-note step: one box, pre-filled with an example written for
  *  this place, and a plain way past it. Nothing is written here; the parent
  *  carries the text into the pack save. */
-export function Note({ example, onContinue }: NoteProps) {
-  const [text, setText] = useState(example);
+export function Note({ example, initial, onContinue }: NoteProps) {
+  const [text, setText] = useState(initial ?? example);
 
   return (
     <main className="page note-page">

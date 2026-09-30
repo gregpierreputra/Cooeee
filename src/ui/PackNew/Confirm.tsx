@@ -7,14 +7,16 @@ import type { AddressCandidate, PendingPlace } from '../../core/types';
 
 type ConfirmProps = {
   candidate: AddressCandidate;
+  /** The name given before, when the person comes back to this step. */
+  initialName?: string;
   onConfirm: (pendingPlace: PendingPlace) => void;
   onSearchAgain: () => void;
 };
 
 /** E1-US1-AC1 confirmation step. The parent owns the pending in-memory value;
  * this component performs no persistence, networking or navigation. */
-export function Confirm({ candidate, onConfirm, onSearchAgain }: ConfirmProps) {
-  const [name, setName] = useState(candidate.localityName);
+export function Confirm({ candidate, initialName, onConfirm, onSearchAgain }: ConfirmProps) {
+  const [name, setName] = useState(initialName ?? candidate.localityName);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

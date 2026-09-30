@@ -359,7 +359,13 @@ if (window.location.pathname === '/recover') {
     await db.packs.put(savedPack);
     await db.packPrograms.put({ ...recoverPrograms[0], id: `${savedPack.id}:recover:payment`, packId: savedPack.id, programId: 'recover:payment' });
   }
-  recoverFlow = <Recover now={recoverNow} />;
+  // With the app's back bar, which goes up from a chosen need to the list.
+  recoverFlow = (
+    <>
+      <BackBar />
+      <Recover now={recoverNow} />
+    </>
+  );
 }
 
 function DetailLauncher() {
@@ -825,9 +831,12 @@ const areaFlow = (
 // Screens link back to the pack list, so they need router context. The
 // harness has no routes of its own, so ONE in-memory router keeps every
 // component mountable in isolation without a second application shell.
-// The rehearsal harness starts on its own path, as the app does, so the back
-// bar (which hides on the home path) is on screen and carries the rehearsal bar.
-const initialEntries = window.location.pathname === '/rehearse' ? [REHEARSE_PATH] : undefined;
+// The rehearsal and Recover harnesses start on their own paths, as the app
+// does, so the back bar knows where it is: it carries the rehearsal bar, and
+// goes up from a chosen need to Recover's list.
+const initialEntries = window.location.pathname === '/rehearse' ? [REHEARSE_PATH]
+  : window.location.pathname === '/recover' ? ['/recover']
+  : undefined;
 
 createRoot(root).render(
   <StrictMode>

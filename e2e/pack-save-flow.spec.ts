@@ -236,6 +236,81 @@ test('a second address becomes a second pack beside the first, with no question 
   await expect(page.locator('.pack-card')).toHaveCount(2);
   await expect(page.getByText(displayAddress(NEW_ADDRESS))).toBeVisible();
   await expect(page.getByText(displayAddress(ADDRESS), { exact: true })).toBeVisible();
+
+  // With two packs, Back from a pack's rehearsal goes up to the chooser.
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Rehearse', exact: true }).click();
+  await page.locator('.condition-list button').first().click();
+  await expect(page).toHaveURL(/\/rehearse\/.+/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
+  await expect(page.locator('.condition-list button')).toHaveCount(2);
+});
+
+// UR-US36: Back steps back through the builder one step at a time, keeping
+// every answer, and the phone's Back button does the same.
+test('Back steps back through the pack builder and keeps every answer', async ({ page }) => {
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  const back = page.getByRole('button', { name: 'Back', exact: true });
+  await page.goto('/');
+  await page.getByRole('link', { name: 'New offline pack' }).first().click();
+  await page.getByLabel('Street address').fill('RIDGE');
+  await page.getByLabel('Street address').press('Enter');
+  await page.getByRole('button', { name: ADDRESS }).click();
+  await page.getByLabel('Place name').fill('Our house');
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  const boxes = page.getByRole('checkbox');
+  await boxes.nth(0).check();
+  await boxes.nth(1).check();
+  await page.getByRole('button', { name: 'Save last-resort places' }).click();
+  await page.getByLabel('Your note').fill('Meet at the oval gate.');
+  await page.getByRole('button', { name: 'Keep this note' }).click();
+  await expect(page.getByRole('heading', { name: 'Carry support programs?' })).toBeVisible();
+
+  // The Back bar: programs, then the note as written.
+  await back.click();
+  await expect(page.getByLabel('Your note')).toHaveValue('Meet at the oval gate.');
+  // The phone's Back button: the places, with the same two ticked.
+  await page.goBack();
+  await expect(boxes.nth(0)).toBeChecked();
+  await expect(boxes.nth(1)).toBeChecked();
+  // The area result, held on the phone, so nothing is asked again.
+  await back.click();
+  await expect(page.getByRole('heading')).toHaveText('This address is inside a Bushfire Prone Area.');
+  // The address, with the name as given.
+  await back.click();
+  await expect(page.getByLabel('Place name')).toHaveValue('Our house');
+  await back.click();
+  await expect(page.getByLabel('Street address')).toBeVisible();
+  await expect(page).toHaveURL(/\/packs\/new$/);
+  // From the search, Back leaves the builder.
+  await back.click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test('once the pack is saved, Back to Home is the one way out', async ({ page }) => {
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await searchConfirmAndReachOffer(page);
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
+  await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Back to Home' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('.pack-card')).toHaveCount(1);
+});
+
+test('a reload part way through starts again at the address search', async ({ page }) => {
+  await page.goto('/packs/new?step=note');
+  await expect(page.getByLabel('Street address')).toBeVisible();
+  await expect(page).toHaveURL(/\/packs\/new$/);
 });
 
 // ── E1-US2 pack-detail return path ──────────────────────────────────────────
@@ -274,6 +349,23 @@ test('US2 the global Back bar works offline and the stored pack survives it', as
   expect(failed).toEqual([]);
 
   await context.setOffline(false);
+});
+
+test('Back from a pack goes Home with another tab behind it, and a lone pack\'s rehearsal has no Back', async ({ page }) => {
+  await saveAPackAndOpenIt(page);
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  await nav.getByRole('link', { name: 'About', exact: true }).click();
+  await page.goBack();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('.pack-card')).toBeVisible();
+
+  // One pack: Rehearse opens its rehearsal straight away, so Back there would loop.
+  await nav.getByRole('link', { name: 'Rehearse', exact: true }).click();
+  await expect(page).toHaveURL(/\/rehearse\/.+/);
+  await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
 });
 
 test('US2 the pack reopens unchanged after returning to the pack list', async ({ page }) => {

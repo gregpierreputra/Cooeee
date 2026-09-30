@@ -30,6 +30,8 @@ type DestinationsProps = {
   /** When provided, the ordered rows become selectable and the two the user
    *  picks are persisted by this callback. Absent = a read-only list. */
   save?: (chosenIds: string[]) => Promise<void>;
+  /** The places ticked before, when the person comes back to this step. */
+  initialChosen?: string[];
   /** The way on when there is nothing to choose: no place published, or only
    *  places the CFA could not put on the map. */
   onContinue?: () => void;
@@ -139,10 +141,11 @@ export function Destinations({
   area,
   status = 'ok',
   save,
+  initialChosen,
   onContinue,
   now = Date.now(),
 }: DestinationsProps) {
-  const [chosen, setChosen] = useState<string[]>([]);
+  const [chosen, setChosen] = useState<string[]>(initialChosen ?? []);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
 
   // The way on when there is nothing to choose, shared by every such state.

@@ -39,7 +39,7 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   await expect(page.getByRole('button', { name: copy.KEEP })).toHaveCount(1);
   await expect(page.getByText(copy.RECOVER_STALE_LINE)).toHaveCount(0);
 
-  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
+  await page.getByRole('button', { name: copy.BACK, exact: true }).click();
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   expect(requests).toBe(0);
 });
@@ -54,7 +54,9 @@ test('a need the pack holds nothing for says so and names the official channel',
   await expect(page.getByText(copy.VERIFIED_ON('9 September 2026'))).toBeVisible();
   await expect(page.getByRole('link', { name: copy.OFFICIAL_CHANNEL }))
     .toHaveAttribute('href', NEED_CHANNELS.documents);
-  await expect(page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED })).toBeVisible();
+  // Back at the top is the way to another need; nothing repeats it below.
+  await expect(page.getByRole('button', { name: copy.BACK, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Another need' })).toHaveCount(0);
 });
 
 // E4-US3-AC3: an old snapshot says so in words and the programs stay shown.
@@ -124,7 +126,7 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   await expect(page.locator('.card')).toHaveCount(1);
   await expect(page.getByRole('button', { name: copy.KEEP })).toHaveAttribute('aria-pressed', 'false');
   await page.getByRole('button', { name: copy.KEEP }).click();
-  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
+  await page.getByRole('button', { name: copy.BACK, exact: true }).click();
   await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
   await expect(page.locator('.card').first()).toContainText('Example disaster payment');
   await page.getByRole('button', { name: copy.KEPT }).click();
@@ -251,14 +253,14 @@ test('the results screen offers to print the list', async ({ page }) => {
 // The pressed control is gone once the page changes, so focus moves to the page
 // itself rather than dropping to the document, where the next Tab would restart
 // from the top.
-test('focus stays on the page when a need is chosen and when choosing again', async ({ page }) => {
+test('focus stays on the page when a need is chosen and when going back', async ({ page }) => {
   await page.goto(RECOVER_URL);
   await page.getByRole('button', { name: copy.NEED_PHRASE.money }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: copy.NEED_PHRASE.money })).toBeVisible();
   await expect(page.locator('main')).toBeFocused();
 
-  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).focus();
+  await page.getByRole('button', { name: copy.BACK, exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   await expect(page.locator('main')).toBeFocused();

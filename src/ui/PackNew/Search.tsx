@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import {
   addressQueryCanRun,
@@ -53,6 +53,7 @@ import Hint from '../components/Hint';
 import StatusPage from '../components/StatusPage';
 import { focusMain } from '../components/focusMain';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
+import { setBuilderBack } from './builder-back';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
 import { Conflict } from './Conflict';
@@ -88,6 +89,9 @@ function typedSearchLine(live: ReturnType<typeof liveSearchState>): string {
     }
   }
 }
+
+/** The builder's steps, in order. Back goes to the one before. */
+type Step = 'search' | 'confirm' | 'conflict' | 'area' | 'places' | 'note' | 'programs' | 'size';
 
 type ConflictState =
   | { kind: 'checking' }
@@ -202,6 +206,11 @@ export function Search({
   // Made once per confirmed place, before the places step: destination rows
   // carry the pack id, so the id must exist before the user chooses them.
   const [packId, setPackId] = useState('');
+  // The places ticked, kept so going back to the places step shows them again.
+  const [placeIds, setPlaceIds] = useState<string[]>([]);
+  const [saveStage, setSaveStage] = useState<'idle' | 'saving' | 'saved'>('idle');
+  // Bumped by every step back, so an answer to a step the user has left is dropped.
+  const flowRef = useRef(0);
 
   const trimmedQuery = query.trim();
   // While Use my location owns the list the typed search claims nothing. A
@@ -351,20 +360,25 @@ export function Search({
   }
 
   async function runAreaCheck(place: PendingPlace) {
+    const flow = flowRef.current;
     setAreaState({ kind: 'checking' });
     try {
-      setAreaState({ kind: 'result', result: await checkArea(place) });
+      const result = await checkArea(place);
+      if (flow === flowRef.current) setAreaState({ kind: 'result', result });
     } catch {
-      setAreaState({ kind: 'unavailable' });
+      if (flow === flowRef.current) setAreaState({ kind: 'unavailable' });
     }
   }
 
   async function runPlaces(place: PendingPlace, result: BushfireAreaResult) {
-    const id = makePackId();
+    // The same id when the places are shown again, so the ticks still match.
+    const id = packId || makePackId();
     setPackId(id);
+    const flow = flowRef.current;
     setPlacesState({ kind: 'loading' });
     try {
       const snapshot = await loadNsp();
+      if (flow !== flowRef.current) return;
       const selection = selectSitesForPack(
         snapshot.sites,
         place,
@@ -377,7 +391,7 @@ export function Search({
       const unlocated = selection.unlocated.map(asRow);
       setPlacesState({ kind: 'ready', snapshot, selection, ordered, unlocated });
     } catch {
-      setPlacesState({ kind: 'unavailable' });
+      if (flow === flowRef.current) setPlacesState({ kind: 'unavailable' });
     }
   }
 
@@ -387,6 +401,7 @@ export function Search({
     destinations: Destination[],
     ticked: string[],
   ) {
+    const flow = flowRef.current;
     setOfferState({ kind: 'building' });
     try {
       const seed = buildPackSeed(packId, now(), place, result.lgaName, result.source, supersedesId);
@@ -403,21 +418,23 @@ export function Search({
       // anything is written.
       const files = await loadFiles(seed.id, content);
       const offer = await buildOffer(content, files);
-      setOfferState({ kind: 'ready', offer, content, files });
+      if (flow === flowRef.current) setOfferState({ kind: 'ready', offer, content, files });
     } catch {
-      setOfferState({ kind: 'failed', result, destinations, ticked });
+      if (flow === flowRef.current) setOfferState({ kind: 'failed', result, destinations, ticked });
     }
   }
 
   async function handleConfirmedPlace(place: PendingPlace) {
     onPendingPlace(place);
     setPendingPlace(place);
+    const flow = flowRef.current;
     setConflictState({ kind: 'checking' });
     try {
       // Several packs may be saved, one per address. A pack already saved for
       // this same address requires an explicit keep-or-replace decision before
       // the next network call; any other address goes straight on.
       const packs = await loadPacks();
+      if (flow !== flowRef.current) return;
       const same = packs.find((pack) => pack.address === place.address);
       if (same) {
         setConflictState({ kind: 'conflict', savedPack: same });
@@ -426,11 +443,14 @@ export function Search({
         await runAreaCheck(place);
       }
     } catch {
-      setConflictState({ kind: 'unavailable' });
+      if (flow === flowRef.current) setConflictState({ kind: 'unavailable' });
     }
   }
 
   function resetToSearch() {
+    flowRef.current += 1;
+    setPackId('');
+    setPlaceIds([]);
     setPendingPlace(null);
     setAreaState(null);
     setConflictState(null);
@@ -442,6 +462,69 @@ export function Search({
     setNote(undefined);
     setPrograms(null);
   }
+
+  // The step on screen, read from what the builder holds.
+  const at: Step = offerState ? 'size'
+    : programs ? 'programs'
+    : chosenPlaces ? 'note'
+    : placesState ? 'places'
+    : areaState ? 'area'
+    : conflictState ? 'conflict'
+    : candidate ? 'confirm'
+    : 'search';
+  const busy = conflictState?.kind === 'checking' || areaState?.kind === 'checking'
+    || placesState?.kind === 'loading' || offerState?.kind === 'building' || saveStage === 'saving';
+
+  /** One step back. Every answer given so far is kept, so going forward again
+   *  shows the same address name, ticks and note. */
+  function stepBack() {
+    flowRef.current += 1;
+    if (at === 'confirm') resetToSearch();
+    else if (at === 'conflict') setConflictState(null);
+    else if (at === 'area') {
+      setAreaState(null);
+      setConflictState(null);
+      setSupersedesId(undefined);
+    } else if (at === 'places') setPlacesState(null);
+    else if (at === 'note') setChosenPlaces(null);
+    else if (at === 'programs') setPrograms(null);
+    else if (at === 'size') setOfferState(null);
+  }
+
+  // Back, from the bar or the phone, steps back one step at a time. The steps
+  // past the address search share one history entry marked ?step=<name>. Going
+  // back pops it, the builder steps back, and the entry is put back on top while
+  // a step past the search remains. So nothing is left in history once the
+  // builder is left, and a reload with nothing held starts at the search.
+  const [params, setParams] = useSearchParams();
+  const urlStep = params.get('step');
+  const hadStep = useRef(false);
+  useEffect(() => {
+    const wasInSteps = hadStep.current;
+    hadStep.current = urlStep !== null;
+    if (wasInSteps && urlStep === null) {
+      if (saveStage === 'saved') navigate('/', { replace: true });
+      // A check or the save is running: hold the step until it is done.
+      else if (busy) setParams({ step: at });
+      else stepBack();
+      return;
+    }
+    if (at === 'search') {
+      if (urlStep === null) return;
+      // Search again from a later step pops the entry; a reload just drops it.
+      if (wasInSteps) navigate(-1);
+      else setParams({}, { replace: true });
+      return;
+    }
+    if (urlStep !== at) setParams({ step: at }, { replace: urlStep !== null });
+  }, [urlStep, at]);
+
+  // The Back bar hides while a check or the save runs, and once the pack is
+  // saved, where the screen's own Back to Home is the one way out.
+  useEffect(() => {
+    setBuilderBack(busy || saveStage === 'saved' ? 'hidden' : 'step');
+  }, [busy, saveStage]);
+  useEffect(() => () => setBuilderBack('step'), []);
 
   // Each step replaces the page under the same path, so focus is moved to it
   // here; the route change that would otherwise do it never happens.
@@ -546,7 +629,14 @@ export function Search({
         offer={offerState.offer}
         address={offerState.content.pack.address}
         download={async () => {
-          await savePack(offerState.content, offerState.offer, now(), offerState.files, note);
+          setSaveStage('saving');
+          try {
+            await savePack(offerState.content, offerState.offer, now(), offerState.files, note);
+            setSaveStage('saved');
+          } catch (error) {
+            setSaveStage('idle');
+            throw error;
+          }
         }}
         onContinue={() => openSavedPack(offerState.content.pack.id)}
       />
@@ -579,9 +669,14 @@ export function Search({
     return (
       <Note
         example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
+        initial={note}
         onContinue={(text) => {
           setNote(text);
-          void loadPrograms().then(setPrograms).catch(() => setPrograms([]));
+          const flow = flowRef.current;
+          const show = (list: RecoveryProgram[]) => {
+            if (flow === flowRef.current) setPrograms(list);
+          };
+          void loadPrograms().then(show).catch(() => show([]));
         }}
       />
     );
@@ -636,7 +731,11 @@ export function Search({
         unlocated={unlocated}
         area={area}
         status={PACK_HAZARD === 'bushfire' ? 'ok' : 'not-bushfire'}
-        save={(ids) => continueWith(chosenDestinations(ordered, ids))}
+        initialChosen={placeIds}
+        save={(ids) => {
+          setPlaceIds(ids);
+          return continueWith(chosenDestinations(ordered, ids));
+        }}
         onContinue={() => void continueWith([])}
       />
     );
@@ -660,8 +759,9 @@ export function Search({
     return (
       <Confirm
         candidate={candidate}
+        initialName={pendingPlace?.name}
         onConfirm={(place) => void handleConfirmedPlace(place)}
-        onSearchAgain={() => setCandidate(null)}
+        onSearchAgain={resetToSearch}
       />
     );
   }

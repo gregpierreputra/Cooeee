@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
@@ -11,7 +11,6 @@ import { localFlagStore } from '../data/acknowledgement';
 import { listPrograms, listSavedProgramIds } from '../data/db';
 import { focusMain } from './components/focusMain';
 import Glyph from './components/Glyph';
-import { canStepBack } from './components/history';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
 
@@ -39,7 +38,6 @@ export default function Recover({
   // category has to land on the list of categories, not on whatever screen
   // came before Recover.
   const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
   const choice = parseChoice(params.get('need'));
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
   // UAT: releasing a program on the Kept list made its card vanish mid-read.
@@ -98,14 +96,6 @@ export default function Recover({
 
   const choose = (next: Choice) => setParams({ need: next });
 
-  /** Back to the list of categories. Stepping back keeps the history honest;
-   *  with nothing of ours behind this entry, the category is dropped instead. */
-  const backToChoices = () => {
-    // One step back is the category list because every category is entered from
-    // it. A link straight into a category would break that, and none exists.
-    if (canStepBack()) navigate(-1);
-    else setParams({}, { replace: true });
-  };
 
   // The phone's own share sheet where there is one (a text message needs no
   // data), otherwise the clipboard. A share the person cancels reports nothing;
@@ -189,10 +179,6 @@ export default function Recover({
     );
   }
 
-  const chooseAgain = (
-    <button type="button" onClick={backToChoices}>{copy.CHOOSE_ANOTHER_NEED}</button>
-  );
-
   if (choice === 'calls') {
     // E4-US10: every number already on the device, as tap-to-call links.
     return (
@@ -220,7 +206,6 @@ export default function Recover({
             </li>
           ))}
         </ul>
-        <div className="actions">{chooseAgain}</div>
       </main>
     );
   }
@@ -242,7 +227,6 @@ export default function Recover({
         </header>
         <div className="actions">
           <OfficialChannel href={isNeed(choice) ? NEED_CHANNELS[choice] : GENERAL_CHANNEL_URL} />
-          {chooseAgain}
         </div>
       </main>
     );
@@ -360,7 +344,6 @@ export default function Recover({
           <Glyph kind="print" line />
           {copy.PRINT_LIST}
         </button>
-        {chooseAgain}
       </div>
     </main>
   );

@@ -129,7 +129,7 @@ body {
 /* Single column, max 560 px, centred on desktop. There is no second layout:
    the product's centre of gravity is a phone in someone's hand. The sticky
    chrome above the page (notice bar 2.25rem, header 3rem + 1px, back bar
-   3.25rem) is outside .page, so the minimum height leaves room for it. The
+   3.5rem) is outside .page, so the minimum height leaves room for it. The
    bottom padding leaves room under the last element for the fixed bottom bar
    (56 px + hairline, plus a gap), so nothing sits beneath it. */
 .page {
@@ -138,7 +138,7 @@ body {
   padding: 1.5rem max(1.75rem, env(safe-area-inset-right))
     calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom))
     max(1.75rem, env(safe-area-inset-left));
-  min-height: calc(100dvh - 8.5rem - 1px);
+  min-height: calc(100dvh - 8.75rem - 1px);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -1769,10 +1769,11 @@ p.caution {
   letter-spacing: 0.01em;
 }
 
-/* The home screen has no back bar above it, so its column is taller by that
-   much: the notice and header above the page take height the viewport unit
-   does not know about. */
-.home {
+/* A screen with no back bar above it (a tab, or a builder step where Back is
+   held) is taller by the bar's height, so its actions still sit the same gap
+   above the bottom bar. The notice and header above take height the viewport
+   unit does not know about. */
+body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   min-height: calc(100dvh - 5.25rem - 1px);
 }
 
