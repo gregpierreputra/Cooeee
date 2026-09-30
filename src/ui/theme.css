@@ -2275,10 +2275,19 @@ p.caution {
   background: var(--accent);
   color: var(--ink-on-accent);
 }
-.recover .keep-button {
-  align-self: start;
-  min-height: 44px;
-  padding: 0.5rem 1.25rem;
+.program-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.program-actions .action {
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--step-s);
+  white-space: nowrap;
+}
+.program-actions .call-action {
+  grid-column: 1 / -1;
 }
 .recover .keep-button[aria-pressed='true'] {
   border-color: var(--accent);

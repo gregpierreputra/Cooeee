@@ -278,26 +278,28 @@ export default function Recover({
                   {copy.IN_YOUR_PACKS}
                 </p>
               ) : null}
-              <div className="source-links">
-                <a className="action with-glyph" href={program.officialUrl} target="_blank" rel="noopener noreferrer">
-                  <Glyph kind="web" line />
-                  {copy.OPEN_ORIGINAL_SOURCE}
-                </a>
-                {program.telephone ? (
-                  <a className="action with-glyph" href={`tel:${program.telephone.replaceAll(' ', '')}`}>
-                    <Glyph kind="calls" line />
-                    {copy.CALL_LINE(program.telephone)}
-                  </a>
-                ) : null}
+              {/* Keep and the web page side by side at equal size, the call
+                  beneath at full width. */}
+              <div className="program-actions">
                 <button
                   type="button"
-                  className="keep-button with-glyph"
+                  className="action keep-button with-glyph"
                   aria-pressed={isKept}
                   onClick={() => setKept(toggleKept(localFlagStore(), kept, program.id))}
                 >
                   <Glyph kind="kept" line />
                   {isKept ? copy.KEPT : copy.KEEP}
                 </button>
+                <a className="action with-glyph" href={program.officialUrl} target="_blank" rel="noopener noreferrer">
+                  <Glyph kind="web" line />
+                  {copy.OPEN_ORIGINAL_SOURCE}
+                </a>
+                {program.telephone ? (
+                  <a className="action call-action with-glyph" href={`tel:${program.telephone.replaceAll(' ', '')}`}>
+                    <Glyph kind="calls" line />
+                    {copy.CALL_LINE(program.telephone)}
+                  </a>
+                ) : null}
               </div>
             </li>
           );
