@@ -20,6 +20,7 @@ import type { LatLon } from '../core/types';
 import { readNearbyCache, syncNearby } from '../data/nearby';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
+import KeyTerms from './components/KeyTerms';
 import StateCard from './components/StateCard';
 
 type Origin = LatLon & { label: string };
@@ -185,7 +186,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
           {view && origin ? (
             <>
               <p className="caveat">{origin.label}</p>
-              <p className="muted">{copy.DISTANCES_NOTE} {copy.NOT_A_RANKING}</p>
+              <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /> {copy.NOT_A_RANKING}</p>
               {view.groups.map((group) => (
                 <section key={group.heading} className="nearby-group">
                   <Hint

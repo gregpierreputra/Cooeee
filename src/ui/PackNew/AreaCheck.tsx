@@ -2,6 +2,7 @@ import { areaCheckView } from '../../core/area-check';
 import * as copy from '../../core/copy';
 import type { BushfireAreaResult, PendingPlace } from '../../core/types';
 import Glyph from '../components/Glyph';
+import KeyTerms from '../components/KeyTerms';
 import StatusPage from '../components/StatusPage';
 import FlowSteps from './FlowSteps';
 
@@ -75,9 +76,9 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
             ) : (
               <Glyph kind="layer" />
             )}
-            <h1>{view.resultLine}</h1>
+            <h1><KeyTerms text={view.resultLine} /></h1>
           </div>
-          {view.cautionLine && <p className="caution">{view.cautionLine}</p>}
+          {view.cautionLine && <p className="caution"><KeyTerms text={view.cautionLine} /></p>}
           <p className="muted">{view.publisherLine}</p>
           <p className="with-glyph">
             <Glyph kind="calls" line />

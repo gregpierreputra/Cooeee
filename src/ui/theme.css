@@ -677,6 +677,12 @@ main:focus {
 
 /* A caution read with the heading: the map is not where fire can go, or a note
    has no password. Amber, the attention colour, at full text strength. */
+/* A key term inside a line: the attention colour, so it is seen first. */
+.key-term {
+  color: var(--stale);
+  font-weight: 600;
+}
+
 p.caution {
   padding: 0.75rem 1rem;
   border-inline-start: 3px solid var(--stale);

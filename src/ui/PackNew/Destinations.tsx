@@ -12,6 +12,7 @@ import { formatIsoDateShort, nspListDateLabel } from '../../core/nsp';
 import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
 import Glyph from '../components/Glyph';
+import KeyTerms from '../components/KeyTerms';
 import StateCard from '../components/StateCard';
 import FlowSteps from './FlowSteps';
 
@@ -189,7 +190,7 @@ export function Destinations({
           {ordered.length > 0 ? (
             <>
               <p className="caveat">{copy.CHOOSE_PLACES_HINT(savableCount(ordered.length))} - {copy.SORTED_BY_DISTANCE}</p>
-              <p className="muted">{copy.DISTANCES_NOTE}</p>
+              <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
               <ul className="list destination-list" data-testid="ordered-destinations">
                 {ordered.map((place) => (
                   <DestinationRow

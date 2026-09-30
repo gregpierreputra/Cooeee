@@ -18,6 +18,7 @@ import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } 
 import { getCompletePackContent, listDrills, listRehearsalsForPack } from '../data/db';
 import Glyph from './components/Glyph';
 import InfoGlyph from './components/InfoGlyph';
+import KeyTerms from './components/KeyTerms';
 import ProvenanceLine from './components/ProvenanceLine';
 import Section from './components/Section';
 import StateCard from './components/StateCard';
@@ -217,7 +218,7 @@ export default function PackDetail({
       {places.length > 0 ? (
         <Section kind="place" title={copy.DESTINATIONS_STEP_TITLE} count={places.length}>
           {places.some((place) => typeof place.distanceM === 'number') ? (
-            <p className="muted">{copy.DISTANCES_NOTE}</p>
+            <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
           ) : null}
           <ul className="list saved-destinations">
             {places.map((place) => {

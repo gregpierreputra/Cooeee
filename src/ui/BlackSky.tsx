@@ -25,6 +25,7 @@ import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
+import KeyTerms from './components/KeyTerms';
 import HoldButton from './components/HoldButton';
 import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
@@ -512,7 +513,7 @@ function ConfidenceLines({
         }
       >
         <p>{copy.ACCURACY_DETAIL(confidence.accuracyM)}</p>
-        <p>{copy.DISTANCES_NOTE}</p>
+        <p><KeyTerms text={copy.DISTANCES_NOTE} /></p>
       </Hint>
       {!estimating && confidence.approximate ? (
         <p className="muted">{copy.GPS_APPROXIMATE(confidence.accuracyM)}</p>

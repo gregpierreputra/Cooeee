@@ -37,6 +37,8 @@ test('AC6 shows the published-but-nothing-mapped state exactly', async ({ page }
   await expect(state.locator('p').nth(0)).toHaveText(
     'Fire can still reach you. This map only sets building rules.',
   );
+  // UAT: the words that matter stand out in the attention colour.
+  await expect(state.locator('.key-term')).toHaveText(['Bushfire Prone Area', 'Fire can still reach you']);
   await expect(state).toContainText('Published by the Department of Transport and Planning, saved');
   await expect(state).not.toContainText(/not designated|none found|no results|all clear|safe|no risk|low risk/i);
 });
