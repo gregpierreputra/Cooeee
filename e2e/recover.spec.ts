@@ -117,6 +117,11 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   await page.reload();
   await page.getByRole('button', { name: copy.KEPT_PROGRAMS }).click();
   await expect(page.locator('.card')).toHaveCount(1);
+  // UAT: releasing it here keeps the card on the list until the person leaves.
+  await page.getByRole('button', { name: copy.KEPT }).click();
+  await expect(page.locator('.card')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: copy.KEEP })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: copy.KEEP }).click();
   await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
   await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
   await expect(page.locator('.card').first()).toContainText('Example disaster payment');

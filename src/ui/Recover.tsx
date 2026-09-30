@@ -42,6 +42,11 @@ export default function Recover({
   const navigate = useNavigate();
   const choice = parseChoice(params.get('need'));
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
+  // UAT: releasing a program on the Kept list made its card vanish mid-read.
+  // The list holds the programs kept when it was opened until the person leaves;
+  // each card still shows its live Keep or Kept state.
+  const [keptOnEntry, setKeptOnEntry] = useState<string[] | null>(null);
+  const keptListed = choice === 'kept' ? (keptOnEntry ?? kept) : kept;
   // A share note belongs to the category it was made on, so it shows only while
   // that category is open. Moving to another category hides it on the very first
   // frame, and a result that arrives after the reader has moved on stays with the
@@ -70,6 +75,7 @@ export default function Recover({
   // and moves focus to the page, since the control that was pressed is gone.
   useEffect(() => {
     setShared(null);
+    setKeptOnEntry(choice === 'kept' ? kept : null);
     focusMain();
   }, [choice]);
 
@@ -122,7 +128,7 @@ export default function Recover({
     );
   }
 
-  const anyKept = programs.some((program) => kept.includes(program.id));
+  const anyKept = programs.some((program) => keptListed.includes(program.id));
   // The kept list with nothing kept is not a category. It is reached by
   // releasing the last kept program, or by an old address, and used to say
   // "This pack holds nothing for that need", which is about something else.
@@ -205,7 +211,7 @@ export default function Recover({
   const heading = choice === 'all' ? copy.EVERY_PROGRAM
     : choice === 'kept' ? copy.KEPT_PROGRAMS
     : copy.NEED_PHRASE[choice];
-  const shown = selectPrograms(programs, choice, kept);
+  const shown = selectPrograms(programs, choice, keptListed);
 
   if (shown.length === 0) {
     // The device holds nothing: a designed screen, and never "no help exists".
