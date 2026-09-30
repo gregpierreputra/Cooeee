@@ -282,9 +282,9 @@ a {
 /* Absence states use the SAME neutral treatment as presence states. Absence must
    read as absence — never as reassurance, never as an error. There are no alert
    colours and no warning iconography in this stylesheet, with ONE deliberate
-   exception: the destructive delete-a-pack controls below reuse the fixed
-   connection colours (--offline red, --online green) so that destroying data
-   can never look like a neutral action. */
+   exception: the delete-a-pack question below reuses the fixed connection
+   colours (--offline red, --online green) so that destroying data can never
+   look like a neutral action. */
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -335,33 +335,37 @@ a {
   }
 }
 
-/* Delete-a-pack: the name row closes with a fingertip-sized ring, the cross
-   drawn inside it, in the fixed red (see the exception note at the top of this
-   section): a half-strength ring at rest, solid with a faint fill on touch. The
-   confirm state swaps the card body for the question and an equal-weight
-   keep/delete pair. */
+/* Delete-a-pack: a small grey ring with a cross on the card's top left
+   corner, as a phone marks an app it can remove. It stays quiet because it
+   removes nothing: the confirm state swaps the card body for the question, and
+   the red Delete there is the one warning. */
 .card-delete {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0;
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--offline) 50%, transparent);
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--offline);
-  position: relative;
+  position: absolute;
+  top: -8px;
+  left: -8px;
   z-index: 1; /* above the pack-card stretched link */
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  min-width: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink-3);
+  color: var(--bg);
 }
-
-/* Named through the card so it outranks the shared accent hover on buttons. */
+/* The ring is drawn small; the invisible ::after keeps a 44px tap area. */
+.card-delete::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
 .pack-card .card-delete:hover,
 .pack-card .card-delete:focus-visible,
 .pack-card .card-delete:active {
-  border-color: var(--offline);
-  background: color-mix(in srgb, var(--offline) 14%, transparent);
+  background: var(--ink-2);
 }
 
 /* The saved pack's two chosen places, side by side and equal: one grid rule, no

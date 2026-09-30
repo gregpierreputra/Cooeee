@@ -169,33 +169,29 @@ export default function Home({ now }: { now?: number }) {
             </section>
           ) : (
             <section key={pack.id} className="card pack-card saved-place">
+              {/* A small grey ring on the card's top left corner, as a phone
+                  marks an app it can remove. It sits above the card's link. */}
+              <button
+                type="button"
+                id={`delete-${pack.id}`}
+                className="card-delete"
+                aria-label={copy.DELETE_PACK}
+                onClick={() => setConfirming(pack.id)}
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">
+                  <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              </button>
               <div className="saved-place-title">
                 <Glyph kind="place" />
                 {/* Cased by the same rule as the address line below, so the two
                     read alike: the name defaults to the locality the geocoder
                     returned, and arrives in the same capitals. Storage keeps the
                     name exactly as it was saved. The link stretches over the
-                    whole card (see .pack-card); the delete control sits above it. */}
+                    whole card (see .pack-card). */}
                 <h2>
                   <Link to={`/packs/${pack.id}`}>{titleCase(pack.name)}</Link>
                 </h2>
-                <button
-                  type="button"
-                  id={`delete-${pack.id}`}
-                  className="card-delete"
-                  aria-label={copy.DELETE_PACK}
-                  onClick={() => setConfirming(pack.id)}
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-                    <path
-                      d="M7 7l10 10M17 7 7 17"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
               </div>
               {/* Title-cased for reading only. The pack still stores the address
                   exactly as the custodian returned it. */}
