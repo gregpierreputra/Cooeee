@@ -20,9 +20,28 @@ async function openOffline(page: Page, context: BrowserContext, mode: string) {
 }
 
 async function findPostcode(page: Page) {
-  await page.getByLabel('Or a postcode').fill('3766');
+  await page.getByLabel('Type a postcode').fill('3766');
   await page.getByRole('button', { name: 'Find' }).click();
 }
+
+async function openTab(page: Page, name: string) {
+  const tab = page.getByRole('tab', { name });
+  await tab.click();
+  await expect(tab).toHaveAttribute('aria-selected', 'true');
+}
+
+test('the tabs move with the arrow keys and show one group at a time', async ({ page, context }) => {
+  await openOffline(page, context, 'cached');
+  await findPostcode(page);
+
+  const bushfire = page.getByRole('tab', { name: 'Bushfire places' });
+  await expect(bushfire).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tabpanel')).toHaveCount(1);
+  await bushfire.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Relief centres' })).toBeFocused();
+  await expect(page.getByRole('tabpanel', { name: 'Relief centres' })).toBeVisible();
+});
 
 const rowFor = (page: Page, title: string) =>
   page.locator('li.card', { has: page.getByRole('heading', { level: 3, name: title, exact: true }) });
@@ -30,19 +49,25 @@ const rowFor = (page: Page, title: string) =>
 test('AC4 offline, static places come from IndexedDB labelled cached with their verified date', async ({ page, context }) => {
   await openOffline(page, context, 'cached');
   await findPostcode(page);
+  await expect(page.getByText('From the centre of postcode 3766')).toBeVisible();
+  await expect(page.locator('.nearby-origin-code')).toHaveText('3766');
 
   const nsp = rowFor(page, 'Neighbourhood Safer Place');
   await expect(nsp).toContainText('Kalorama Memorial Reserve');
   await expect(nsp).toContainText(STATE_CACHED(HOURS_AGO(2)));
   await expect(nsp).toContainText('Verified 31 August 2026');
   await expect(rowFor(page, 'Community Fire Refuge')).toContainText('Ferny Creek Community Fire Refuge');
+  // One group at a time: the relief rows wait behind their own tab.
+  await expect(rowFor(page, 'Relief Centre')).toHaveCount(0);
 
+  await openTab(page, 'Relief centres');
   const relief = rowFor(page, 'Relief Centre');
   await expect(relief).toContainText('Lilydale Community Centre');
   await expect(relief).toContainText(STATE_CACHED(MINUTES_AGO(10)));
   await expect(relief).toContainText(MAY_BE_OUTDATED);
-  // E1-US3-AC7: one drawing per group head.
-  await expect(page.locator('.nearby-group .pack-section-head .glyph')).toHaveCount(2);
+  await expect(rowFor(page, 'Neighbourhood Safer Place')).toHaveCount(0);
+  // E1-US3-AC7: one drawing per kind, carried on its tab.
+  await expect(page.getByRole('tab').locator('.glyph')).toHaveCount(2);
 
   // The data sources sit behind the information ring: closed until tapped,
   // then plain words naming each list and when it was last checked.
@@ -62,17 +87,19 @@ test('AC5 offline with a snapshot past the threshold, no relief centre is shown 
   await openOffline(page, context, 'stale');
   await findPostcode(page);
 
+  // The static rows are unaffected by the dynamic cut-off.
+  await expect(rowFor(page, 'Neighbourhood Safer Place')).toContainText('Kalorama Memorial Reserve');
+
+  await openTab(page, 'Relief centres');
   const relief = rowFor(page, 'Relief Centre');
   await expect(relief).not.toContainText('Lilydale');
   await expect(relief).toContainText(TOO_OLD_TO_SHOW);
   await expect(relief).toContainText('1800 226 226');
-  // The static rows are unaffected by the dynamic cut-off.
-  await expect(rowFor(page, 'Neighbourhood Safer Place')).toContainText('Kalorama Memorial Reserve');
 });
 
 test('AC6 offline and never synced, the first-run state is stated rather than a blank screen', async ({ page, context }) => {
   await openOffline(page, context, 'empty');
   await expect(page.getByRole('heading', { name: FIRST_RUN_TITLE })).toBeVisible();
   await expect(page.getByText(FIRST_RUN_LINE)).toBeVisible();
-  await expect(page.getByLabel('Or a postcode')).toHaveCount(0);
+  await expect(page.getByLabel('Type a postcode')).toHaveCount(0);
 });

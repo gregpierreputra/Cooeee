@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
 import {
   NEARBY_CLOCK_MS,
   NEARBY_FIX_MAX_AGE_MS,
@@ -13,17 +13,23 @@ import {
   parsePostcode,
   postcodeOrigin,
   type NearbyCache,
+  type NearbyGroup,
   type NearbyRow,
   type NearbySession,
 } from '../core/nearby';
 import type { LatLon } from '../core/types';
 import { readNearbyCache, syncNearby } from '../data/nearby';
-import Glyph from './components/Glyph';
+import Glyph, { type GlyphKind } from './components/Glyph';
 import Hint from './components/Hint';
 import KeyTerms from './components/KeyTerms';
 import StateCard from './components/StateCard';
 
-type Origin = LatLon & { label: string };
+type Origin = LatLon & { label: ReactNode };
+type GroupKind = NearbyGroup['kind'];
+const TABS: { kind: GroupKind; glyph: GlyphKind; label: string }[] = [
+  { kind: 'bushfire', glyph: 'place', label: copy.TAB_BUSHFIRE },
+  { kind: 'relief', glyph: 'relief', label: copy.TAB_RELIEF },
+];
 const NOTHING_SYNCED: NearbySession = { staticSyncedNow: false, dynamicSyncedNow: false };
 
 /** Nearby places: the nearest official place of each kind, answered from
@@ -41,6 +47,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   const [postcode, setPostcode] = useState('');
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [tab, setTab] = useState<GroupKind>('bushfire');
 
   const refresh = useCallback(async () => {
     if (!navigator.onLine) return;
@@ -133,18 +140,33 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       return;
     }
     setNotice(null);
-    setOrigin({ ...point, label: copy.FROM_POSTCODE(code) });
+    setOrigin({
+      ...point,
+      label: (
+        <>
+          {copy.FROM_POSTCODE} <span className="nearby-origin-code">{code}</span>
+        </>
+      ),
+    });
   };
 
   const ready = cache !== null && hasNearbyData(cache);
   const view = ready && origin ? nearbyView(clock, origin, cache, session) : null;
+  const group = view?.groups.find((each) => each.kind === tab);
+
+  // Left and Right move between the two tabs, as the tab pattern expects.
+  const onTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    const next = tab === 'bushfire' ? 'relief' : 'bushfire';
+    setTab(next);
+    document.getElementById(`nearby-tab-${next}`)?.focus();
+  };
 
   return (
     <main className="page nearby">
       <div className="hero">
         <span className="kicker">{copy.NEARBY_KICKER}</span>
         <h1>{copy.NEARBY_TITLE}</h1>
-        <p className="muted">{copy.NEARBY_LEDE}</p>
       </div>
 
       {/* Nothing is drawn until IndexedDB has answered — a frame or two. */}
@@ -158,12 +180,10 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       ) : (
         <>
           <section className="card nearby-locate">
-            <button type="button" className="main-action" onClick={locate} disabled={locating}>
-              <Glyph kind="locate" />
-              {locating ? copy.LOCATING : copy.USE_MY_LOCATION}
-            </button>
             <form className="nearby-postcode" onSubmit={findPostcode}>
-              <label htmlFor="nearby-postcode">{copy.POSTCODE_LABEL}</label>
+              <label htmlFor="nearby-postcode" className="nearby-postcode-hint">
+                {copy.POSTCODE_LABEL}
+              </label>
               <div className="postcode-row">
                 <input
                   id="nearby-postcode"
@@ -176,6 +196,10 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
                 <button type="submit">{copy.FIND_POSTCODE}</button>
               </div>
             </form>
+            <button type="button" className="main-action" onClick={locate} disabled={locating}>
+              <Glyph kind="locate" />
+              {locating ? copy.LOCATING : copy.USE_MY_LOCATION}
+            </button>
             {notice ? (
               <p className="muted" role="status">
                 {notice}
@@ -187,17 +211,32 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
             <>
               <p className="caveat">{origin.label}</p>
               <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /> {copy.NOT_A_RANKING}</p>
-              {view.groups.map((group) => (
-                <section key={group.heading} className="nearby-group">
-                  <Hint
-                    label={copy.ABOUT_GROUP(group.heading)}
-                    head={
-                      <div className="pack-section-head">
-                        <Glyph kind={group.kind === 'bushfire' ? 'place' : 'relief'} />
-                        <h2>{group.heading}</h2>
-                      </div>
-                    }
+              <div className="nearby-tabs" role="tablist" aria-label={copy.NEARBY_TABS_LABEL}>
+                {TABS.map((each) => (
+                  <button
+                    key={each.kind}
+                    id={`nearby-tab-${each.kind}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === each.kind}
+                    aria-controls="nearby-panel"
+                    tabIndex={tab === each.kind ? 0 : -1}
+                    onClick={() => setTab(each.kind)}
+                    onKeyDown={onTabKey}
                   >
+                    <Glyph kind={each.glyph} line />
+                    {each.label}
+                  </button>
+                ))}
+              </div>
+              {group ? (
+                <section
+                  id="nearby-panel"
+                  className="nearby-group"
+                  role="tabpanel"
+                  aria-labelledby={`nearby-tab-${tab}`}
+                >
+                  <Hint label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>}>
                     <p>{group.note}</p>
                   </Hint>
                   <ul className="list">
@@ -206,7 +245,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
                     ))}
                   </ul>
                 </section>
-              ))}
+              ) : null}
               <DataSources lines={view.health} />
             </>
           ) : null}

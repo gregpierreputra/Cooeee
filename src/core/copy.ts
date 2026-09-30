@@ -660,19 +660,19 @@ export const GATE_UNAVAILABLE = 'The password cannot be checked right now.';
 export const NAV_NEARBY = 'Nearby';
 export const NEARBY_KICKER = 'Nearby places';
 export const NEARBY_TITLE = 'Nearest official places';
-export const NEARBY_LEDE = 'The nearest of each kind, from you or a postcode.';
 export const ABOUT_GROUP = (group: string) => `About ${group}`;
 
 export const USE_MY_LOCATION = 'Use my location';
 export const LOCATING = 'Reading your position…';
 export const LOCATION_FAILED = 'Your position could not be read. Enter a postcode instead.';
-export const POSTCODE_LABEL = 'Or a postcode';
+export const POSTCODE_LABEL = 'Type a postcode';
 export const FIND_POSTCODE = 'Find';
 export const POSTCODE_INVALID = 'Enter a four-digit postcode.';
 export const POSTCODE_UNKNOWN = (postcode: string) =>
   `Postcode ${postcode} is not in the downloaded Victorian list.`;
 export const FROM_POSITION = (accuracy: string) => `From your position, ${accuracy}`;
-export const FROM_POSTCODE = (postcode: string) => `From the centre of postcode ${postcode}`;
+/** Followed on screen by the postcode itself, in the accent. */
+export const FROM_POSTCODE = 'From the centre of postcode';
 /** UAT: people could not tell how distances were worked out, so every screen
  *  that shows one says it is measured in a straight line. */
 export const DISTANCES_NOTE = 'Straight-line distances, not by road.';
@@ -688,6 +688,10 @@ export const FIRST_RUN_LINE = 'Connect once to download. Then it opens with no s
 export const GROUP_BUSHFIRE = 'Bushfire places of last resort';
 export const GROUP_BUSHFIRE_NOTE = 'Designated by the Country Fire Authority for their own township. Bushfire only.';
 export const GROUP_RELIEF = 'Relief and recovery';
+/** The two tabs over the Nearby groups, short enough to sit side by side. */
+export const TAB_BUSHFIRE = 'Bushfire places';
+export const TAB_RELIEF = 'Relief centres';
+export const NEARBY_TABS_LABEL = 'Kind of place';
 export const GROUP_RELIEF_NOTE = 'Opened for one incident, and listed by VicEmergency only while it runs.';
 
 export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
