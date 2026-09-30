@@ -295,7 +295,7 @@ export default function PackDetail({
                 <p className="history-date">{row.date}</p>
                 <p className="muted">{row.condition}</p>
                 <p>{row.ending}</p>
-                <HistoryGaps id={row.id} gaps={row.gaps} />
+                <HistoryGaps id={row.id} gaps={row.gaps} found={row.found} />
               </li>
             ))}
           </ul>
@@ -372,11 +372,11 @@ export default function PackDetail({
   );
 }
 
-/** One rehearsal's gaps line, with the ring that says what the count means.
+/** One rehearsal's gaps line, with the ring that names each gap it found.
  *  Every row carries its own ring and its own panel, so both are named from the
  *  rehearsal's id; the panel opens in flow beneath the pair, covering no other
  *  rehearsal. Never on hover, as the other two information rings. */
-function HistoryGaps({ id, gaps }: { id: string; gaps: string }) {
+function HistoryGaps({ id, gaps, found }: { id: string; gaps: string; found: HistoryRow['found'] }) {
   const [open, setOpen] = useState(false);
   const panel = useRevealedPanel<HTMLDivElement>(open);
   const panelId = `history-gaps-${id}`;
@@ -398,11 +398,23 @@ function HistoryGaps({ id, gaps }: { id: string; gaps: string }) {
         <div id={panelId} ref={panel} tabIndex={-1} className="card info-panel">
           <span className="kicker">{copy.ABOUT_GAPS}</span>
           <ul className="info-lines">
-            {copy.GAPS_INFO_LINES.map((line) => (
-              <li key={line.lead}>
-                <b>{line.lead}</b> {line.text}
+            <li>
+              <b>{copy.GAP_WHAT_IS.lead}</b> {copy.GAP_WHAT_IS.text}
+            </li>
+            {found.length === 0 ? (
+              <li>
+                <b>{copy.GAP_NONE_FOUND.lead}</b> {copy.GAP_NONE_FOUND.text}
               </li>
-            ))}
+            ) : (
+              found.map((gap, index) => (
+                <li key={index}>
+                  <b>{gap.title}.</b> {gap.reason} <b>{copy.ACTION_LABEL}.</b> {gap.action}
+                </li>
+              ))
+            )}
+            <li>
+              <b>{copy.GAP_IS_A_COUNT.lead}</b> {copy.GAP_IS_A_COUNT.text}
+            </li>
           </ul>
         </div>
       ) : null}

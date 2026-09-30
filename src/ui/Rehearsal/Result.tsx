@@ -180,6 +180,8 @@ export default function Result({
           <li key={`${row.gapType}:${row.hazardLine}`} className="card gap-row">
             <span className="kicker">{row.hazardLine}</span>
             <h3>{row.title}</h3>
+            <p className="gap-reason-label">{copy.GAP_REASON_LABEL}</p>
+            <p>{row.reason}</p>
             {/* Which of the two kinds this is, said in words. The two kinds are
                 told apart by this sentence and by nothing else: no severity, no
                 ranking, no separate list, no colour. */}

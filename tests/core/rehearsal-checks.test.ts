@@ -44,10 +44,17 @@ describe('what a rehearsal checks under no mobile data', () => {
   });
 
   it('raises a gap when the official designation is not in the pack', () => {
-    const gaps = detectGaps('no-data', content({ layers: [layer({ status: 'none-mapped-here' })] }));
+    const gaps = detectGaps('no-data', content({ layers: [] }));
     expect(types(gaps)).toEqual(['designation-missing']);
     expect(gaps[0].kind).toBe('pack-content');
     expect(gaps[0].hazard).toBe('bushfire');
+  });
+
+  // UAT: "none mapped here" is the official answer, and rebuilding would store
+  // it again, so it is never a gap the reader is told to close.
+  it('raises no gap when the pack holds a none mapped or not published answer', () => {
+    expect(detectGaps('no-data', content({ layers: [layer({ status: 'none-mapped-here' })] }))).toEqual([]);
+    expect(detectGaps('no-data', content({ layers: [layer({ status: 'not-published' })] }))).toEqual([]);
   });
 
   it('raises a gap when no official place is saved with the pack', () => {
@@ -117,7 +124,7 @@ describe('what a rehearsal checks under no location fix', () => {
   it('still checks the saved information', () => {
     const gaps = detectGaps(
       'no-location-fix',
-      content({ layers: [layer({ status: 'none-mapped-here' })] }),
+      content({ layers: [] }),
     );
     expect(types(gaps)).toEqual(['designation-missing', 'live-direction-unavailable']);
   });

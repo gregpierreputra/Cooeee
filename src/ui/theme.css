@@ -2505,9 +2505,10 @@ p.caution {
   margin: 0;
 }
 
-/* Names the line beneath it as the one thing to do, so the action is never read
+/* Names the line beneath it as the reason or the one thing to do, so neither is read
    as more explanation. */
-.gap-action-label {
+.gap-action-label,
+.gap-reason-label {
   font-size: var(--step-s);
   font-weight: var(--w-heavy);
   letter-spacing: 0.04em;

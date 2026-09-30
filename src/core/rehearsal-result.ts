@@ -26,6 +26,7 @@ export type GapRow = {
   kind: RehearsalGapKind;
   hazardLine: string;
   title: string;
+  reason: string;
   meaning: string;
   action: string;
   actionId: string;
@@ -57,6 +58,7 @@ const rowFor = (detected: DetectedGap, doneAt: number | undefined): GapRow => {
     // there is no fallback to reach for.
     hazardLine: copy.GAP_HAZARD_LINE(copy.HAZARD_NAME[detected.hazard]),
     title: action.title,
+    reason: action.reason,
     meaning: action.meaning,
     action: action.action,
     actionId: action.actionId,

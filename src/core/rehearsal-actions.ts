@@ -40,6 +40,14 @@ export const GAP_TITLE: Record<RehearsalGapType, string> = {
   'live-direction-unavailable': copy.GAP_LIVE_DIRECTION,
 };
 
+/** Why the gap was found, so a named gap is never left unexplained. */
+const GAP_REASON: Record<RehearsalGapType, string> = {
+  'designation-missing': copy.GAP_REASON_DESIGNATION,
+  'places-missing': copy.GAP_REASON_PLACES,
+  'provenance-missing': copy.GAP_REASON_PROVENANCE,
+  'live-direction-unavailable': copy.GAP_REASON_LIVE_DIRECTION,
+};
+
 /** The one written action. */
 const GAP_ACTION: Record<RehearsalGapType, string> = {
   'designation-missing': copy.ACTION_BUILD_AGAIN_DESIGNATION,
@@ -60,6 +68,8 @@ export type GapAction = {
   actionId: string;
   /** What could not be relied on. */
   title: string;
+  /** Why it was found. */
+  reason: string;
   /** Which of the two kinds this is, said in words. */
   meaning: string;
   /** The one thing to do about it. */
@@ -70,6 +80,7 @@ export type GapAction = {
 export const actionFor = (detected: DetectedGap): GapAction => ({
   actionId: GAP_ACTION_ID[detected.gapType],
   title: GAP_TITLE[detected.gapType],
+  reason: GAP_REASON[detected.gapType],
   meaning: KIND_MEANING[detected.kind],
   action: GAP_ACTION[detected.gapType],
 });

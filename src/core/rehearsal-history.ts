@@ -6,12 +6,14 @@
 // order is the order in time, never the order of outcome.
 
 import * as copy from './copy';
+import { actionFor, type GapAction } from './rehearsal-actions';
 import { conditionLabel } from './rehearsal-condition';
 import { endingLine, endingOf } from './rehearsal-ending';
 import { formatSavedDate } from './provenance';
 import type { Rehearsal } from './types';
 
-export type HistoryRow = { id: string; date: string; condition: string; ending: string; gaps: string };
+/** `found` is each gap the run recorded, named with its reason and action. */
+export type HistoryRow = { id: string; date: string; condition: string; ending: string; gaps: string; found: GapAction[] };
 
 export function historyRows(rehearsals: Rehearsal[]): HistoryRow[] {
   return [...rehearsals]
@@ -22,5 +24,6 @@ export function historyRows(rehearsals: Rehearsal[]): HistoryRow[] {
       condition: conditionLabel(rehearsal.condition),
       ending: endingLine(endingOf(rehearsal)),
       gaps: copy.HISTORY_GAPS(rehearsal.gaps.length),
+      found: rehearsal.gaps.map(actionFor),
     }));
 }
