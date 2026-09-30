@@ -41,6 +41,10 @@ test('the arrows turn with the phone and stay drawn from a vague fix', async ({ 
   // The bottom bar is on every other screen; BlackSky's only exit is its own.
   await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
   await expect(page.getByText(/GPS ± 350 m here/)).toBeVisible();
+  // UAT: the figure is named, and its meaning opens behind the ring.
+  await expect(page.getByText('Your position ± 350 m')).toBeVisible();
+  await page.getByRole('button', { name: 'About your position' }).click();
+  await expect(page.getByText(/places you within 350 m/)).toBeVisible();
   await expect(page.getByText('North is at the top.')).toBeVisible();
 
   const arrow = page.locator('.blacksky-arrow').first();

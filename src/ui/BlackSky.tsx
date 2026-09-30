@@ -24,6 +24,7 @@ import type { Destination, Fix, NspSnapshot, Pack, PackWithPlaces } from '../cor
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import Glyph from './components/Glyph';
+import Hint from './components/Hint';
 import HoldButton from './components/HoldButton';
 import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
@@ -499,12 +500,20 @@ function ConfidenceLines({
 }) {
   return (
     <>
-      <p className="muted figure">
-        {estimating
-          ? copy.ESTIMATE_READOUT(confidence.accuracyM)
-          : copy.ACCURACY_READOUT(confidence.accuracyM)}
-      </p>
-      <p className="muted">{copy.DISTANCES_NOTE}</p>
+      <Hint
+        label={copy.ABOUT_ACCURACY}
+        panelClass="blacksky-info-panel"
+        head={
+          <p className="muted figure">
+            {estimating
+              ? copy.ESTIMATE_READOUT(confidence.accuracyM)
+              : `${copy.ACCURACY_LABEL} ${copy.ACCURACY_READOUT(confidence.accuracyM)}`}
+          </p>
+        }
+      >
+        <p>{copy.ACCURACY_DETAIL(confidence.accuracyM)}</p>
+        <p>{copy.DISTANCES_NOTE}</p>
+      </Hint>
       {!estimating && confidence.approximate ? (
         <p className="muted">{copy.GPS_APPROXIMATE(confidence.accuracyM)}</p>
       ) : null}
