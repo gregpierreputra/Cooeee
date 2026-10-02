@@ -126,12 +126,25 @@ export const HOLD_MS = 2_000;
 // real phones. 24 px is about half a fingertip, and the smallest target WCAG
 // 2.5.8 accepts: a pointer further off than that is no longer on this control.
 export const HOLD_LEAVE_MARGIN_PX = 24;
+// The buzz when a hold completes, where the phone has one: the cue for a finger
+// that cannot see the control under it. Entering is a longer buzz, a door into
+// another screen; leaving BlackSky a short one, so it is felt, not startling
+// (from the phone test, 28 Sep).
+export const HOLD_VIBRATE_MS = 100;
+export const HOLD_LEAVE_VIBRATE_MS = 40;
 // How long the line saying BlackSky was not opened stays on screen.
 export const BLOCKED_NOTICE_MS = 8_000;
 export const TICK_MS = 5_000;
 // A position this far from the one on screen is shown at once, not at the next
 // tick. Smaller moves are sensor noise and wait, which saves the battery.
 export const FIX_PUBLISH_M = 5;
+/** The readout's steadiness (28 Sep review): the distance and the compass point
+ *  on screen change only when the place, as seen from the new position, has
+ *  moved by more than the position's own error (its accuracy), and never for
+ *  less than this. Below that the change is the fix wobbling, and a figure
+ *  that flickers between 2.60 and 2.61 km while the phone lies still reads as
+ *  movement that is not there. The voice keeps its own rule. */
+export const READOUT_MIN_CHANGE_M = FIX_PUBLISH_M;
 // A position watch that has said nothing for this long is started again: some
 // phones stop delivering positions without reporting any error.
 export const WATCH_RESTART_MS = 15_000;
@@ -181,6 +194,139 @@ export const VOICE_CHECK_MS = 1_000;
 /** Faster than this the person is moving, and the screen is kept awake. A slow
  *  walk is about 1.4 m/s; a phone lying still reports 0 or nothing. Starting value. */
 export const AWAKE_MOVING_MPS = 1;
+
+// Roads inside the dial (BS_Enhancement-AC5). Every figure here is a starting
+// value, to be tuned on a real phone and in user testing, not a measured one.
+/** "Whole way": the view reaches the place and this share beyond it, so the pin
+ *  sits inside the ring with some road around it. Starting value. */
+export const ROADS_WHOLE_WAY_MARGIN = 0.15;
+/** The smallest and largest radius the dial ever shows. Below 1.5 km a road
+ *  map on a 340 px dial is a handful of lines; above 30 km even the main roads
+ *  run together and nothing can be named. Starting values. */
+export const ROADS_MIN_RADIUS_M = 1_500;
+export const ROADS_MAX_RADIUS_M = 30_000;
+/** "Near me": the ground a person on foot can see around them. Starting value. */
+export const ROADS_NEAR_RADIUS_M = 1_500;
+/** The map is drawn again once the person has moved more than this far from
+ *  where it was last drawn, or more than ROADS_REDRAW_SHARE of the view's
+ *  radius, whichever is larger (see redrawDistanceM in core/roads.ts). Below it
+ *  the change is under a pixel or two, and a redraw per GPS sample would cost
+ *  power for nothing. Starting value. */
+export const ROADS_REDRAW_M = 50;
+/** The share of the view's radius the person must move before a redraw. In the
+ *  30 km view 50 m is a fifth of a pixel, and a redraw every 50 m in a car
+ *  would redraw two thousand roads every two seconds; 1 % is about a pixel and
+ *  a half at every view. Starting value. */
+export const ROADS_REDRAW_SHARE = 0.01;
+/** A freeway line shorter than this is an on or off ramp. Starting value. */
+export const ROADS_RAMP_MAX_M = 1_000;
+/** Ramps are drawn only in "Near me", thin, in the freeway's colours. In the
+ *  whole way they were most of the lines drawn (593 of 804 round Clayton
+ *  South) and turned every interchange into a knot. */
+export const ROADS_RAMP_IN_WHOLE_WAY = false;
+/** Which road classes the dial draws. Drawn all at one weight, the state's
+ *  roads were an unreadable mesh on a phone (Samsung S26 test), so each view
+ *  draws only the roads a person would recognise at its scale:
+ *  - "Near me" draws every class, 0 to 3, collectors included;
+ *  - "Whole way" never draws collectors: classes 0 to 2 up to and including
+ *    `mainUpToM`, and beyond it freeways and highways (0 and 1) only, unless
+ *    the ground is so empty of main roads that fewer than `sparseLines` lines
+ *    of classes 0 to 2 are in view: then the arterials come back, or a country
+ *    view would be nearly blank.
+ *  Starting values. */
+export const ROADS_CLASS_LIMITS = { mainUpToM: 10_000, sparseLines: 40 } as const;
+/** Line widths in screen pixels, by kind and view: the whole width of a road,
+ *  its casing. Wide enough in "Near me" to read as streets on the light disc;
+ *  in the whole way the freeway stands well above the highway and the
+ *  arterial, so the hierarchy reads at a glance. A freeway ramp is drawn in
+ *  "Near me" only, at the collector width. Starting values. */
+export const ROADS_WIDTH_PX = {
+  whole: { freeway: 5.5, highway: 2.8, arterial: 1.6, collector: 1.2 },
+  near: { freeway: 11, highway: 9, arterial: 6, collector: 4 },
+} as const;
+/** The centre arrow's size, as a share of the arrow first built for the plain
+ *  dial: smaller, so it covers less of the map it sits on (at full size it hid
+ *  the middle of the map, where the roads through the person run). Starting
+ *  value. */
+export const DIAL_ARROW_SCALE = 0.5;
+/** The compass letters' size on the phone's dial: 13 px on the 328 px dial of
+ *  a 360 px phone, the card's floor for any text a person must read there.
+ *  The dial is drawn in its own units and scales, so the letters are sized as
+ *  that share of the dial. */
+export const DIAL_LETTER_PX = 13;
+export const DIAL_PHONE_PX = 328;
+/** The place's pin on the ring, tip to top, on the phone's dial: 30 px. At
+ *  22 px, the size of the drop inside the disc, the ring pin read smaller than
+ *  a compass letter on the phone (28 Sep), and it is what the person turns to
+ *  bring under the notch. The drop inside the disc stays 22 px: there it sits
+ *  on the map among the roads. */
+export const DIAL_RING_PIN_PX = 30;
+/** Looking around the map by dragging it. The map may be moved at most this
+ *  far from the person: far enough to see the next suburb, not so far that the
+ *  person loses the map (the view itself is 1.5 km round them). */
+export const ROADS_PAN_MAX_M = 3_000;
+/** A pointer that moves less than this before it lifts is a tap, and a tap on
+ *  the map does nothing: a finger resting on a phone in a hand moves a few
+ *  pixels. Screen pixels. Starting value. */
+export const ROADS_PAN_TAP_PX = 6;
+/** With the map moved and no touch for this long, it returns to the person by
+ *  itself: someone who looked away and back must find themselves at the
+ *  centre. Starting value. */
+export const ROADS_PAN_RETURN_MS = 15_000;
+/** The scale bar on the map disc: this many metres, a round figure a person
+ *  can pace out, short enough to sit in the disc's corner in "Near me". */
+export const ROADS_SCALE_BAR_M = 500;
+/** Its label, in screen pixels: as quiet as the map's own names. Starting
+ *  value. */
+export const ROADS_SCALE_LABEL_PX = 11;
+/** Each road is drawn twice, a darker casing at its full width and its fill on
+ *  top; the fill is narrower by this edge on each side: a share of the width,
+ *  never under `minPx`, so the edge shows on the thinnest road. Starting
+ *  values. */
+export const ROADS_CASING_EDGE = { share: 0.15, minPx: 0.6 } as const;
+/** At most this many road names in view: more and the dial reads as a street
+ *  map, which it is not. Starting value. */
+export const ROADS_LABEL_COUNT = 4;
+/** Road names, in screen pixels: over the card's 13 px floor, so they read at
+ *  arm's length. The label rule fits names at this size and the dial draws
+ *  them at it. Starting value. */
+export const ROADS_LABEL_PX = 14;
+/** A name may take up to this share of its line's visible length (the longest
+ *  run in view), placed on the line's straightest stretches. Starting value. */
+export const ROADS_LABEL_STRETCH = 0.9;
+/** How straight a stretch is: the straight-line distance between its ends over
+ *  its length, 1 for a straight line. Summing the turns instead counted every
+ *  pixel's wobble, so a road that was plainly straight at the dial's scale
+ *  scored as bent. Stretches within this much of the straightest count as
+ *  equally straight, so a name can move off the arrow onto a stretch that is
+ *  nearly as good. Starting value. */
+export const ROADS_LABEL_STRAIGHT_SLACK = 0.02;
+/** The least straightness the stretch under a name may have. Round a hairpin,
+ *  or along a road that wiggles, a name reads as broken letters with part of
+ *  it upside down (seen in the 20 km view): such a stretch is no room at all.
+ *  Starting value. */
+export const ROADS_LABEL_MIN_STRAIGHT = 0.9;
+/** The room a name needs beyond its own width, each end, and the clear space
+ *  between two names. Starting values. */
+export const ROADS_LABEL_PAD_PX = 4;
+export const ROADS_LABEL_GAP_PX = 3;
+/** Locality names on the map disc, "Whole way" only: the suburbs and towns a
+ *  person knows, so the far view says where the place lies among them.
+ *  Upper case at this size in screen pixels, with this much letter-spacing.
+ *  Starting values. */
+export const ROADS_LOCALITY_PX = 9.5;
+export const ROADS_LOCALITY_LETTER_SPACING_PX = 1;
+/** At most this many locality names on the disc. Starting value. */
+export const ROADS_LOCALITY_COUNT = 8;
+/** A locality is not named closer than this to the centre, where the arrow is,
+ *  nor this close to the disc's edge, where the name would be cut off, nor
+ *  this close to a locality already named. Screen pixels. Starting values. */
+export const ROADS_LOCALITY_CENTRE_PX = 46;
+export const ROADS_LOCALITY_EDGE_PX = 30;
+export const ROADS_LOCALITY_SPACING_PX = 62;
+/** A locality name keeps this much clear round its own upright box, of road
+ *  names and of the pin. Screen pixels. Starting value. */
+export const ROADS_LOCALITY_PAD_PX = 4;
 
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion

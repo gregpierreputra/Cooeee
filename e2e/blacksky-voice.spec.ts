@@ -179,10 +179,12 @@ test('Empty then Normal: nothing is spoken before the tap; the tap speaks the lo
   expect(await page.evaluate(() => window.__speech.voices)).toEqual(['Local Australian']);
 
   // Filled when on, and the caption carries exactly the words being spoken.
+  // Polled: a button's colour eases in over 0.15 s, and a busy test machine
+  // could read it at the first frame, still clear.
   await expect(speaker(page)).toHaveAttribute('aria-pressed', 'true');
-  expect(await speaker(page).evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
-    'rgba(0, 0, 0, 0)',
-  );
+  await expect
+    .poll(() => speaker(page).evaluate((el) => getComputedStyle(el).backgroundColor))
+    .not.toBe('rgba(0, 0, 0, 0)');
   await expect(caption(page)).toHaveText(long);
   expect(await caption(page).evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
 

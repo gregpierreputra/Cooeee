@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
-import { HOLD_LEAVE_MARGIN_PX, HOLD_MS } from '../../core/constants';
+import { HOLD_LEAVE_MARGIN_PX, HOLD_MS, HOLD_VIBRATE_MS } from '../../core/constants';
 
 type HoldButtonProps = {
   onHold: () => void;
   hint: string;
   children: ReactNode;
+  /** More classes for the button, beside its own: where it sits sets its look. */
+  className?: string;
+  /** How long the completed hold's buzz lasts, where the phone can buzz. */
+  vibrateMs?: number;
 };
 
 /** A mode switch fires on a HOLD, not a tap: a pocket press must not flip the
@@ -26,7 +30,13 @@ type HoldButtonProps = {
  *   3 a touch or pen long-press menu is refused and does not end the hold.
  *  A pocket press is still kept out: it takes two unbroken seconds on the
  *  button, and lifting, sliding off or the browser cancelling all end it. */
-export default function HoldButton({ onHold, hint, children }: HoldButtonProps) {
+export default function HoldButton({
+  onHold,
+  hint,
+  children,
+  className,
+  vibrateMs = HOLD_VIBRATE_MS,
+}: HoldButtonProps) {
   const [showHint, setShowHint] = useState(false);
   const holdTimer = useRef<number | null>(null);
   // Which kind of pointer is pressing, from its pointerdown until it lifts. The
@@ -50,7 +60,7 @@ export default function HoldButton({ onHold, hint, children }: HoldButtonProps) 
     clearHold(); // a key press during a pointer hold must not start a second timer
     holdTimer.current = window.setTimeout(() => {
       holdTimer.current = null;
-      if ('vibrate' in navigator) navigator.vibrate(100);
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(vibrateMs);
       onHold();
     }, HOLD_MS);
   };
@@ -82,7 +92,7 @@ export default function HoldButton({ onHold, hint, children }: HoldButtonProps) 
     <>
       <button
         type="button"
-        className="blacksky-hold"
+        className={className ? `blacksky-hold ${className}` : 'blacksky-hold'}
         // Only the main button holds. A right click opens a menu that swallows
         // the pointerup, and the timer would then enter BlackSky with no hold.
         onPointerDown={(e) => {

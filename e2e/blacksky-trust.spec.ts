@@ -59,8 +59,8 @@ test('Normal: a fresh position and a live heading show no bar and no tag', async
   const onTheLeft = norm(relativeBearing(0, east));
   expect(await arrowAndPin(page)).toEqual({ arrow: onTheLeft, pin: onTheLeft });
   // One arrow, solid, and nothing else at the centre.
-  await expect(page.locator('.blacksky-dial-arrow path')).toHaveCount(1);
-  await expect(page.locator('.blacksky-dial-arrow path.hollow')).toHaveCount(0);
+  await expect(page.locator('.blacksky-dial-arrow .blacksky-arrow-line')).toHaveCount(1);
+  await expect(page.locator(".blacksky-dial-arrow[data-stale='true']")).toHaveCount(0);
 });
 
 test('facing the place, the arrow stands straight up and the pin sits under the notch', async ({ page }) => {
@@ -99,10 +99,10 @@ test('an old position shows the bar and a dimmed about distance, and a fresh one
   await expect(figures(page)).toHaveAttribute('data-about', 'true');
   expect(await colour(page, '.blacksky-figure-main')).not.toBe(fullStrength);
 
-  // The dial keeps turning on an old position, with the arrow drawn hollow.
+  // The dial keeps turning on an old position, with the arrow's outline dashed.
   await turnPhone(page, FACING_EAST);
   await expect(centre(page)).toHaveAttribute('data-centre', 'outline');
-  await expect(page.locator('.blacksky-dial-arrow path.hollow')).toHaveCount(1);
+  await expect(page.locator(".blacksky-dial-arrow[data-stale='true']")).toHaveCount(1);
   await expect.poll(() => drawnAngle(page, '.blacksky-dial-ring')).toBe(norm(-(90 + DECLINATION)));
   const stalePointing = norm(relativeBearing(0, 90 + DECLINATION));
   expect(await arrowAndPin(page)).toEqual({ arrow: stalePointing, pin: stalePointing });
@@ -126,7 +126,7 @@ test('a vague position is prefixed about, with no bar while it is fresh', async 
   await expect(bar(page)).toHaveCount(0);
 });
 
-test('a position from a mark shows the bar with from your saved place, and a hollow arrow at the place', async ({
+test('a position from a mark shows the bar with from your saved place, and a dashed arrow at the place', async ({
   page,
 }) => {
   await openDial(page, 'pack');
@@ -137,9 +137,9 @@ test('a position from a mark shows the bar with from your saved place, and a hol
   await expect(page.getByText('GPS signal lost', { exact: true })).toBeVisible();
   await expect(page.locator('.blacksky-bar')).toContainText('from your saved place');
   // No glyph at the centre: the bar already says where the position is from.
-  // The arrow is hollow and, north up, points at the place (due north of here).
+  // The arrow is dashed and, north up, points at the place (due north of here).
   await expect(centre(page)).toHaveAttribute('data-centre', 'outline');
-  await expect(page.locator('.blacksky-dial-arrow path.hollow')).toHaveCount(1);
+  await expect(page.locator(".blacksky-dial-arrow[data-stale='true']")).toHaveCount(1);
   expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 });
   await expect(page.getByText('about', { exact: true })).toBeVisible();
   // E3-US1-AC4's own words stay: always ESTIMATE, the uncertainty growing.
