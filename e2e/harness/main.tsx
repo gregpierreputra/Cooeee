@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 
-import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
+import type { Destination, ExposureLayer, HazardType, NspSnapshot, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
 import { DTP_DATASET_URL } from '../../src/core/constants';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../src/core/nsp';
@@ -433,9 +433,49 @@ if (window.location.pathname === '/blacksky') {
   if (new URLSearchParams(window.location.search).get('run') === '1') {
     startRun('saved-pack', 'no-location-fix');
   }
+  // BS_Enhancement-AC1 and AC2. `dial=` mounts the real screen over stores the
+  // spec can read at a glance: one pack at Ferny Creek with two chosen places
+  // and a note, and the fixture's state-wide list, whose nearest site (Belgrave,
+  // 2.1 km) is NEARER than either chosen place. The names are written as the
+  // CFA writes them, brackets and all. `pack` stores that pack, `no-pack` stores
+  // none, `empty` stores neither a pack nor a list, and `pack-only` stores the
+  // pack with its note but no place and no list, so in the last two a position
+  // has nothing to point at. The spec supplies the position.
+  const dialMode = new URLSearchParams(window.location.search).get('dial');
+  const dialPlace = (id: string, name: string, lat: number): Destination => ({
+    id: `saved-pack:${id}`,
+    packId: 'saved-pack',
+    kind: 'nsp-bushfire',
+    name,
+    geocode: 'exact',
+    lat,
+    lon: savedPack.lon,
+    chosen: true,
+    source: nspFixture.source,
+  });
+  const dialPacks = [{
+    pack: savedPack,
+    places: [
+      dialPlace('nsp-north', 'Sassafras (Village Green (car park)) Neighbourhood Safer Place', -37.8566),
+      dialPlace('nsp-south', 'Belgrave South (Community Hall) Neighbourhood Safer Place', -37.9115),
+    ],
+    notes: [{ id: 'dial-note', packId: 'saved-pack', text: 'Gas is off at the meter.', updatedAt: savedPack.createdAt }],
+    placesVerified: true,
+  }];
   blackSkyFlow = (
     <>
-      <BlackSky />
+      {dialMode ? (
+        <BlackSky
+          loadPacks={async () =>
+            dialMode === 'pack' ? dialPacks
+              : dialMode === 'pack-only' ? [{ ...dialPacks[0], places: [] }]
+                : []}
+          loadSites={async () =>
+            dialMode === 'empty' || dialMode === 'pack-only' ? undefined : (nspFixture as NspSnapshot)}
+        />
+      ) : (
+        <BlackSky />
+      )}
       <div hidden>
         <LocationProbe />
       </div>
