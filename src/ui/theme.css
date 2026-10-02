@@ -909,60 +909,95 @@ input {
 /* The bearing figure is the biggest thing on screen — readable at arm's length,
    while walking. Everything else recedes into dim amber. */
 
-/* The top bar: the mode's name in the kicker treatment on the left, the Leave
-   control as a compact pill on the right, ruled off from the screen below.
-   A grid, so that the hold's hint and the "still open" notice, which the
-   markup places after the button, fall into full-width rows UNDER the bar.
-   They push the page down when they appear; the button above them never moves,
-   so it cannot slide out from under the finger that is holding it. */
+/* The top bar: the one way out, a hold across the full content width, 48 px
+   high, with the mode's name set over its right-hand end (E3-US3-AC1, restored
+   after the phone test of 28 Sep: a finger on the old pill hid it, so nobody
+   could see the hold going). A grid, so that the hold's hint and the "still
+   open" notice, which the markup places after the button, fall into
+   full-width rows UNDER the bar. They push the page down when they appear; the
+   bar above them never moves, so it cannot slide out from under the finger
+   that is holding it. */
 .blacksky-topbar {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 0.25rem 0.75rem;
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid var(--line);
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
 }
 
 .blacksky-topbar > .blacksky-hold-hint {
-  grid-column: 1 / -1;
   text-align: left;
   font-size: var(--step-0); /* nothing on this screen but the two small labels is under 16 px */
 }
 
-/* The same hold control as everywhere else (the 2 s hold, the fill, the hint),
-   made quiet. Leaving is the last thing this screen is for, so the control must
-   never be louder than the title beside it: the BUTTON is only the touch
-   target, 44 px high and invisible, and the PILL inside it is what is seen,
-   small, regular weight, in the muted amber, with a thin border and no fill
-   until it is pressed. The target stays full size; only the look shrinks. */
-.blacksky-topbar > .blacksky-hold {
-  min-height: 44px;
+/* The bar and its fill. The fill is the mode's full amber, sweeping left to
+   right across the whole bar for the 2 s of the hold (HOLD_MS), so both ends
+   of it show beside a thumb: amber on the black bar is 11.5 to 1. The words
+   turn dark as the fill passes under them, so they read on both. */
+.blacksky-topbar > .blacksky-leave-bar {
+  min-height: 0;
+  height: 48px;
   padding: 0;
-  border: 0;
-  background: none;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-pill);
   flex-direction: row;
+  justify-content: flex-start;
   white-space: nowrap;
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--accent), var(--accent));
 }
 
-.blacksky-leave-pill {
-  padding: 0.1875rem 0.75rem;
-  border: 1px solid var(--ink-2);
-  border-radius: var(--r-pill);
-  font-size: var(--step-s);
-  font-weight: 400;
-  color: var(--ink-2);
-  /* The hold's fill sweep, moved from the button onto the pill that is seen. */
-  background-image: linear-gradient(var(--blacksky-fill), var(--blacksky-fill));
+.blacksky-topbar > .blacksky-leave-bar:active {
+  background-size: 100% 100%;
+  transition: background-size 2s linear; /* HOLD_MS, as on every hold control */
+}
+
+/* The words, and the mode's name over the other end, painted by the same sweep
+   as the fill: dark where the fill has reached, amber where it has not. Each
+   spans the whole bar, so its sweep and the bar's are the same. */
+.blacksky-leave-label,
+.blacksky-topbar > .blacksky-title {
+  box-sizing: border-box;
+  width: 100%;
+  background-image: linear-gradient(var(--ink-on-accent), var(--ink-on-accent)), linear-gradient(var(--accent), var(--accent));
   background-repeat: no-repeat;
   background-position: left;
-  background-size: 0% 100%;
+  background-size: 0% 100%, 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   transition: background-size 0.2s ease;
 }
 
-.blacksky-topbar > .blacksky-hold:active .blacksky-leave-pill {
-  background-size: 100% 100%;
-  transition: background-size 2s linear; /* HOLD_MS, as on every hold control */
+.blacksky-leave-label {
+  padding: 0 1.25rem;
+  text-align: left;
+  font-size: var(--step-0);
+  font-weight: var(--w-bold);
+  line-height: 46px;
+}
+
+/* The name: over the bar's right-hand end, never touched: the pointer goes
+   through it to the bar. Inset by the bar's 1 px border, so its sweep lines up
+   with the fill's. */
+.blacksky-topbar > .blacksky-title {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: auto;
+  right: 1px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 1.25rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.blacksky-topbar > .blacksky-leave-bar:active .blacksky-leave-label,
+.blacksky-topbar:has(> .blacksky-leave-bar:active) > .blacksky-title {
+  background-size: 100% 100%, 100% 100%;
+  transition: background-size 2s linear;
 }
 
 /* Which pack to load, when several are saved: asked under the title and left
@@ -1031,21 +1066,21 @@ input {
    is the one flexible row (1fr). Every other row keeps its own height, so
    whatever they need (a name on two lines, "about", the compass button) comes
    out of the dial and nothing else. dvh, not vh, so the browser's bars count.
-   240 px is the floor: smaller than that the ring letters and the arrow stop
-   being readable at arm's length. The floor is the row's minimum, and
+   300 px is the floor: smaller than that the roads and names inside the map
+   circle stop being readable at arm's length. The floor is the row's minimum, and
    min-height: min-content makes the body at least its rows tall, so on a
    screen too short even for that the body grows, the page scrolls, and nothing
    overlaps.
    On a taller screen (over 700 px) none of this applies: the dial is simply
-   the content width up to 340 px, and the heading is in view anyway. Without
+   the content width up to 360 px, and the heading is in view anyway. Without
    that limit a tall screen would stretch the body and leave a hole round the
    dial. With no notes there is no heading to keep in view, so less is taken
    off and the dial takes the room. */
 .blacksky {
-  --bs-gap: 0.75rem;
-  /* Above the body: the page's top padding, the top bar (its 44 px target, its
-     padding and rule), and the gap under it. */
-  --bs-above: calc(max(1.5rem, env(safe-area-inset-top) + 1rem) + 44px + 0.25rem + 1px + var(--bs-gap));
+  --bs-gap: 6px;
+  /* Above the body: the page's top padding, the top bar (the 48 px hold), and
+     the gap under it. */
+  --bs-above: calc(max(1.5rem, env(safe-area-inset-top) + 1rem) + 48px + var(--bs-gap));
   --bs-line: 0px; /* a line of text standing between the bar and the body */
   --bs-bar: 0px; /* the GPS signal lost bar */
   /* Below it: the page's bottom padding, or the Notes heading and its gap. */
@@ -1070,19 +1105,47 @@ input {
   gap: var(--bs-gap);
 }
 
+/* The dial takes the full content width, the screen less 16 px each side, up
+   to 360 px: BlackSky's page runs closer to the edges than the other screens,
+   because on a phone the dial is the screen. */
+.page.blacksky:has(.blacksky-dial-body) {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
 .blacksky-dial-body {
   display: grid;
-  gap: 0.5rem;
-  grid-template-rows: auto auto min(340px, calc(100vw - 3.5rem));
+  gap: 6px;
+  grid-template-rows: auto auto min(360px, calc(100vw - 2rem));
   grid-auto-rows: auto;
 }
 
 @media (max-height: 700px) {
   .blacksky-dial-body {
-    grid-template-rows: auto auto minmax(240px, 1fr);
+    grid-template-rows: auto auto minmax(300px, 1fr);
     height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
+  }
+}
+
+/* A screen wider than any phone (a laptop, a tablet): the dial grows past
+   360 px, up to the height the other rows leave and the page's width, so it is
+   not a small circle in a large window. The body takes the screen's height as
+   on a short phone, and the dial's row is the flexible one. Phones never see
+   this: their layout is the one above. */
+@media (min-width: 701px) {
+  .blacksky-dial-body {
+    grid-template-rows: auto auto minmax(300px, 1fr);
+    height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    min-height: min-content;
+  }
+
+  /* The slot in the selector: this must beat the frame's own rule, later in
+     the file, which holds a phone's dial to 360 px. */
+  .blacksky-dial-slot .blacksky-dial-frame {
+    width: min(100cqw, 100cqh);
   }
 }
 
@@ -1091,8 +1154,14 @@ input {
   gap: 0.125rem;
 }
 
+/* The name block is set tight, so the dial can have the room: the label at
+   12 px, the site at 22 and the suburb at 15, all on a line-height of 1.1. */
+.blacksky-dial-head .kicker {
+  line-height: 1.1;
+}
+
 .blacksky-dial-head h2 {
-  font-size: var(--step-2);
+  font-size: 22px;
   font-weight: var(--w-heavy);
   line-height: 1.1;
   overflow-wrap: anywhere;
@@ -1100,8 +1169,8 @@ input {
 
 .blacksky-dial-head p {
   margin: 0;
-  font-size: var(--step-1);
-  line-height: 1.25;
+  font-size: 15px;
+  line-height: 1.1;
 }
 
 /* The distance row: the figure on the left; beside it the compass point over
@@ -1112,14 +1181,23 @@ input {
   margin: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) 48px;
+  /* 48 px high, the speaker button's height, and taller only when it must:
+     with "about" over the figure the cell is taller than 48 px, and a fixed
+     row let it spill upwards over the place's name (found on a laptop, whose
+     position is usually vague). A marked position's longer readout takes a
+     row of its own below. */
+  grid-template-rows: minmax(48px, auto);
   align-items: end;
   gap: 0 0.5rem;
   color: var(--accent);
   font-weight: var(--w-heavy);
 }
 
+/* Row 1 always: a long readout spans the row below, and without a row the
+   button was placed after it, on a row of its own. */
 .blacksky-dial-row-end {
   grid-column: 3;
+  grid-row: 1;
   align-self: center;
   display: grid;
 }
@@ -1147,14 +1225,22 @@ input {
   grid-column: 1 / -1;
 }
 
-/* The distance is the largest text on the screen: never under 56 px. */
+/* Outside the pack's area, the readout is E3-US2-AC1's line, one fact a line. */
+.blacksky-outside,
+.blacksky-outside-pack {
+  display: block;
+  line-height: 1.2;
+}
+
+/* The distance is the largest text on the screen, 44 px, the height of its
+   48 px row: it gave up size so the dial could fill the width. */
 .blacksky-figure-main {
-  font-size: clamp(3.5rem, 15vw, 4.5rem);
+  font-size: 44px;
   line-height: 1;
   letter-spacing: -0.04em;
 }
 
-/* The unit, at half the number's size: still 28 px, well over the 16 px floor. */
+/* The unit, at half the number's size: 22 px, over the 16 px floor. */
 .blacksky-figure-unit {
   font-size: 0.5em;
   letter-spacing: 0;
@@ -1189,7 +1275,7 @@ input {
 }
 
 /* The dial takes the room it is given: the slot is the grid row above (the
-   content width up to 340 px, less whatever a short screen cannot spare), and
+   content width up to 360 px, less whatever a short screen cannot spare), and
    the frame is the largest square that fits the slot, measured with container
    units because only the slot knows both its width and its height. It is the
    largest element on the screen, and it is sized for the map that is to go
@@ -1200,11 +1286,12 @@ input {
   min-height: 0;
   display: grid;
   place-items: center;
+  place-content: center;
 }
 
 .blacksky-dial-frame {
   position: relative;
-  width: min(100cqw, 100cqh);
+  width: min(100cqw, 100cqh, 360px);
   aspect-ratio: 1;
 }
 
@@ -1233,6 +1320,21 @@ input {
   transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
 }
 
+/* Something set at a spot on the map (the arrow at the person, the drop at the
+   place): carried round with the map by the heading to its spot, then turned
+   back, so what is inside keeps its own turn (the arrow's bearing, the drop
+   upright). The spot is in the drawing's units, north up. */
+.blacksky-dial-at {
+  transform: rotate(calc(var(--heading, 0) * -1deg)) translate(calc(var(--at-x, 0) * 1px), calc(var(--at-y, 0) * 1px))
+    rotate(calc(var(--heading, 0) * 1deg));
+}
+
+/* Inside the view the pin's own group does not turn: its drop is placed on
+   the map by .blacksky-dial-at. */
+.blacksky-dial-pin[data-at='inside'] {
+  transform: none;
+}
+
 .blacksky-dial-ring circle {
   fill: none;
   stroke: var(--ink-2);
@@ -1246,8 +1348,9 @@ input {
 
 /* Each letter turns back by the same heading about its own centre, so it
    stays upright and readable however the ring has turned. */
+/* The size comes from the dial's geometry, to fit the band between the map
+   disc and the ring. */
 .blacksky-dial-letter {
-  font-size: 17px;
   font-weight: var(--w-heavy);
   fill: var(--ink-2);
   transform-box: fill-box;
@@ -1255,26 +1358,37 @@ input {
   transform: rotate(calc(var(--heading, 0) * 1deg));
 }
 
-.blacksky-dial-notch,
-.blacksky-dial-pin circle,
-.blacksky-dial-arrow path {
+.blacksky-dial-notch {
   fill: currentColor;
 }
 
-.blacksky-dial-pin .blacksky-dial-pin-eye {
-  fill: var(--bg);
-}
-
-/* An old position, or a marked one: the arrow is drawn hollow. */
-.blacksky-dial-arrow path.hollow {
+/* The arrow is an outline, never filled, so the map shows through it: a 2.5 px
+   amber line over a dark line 1 px wider each side. Amber alone is 1.5 to 1 on
+   the light disc; the dark edge is 16.5 to 1 there, and the amber 12.6 to 1 on
+   the black. Widths in screen pixels at any dial size. */
+.blacksky-dial-arrow path {
   fill: none;
-  stroke: currentColor;
-  stroke-width: 3;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
-/* The North up tag sits in the top corner the ring leaves free: a circle never
-   reaches the corners of its own square. */
+.blacksky-dial-arrow .blacksky-arrow-edge {
+  stroke: var(--map-mark);
+  stroke-width: 4.5px;
+}
+
+.blacksky-dial-arrow .blacksky-arrow-line {
+  stroke: var(--map-mark-edge);
+  stroke-width: 2.5px;
+}
+
+/* An old position, or a marked one: the same outline, dashed. */
+.blacksky-dial-arrow[data-stale='true'] path {
+  stroke-dasharray: 6 4;
+}
+
+/* The North up tag sits in the dial's top corner, over the ring's line where
+   the ring comes near it. */
 .blacksky-tag {
   position: absolute;
   top: 0;
@@ -1282,8 +1396,227 @@ input {
   padding: 0.125rem 0.75rem;
   border: 1px solid var(--ink-2);
   border-radius: 999px;
+  /* The ring reaches nearly to the box's corners, so a tag sits over its line
+     there: a solid ground keeps the line from running through the words. */
+  background: var(--bg);
   font-weight: var(--w-bold);
   color: var(--ink-2);
+}
+
+/* ── Roads inside the dial (BS_Enhancement-AC5) ───────────────────────────
+   The map is a light disc inside the dark ring, like a paper map held up on
+   the black screen: the ring, its ticks and letters, and every word outside
+   the disc stay in the mode's amber on black. The roads are context, not a
+   way to go: every road of a kind is drawn alike, as a casing with a fill on
+   top, each class a clear step up from the one below (ROADS_WIDTH_PX), so the
+   freeways and highways a person recognises read first. All the map's colours
+   are here, as custom properties on the dial.
+   Contrast on the disc #F2EFE9, WCAG 1.4.11 asks 3 to 1 for graphics: the
+   freeway casing #D98B21 2.4 to 1, the highway casing #D9B84A 1.7 to 1, the
+   arterial casing #C9C9C9 1.4 to 1, all BELOW it, as specified for this
+   build and flagged for the accessibility check on the card. Road names
+   #333333 on their white halo 12.6 to 1; the arrow and the drop #111111 on
+   the disc 16.5 to 1, their amber edge #FBBF24 12.6 to 1 on the black. */
+.blacksky-dial {
+  --map-disc: #f2efe9;
+  --map-freeway-casing: #d98b21;
+  --map-freeway-fill: #f2a33a;
+  --map-highway-casing: #d9b84a;
+  --map-highway-fill: #ffe082;
+  --map-highway-fill-whole: #fff1b8; /* paler in the whole way, under the freeway */
+  --map-arterial-casing: #c9c9c9;
+  --map-arterial-fill: #ffffff;
+  --map-collector-casing: #dddddd;
+  --map-collector-fill: #ffffff;
+  --map-label: #333333;
+  --map-label-halo: #ffffff;
+  --map-locality: #4a4a4a;
+  --map-locality-halo: #f2efe9;
+  --map-mark: #111111;
+  --map-mark-edge: #fbbf24;
+}
+
+/* Beats the ring's own circle rule: the disc is filled, with no stroke. */
+.blacksky-dial-ring .blacksky-map-disc {
+  fill: var(--map-disc);
+  stroke: none;
+}
+
+.blacksky-road {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.blacksky-road.freeway.casing {
+  stroke: var(--map-freeway-casing);
+}
+
+.blacksky-road.freeway.fill {
+  stroke: var(--map-freeway-fill);
+}
+
+.blacksky-road.highway.casing {
+  stroke: var(--map-highway-casing);
+}
+
+.blacksky-road.highway.fill {
+  stroke: var(--map-highway-fill);
+}
+
+.blacksky-dial-map[data-view='whole'] .blacksky-road.highway.fill {
+  stroke: var(--map-highway-fill-whole);
+}
+
+.blacksky-road.arterial.casing {
+  stroke: var(--map-arterial-casing);
+}
+
+.blacksky-road.arterial.fill {
+  stroke: var(--map-arterial-fill);
+}
+
+.blacksky-road.collector.casing {
+  stroke: var(--map-collector-casing);
+}
+
+.blacksky-road.collector.fill {
+  stroke: var(--map-collector-fill);
+}
+
+.blacksky-road-label text {
+  /* The size is set on the label from ROADS_LABEL_PX, not here. */
+  font-weight: var(--w-med);
+  fill: var(--map-label);
+  stroke: var(--map-label-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* The scale bar, in the map's label colours: a dark bar on a white halo, its
+   figure like a road name. It stands still while the map turns. */
+.blacksky-scale-halo {
+  fill: none;
+  stroke: var(--map-label-halo);
+  stroke-width: 4px;
+  stroke-linecap: butt;
+}
+
+.blacksky-scale-bar {
+  fill: none;
+  stroke: var(--map-label);
+  stroke-width: 2px;
+  stroke-linecap: butt;
+}
+
+.blacksky-scale-label {
+  font-weight: var(--w-med);
+  fill: var(--map-label);
+  stroke: var(--map-label-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* Locality names, "Whole way" only: quiet capitals in grey with a halo of the
+   disc's own colour, upright whichever way the map has turned (the same turn
+   back as the ring's letters). Size and spacing come from constants.ts. */
+.blacksky-locality {
+  font-weight: var(--w-med);
+  fill: var(--map-locality);
+  stroke: var(--map-locality-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotate(calc(var(--heading, 0) * 1deg));
+}
+
+/* With the map, the compass letters lie across the disc's edge: dark with the
+   arrow's amber edge, the edge drawn outside the letter (paint-order), so a
+   letter reads on the light disc and on the black band alike. */
+.blacksky-dial-ring.on-map .blacksky-dial-letter {
+  /* The edge's width is set on the letter, in the dial's units. */
+  fill: var(--map-mark);
+  stroke: var(--map-mark-edge);
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* A name reads the right way up while its stretch, as the dial has turned it,
+   points anywhere from straight down to straight up through the right-hand
+   side: the cosine of that angle is positive. Past that its twin, set along the
+   same stretch the other way, takes over. The small bias gives a name standing
+   exactly upright (a cosine of 0) to the first copy, so one of the two always
+   shows. The angle comes from --heading, so this follows the phone at display
+   rate with no render. */
+.blacksky-road-label .upright {
+  opacity: clamp(0, calc((cos((var(--label-deg) - var(--heading, 0)) * 1deg) + 0.0001) * 100000), 1);
+}
+
+.blacksky-road-label .turned {
+  opacity: clamp(0, calc((cos((var(--label-deg) - var(--heading, 0)) * 1deg) + 0.0001) * -100000), 1);
+}
+
+/* The place's pin inside the view: a dark drop with the mode's amber edge, its
+   tip on the spot, so it stands clear of the light disc and the roads on it.
+   Placed and kept upright by .blacksky-dial-at. */
+.blacksky-dial-drop {
+  fill: var(--map-mark);
+  stroke: var(--map-mark-edge);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+/* The same drop on the ring: amber with a dark edge, like the marker it
+   replaced, so it reads on the black band and where it reaches the disc. */
+.blacksky-dial-drop.on-ring {
+  fill: currentColor;
+  stroke: var(--map-mark);
+  stroke-width: 1.5px;
+  /* 1.5 screen pixels, however the drop is scaled to the ring pin's size. */
+  vector-effect: non-scaling-stroke;
+}
+
+/* The disc is where the map is dragged: a clear layer the size of the disc (88 %
+   of the dial's box, so 6 % in from each side), round like it, so the dial's
+   corners and everything outside the disc take no drag. touch-action none: the
+   page neither scrolls nor zooms under a finger on the map. */
+.blacksky-dial-pan {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.blacksky-dial-pan:active {
+  cursor: grabbing;
+}
+
+/* "Back to me", a pill over the dial's foot while the map is dragged: centred,
+   its bottom edge on the frame's, over the black band under the S. Out of the
+   page's flow, so the dial never changes size for it. The ring's line may pass
+   behind it; the solid ground the tags have keeps the line out of the words.
+   44 px high, the smallest target on this screen. */
+.blacksky-map-return {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 1;
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 0;
+  padding: 0 1.25rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  color: var(--accent);
+  font-size: var(--step-0);
+  white-space: nowrap;
 }
 
 /* ── Voice (BS_Enhancement-AC3) ────────────────────────────────────────────

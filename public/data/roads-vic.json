@@ -1,0 +1,41 @@
+{
+  "file": "roads-vic.bin",
+  "snapshotDate": "2026-09-27",
+  "retrievedAt": 1790515007922,
+  "source": {
+    "publisher": "Department of Transport and Planning",
+    "dataset": "Vicmap Transport, road network (tr_road)",
+    "url": "https://opendata.maps.vic.gov.au/geoserver/wfs",
+    "licence": "CC BY 4.0"
+  },
+  "classes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "featuresPerClass": {
+    "0": 8002,
+    "1": 30387,
+    "2": 57863,
+    "3": 74288
+  },
+  "linesPerClass": {
+    "0": 1696,
+    "1": 2281,
+    "2": 5043,
+    "3": 6964
+  },
+  "lines": 15984,
+  "points": 107235,
+  "toleranceM": 25,
+  "gridM": 5,
+  "bounds": {
+    "minLon": 140.06913,
+    "minLat": -39.0328,
+    "maxLon": 150.05325,
+    "maxLat": -33.00001
+  },
+  "bytes": 514664,
+  "gzipBytes": 369428
+}
