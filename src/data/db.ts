@@ -51,7 +51,7 @@ class CooeeeDb extends Dexie {
   rehearsals!: Table<StoredRehearsal, string>;
   // The reader's own record of the actions they have taken, per pack.
   actionCompletions!: Table<ActionCompletion, string>;
-  // E7: finished drills, the timed packing game played before a rehearsal.
+  // E9: finished drills, the timed packing game played before a rehearsal.
   drills!: Table<Drill, string>;
   // The CFA site list, for BlackSky's nearest-places pointer.
   snapshots!: Table<StoredSnapshot, string>;
@@ -498,7 +498,7 @@ export async function deleteCompletePack(id: string): Promise<void> {
 // (The status checks inside sweepBuilding and deleteCompletePack are write-path
 // guards, not read APIs.)
 
-/** E7 — whether a stored row is a drill this app wrote. A row that fails is
+/** E9 — whether a stored row is a drill this app wrote. A row that fails is
  *  dropped on read rather than rendered, so nothing altered on the device can
  *  put an unknown item or an impossible score on the pack page. */
 export const isDrill = (row: unknown): row is Drill => {

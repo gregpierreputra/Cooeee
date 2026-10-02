@@ -198,7 +198,12 @@ export type Fix = {
   lat: number; 
   lon: number; 
   accuracyM: number; 
-  at: number };
+  at: number;
+  // The direction of movement (TRUE north) and the speed, from the position
+  // sensor itself. Absent when the browser gives none, which is the usual case
+  // for a phone that is standing still.
+  headingDeg?: number;
+  speedMps?: number };
 
 /** A geographic point in the order this codebase uses everywhere: named fields,
  *  never a positional pair, because the axis-order trap is the defect that
@@ -513,7 +518,7 @@ export type SyncMetaRow = { key: string; value: string };
  *  how it read when last checked. */
 export type SourceLine = { lead: string; text: string };
 
-/** E7 — ONE FINISHED drill: the timed packing game played before a rehearsal.
+/** E9 — ONE FINISHED drill: the timed packing game played before a rehearsal.
  *  Kept on the phone so the pack page can list it. The score is about the bag
  *  and is 0 when the door was not reached, which the page never shows as a
  *  number. */

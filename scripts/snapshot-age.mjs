@@ -47,7 +47,8 @@ const named = [];
 const collectFiles = (node) => {
   if (Array.isArray(node)) return node.forEach(collectFiles);
   if (node && typeof node === 'object') return Object.values(node).forEach(collectFiles);
-  if (typeof node === 'string' && /\.json$/.test(node)) named.push(node);
+  // The roads file is binary, with a JSON sidecar; both are named in the index.
+  if (typeof node === 'string' && /\.(json|bin)$/.test(node)) named.push(node);
 };
 collectFiles(index);
 const missing = named.filter((file) => !existsSync(`public/data/${file.replace(/^\/?(data\/)?/, '')}`));

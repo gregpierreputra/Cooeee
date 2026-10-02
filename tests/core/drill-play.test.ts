@@ -5,7 +5,7 @@ import { DOWN, LEFT, RIGHT, SPEED, UP, facing, haze, leavingEarly, nearestItem, 
 
 const bulky = DRILL_ITEMS.filter((item) => item.weight < 0).map((item) => item.id);
 
-describe('E7 the drill rules of movement', () => {
+describe('E9 the drill rules of movement', () => {
   it('moves at the pace given, never faster on a diagonal', () => {
     const moved = step(SPAWN.x, SPAWN.y, 1, -1, 0.1, SPEED);
     expect(Math.hypot(moved.x - SPAWN.x, moved.y - SPAWN.y)).toBeCloseTo(SPEED * 0.1);
@@ -57,11 +57,9 @@ describe('E7 the drill rules of movement', () => {
     expect(haze(999, 60)).toEqual(haze(60, 60));
   });
 
-  it('lets a full bag leave early from the mat in the last ten seconds only', () => {
-    expect(leavingEarly(10, 9.5, true)).toBe(true);
-    expect(leavingEarly(10, 10, true)).toBe(true);
-    expect(leavingEarly(10, 10.5, true)).toBe(false);
-    expect(leavingEarly(9, 5, true)).toBe(false);
-    expect(leavingEarly(10, 5, false)).toBe(false);
+  it('lets any bag leave early from the mat with under thirty seconds left', () => {
+    expect(leavingEarly(29.5, true)).toBe(true);
+    expect(leavingEarly(30, true)).toBe(false);
+    expect(leavingEarly(5, false)).toBe(false);
   });
 });

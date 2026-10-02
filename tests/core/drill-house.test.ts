@@ -17,7 +17,7 @@ function walkable(): Set<string> {
   return seen;
 }
 
-describe('E7 the drill house', () => {
+describe('E9 the drill house', () => {
   it('is a grid of equal rows that starts the person in the living room', () => {
     expect(GRID.every((row) => row.length === COLS)).toBe(true);
     expect(blocked(SPAWN.x, SPAWN.y)).toBe(false);

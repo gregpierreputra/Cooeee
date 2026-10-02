@@ -1,4 +1,4 @@
-// E7 — the drill's score and the debrief that explains it.
+// E9 — the drill's score and the debrief that explains it.
 //
 // THIS FILE HAS A NUMBER IN IT, ON PURPOSE. The rehearsal (E5) never scores,
 // and E5-US2-AC2 keeps that rule for the rehearsal alone. The drill is a game

@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 
-import type { Destination, ExposureLayer, HazardType, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
+import type { Destination, ExposureLayer, HazardType, NspSnapshot, Pack, PackFile, PackProgram, PendingPlace, RecoveryProgram, TextPackContent } from '../../src/core/types';
 import { absenceRow, chosenDestinations, orderByDistance } from '../../src/core/destination';
 import { DTP_DATASET_URL } from '../../src/core/constants';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../src/core/nsp';
@@ -28,6 +28,7 @@ import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
 import { Size } from '../../src/ui/PackNew/Size';
 import nspFixture from './nsp-fixture.json';
+import { roadsFixture } from './roads-fixture';
 import '../../src/ui/theme.css';
 
 declare global {
@@ -441,9 +442,60 @@ if (window.location.pathname === '/blacksky') {
   if (new URLSearchParams(window.location.search).get('run') === '1') {
     startRun('saved-pack', 'no-location-fix');
   }
+  // BS_Enhancement-AC1 and AC2. `dial=` mounts the real screen over stores the
+  // spec can read at a glance: one pack at Ferny Creek with two chosen places
+  // and a note, and the fixture's state-wide list, whose nearest site (Belgrave,
+  // 2.1 km) is NEARER than either chosen place. The names are written as the
+  // CFA writes them, brackets and all. `pack` stores that pack, `no-pack` stores
+  // none, `empty` stores neither a pack nor a list, and `pack-only` stores the
+  // pack with its note but no place and no list, so in the last two a position
+  // has nothing to point at. The spec supplies the position.
+  const dialMode = new URLSearchParams(window.location.search).get('dial');
+  const dialPlace = (id: string, name: string, lat: number): Destination => ({
+    id: `saved-pack:${id}`,
+    packId: 'saved-pack',
+    kind: 'nsp-bushfire',
+    name,
+    geocode: 'exact',
+    lat,
+    lon: savedPack.lon,
+    chosen: true,
+    source: nspFixture.source,
+  });
+  const dialPacks = [{
+    pack: savedPack,
+    places: [
+      dialPlace('nsp-north', 'Sassafras (Village Green (car park)) Neighbourhood Safer Place', -37.8566),
+      dialPlace('nsp-south', 'Belgrave South (Community Hall) Neighbourhood Safer Place', -37.9115),
+    ],
+    notes: [{ id: 'dial-note', packId: 'saved-pack', text: 'Gas is off at the meter.', updatedAt: savedPack.createdAt }],
+    placesVerified: true,
+  }];
+  // BS_Enhancement-AC5. `roads=fixture` hands the dial the synthetic roads file
+  // above; `roads=real` the committed state-wide file, for timing. Without it
+  // the screen uses its own cache-only reader, which finds nothing here (the
+  // harness has no service worker), so every other spec sees the plain dial.
+  const roadsMode = new URLSearchParams(window.location.search).get('roads');
+  const loadRoads = roadsMode === 'fixture'
+    ? async () => roadsFixture()
+    : roadsMode === 'real'
+      ? async () => (await fetch('/data/roads-vic.bin')).arrayBuffer()
+      : undefined;
   blackSkyFlow = (
     <>
-      <BlackSky />
+      {dialMode ? (
+        <BlackSky
+          {...(loadRoads ? { loadRoads } : {})}
+          loadPacks={async () =>
+            dialMode === 'pack' ? dialPacks
+              : dialMode === 'pack-only' ? [{ ...dialPacks[0], places: [] }]
+                : []}
+          loadSites={async () =>
+            dialMode === 'empty' || dialMode === 'pack-only' ? undefined : (nspFixture as NspSnapshot)}
+        />
+      ) : (
+        <BlackSky />
+      )}
       <div hidden>
         <LocationProbe />
       </div>
@@ -696,7 +748,7 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
   rehearseFlow = <RehearsalHarness />;
 }
 if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
-// E7. The drill stands in front of every rehearsal. The rehearsal's own specs
+// E9. The drill stands in front of every rehearsal. The rehearsal's own specs
 // step past it here, as a person who skipped it would; ?drill=1 keeps it.
 if (new URLSearchParams(window.location.search).get('drill') !== '1') {
   markDrilled('rehearse-pack');
@@ -808,7 +860,7 @@ if (window.location.pathname === '/rehearse-choose') {
   );
 }
 
-// E7. The drill on its own, with a minute as short as the spec asks for.
+// E9. The drill on its own, with a minute as short as the spec asks for.
 // ?seconds=3 ends it almost at once; the app never passes this.
 const drillSeconds = Number(new URLSearchParams(window.location.search).get('seconds')) || undefined;
 const drillFlow = (

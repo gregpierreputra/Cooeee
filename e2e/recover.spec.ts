@@ -195,7 +195,7 @@ test('the pack page sections off its saved programs, each with its own page copy
 test('every pack page section carries a glyph and opens and closes under one control', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
   const heads = page.locator('.pack-section-head');
-  // Six since E7 added the Drills record under the rehearsals.
+  // Six since E9 added the Drills record under the rehearsals.
   await expect(heads).toHaveCount(6);
   await expect(heads.locator('.glyph')).toHaveCount(6);
   const places = page.locator('.pack-section', { hasText: copy.DESTINATIONS_STEP_TITLE });

@@ -47,7 +47,7 @@ type Props = {
   onDone: () => void;
 };
 
-/** E7-US3 — the report after the minute, read at a glance: a ring for the
+/** E9-US3 — the report after the minute, read at a glance: a ring for the
  *  score, the bag as pictures edged by what each did, a bar of how the points
  *  add up, and the essentials left behind. Each reason is one tap away rather
  *  than printed. Away from the door there is no number anywhere. */

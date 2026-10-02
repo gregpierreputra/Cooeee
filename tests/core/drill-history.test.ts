@@ -6,7 +6,7 @@ const drill = (over: Partial<Drill>): Drill => ({
   id: 'a', packId: 'p', finishedAt: 1_700_000_000_000, reachedDoor: true, score: 50, packed: ['water'], ...over,
 });
 
-describe('E7 the drill record', () => {
+describe('E9 the drill record', () => {
   it('lists drills newest first in the debrief wording', () => {
     const rows = drillRows([drill({ id: 'old' }), drill({ id: 'new', finishedAt: 1_800_000_000_000, reachedDoor: false, score: 0, packed: [] })]);
     expect(rows.map((row) => row.id)).toEqual(['new', 'old']);

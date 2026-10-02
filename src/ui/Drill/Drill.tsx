@@ -9,11 +9,10 @@ import { focusMain } from '../components/focusMain';
 import * as audio from './audio';
 import Debrief from './Debrief';
 import Game, { type DrillOutcome } from './Game';
-import MinuteFact from './MinuteFact';
 import SoundButton from './SoundButton';
 import Statline from './Statline';
 
-type Stage = 'statline' | 'game' | 'again' | 'fact' | 'debrief' | 'unavailable';
+type Stage = 'statline' | 'game' | 'again' | 'debrief' | 'unavailable';
 
 /** An id for the record. A page opened over plain http has no randomUUID. */
 const newId = (): string =>
@@ -27,8 +26,8 @@ type Props = {
   seconds?: number;
 };
 
-/** E7 — the drill in front of a rehearsal: one fact, the opening picture, one
- *  minute in the house, what that minute means in a real fire, then the debrief. `onDone` hands over to the
+/** E9 — the drill in front of a rehearsal: one fact, the opening picture, one
+ *  minute in the house, then the debrief. `onDone` hands over to the
  *  rehearsal, whether the drill was played or skipped. */
 export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props) {
   const [stage, setStage] = useState<Stage>('statline');
@@ -39,14 +38,14 @@ export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props
   // The sound stops with the drill, however it is left.
   useEffect(() => audio.suspend, []);
   // The report and the unavailable card replace the control that led to them.
-  // The film and the minute place their own focus.
+  // The film places its own focus.
   useEffect(() => {
     if (stage === 'debrief' || stage === 'unavailable') focusMain();
   }, [stage]);
 
   const finish = async (result: DrillOutcome) => {
     setOutcome(result);
-    setStage('fact');
+    setStage('debrief');
     // The record is for the pack page. A store that refuses costs the debrief
     // nothing. The score is worked out here from the bag, never read from the screen.
     try {
@@ -84,7 +83,6 @@ export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props
       {stage === 'game' || stage === 'again' ? (
         <Game key={stage} opening={stage === 'game'} seconds={seconds} onEnd={finish} onUnavailable={unavailable} onLeave={onDone} />
       ) : null}
-      {stage === 'fact' ? <MinuteFact onContinue={() => setStage('debrief')} /> : null}
       {stage === 'debrief' && outcome ? (
         <Debrief outcome={outcome} highest={highest} onAgain={() => start('again')} onDone={onDone} />
       ) : null}

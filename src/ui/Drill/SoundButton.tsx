@@ -1,7 +1,7 @@
 import * as copy from '../../core/copy';
 import * as audio from './audio';
 
-/** E7-US4-AC2 — one round button that shows the state it is in: a speaker
+/** E9-US4-AC2 — one round button that shows the state it is in: a speaker
  *  with sound waves, filled, while sound is on; a speaker with a cross,
  *  outlined, while it is off. A screen reader hears "Sound" and whether it
  *  is pressed. */

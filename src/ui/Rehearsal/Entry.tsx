@@ -85,7 +85,7 @@ export default function RehearsalEntry({
   // Date.now() on every render, so watching it would read the pack, set the
   // gate, render, and read the pack again, for as long as the screen is open.
   const [openedAt] = useState(now);
-  // E7 — whether this pack has had its drill this session. Read as a hook so
+  // E9 — whether this pack has had its drill this session. Read as a hook so
   // the debrief's way on re-renders this screen into the choice of condition.
   const drilled = useDrilled(packId);
 
@@ -147,7 +147,7 @@ export default function RehearsalEntry({
     if (unfinished !== null && unfinished.packId === gate.packId) {
       return <Unfinished rehearsal={unfinished} />;
     }
-    // E7 — the drill comes before the choice of condition, once per pack per
+    // E9 — the drill comes before the choice of condition, once per pack per
     // session, whichever way in was taken. Skipping it and finishing it both
     // mark it done.
     if (!drilled) return <Drill packId={gate.packId} onDone={() => markDrilled(gate.packId)} />;

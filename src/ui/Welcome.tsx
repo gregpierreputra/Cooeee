@@ -1,7 +1,6 @@
 import * as copy from '../core/copy';
 import Glyph from './components/Glyph';
 import Mark from './components/Mark';
-import Particles from './components/Particles';
 
 /** The first screen a new person sees, before the disclosure: why the app is
  *  worth having, in three drawings and as few words as will carry them. It
@@ -10,7 +9,6 @@ import Particles from './components/Particles';
 export default function Welcome({ onContinue }: { onContinue: () => void }) {
   return (
     <main className="page first-open welcome">
-      <Particles />
       <header className="hero first-open-hero">
         <Mark className="mark" size={44} />
         <h1>{copy.APP_NAME}</h1>

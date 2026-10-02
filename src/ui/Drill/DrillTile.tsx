@@ -1,7 +1,7 @@
 import * as copy from '../../core/copy';
 import Glyph from '../components/Glyph';
 
-/** E7-US4 — the way back into the drill from the Rehearse screens, at any
+/** E9-US4 — the way back into the drill from the Rehearse screens, at any
  *  time. Drawn unlike every other row there (amber, a flame, its own line), so
  *  it reads as a different thing to do rather than one more choice. */
 export default function DrillTile({ onPlay }: { onPlay: () => void }) {

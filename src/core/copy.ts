@@ -29,8 +29,9 @@ export const NOT_RECENTLY_VERIFIED = (days: number) =>
 
 // Shared vocabulary
 /** The eight compass points by name, index 0 = north, one every 45 degrees.
- *  Read by core/geo.ts cardinalPoint(). Names, not letters: the point is read
- *  under the arrow at arm's length, and "NE" is an abbreviation. */
+ *  Read by core/geo.ts cardinalPoint(). Names, not letters: a lone "E" beside
+ *  the distance read as a stray letter on a real phone, and "NE" read aloud is
+ *  two letters. The word is shown small; it is never abbreviated. */
 export const CARDINAL_POINTS = [
   'North',
   'North-east',
@@ -41,7 +42,6 @@ export const CARDINAL_POINTS = [
   'West',
   'North-west',
 ] as const;
-
 // Application shell
 export const APP_NAME = 'Cooeee';
 export const APP_TAGLINE =
@@ -327,11 +327,101 @@ export const ABOUT_ACCURACY = 'About your position';
 export const ACCURACY_DETAIL = (m: number) =>
   `Your phone places you within ${m} m of where you stand. The arrows and distances can be off by about that much.`;
 
-// The compass. Which way the arrow is to be read depends on whether the phone's
-// orientation sensor is feeding it, so the screen always says which.
-export const COMPASS_LIVE = 'The arrow turns with your phone.';
-export const COMPASS_NORTH_UP = 'North is at the top.';
+// The compass. iOS only hands the orientation sensor over after a tap.
 export const TURN_ON_COMPASS = 'Turn on the compass';
+
+// BS_Enhancement-AC1 one place on one compass dial
+/** The small label above the main place: where it comes from. Written in
+ *  capitals here, not by the stylesheet, so a screen reader and a test read
+ *  the same words the eye does. */
+export const YOUR_CHOSEN_PLACE = 'YOUR CHOSEN PLACE';
+export const NEAREST_PLACE_OF_LAST_RESORT = 'NEAREST PLACE OF LAST RESORT';
+/** A state-wide site picked with Show that is not the nearest one: calling it
+ *  nearest would be untrue. */
+export const PLACE_OF_LAST_RESORT = 'PLACE OF LAST RESORT';
+/** The dial as words, for a screen reader: the same three facts the eye gets. */
+export const DIAL_DESCRIPTION = (site: string, distance: string, point: string) =>
+  `${site}, ${distance}, ${point}`;
+/** Every other place folded into one line: how many, and the range they lie
+ *  in, nearest to furthest. A range, not a list, because the line must stay one
+ *  line on the narrowest phone and must never be cut off: a list of four
+ *  distances could do neither. Every distance is still in the sheet the line
+ *  opens. One other place has no range, and two at the same distance read as
+ *  one figure, not as "2.13 km – 2.13 km". `distances` is nearest first. */
+export const PLACES_SEPARATOR = ' · ';
+export const OTHER_PLACES_COUNT = (count: number) =>
+  count === 1 ? '1 other place' : `${count} other places`;
+export const OTHER_PLACES = (distances: string[]) => {
+  const nearest = distances[0];
+  const furthest = distances[distances.length - 1];
+  const range = nearest === furthest ? nearest : `${nearest} – ${furthest}`;
+  return `${OTHER_PLACES_COUNT(distances.length)}${PLACES_SEPARATOR}${range}`;
+};
+export const OTHER_PLACES_TITLE = 'Other places';
+export const SHOW_PLACE = 'Show';
+/** The Show button's name for a screen reader, so five buttons are not all
+ *  called Show. It starts with the visible word (WCAG 2.5.3). */
+export const SHOW_PLACE_NAMED = (site: string) => `Show ${site}`;
+export const CLOSE_OTHER_PLACES = 'Close';
+/** A position, and nothing stored on the phone that can be pointed at. */
+export const NO_PLACE_TO_POINT_AT =
+  'No official place of last resort stored on this phone can be pointed at from here.';
+
+// BS_Enhancement-AC2 say plainly when position or heading cannot be trusted
+export const GPS_SIGNAL_LOST = 'GPS signal lost';
+/** How old the position is, beside the bar's words: seconds, then minutes. */
+export const LAST_POSITION_AGE = (s: number) =>
+  s < 60 ? `last position ${s} s ago` : `last position ${Math.floor(s / 60)} min ago`;
+/** The bar when the position is a mark the person made, not a fix. */
+export const FROM_YOUR_SAVED_PLACE = 'from your saved place';
+/** Before a distance measured from an old, vague or estimated position. */
+export const ABOUT = 'about';
+/** The tag on a dial that nothing is turning. */
+export const NORTH_UP = 'North up';
+
+// BS_Enhancement-AC5 roads inside the dial. The roads are there to be
+// recognised, never followed: no word here names a road to take or a way to go.
+/** The button under the dial while the map has been dragged away from the
+ *  person: it puts them back at the centre. */
+export const MAP_RETURN_BUTTON = 'Back to me';
+/** The attribution the road layer's licence asks for, on the About screen. */
+export const ROADS_ATTRIBUTION = 'Roads: Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
+/** The same for the locality names on the map disc, under the roads line. */
+export const LOCALITIES_ATTRIBUTION = 'Localities: Vicmap Admin, Department of Transport and Planning, CC BY 4.0';
+
+// BS_Enhancement-AC3 say the place, distance and side aloud
+// Everything the phone speaks, and the caption shows the same words. Each
+// sentence states where the place IS. None tells the person which way to
+// travel, and none promises anything about the place.
+/** The speaker button's name. One name for both states: aria-pressed says
+ *  whether it is on. */
+export const VOICE_BUTTON = 'Speak the distance aloud';
+/** A distance in words a voice reads well: whole tens of metres under a
+ *  kilometre, one decimal place of kilometres from there. */
+export const spokenDistance = (m: number): string => {
+  if (m < 995) return `${Math.max(10, Math.round(m / 10) * 10)} metres`;
+  const km = (m / 1000).toFixed(1).replace(/\.0$/, '');
+  return km === '1' ? '1 kilometre' : `${km} kilometres`;
+};
+/** Which side the place is on, as seen from the top of the phone. Where it is,
+ *  never what to do about it. */
+export const SPOKEN_SIDES = {
+  ahead: 'Ahead of you',
+  right: 'On your right',
+  behind: 'Behind you',
+  left: 'On your left',
+} as const;
+/** The repeat: distance, compass point, side. The side is left out when nothing
+ *  is turning the dial, because then it is not known. A figure from an old,
+ *  vague or estimated position is said with "about", as it is shown. */
+export const VOICE_SHORT = (distance: string, point: string, side: string | null, about: boolean) =>
+  `${about ? `About ${distance}` : distance}. ${point}.${side ? ` ${side}.` : ''}`;
+/** The first message after the tap: the place by name, then the repeat. */
+export const VOICE_LONG = (site: string, short: string) => `${site}, place of last resort. ${short}`;
+export const VOICE_SIGNAL_LOST = 'GPS signal lost.';
+export const VOICE_SIGNAL_BACK = (short: string) => `GPS signal is back. ${short}`;
+/** Said once, close to the place. A distance, not a promise about the place. */
+export const VOICE_AT_PLACE = (site: string, metres: number) => `${site} is within ${metres} metres.`;
 
 /** "850 m" under a kilometre, "2.34 km" under ten, "12.3 km" from there. Ten
  *  metre steps within walking range, so the figure is seen to move on foot. */
@@ -365,7 +455,6 @@ export const PHONE_MAY_WORK = 'Calls may work if your phone shows signal. This a
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
-export const NEAREST_OFFICIAL_PLACES = 'Nearest official places of last resort';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack';
@@ -392,13 +481,15 @@ export const PLACE_DESCRIPTOR = (publisher: string) =>
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter. Two seconds.';
 export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
-export const LEAVE_BLACKSKY = 'Leave BlackSky';
-/** Said above the Leave control, never over anything else: the phone's back
+/** The label on the full-width Leave bar at the top of BlackSky. It says what
+ *  to do, so the bar needs no second line of help. */
+export const LEAVE_BLACKSKY = 'Hold to leave';
+/** Said under BlackSky's top bar, never over anything else: the phone's back
  *  button was pressed, or the app opened here again because BlackSky was the
  *  last screen open. Both end with the one way out. */
 export const BLACKSKY_BLOCKED = 'Not opened. Hold its button two seconds to enter.';
-export const BACK_PRESSED = 'Back does not leave BlackSky. Hold Leave BlackSky two seconds.';
-export const BLACKSKY_RESUMED = 'Reopened where you left off. Hold Leave BlackSky two seconds to exit.';
+export const BACK_PRESSED = `Back does not leave BlackSky. Use ${LEAVE_BLACKSKY} at the top.`;
+export const BLACKSKY_RESUMED = `Reopened where you left off. To exit, use ${LEAVE_BLACKSKY} at the top.`;
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 
@@ -1095,7 +1186,7 @@ export const WAY_NOTE_DETAIL = 'Optional. The turns, what you met, what you woul
 /** [DRAFT] pending Sharon's copy review. */
 export const WAY_NOTE_LABEL = 'Your note about the way';
 
-// ── E7 the drill ──────────────────────────────────────────────────────────
+// ── E9 the drill ──────────────────────────────────────────────────────────
 // A game played before the rehearsal. It has a clock and a score, which the
 // rehearsal never has (E5-US2-AC2 keeps that rule for the rehearsal alone).
 // Every number here is about the bag, never about the person.
@@ -1161,14 +1252,6 @@ export const TILE_LABEL = (name: string, points: string) => `${name}, ${points}`
 export const HIGHEST_SO_FAR = (score: number) => `Your highest so far is ${score} out of 100.`;
 export const PLAY_AGAIN = 'Play again';
 export const GO_ON_TO_REHEARSAL = 'Go on to the rehearsal';
-/** After every drill, before the report: what one minute means in a real fire.
- *  From the Country Fire Authority: grassfires can travel up to 25 km an hour,
- *  which is over 400 metres a minute (checked 26 September 2026). */
-export const DRILL_MINUTE_FIGURE = '400 m';
-export const DRILL_MINUTE_LINE = 'In one minute, a grassfire can travel 400 metres.';
-export const DRILL_MINUTE_RUN = 'Faster than you can run.';
-export const DRILL_MINUTE_CALL = 'If you live where bushfires happen, prepare now.';
-export const DRILL_MINUTE_SOURCE = 'Country Fire Authority. Grassfires can travel up to 25 kilometres an hour.';
 export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures, so the rehearsal opens instead.';
 export const DRILLS = 'Drills';
 export const NOT_YET_DRILLED = 'Not yet drilled.';

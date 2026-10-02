@@ -5,7 +5,7 @@ import { debriefRows, leftBehind, scoreBreakdown, scoreDrill, topTenTotal } from
 
 const ids = (weight: (w: number) => boolean) => DRILL_ITEMS.filter((item) => weight(item.weight)).map((item) => item.id);
 
-describe('E7 the drill score', () => {
+describe('E9 the drill score', () => {
   it('holds thirty items with unique ids, and the top ten add up to 100', () => {
     expect(DRILL_ITEMS).toHaveLength(30);
     expect(new Set(DRILL_ITEMS.map((item) => item.id)).size).toBe(30);

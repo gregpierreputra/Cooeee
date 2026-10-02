@@ -1,4 +1,4 @@
-// E7 — the two ways to steer: the arrow keys and the thumb stick. Both end up
+// E9 — the two ways to steer: the arrow keys and the thumb stick. Both end up
 // as one vector at most one long, x to the right and y down the screen.
 
 const KEYS: Record<string, [number, number]> = {

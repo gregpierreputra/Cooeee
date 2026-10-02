@@ -1,4 +1,4 @@
-// E7 — where the figure can stand. Everything here is worked out from the
+// E9 — where the figure can stand. Everything here is worked out from the
 // layout the picture is painted from, so a wall on screen is a wall underfoot.
 // Positions are in tiles: x across, y down, fractions allowed.
 

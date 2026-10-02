@@ -1,4 +1,4 @@
-// E7 — the drill house as data. ONE source for the picture and the physics:
+// E9 — the drill house as data. ONE source for the picture and the physics:
 // scripts/build-drill-art.mjs paints floors and walls from GRID, the game draws
 // FURNITURE from the sprite sheet, and drill-house.ts builds its solid cells
 // from both. So what stops the figure is always what the player can see.

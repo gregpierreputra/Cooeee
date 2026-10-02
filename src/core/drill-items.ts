@@ -1,4 +1,4 @@
-// E7 — the thirty things in the drill house, and what each is worth.
+// E9 — the thirty things in the drill house, and what each is worth.
 //
 // The weights follow the Country Fire Authority's own list of what to take
 // when leaving (its Fire Ready Kit, "what to take with you"). An item on that

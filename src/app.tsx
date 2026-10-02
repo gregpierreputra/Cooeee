@@ -27,6 +27,7 @@ import Welcome from './ui/Welcome';
 import Nearby from './ui/Nearby';
 import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
+import Particles from './ui/components/Particles';
 import BottomNav from './ui/components/BottomNav';
 import NoticeBar from './ui/components/NoticeBar';
 import Splash from './ui/components/Splash';
@@ -171,6 +172,15 @@ function BottomNavHost() {
   return <BottomNav />;
 }
 
+/** The living background from the welcome, on every screen but BlackSky,
+ *  where every pixel that can stay off does, to save the battery. Unmounting
+ *  stops its frames. */
+function ParticlesHost() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/blacksky')) return null;
+  return <Particles />;
+}
+
 function UpdateBanner({ applyUpdate }: { applyUpdate: () => void }) {
   const [ready, setReady] = useState(updateReady);
 
@@ -278,6 +288,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <ScrollToTop />
         <ModeSwitch />
         <NoticeBar />
+        <ParticlesHost />
         <HeaderHost />
         <UpdateBanner applyUpdate={applyUpdate} />
         <BlockedNotice />
@@ -304,6 +315,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   return (
     <>
       <Splash key={replays} play={replays > 0 ? true : undefined} />
+      {/* The gate, the welcome and the disclosure stand before the router. */}
+      {passed && screen !== 'first-open' ? null : <Particles />}
       {screenFor()}
     </>
   );

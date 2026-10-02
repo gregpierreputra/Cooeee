@@ -93,7 +93,7 @@ export default function PackDetail({
     };
   }, [loadRehearsals, packId]);
 
-  // E7 — the pack's own drills, read the same way.
+  // E9 — the pack's own drills, read the same way.
   useEffect(() => {
     let live = true;
     loadDrills(packId).then(
@@ -302,7 +302,7 @@ export default function PackDetail({
         )}
       </Section>
 
-      {/* E7 — every drill of this pack, newest first. A record, like the
+      {/* E9 — every drill of this pack, newest first. A record, like the
           rehearsals above it, so it too is closed by default. */}
       <Section kind="rehearse" title={copy.DRILLS} count={drills.length} defaultOpen={false}>
         {drills.length === 0 ? (

@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { HARNESS } from './helpers';
 
-// E7. The drill stands in front of the rehearsal. Asserted here: the way in,
+// E9. The drill stands in front of the rehearsal. Asserted here: the way in,
 // the way past, one short minute played to its debrief, and the record.
-test.describe('E7 the drill in front of the rehearsal', () => {
+test.describe('E9 the drill in front of the rehearsal', () => {
   test('opens on one quiet screen, and Skip the drill lands on the choice of condition', async ({ page }) => {
     await page.goto(`${HARNESS}/rehearse?mode=rehearsable&drill=1`);
     await expect(page.getByRole('heading', { name: 'One minute to leave' })).toBeVisible();
@@ -28,9 +28,7 @@ test.describe('E7 the drill in front of the rehearsal', () => {
     await expect(page.getByRole('img', { name: /bushfire arrives/ })).toBeVisible();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await expect(page.locator('main')).toContainText('Bag 0 of 10');
-    // Every minute ends on what a minute means in a real fire, then the report.
-    await expect(page.getByRole('heading', { name: 'In one minute, a grassfire can travel 400 metres.' })).toBeFocused();
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The minute goes straight to the report.
     await expect(page.getByRole('heading', { name: 'The minute ended away from the door' })).toBeVisible();
     await expect(page.locator('main')).not.toContainText('out of 100');
     await expect(page.getByRole('heading', { name: 'Left behind' })).toBeVisible();

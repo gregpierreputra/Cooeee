@@ -1,6 +1,6 @@
 import * as copy from '../../core/copy';
 
-/** E7-US1-AC1 — one quiet screen before the film: what the drill asks, and the
+/** E9-US1-AC1 — one quiet screen before the film: what the drill asks, and the
  *  two ways on. The tap on Start is also what lets the phone play sound. */
 export default function Statline({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
   return (

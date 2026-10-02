@@ -1,4 +1,4 @@
-// E7 — every sound in the drill, made by the phone itself. No sound file is
+// E9 — every sound in the drill, made by the phone itself. No sound file is
 // downloaded, so there is nothing to fetch, license or precache, and the
 // site's content rules stay as they are. Nothing plays before unlock(), which
 // the Start button calls: browsers only allow sound from inside a tap.

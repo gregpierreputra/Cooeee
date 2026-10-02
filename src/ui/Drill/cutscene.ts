@@ -1,4 +1,4 @@
-// E7 — the opening film. Thirty seconds outside, drawn here in code because the
+// E9 — the opening film. Thirty seconds outside, drawn here in code because the
 // art pack holds no outdoors: a home among gum trees as a bushfire arrives and
 // grows into a firestorm, while the published facts appear over it one by one.
 // Then ten seconds inside the same house the game is played in, drawn by the

@@ -1,4 +1,4 @@
-// E7 — the pack page's record of its own drills, newest first, in the
+// E9 — the pack page's record of its own drills, newest first, in the
 // debrief's own words.
 
 import * as copy from './copy';

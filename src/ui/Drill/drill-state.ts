@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-/** E7 — which packs have had their drill this session.
+/** E9 — which packs have had their drill this session.
  *
  *  Held at module scope like the rehearsal run (Rehearsal/run-state.ts), so
  *  leaving for BlackSky or Home and coming back does not replay the drill,

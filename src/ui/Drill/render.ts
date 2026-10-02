@@ -1,4 +1,4 @@
-// E7 — draws the drill house on a canvas. The floor and walls are one baked
+// E9 — draws the drill house on a canvas. The floor and walls are one baked
 // picture. Furniture, the things to pack and the figure are drawn over it from
 // back to front, so a person behind the fridge is hidden by it and a person in
 // front is not. All drawing is in source pixels (16 to a tile), scaled up by a

@@ -63,7 +63,7 @@ type Props = {
   onLeave: () => void;
 };
 
-/** E7-US1 and US2 — the opening film, then one minute in the house, on one
+/** E9-US1 and US2 — the opening film, then one minute in the house, on one
  *  canvas that fills the screen, so there is no break between them. Left thumb
  *  steers, the one button packs whatever is in reach, and where the figure
  *  stands at 0:00 decides. */
@@ -172,7 +172,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
             w.facing = facing(w.stickX, w.stickY, w.facing);
           }
           w.near = nearestItem(w.x, w.y, w.packed);
-          const ready = leavingEarly(w.packed.length, seconds - w.elapsed, onDoorMat(w.x, w.y));
+          const ready = leavingEarly(seconds - w.elapsed, onDoorMat(w.x, w.y));
           w.onMat = ready ? w.onMat + dt : 0;
         } else {
           w.leaving += dt;
@@ -186,7 +186,8 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
           packed: w.packed, packedAt: w.packedAt, near: w.phase === 'play' ? w.near : null,
           powered: false, glow: 1, smoke, dark, door: Math.min(1, w.leaving / 0.6),
           late: left <= LATE_SECONDS, doorArrow: left <= DOOR_ARROW_SECONDS, showBag: true, outlines: w.phase === 'play', calm,
-          matHold: w.phase === 'play' ? w.onMat / EARLY_EXIT_HOLD : 0,
+          // The ring stays full while the door opens, so it is seen to complete.
+          matHold: w.phase === 'play' ? w.onMat / EARLY_EXIT_HOLD : 1,
         });
       }
 
@@ -203,7 +204,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         setHud(next);
       }
 
-      // A full bag, the last seconds, and a moment on the mat: out the door now.
+      // Under thirty seconds left and a moment on the mat: out the door now.
       if (w.phase === 'play' && w.onMat >= EARLY_EXIT_HOLD) {
         w.phase = 'leaving';
         audio.thud();

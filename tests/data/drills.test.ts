@@ -8,7 +8,7 @@ const drill = (over: Partial<Drill> = {}): Drill => ({
   id: 'd1', packId: 'p1', finishedAt: 1_756_100_000_000, reachedDoor: true, score: 40, packed: ['torch', 'radio'], ...over,
 });
 
-describe('E7 the drills store', () => {
+describe('E9 the drills store', () => {
   beforeEach(async () => {
     await Promise.all(db.tables.map((table) => table.clear()));
   });
