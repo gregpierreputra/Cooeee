@@ -1286,6 +1286,59 @@ input {
   color: var(--ink-2);
 }
 
+/* ── Voice (BS_Enhancement-AC3) ────────────────────────────────────────────
+   The speaker button: round, 48 px, at the right-hand end of the distance row,
+   in the 48 px the row keeps for it. Outlined when off, filled in the mode's
+   amber when on, so its state is read from shape and fill, not from colour
+   alone. */
+.blacksky-speaker {
+  width: 48px;
+  height: 48px;
+  min-height: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent);
+}
+
+.blacksky-speaker[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+
+.blacksky-speaker svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+}
+
+.blacksky-speaker .waves {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* The caption: the words being spoken, over the foot of the dial. A solid
+   ground, so the ring behind it never runs through the letters. */
+.blacksky-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-weight: var(--w-med);
+  text-align: center;
+}
+
 /* Every other place, folded into one line that opens the sheet: the count and
    the range. One line on every phone, so it never wraps and is never cut off;
    the sides are narrower than other buttons' to make sure of that at 360 px. */

@@ -384,6 +384,40 @@ export const ABOUT = 'about';
 /** The tag on a dial that nothing is turning. */
 export const NORTH_UP = 'North up';
 
+// BS_Enhancement-AC3 say the place, distance and side aloud
+// Everything the phone speaks, and the caption shows the same words. Each
+// sentence states where the place IS. None tells the person which way to
+// travel, and none promises anything about the place.
+/** The speaker button's name. One name for both states: aria-pressed says
+ *  whether it is on. */
+export const VOICE_BUTTON = 'Speak the distance aloud';
+/** A distance in words a voice reads well: whole tens of metres under a
+ *  kilometre, one decimal place of kilometres from there. */
+export const spokenDistance = (m: number): string => {
+  if (m < 995) return `${Math.max(10, Math.round(m / 10) * 10)} metres`;
+  const km = (m / 1000).toFixed(1).replace(/\.0$/, '');
+  return km === '1' ? '1 kilometre' : `${km} kilometres`;
+};
+/** Which side the place is on, as seen from the top of the phone. Where it is,
+ *  never what to do about it. */
+export const SPOKEN_SIDES = {
+  ahead: 'Ahead of you',
+  right: 'On your right',
+  behind: 'Behind you',
+  left: 'On your left',
+} as const;
+/** The repeat: distance, compass point, side. The side is left out when nothing
+ *  is turning the dial, because then it is not known. A figure from an old,
+ *  vague or estimated position is said with "about", as it is shown. */
+export const VOICE_SHORT = (distance: string, point: string, side: string | null, about: boolean) =>
+  `${about ? `About ${distance}` : distance}. ${point}.${side ? ` ${side}.` : ''}`;
+/** The first message after the tap: the place by name, then the repeat. */
+export const VOICE_LONG = (site: string, short: string) => `${site}, place of last resort. ${short}`;
+export const VOICE_SIGNAL_LOST = 'GPS signal lost.';
+export const VOICE_SIGNAL_BACK = (short: string) => `GPS signal is back. ${short}`;
+/** Said once, close to the place. A distance, not a promise about the place. */
+export const VOICE_AT_PLACE = (site: string, metres: number) => `${site} is within ${metres} metres.`;
+
 /** "850 m" under a kilometre, "2.34 km" under ten, "12.3 km" from there. Ten
  *  metre steps within walking range, so the figure is seen to move on foot. */
 export const distanceLabel = (m: number): string => {
