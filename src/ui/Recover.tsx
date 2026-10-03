@@ -13,6 +13,8 @@ import { focusMain } from './components/focusMain';
 import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
+import WellbeingLines from './components/WellbeingLines';
+import Roadmap from './Roadmap';
 
 type RecoverProps = {
   loadPrograms?: () => Promise<RecoveryProgram[]>;
@@ -123,6 +125,9 @@ export default function Recover({
   // The page itself, empty, while the store answers, so focus has somewhere to land.
   if (programs === null) return <main className="page" />;
 
+  // R1: the roadmap needs no program, so it opens whatever the device holds.
+  if (choice === 'roadmap') return <Roadmap />;
+
   if (programs.length === 0) {
     return (
       <main className="page recover">
@@ -172,6 +177,11 @@ export default function Recover({
             <span className="recover-tile-detail">{copy.ALL_PROGRAMS_DETAIL}</span>
           </button>
         </div>
+        {/* R1: the way through recovery, in teal over the single needs. */}
+        <button type="button" className="need-button roadmap-button" onClick={() => choose('roadmap')}>
+          <Glyph kind="roadmap" />
+          {copy.ROADMAP_TITLE}
+        </button>
         <ul className="list">
           {rows.map((row) => (
             <li key={row.key}>
@@ -213,6 +223,11 @@ export default function Recover({
             </li>
           ))}
         </ul>
+        <section className="talk-to-someone" aria-labelledby="talk-to-someone">
+          <h2 id="talk-to-someone">{copy.TALK_TO_SOMEONE}</h2>
+          <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
+          <WellbeingLines />
+        </section>
       </main>
     );
   }

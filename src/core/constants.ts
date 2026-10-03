@@ -399,6 +399,8 @@ export const NEED_CHANNELS = {
   documents: 'https://www.servicesaustralia.gov.au/natural-disaster-support',
 } as const;
 export const GENERAL_CHANNEL_URL = 'https://www.disasterassist.gov.au/';
+/** Red Cross's register for letting family know you are safe, live during an emergency. */
+export const REGISTER_FIND_REUNITE_URL = 'https://register.redcross.org.au/';
 /** The VicEmergency hotline, the one number every call list opens with. */
 export const HOTLINE_NUMBER = '1800 226 226';
 
@@ -406,6 +408,8 @@ export const HOTLINE_NUMBER = '1800 226 226';
  *  the list can never grow without bound. */
 export const KEPT_KEY = 'cooeee.kept.v1';
 export const KEPT_MAX = 50;
+/** R1: the roadmap steps ticked done, as step ids. */
+export const ROADMAP_DONE_KEY = 'cooeee.roadmap.v1';
 
 /** Unit constant. The metres↔kilometres display cutoff and divisor for
  * destination.formatDistanceM — not a safety threshold. */

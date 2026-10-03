@@ -21,6 +21,8 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   documents: 'M7 3h7l4 4v14H7zM14 3v4h4M9.5 12h5M9.5 16h5',
   all: 'M5 7h14M5 12h14M5 17h14',
   kept: 'M7 4h10v17l-5-3.5L7 21z',
+  // A winding way between a start and an end: the recovery roadmap.
+  roadmap: 'M6 19a2 2 0 1 0 0 .01M18 5a2 2 0 1 0 0 .01M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7',
   map: 'M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14',
   layer: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5',
   place: 'M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11zM12 7.8a2.2 2.2 0 1 0 0 4.4a2.2 2.2 0 1 0 0-4.4',

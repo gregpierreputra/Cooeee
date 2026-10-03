@@ -528,7 +528,7 @@ export const NAV_REHEARSE = 'Rehearse';
 
 // E4 Recover: needs-first support matching, read from the pack's dated snapshot
 export const RECOVER_QUESTION = 'What do you need?';
-export const RECOVER_PRIVACY_LINE = 'Nothing leaves this phone. Only programs you keep are remembered.';
+export const RECOVER_PRIVACY_LINE = 'Nothing leaves this phone. Only the programs you save and the steps you tick are remembered.';
 export const NEED_PHRASE: Record<NeedKey, string> = {
   stay: 'Somewhere to stay',
   money: 'Money for essentials',
@@ -576,8 +576,72 @@ export const KEPT_NOT_SAVED = (count: number) =>
 export const IN_YOUR_PACKS = 'In your packs';
 export const CHOOSE_IN_RECOVER = 'Choose programs in Recover';
 export const WHO_TO_CALL = 'Who to call';
+// ── R1 the recovery roadmap ────────────────────────────────────────────────
+// Cooeee's own words, after Emergency Recovery Victoria and Australian Red
+// Cross guidance. Each step may link to the programs for one need, to Who to
+// call, to Nearby, or to Red Cross Register.Find.Reunite.
+export const ROADMAP_TITLE = 'Recovery roadmap';
+export const ROADMAP_LINE = 'What usually comes first after a fire. Tick each step as you go.';
+export const ROADMAP_SOURCE = 'Based on Emergency Recovery Victoria and Australian Red Cross guidance.';
+export const ROADMAP_DONE_COUNT = (done: number, total: number) => `${done} of ${total} done`;
+export const ROADMAP_MARK = (step: string) => `Done: ${step}`;
+export const ROADMAP_NEARBY = 'Nearby places';
+export const ROADMAP_REDCROSS = 'Register.Find.Reunite (web)';
+export type RoadmapLink = NeedKey | 'calls' | 'nearby' | 'redcross';
+export const ROADMAP_STAGES: readonly {
+  id: string;
+  title: string;
+  steps: readonly { id: string; text: string; link?: RoadmapLink }[];
+}[] = [
+  {
+    id: 'days',
+    title: 'The first 72 hours',
+    steps: [
+      { id: 'stay-away', text: 'Stay away until the authorities say you can go back.' },
+      { id: 'tell-family', text: 'Let family know where you are. Register with Red Cross Register.Find.Reunite.', link: 'redcross' },
+      { id: 'relief-centre', text: 'Go to a relief centre for food, shelter and information.', link: 'nearby' },
+      { id: 'insurer', text: 'Call your insurer to start a claim. Write down the claim number.', link: 'property' },
+      { id: 'receipts', text: 'Keep the receipts for everything you buy.' },
+    ],
+  },
+  {
+    id: 'weeks',
+    title: 'The first weeks',
+    steps: [
+      { id: 'payments', text: 'Apply for disaster payments.', link: 'money' },
+      { id: 'documents', text: 'Replace lost documents, such as ID and your Medicare card.', link: 'documents' },
+      { id: 'housing', text: 'Find somewhere to stay while you recover.', link: 'stay' },
+      { id: 'essentials', text: 'Get food, clothes and other essentials.', link: 'food' },
+      { id: 'health', text: 'Look after your health, and refill your medicines.', link: 'health' },
+    ],
+  },
+  {
+    id: 'months',
+    title: 'The first months',
+    steps: [
+      { id: 'rebuild', text: 'Plan the clean-up and rebuild with your council.', link: 'property' },
+      { id: 'talk', text: 'Talk to someone about how you are coping.', link: 'calls' },
+      { id: 'community', text: 'Join the recovery events in your community.' },
+    ],
+  },
+];
 export const HOTLINE_LABEL = 'VicEmergency hotline';
 export const CALLS_LINE = 'Calls often work when data does not.';
+/** R3: free lines for how a person is coping, in Who to call and on every pack
+ *  page. Bundled, so they show with no signal and no pack. Numbers and hours
+ *  checked against each service's own site on 3 October 2026. */
+export const TALK_TO_SOMEONE = 'Talk to someone';
+export const TALK_TO_SOMEONE_LINE = 'Free and confidential. Distress after a fire often shows up weeks later.';
+export const WELLBEING_LINES = [
+  { name: 'Lifeline', number: '13 11 14', detail: 'Crisis support for anyone. Any time, day or night.' },
+  { name: 'Beyond Blue', number: '1300 22 4636', detail: 'Talk about stress, worry or low mood. Any time, day or night.' },
+  { name: 'Kids Helpline', number: '1800 55 1800', detail: 'For young people aged 5 to 25. Any time, day or night.' },
+  {
+    name: 'Partners in Wellbeing',
+    number: '1300 375 330',
+    detail: 'Victorian wellbeing coaching, aged 16 and over. Weekdays 9am to 10pm, weekends 9am to 5pm.',
+  },
+] as const;
 export const PRINT_LIST = 'Print this list';
 export const RECOVER_NONE_LINE = 'Build a pack online. It carries the programs, so they open with no signal.';
 

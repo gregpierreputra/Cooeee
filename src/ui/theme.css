@@ -3139,6 +3139,82 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   gap: 0.875rem;
   padding-left: 0.5rem;
 }
+/* R1: the roadmap, the one need row filled in teal, so the way through
+   recovery is seen before the single needs. */
+.recover .roadmap-button {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.roadmap-button .glyph {
+  background: rgb(0 0 0 / 0.12);
+  color: inherit;
+}
+.roadmap-stage {
+  display: grid;
+  gap: 0.75rem;
+}
+.roadmap-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.roadmap-step {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+.roadmap-step-body {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+}
+.roadmap-step-body p {
+  margin: 0;
+}
+.roadmap-step.done .roadmap-step-body p {
+  color: var(--ink-2);
+}
+/* The tick: a 32 px ring, filled teal with a tick once done. The invisible
+   ::after keeps a 44 px tap area, as the information ring does. */
+.roadmap-tick {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+}
+.roadmap-tick::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.roadmap-tick[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.roadmap-link {
+  justify-self: start;
+  font-weight: var(--w-med);
+}
+.roadmap-source {
+  font-size: var(--step-s);
+}
+/* R3: the wellbeing lines under the numbers in Who to call. */
+.talk-to-someone {
+  display: grid;
+  gap: 0.75rem;
+}
 
 /* The source at a glance: its initials in a ring at the head of the card. */
 .card-head {
@@ -4338,10 +4414,16 @@ p.with-glyph {
 .glyph-lines .line-glyph {
   margin-top: 0.1em;
 }
-/* Nothing saved yet: the pack drawing says what is missing before the words do. */
+/* Nothing saved yet: the pack drawing sits on the heading's row and the hint
+   lines up under the heading, so the card is as tall as its words. */
 .empty-state {
-  justify-items: center;
-  text-align: center;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.25rem 0.875rem;
+}
+.empty-state p {
+  grid-column: 2;
 }
 /* The pack builder's step strip: small rings joined by a line, done steps
    filled, the current one ringed and named. */

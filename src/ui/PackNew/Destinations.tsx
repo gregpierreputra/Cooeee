@@ -11,6 +11,7 @@ import {
 import { formatIsoDateShort, nspListDateLabel } from '../../core/nsp';
 import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
+import CountRing from '../components/CountRing';
 import Glyph from '../components/Glyph';
 import StateCard from '../components/StateCard';
 import FlowSteps from './FlowSteps';
@@ -104,28 +105,6 @@ function DestinationRow({ place, selection }: { place: Destination; selection?: 
       ) : null}
       {where ? <p className="muted place-meta">{where}</p> : null}
     </li>
-  );
-}
-
-/** A ring that fills as places are chosen, with the count inside it. */
-function ChosenRing({ chosen, total }: { chosen: number; total: number }) {
-  const r = 20;
-  const length = 2 * Math.PI * r;
-  return (
-    <svg className="chosen-ring" viewBox="0 0 48 48" role="img" aria-label={copy.PLACES_CHOSEN_COUNT(chosen, total)}>
-      <circle className="chosen-ring-track" cx="24" cy="24" r={r} />
-      <circle
-        className="chosen-ring-fill"
-        cx="24"
-        cy="24"
-        r={r}
-        strokeDasharray={length}
-        strokeDashoffset={length * (1 - chosen / total)}
-      />
-      <text x="24" y="24" dominantBaseline="central" textAnchor="middle" aria-hidden="true">
-        {chosen}/{total}
-      </text>
-    </svg>
   );
 }
 
@@ -224,7 +203,7 @@ export function Destinations({
           {ordered.length > 0 ? (
             <>
               <div className="choose-head">
-                {selectable ? <ChosenRing chosen={chosen.length} total={limit} /> : null}
+                {selectable ? <CountRing count={chosen.length} total={limit} label={copy.PLACES_CHOSEN_COUNT(chosen.length, limit)} /> : null}
                 <div>
                   <p className="caveat" role="status" aria-live="polite">
                     <strong className="choose-hint">

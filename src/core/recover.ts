@@ -9,17 +9,18 @@ import type { NeedKey, PackProgram, RecoveryProgram } from './types';
 /** The order the need phrases are offered in. */
 export const NEEDS: readonly NeedKey[] = ['stay', 'money', 'food', 'property', 'health', 'documents'];
 
-/** What the person asked to see: one need, every program, or the kept ones. */
-export type Choice = NeedKey | 'all' | 'kept' | 'calls';
+/** What the person asked to see: one need, every program, the kept ones,
+ *  who to call, or the recovery roadmap. */
+export type Choice = NeedKey | 'all' | 'kept' | 'calls' | 'roadmap';
 
 export const isNeed = (choice: Choice): choice is NeedKey =>
-  choice !== 'all' && choice !== 'kept' && choice !== 'calls';
+  choice !== 'all' && choice !== 'kept' && choice !== 'calls' && choice !== 'roadmap';
 
 /** The choice a URL is asking for, or null for none. The value comes from the
  *  address bar, so it is matched against the choices this screen offers and
  *  anything else is treated as no choice at all. */
 export function parseChoice(value: string | null): Choice | null {
-  const offered: readonly string[] = [...NEEDS, 'all', 'kept', 'calls'];
+  const offered: readonly string[] = [...NEEDS, 'all', 'kept', 'calls', 'roadmap'];
   return value !== null && offered.includes(value) ? (value as Choice) : null;
 }
 
@@ -28,7 +29,7 @@ export function parseChoice(value: string | null): Choice | null {
  *  read; "kept" is a list of program ids the person chose. */
 export function selectPrograms(
   programs: readonly RecoveryProgram[],
-  choice: Exclude<Choice, 'calls'>,
+  choice: Exclude<Choice, 'calls' | 'roadmap'>,
   kept: readonly string[],
 ): RecoveryProgram[] {
   const rank = (program: RecoveryProgram) => (kept.includes(program.id) ? 0 : 1);

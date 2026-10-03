@@ -12,7 +12,7 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   await page.goto(RECOVER_URL);
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   await expect(page.getByText(copy.RECOVER_PRIVACY_LINE)).toBeVisible();
-  await expect(page.getByRole('button')).toHaveCount(8);
+  await expect(page.getByRole('button')).toHaveCount(9);
 
   let requests = 0;
   await page.route('**', async (route) => { requests += 1; await route.continue(); });
@@ -195,9 +195,9 @@ test('the pack page sections off its saved programs, each with its own page copy
 test('every pack page section carries a glyph and opens and closes under one control', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
   const heads = page.locator('.pack-section-head');
-  // Six since E9 added the Drills record under the rehearsals.
-  await expect(heads).toHaveCount(6);
-  await expect(heads.locator('.glyph')).toHaveCount(6);
+  // Seven since R3 added the wellbeing lines.
+  await expect(heads).toHaveCount(7);
+  await expect(heads.locator('.glyph')).toHaveCount(7);
   const places = page.locator('.pack-section', { hasText: copy.DESTINATIONS_STEP_TITLE });
   await expect(places.locator('.card')).toHaveCount(1);
   await places.getByRole('button', { name: copy.HIDE_SECTION(copy.DESTINATIONS_STEP_TITLE) }).click();
@@ -238,7 +238,8 @@ test('who to call lists the hotline and each program number as a call link', asy
   await page.goto(RECOVER_URL);
   await page.getByRole('button', { name: copy.WHO_TO_CALL }).click();
   await expect(page.getByRole('heading', { name: copy.WHO_TO_CALL })).toBeVisible();
-  const links = page.locator('.card a');
+  // The wellbeing lines follow in their own group (R3).
+  const links = page.locator('.list').first().locator('.card a');
   await expect(links).toHaveCount(2);
   await expect(links.first()).toHaveAttribute('href', 'tel:1800226226');
   await expect(links.nth(1)).toHaveAttribute('href', 'tel:1802266');
@@ -267,4 +268,35 @@ test('focus stays on the page when a need is chosen and when going back', async 
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   await expect(page.locator('main')).toBeFocused();
+});
+
+// R1: the roadmap opens from its teal row, ticks stay on the phone across a
+// reload, each stage's ring counts them, and a step leads to its programs.
+test('the recovery roadmap ticks steps, keeps them, and links each step to its help', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.ROADMAP_TITLE }).click();
+  await expect(page.getByRole('heading', { name: copy.ROADMAP_TITLE })).toBeVisible();
+  const first = copy.ROADMAP_STAGES[0];
+  const stage = page.getByRole('region', { name: first.title });
+  await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(0, first.steps.length) })).toBeVisible();
+  const insurer = first.steps.find((step) => step.id === 'insurer')!;
+  await page.getByRole('button', { name: copy.ROADMAP_MARK(insurer.text) }).click();
+  await expect(page.getByRole('button', { name: copy.ROADMAP_MARK(insurer.text) })).toHaveAttribute('aria-pressed', 'true');
+  // The harness opens on the landing after a reload; the tick is still there.
+  await page.reload();
+  await page.getByRole('button', { name: copy.ROADMAP_TITLE }).click();
+  await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(1, first.steps.length) })).toBeVisible();
+  await page.getByRole('link', { name: copy.NEED_PHRASE.money }).click();
+  await expect(page.getByRole('heading', { name: copy.NEED_PHRASE.money })).toBeVisible();
+});
+
+// R3: the wellbeing lines sit under the numbers in Who to call, each one tap to call.
+test('Who to call ends with the wellbeing lines', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.WHO_TO_CALL }).click();
+  await expect(page.getByRole('heading', { name: copy.TALK_TO_SOMEONE })).toBeVisible();
+  for (const line of copy.WELLBEING_LINES) {
+    await expect(page.getByRole('link', { name: copy.CALL_LINE(line.number) }))
+      .toHaveAttribute('href', `tel:${line.number.replaceAll(' ', '')}`);
+  }
 });

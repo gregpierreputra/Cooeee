@@ -23,6 +23,7 @@ import InfoGlyph from './components/InfoGlyph';
 import KeyTerms from './components/KeyTerms';
 import ProvenanceLine from './components/ProvenanceLine';
 import Section from './components/Section';
+import WellbeingLines from './components/WellbeingLines';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
 import { useRevealedPanel } from './components/useRevealedPanel';
@@ -277,6 +278,12 @@ export default function PackDetail({
             ))}
           </ul>
         )}
+      </Section>
+
+      {/* R3: the wellbeing lines travel with every pack. */}
+      <Section kind="calls" title={copy.TALK_TO_SOMEONE} defaultOpen={false}>
+        <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
+        <WellbeingLines />
       </Section>
 
       <Section kind="note" title={copy.NOTES}>
