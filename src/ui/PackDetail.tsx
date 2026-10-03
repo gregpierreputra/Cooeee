@@ -414,8 +414,13 @@ function HistoryGaps({ id, gaps, found }: { id: string; gaps: string; found: His
               </li>
             ) : (
               found.map((gap, index) => (
-                <li key={index}>
-                  <b>{gap.title}.</b> {gap.reason} <b>{copy.ACTION_LABEL}.</b> {gap.action}
+                <li key={index} className="gap-line">
+                  <p>
+                    <b>{gap.title}.</b> {gap.reason}
+                  </p>
+                  <p>
+                    <b>{copy.ACTION_LABEL}.</b> {gap.action}
+                  </p>
                 </li>
               ))
             )}

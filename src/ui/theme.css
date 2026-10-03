@@ -2271,6 +2271,14 @@ p.caution {
 .info-lines b {
   color: var(--accent);
 }
+/* A gap, then on its own line what to do about it. */
+.gap-line {
+  display: grid;
+  gap: 0.375rem;
+}
+.gap-line p {
+  margin: 0;
+}
 
 /* ── Splash on arrival ─────────────────────────────────────────────────────── */
 
