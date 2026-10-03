@@ -5,7 +5,6 @@
 // string carries an em dash: scripts/banned-terms.mjs fails the build on one.
 // Never reword them without updating the tests.
 
-import { AREA_MAP_HALF_KM } from './constants';
 import type { Destination, FacilityType, NeedKey, SourceStatus } from './types';
 
 // Core Mandated Literals
@@ -123,7 +122,7 @@ export const AREA_NOT_PUBLISHED =
  *  a fire's way. The map sets building rules only, so every answer other than
  *  inside says so. */
 export const AREA_MAP_IS_NOT_FIRE_REACH =
-  'Fire can still reach you. This map only sets building rules.';
+  'Fire can still reach you.';
 export const OFFICIAL_INSTRUCTIONS_FIRST =
   'Follow Country Fire Authority and emergency service instructions first.';
 export const AREA_CHECK_COULD_NOT_RUN = 'The bushfire area check is unavailable right now.';
@@ -177,8 +176,20 @@ export const AREA_MAP_LABEL = 'Map of the area';
 export const AREA_MAP_ALT =
   'Map of the area around the saved place, with the Designated Bushfire Prone Area shaded';
 /** The map's key, drawn as swatches beside these words rather than said. */
-export const AREA_MAP_KEY = { inside: 'Bushfire Prone Area', outside: 'Outside it', place: 'Your place' } as const;
-export const AREA_MAP_ACROSS = `${AREA_MAP_HALF_KM * 2} km across`;
+export const AREA_MAP_KEY = {
+  inside: 'Bushfire Prone Area',
+  outside: 'Outside it',
+  place: 'Your place',
+  lastResort: 'Official place of last resort',
+} as const;
+/** Read from the stored map itself, so an older, smaller map says its own size. */
+export const AREA_MAP_ACROSS = (km: number) => `${km} km across`;
+/** The viewer's buttons. A finger pans, pinches and turns; these do the same. */
+export const MAP_ZOOM_IN = 'Zoom in';
+export const MAP_ZOOM_OUT = 'Zoom out';
+export const MAP_TURN = 'Turn the map';
+export const MAP_NORTH_UP = 'North up, whole map';
+export const MAP_HOW = 'Drag to move. Pinch to zoom. Twist with two fingers to turn.';
 export const AREA_MAP_SOURCE = (date: string) => `Department of Transport and Planning map, saved ${date}`;
 export const EXTERNAL_SOURCE_NOTICE = 'May use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to the web page';
@@ -243,7 +254,7 @@ export const SAVE_LAST_RESORT_PLACES = 'Save last-resort places';
 export const CHOOSE_PLACES_HINT = (n: number) => (n === 1 ? 'Choose one' : 'Choose two');
 export const TWO_PLACES_ALREADY_CHOSEN = 'Untick to change';
 /** The places step's short order line beside the hint. */
-export const SORTED_SHORT = 'sorted by distance';
+export const SORTED_SHORT = 'sorted by closest distance';
 /** Read out for the counter ring beside Choose two. */
 export const PLACES_CHOSEN_COUNT = (chosen: number, total: number) => `${chosen} of ${total} chosen`;
 export const SAVING_LAST_RESORT_PLACES = 'Saving…';
@@ -264,7 +275,6 @@ export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
 export const NOTE_STEP_TITLE = 'Your note';
 export const NOTE_DISCLOSURE = 'Kept on this phone and opens with no signal, here and in BlackSky.';
 /** UAT: the risk was lost at the end of the disclosure, so it stands alone as a caution. */
-export const NOTE_NOT_PROTECTED = 'This note has no password. Anyone who unlocks the phone can read it.';
 export const NOTE_LABEL = 'Your note';
 /** The box is never blank: an example written for this place and, when one
  *  was chosen, its nearest official place of last resort. One point per
@@ -763,7 +773,6 @@ export const USE_MY_LOCATION = 'Use my location';
 export const LOCATING = 'Reading your position…';
 export const LOCATION_FAILED = 'Your position could not be read. Enter a postcode instead.';
 export const POSTCODE_LABEL = 'Type a postcode';
-export const FIND_POSTCODE = 'Find';
 export const POSTCODE_INVALID = 'Enter a four-digit postcode.';
 export const POSTCODE_UNKNOWN = (postcode: string) =>
   `Postcode ${postcode} is not in the downloaded Victorian list.`;
@@ -776,7 +785,7 @@ export const DISTANCES_NOTE = 'Straight-line distances, not by road.';
 export const NOT_A_RANKING = 'Not a ranking.';
 /** UAT: the words a person must not miss, coloured wherever they appear in a
  *  line passed through KeyTerms. Plain words only: they are joined into a regex. */
-export const KEY_TERMS = ['Bushfire Prone Area', 'Fire can still reach you', 'no password', 'not by road'] as const;
+export const KEY_TERMS = ['Bushfire Prone Area', 'Fire can still reach you', 'no password'] as const;
 
 export const DOWNLOADING_PLACES = 'Downloading the official places…';
 export const FIRST_RUN_TITLE = 'Nothing downloaded yet';
@@ -1150,6 +1159,12 @@ export const ENDING_NOT_RECORDED = 'Whether you went there was not recorded.';
 
 /** [DRAFT] pending Sharon's copy review. A walked rehearsal, and how long it took her. */
 export const RESULT_WALKED = (duration: string) => `You went there. It took you ${duration}.`;
+/** A walked rehearsal with the distance her phone counted. */
+export const RESULT_WALKED_DISTANCE = (duration: string, distance: string) =>
+  `You went there. It took you ${duration} and covered ${distance}.`;
+/** The live line at the top of a running rehearsal. */
+export const TRACK_LINE = (clock: string, distance: string) => `${clock} elapsed · ${distance}`;
+export const TRACK_NO_DISTANCE = 'Distance not counted without location';
 /** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
  *  kept with it. Every walk ended on the journey screen keeps one; this covers a
  *  stored record that does not. */
@@ -1181,16 +1196,16 @@ export const WAY_NOTE_LABEL = 'Your note about the way';
 // rehearsal never has (E5-US2-AC2 keeps that rule for the rehearsal alone).
 // Every number here is about the bag, never about the person.
 export const DRILL_LABEL = 'Drill';
-export const DRILL_INTRO_HEADING = 'One minute to leave';
+export const DRILL_INTRO_HEADING = 'Two minutes to leave';
 export const DRILL_STAT_DETAIL =
-  'This drill gives you one minute in a house. Pack ten things and be at the front door when the time ends. Then it says how ready your bag was.';
+  'This drill gives you two minutes in a house. Pack ten things and be at the front door when the time ends. Steer with the stick, or tap where to walk. Then it says how ready your bag was.';
 export const START_DRILL = 'Start the drill';
 export const SKIP_DRILL = 'Skip the drill';
 export const SKIP_CUTSCENE = 'Skip';
 export const NEXT_STAGE = 'Next';
 export const LEAVE_DRILL = 'Leave the drill';
 export const DRILL_TILE_TITLE = 'Play the drill';
-export const DRILL_TILE_DETAIL = 'One minute to pack ten things and reach the front door.';
+export const DRILL_TILE_DETAIL = 'Two minutes to pack ten things and reach the front door.';
 /** The facts shown over the fire as it worsens, each with its publisher and
  *  the phrases set in the accent colour. Every
  *  line was checked against the page it is credited to (21 September 2026). */
@@ -1205,9 +1220,9 @@ export const DRILL_FACTS = [
 export const DRILL_INSIDE_LINE = { text: 'Inside, the news is on. The light at the window turns orange.', key: ['turns orange'] };
 /** The instructions, shown while the camera tours the dark house. */
 export const DRILL_TOUR_LINES = [
-  { text: 'The power is out. You have one minute.', key: ['one minute'] },
+  { text: 'The power is out. You have two minutes.', key: ['two minutes'] },
   { text: 'Find and pack ten things. Each one is outlined in yellow.', key: ['ten things', 'yellow'] },
-  { text: 'Then get out the front door before the minute is up.', key: ['front door'] },
+  { text: 'Then get out the front door before the time is up.', key: ['front door'] },
 ];
 /** The last line, over the person, just before the clock starts. */
 export const DRILL_READY = 'Get ready.';
@@ -1223,9 +1238,9 @@ export const IN_ROOM = (room: string) => `In the ${room}`;
 export const SOUND = 'Sound';
 export const SOUND_ON = 'Sound on';
 export const SOUND_OFF = 'Sound off';
-export const STICK_LABEL = 'Move. Drag here, or use the arrow keys.';
+export const STICK_LABEL = 'Move. Drag here, tap the floor, or use the arrow keys.';
 export const DEBRIEF_SCORE = (score: number) => `${score} out of 100`;
-export const OVER_HEADING = 'The minute ended away from the door';
+export const OVER_HEADING = 'Time ran out away from the door';
 export const OVER_DETAIL = 'Nothing counts if you are still inside.';
 export const DRILL_SOURCE =
   'The points follow what the Country Fire Authority says to take with you, from its Fire Ready Kit.';
@@ -1246,6 +1261,6 @@ export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures
 export const DRILLS = 'Drills';
 export const NOT_YET_DRILLED = 'Not yet drilled.';
 export const DRILL_ROW_DOOR = (score: number) => `At the door, ${score} out of 100`;
-export const DRILL_ROW_AWAY = 'Away from the door when the minute ended';
+export const DRILL_ROW_AWAY = 'Away from the door when time ran out';
 export const DRILL_ROW_PACKED = (count: number) =>
   count === 1 ? '1 thing packed' : `${count} things packed`;

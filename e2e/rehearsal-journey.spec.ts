@@ -587,6 +587,33 @@ test('AC5 her time is stated once, in whole minutes, never judged, and never on 
   expect(progressText).not.toMatch(/minute|walked|took/);
 });
 
+// F7: the time and distance at the top while she is out, and both kept with
+// "I have arrived". In No location fix no position is ever asked for.
+test('the walk is timed and measured while she is out, and both are kept when she arrives', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: -37.8, longitude: 145.3, accuracy: 10 });
+  await choose(page, NO_DATA);
+  await go(page);
+  const track = page.locator('.journey-track');
+  await expect(track).toHaveText(/^0:0\d elapsed · 0 m$/);
+  await context.setGeolocation({ latitude: -37.801, longitude: 145.3, accuracy: 10 }); // about 111 m
+  await expect(track).toHaveText(/elapsed · 1[01]0 m$/);
+  await endingControl(page, ARRIVED).click();
+  await expect(page.getByText(/and covered 1[01]0 m\./)).toBeVisible();
+  await expect
+    .poll(async () => (await storedRehearsals(page)).find((row) => row.ending === 'walked')?.distanceM)
+    .toBeGreaterThan(100);
+});
+
+test('in No location fix the top reads the time and that distance is not counted', async ({ page }) => {
+  await choose(page, NO_FIX);
+  await go(page);
+  await expect(page.locator('.journey-track')).toHaveText(/^0:0\d elapsed · Distance not counted without location$/);
+});
+
 // How it is worded matters more here than anywhere else.
 test.describe('AC5 the words of the journey screen', () => {
   const TRAVEL = /\b(route|routes|directions|turn-by-turn|eta|arrival|arrive by)\b/;
@@ -606,8 +633,14 @@ test.describe('AC5 the words of the journey screen', () => {
       expect(text).not.toMatch(JUDGED);
       expect(text).not.toContain('%');
 
-      // Every digit on the screen sits inside a place's own entry: its saved date.
+      // Every digit on the screen sits inside a place's own entry, its saved date,
+      // or in the live time and distance at the top once she has gone.
       let rest = text;
+      if (state === 'while she is out') {
+        const track = (await page.locator('.journey-track').innerText()).toLowerCase();
+        expect(track).toMatch(/^\d+:\d{2} elapsed · /);
+        rest = rest.split(track).join('');
+      }
       for (const line of await places(page).locator('p').allInnerTexts()) {
         rest = rest.split(line.trim().toLowerCase()).join('');
       }

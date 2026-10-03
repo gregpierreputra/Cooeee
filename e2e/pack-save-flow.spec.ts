@@ -136,6 +136,30 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(savedPlaces).toHaveCount(2);
   // The map of the area, from the bytes stored with the pack.
   await expect(page.locator('.area-map img')).toBeVisible();
+  // Both chosen places are marked on it, and the buttons zoom and turn it.
+  await expect(page.locator('.area-map-mark')).toHaveCount(2);
+  const layer = page.locator('.area-map-layer');
+  const transform = () => layer.evaluate((el) => (el as HTMLElement).style.transform);
+  const home = await transform();
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+  await page.getByRole('button', { name: 'Turn the map' }).click();
+  expect(await transform()).toMatch(/rotate\(45deg\) scale\(1\.6\)/);
+  await page.getByRole('button', { name: 'North up, whole map' }).click();
+  // Two real fingers, through the browser's touch input: spreading them zooms
+  // in, and turning them turns the map.
+  await page.locator('.area-map-frame').scrollIntoViewIfNeeded();
+  const box = (await page.locator('.area-map-frame').boundingBox())!;
+  const [cx, cy] = [box.x + box.width / 2, box.y + box.height / 2];
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', points: [number, number][]) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y], id) => ({ x, y, id })) });
+  await touch('touchStart', [[cx - 40, cy], [cx + 40, cy]]);
+  await touch('touchMove', [[cx - 70, cy - 30], [cx + 70, cy + 30]]);
+  await touch('touchEnd', []);
+  expect(await transform()).toMatch(/rotate\((?!0deg)[-\d.]+deg\) scale\((?!1\))[\d.]+\)/);
+  await page.getByRole('button', { name: 'North up, whole map' }).click();
+  expect(await transform()).toBe(home);
   await expect(savedPlaces.locator('.place-meta')).toHaveCount(2);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

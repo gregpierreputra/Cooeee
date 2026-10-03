@@ -1,4 +1,4 @@
-import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
 import {
   NEARBY_CLOCK_MS,
   NEARBY_FIX_MAX_AGE_MS,
@@ -127,9 +127,15 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
     );
   };
 
-  const findPostcode = (event: FormEvent) => {
-    event.preventDefault();
-    const code = parsePostcode(postcode);
+  // Searched as it is typed, like the address search when building a pack.
+  // The lookup is on the phone, so it answers at the fourth digit with no wait.
+  const findPostcode = (text: string) => {
+    setPostcode(text);
+    if (text.trim().length < 4) {
+      setNotice(null);
+      return;
+    }
+    const code = parsePostcode(text);
     if (code === null) {
       setNotice(copy.POSTCODE_INVALID);
       return;
@@ -180,31 +186,33 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       ) : (
         <>
           <section className="card nearby-locate">
-            <form className="nearby-postcode" onSubmit={findPostcode}>
-              <label htmlFor="nearby-postcode" className="nearby-postcode-hint">
-                {copy.POSTCODE_LABEL}
-              </label>
-              <div className="postcode-row">
-                <input
-                  id="nearby-postcode"
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  maxLength={4}
-                  value={postcode}
-                  onChange={(event) => setPostcode(event.target.value)}
-                />
-                <button type="submit">{copy.FIND_POSTCODE}</button>
-              </div>
-            </form>
-            <button type="button" className="main-action" onClick={locate} disabled={locating}>
-              <Glyph kind="locate" />
-              {locating ? copy.LOCATING : copy.USE_MY_LOCATION}
-            </button>
-            {notice ? (
-              <p className="muted" role="status">
-                {notice}
-              </p>
-            ) : null}
+            {/* The pack builder's search: one polite line above the field, then
+                the field with the Use my location ring beside it. */}
+            <p id="nearby-postcode-status" className="muted search-hint" role="status" aria-live="polite">
+              {notice ?? copy.POSTCODE_LABEL}
+            </p>
+            <div className="search-row">
+              <input
+                id="nearby-postcode"
+                type="search"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                maxLength={4}
+                value={postcode}
+                aria-label={copy.POSTCODE_LABEL}
+                aria-describedby="nearby-postcode-status"
+                onChange={(event) => findPostcode(event.target.value)}
+              />
+              <button
+                type="button"
+                className="info-ring search-locate"
+                aria-label={locating ? copy.LOCATING : copy.USE_MY_LOCATION}
+                onClick={locate}
+                disabled={locating}
+              >
+                <Glyph kind="locate" line />
+              </button>
+            </div>
           </section>
 
           {view && origin ? (
@@ -280,7 +288,7 @@ function PlaceRow({ row }: { row: NearbyRow }) {
         </div>
       ) : null}
       {row.timestamp ? <p className="muted figure">{row.timestamp}</p> : null}
-      {row.note ? <p>{row.note}</p> : null}
+      {row.note ? <p className="nearby-note">{row.note}</p> : null}
     </li>
   );
 }

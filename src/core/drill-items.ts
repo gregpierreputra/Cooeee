@@ -25,7 +25,7 @@ export type DrillItem = {
 };
 
 export const BAG_LIMIT = 10;
-export const DRILL_SECONDS = 60;
+export const DRILL_SECONDS = 120;
 
 export const DRILL_ITEMS: DrillItem[] = [
   // living room

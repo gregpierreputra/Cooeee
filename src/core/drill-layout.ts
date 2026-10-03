@@ -60,7 +60,8 @@ export const ROOM_OF: Record<string, DrillRoom> = {
  *  piece (a rug) is painted into the floor and blocks nothing. A wall piece
  *  (a picture, a window) sits on a wall cell and is centred on the wall face.
  *  A loose piece (a bucket, a pot plant, a toy) is small clutter the person
- *  steps round or over, so it blocks nothing.
+ *  steps round or over, so it blocks nothing; one standing on another piece
+ *  (a globe on a nightstand) takes a fractional y at that piece's top.
  *  `nudge` moves only the picture sideways, in pixels, for a sprite wider than
  *  its footprint that would otherwise overhang a wall. */
 export type Piece = { sprite: string; x: number; y: number; w: number; h: number; flat?: true; wall?: true; loose?: true; nudge?: number };
@@ -132,13 +133,14 @@ export const FURNITURE: Piece[] = [
   { sprite: 'officeChair', x: 15, y: 19, w: 1, h: 1 },
   { sprite: 'bookshelf', x: 18, y: 17, w: 2, h: 1 },
   { sprite: 'sideboard', x: 14, y: 21, w: 2, h: 1 },
-  { sprite: 'globe', x: 19, y: 21, w: 1, h: 1, loose: true },
   { sprite: 'frameC', x: 14, y: 16, w: 1, h: 1, wall: true, nudge: 8 },
   // second bedroom
   { sprite: 'worldMap', x: 25, y: 16, w: 2, h: 1, wall: true },
   { sprite: 'kidRug', x: 22, y: 19, w: 2, h: 2, flat: true },
   { sprite: 'singleBed', x: 21, y: 17, w: 1, h: 2 },
   { sprite: 'nightstand', x: 22, y: 17, w: 1, h: 1 },
+  // standing on the nightstand's top, so it sorts as a thing resting there
+  { sprite: 'globe', x: 22, y: 16.3, w: 1, h: 1, loose: true },
   { sprite: 'dresser', x: 25, y: 17, w: 1, h: 1 },
   { sprite: 'drum', x: 26, y: 21, w: 1, h: 1, nudge: -2, loose: true },
   { sprite: 'teddy', x: 21, y: 21, w: 1, h: 1, loose: true },

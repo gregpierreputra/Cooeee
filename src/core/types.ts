@@ -448,6 +448,10 @@ export type Rehearsal = {
    *  gap. OPTIONAL: a dry run carries none, and nor does anything recorded
    *  before it existed. */
   elapsedMs?: number;
+  /** On a walked rehearsal only: the metres her phone counted her moving, from
+   *  the start to "I have arrived". Only this number is kept, never a position.
+   *  OPTIONAL: absent without location, and on anything recorded before it. */
+  distanceM?: number;
   /** The pack's own verifiedAt at the moment this rehearsal ran.
    *
    *  Two rehearsals whose values differ were run against different pack
@@ -481,6 +485,7 @@ export type UnfinishedRehearsal = {
   gaps?: never;
   ending?: never;
   elapsedMs?: never;
+  distanceM?: never;
 };
 
 /** Everything the rehearsals store can hold. */

@@ -46,6 +46,8 @@ export type Scene = {
   matHold: number;
   /** The phone asked for less motion: nothing pulses, shakes or drifts. */
   calm: boolean;
+  /** Where a tapped walk ends, marked with a small ring. */
+  target?: { x: number; y: number } | null;
 };
 
 /** At least this many tiles fit across and down the picture, whatever the
@@ -166,17 +168,14 @@ function drawStanding(view: View, art: Art, scene: Scene): void {
   for (const piece of STANDING) {
     const frame = piece.sprite === 'door' ? Math.round(scene.door * 4) : 0;
     things.push({
-      order: piece.y + piece.h,
+      // Loose clutter on top of another piece is drawn after it, as things are.
+      order: piece.loose ? restingOrder(piece.x + piece.w / 2, piece.y + piece.h - 0.01) : piece.y + piece.h,
       draw: () => drawSprite(view, art, piece.sprite, (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0), (piece.y + piece.h) * TILE - (piece.wall ? wallLift(ATLAS[piece.sprite][3]) : 0), frame),
     });
   }
   for (const item of DRILL_ITEMS) {
     if (scene.packed.includes(item.id)) continue;
     things.push({ order: restingOrder(item.x, item.y), draw: () => drawItem(view, art, item, scene) });
-    if (item.id === 'pet') {
-      const frame = scene.calm ? 0 : Math.floor(scene.time * 6) % (ATLAS.cat[4] ?? 1);
-      things.push({ order: item.y, draw: () => drawSprite(view, art, 'cat', (item.x + 1.5) * TILE, item.y * TILE, frame) });
-    }
   }
   const figure = scene.figure;
   if (figure) things.push({ order: figure.y, draw: () => drawFigure(view, art, figure) });
@@ -397,8 +396,10 @@ function drawDoorArrow(view: View, scene: Scene, left: number, top: number): voi
   ctx.restore();
 }
 
-/** One whole frame of the house. */
-export function drawScene(view: View, art: Art, scene: Scene): void {
+/** One whole frame of the house. Returns where the picture starts over the
+ *  house and how many house pixels one css pixel covers, so a tap can be
+ *  turned back into a place in the house. */
+export function drawScene(view: View, art: Art, scene: Scene): { left: number; top: number; perCss: number } {
   const { ctx, width, height, scale } = view;
   const shake = scene.late && !scene.calm ? Math.sin(scene.time * 40) : 0;
   const toSource = view.ratio / scale;
@@ -425,6 +426,13 @@ export function drawScene(view: View, art: Art, scene: Scene): void {
   drawGlow(view, scene.glow, scene.time, scene.calm);
   if (scene.dark > 0) drawMat(view, scene);
   if (scene.matHold > 0) drawMatHold(view, scene.matHold);
+  if (scene.target) {
+    view.ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    view.ctx.lineWidth = 1.5;
+    view.ctx.beginPath();
+    view.ctx.ellipse(scene.target.x * TILE, scene.target.y * TILE + 4, 6, 3, 0, 0, Math.PI * 2);
+    view.ctx.stroke();
+  }
   if (scene.outlines) {
     for (const item of DRILL_ITEMS) {
       if (scene.packed.includes(item.id)) continue;
@@ -440,4 +448,5 @@ export function drawScene(view: View, art: Art, scene: Scene): void {
   drawNearArrow(view, art, scene, left, top);
   if (scene.doorArrow) drawDoorArrow(view, scene, left, top);
   if (scene.showBag) drawBag(view, art, scene, left, top);
+  return { left, top, perCss: toSource };
 }

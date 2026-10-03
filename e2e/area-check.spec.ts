@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { AREA_MAP_IS_NOT_FIRE_REACH } from '../src/core/copy';
 import { chooseLastResortPlaces, deviceStorage, HARNESS, openSources } from './helpers';
 
 const AREA_URL = `${HARNESS}/area`;
@@ -39,9 +40,7 @@ test('AC6 shows the published-but-nothing-mapped state exactly', async ({ page }
     'No Bushfire Prone Area is mapped here.',
   );
   await openSources(page);
-  await expect(state.locator('p').nth(0)).toHaveText(
-    'Fire can still reach you. This map only sets building rules.',
-  );
+  await expect(state.locator('p').nth(0)).toHaveText(AREA_MAP_IS_NOT_FIRE_REACH);
   // Outside, nothing is in amber: no coloured words and no flame.
   await expect(state.locator('.key-term, .tone-amber')).toHaveCount(0);
   await expect(state.locator('.source-rows')).toContainText('Department of Transport and Planning');

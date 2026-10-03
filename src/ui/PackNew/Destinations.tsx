@@ -12,7 +12,6 @@ import { formatIsoDateShort, nspListDateLabel } from '../../core/nsp';
 import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
 import Glyph from '../components/Glyph';
-import KeyTerms from '../components/KeyTerms';
 import StateCard from '../components/StateCard';
 import FlowSteps from './FlowSteps';
 
@@ -233,7 +232,6 @@ export function Destinations({
                     </strong>{' '}
                     · {copy.SORTED_SHORT}
                   </p>
-                  <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
                 </div>
               </div>
               <ul className="list destination-list" data-testid="ordered-destinations">

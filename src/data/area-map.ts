@@ -4,6 +4,7 @@ import {
   AREA_MAP_TIMEOUT_MS,
   MAX_RESPONSE_BYTES,
 } from '../core/constants';
+import { mapBoxAround } from '../core/area-map-view';
 import type { LatLon, PackFile } from '../core/types';
 import { readBodyBounded } from './bounded-body';
 import { sha256Hex } from './integrity';
@@ -27,20 +28,17 @@ const LAYERS = [
   'vmlite_geo_area_label',
   'vmlite_geo_point_label',
 ].map((layer) => `open-data-platform:${layer}`).join(',');
-// The largest picture the service draws, so it stays sharp when pinch-zoomed.
-// The service draws lines and labels at a fixed pixel size, so without the
-// dpi option a larger picture would only make them smaller; at twice the dpi
-// they keep their size and the picture is a crisp double of the same layout.
-const MAP_PX = 2048;
+// About 20 m a pixel over the 80 km square, so streets stay readable when the
+// pack page's viewer zooms in, at about 4 MB, inside MAX_RESPONSE_BYTES. The
+// service draws lines and labels at a fixed pixel size, so without the dpi
+// option a larger picture would only make them smaller; at twice the dpi they
+// keep their size and the picture is a crisp double of the same layout.
+const MAP_PX = 4096;
 const MAP_DPI = 180;
-const KM_PER_DEGREE_LAT = 111;
 
-/** The GetMap request for a square AREA_MAP_HALF_KM each way from the centre. A
- *  degree of longitude shrinks with latitude, so the east-west half-width is
- *  widened to keep the square square on the ground. */
-export function areaMapUrl({ lat, lon }: LatLon): string {
-  const halfLat = AREA_MAP_HALF_KM / KM_PER_DEGREE_LAT;
-  const halfLon = halfLat / Math.cos((lat * Math.PI) / 180);
+/** The GetMap request for a square AREA_MAP_HALF_KM each way from the centre. */
+export function areaMapUrl(centre: LatLon): string {
+  const { west, south, east, north } = mapBoxAround(centre, AREA_MAP_HALF_KM);
   const params = new URLSearchParams({
     service: 'WMS',
     version: '1.1.1',
@@ -51,7 +49,7 @@ export function areaMapUrl({ lat, lon }: LatLon): string {
     bgcolor: '0xFFFFFF',
     format_options: `dpi:${MAP_DPI}`,
     layers: LAYERS,
-    bbox: [lon - halfLon, lat - halfLat, lon + halfLon, lat + halfLat].join(','),
+    bbox: [west, south, east, north].join(','),
     width: String(MAP_PX),
     height: String(MAP_PX),
   });

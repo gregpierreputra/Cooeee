@@ -73,6 +73,39 @@ export function blocked(x: number, y: number): boolean {
 
 export const onDoorMat = (x: number, y: number): boolean => cellAt(x, y) === MAT;
 
+type Point = { x: number; y: number };
+
+/** The shortest walk from (fromX, fromY) towards (toX, toY), all in tiles, as
+ *  the middles of the cells to pass through, the first step first. A target
+ *  no one can stand on (a bench, a wall, a thing on a shelf) is walked up to:
+ *  the reachable cell nearest to it. Empty when the figure is already there.
+ *  A breadth first search over the grid's cells, four ways, so no corner of a
+ *  wall or a piece of furniture is cut. */
+export function pathTo(fromX: number, fromY: number, toX: number, toY: number): Point[] {
+  const open = (x: number, y: number) => !blocked(x + 0.5, y + 0.5);
+  const start = [Math.floor(fromX), Math.floor(fromY)];
+  const came = new Map<string, string | null>([[`${start[0]},${start[1]}`, null]]);
+  const queue = [start];
+  let best = start;
+  const away = ([x, y]: number[]) => Math.hypot(x + 0.5 - toX, y + 0.5 - toY);
+  for (let i = 0; i < queue.length; i++) {
+    const [x, y] = queue[i];
+    if (away([x, y]) < away(best)) best = [x, y];
+    for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+      const key = `${nx},${ny}`;
+      if (came.has(key) || !open(nx, ny)) continue;
+      came.set(key, `${x},${y}`);
+      queue.push([nx, ny]);
+    }
+  }
+  const path: Point[] = [];
+  for (let key: string | null = `${best[0]},${best[1]}`; key && came.get(key) !== null; key = came.get(key) ?? null) {
+    const [x, y] = key.split(',').map(Number);
+    path.unshift({ x: x + 0.5, y: y + 0.5 });
+  }
+  return path;
+}
+
 export const roomAt = (x: number, y: number): DrillRoom | null => ROOM_OF[cellAt(x, y)] ?? null;
 
 /** The middle of the first cell holding this mark. */

@@ -122,7 +122,7 @@ describe('nearbyView', () => {
     const relief = row(nearbyView(NOW, KALORAMA, cache({}, 61 * 60_000), OFFLINE), 'RELIEF');
     expect(relief.place).toBeNull();
     expect(relief.stateLabel).toBe(copy.STATE_CACHED(copy.HOURS_AGO(1)));
-    expect(relief.note).toBe(`${copy.TOO_OLD_TO_SHOW} ${copy.VICEMERGENCY_HOTLINE}`);
+    expect(relief.note).toBe(`${copy.TOO_OLD_TO_SHOW}\n${copy.VICEMERGENCY_HOTLINE}`);
     expect(relief.note).toContain('1800 226 226');
   });
 

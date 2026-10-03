@@ -22,12 +22,12 @@ const newId = (): string =>
 type Props = {
   packId: string;
   onDone: () => void;
-  /** The length of the minute. Only the test harness passes anything else. */
+  /** The length of the drill, in seconds. Only the test harness passes anything else. */
   seconds?: number;
 };
 
-/** E9 — the drill in front of a rehearsal: one fact, the opening picture, one
- *  minute in the house, then the debrief. `onDone` hands over to the
+/** E9 — the drill in front of a rehearsal: one fact, the opening picture,
+ *  two minutes in the house, then the debrief. `onDone` hands over to the
  *  rehearsal, whether the drill was played or skipped. */
 export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props) {
   const [stage, setStage] = useState<Stage>('statline');

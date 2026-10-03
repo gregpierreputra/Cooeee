@@ -124,6 +124,15 @@ describe('what an ending records', () => {
     expect(endingLine({ state: 'walked' })).toBe('You went there.');
   });
 
+  it('keeps the counted distance with a walked rehearsal, and states both', () => {
+    const record = endingRecord(STARTED, 'walked', STARTED + 900_000, 1_234);
+    expect(record).toEqual({ finishedAt: STARTED + 900_000, ending: 'walked', elapsedMs: 900_000, distanceM: 1_234 });
+    expect(endingLine({ state: 'walked', elapsedMs: 900_000, distanceM: 1_234 })).toBe(
+      'You went there. It took you 15 minutes and covered 1.2 km.',
+    );
+    expect(endingRecord(STARTED, 'dry-run', STARTED + 60_000, 1_234)).not.toHaveProperty('distanceM');
+  });
+
   it('keeps no time on a dry run', () => {
     const record = endingRecord(STARTED, 'dry-run', STARTED + 60_000);
     expect(record).toEqual({ finishedAt: STARTED + 60_000, ending: 'dry-run' });

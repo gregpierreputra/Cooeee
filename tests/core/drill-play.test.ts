@@ -57,9 +57,9 @@ describe('E9 the drill rules of movement', () => {
     expect(haze(999, 60)).toEqual(haze(60, 60));
   });
 
-  it('lets any bag leave early from the mat with under thirty seconds left', () => {
-    expect(leavingEarly(29.5, true)).toBe(true);
-    expect(leavingEarly(30, true)).toBe(false);
+  it('lets any bag leave early from the mat in the last 1 minute 45 seconds', () => {
+    expect(leavingEarly(104.5, true)).toBe(true);
+    expect(leavingEarly(105, true)).toBe(false);
     expect(leavingEarly(5, false)).toBe(false);
   });
 });

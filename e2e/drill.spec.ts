@@ -6,10 +6,10 @@ import { HARNESS } from './helpers';
 test.describe('E9 the drill in front of the rehearsal', () => {
   test('opens on one quiet screen, and Skip the drill lands on the choice of condition', async ({ page }) => {
     await page.goto(`${HARNESS}/rehearse?mode=rehearsable&drill=1`);
-    await expect(page.getByRole('heading', { name: 'One minute to leave' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toBeVisible();
     await page.getByRole('button', { name: 'Skip the drill' }).click();
     await expect(page.locator('main')).toContainText('Rehearsal');
-    await expect(page.getByRole('heading', { name: 'One minute to leave' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toHaveCount(0);
   });
 
   test('the film shows each fact with its publisher over the fire', async ({ page }) => {
@@ -29,7 +29,7 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await expect(page.locator('main')).toContainText('Bag 0 of 10');
     // The minute goes straight to the report.
-    await expect(page.getByRole('heading', { name: 'The minute ended away from the door' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Time ran out away from the door' })).toBeVisible();
     await expect(page.locator('main')).not.toContainText('out of 100');
     await expect(page.getByRole('heading', { name: 'Left behind' })).toBeVisible();
     await page.getByRole('button', { name: 'torch' }).click();
@@ -54,6 +54,6 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await page.goto(`${HARNESS}/rehearse?mode=rehearsable`);
     await expect(page.getByRole('heading', { name: 'Rehearse without…' })).toBeVisible();
     await page.getByRole('button', { name: /Play the drill/ }).click();
-    await expect(page.getByRole('heading', { name: 'One minute to leave' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toBeVisible();
   });
 });

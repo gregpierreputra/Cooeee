@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as copy from '../../src/core/copy';
 import { REHEARSAL_CONDITIONS, conditionLabel } from '../../src/core/rehearsal-condition';
-import { barParts, isRunFor, type RehearsalRun } from '../../src/core/rehearsal-run';
+import { addFix, barParts, elapsedClock, isRunFor, NO_TRACK, type RehearsalRun } from '../../src/core/rehearsal-run';
 import { endRun, startRun } from '../../src/ui/Rehearsal/run-state';
 
 const run = (over: Partial<RehearsalRun> = {}): RehearsalRun => ({
@@ -103,5 +103,26 @@ describe('the wording of a running rehearsal', () => {
       expect(line).not.toMatch(/\b(bushfire|fire|heat|hot|flood|storm|smoke|ember)\b/i);
       expect(line).not.toMatch(/\bunprepared\b|\bnot ready\b/i);
     });
+  });
+});
+
+// F7: the distance counted on a walk, and the clock at the top of the screen.
+describe('the walk so far', () => {
+  const at = (lat: number, accuracyM = 10) => ({ lat, lon: 145.3, accuracyM });
+
+  it('adds accurate moves, and skips vague positions and standing jitter', () => {
+    let track = addFix(NO_TRACK, at(-37.8)); // the first position starts the walk
+    expect(track.distanceM).toBe(0);
+    track = addFix(track, at(-37.801)); // about 111 m south
+    expect(track.distanceM).toBeGreaterThan(105);
+    expect(track.distanceM).toBeLessThan(117);
+    expect(addFix(track, at(-37.80102))).toBe(track); // about 2 m: jitter
+    expect(addFix(track, at(-37.9, 80))).toBe(track); // too vague to count
+  });
+
+  it('reads as a clock', () => {
+    expect(elapsedClock(0)).toBe('0:00');
+    expect(elapsedClock(754_000)).toBe('12:34');
+    expect(elapsedClock(3_729_000)).toBe('1:02:09');
   });
 });

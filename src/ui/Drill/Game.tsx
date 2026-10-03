@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import * as copy from '../../core/copy';
-import { SPAWN, onDoorMat, roomAt } from '../../core/drill-house';
+import { SPAWN, onDoorMat, pathTo, roomAt } from '../../core/drill-house';
 import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
 import { DOWN, EARLY_EXIT_HOLD, facing, haze, leavingEarly, nearestItem, speedFor, step } from '../../core/drill-play';
 import * as audio from './audio';
@@ -8,6 +8,7 @@ import { BEATS, CUTSCENE_SECONDS, LINES, OUTSIDE_SECONDS, POWER_OFF_AT, beatAt, 
 import { attachKeys, stickVector } from './input';
 import SoundButton from './SoundButton';
 import { startLoop } from './loop';
+import { TILE } from '../../core/drill-layout';
 import { BAG_STRIP, drawScene, fitCanvas, loadArt, type Art } from './render';
 
 export type DrillOutcome = { reachedDoor: boolean; packed: string[] };
@@ -15,7 +16,7 @@ export type DrillOutcome = { reachedDoor: boolean; packed: string[] };
 const STICK_RADIUS = 48; // css pixels
 const PICK_SECONDS = 0.4; // the figure bends down: packing costs a moment
 const LATE_SECONDS = 10;
-const DOOR_ARROW_SECONDS = 15;
+const DOOR_ARROW_SECONDS = 20;
 const DOOR_OPENS_SECONDS = 0.9;
 
 /** Everything the loop reads and writes, outside React so a frame never
@@ -37,13 +38,16 @@ type World = {
   packed: string[];
   packedAt: number;
   near: DrillItem | null;
+  /** A tapped walk: the cell middles still to pass, and where it ends. */
+  route: { x: number; y: number }[];
+  target: { x: number; y: number } | null;
 };
 
 const freshWorld = (opening: boolean): World => ({
   phase: opening ? 'opening' : 'play',
   clock: 0, opening: 0, elapsed: 0, leaving: 0, onMat: 0,
   x: SPAWN.x, y: SPAWN.y, facing: DOWN, stickX: 0, stickY: 0, moving: false, pickUntil: 0,
-  packed: [], packedAt: 0, near: null,
+  packed: [], packedAt: 0, near: null, route: [], target: null,
 });
 
 /** A fact with its key phrases (a date, a distance, a count) set in the
@@ -63,10 +67,10 @@ type Props = {
   onLeave: () => void;
 };
 
-/** E9-US1 and US2 — the opening film, then one minute in the house, on one
+/** E9-US1 and US2 — the opening film, then two minutes in the house, on one
  *  canvas that fills the screen, so there is no break between them. Left thumb
- *  steers, the one button packs whatever is in reach, and where the figure
- *  stands at 0:00 decides. */
+ *  steers, or a tap on the floor walks there; the one button packs whatever
+ *  is in reach, and where the figure stands at 0:00 decides. */
 export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -97,6 +101,20 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
     w.pickUntil = w.clock + PICK_SECONDS;
     audio.blip();
     navigator.vibrate?.(10);
+  };
+
+  // Where the picture starts over the house, and house pixels per css pixel,
+  // as the last frame drew it: what a tap on the picture is turned back through.
+  const camera = useRef({ left: 0, top: 0, perCss: 1 });
+  const walkTo = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    const w = world.current;
+    if (w.phase !== 'play') return;
+    const box = event.currentTarget.getBoundingClientRect();
+    const { left, top, perCss } = camera.current;
+    const x = ((event.clientX - box.left) * perCss + left) / TILE;
+    const y = ((event.clientY - box.top) * perCss + top) / TILE;
+    w.route = pathTo(w.x, w.y, x, y);
+    w.target = w.route.at(-1) ?? null;
   };
 
   const releaseStick = () => {
@@ -164,12 +182,37 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
           w.elapsed += dt;
           const left = Math.ceil(seconds - w.elapsed);
           if (left < before && left < LATE_SECONDS && left >= 0) audio.beat();
-          w.moving = !picking && (w.stickX !== 0 || w.stickY !== 0);
+          // The stick or the keys always win: touching them ends a tapped walk.
+          let goX = w.stickX;
+          let goY = w.stickY;
+          if (goX !== 0 || goY !== 0) {
+            w.route = [];
+            w.target = null;
+          } else if (w.route.length > 0) {
+            // Head for the next cell middle; close enough counts as there.
+            const [next] = w.route;
+            if (Math.hypot(next.x - w.x, next.y - w.y) < 0.1) w.route.shift();
+            if (w.route.length === 0) w.target = null;
+            else {
+              // Full pace, easing off only for the last bit so it never overshoots.
+              const dx = w.route[0].x - w.x;
+              const dy = w.route[0].y - w.y;
+              const pace = Math.min(1, Math.hypot(dx, dy) / Math.max(1e-6, speedFor(w.packed) * dt)) / Math.hypot(dx, dy);
+              goX = dx * pace;
+              goY = dy * pace;
+            }
+          }
+          w.moving = !picking && (goX !== 0 || goY !== 0);
           if (w.moving) {
-            const moved = step(w.x, w.y, w.stickX, w.stickY, dt, speedFor(w.packed));
+            const moved = step(w.x, w.y, goX, goY, dt, speedFor(w.packed));
+            // A walk that is held fast (an edge it cannot ease round) gives up.
+            if (dt > 0 && moved.x === w.x && moved.y === w.y) {
+              w.route = [];
+              w.target = null;
+            }
             w.x = moved.x;
             w.y = moved.y;
-            w.facing = facing(w.stickX, w.stickY, w.facing);
+            w.facing = facing(goX, goY, w.facing);
           }
           w.near = nearestItem(w.x, w.y, w.packed);
           const ready = leavingEarly(seconds - w.elapsed, onDoorMat(w.x, w.y));
@@ -180,8 +223,8 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         const left = seconds - w.elapsed;
         const { smoke, dark } = haze(w.elapsed, seconds);
         audio.fire(0.45 + 0.5 * (w.elapsed / seconds));
-        drawScene(view, art, {
-          time: w.clock, camX: w.x, camY: w.y - 1,
+        camera.current = drawScene(view, art, {
+          time: w.clock, camX: w.x, camY: w.y - 1, target: w.target,
           figure: { x: w.x, y: w.y, facing: w.facing, pose: picking ? 'pick' : w.moving ? 'walk' : 'idle', poseTime: picking ? w.clock - w.packedAt : w.clock },
           packed: w.packed, packedAt: w.packedAt, near: w.phase === 'play' ? w.near : null,
           powered: false, glow: 1, smoke, dark, door: Math.min(1, w.leaving / 0.6),
@@ -204,13 +247,13 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         setHud(next);
       }
 
-      // Under thirty seconds left and a moment on the mat: out the door now.
+      // In the last 1:45, a moment on the mat: out the door now.
       if (w.phase === 'play' && w.onMat >= EARLY_EXIT_HOLD) {
         w.phase = 'leaving';
         audio.thud();
       }
       if (w.phase === 'play' && w.elapsed >= seconds) {
-        // The minute always runs to its end. Where the figure stands now decides.
+        // The time always runs to its end. Where the figure stands now decides.
         if (!onDoorMat(w.x, w.y)) {
           onEnd({ reachedDoor: false, packed: w.packed });
           return false;
@@ -271,7 +314,13 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
 
   return (
     <div ref={stageRef} className="drill-stage" tabIndex={-1} aria-label={copy.DRILL_LABEL}>
-      <canvas ref={canvasRef} role="img" aria-label={hud.playing ? copy.DRILL_SCENE_LABEL : copy.CUTSCENE_LABEL} />
+      {/* A tap on the floor walks the figure there, round walls and furniture. */}
+      <canvas
+        ref={canvasRef}
+        role="img"
+        aria-label={hud.playing ? copy.DRILL_SCENE_LABEL : copy.CUTSCENE_LABEL}
+        onPointerDown={walkTo}
+      />
       <div className="drill-top">
         {hud.playing ? (
           <div className="drill-counts">

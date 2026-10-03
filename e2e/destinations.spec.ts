@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { SORTED_SHORT } from '../src/core/copy';
 import { openSources } from './helpers';
 
 const URL = 'http://127.0.0.1:4174/destinations';
@@ -17,7 +18,7 @@ const BY_DISTANCE = [
 ];
 const UNLOCATED_SAME_LGA = 'Wandin North Reserve';
 const UNLOCATED_OTHER_LGA = 'Alexandra Showgrounds';
-const CAVEAT = 'sorted by distance';
+const CAVEAT = SORTED_SHORT;
 const DISTANCE = /^\d+(\.\d+)?\s(m|km)$/;
 
 function offOriginRequests(page: Page): string[] {
@@ -94,7 +95,6 @@ test('AC2 shows the mandated caveat line once, above the list and not inside it'
   await expect(page.locator('p.caveat')).toContainText(CAVEAT);
   expect(await page.getByText(CAVEAT).count()).toBe(1);
   await expect(page.locator('[data-testid=ordered-destinations]')).not.toContainText(CAVEAT);
-  await expect(page.getByText('Straight-line distances, not by road.')).toHaveCount(1);
 });
 
 test('AC2 keeps the un-located group free of distance and ordinals', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLS, MAT_CENTRE, REACH, ROWS, SPAWN, blocked, onDoorMat, restingOrder, roomAt } from '../../src/core/drill-house';
+import { COLS, MAT_CENTRE, REACH, ROWS, SPAWN, blocked, onDoorMat, pathTo, restingOrder, roomAt } from '../../src/core/drill-house';
 import { DRILL_ITEMS } from '../../src/core/drill-items';
 import { FURNITURE, GRID, ROOM_OF } from '../../src/core/drill-layout';
 
@@ -72,5 +72,21 @@ describe('E9 the drill house', () => {
       if (cell in ROOM_OF && !covered.has(`${x},${y}`) && blocked(x + 0.5, y + 0.5)) pinched.push(`${x},${y}`);
     }));
     expect(pinched).toEqual([]);
+  });
+
+  it('walks a tapped spot by open cells, and up to a spot no one can stand on', () => {
+    const route = pathTo(SPAWN.x, SPAWN.y, MAT_CENTRE.x, MAT_CENTRE.y);
+    expect(route.at(-1)).toEqual(MAT_CENTRE);
+    for (const cell of route) expect(blocked(cell.x, cell.y)).toBe(false);
+    // Each step is one cell along a row or a column, so no corner is cut.
+    [{ x: Math.floor(SPAWN.x) + 0.5, y: Math.floor(SPAWN.y) + 0.5 }, ...route].reduce((a, b) => {
+      expect(Math.abs(a.x - b.x) + Math.abs(a.y - b.y)).toBe(1);
+      return b;
+    });
+    // The sofa: the walk ends on the open cell nearest to it.
+    const toSofa = pathTo(SPAWN.x, SPAWN.y, 21.5, 6.5).at(-1)!;
+    expect(blocked(toSofa.x, toSofa.y)).toBe(false);
+    expect(Math.hypot(toSofa.x - 21.5, toSofa.y - 6.5)).toBe(1);
+    expect(pathTo(SPAWN.x, SPAWN.y, SPAWN.x, SPAWN.y)).toEqual([]);
   });
 });

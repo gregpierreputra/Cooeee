@@ -38,7 +38,9 @@ const SHEETS = {
   figure: '2_Characters/Character_Generator/0_Premade_Characters/16x16/Premade_Character_01.png',
   door: '3_Animated_objects/16x16/spritesheets/animated_door_big_1.png',
   report: '3_Animated_objects/16x16/spritesheets/animated_TV_reportage.png',
-  cat: '3_Animated_objects/16x16/spritesheets/animated_cat.png',
+  sink: '3_Animated_objects/16x16/spritesheets/animated_sink.png',
+  // drawn for this game where the pack has no truthful picture (drill-handmade.py)
+  handmade: new URL('./drill-handmade.png', import.meta.url),
   ui: '4_User_Interface_Elements/UI_16x16.png',
 };
 
@@ -50,7 +52,6 @@ const SOURCES = {
   idle: ['figure', 0, 32, 16, 32, 24],
   walk: ['figure', 0, 64, 16, 32, 24],
   pick: ['figure', 0, 288, 16, 32, 48],
-  cat: ['cat', 0, 0, 48, 16, 12],
   arrow: ['ui', 48, 16, 16, 16],
   // furniture and the things that make a home look lived in
   door: ['door', 0, 0, 16, 48, 5],
@@ -76,12 +77,12 @@ const SOURCES = {
   smallPlant: ['living', 242, 360, 13, 17],
   basket: ['living', 1, 396, 15, 15],
   standMirror: ['living', 134, 360, 20, 31],
-  globe: ['living', 193, 360, 13, 13],
+  globe: ['living', 193, 353, 13, 20],
   sideboard: ['living', 19, 245, 27, 23],
   nightstand: ['living', 16, 213, 16, 20],
   fridge: ['kitchen', 208, 602, 13, 37],
   cabinet: ['kitchen', 162, 118, 29, 14],
-  sink: ['kitchen', 133, 113, 24, 14],
+  sink: ['sink', 0, 0, 32, 32], // a whole counter with its sink, not a basin on the floor
   stove: ['kitchen', 128, 178, 16, 28],
   dining: ['kitchen', 57, 240, 30, 41],
   chair: ['kitchen', 66, 177, 13, 21],
@@ -101,7 +102,8 @@ const SOURCES = {
   dresser: ['bedroom', 129, 1144, 14, 18],
   drum: ['music', 166, 188, 20, 19],
   teddy: ['bedroom', 1, 1050, 15, 15],
-  // the thirty things, each the closest look alike the art set holds
+  // the thirty things, each the closest look alike the art set holds, or
+  // drawn for the game where it holds none
   photos: ['living', 2, 458, 13, 15],
   television: ['report', 0, 0, 48, 23, 24],
   console: ['basement', 32, 754, 19, 16],
@@ -110,7 +112,7 @@ const SOURCES = {
   lamp: ['living', 176, 183, 15, 25],
   water: ['kitchen', 196, 217, 9, 17],
   kettle: ['kitchen', 197, 483, 11, 10],
-  pet: ['bathroom', 230, 0, 18, 15],
+  pet: ['handmade', 0, 0, 20, 13],
   plant: ['living', 2, 86, 12, 14],
   blanket: ['bedroom', 70, 804, 16, 18],
   batteries: ['grocery', 144, 208, 13, 7],
@@ -120,16 +122,16 @@ const SOURCES = {
   toolbox: ['fishing', 1, 193, 30, 15],
   medicines: ['hospital', 132, 496, 11, 11],
   overnight: ['clothing', 225, 209, 14, 14],
-  pillow: ['living', 233, 482, 13, 13],
+  pillow: ['handmade', 54, 0, 14, 8],
   clothes: ['clothing', 98, 253, 13, 16],
   firstaid: ['jail', 225, 73, 14, 13],
-  masks: ['bathroom', 51, 2, 11, 8],
+  masks: ['handmade', 21, 0, 12, 9],
   papers: ['hospital', 48, 41, 16, 12],
   laptop: ['jail', 144, 231, 15, 12],
-  memorystick: ['hospital', 185, 501, 11, 10],
+  memorystick: ['handmade', 47, 0, 6, 11],
   books: ['classroom', 194, 246, 13, 11],
   cash: ['clothing', 195, 211, 10, 6],
-  charger: ['generic', 167, 665, 16, 12],
+  charger: ['handmade', 34, 0, 12, 12],
   guitar: ['music', 112, 45, 15, 30],
   football: ['music', 178, 138, 11, 11],
 };

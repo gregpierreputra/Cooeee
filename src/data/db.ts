@@ -262,7 +262,7 @@ export async function readRehearsalSource(packId: string): Promise<Omit<Rehearsa
  *  `add`, not `put`: a start never overwrites a row, so it can never turn a
  *  finished rehearsal back into an unfinished one. */
 export async function saveStartedRehearsal(started: UnfinishedRehearsal): Promise<void> {
-  const claimsAnEnd = ['finishedAt', 'gaps', 'ending', 'elapsedMs'].some((field) => field in started);
+  const claimsAnEnd = ['finishedAt', 'gaps', 'ending', 'elapsedMs', 'distanceM'].some((field) => field in started);
   if (claimsAnEnd || !isUnfinished(started) || !(started.startedAt > 0)) {
     throw new RangeError('a started rehearsal is kept with no finish, no gaps and no ending');
   }
@@ -304,6 +304,14 @@ export async function saveFinishedRehearsal(rehearsal: Rehearsal): Promise<void>
     (rehearsal.ending !== 'walked' || rehearsal.elapsedMs !== rehearsal.finishedAt - rehearsal.startedAt)
   ) {
     throw new RangeError('a time is kept only on a walked rehearsal, as the time between its start and end');
+  }
+  // A distance, like a time, is kept only with a walked rehearsal, and only as a
+  // real number of metres.
+  if (
+    rehearsal.distanceM !== undefined &&
+    (rehearsal.ending !== 'walked' || !Number.isFinite(rehearsal.distanceM) || rehearsal.distanceM < 0)
+  ) {
+    throw new RangeError('a distance is kept only on a walked rehearsal, as metres walked');
   }
   await db.rehearsals.put(rehearsal);
 }

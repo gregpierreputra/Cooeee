@@ -109,9 +109,10 @@ export const DTP_DATASET_URL =
  *  importing the module that fetches it. */
 export const AREA_MAP_NAME = 'bushfire-prone-area-map.png';
 /** How far that picture reaches each way from the saved place, in
- *  kilometres: 8 km across, close enough to read roads, creeks and place names.
- *  A picture size only; the pack's 6 km area rule is PACK_RADIUS_KM. */
-export const AREA_MAP_HALF_KM = 4;
+ *  kilometres: 80 km across, the wider area to explore, zoomed in on the pack
+ *  page to read roads, creeks and place names. A picture size only; the pack's
+ *  6 km area rule is PACK_RADIUS_KM. */
+export const AREA_MAP_HALF_KM = 40;
 
 // The arrows are drawn from any fix; these decide when the screen says the fix
 // is old or vague beside them, and when a marked-position estimate expires.

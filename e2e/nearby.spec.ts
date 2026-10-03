@@ -20,8 +20,8 @@ async function openOffline(page: Page, context: BrowserContext, mode: string) {
 }
 
 async function findPostcode(page: Page) {
+  // Searched at the fourth digit, with no button, like the pack builder.
   await page.getByLabel('Type a postcode').fill('3766');
-  await page.getByRole('button', { name: 'Find' }).click();
 }
 
 async function openTab(page: Page, name: string) {

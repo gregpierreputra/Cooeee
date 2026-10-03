@@ -91,7 +91,7 @@ export default function Result({
           // rehearsal the time between its start and that moment. Never
           // supplied here, and never judged anywhere.
           ...(run.ending
-            ? endingRecord(run.startedAt, run.ending, run.endedAt ?? now())
+            ? endingRecord(run.startedAt, run.ending, run.endedAt ?? now(), run.distanceM)
             : { finishedAt: now() }),
         };
         setCompletions(alreadyDone);

@@ -10,12 +10,12 @@ export const SPEED = 6.5;
 const BULKY_COST = 0.1;
 const SLOWEST = 0.6;
 
-/** The early way out: with under thirty seconds left, standing on the door
+/** The early way out: in the last 1 minute 45 seconds, standing on the door
  *  mat this long ends the drill at once, with whatever is in the bag. A ring
  *  fills on the mat while they wait, so a person at the door is never left
  *  unsure what happens next. */
 export const EARLY_EXIT_HOLD = 1.5;
-const EARLY_EXIT_WINDOW = 30;
+const EARLY_EXIT_WINDOW = 105;
 
 /** Whether the time on the mat counts towards leaving early. */
 export const leavingEarly = (secondsLeft: number, onMat: boolean): boolean =>

@@ -522,12 +522,16 @@ export function Search({
   useEffect(() => () => setBuilderBack('step'), []);
 
   // Each step replaces the page under the same path, so focus is moved to it
-  // here; the route change that would otherwise do it never happens.
+  // and the page starts at its top here; the route change that would
+  // otherwise do both never happens.
   const step = [
     !!candidate, !!pendingPlace, conflictState?.kind, areaState?.kind,
     placesState?.kind, !!chosenPlaces, offerState?.kind,
   ].join();
-  useEffect(focusMain, [step]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    focusMain();
+  }, [step]);
 
   if (pendingPlace && conflictState?.kind === 'checking') {
     return (

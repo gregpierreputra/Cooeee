@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
+import { mapAcrossKm, mapBoxOf } from '../core/area-map-view';
 import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
 import { formatDistanceM, placeName } from '../core/destination';
@@ -16,6 +17,7 @@ import { drillRows, type DrillRow } from '../core/drill-history';
 import { historyRows, type HistoryRow } from '../core/rehearsal-history';
 import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } from '../core/types';
 import { getCompletePackContent, listDrills, listRehearsalsForPack } from '../data/db';
+import AreaMap from './components/AreaMap';
 import Glyph from './components/Glyph';
 import InfoGlyph from './components/InfoGlyph';
 import KeyTerms from './components/KeyTerms';
@@ -140,6 +142,8 @@ export default function PackDetail({
   const places = packDetailPlaces(content);
   const absence = packDetailAbsence(content);
   const areaMap = content.files.find((file) => file.name === AREA_MAP_NAME);
+  // The box the stored map was drawn for, read from its own request.
+  const mapBox = areaMap ? mapBoxOf(areaMap.url) : null;
   const interceptSource = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
     event.preventDefault();
     setOfflineSource(decideOriginalSourceAccess(item).item);
@@ -162,23 +166,19 @@ export default function PackDetail({
         <p className="muted">{content.pack.address}</p>
       </header>
 
-      {/* The map of the pack's own area, from the bytes stored with the pack.
-          The saved place is the centre of the picture by construction, so the
-          ring is drawn at the middle rather than computed. Absent on packs
-          built before the map was stored. */}
+      {/* The map of the pack's own area, from the bytes stored with the pack,
+          to pan, zoom and turn. Absent on packs built before the map was stored. */}
       {areaMap && fileUrls[areaMap.id] ? (
         <Section kind="map" title={copy.AREA_MAP_LABEL}>
           <figure className="area-map">
-            <div className="area-map-frame">
-              <img src={fileUrls[areaMap.id]} alt={copy.AREA_MAP_ALT} />
-              <span className="area-map-pin" aria-hidden="true" />
-            </div>
+            <AreaMap src={fileUrls[areaMap.id]} box={mapBox} places={places} />
             <figcaption className="muted">
               <ul className="map-key">
                 <li><span className="swatch swatch-inside" aria-hidden="true" />{copy.AREA_MAP_KEY.inside}</li>
                 <li><span className="swatch swatch-outside" aria-hidden="true" />{copy.AREA_MAP_KEY.outside}</li>
                 <li><span className="swatch swatch-place" aria-hidden="true" />{copy.AREA_MAP_KEY.place}</li>
-                <li>{copy.AREA_MAP_ACROSS}</li>
+                <li><span className="area-map-mark-key" aria-hidden="true"><Glyph kind="place" size={14} /></span>{copy.AREA_MAP_KEY.lastResort}</li>
+                {mapBox ? <li>{copy.AREA_MAP_ACROSS(mapAcrossKm(mapBox))}</li> : null}
               </ul>
               <p>{copy.AREA_MAP_SOURCE(formatSavedDate(areaMap.retrievedAt))}</p>
             </figcaption>

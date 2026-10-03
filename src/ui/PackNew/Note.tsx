@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { NOTE_MAX_CHARS } from '../../core/constants';
 import * as copy from '../../core/copy';
 import Glyph from '../components/Glyph';
-import KeyTerms from '../components/KeyTerms';
 import FlowSteps from './FlowSteps';
 
 type NoteProps = {
@@ -30,7 +29,6 @@ export function Note({ example, initial, onContinue }: NoteProps) {
             <Glyph kind="lock" line />
             {copy.NOTE_DISCLOSURE}
           </p>
-          <p className="caution"><KeyTerms text={copy.NOTE_NOT_PROTECTED} /></p>
         </header>
         <label htmlFor="pack-note">{copy.NOTE_LABEL}</label>
         <textarea

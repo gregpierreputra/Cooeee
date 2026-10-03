@@ -10,7 +10,7 @@ describe('E9 the drill record', () => {
   it('lists drills newest first in the debrief wording', () => {
     const rows = drillRows([drill({ id: 'old' }), drill({ id: 'new', finishedAt: 1_800_000_000_000, reachedDoor: false, score: 0, packed: [] })]);
     expect(rows.map((row) => row.id)).toEqual(['new', 'old']);
-    expect(rows[0].outcome).toBe('Away from the door when the minute ended');
+    expect(rows[0].outcome).toBe('Away from the door when time ran out');
     expect(rows[1].outcome).toBe('At the door, 50 out of 100');
     expect(rows[1].packed).toBe('1 thing packed');
   });

@@ -463,21 +463,44 @@ a {
   margin: 0;
 }
 
+/* Fingers and the mouse move the map, not the page, while they are on it. */
 .area-map-frame {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
+  background: #ffffff;
+  touch-action: none;
+  cursor: grab;
 }
 
-.area-map-frame img {
+.area-map-frame:active {
+  cursor: grabbing;
+}
+
+/* The picture and its markers move together, about the frame's middle. */
+.area-map-layer {
+  position: relative;
+  transform-origin: center;
+}
+
+.area-map-layer img {
   display: block;
   width: 100%;
   aspect-ratio: 1;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Each marker undoes the map's turn and zoom, so it stays upright and the
+   same size, centred on its own spot. */
+.area-map-pin,
+.area-map-mark {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(calc(var(--map-angle, 0deg) * -1)) scale(calc(1 / var(--map-scale, 1)));
 }
 
 .area-map-pin {
-  position: absolute;
   top: 50%;
   left: 50%;
   width: 1rem;
@@ -486,7 +509,49 @@ a {
   border-radius: 50%;
   background: rgb(255 255 255 / 0.6);
   box-shadow: 0 0 0 2px #fff;
-  transform: translate(-50%, -50%);
+}
+
+/* An official place of last resort: the places glyph in a dark disc, so it
+   reads over the light map and is never mistaken for the ring. */
+.area-map-mark .glyph,
+.area-map-mark-key .glyph {
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.area-map-mark-key .glyph {
+  width: 20px;
+  height: 20px;
+}
+
+/* One quiet line on how to move the map, then the round buttons that do the
+   same for anyone who cannot use a gesture. */
+.area-map-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.area-map-controls p {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--step-s);
+}
+
+.map-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: var(--step-1);
+  line-height: 1;
 }
 
 .area-map figcaption {
@@ -2853,31 +2918,13 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .nearby-locate {
   gap: 0.75rem;
 }
-.nearby-postcode {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr); /* never wider than the card, whatever the input wants */
-  gap: 0.5rem;
-}
-/* The instruction over the postcode field, as small as the address search's. */
-.nearby-postcode-hint {
-  font-weight: var(--w-med);
-}
 /* The postcode in the origin line, picked out in the accent. */
 .nearby-origin-code {
   color: var(--accent);
   font-weight: var(--w-bold);
 }
-.postcode-row {
-  display: flex;
-  gap: 0.75rem;
-}
-.postcode-row input {
-  flex: 1;
-  min-width: 0;
-}
 
-/* The two Nearby tabs: one pill track, the chosen half raised and outlined,
-   so the choice reads without colour. */
+/* The two Nearby tabs: one pill track, the chosen half filled in teal. */
 .nearby-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2899,10 +2946,15 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   color: var(--ink-2);
   font-size: var(--step-s);
 }
+/* The chosen list is a filled teal pill, so the choice reads at a glance. */
 .nearby-tabs [role='tab'][aria-selected='true'] {
   border-color: var(--accent);
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+/* The hotline sits on its own line under the note. */
+.nearby-note {
+  white-space: pre-line;
 }
 
 .nearby-group {
@@ -3274,13 +3326,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   color: var(--ink);
 }
 
-/* Nearby: the locate control carries its glyph inside the pill. */
-.nearby-locate .main-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
-}
 .main-action .glyph {
   width: 28px;
   height: 28px;
@@ -3488,6 +3533,15 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   align-self: flex-start;
   min-height: 44px;
   margin-top: 0.5rem;
+}
+
+/* The live time and distance at the top of a running rehearsal: one quiet
+   figure line in the accent, tabular so the digits do not jump each second. */
+.journey-track {
+  margin: 0;
+  font-weight: var(--w-bold);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
 }
 
 /* E5-US1-AC5 — the journey screen. The places sit in the card treatment the
