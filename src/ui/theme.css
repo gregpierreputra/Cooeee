@@ -325,6 +325,9 @@ a {
    (position + z-index) to stay independently clickable. */
 .pack-card {
   position: relative;
+  /* Its own layer, so the settings ring stacks inside the card and never over
+     a sticky bar. */
+  isolation: isolate;
 }
 .pack-card h2 a::after {
   content: '';
@@ -466,6 +469,9 @@ a {
 /* Fingers and the mouse move the map, not the page, while they are on it. */
 .area-map-frame {
   position: relative;
+  /* Its own layer: the buttons and pins stack inside the map, so they scroll
+     under the sticky Back bar and header with the image, never over them. */
+  isolation: isolate;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
