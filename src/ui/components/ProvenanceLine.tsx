@@ -1,7 +1,6 @@
 import * as copy from '../../core/copy';
 import { provenanceView } from '../../core/provenance';
 import type { Source } from '../../core/types';
-import Glyph from './Glyph';
 import Hint from './Hint';
 
 /** One labelled fact. `detail` is a quieter second part, such as a date. */
@@ -44,8 +43,7 @@ type ProvenanceLineProps = {
 };
 
 /** Who published an item and when it was saved. UAT: these lines crowded every
- *  card, so they sit behind a small Source ring. The old-data warning is never
- *  hidden: it stays on the card. */
+ *  card, so they sit behind a small Source ring. */
 export default function ProvenanceLine({ source, now, extra = [], open = false }: ProvenanceLineProps) {
   const view = provenanceView(now, source);
   const rows: SourceRow[] = [
@@ -56,15 +54,6 @@ export default function ProvenanceLine({ source, now, extra = [], open = false }
   return (
     <div className="provenance">
       {open ? <SourceRows rows={rows} /> : <SourceRing rows={rows} />}
-      {view.stale ? (
-        <div className="stale-note">
-          <p className="with-glyph">
-            <Glyph kind="caution" line />
-            {copy.NOT_RECENTLY_VERIFIED_LABEL}
-          </p>
-          <p>{copy.STALE_PACK_STILL_WORKS}</p>
-        </div>
-      ) : null}
     </div>
   );
 }

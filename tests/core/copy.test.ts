@@ -32,9 +32,6 @@ describe('mandated literals', () => {
     expect(copy.OUTSIDE_AREAS).toBe("You're outside this pack's area");
   });
 
-  it('a stale pack is labelled without being disabled', () => {
-    expect(copy.NOT_RECENTLY_VERIFIED(96)).toBe('Saved 96 days ago, not recently verified');
-  });
 
   it('the app states what it cannot detect', () => {
     expect(copy.PHONE_MAY_WORK).toBe(
@@ -240,9 +237,6 @@ describe('the fixed header', () => {
     expect(copy.CHECKED_DAYS_AGO(30)).toBe('Checked 30 days ago');
   });
 
-  it('carries the label, and no verdict, past the window', () => {
-    expect(copy.NOT_RECENTLY_VERIFIED_LABEL).toBe('Not recently verified');
-  });
 
   it('keeps the header wording distinct from the pack card wording', () => {
     expect(copy.CHECKED_DAYS_AGO(3)).not.toBe(copy.SAVED_DAYS_AGO(3));

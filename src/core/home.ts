@@ -2,22 +2,16 @@
 // fixed header. Everything here is pure: the screen renders what these
 // functions return and decides nothing of its own.
 
-import { MS_PER_DAY, PACK_REFRESH_DAYS } from './constants';
+import { MS_PER_DAY } from './constants';
 import * as copy from './copy';
-import { freshness } from './pack';
+import { packAgeLabel } from './pack';
 import { savedAgeDays } from './provenance';
 import type { Pack } from './types';
 
-/** What the right-hand side of the header reports.
- *
- *  Three states and no fourth: inside the refresh window it states the age in
- *  days, past the window it carries the label, and with no pack it says
- *  nothing at all. Nothing here judges whether the pack is still good to use,
- *  and no state disables anything. */
-export type HeaderAge =
-  | { kind: 'none' }
-  | { kind: 'checked'; days: number; text: string }
-  | { kind: 'not-recently-verified'; days: number; text: string };
+/** What the right-hand side of the header reports: the age in days, or
+ *  nothing at all with no pack. Nothing here judges whether the pack is still
+ *  good to use, and no state disables anything. */
+export type HeaderAge = { kind: 'none' } | { kind: 'checked'; days: number; text: string };
 
 /** The header reports the OLDEST complete pack: with several saved, the oldest
  *  is the honest figure to report rather than the newest. */
@@ -28,16 +22,12 @@ export function oldestPack(packs: Pack[]): Pack | null {
   );
 }
 
-/** The window is inclusive, exactly as core/pack.ts freshness() reads it: day 30
- *  is still 'Checked 30 days ago', and the label starts on day 31. The day
- *  arithmetic is savedAgeDays(), shared with the pack card — only the wording
- *  differs, deliberately. */
+/** The day arithmetic is savedAgeDays(), shared with the pack card — only the
+ *  wording differs, deliberately. */
 export function headerAge(now: number, verifiedAt: number | null): HeaderAge {
   if (verifiedAt === null) return { kind: 'none' };
   const days = savedAgeDays(now, verifiedAt);
-  return days > PACK_REFRESH_DAYS
-    ? { kind: 'not-recently-verified', days, text: copy.NOT_RECENTLY_VERIFIED_LABEL }
-    : { kind: 'checked', days, text: copy.CHECKED_DAYS_AGO(days) };
+  return { kind: 'checked', days, text: copy.CHECKED_DAYS_AGO(days) };
 }
 
 const melbourneDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Melbourne' });
@@ -92,9 +82,8 @@ export function homeView(now: number, packs: Pack[]): HomeView {
   return {
     packs: [...packs]
       .sort((a, b) => b.verifiedAt - a.verifiedAt)
-      // The pack card's own wording, unchanged: 'Saved N days ago', and past the
-      // window the mandated 'Saved N days ago, not recently verified'.
-      .map((pack) => ({ pack, ageLine: freshness(now, pack.verifiedAt).label })),
+      // The pack card's own wording: 'Saved N days ago'.
+      .map((pack) => ({ pack, ageLine: packAgeLabel(now, pack.verifiedAt) })),
     preparation: preparationLine(now),
   };
 }

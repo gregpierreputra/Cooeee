@@ -502,8 +502,8 @@ export type StoredRehearsal = Rehearsal | UnfinishedRehearsal;
  *  It is never expired and never removed by the product. A condition-persistent
  *  gap may recur, and the answer to that is the DATE on screen, not the product
  *  quietly deciding a tick has gone stale — the same treatment EPIC 1 gives a
- *  pack past its freshness window, which stays fully usable and plainly dated
- *  while the reader judges it.
+ *  pack however old it is, which stays fully usable and plainly dated while
+ *  the reader judges it.
  *
  *  The reader may remove their own completion, and that is a different act from
  *  the product removing it: one is a person correcting their own record, the

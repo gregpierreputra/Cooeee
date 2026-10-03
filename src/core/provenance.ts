@@ -1,4 +1,4 @@
-import { DTP_DATASET_URL, MS_PER_DAY, OFFICIAL_DOMAINS, PACK_REFRESH_DAYS } from './constants';
+import { DTP_DATASET_URL, MS_PER_DAY, OFFICIAL_DOMAINS } from './constants';
 import * as copy from './copy';
 import type {
   CompletePackContent,
@@ -84,14 +84,12 @@ export function provenanceView(now: number, source: Source): {
   publisher: string;
   savedOn: string;
   age: string;
-  stale: boolean;
 } {
   const days = savedAgeDays(now, source.retrievedAt);
   return {
     publisher: source.publisher,
     savedOn: formatSavedDate(source.retrievedAt),
     age: days === 0 ? copy.SOURCE_TODAY : copy.ITEM_DAYS_AGO(days),
-    stale: days > PACK_REFRESH_DAYS,
   };
 }
 

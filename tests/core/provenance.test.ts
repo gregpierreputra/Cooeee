@@ -60,20 +60,11 @@ describe('E1-US2 saved date and age', () => {
     expect(formatGazettalDate('')).toBe('');
   });
 
-  it.each([
-    [29, false],
-    [30, false],
-    [31, true],
-  ])('marks day %i stale only after the inclusive 30-day window', (days, stale) => {
-    expect(provenanceView(NOW, source({ retrievedAt: daysAgo(days) })).stale).toBe(stale);
-  });
-
   it('gives the publisher, the saved date and same-day wording as separate facts', () => {
     expect(provenanceView(NOW, source({ retrievedAt: NOW }))).toEqual({
       publisher: 'Country Fire Authority',
       savedOn: formatSavedDate(NOW),
       age: copy.SOURCE_TODAY,
-      stale: false,
     });
   });
 

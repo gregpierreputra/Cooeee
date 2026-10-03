@@ -14,7 +14,6 @@ export const PLACES_OFFERED = 5;
 /** How many of the nearest official places BlackSky points at from the live
  *  fix, beyond the ones saved in the pack. */
 export const NEARBY_PLACES = 3;
-export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
 /** The longest personal note a pack takes. A bound on the user's own text,
  *  enforced where it is written, not a limit on the official content. */
 export const NOTE_MAX_CHARS = 2000;
@@ -379,8 +378,8 @@ export const OFFICIAL_DOMAINS = [
 export const MS_PER_DAY = 86_400_000;
 
 /** Recovery programs change faster than places do, so the pack's recovery
- *  snapshot has its own window, separate from PACK_REFRESH_DAYS and the
- *  SNAPSHOT_MAX_AGE_DAYS build gate. Label only; the programs stay shown. */
+ *  snapshot has its own window, separate from the SNAPSHOT_MAX_AGE_DAYS build
+ *  gate. Label only; the programs stay shown. */
 export const RECOVERY_STALE_DAYS = 90;
 
 /** The longest gap between "I'm going now" and "I went there" that is still

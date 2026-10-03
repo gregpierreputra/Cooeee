@@ -18,7 +18,6 @@ import {
   NAV_NEARBY,
   NAV_REHEARSE,
   NO_PACK_SAVED,
-  NOT_RECENTLY_VERIFIED_LABEL,
   OFFLINE_NOTICE,
   ONLINE_NOTICE,
   PACK_SETTINGS,
@@ -42,21 +41,11 @@ test.describe('the header reports the saved pack age', () => {
     await expect(page.getByText(CHECKED_DAYS_AGO(0), { exact: true })).toBeVisible();
   });
 
-  // TC-1.2.6-B — the window is inclusive: day 30 is not yet labelled.
-  test('still states the age at exactly 30 days, and carries no label', async ({ page }) => {
-    await page.goto(home('?days=30'));
-    await expect(page.getByText(CHECKED_DAYS_AGO(30), { exact: true })).toBeVisible();
-    await expect(page.getByText(NOT_RECENTLY_VERIFIED_LABEL, { exact: true })).toHaveCount(0);
-  });
-
-  // TC-1.2.6-C
-  test('carries the label from day 31', async ({ page }) => {
+  // An old pack states its age plainly, with no old-data label, and stays usable.
+  test('states the age plainly at day 31, and the pack stays usable', async ({ page }) => {
     await page.goto(home('?days=31'));
-    await expect(page.getByText(NOT_RECENTLY_VERIFIED_LABEL, { exact: true })).toBeVisible();
-    await expect(page.getByText('Checked')).toHaveCount(0);
-
-    // Past the window the pack is labelled, never disabled: the way in is still
-    // there and still tappable.
+    await expect(page.getByText(CHECKED_DAYS_AGO(31), { exact: true })).toBeVisible();
+    await expect(page.getByText(/not recently verified/i)).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Ferny Creek' })).toBeEnabled();
   });
 
@@ -69,7 +58,6 @@ test.describe('the header reports the saved pack age', () => {
     // No dash, no zero, no placeholder standing in for an age that does not exist.
     const header = page.locator('.app-header');
     await expect(header.getByText('Checked')).toHaveCount(0);
-    await expect(header.getByText(NOT_RECENTLY_VERIFIED_LABEL)).toHaveCount(0);
     await expect(header.locator('.app-header-age')).toHaveCount(0);
 
     // The way into BlackSky is reachable with nothing saved.

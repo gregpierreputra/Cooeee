@@ -76,17 +76,13 @@ test('US2 AC3 opens the same provenance offline with zero requests and no loadin
   expect(requests).toBe(0);
 });
 
-test('US2 AC4 labels day 31 without disabling or hiding pack functions', async ({ page }) => {
+test('an item saved 31 days ago states its age, with no old-data note, and stays usable', async ({ page }) => {
   await page.goto(`${DETAIL_URL}?mode=stale`);
   await expect(page.locator('.pack-detail h1')).toBeVisible();
   await openSources(page);
 
   await expect(page.locator('.source-rows dd', { hasText: '31 days ago' }).locator('visible=true')).toHaveCount(2);
-  await expect(page.getByText('Not recently verified', { exact: true }).locator('visible=true')).toHaveCount(2);
-  await expect(page.getByText(
-    'Still works. Refresh it when next online.',
-    { exact: true },
-  ).locator('visible=true')).toHaveCount(2);
+  await expect(page.getByText(/not recently verified|refresh it when next online/i)).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Web page' }).locator('visible=true')).toHaveCount(2);
   expect(await page.locator('.provenance-item').evaluateAll(
     (items) => items.every((item) => !item.classList.contains('disabled')),

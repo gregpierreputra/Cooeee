@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MS_PER_DAY, PACK_REFRESH_DAYS } from '../../src/core/constants';
+import { MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 import {
   headerAge,
@@ -36,25 +36,15 @@ describe('header age', () => {
   });
 
   it('still states the age at exactly 30 days — the window is inclusive', () => {
-    expect(headerAge(NOW, daysAgo(PACK_REFRESH_DAYS))).toEqual({
+    expect(headerAge(NOW, daysAgo(30))).toEqual({
       kind: 'checked',
       days: 30,
       text: 'Checked 30 days ago',
     });
   });
 
-  it('carries the label from day 31, the first day past the window', () => {
-    expect(headerAge(NOW, daysAgo(PACK_REFRESH_DAYS + 1))).toEqual({
-      kind: 'not-recently-verified',
-      days: 31,
-      text: 'Not recently verified',
-    });
-  });
-
-  it('carries the label, and no day count in words, well past the window', () => {
-    const age = headerAge(NOW, daysAgo(44));
-    expect(age).toEqual({ kind: 'not-recently-verified', days: 44, text: 'Not recently verified' });
-    expect(age.kind === 'not-recently-verified' && age.text).not.toContain('44');
+  it('states the age plainly however old the pack is, with no old-data label', () => {
+    expect(headerAge(NOW, daysAgo(44))).toEqual({ kind: 'checked', days: 44, text: 'Checked 44 days ago' });
   });
 
   // TC-1.2.6-D. No pack, no age: the header states nothing rather than
@@ -90,9 +80,7 @@ describe('the pack the header reports', () => {
     const older = pack({ id: 'older', verifiedAt: daysAgo(40) });
     const newer = pack({ id: 'newer', verifiedAt: daysAgo(1) });
     expect(oldestPack([newer, older])).toBe(older);
-    expect(headerAge(NOW, oldestPack([newer, older])!.verifiedAt).kind).toBe(
-      'not-recently-verified',
-    );
+    expect(headerAge(NOW, oldestPack([newer, older])!.verifiedAt)).toMatchObject({ days: 40 });
   });
 });
 
@@ -193,11 +181,10 @@ describe('the home view', () => {
 
   // The two wordings are deliberately different, and mean different things: the
   // card reports when the pack was written, the header when it was last checked.
-  it('keeps the card wording and the header wording distinct past the window', () => {
+  it('keeps the card wording and the header wording distinct', () => {
     const view = homeView(NOW, [pack({ verifiedAt: daysAgo(44) })]);
-    expect(view.packs[0].ageLine).toBe('Saved 44 days ago, not recently verified');
-    const age = headerAge(NOW, daysAgo(44));
-    expect(age.kind === 'not-recently-verified' && age.text).toBe('Not recently verified');
+    expect(view.packs[0].ageLine).toBe('Saved 44 days ago');
+    expect(headerAge(NOW, daysAgo(44)).kind === 'checked' && headerAge(NOW, daysAgo(44))).toMatchObject({ text: 'Checked 44 days ago' });
   });
 
   it('carries one preparation line and its source in every state', () => {

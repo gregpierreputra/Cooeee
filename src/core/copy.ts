@@ -23,9 +23,6 @@ export const FIX_AGE = (s: number) => `GPS fix ${s} s old. Direction may have ch
  *  may well cover this place, and the picker says so beside it. */
 export const OUTSIDE_AREAS = "You're outside this pack's area";
 
-export const NOT_RECENTLY_VERIFIED = (days: number) =>
-  `Saved ${days} days ago, not recently verified`;
-
 // Shared vocabulary
 /** The eight compass points by name, index 0 = north, one every 45 degrees.
  *  Read by core/geo.ts cardinalPoint(). Names, not letters: a lone "E" beside
@@ -159,8 +156,6 @@ export const SOURCE_TODAY = 'Today';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
 export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;
-export const NOT_RECENTLY_VERIFIED_LABEL = 'Not recently verified';
-export const STALE_PACK_STILL_WORKS = 'Still works. Refresh it when next online.';
 export const ITEM_LEFT_OUT = 'One item left out';
 export const ITEMS_LEFT_OUT = (count: number) => `${count} items left out`;
 export const ITEM_LEFT_OUT_REASON = 'No publisher or date was given.';

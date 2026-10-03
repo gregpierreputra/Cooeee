@@ -917,14 +917,12 @@ p.caution {
 /* ── Pack detail and provenance ────────────────────────────────────────────── */
 
 .pack-detail header,
-.provenance,
-.stale-note {
+.provenance {
   display: grid;
   gap: 0.5rem;
 }
 
-.provenance p,
-.stale-note p {
+.provenance p {
   margin: 0;
 }
 
@@ -967,20 +965,6 @@ p.caution {
 .source-detail {
   color: var(--ink-2);
   font-size: var(--step-s);
-}
-
-/* Prominence through weight and a hairline — never an alert colour. */
-.stale-note {
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
-}
-.stale-note p:first-child {
-  font-weight: var(--w-bold);
-  color: var(--ink);
-}
-.stale-note p + p {
-  font-size: var(--step-s);
-  color: var(--ink-2);
 }
 
 .provenance-item a {
