@@ -1,6 +1,6 @@
 import { keptDiff, packProgramsFor } from '../core/recover';
 import { exactTextBytes } from '../core/pack-offer';
-import type { Pack, PackFile } from '../core/types';
+import type { Pack, PackFile, RecoveryProgram } from '../core/types';
 import { db, listCompletePacks } from './db';
 import { fileMeta, manifestGroup } from './integrity';
 import { currentCopyName, loadSourceFiles } from './source-files';
@@ -11,9 +11,8 @@ import { currentCopyName, loadSourceFiles } from './source-files';
 // row from an older snapshot build, or a page copy the register no longer
 // names, is replaced with the current one, so a pack keeps up on ordinary days.
 
-async function syncPack(pack: Pack, kept: readonly string[]): Promise<void> {
+async function syncPack(pack: Pack, kept: readonly string[], programs: RecoveryProgram[]): Promise<void> {
   const have = await db.packPrograms.where('packId').equals(pack.id).toArray();
-  const programs = await db.programs.toArray();
   const stale = have
     .filter((row) => programs.some((p) => p.id === row.programId && p.source.retrievedAt !== row.source.retrievedAt))
     .map((row) => row.programId);
@@ -22,20 +21,23 @@ async function syncPack(pack: Pack, kept: readonly string[]): Promise<void> {
     ...have.filter((row) => !diff.remove.includes(row.programId)),
     ...packProgramsFor(pack.id, programs, diff.add),
   ];
+  // The page copies the pack is missing or holds an older copy of, one per
+  // page whatever shares it. A copy that could not be read this visit is asked
+  // for again next visit. Checked on keys alone (a file's id is packId:name), so
+  // the usual visit, with nothing to change, reads no file bytes at all.
+  const keptUrls = new Set(rows.map((row) => row.officialUrl));
+  const isCurrent = (file: PackFile) => file.name === currentCopyName(file.url);
+  const keys = new Set(await db.files.where('packId').equals(pack.id).primaryKeys());
+  const missing = [...keptUrls].filter((url) => {
+    const name = currentCopyName(url);
+    return name !== undefined && !keys.has(`${pack.id}:${name}`);
+  });
+  if (diff.add.length === 0 && diff.remove.length === 0 && missing.length === 0) return;
   const [layers, destinations, stored] = await Promise.all([
     db.layers.where('packId').equals(pack.id).toArray(),
     db.destinations.where('packId').equals(pack.id).toArray(),
     db.files.where('packId').equals(pack.id).toArray(),
   ]);
-
-  // The page copies the pack is missing or holds an older copy of, one per
-  // page whatever shares it. A copy that could not be read this visit is asked
-  // for again next visit.
-  const keptUrls = new Set(rows.map((row) => row.officialUrl));
-  const isCurrent = (file: PackFile) => file.name === currentCopyName(file.url);
-  const missing = [...keptUrls].filter((url) =>
-    currentCopyName(url) !== undefined && !stored.some((file) => file.url === url && isCurrent(file)));
-  if (diff.add.length === 0 && diff.remove.length === 0 && missing.length === 0) return;
   const added = (await Promise.all(missing.map((url) => loadSourceFiles(pack.id, [url]).catch(() => [])))).flat();
   const removedUrls = have
     .filter((row) => diff.remove.includes(row.programId))
@@ -90,7 +92,8 @@ let queue: Promise<void> = Promise.resolve();
 /** Bring every complete pack in line with the kept list. */
 export function syncKeptIntoPacks(kept: readonly string[]): Promise<void> {
   const run = queue.then(async () => {
-    for (const pack of await listCompletePacks()) await syncPack(pack, kept);
+    const [packs, programs] = await Promise.all([listCompletePacks(), db.programs.toArray()]);
+    for (const pack of packs) await syncPack(pack, kept, programs);
   });
   queue = run.catch(() => {});
   return run;

@@ -18,6 +18,8 @@ import Recover from '../../src/ui/Recover';
 import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import { startRun } from '../../src/ui/Rehearsal/run-state';
+import Drill from '../../src/ui/Drill/Drill';
+import { markDrilled } from '../../src/ui/Drill/drill-state';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BackBar from '../../src/ui/components/BackBar';
 import BottomNav from '../../src/ui/components/BottomNav';
@@ -358,7 +360,13 @@ if (window.location.pathname === '/recover') {
     await db.packs.put(savedPack);
     await db.packPrograms.put({ ...recoverPrograms[0], id: `${savedPack.id}:recover:payment`, packId: savedPack.id, programId: 'recover:payment' });
   }
-  recoverFlow = <Recover now={recoverNow} />;
+  // With the app's back bar, which goes up from a chosen need to the list.
+  recoverFlow = (
+    <>
+      <BackBar />
+      <Recover now={recoverNow} />
+    </>
+  );
 }
 
 function DetailLauncher() {
@@ -740,6 +748,12 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
   rehearseFlow = <RehearsalHarness />;
 }
 if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
+// E9. The drill stands in front of every rehearsal. The rehearsal's own specs
+// step past it here, as a person who skipped it would; ?drill=1 keeps it.
+if (new URLSearchParams(window.location.search).get('drill') !== '1') {
+  markDrilled('rehearse-pack');
+  markDrilled('saved-pack');
+}
 
 
 // The remount control is HARNESS FURNITURE, not product UI. It is rendered
@@ -846,6 +860,13 @@ if (window.location.pathname === '/rehearse-choose') {
   );
 }
 
+// E9. The drill on its own, with a minute as short as the spec asks for.
+// ?seconds=3 ends it almost at once; the app never passes this.
+const drillSeconds = Number(new URLSearchParams(window.location.search).get('seconds')) || undefined;
+const drillFlow = (
+  <Drill packId="saved-pack" seconds={drillSeconds} onDone={() => { document.title = 'drill done'; }} />
+);
+
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
 const areaFlow = (
   <Search
@@ -862,9 +883,12 @@ const areaFlow = (
 // Screens link back to the pack list, so they need router context. The
 // harness has no routes of its own, so ONE in-memory router keeps every
 // component mountable in isolation without a second application shell.
-// The rehearsal harness starts on its own path, as the app does, so the back
-// bar (which hides on the home path) is on screen and carries the rehearsal bar.
-const initialEntries = window.location.pathname === '/rehearse' ? [REHEARSE_PATH] : undefined;
+// The rehearsal and Recover harnesses start on their own paths, as the app
+// does, so the back bar knows where it is: it carries the rehearsal bar, and
+// goes up from a chosen need to Recover's list.
+const initialEntries = window.location.pathname === '/rehearse' ? [REHEARSE_PATH]
+  : window.location.pathname === '/recover' ? ['/recover']
+  : undefined;
 
 createRoot(root).render(
   <StrictMode>
@@ -879,6 +903,7 @@ createRoot(root).render(
         : window.location.pathname === '/recover' ? recoverFlow
         : window.location.pathname === '/rehearse' ? rehearseFlow
         : window.location.pathname === '/rehearse-choose' ? chooseFlow
+        : window.location.pathname === '/drill' ? drillFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/search' ? (

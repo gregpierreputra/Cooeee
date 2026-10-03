@@ -56,6 +56,20 @@ if (missing.length > 0) {
   console.error(`snapshot-age: the index names ${missing.join(', ')}, which is not in public/data`);
   process.exit(1);
 }
+
+// The app loads the NSP and recovery snapshots by a fixed path, not through the
+// index. A refresh that moves the index on without that path would pass on fresh
+// stamps while every device keeps loading the old file.
+for (const [key, module, constant] of [
+  ['nsp', 'src/data/nsp.ts', 'NSP_SNAPSHOT_PATH'],
+  ['recovery', 'src/data/recovery.ts', 'RECOVERY_SNAPSHOT_PATH'],
+]) {
+  const loaded = readFileSync(module, 'utf8').match(new RegExp(`${constant} = '/data/([^']+)'`))?.[1];
+  if (loaded !== index[key]?.file) {
+    console.error(`snapshot-age: ${module} loads ${loaded ?? 'nothing'}, but the index names ${index[key]?.file}`);
+    process.exit(1);
+  }
+}
 if (existsSync(SOURCES)) collect(JSON.parse(readFileSync(SOURCES, 'utf8')));
 
 if (stamps.length === 0) {

@@ -1,6 +1,8 @@
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
+import Glyph from '../components/Glyph';
 import Head from './Head';
+import DrillTile from '../Drill/DrillTile';
 import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
 
 /** E5-US1-AC1 — the user says what the rehearsal is run without.
@@ -21,13 +23,17 @@ import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-con
 export default function Condition({
   packId,
   onChoose,
+  onDrill,
 }: {
   packId: string;
   onChoose: (condition: RehearsalCondition) => void;
+  /** Play the drill again, before choosing. */
+  onDrill: () => void;
 }) {
   return (
     <main className="page rehearsal-condition">
       <Head />
+      <DrillTile onPlay={onDrill} />
       <h2>{copy.CHOOSE_CONDITION_HEADING}</h2>
 
       <ul className="list condition-list">
@@ -42,7 +48,10 @@ export default function Condition({
               className="candidate-action condition-action"
               onClick={() => onChoose(row.condition)}
             >
-              <span className="condition-label">{row.label}</span>
+              <span className="condition-label with-glyph">
+                <Glyph kind={row.condition === 'no-data' ? 'offline' : 'locate'} line />
+                {row.label}
+              </span>
               <span className="condition-detail">{row.detail}</span>
             </button>
           </li>

@@ -6,7 +6,7 @@ const ABSENCE_LINE = 'No official place of last resort is published for this are
 
 test('AC3 a saved pack with no published places states so plainly', async ({ page }) => {
   await page.goto(URL);
-  await expect(page.getByRole('heading', { name: 'Your pack' })).toBeVisible();
+  await expect(page.locator('.pack-detail h1')).toBeVisible();
   await expect(page.getByText(ABSENCE_LINE)).toBeVisible();
 });
 

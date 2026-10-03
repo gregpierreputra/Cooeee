@@ -7,7 +7,7 @@
 // build:data:nsp, whose snapshot names the Country Fire Authority page).
 
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { DTP_DATASET_URL, VIC_EXTENT } from '../src/core/constants.ts';
 
@@ -75,6 +75,12 @@ for (const { url, name, mustContain, optional } of pages) {
 await browser.close();
 
 writeFileSync(registerUrl, `${JSON.stringify(sources, null, 2)}\n`);
+// Copies the register no longer names (an earlier date, or a page skipped this
+// time) are removed, since the service worker precaches every pdf here.
+const kept = new Set(sources.map((source) => source.name));
+for (const file of readdirSync(new URL('sources/', dataDir))) {
+  if (file.endsWith('.pdf') && !kept.has(file)) rmSync(new URL(`sources/${file}`, dataDir));
+}
 
 /** The page as a PDF, or a thrown reason; the browser page is always closed. */
 async function renderPdf(url, mustContain, name) {

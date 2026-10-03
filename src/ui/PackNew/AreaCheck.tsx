@@ -1,7 +1,11 @@
 import { areaCheckView } from '../../core/area-check';
+import { DTP_PUBLISHER } from '../../core/constants';
 import * as copy from '../../core/copy';
 import type { BushfireAreaResult, PendingPlace } from '../../core/types';
+import Glyph from '../components/Glyph';
+import { SourceRing } from '../components/ProvenanceLine';
 import StatusPage from '../components/StatusPage';
+import FlowSteps from './FlowSteps';
 
 export type AreaCheckState =
   | { kind: 'checking' }
@@ -23,7 +27,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
     return (
       <StatusPage
         page="area-page"
-        kicker={copy.EYEBROW_AREA_RESULT}
+        kicker={<FlowSteps at={1} />}
         card={<p>{copy.AREA_CHECK_IN_PROGRESS}</p>}
       />
     );
@@ -33,7 +37,7 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
     return (
       <StatusPage
         page="area-page"
-        kicker={copy.EYEBROW_AREA_RESULT}
+        kicker={<FlowSteps at={1} />}
         cardClass="area-content"
         card={
           <>
@@ -57,16 +61,48 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
   }
 
   const view = areaCheckView(state.result);
+  const inside = state.result.status === 'present';
+  // Inside, only the words that say so are in amber.
+  const [before, after] = view.resultLine.split(copy.INSIDE_BPA_TERM);
   return (
     <StatusPage
       page="area-page"
-      kicker={copy.EYEBROW_AREA_RESULT}
+      kicker={<FlowSteps at={1} />}
       cardClass="area-result"
       card={
         <>
-          <h1>{view.resultLine}</h1>
-          <p>{view.publisherLine}</p>
-          <p>{view.priorityLine}</p>
+          {/* Amber, the flame and the coloured words, only inside a designated
+              area. Every other answer is plain, with the calm layer drawing.
+              The words carry the meaning either way. */}
+          <div className="card-head">
+            {inside ? (
+              <span className="tone-amber"><Glyph kind="drill" /></span>
+            ) : (
+              <Glyph kind="layer" />
+            )}
+            <h1>
+              {inside ? (
+                <>
+                  {before}
+                  <strong className="key-term">{copy.INSIDE_BPA_TERM}</strong>
+                  {after}
+                </>
+              ) : (
+                view.resultLine
+              )}
+            </h1>
+          </div>
+          {view.cautionLine && <p className="muted">{view.cautionLine}</p>}
+          <SourceRing
+            rows={[
+              { label: copy.SOURCE_PUBLISHED_BY, value: DTP_PUBLISHER },
+              { label: copy.SOURCE_SAVED, value: view.savedOn },
+            ]}
+          />
+          <p className="with-glyph">
+            <Glyph kind="calls" line />
+            {view.priorityLine}
+          </p>
         </>
       }
       actions={

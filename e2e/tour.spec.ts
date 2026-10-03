@@ -21,7 +21,7 @@ test('starts after the acknowledgement, steps across screens, and skips', async 
 
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText(count(1));
-  await expect(dialog.getByRole('button', { name: TOUR_BACK })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: TOUR_BACK })).toHaveCount(0);
   await expect(page.locator('.tour-spot')).toBeVisible();
 
   await dialog.getByRole('button', { name: TOUR_NEXT }).click();

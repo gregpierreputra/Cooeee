@@ -21,8 +21,16 @@ export function useWakeLock(active: boolean) {
       lock = null;
       navigator.wakeLock.request('screen').then(
         (held) => {
-          if (over) void held.release(); // granted after the need ended: let it go
-          else lock = held;
+          if (over) {
+            void held.release(); // granted after the need ended: let it go
+            return;
+          }
+          lock = held;
+          // The phone may drop the lock on its own (power saving) while the
+          // screen is still in use, so a release nobody asked for asks again.
+          held.addEventListener('release', () => {
+            if (lock === held && !over) request();
+          });
         },
         () => {},
       );

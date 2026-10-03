@@ -13,14 +13,14 @@ export default function StatusPage({
   actions,
 }: {
   page: string;
-  kicker: string;
+  kicker: ReactNode;
   cardClass?: string;
   card: ReactNode;
   actions?: ReactNode;
 }) {
   return (
     <main className={`page ${page}`}>
-      <span className="kicker">{kicker}</span>
+      {typeof kicker === 'string' ? <span className="kicker">{kicker}</span> : kicker}
       <div className={cardClass ? `card ${cardClass}` : 'card'} role="status" aria-live="polite">
         {card}
       </div>

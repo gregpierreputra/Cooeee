@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 
 const COUNT = 60;
 const LINK_PX = 110;
+/** About 30 frames a second: smooth for motes this slow, at half the battery. */
+const FRAME_MS = 33;
 const ACCENT = '45, 212, 191'; // the accent teal, as rgb channels
 
 type Mote = { x: number; y: number; r: number; drift: number; sway: number; phase: number };
@@ -16,8 +18,8 @@ const mote = (w: number, h: number): Mote => ({
 });
 
 /** The call carrying: motes rising slowly like embers, hairlines forming and
- *  dissolving between the ones that pass close. Drawn behind the welcome and
- *  the disclosure at a low alpha, so the words stay the thing on the screen.
+ *  dissolving between the ones that pass close. Drawn behind every screen but
+ *  BlackSky at a low alpha, so the words stay the thing on the screen.
  *  Decorative and inert: no pointer, no storage, no request. Stops while the
  *  tab is hidden, and under reduced motion draws one still frame. */
 export default function Particles() {
@@ -38,20 +40,26 @@ export default function Particles() {
       canvas.height = innerHeight * scale;
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
       motes = Array.from({ length: COUNT }, () => mote(innerWidth, innerHeight));
+      // Resizing clears the canvas, and a still frame has no next frame to redraw it.
+      if (still) draw(performance.now());
     };
 
     const draw = (now: number) => {
+      if (!still && now - last < FRAME_MS) {
+        frame = requestAnimationFrame(draw);
+        return;
+      }
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
       const w = innerWidth;
       const h = innerHeight;
       ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = `rgba(${ACCENT}, 0.35)`;
       for (const m of motes) {
         m.y -= m.drift * dt;
         if (m.y < -4) m.y = h + 4;
         m.phase += dt * 0.6;
         const x = m.x + Math.sin(m.phase) * m.sway;
-        ctx.fillStyle = `rgba(${ACCENT}, 0.35)`;
         ctx.beginPath();
         ctx.arc(x, m.y, m.r, 0, Math.PI * 2);
         ctx.fill();

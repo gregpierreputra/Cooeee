@@ -14,7 +14,6 @@ export const PLACES_OFFERED = 5;
 /** How many of the nearest official places BlackSky points at from the live
  *  fix, beyond the ones saved in the pack. */
 export const NEARBY_PLACES = 3;
-export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
 /** The longest personal note a pack takes. A bound on the user's own text,
  *  enforced where it is written, not a limit on the official content. */
 export const NOTE_MAX_CHARS = 2000;
@@ -109,9 +108,12 @@ export const DTP_DATASET_URL =
  *  importing the module that fetches it. */
 export const AREA_MAP_NAME = 'bushfire-prone-area-map.png';
 /** How far that picture reaches each way from the saved place, in
- *  kilometres: 8 km across, close enough to read roads, creeks and place names.
- *  A picture size only; the pack's 6 km area rule is PACK_RADIUS_KM. */
-export const AREA_MAP_HALF_KM = 4;
+ *  kilometres: 40 km across, the wider area to explore, zoomed in on the pack
+ *  page to read roads, creeks and place names. A picture size only; the pack's
+ *  6 km area rule is PACK_RADIUS_KM. */
+export const AREA_MAP_HALF_KM = 20;
+/** The most a whole pack may take on the phone, map included. */
+export const PACK_MAX_BYTES = 15 * 1_048_576;
 
 // The arrows are drawn from any fix; these decide when the screen says the fix
 // is old or vague beside them, and when a marked-position estimate expires.
@@ -134,9 +136,12 @@ export const HOLD_VIBRATE_MS = 100;
 export const HOLD_LEAVE_VIBRATE_MS = 40;
 // How long the line saying BlackSky was not opened stays on screen.
 export const BLOCKED_NOTICE_MS = 8_000;
-export const TICK_MS = 5_000;
+// BlackSky's clock: the fix's age, a small move and a marked estimate's growing
+// uncertainty all catch up within one tick, so what is on screen is never more
+// than a second behind a person who is walking.
+export const TICK_MS = 1_000;
 // A position this far from the one on screen is shown at once, not at the next
-// tick. Smaller moves are sensor noise and wait, which saves the battery.
+// tick. Smaller moves are sensor noise and wait for the tick.
 export const FIX_PUBLISH_M = 5;
 /** The readout's steadiness (28 Sep review): the distance and the compass point
  *  on screen change only when the place, as seen from the new position, has
@@ -373,8 +378,8 @@ export const OFFICIAL_DOMAINS = [
 export const MS_PER_DAY = 86_400_000;
 
 /** Recovery programs change faster than places do, so the pack's recovery
- *  snapshot has its own window, separate from PACK_REFRESH_DAYS and the
- *  SNAPSHOT_MAX_AGE_DAYS build gate. Label only; the programs stay shown. */
+ *  snapshot has its own window, separate from the SNAPSHOT_MAX_AGE_DAYS build
+ *  gate. Label only; the programs stay shown. */
 export const RECOVERY_STALE_DAYS = 90;
 
 /** The longest gap between "I'm going now" and "I went there" that is still
@@ -393,6 +398,8 @@ export const NEED_CHANNELS = {
   documents: 'https://www.servicesaustralia.gov.au/natural-disaster-support',
 } as const;
 export const GENERAL_CHANNEL_URL = 'https://www.disasterassist.gov.au/';
+/** Red Cross's register for letting family know you are safe, live during an emergency. */
+export const REGISTER_FIND_REUNITE_URL = 'https://register.redcross.org.au/';
 /** The VicEmergency hotline, the one number every call list opens with. */
 export const HOTLINE_NUMBER = '1800 226 226';
 
@@ -400,6 +407,8 @@ export const HOTLINE_NUMBER = '1800 226 226';
  *  the list can never grow without bound. */
 export const KEPT_KEY = 'cooeee.kept.v1';
 export const KEPT_MAX = 50;
+/** R1: the roadmap steps ticked done, as step ids. */
+export const ROADMAP_DONE_KEY = 'cooeee.roadmap.v1';
 
 /** Unit constant. The metres↔kilometres display cutoff and divisor for
  * destination.formatDistanceM — not a safety threshold. */
@@ -438,4 +447,6 @@ export const NEARBY_SYNC_TIMEOUT_MS = 15_000;
 export const NEARBY_RESYNC_MS = 5 * 60_000; // while the screen stays open and online
 export const NEARBY_CLOCK_MS = 60_000; // how often the age labels are re-read
 export const NEARBY_FIX_TIMEOUT_MS = 15_000;
+/** How long Nearby shows Searching… at least, so a search is always seen to happen. */
+export const SEARCH_SHOW_MS = 500;
 export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is fine

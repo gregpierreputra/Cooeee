@@ -97,30 +97,30 @@ describe("the journey screen's words", () => {
     expect(before).toEqual([
       'Rehearse the way there',
       'This rehearsal is without mobile data.',
-      'A rehearsal is a trip to one of the official places saved with this pack, in calm conditions, with BlackSky open. Go the way you would on the day.',
-      'It is practice at knowing the way: how long it takes, and which turns you take.',
+      'A calm-day trip to a saved official place, with BlackSky open.',
+      'Practice at knowing the way, how long it takes and which turns you take.',
       "I'm going now",
     ]);
     expect(running).toEqual([
       'Practising the way',
-      'Go to one of these places in calm conditions, with BlackSky open. When you stop, come back here and say how it ended.',
+      'Go with BlackSky open. Come back here to say how it ended.',
       'I have arrived',
       'End without going',
     ]);
   });
 
-  it('ask for a trip in calm conditions, with BlackSky open, before and during, however she gets there', () => {
+  it('ask for a calm-day trip before, and BlackSky open before and during, however she gets there', () => {
     [copy.JOURNEY_BEFORE_HEADING, copy.JOURNEY_WHAT_IT_IS, copy.JOURNEY_RUNNING_DETAIL].forEach((line) => {
       expect(line).not.toMatch(/foot|walk/i);
     });
+    expect(copy.JOURNEY_WHAT_IT_IS).toContain('calm-day trip');
     [copy.JOURNEY_WHAT_IT_IS, copy.JOURNEY_RUNNING_DETAIL].forEach((line) => {
-      expect(line).toContain('in calm conditions');
       expect(line).toContain('with BlackSky open');
     });
   });
 
   it('say it is practice at knowing the way', () => {
-    expect(copy.JOURNEY_WHAT_IT_IS_FOR).toContain('practice at knowing the way');
+    expect(copy.JOURNEY_WHAT_IT_IS_FOR).toContain('Practice at knowing the way');
   });
 
   it('never read as a plan for the day', () => {

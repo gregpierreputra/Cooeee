@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { NEED_CHANNELS } from '../src/core/constants';
 import * as copy from '../src/core/copy';
-import { acknowledgeFirstOpen, HARNESS } from './helpers';
+import { acknowledgeFirstOpen, HARNESS, openSources } from './helpers';
 
 const RECOVER_URL = `${HARNESS}/recover`;
 
@@ -12,7 +12,7 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   await page.goto(RECOVER_URL);
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   await expect(page.getByText(copy.RECOVER_PRIVACY_LINE)).toBeVisible();
-  await expect(page.getByRole('button')).toHaveCount(8);
+  await expect(page.getByRole('button')).toHaveCount(9);
 
   let requests = 0;
   await page.route('**', async (route) => { requests += 1; await route.continue(); });
@@ -20,15 +20,17 @@ test('a need in plain words lists the may-match programs from the pack, with zer
 
   await expect(page.getByRole('heading', { name: copy.NEED_PHRASE.money })).toBeVisible();
   await expect(page.getByText(copy.RECOVER_MAY_MATCH)).toBeVisible();
-  await expect(page.getByText(copy.RECOVER_ORDER_LINE)).toBeVisible();
   const cards = page.locator('.card');
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Example disaster payment');
   await expect(cards.first().locator('.monogram')).toHaveText('SA');
   await expect(cards.first().locator('.need-pill')).toHaveText([copy.NEED_PHRASE.money, copy.NEED_PHRASE.property]);
   await expect(page.locator('.card.kept')).toHaveCount(0);
-  await expect(cards.first()).toContainText('Published by Services Australia · Saved 9 September 2026');
-  await expect(cards.first()).toContainText(copy.LICENCE_LINE('CC BY 4.0'));
+  await openSources(page);
+  const source = cards.first().locator('.source-rows');
+  await expect(source).toContainText('Services Australia');
+  await expect(source).toContainText('9 September 2026');
+  await expect(source).toContainText('CC BY 4.0');
   await expect(cards.getByRole('link', { name: copy.OPEN_ORIGINAL_SOURCE }))
     .toHaveAttribute('href', 'https://www.servicesaustralia.gov.au/');
   await expect(cards.getByRole('link', { name: copy.CALL_LINE('180 22 66') }))
@@ -37,7 +39,7 @@ test('a need in plain words lists the may-match programs from the pack, with zer
   await expect(page.getByRole('button', { name: copy.KEEP })).toHaveCount(1);
   await expect(page.getByText(copy.RECOVER_STALE_LINE)).toHaveCount(0);
 
-  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
+  await page.getByRole('button', { name: copy.BACK, exact: true }).click();
   await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
   expect(requests).toBe(0);
 });
@@ -52,7 +54,9 @@ test('a need the pack holds nothing for says so and names the official channel',
   await expect(page.getByText(copy.VERIFIED_ON('9 September 2026'))).toBeVisible();
   await expect(page.getByRole('link', { name: copy.OFFICIAL_CHANNEL }))
     .toHaveAttribute('href', NEED_CHANNELS.documents);
-  await expect(page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED })).toBeVisible();
+  // Back at the top is the way to another need; nothing repeats it below.
+  await expect(page.getByRole('button', { name: copy.BACK, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Another need' })).toHaveCount(0);
 });
 
 // E4-US3-AC3: an old snapshot says so in words and the programs stay shown.
@@ -62,7 +66,8 @@ test('an old snapshot is labelled in plain words and still shown', async ({ page
 
   await expect(page.getByText(copy.RECOVER_STALE_LINE)).toBeVisible();
   await expect(page.locator('.card')).toHaveCount(1);
-  await expect(page.locator('.card')).toContainText(copy.LICENCE_LINE('Link only, all rights reserved'));
+  await openSources(page);
+  await expect(page.locator('.card .source-rows')).toContainText('Link only, all rights reserved');
 });
 
 // E4-US2-AC6: the source at a glance.
@@ -96,11 +101,10 @@ test('the bottom bar opens Recover', async ({ page }) => {
 // E4-US4-AC1: every program, any day, with no need chosen.
 test('every program in the pack can be read without choosing a need', async ({ page }) => {
   await page.goto(RECOVER_URL);
-  await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
-  await expect(page.getByRole('heading', { name: copy.EVERY_PROGRAM })).toBeVisible();
+  await page.getByRole('button', { name: copy.ALL_PROGRAMS }).click();
+  await expect(page.getByRole('heading', { name: copy.ALL_PROGRAMS })).toBeVisible();
   await expect(page.locator('.card')).toHaveCount(2);
   await expect(page.locator('.card').first()).toContainText('Australian Red Cross');
-  await expect(page.getByText(copy.RECOVER_ORDER_LINE)).toBeVisible();
 });
 
 // E4-US6: a kept program is remembered on the phone, listed first, and offered as its own row.
@@ -115,14 +119,44 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["recover:payment"]');
 
   await page.reload();
+  // The two tiles over the needs say the kept list is shared and the programs are on the phone.
+  await expect(page.getByRole('button', { name: `${copy.KEPT_PROGRAMS} ${copy.KEPT_PROGRAMS_DETAIL}` })).toBeVisible();
+  await expect(page.getByRole('button', { name: `${copy.ALL_PROGRAMS} ${copy.ALL_PROGRAMS_DETAIL}` })).toBeVisible();
   await page.getByRole('button', { name: copy.KEPT_PROGRAMS }).click();
   await expect(page.locator('.card')).toHaveCount(1);
-  await page.getByRole('button', { name: copy.CHOOSE_ANOTHER_NEED }).click();
-  await page.getByRole('button', { name: copy.EVERY_PROGRAM }).click();
+  // UAT: releasing it here keeps the card on the list until the person leaves.
+  await page.getByRole('button', { name: copy.KEPT }).click();
+  await expect(page.locator('.card')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: copy.KEEP })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: copy.KEEP }).click();
+  await page.getByRole('button', { name: copy.BACK, exact: true }).click();
+  await page.getByRole('button', { name: copy.ALL_PROGRAMS }).click();
   await expect(page.locator('.card').first()).toContainText('Example disaster payment');
-  await expect(page.getByText(copy.RECOVER_ORDER_LINE_KEPT)).toBeVisible();
   await page.getByRole('button', { name: copy.KEPT }).click();
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('[]');
+});
+
+// UR-US33: Clear all on the kept list asks once, and keeps the cards on screen.
+test('Clear all asks first, then releases every kept program', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.evaluate(() => window.localStorage.setItem('cooeee.kept.v1', '["recover:payment"]'));
+  await page.reload();
+  await page.getByRole('button', { name: copy.KEPT_PROGRAMS }).click();
+
+  const clear = page.getByRole('button', { name: copy.CLEAR_KEPT });
+  await clear.click();
+  await expect(page.getByText(copy.CLEAR_KEPT_QUESTION)).toBeVisible();
+  await expect(page.getByRole('button', { name: copy.KEEP_KEPT })).toBeFocused();
+  await page.getByRole('button', { name: copy.KEEP_KEPT }).click();
+  await expect(clear).toBeFocused();
+  expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["recover:payment"]');
+
+  await clear.click();
+  await page.getByRole('button', { name: copy.CLEAR_KEPT }).click();
+  expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('[]');
+  await expect(page.getByRole('status').filter({ hasText: copy.KEPT_CLEARED })).toBeVisible();
+  await expect(page.locator('.card')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: copy.KEEP })).toHaveAttribute('aria-pressed', 'false');
 });
 
 // E4-US5: the list leaves as plain text, with the caveat at the top.
@@ -161,8 +195,9 @@ test('the pack page sections off its saved programs, each with its own page copy
 test('every pack page section carries a glyph and opens and closes under one control', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
   const heads = page.locator('.pack-section-head');
-  await expect(heads).toHaveCount(5);
-  await expect(heads.locator('.glyph')).toHaveCount(5);
+  // Seven since R3 added the wellbeing lines.
+  await expect(heads).toHaveCount(7);
+  await expect(heads.locator('.glyph')).toHaveCount(7);
   const places = page.locator('.pack-section', { hasText: copy.DESTINATIONS_STEP_TITLE });
   await expect(places.locator('.card')).toHaveCount(1);
   await places.getByRole('button', { name: copy.HIDE_SECTION(copy.DESTINATIONS_STEP_TITLE) }).click();
@@ -179,7 +214,6 @@ test('Home nudges towards a pack while a kept program is not saved offline', asy
   await page.evaluate(() => window.localStorage.setItem('cooeee.kept.v1', '["services-australia-crisis-payment"]'));
   await page.goto('/');
   await expect(page.locator('.nudge')).toContainText(copy.KEPT_NOT_SAVED(1));
-  await expect(page.locator('.nudge .kicker')).toHaveText(copy.NUDGE_KICKER);
   await expect(page.locator('.nudge').getByRole('link', { name: copy.BUILD_A_PACK })).toBeVisible();
 });
 
@@ -204,7 +238,8 @@ test('who to call lists the hotline and each program number as a call link', asy
   await page.goto(RECOVER_URL);
   await page.getByRole('button', { name: copy.WHO_TO_CALL }).click();
   await expect(page.getByRole('heading', { name: copy.WHO_TO_CALL })).toBeVisible();
-  const links = page.locator('.card a');
+  // The wellbeing lines follow in their own group (R3).
+  const links = page.locator('.list').first().locator('.card a');
   await expect(links).toHaveCount(2);
   await expect(links.first()).toHaveAttribute('href', 'tel:1800226226');
   await expect(links.nth(1)).toHaveAttribute('href', 'tel:1802266');
@@ -217,4 +252,59 @@ test('the results screen offers to print the list', async ({ page }) => {
   await page.evaluate(() => { (window as Window & { __printed?: number }).__printed = 0; window.print = () => { (window as Window & { __printed?: number }).__printed! += 1; }; });
   await page.getByRole('button', { name: copy.PRINT_LIST }).click();
   expect(await page.evaluate(() => (window as Window & { __printed?: number }).__printed)).toBe(1);
+});
+
+// The pressed control is gone once the page changes, so focus moves to the page
+// itself rather than dropping to the document, where the next Tab would restart
+// from the top.
+test('focus stays on the page when a need is chosen and when going back', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.NEED_PHRASE.money }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: copy.NEED_PHRASE.money })).toBeVisible();
+  await expect(page.locator('main')).toBeFocused();
+
+  await page.getByRole('button', { name: copy.BACK, exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: copy.RECOVER_QUESTION })).toBeVisible();
+  await expect(page.locator('main')).toBeFocused();
+});
+
+// R1: the roadmap opens from its teal row, ticks stay on the phone across a
+// reload, each stage's ring counts them, and a step leads to its programs.
+test('the recovery roadmap ticks steps, keeps them, and links each step to its help', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.ROADMAP_TITLE }).click();
+  await expect(page.getByRole('heading', { name: copy.ROADMAP_TITLE })).toBeVisible();
+  const first = copy.ROADMAP_STAGES[0];
+  const stage = page.getByRole('region', { name: first.title });
+  await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(0, first.steps.length) })).toBeVisible();
+  const insurer = first.steps.find((step) => step.id === 'insurer')!;
+  await page.getByRole('button', { name: copy.ROADMAP_MARK(insurer.text) }).click();
+  await expect(page.getByRole('button', { name: copy.ROADMAP_MARK(insurer.text) })).toHaveAttribute('aria-pressed', 'true');
+  // The harness opens on the landing after a reload; the tick is still there.
+  await page.reload();
+  await page.getByRole('button', { name: copy.ROADMAP_TITLE }).click();
+  await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(1, first.steps.length) })).toBeVisible();
+  // Clear progress asks once, then unticks every step.
+  await page.getByRole('button', { name: copy.ROADMAP_CLEAR }).click();
+  await page.getByRole('button', { name: copy.KEEP_KEPT }).click();
+  await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(1, first.steps.length) })).toBeVisible();
+  await page.getByRole('button', { name: copy.ROADMAP_CLEAR }).click();
+  await page.locator('.card-confirm-yes').click();
+  await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(0, first.steps.length) })).toBeVisible();
+  await expect(page.getByRole('button', { name: copy.ROADMAP_CLEAR })).toBeDisabled();
+  await page.getByRole('link', { name: copy.NEED_PHRASE.money }).click();
+  await expect(page.getByRole('heading', { name: copy.NEED_PHRASE.money })).toBeVisible();
+});
+
+// R3: the wellbeing lines sit under the numbers in Who to call, each one tap to call.
+test('Who to call ends with the wellbeing lines', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.WHO_TO_CALL }).click();
+  await expect(page.getByRole('heading', { name: copy.TALK_TO_SOMEONE })).toBeVisible();
+  for (const line of copy.WELLBEING_LINES) {
+    await expect(page.getByRole('link', { name: copy.CALL_LINE(line.number) }))
+      .toHaveAttribute('href', `tel:${line.number.replaceAll(' ', '')}`);
+  }
 });

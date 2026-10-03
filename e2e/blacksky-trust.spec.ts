@@ -143,7 +143,7 @@ test('a position from a mark shows the bar with from your saved place, and a das
   expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 });
   await expect(page.getByText('about', { exact: true })).toBeVisible();
   // E3-US1-AC4's own words stay: always ESTIMATE, the uncertainty growing.
-  await expect(page.getByText(/^ESTIMATE from your marked position, ± \d+ m and growing$/)).toBeVisible();
+  await expect(page.getByText(/^ESTIMATE from your mark, ± \d+ m and growing$/)).toBeVisible();
 
   // A real fix always beats the mark: the bar and the glyph go.
   await pushPosition(page, AT_FERNY_CREEK);

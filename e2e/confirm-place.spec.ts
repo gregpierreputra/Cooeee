@@ -6,7 +6,7 @@ const HARNESS_URL = `${HARNESS}/`;
 test('AC1 renders the confirmation order and immutable address', async ({ page }) => {
   await page.goto(HARNESS_URL);
 
-  const heading = page.getByRole('heading', { name: 'Is this the place you want to save?' });
+  const heading = page.getByRole('heading', { name: 'Is this the place?' });
   const address = page.getByTestId('returned-address');
   const name = page.getByLabel('Place name');
   const save = page.getByRole('button', { name: 'Save this place' });
@@ -78,6 +78,8 @@ test('AC1 abandonment retains no edited or pending value', async ({ page }) => {
 
 test('AC1 keyboard order, focus and targets are accessible', async ({ page }) => {
   await page.goto(HARNESS_URL);
+  // React renders after the load event; a Tab pressed before then lands nowhere.
+  await expect(page.getByLabel('Place name')).toBeVisible();
 
   for (const target of [
     page.getByLabel('Place name'),

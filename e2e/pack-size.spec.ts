@@ -64,9 +64,9 @@ test('AC9 interrupted staging cleans immediately and preserves the previous pack
   expect(before).toHaveLength(1);
   await page.getByRole('button', { name: 'Save this pack' }).click();
 
-  await expect(page.getByRole('heading')).toHaveText('The download stopped before it finished.');
+  await expect(page.getByRole('heading')).toHaveText('Download stopped.');
   await expect(page.getByRole('status')).toContainText(
-    'Nothing has been changed. Your previous pack is untouched.',
+    'Nothing changed. Your previous pack is untouched.',
   );
   expect(await packs(page)).toEqual(before);
   expect(await counts(page)).toMatchObject({ packs: 1, layers: 0, destinations: 0, tiles: 0 });

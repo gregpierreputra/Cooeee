@@ -11,9 +11,12 @@ export default function About() {
         <span className="kicker">{copy.ABOUT_COOEEE}</span>
         <ul className="info-lines">
           {copy.COOEEE_INFO_LINES.map((line) => (
-            <li key={line.lead}>
+            <li key={line.glyph}>
               <Glyph kind={line.glyph} />
-              <span><b>{line.lead}</b> {line.text}</span>
+              <div>
+                <h2 className="about-line-title">{line.title}</h2>
+                <p>{line.text}</p>
+              </div>
             </li>
           ))}
         </ul>

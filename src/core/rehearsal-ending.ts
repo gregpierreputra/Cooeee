@@ -8,6 +8,7 @@
 
 import { REHEARSAL_TIMED_MAX_MS } from './constants';
 import * as copy from './copy';
+import { formatDistanceM } from './destination';
 import { formatSavedDate } from './provenance';
 import { conditionWithout } from './rehearsal-condition';
 import type { RehearsalRun } from './rehearsal-run';
@@ -63,18 +64,21 @@ export const unfinishedView = (unfinished: UnfinishedRehearsal): UnfinishedView 
  *  polite version of either of the others: not knowing is its own state, the
  *  same shape as the pack change in rehearsal-progress.ts. */
 export type Ending =
-  /** `elapsedMs` is her recorded time, where a real one was kept. */
-  | { state: 'walked'; elapsedMs?: number }
+  /** `elapsedMs` is her recorded time, and `distanceM` the distance her phone
+   *  counted, where real ones were kept. */
+  | { state: 'walked'; elapsedMs?: number; distanceM?: number }
   | { state: 'dry-run' }
   | { state: 'not-recorded' };
 
 export function endingOf(rehearsal: Rehearsal): Ending {
   if (!isRehearsalEnding(rehearsal.ending)) return { state: 'not-recorded' };
   if (rehearsal.ending === 'dry-run') return { state: 'dry-run' };
-  const kept = rehearsal.elapsedMs;
-  return typeof kept === 'number' && Number.isFinite(kept) && kept >= 0
-    ? { state: 'walked', elapsedMs: kept }
-    : { state: 'walked' };
+  const real = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+  return {
+    state: 'walked',
+    ...(real(rehearsal.elapsedMs) ? { elapsedMs: rehearsal.elapsedMs } : {}),
+    ...(real(rehearsal.distanceM) ? { distanceM: rehearsal.distanceM } : {}),
+  };
 }
 
 const MS_PER_MINUTE = 60_000;
@@ -105,21 +109,23 @@ export const journeyEndingRows = (): JourneyEndingRow[] =>
  *  it, and — on a walked rehearsal only — the time between its start and that
  *  moment. The time is carried exactly as it is: not rounded, rated, compared or
  *  checked against anything. A dry run keeps no time. */
-export type EndingRecord = { finishedAt: number; ending: RehearsalEnding; elapsedMs?: number };
+export type EndingRecord = { finishedAt: number; ending: RehearsalEnding; elapsedMs?: number; distanceM?: number };
 
 export function endingRecord(
   startedAt: number,
   ending: RehearsalEnding,
   endedAt: number,
+  distanceM?: number,
 ): EndingRecord {
   const elapsedMs = endedAt - startedAt;
   // A rehearsal kept through a cold start may be answered days later. The gap
   // is then not the time the walk took, and stating it ("It took you 2880
   // minutes") would be a figure the app cannot stand behind, so none is kept.
   const couldBeTheWalk = elapsedMs >= 0 && elapsedMs <= REHEARSAL_TIMED_MAX_MS;
-  return ending === 'walked' && couldBeTheWalk
+  if (ending !== 'walked' || !couldBeTheWalk) return { finishedAt: endedAt, ending };
+  return distanceM === undefined
     ? { finishedAt: endedAt, ending, elapsedMs }
-    : { finishedAt: endedAt, ending };
+    : { finishedAt: endedAt, ending, elapsedMs, distanceM };
 }
 
 /** How an ending is stated on the result, beside the condition line. Her time is
@@ -128,9 +134,10 @@ export function endingRecord(
 export function endingLine(ending: Ending): string {
   switch (ending.state) {
     case 'walked':
-      return ending.elapsedMs === undefined
-        ? copy.RESULT_WALKED_NO_TIME
-        : copy.RESULT_WALKED(durationWords(ending.elapsedMs));
+      if (ending.elapsedMs === undefined) return copy.RESULT_WALKED_NO_TIME;
+      return ending.distanceM === undefined
+        ? copy.RESULT_WALKED(durationWords(ending.elapsedMs))
+        : copy.RESULT_WALKED_DISTANCE(durationWords(ending.elapsedMs), formatDistanceM(ending.distanceM));
     case 'dry-run':
       return copy.RESULT_DRY_RUN;
     case 'not-recorded':

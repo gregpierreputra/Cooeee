@@ -54,7 +54,9 @@ type AddressSearchState =
   | { kind: 'dismissed' };
 
 export function addressQueryCanRun(query: string): boolean {
-  return query.trim().length >= ADDRESS_QUERY_MIN_CHARS;
+  // Counted after cleaning, since that is what is searched: '!!!' cleans to
+  // nothing, which would match every address in the register.
+  return cleanedText(query).length >= ADDRESS_QUERY_MIN_CHARS;
 }
 
 /** True when the response is the size of the cap, so the register may hold more than it was asked for. 

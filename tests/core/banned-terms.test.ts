@@ -19,7 +19,7 @@ const fixture = (files: Record<string, string>): string => {
 
 const scan = (root: string): { code: number; output: string } => {
   try {
-    const out = execFileSync('node', ['scripts/banned-terms.mjs', root], { encoding: 'utf8' });
+    const out = execFileSync('node', ['scripts/banned-terms.mjs', root], { encoding: 'utf8', stdio: 'pipe' });
     return { code: 0, output: out };
   } catch (e) {
     const err = e as { status: number; stderr: string; stdout: string };

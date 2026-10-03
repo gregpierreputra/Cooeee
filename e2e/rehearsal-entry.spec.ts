@@ -30,9 +30,9 @@ const UNREADABLE = `${ORIGIN}/rehearse?mode=unreadable`;
 const NOTHING_HEADING = 'This pack holds nothing to rehearse';
 const UNREADABLE_HEADING = 'This pack could not be read';
 const NOTHING_DETAIL =
-  'Kalorama, saved 3 March 2026, holds no designation recorded for its address, and no official place saved with it.';
+  'Kalorama, saved 3 March 2026, has no area designation and no official place.';
 const UNREADABLE_DETAIL =
-  'Cooeee read this pack from the device, and the saved places did not match what the pack recorded, so they were not used.';
+  'In this pack, the saved places did not match what was saved, so they were not used.';
 
 // E5-US1-AC4 has four states. Only two of them are reachable in a running app,
 // and this file covers exactly those two.
@@ -56,7 +56,7 @@ test.describe('AC4 the pack holds nothing to rehearse', () => {
     await expect(page.getByText(NOTHING_DETAIL)).toBeVisible();
     await expect(
       page.getByText(
-        'A rehearsal runs from one of those two. Building this pack again, once the official information covers this address, is what would add them.',
+        'A rehearsal needs one of them. Build the pack again once official information covers this address.',
       ),
     ).toBeVisible();
   });
@@ -92,7 +92,7 @@ test.describe('AC4 the pack could not be read', () => {
     await expect(page.locator('.card > *').first()).toHaveText(UNREADABLE_HEADING);
     await expect(page.getByText(UNREADABLE_DETAIL)).toBeVisible();
     await expect(
-      page.getByText('An offline pack built for this address again would restore it.'),
+      page.getByText('A new pack for this address would restore it.'),
     ).toBeVisible();
     // Two paragraphs, not three: the state no longer explains the other state.
     await expect(page.locator('.card p')).toHaveCount(2);
@@ -158,7 +158,7 @@ test.describe('AC4 the way on from a stopped state', () => {
 
       await expect(page.locator('.actions a')).toHaveText([
         'Back to this pack',
-        'Build an offline pack',
+        'New offline pack',
         'Back to Home',
       ]);
       await expect(page.getByRole('link', { name: 'Back to this pack' })).toHaveAttribute(

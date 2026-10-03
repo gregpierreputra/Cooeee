@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import {
   addressQueryCanRun,
@@ -12,7 +12,6 @@ import { bpaExposureLayer } from '../../core/area-check';
 import {
   ADDRESS_QUERY_DEBOUNCE_MS,
   ADDRESS_QUERY_MAX_CHARS,
-  ADDRESS_RESULT_LIMIT,
   isInsideVictoria,
   NEARBY_FIX_MAX_AGE_MS,
   NEARBY_FIX_TIMEOUT_MS,
@@ -23,7 +22,7 @@ import * as copy from '../../core/copy';
 import { chosenDestinations, orderByDistance } from '../../core/destination';
 import { titleCase } from '../../core/home';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
-import { readKept, writeKept } from '../../core/kept';
+import { readKept } from '../../core/kept';
 import { buildPackSeed } from '../../core/pack';
 import { packProgramsFor } from '../../core/recover';
 import type {
@@ -50,14 +49,17 @@ import {
   fetchBushfireAreaResult,
 } from '../../data/wfs';
 import Glyph from '../components/Glyph';
+import Hint from '../components/Hint';
 import StatusPage from '../components/StatusPage';
+import { focusMain } from '../components/focusMain';
 import { AreaCheck, type AreaCheckState } from './AreaCheck';
+import { setBuilderBack } from './builder-back';
 import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
 import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
+import FlowSteps from './FlowSteps';
 import { Note } from './Note';
-import { Programs } from './Programs';
 import { Size } from './Size';
 
 /** Module scope, so the default has one stable identity for the life of the
@@ -67,6 +69,29 @@ import { Size } from './Size';
 const searchAddressRegister = (query: string, signal: AbortSignal) =>
   fetchAddressCandidates(query, undefined, signal);
 
+/** The line above the field for the typed search, one short sentence per state. */
+function typedSearchLine(live: ReturnType<typeof liveSearchState>): string {
+  switch (live.kind) {
+    case 'too-short':
+      return copy.ADDRESS_QUERY_TOO_SHORT;
+    case 'pending':
+      return copy.SEARCH_IN_PROGRESS;
+    case 'dismissed':
+      return copy.REFINE_ADDRESS_HINT;
+    case 'no-match':
+      return copy.NO_ADDRESS_MATCH;
+    case 'unavailable':
+      return `${copy.SEARCH_COULD_NOT_RUN} ${copy.SEARCH_FAILURE_MEANING}`;
+    case 'candidates': {
+      const count = copy.ADDRESS_RESULT_COUNT(live.candidates.length);
+      return addressResultsAtLimit(live.returnedCount) ? `${count}. ${copy.ADDRESS_RESULT_CAPPED}` : count;
+    }
+  }
+}
+
+/** The builder's steps, in order. Back goes to the one before. */
+type Step = 'search' | 'confirm' | 'conflict' | 'area' | 'places' | 'note' | 'size';
+
 type ConflictState =
   | { kind: 'checking' }
   | { kind: 'conflict'; savedPack: Pack }
@@ -75,7 +100,7 @@ type ConflictState =
 type OfferState =
   | { kind: 'building' }
   | { kind: 'ready'; offer: PackOffer; content: TextPackContent; files: PackFile[] }
-  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[]; ticked: string[] };
+  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[] };
 
 /** E2-US1/US2: the official places of last resort for the confirmed place,
  * read from the precached CFA snapshot. Nothing here is written to the device. */
@@ -148,7 +173,7 @@ export function Search({
   const [settled, setSettled] = useState<SettledSearch | null>(null);
   const [dismissed, setDismissed] = useState(false);
   // Bumped by every keystroke and by every explicit run, so the debounce restarts
-  // on each. `immediate` is an explicit run — Enter, Search, or Try again — which
+  // on each. `immediate` is an explicit run — Enter or Try again — which
   // does not wait out a pause the user has already ended themselves.
   const [attempt, setAttempt] = useState({ immediate: false });
   const [candidate, setCandidate] = useState<AddressCandidate | null>(null);
@@ -175,11 +200,14 @@ export function Search({
   // note itself once it is past. Both in memory only until the pack save.
   const [chosenPlaces, setChosenPlaces] = useState<Destination[] | null>(null);
   const [note, setNote] = useState<string | undefined>(undefined);
-  // The programs step: null until the note is kept, then the list to tick.
-  const [programs, setPrograms] = useState<RecoveryProgram[] | null>(null);
   // Made once per confirmed place, before the places step: destination rows
   // carry the pack id, so the id must exist before the user chooses them.
   const [packId, setPackId] = useState('');
+  // The places ticked, kept so going back to the places step shows them again.
+  const [placeIds, setPlaceIds] = useState<string[]>([]);
+  const [saveStage, setSaveStage] = useState<'idle' | 'saving' | 'saved'>('idle');
+  // Bumped by every step back, so an answer to a step the user has left is dropped.
+  const flowRef = useRef(0);
 
   const trimmedQuery = query.trim();
   // While Use my location owns the list the typed search claims nothing. A
@@ -188,6 +216,11 @@ export function Search({
   const live = byPosition
     ? ({ kind: 'dismissed' } as const)
     : liveSearchState(query, settled, dismissed);
+  const statusLine = locating
+    ? copy.LOCATING
+    : located
+      ? copy.ADDRESS_LOCATE_FOUND
+      : (locateNotice ?? typedSearchLine(live));
 
   // Read through a ref so that a caller passing an inline function cannot make
   // the search restart on every render. Only the typed query and an explicit run
@@ -238,8 +271,13 @@ export function Search({
     // and the cancellation at once.
   }, [trimmedQuery, attempt]);
 
-  // Leaving the screen stops a nearby lookup still on the wire.
-  useEffect(() => () => locateAbortRef.current?.abort(), []);
+  // Leaving the screen stops a nearby lookup still on the wire, and drops a
+  // position still to come: the fix must not reach the register after the
+  // user has left.
+  useEffect(() => () => {
+    locateIdRef.current += 1;
+    locateAbortRef.current?.abort();
+  }, []);
 
   function clearLocated() {
     locateIdRef.current += 1;
@@ -302,7 +340,7 @@ export function Search({
     setAttempt({ immediate: false });
   }
 
-  /** Enter, Search, Search again and Try again: run this query now. A request
+  /** Enter and Try again: run this query now. A request
    * already in flight for this exact text is left to finish, so an explicit tap
    * during the wait cannot double the outbound requests. */
   function runSearchNow() {
@@ -319,20 +357,25 @@ export function Search({
   }
 
   async function runAreaCheck(place: PendingPlace) {
+    const flow = flowRef.current;
     setAreaState({ kind: 'checking' });
     try {
-      setAreaState({ kind: 'result', result: await checkArea(place) });
+      const result = await checkArea(place);
+      if (flow === flowRef.current) setAreaState({ kind: 'result', result });
     } catch {
-      setAreaState({ kind: 'unavailable' });
+      if (flow === flowRef.current) setAreaState({ kind: 'unavailable' });
     }
   }
 
   async function runPlaces(place: PendingPlace, result: BushfireAreaResult) {
-    const id = makePackId();
+    // The same id when the places are shown again, so the ticks still match.
+    const id = packId || makePackId();
     setPackId(id);
+    const flow = flowRef.current;
     setPlacesState({ kind: 'loading' });
     try {
       const snapshot = await loadNsp();
+      if (flow !== flowRef.current) return;
       const selection = selectSitesForPack(
         snapshot.sites,
         place,
@@ -345,7 +388,7 @@ export function Search({
       const unlocated = selection.unlocated.map(asRow);
       setPlacesState({ kind: 'ready', snapshot, selection, ordered, unlocated });
     } catch {
-      setPlacesState({ kind: 'unavailable' });
+      if (flow === flowRef.current) setPlacesState({ kind: 'unavailable' });
     }
   }
 
@@ -353,39 +396,43 @@ export function Search({
     place: PendingPlace,
     result: BushfireAreaResult,
     destinations: Destination[],
-    ticked: string[],
   ) {
+    const flow = flowRef.current;
     setOfferState({ kind: 'building' });
     try {
+      // The programs saved in Recover go into the pack, or none if nothing is
+      // saved. A store that cannot be read gives none, never a failed pack.
+      const programs = await loadPrograms().catch(() => []);
       const seed = buildPackSeed(packId, now(), place, result.lgaName, result.source, supersedesId);
       const content: TextPackContent = {
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
         destinations,
-        // The programs ticked on the programs step, copied so the pack carries
-        // them and their pages with no signal.
-        recovery: packProgramsFor(seed.id, programs ?? [], ticked),
+        // Copied so the pack carries them and their pages with no signal.
+        recovery: packProgramsFor(seed.id, programs, readKept(localFlagStore())),
       };
       // The PDF copies of the source pages and the map of the area travel with
       // the pack, so their bytes are part of the one size stated before
       // anything is written.
       const files = await loadFiles(seed.id, content);
       const offer = await buildOffer(content, files);
-      setOfferState({ kind: 'ready', offer, content, files });
+      if (flow === flowRef.current) setOfferState({ kind: 'ready', offer, content, files });
     } catch {
-      setOfferState({ kind: 'failed', result, destinations, ticked });
+      if (flow === flowRef.current) setOfferState({ kind: 'failed', result, destinations });
     }
   }
 
   async function handleConfirmedPlace(place: PendingPlace) {
     onPendingPlace(place);
     setPendingPlace(place);
+    const flow = flowRef.current;
     setConflictState({ kind: 'checking' });
     try {
       // Several packs may be saved, one per address. A pack already saved for
       // this same address requires an explicit keep-or-replace decision before
       // the next network call; any other address goes straight on.
       const packs = await loadPacks();
+      if (flow !== flowRef.current) return;
       const same = packs.find((pack) => pack.address === place.address);
       if (same) {
         setConflictState({ kind: 'conflict', savedPack: same });
@@ -394,11 +441,14 @@ export function Search({
         await runAreaCheck(place);
       }
     } catch {
-      setConflictState({ kind: 'unavailable' });
+      if (flow === flowRef.current) setConflictState({ kind: 'unavailable' });
     }
   }
 
   function resetToSearch() {
+    flowRef.current += 1;
+    setPackId('');
+    setPlaceIds([]);
     setPendingPlace(null);
     setAreaState(null);
     setConflictState(null);
@@ -408,14 +458,86 @@ export function Search({
     setPlacesState(null);
     setChosenPlaces(null);
     setNote(undefined);
-    setPrograms(null);
   }
+
+  // The step on screen, read from what the builder holds.
+  const at: Step = offerState ? 'size'
+    : chosenPlaces ? 'note'
+    : placesState ? 'places'
+    : areaState ? 'area'
+    : conflictState ? 'conflict'
+    : candidate ? 'confirm'
+    : 'search';
+  const busy = conflictState?.kind === 'checking' || areaState?.kind === 'checking'
+    || placesState?.kind === 'loading' || offerState?.kind === 'building' || saveStage === 'saving';
+
+  /** One step back. Every answer given so far is kept, so going forward again
+   *  shows the same address name, ticks and note. */
+  function stepBack() {
+    flowRef.current += 1;
+    if (at === 'confirm') resetToSearch();
+    else if (at === 'conflict') setConflictState(null);
+    else if (at === 'area') {
+      setAreaState(null);
+      setConflictState(null);
+      setSupersedesId(undefined);
+    } else if (at === 'places') setPlacesState(null);
+    else if (at === 'note') setChosenPlaces(null);
+    else if (at === 'size') setOfferState(null);
+  }
+
+  // Back, from the bar or the phone, steps back one step at a time. The steps
+  // past the address search share one history entry marked ?step=<name>. Going
+  // back pops it, the builder steps back, and the entry is put back on top while
+  // a step past the search remains. So nothing is left in history once the
+  // builder is left, and a reload with nothing held starts at the search.
+  const [params, setParams] = useSearchParams();
+  const urlStep = params.get('step');
+  const hadStep = useRef(false);
+  useEffect(() => {
+    const wasInSteps = hadStep.current;
+    hadStep.current = urlStep !== null;
+    if (wasInSteps && urlStep === null) {
+      if (saveStage === 'saved') navigate('/', { replace: true });
+      // A check or the save is running: hold the step until it is done.
+      else if (busy) setParams({ step: at });
+      else stepBack();
+      return;
+    }
+    if (at === 'search') {
+      if (urlStep === null) return;
+      // Search again from a later step pops the entry; a reload just drops it.
+      if (wasInSteps) navigate(-1);
+      else setParams({}, { replace: true });
+      return;
+    }
+    if (urlStep !== at) setParams({ step: at }, { replace: urlStep !== null });
+  }, [urlStep, at]);
+
+  // The Back bar hides while a check or the save runs, and once the pack is
+  // saved, where the screen's own Back to Home is the one way out.
+  useEffect(() => {
+    setBuilderBack(busy || saveStage === 'saved' ? 'hidden' : 'step');
+  }, [busy, saveStage]);
+  useEffect(() => () => setBuilderBack('step'), []);
+
+  // Each step replaces the page under the same path, so focus is moved to it
+  // and the page starts at its top here; the route change that would
+  // otherwise do both never happens.
+  const step = [
+    !!candidate, !!pendingPlace, conflictState?.kind, areaState?.kind,
+    placesState?.kind, !!chosenPlaces, offerState?.kind,
+  ].join();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    focusMain();
+  }, [step]);
 
   if (pendingPlace && conflictState?.kind === 'checking') {
     return (
       <StatusPage
         page="conflict-page"
-        kicker={copy.EYEBROW_SET_UP_YOUR_PLACE}
+        kicker={<FlowSteps at={0} />}
         card={<p>{copy.CHECKING_SAVED_PLACE}</p>}
       />
     );
@@ -442,7 +564,7 @@ export function Search({
     return (
       <StatusPage
         page="conflict-page"
-        kicker={copy.EYEBROW_SET_UP_YOUR_PLACE}
+        kicker={<FlowSteps at={0} />}
         cardClass="conflict-content"
         card={
           <>
@@ -464,7 +586,7 @@ export function Search({
       return (
         <StatusPage
           page="size-page"
-          kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+          kicker={<FlowSteps at={4} />}
           card={<p>{copy.PREPARING_PACK_OFFER}</p>}
         />
       );
@@ -474,7 +596,7 @@ export function Search({
       return (
         <StatusPage
           page="size-page"
-          kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+          kicker={<FlowSteps at={4} />}
           card={<p>{copy.PACK_OFFER_FAILED}</p>}
           actions={
             <>
@@ -486,7 +608,6 @@ export function Search({
                     pendingPlace,
                     offerState.result,
                     offerState.destinations,
-                    offerState.ticked,
                   )
                 }
               >
@@ -506,7 +627,14 @@ export function Search({
         offer={offerState.offer}
         address={offerState.content.pack.address}
         download={async () => {
-          await savePack(offerState.content, offerState.offer, now(), offerState.files, note);
+          setSaveStage('saving');
+          try {
+            await savePack(offerState.content, offerState.offer, now(), offerState.files, note);
+            setSaveStage('saved');
+          } catch (error) {
+            setSaveStage('idle');
+            throw error;
+          }
         }}
         onContinue={() => openSavedPack(offerState.content.pack.id)}
       />
@@ -515,33 +643,15 @@ export function Search({
 
   // The note step, after the places and before the size. The example names the
   // nearest chosen place, so the note is about this pack from the first word.
-  // The programs step, after the note: the ticks become the kept list, so
-  // every pack mirrors the same choice. Not now leaves the list as it is and
-  // the pack carries what is kept, exactly as Home would make it.
-  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces && programs) {
-    const { result } = areaState;
-    const kept = readKept(localFlagStore());
-    return (
-      <Programs
-        programs={programs}
-        kept={kept}
-        onContinue={(ticked) => {
-          writeKept(localFlagStore(), ticked);
-          void buildPackOfferForResult(pendingPlace, result, chosenPlaces, ticked);
-        }}
-        onSkip={() => void buildPackOfferForResult(pendingPlace, result, chosenPlaces, kept)}
-      />
-    );
-  }
-
   if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
     const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
     return (
       <Note
         example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
+        initial={note}
         onContinue={(text) => {
           setNote(text);
-          void loadPrograms().then(setPrograms).catch(() => setPrograms([]));
+          void buildPackOfferForResult(pendingPlace, areaState.result, chosenPlaces);
         }}
       />
     );
@@ -553,7 +663,7 @@ export function Search({
       return (
         <StatusPage
           page="places-page"
-          kicker={copy.DESTINATIONS_STEP_TITLE}
+          kicker={<FlowSteps at={2} />}
           card={<p>{copy.LOADING_LAST_RESORT_PLACES}</p>}
         />
       );
@@ -563,7 +673,7 @@ export function Search({
       return (
         <StatusPage
           page="places-page"
-          kicker={copy.DESTINATIONS_STEP_TITLE}
+          kicker={<FlowSteps at={2} />}
           card={<p>{copy.OFFICIAL_LIST_UNAVAILABLE}</p>}
           actions={
             <>
@@ -596,7 +706,11 @@ export function Search({
         unlocated={unlocated}
         area={area}
         status={PACK_HAZARD === 'bushfire' ? 'ok' : 'not-bushfire'}
-        save={(ids) => continueWith(chosenDestinations(ordered, ids))}
+        initialChosen={placeIds}
+        save={(ids) => {
+          setPlaceIds(ids);
+          return continueWith(chosenDestinations(ordered, ids));
+        }}
         onContinue={() => void continueWith([])}
       />
     );
@@ -620,8 +734,9 @@ export function Search({
     return (
       <Confirm
         candidate={candidate}
+        initialName={pendingPlace?.name}
         onConfirm={(place) => void handleConfirmedPlace(place)}
-        onSearchAgain={() => setCandidate(null)}
+        onSearchAgain={resetToSearch}
       />
     );
   }
@@ -631,54 +746,44 @@ export function Search({
       <form className="search-form" onSubmit={handleSubmit}>
         <div className="search-content">
           <header className="hero">
-            <span className="kicker">{copy.EYEBROW_SET_UP_YOUR_PLACE}</span>
-            <h1>{copy.ADDRESS_SEARCH_TITLE}</h1>
-            <p className="muted">{copy.ADDRESS_SEARCH_DISCLOSURE}</p>
+            <FlowSteps at={0} />
+            {/* Why the exact address matters, that some have no place close by,
+                and where a position goes, wait behind the ring beside the title. */}
+            <Hint label={copy.ABOUT_ADDRESS} head={<h1>{copy.ADDRESS_SEARCH_TITLE}</h1>}>
+              <ul className="info-lines glyph-lines">
+                <li><Glyph kind="place" line />{copy.ADDRESS_FIELD_HINT}</li>
+                <li><Glyph kind="found" line />{copy.ADDRESS_SEARCH_DISCLOSURE}</li>
+                <li><Glyph kind="lock" line />{copy.ADDRESS_LOCATE_DISCLOSURE}</li>
+              </ul>
+            </Hint>
           </header>
-          <label htmlFor="address-query">{copy.ADDRESS_FIELD_LABEL}</label>
-          <p id="address-hint" className="muted search-hint">
-            {copy.ADDRESS_FIELD_HINT}
+          {/* One small polite line above the field. It says what to type, then
+              follows the search as the user types, and it is the only place a
+              result is claimed, which the list markup alone does not announce. */}
+          <p id="address-result" className="muted search-hint" role="status" aria-live="polite">
+            {statusLine}
           </p>
-          <input
-            id="address-query"
-            name="addressQuery"
-            value={query}
-            autoComplete="off"
-            maxLength={ADDRESS_QUERY_MAX_CHARS}
-            aria-describedby="address-hint address-result"
-            onChange={handleQueryChange}
-          />
-          <button type="button" className="search-locate" onClick={locate} disabled={locating}>
-            <Glyph kind="locate" />
-            {locating ? copy.LOCATING : copy.USE_MY_LOCATION}
-          </button>
-          <p className="muted search-hint">{copy.ADDRESS_LOCATE_DISCLOSURE}</p>
-
-          {/* One polite live region for the field. It carries the count when the
-              list changes under a screen reader, which the list markup alone
-              does not announce, and it is the only place a result is claimed. */}
-          <div id="address-result" className="card search-result" role="status" aria-live="polite">
-            {live.kind === 'too-short' ? <p>{copy.ADDRESS_QUERY_TOO_SHORT}</p> : null}
-            {live.kind === 'pending' ? <p>{copy.SEARCH_IN_PROGRESS}</p> : null}
-            {locating ? <p>{copy.LOCATING}</p> : null}
-            {located ? <p>{copy.ADDRESS_LOCATE_FOUND}</p> : null}
-            {locateNotice ? <p>{locateNotice}</p> : null}
-            {live.kind === 'dismissed' && !byPosition ? <p>{copy.REFINE_ADDRESS_HINT}</p> : null}
-            {live.kind === 'no-match' ? <p>{copy.NO_ADDRESS_MATCH}</p> : null}
-            {live.kind === 'candidates' ? (
-              <>
-                <p>{copy.ADDRESS_RESULT_COUNT(live.returnedCount, live.candidates.length)}</p>
-                {addressResultsAtLimit(live.returnedCount) ? (
-                  <p>{copy.ADDRESS_RESULT_CAPPED(ADDRESS_RESULT_LIMIT)}</p>
-                ) : null}
-              </>
-            ) : null}
-            {live.kind === 'unavailable' ? (
-              <>
-                <p>{copy.SEARCH_COULD_NOT_RUN}</p>
-                <p>{copy.SEARCH_FAILURE_MEANING}</p>
-              </>
-            ) : null}
+          <div className="search-row">
+            <input
+              id="address-query"
+              name="addressQuery"
+              type="search"
+              value={query}
+              autoComplete="off"
+              maxLength={ADDRESS_QUERY_MAX_CHARS}
+              aria-label={copy.ADDRESS_FIELD_LABEL}
+              aria-describedby="address-result"
+              onChange={handleQueryChange}
+            />
+            <button
+              type="button"
+              className="info-ring search-locate"
+              aria-label={locating ? copy.LOCATING : copy.USE_MY_LOCATION}
+              onClick={locate}
+              disabled={locating}
+            >
+              <Glyph kind="locate" line />
+            </button>
           </div>
 
           {live.kind === 'candidates' ? (
@@ -700,25 +805,16 @@ export function Search({
           ) : null}
         </div>
 
-        {/* One primary action, labelled for the state it is in. It is never
-            disabled: a search that has not answered yet must still be re-runnable
-            by hand, and a tap during a request in flight is a no-op, not a second
-            request. */}
-        <div className="actions search-actions">
-          {live.kind === 'unavailable' ? (
+        {/* The search runs as the user types, and Enter runs it at once, so the
+            only button is Try again when the search could not run: the same
+            text typed again would not ask the register a second time. */}
+        {live.kind === 'unavailable' ? (
+          <div className="actions search-actions">
             <button className="main-action" type="button" onClick={runSearchNow}>
               {copy.TRY_AGAIN}
             </button>
-          ) : live.kind === 'no-match' ? (
-            <button className="main-action" type="button" onClick={runSearchNow}>
-              {copy.SEARCH_AGAIN}
-            </button>
-          ) : (
-            <button className="main-action" type="submit">
-              {copy.SEARCH}
-            </button>
-          )}
-        </div>
+          </div>
+        ) : null}
       </form>
     </main>
   );

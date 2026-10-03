@@ -108,7 +108,7 @@ describe('a first rehearsal of this pack this way', () => {
     expect(words).not.toMatch(
       /\bincomplete\b|\bpartial\b|\bbaseline\b|\bscore\b|\bstarting point\b|\bso far\b/i,
     );
-    expect(copy.FIRST_REHEARSAL_DETAIL).toContain('in full');
+    expect(copy.FIRST_REHEARSAL_DETAIL).toContain('Nothing earlier to compare with yet');
   });
 });
 
@@ -145,14 +145,14 @@ describe('whether the pack changed between the two runs', () => {
   });
 
   it('says so in words that are not a softer way of saying nothing changed', () => {
-    expect(copy.PACK_CHANGE_UNKNOWN).toContain('cannot be said either way');
+    expect(copy.PACK_CHANGE_UNKNOWN).toContain('was not recorded');
     expect(copy.PACK_CHANGE_UNKNOWN).not.toMatch(/\bunchanged\b|\bthe same\b|\bno change\b/i);
   });
 
   // Nothing about a changed pack is attributed to the reader's own effort.
   it('keeps a change in the pack apart from a change in what the reader did', () => {
     expect(copy.PACK_CHANGED_ON('10 March 2026')).toContain(
-      'What changed between them is not only what you did.',
+      'not only from you.',
     );
     expect(copy.PACK_CHANGED_ON('10 March 2026')).not.toMatch(
       /\byour fault\b|\byou failed\b|\bbecause you\b/i,
@@ -167,7 +167,7 @@ describe('what has moved since the last comparable rehearsal', () => {
 
     const progress = rehearsalProgress(latest, earlier, []);
     if (progress.state !== 'compared') throw new Error('expected a comparison');
-    expect(progress.earlierOn).toBe('Compared with your rehearsal of 3 March 2026');
+    expect(progress.earlierOn).toBe('Compared with 3 March 2026');
   });
 
   // The coupling: a pack's checked content never changes once committed, so a

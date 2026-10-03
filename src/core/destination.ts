@@ -29,10 +29,11 @@ export const orderByDistance = (
  *  one decimal place above it. The figure is a ±5% estimate, so it is never
  *  shown to the metre. Fed by the SAME haversine that produced the ordering, so
  *  the figure and the order can never disagree. */
-export const formatDistanceM = (metres: number): string =>
-  metres < METRES_PER_KM
-    ? `${Math.round(metres / 10) * 10} m`
-    : `${(metres / METRES_PER_KM).toFixed(1)} km`;
+export const formatDistanceM = (metres: number): string => {
+  // The unit follows the rounded figure, so 997 m reads 1.0 km, not 1000 m.
+  const tens = Math.round(metres / 10) * 10;
+  return tens < METRES_PER_KM ? `${tens} m` : `${(metres / METRES_PER_KM).toFixed(1)} km`;
+};
 
 /** How an official place is named: in the destinations list, on the pack page,
  *  and in a rehearsal. One definition, so the three cannot word a place apart. */

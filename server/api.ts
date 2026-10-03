@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
-import { FACILITY_SOURCE } from '../src/core/facility-sources.ts';
+import { FACILITY_SOURCE, STATIC_TYPES } from '../src/core/facility-sources.ts';
 import type { DynamicSnapshot, FacilityType, SourceHealth, StaticBundle } from '../src/core/types.ts';
 import { type Db, nowIso } from './db.ts';
 import { findNearest, type Point } from './geo.ts';
@@ -49,10 +49,11 @@ function parseQuery(db: Db, params: Params): { query: Query } | { error: Route }
     if (!row) return { error: { status: 404, body: { error: 'postcode not found in the Victorian list' } } };
     return { query: { postcode, lat: row.lat, lon: row.lon } };
   }
-  const lat = Number(params.get('lat'));
-  const lon = Number(params.get('lon'));
+  // Number('') is 0, so a blank value is refused before it is converted.
+  const coordinate = (key: string): number => Number(params.get(key)?.trim() || NaN);
+  const lat = coordinate('lat');
+  const lon = coordinate('lon');
   const valid =
-    params.has('lat') && params.has('lon') &&
     Number.isFinite(lat) && Number.isFinite(lon) &&
     Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
   if (!valid) return { error: { status: 400, body: { error: 'provide postcode=NNNN, or lat and lon' } } };
@@ -139,8 +140,11 @@ function staticBundle(db: Db, params: Params): Route {
       : (db.prepare(
           `SELECT facility_id, type_code AS type, name, address, ROUND(lat, 5) AS lat, ROUND(lon, 5) AS lon,
                   lga_name, designation_status, last_verified_at
-           FROM facilities WHERE designation_status IN ('designated', 'needs_review') ORDER BY facility_id`,
-        ).all() as unknown as StaticBundle['facilities']),
+           FROM facilities
+           WHERE designation_status IN ('designated', 'needs_review')
+             AND type_code IN (${STATIC_TYPES.map(() => '?').join(', ')})
+           ORDER BY facility_id`,
+        ).all(...STATIC_TYPES) as unknown as StaticBundle['facilities']),
     postcodes: unchanged
       ? []
       : (db.prepare(

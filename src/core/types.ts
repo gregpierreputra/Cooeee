@@ -448,6 +448,10 @@ export type Rehearsal = {
    *  gap. OPTIONAL: a dry run carries none, and nor does anything recorded
    *  before it existed. */
   elapsedMs?: number;
+  /** On a walked rehearsal only: the metres her phone counted her moving, from
+   *  the start to "I have arrived". Only this number is kept, never a position.
+   *  OPTIONAL: absent without location, and on anything recorded before it. */
+  distanceM?: number;
   /** The pack's own verifiedAt at the moment this rehearsal ran.
    *
    *  Two rehearsals whose values differ were run against different pack
@@ -481,6 +485,7 @@ export type UnfinishedRehearsal = {
   gaps?: never;
   ending?: never;
   elapsedMs?: never;
+  distanceM?: never;
 };
 
 /** Everything the rehearsals store can hold. */
@@ -497,8 +502,8 @@ export type StoredRehearsal = Rehearsal | UnfinishedRehearsal;
  *  It is never expired and never removed by the product. A condition-persistent
  *  gap may recur, and the answer to that is the DATE on screen, not the product
  *  quietly deciding a tick has gone stale — the same treatment EPIC 1 gives a
- *  pack past its freshness window, which stays fully usable and plainly dated
- *  while the reader judges it.
+ *  pack however old it is, which stays fully usable and plainly dated while
+ *  the reader judges it.
  *
  *  The reader may remove their own completion, and that is a different act from
  *  the product removing it: one is a person correcting their own record, the
@@ -517,3 +522,16 @@ export type SyncMetaRow = { key: string; value: string };
 /** One data source as a screen names it: what the list is, and in plain words
  *  how it read when last checked. */
 export type SourceLine = { lead: string; text: string };
+
+/** E9 — ONE FINISHED drill: the timed packing game played before a rehearsal.
+ *  Kept on the phone so the pack page can list it. The score is about the bag
+ *  and is 0 when the door was not reached, which the page never shows as a
+ *  number. */
+export type Drill = {
+  id: string;          // crypto.randomUUID()
+  packId: string;
+  finishedAt: number;  // epoch ms
+  reachedDoor: boolean;
+  score: number;       // 0 to 100, whole
+  packed: string[];    // drill item ids, at most BAG_LIMIT
+};

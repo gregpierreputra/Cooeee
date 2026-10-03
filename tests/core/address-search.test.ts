@@ -51,6 +51,9 @@ describe('address search decisions', () => {
     ['AB', false],
     ['ABC', true],
     ['ABCD', true],
+    // Punctuation cleans to nothing, which would match every address.
+    ['!!!', false],
+    ['(a)', false],
   ])('requires at least three trimmed characters for %j', (query, expected) => {
     expect(addressQueryCanRun(query)).toBe(expected);
   });
@@ -409,32 +412,25 @@ describe('E1-US1-AC2 search state', () => {
 });
 
 describe('E1-US1-AC2–AC4 copy', () => {
-  it('keeps candidate choice wording exact', () => {
-    expect(copy.CHOOSE_ADDRESS).toBe('Choose your address from the list.');
-    expect(copy.NONE_OF_THESE).toBe('None of these is my address');
+  it('keeps the not my address wording exact', () => {
+    expect(copy.NONE_OF_THESE).toBe('Not my address');
   });
 
   // Character for character, with no dash of any kind: the em dash is gone,
   // and a hyphen in its place would be a different sentence.
   it('uses the baseline R2 no-match literal exactly, with no dash of any kind', () => {
-    expect(copy.NO_ADDRESS_MATCH).toBe(
-      'No matching address found. Check the spelling or try the nearest cross street.',
-    );
+    expect(copy.NO_ADDRESS_MATCH).toBe('No match. Check the spelling or try a cross street.');
     expect(copy.NO_ADDRESS_MATCH).not.toContain('\u2014');
     expect(copy.NO_ADDRESS_MATCH).not.toContain('-');
   });
 
   it('keeps both search-failure sentences exact', () => {
-    expect(copy.SEARCH_COULD_NOT_RUN).toBe('We could not search for this address right now.');
-    expect(copy.SEARCH_FAILURE_MEANING).toBe(
-      'This is not the same as saying the address is not there. Try again when you have a connection.',
-    );
+    expect(copy.SEARCH_COULD_NOT_RUN).toBe('Search is unavailable right now.');
+    expect(copy.SEARCH_FAILURE_MEANING).toBe('The address may still exist.');
   });
 
   it('offers a way forward when none of the listed addresses fits', () => {
-    expect(copy.REFINE_ADDRESS_HINT).toBe(
-      'Check or add a unit or street number, then search again.',
-    );
+    expect(copy.REFINE_ADDRESS_HINT).toBe('Add a unit or street number.');
   });
 });
 
@@ -537,16 +533,11 @@ describe('E1-US1-AC2 returned-record count', () => {
     expect(resolveAddressCandidates([]).returnedCount).toBe(0);
   });
 
-  it('states both numbers in one line, so the cap cannot read as the whole register', () => {
-    expect(copy.ADDRESS_RESULT_COUNT(10, 8)).toBe(
-      'The address register returned 10 records; 8 distinct addresses are listed below.',
-    );
-    expect(copy.ADDRESS_RESULT_COUNT(1, 1)).toBe(
-      'The address register returned 1 record; 1 distinct address is listed below.',
-    );
-    expect(copy.ADDRESS_RESULT_CAPPED(10)).toBe(
-      'Cooeee asks the register for at most 10 records, so there may be more. '
-      + 'Type more of the address to shorten the list.',
-    );
+  // The count agrees with the list on screen; a capped answer says so on a
+  // line of its own, so the cap still cannot read as the whole register.
+  it('counts the listed addresses, and states the cap in its own sentence', () => {
+    expect(copy.ADDRESS_RESULT_COUNT(8)).toBe('8 addresses found');
+    expect(copy.ADDRESS_RESULT_COUNT(1)).toBe('1 address found');
+    expect(copy.ADDRESS_RESULT_CAPPED).toBe('Type more to narrow it.');
   });
 });

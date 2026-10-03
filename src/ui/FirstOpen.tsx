@@ -2,7 +2,6 @@ import { useState, type ReactNode } from 'react';
 import * as copy from '../core/copy';
 import InfoGlyph from './components/InfoGlyph';
 import Mark from './components/Mark';
-import Particles from './components/Particles';
 
 /** E1-US1-AC0. The first screen anyone sees, and the only one that stands
  *  between a fresh install and the app. It states in full what Cooeee does,
@@ -43,7 +42,6 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
 
   return (
     <main className="page first-open">
-      <Particles />
       <header className="hero first-open-hero">
         {/* Decorative: the wordmark beside it carries the name in text. */}
         <Mark className="mark" size={44} />
@@ -65,7 +63,7 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
         ))}
       </ul>
 
-      <p className="official-channels">
+      <p className="official-channels emergency-line">
         <InfoGlyph size={22} />
         <span>{copy.OFFICIAL_CHANNELS_LINE}</span>
       </p>

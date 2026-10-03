@@ -255,6 +255,12 @@ describe('estimateFix', () => {
     expect(wellPast).toBeNull();
   });
 
+  // The screen clock can trail the mark's own stamp by a tick, and a device
+  // clock can step back: neither may read tighter than the starting figure.
+  it('never starts tighter than the published uncertainty, whatever the clock does', () => {
+    expect(estimateFix(mark, NOW - 5_000)?.accuracyM).toBe(MARK_START_ACCURACY_M);
+  });
+
   it('is never stale: the returned fix carries the caller clock', () => {
     expect(estimateFix(mark, NOW + 20_000)?.at).toBe(NOW + 20_000);
   });

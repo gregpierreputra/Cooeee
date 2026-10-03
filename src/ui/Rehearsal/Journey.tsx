@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { TICK_MS } from '../../core/constants';
 import * as copy from '../../core/copy';
+import { formatDistanceM } from '../../core/destination';
 import {
   conditionWithout,
   connectionLine,
@@ -9,14 +11,16 @@ import {
 } from '../../core/rehearsal-condition';
 import { journeyEndingRows, unfinishedFrom } from '../../core/rehearsal-ending';
 import { journeyNotes, journeyPlaces, type JourneyPlace } from '../../core/rehearsal-journey';
-import type { RehearsalRun } from '../../core/rehearsal-run';
+import { elapsedClock, type RehearsalRun } from '../../core/rehearsal-run';
 import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types';
 import { getCompletePackContent, saveStartedRehearsal } from '../../data/db';
 import Glyph from '../components/Glyph';
+import Hint from '../components/Hint';
 import HoldButton from '../components/HoldButton';
+import { focusMain } from '../components/focusMain';
 import { useOnline } from '../components/useOnline';
 import Head from './Head';
-import { endWith, startRun } from './run-state';
+import { endWith, startRun, walkedSoFar } from './run-state';
 
 type LoadContent = (id: string) => Promise<CompletePackContent | undefined>;
 
@@ -103,16 +107,27 @@ export function JourneyBefore({
   keep?: (started: UnfinishedRehearsal) => Promise<void>;
 }) {
   const journey = useJourney(packId, loadContent);
+  // Drawn only once the pack is read, after the choice that led here has gone.
+  const ready = journey !== null;
+  useEffect(() => {
+    if (ready) focusMain();
+  }, [ready]);
   if (journey === null) return null;
 
   return (
     <main className="page rehearsal-journey">
       <Head />
-      <h2>{copy.JOURNEY_BEFORE_HEADING}</h2>
+      <Hint label={copy.ABOUT_REHEARSAL} head={<h2>{copy.JOURNEY_BEFORE_HEADING}</h2>}>
+        <ul className="info-lines glyph-lines">
+          <li><Glyph kind="go" line />{copy.JOURNEY_WHAT_IT_IS}</li>
+          <li><Glyph kind="clock" line />{copy.JOURNEY_WHAT_IT_IS_FOR}</li>
+        </ul>
+      </Hint>
       <p>{copy.JOURNEY_CONDITION_LINE(conditionWithout(condition))}</p>
-      <p>{copy.JOURNEY_WHAT_IT_IS}</p>
-      <p>{copy.JOURNEY_WHAT_IT_IS_FOR}</p>
-      <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+      <p className="with-glyph">
+        <Glyph kind="calls" line />
+        {copy.OFFICIAL_INSTRUCTIONS_FIRST}
+      </p>
       {/* E5-US6 — the condition is made on the phone, not pretended. */}
       <section className="card condition-how-to">
         <Glyph kind="not" />
@@ -125,17 +140,35 @@ export function JourneyBefore({
       <div className="actions">
         <button
           type="button"
-          className="action journey-go"
+          className="action journey-go with-glyph"
           onClick={() => {
             onGone();
             const run = startRun(packId, condition);
             keep(unfinishedFrom(run)).catch(() => undefined);
           }}
         >
+          <Glyph kind="go" line />
           {copy.I_AM_GOING_NOW}
         </button>
       </div>
     </main>
+  );
+}
+
+/** The time since she went and the distance her phone has counted, at the top
+ *  of the running screen, redrawn every second. Only this line redraws. It is
+ *  not announced: a screen reader would hear it every second. */
+function TrackLine({ startedAt }: { startedAt: number }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), TICK_MS);
+    return () => clearInterval(timer);
+  }, []);
+  const walked = walkedSoFar();
+  return (
+    <p className="figure journey-track" aria-live="off">
+      {copy.TRACK_LINE(elapsedClock(now - startedAt), walked === null ? copy.TRACK_NO_DISTANCE : formatDistanceM(walked))}
+    </p>
   );
 }
 
@@ -157,6 +190,7 @@ export function JourneyRunning({
 
   return (
     <>
+      <TrackLine startedAt={run.startedAt} />
       <h2>{copy.JOURNEY_RUNNING_HEADING}</h2>
       <p>{copy.JOURNEY_RUNNING_DETAIL}</p>
       {connection ? (

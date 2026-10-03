@@ -18,7 +18,7 @@ const rehearsal = (over: Partial<Rehearsal>): Rehearsal => ({
 describe('E5-US5 the rehearsal history on the pack page', () => {
   it('lists every finished rehearsal newest first, in the result screen words', () => {
     const rows = historyRows([
-      rehearsal({ id: 'older', ending: 'dry-run', gaps: [{ type: 'no-notes', hazard: 'bushfire' }] as never }),
+      rehearsal({ id: 'older', ending: 'dry-run', gaps: [{ gapType: 'places-missing', kind: 'pack-content', hazard: 'bushfire' }] }),
       rehearsal({
         id: 'newer',
         condition: 'no-location-fix',
@@ -35,13 +35,23 @@ describe('E5-US5 the rehearsal history on the pack page', () => {
         condition: 'No location fix',
         ending: 'You went there. It took you 12 minutes.',
         gaps: 'No gaps found',
+        found: [],
       },
       {
         id: 'older',
         date: '25 August 2025',
         condition: 'No mobile data',
-        ending: 'This was a dry run: you ended it without going.',
+        ending: 'A dry run. You ended it without going.',
         gaps: '1 gap found',
+        found: [
+          {
+            actionId: 'build-pack-again-for-places',
+            title: copy.GAP_PLACES,
+            reason: copy.GAP_REASON_PLACES,
+            meaning: copy.GAP_MEANING_PACK_CONTENT,
+            action: copy.ACTION_BUILD_AGAIN_PLACES,
+          },
+        ],
       },
     ]);
     expect(copy.HISTORY_GAPS(2)).toBe('2 gaps found');

@@ -65,6 +65,9 @@
   --online-ink: #04211c;
   --offline: #f87171;
   --offline-ink: #2a0a0a;
+  /* Keep, the choice that changes nothing, beside the red of Delete. */
+  --keep: #4ade80;
+  --keep-ink: #052e14;
   /* Data-age tier from the mockups' freshness screen: marks a cached row, never a hazard. */
   --stale: #fbbf24;
   --stale-fill: #1f1809;
@@ -116,6 +119,9 @@ body {
      entirely in blacksky by the token. */
   background-image: var(--glow);
   background-repeat: no-repeat;
+  /* Its own stacking context, so the particle canvas sits over this ground
+     and under every screen's words. */
+  isolation: isolate;
 }
 
 ::selection {
@@ -126,7 +132,7 @@ body {
 /* Single column, max 560 px, centred on desktop. There is no second layout:
    the product's centre of gravity is a phone in someone's hand. The sticky
    chrome above the page (notice bar 2.25rem, header 3rem + 1px, back bar
-   3.25rem) is outside .page, so the minimum height leaves room for it. The
+   3.5rem) is outside .page, so the minimum height leaves room for it. The
    bottom padding leaves room under the last element for the fixed bottom bar
    (56 px + hairline, plus a gap), so nothing sits beneath it. */
 .page {
@@ -135,7 +141,7 @@ body {
   padding: 1.5rem max(1.75rem, env(safe-area-inset-right))
     calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom))
     max(1.75rem, env(safe-area-inset-left));
-  min-height: calc(100dvh - 8.5rem - 1px);
+  min-height: calc(100dvh - 8.75rem - 1px);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -221,9 +227,57 @@ a {
   min-height: 44px;
   cursor: pointer;
 }
-.destination-choose-hint {
-  margin: 0;
-  color: var(--ink-2);
+
+/* The rule on top: the counter ring, then Choose two in the accent. */
+.choose-head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+.choose-hint {
+  color: var(--accent);
+  font-weight: var(--w-heavy);
+}
+.chosen-ring {
+  inline-size: 48px;
+  block-size: 48px;
+  flex: none;
+}
+.chosen-ring circle {
+  fill: none;
+  stroke-width: 4;
+}
+.chosen-ring-track {
+  stroke: var(--line);
+}
+/* Starts at twelve o'clock and fills clockwise as places are chosen. */
+.chosen-ring-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dashoffset 0.25s ease;
+}
+.chosen-ring text {
+  fill: var(--ink);
+  font-size: 14px;
+  font-weight: var(--w-heavy);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chosen-ring-fill {
+    transition: none;
+  }
+}
+
+/* Once two are chosen, the rest step back. Still tappable, so tapping one
+   still says why it cannot be added. */
+.destination-item-greyed {
+  opacity: 0.45;
+}
+
+.destination-source {
+  display: grid;
+  gap: 0.25rem;
 }
 
 /* ── Cards and lists ───────────────────────────────────────────────────────── */
@@ -231,9 +285,9 @@ a {
 /* Absence states use the SAME neutral treatment as presence states. Absence must
    read as absence — never as reassurance, never as an error. There are no alert
    colours and no warning iconography in this stylesheet, with ONE deliberate
-   exception: the destructive delete-a-pack controls below reuse the fixed
-   connection colours (--offline red, --online green) so that destroying data
-   can never look like a neutral action. */
+   exception: the delete-a-pack question below reuses the fixed connection
+   colours (--offline red, --online green) so that destroying data can never
+   look like a neutral action. */
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -284,33 +338,70 @@ a {
   }
 }
 
-/* Delete-a-pack: the name row closes with a fingertip-sized ring, the cross
-   drawn inside it, in the fixed red (see the exception note at the top of this
-   section): a half-strength ring at rest, solid with a faint fill on touch. The
-   confirm state swaps the card body for the question and an equal-weight
-   keep/delete pair. */
-.card-delete {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  min-width: 44px;
+/* A pack's settings: a quiet ring with three dots at the card's top right,
+   inside the card, as a phone marks more options. It sits above the card's
+   stretched link and opens the pack's sheet. */
+.card-more {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1; /* above the pack-card stretched link */
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   padding: 0;
-  display: inline-grid;
+  display: grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--offline) 50%, transparent);
+  border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--surface-2);
-  color: var(--offline);
-  position: relative;
-  z-index: 1; /* above the pack-card stretched link */
+  color: var(--ink-2);
+}
+/* The ring is drawn small; the invisible ::after keeps a 44px tap area. */
+.card-more::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.pack-card .card-more:hover,
+.pack-card .card-more:focus-visible {
+  border-color: var(--accent);
+  color: var(--ink);
 }
 
-/* Named through the card so it outranks the shared accent hover on buttons. */
-.pack-card .card-delete:hover,
-.pack-card .card-delete:focus-visible,
-.pack-card .card-delete:active {
+/* A bottom sheet over the page: the browser's own modal dialog, so Escape,
+   the focus trap and the dimmed page come with it. */
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85dvh;
+  margin: auto auto 0;
+  padding: 1.5rem max(1.5rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom))
+    max(1.5rem, env(safe-area-inset-left));
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  overflow-y: auto;
+}
+.sheet[open] {
+  display: grid;
+  gap: 0.75rem;
+}
+.sheet::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+.sheet h2,
+.sheet p {
+  margin: 0;
+}
+/* The one setting that removes data reads in the delete red, as an outline:
+   the filled red is kept for the Delete that confirms it. */
+.sheet .sheet-delete {
   border-color: var(--offline);
-  background: color-mix(in srgb, var(--offline) 14%, transparent);
+  color: var(--offline);
 }
 
 /* The saved pack's two chosen places, side by side and equal: one grid rule, no
@@ -372,21 +463,44 @@ a {
   margin: 0;
 }
 
+/* Fingers and the mouse move the map, not the page, while they are on it. */
 .area-map-frame {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
+  background: #ffffff;
+  touch-action: none;
+  cursor: grab;
 }
 
-.area-map-frame img {
+.area-map-frame:active {
+  cursor: grabbing;
+}
+
+/* The picture and its markers move together, about the frame's middle. */
+.area-map-layer {
+  position: relative;
+  transform-origin: center;
+}
+
+.area-map-layer img {
   display: block;
   width: 100%;
   aspect-ratio: 1;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Each marker undoes the map's turn and zoom, so it stays upright and the
+   same size, centred on its own spot. */
+.area-map-pin,
+.area-map-mark {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(calc(var(--map-angle, 0deg) * -1)) scale(calc(1 / var(--map-scale, 1)));
 }
 
 .area-map-pin {
-  position: absolute;
   top: 50%;
   left: 50%;
   width: 1rem;
@@ -395,7 +509,62 @@ a {
   border-radius: 50%;
   background: rgb(255 255 255 / 0.6);
   box-shadow: 0 0 0 2px #fff;
-  transform: translate(-50%, -50%);
+}
+
+/* An official place of last resort: the places glyph in a dark disc, so it
+   reads over the light map and is never mistaken for the ring. */
+.area-map-mark .glyph,
+.area-map-mark-key .glyph {
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.area-map-mark-key .glyph {
+  width: 20px;
+  height: 20px;
+}
+
+/* One quiet line on how to move the map, then the round buttons that do the
+   same for anyone who cannot use a gesture. */
+/* The controls float on the map's top left as one narrow frosted column, as a
+   phone's own maps app does, so the map shows round and through them. */
+.area-map-controls {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+  display: grid;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  cursor: default;
+}
+
+.area-map-how {
+  margin: 0.5rem 0 0;
+  font-size: var(--step-s);
+}
+
+/* 44 px targets with no fill or border of their own: the column is the shape. */
+.map-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #1a1f24;
+  font-size: var(--step-1);
+  line-height: 1;
+}
+.map-button:disabled {
+  color: rgb(26 31 36 / 0.35);
 }
 
 .area-map figcaption {
@@ -420,14 +589,24 @@ a {
   font-size: var(--step-s);
 }
 
+/* Keep is green and Delete is red, each filled, so the choice reads at a
+   glance. The words say the same, so colour is never the only cue. */
 .card-confirm-no {
-  color: var(--offline);
-  border-color: var(--offline);
+  color: var(--keep-ink);
+  background: var(--keep);
+  border-color: var(--keep);
 }
 
 .card-confirm-yes {
-  color: var(--online);
-  border-color: var(--online);
+  color: var(--offline-ink);
+  background: var(--offline);
+  border-color: var(--offline);
+}
+@media (hover: hover) {
+  .card-confirm-no:hover,
+  .card-confirm-yes:hover {
+    border-color: var(--ink);
+  }
 }
 
 /* Primary action sits at the bottom of the viewport, within thumb reach. */
@@ -504,8 +683,10 @@ button,
 }
 
 @media (hover: hover) {
-  button:not(:disabled):hover,
-  .action:hover {
+  /* Controls whose border colour carries meaning (red ends something, amber
+     is BlackSky, a debrief tile's kind) keep it under the pointer. */
+  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold):hover,
+  .action:not(.leave-action):hover {
     border-color: var(--accent);
   }
   .main-action:hover {
@@ -529,6 +710,11 @@ input {
   outline-offset: 2px;
 }
 
+/* The page itself takes focus on arrival; the ring belongs on controls only. */
+main:focus {
+  outline: none;
+}
+
 /* An accent ring on an accent fill would vanish. */
 .main-action:focus-visible {
   outline-color: var(--ink);
@@ -547,24 +733,33 @@ input {
   gap: 1rem;
 }
 
-/* The field's own hint sits tight under its label, at meta size. */
+/* The ring beside the title opens its panel across the full width. */
+.hero > .hint {
+  justify-self: stretch;
+}
+
+/* The field's status line sits tight above the field, at meta size, and holds
+   its height while empty so the field never jumps. */
 .search-hint {
-  margin-top: -0.5rem;
+  min-height: 1.5em;
+  margin: -0.5rem 0 0;
   font-size: var(--step-s);
 }
 
-.search-result {
-  display: grid;
+/* The field and the locate ring share one row; the ring is the field's height
+   less its border, so the two read as one control. */
+.search-row {
+  display: flex;
   gap: 0.75rem;
-  color: var(--ink-2);
+  align-items: center;
 }
-
-.search-result:empty {
-  display: none;
+.search-row input {
+  flex: 1;
+  min-width: 0;
 }
-
-.search-result p {
-  margin: 0;
+.search-row .search-locate {
+  width: 48px;
+  height: 48px;
 }
 
 .search-actions {
@@ -659,6 +854,22 @@ input {
   color: var(--ink-2);
 }
 
+/* A caution read with the heading: the map is not where fire can go, or a note
+   has no password. Amber, the attention colour, at full text strength. */
+/* A key term inside a line: the attention colour, so it is seen first. */
+.key-term {
+  color: var(--stale);
+  font-weight: 600;
+}
+
+p.caution {
+  padding: 0.75rem 1rem;
+  border-inline-start: 3px solid var(--stale);
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--stale) 10%, var(--surface));
+  color: var(--ink);
+}
+
 /* ── Conflict ──────────────────────────────────────────────────────────────── */
 
 .conflict-content {
@@ -706,14 +917,12 @@ input {
 /* ── Pack detail and provenance ────────────────────────────────────────────── */
 
 .pack-detail header,
-.provenance,
-.stale-note {
+.provenance {
   display: grid;
   gap: 0.5rem;
 }
 
-.provenance p,
-.stale-note p {
+.provenance p {
   margin: 0;
 }
 
@@ -726,18 +935,36 @@ input {
   color: var(--ink-3);
 }
 
-/* Prominence through weight and a hairline — never an alert colour. */
-.stale-note {
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
-}
-.stale-note p:first-child {
-  font-weight: var(--w-bold);
-  color: var(--ink);
-}
-.stale-note p + p {
+/* The Source ring's panel: a quiet hairline box, lighter than a card. */
+.source-panel {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
   font-size: var(--step-s);
   color: var(--ink-2);
+}
+.source-rows {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+}
+.source-rows dt {
+  font-size: 0.75rem;
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.source-rows dd {
+  margin: 0.125rem 0 0;
+  font-size: var(--step-0);
+  color: var(--ink);
+}
+.source-detail {
+  color: var(--ink-2);
+  font-size: var(--step-s);
 }
 
 .provenance-item a {
@@ -1918,13 +2145,16 @@ input {
   background: var(--blacksky-fill);
 }
 
-/* An information ring: the delete control's shape in the accent. The tour ring
-   beside the daily reminder is the plain one; the BlackSky ring recolours it. */
+/* An information ring: the delete control's shape in the accent, drawn small so
+   it never competes with the screen. The invisible ::after keeps the 44px tap
+   area. The BlackSky ring recolours it; the tour ring carries a question mark. */
 .info-ring {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  min-width: 44px;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  min-width: 32px;
+  flex: none;
   padding: 0;
   display: inline-grid;
   place-items: center;
@@ -1932,12 +2162,15 @@ input {
   border-color: var(--accent);
   color: var(--accent);
 }
-/* The ring leads the label, as the BlackSky ring leads its hold control. */
-.preparation-head {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.75rem;
-  align-items: center;
+.info-ring::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+/* The tour ring in the header: the information ring with a question mark. */
+.tour-ring {
+  font-size: var(--step-s);
+  font-weight: var(--w-heavy);
 }
 
 /* ── The guided tour ──────────────────────────────────────────────────────── */
@@ -2037,6 +2270,14 @@ input {
 }
 .info-lines b {
   color: var(--accent);
+}
+/* A gap, then on its own line what to do about it. */
+.gap-line {
+  display: grid;
+  gap: 0.375rem;
+}
+.gap-line p {
+  margin: 0;
 }
 
 /* ── Splash on arrival ─────────────────────────────────────────────────────── */
@@ -2170,6 +2411,16 @@ input {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* The splash's wait is a delay, which the durations above leave alone: it
+     goes on the first frame, as promised. */
+  .splash {
+    animation-delay: 0s !important;
+  }
+  /* The hold's fill is a progress bar, not motion. On iOS, with no vibration,
+     it is the only sign of how long is left, so it keeps its two seconds. */
+  .blacksky-hold:active {
+    transition-duration: 2s !important;
+  }
 }
 
 /* ── The fixed header (E1-US2-AC6) ─────────────────────────────────────────── */
@@ -2229,6 +2480,21 @@ input {
   letter-spacing: var(--track-tight);
 }
 
+/* The right side: the age pill, then the tour ring at the far edge. */
+.app-header-end {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+/* On the narrowest phones the mark alone returns home, so the age and the
+   ring keep one line. The link's label still names it. */
+@media (max-width: 359px) {
+  .app-header-name {
+    display: none;
+  }
+}
+
 /* The age as a small pill: real text, announced like any other text — never an
    image and never a colour on its own. The card colour and the same hairline as
    every card, so it reads as a quiet fact carried by the header, not a verdict
@@ -2277,15 +2543,17 @@ input {
   color: var(--ink-3);
 }
 
-/* The name leads the row and the delete control closes it. */
+/* The name leads the row, clear of the settings ring at the top right. */
 .saved-place-title {
+  padding-right: 2.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
 .saved-place-title h2 {
-  min-width: 0; /* a long name wraps rather than pushing the delete control out */
+  min-width: 0; /* a long name wraps rather than running under the settings ring */
+  flex: 1;
 }
 
 /* The freshness line sits below a hairline, as a footer to the card rather than
@@ -2347,10 +2615,11 @@ input {
   letter-spacing: 0.01em;
 }
 
-/* The home screen has no back bar above it, so its column is taller by that
-   much: the notice and header above the page take height the viewport unit
-   does not know about. */
-.home {
+/* A screen with no back bar above it (a tab, or a builder step where Back is
+   held) is taller by the bar's height, so its actions still sit the same gap
+   above the bottom bar. The notice and header above take height the viewport
+   unit does not know about. */
+body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   min-height: calc(100dvh - 5.25rem - 1px);
 }
 
@@ -2453,13 +2722,10 @@ input {
    sparse. */
 .first-open {
   gap: 0.75rem;
-  /* Its own stacking context, so the particle canvas below sits under the
-     page's words and above the body ground, and never above anything else. */
-  isolation: isolate;
 }
 
-/* The motes behind the welcome and the disclosure: full screen, under the
-   text, and inert to every tap. */
+/* The motes behind every screen but BlackSky: full screen, under the text,
+   and inert to every tap. */
 .particles {
   position: fixed;
   inset: 0;
@@ -2542,8 +2808,10 @@ input {
   grid-column: 2;
 }
 
-/* The quieter note under the statements: its own small card, so the line that
-   points away from Cooeee is visibly not one of Cooeee's four statements. */
+/* The note under the statements: its own small card, so the line that points
+   away from Cooeee is visibly not one of Cooeee's four statements. It carries
+   the emergency treatment below, so it reads at full strength rather than as a
+   footnote. */
 .official-channels {
   display: flex;
   align-items: start;
@@ -2551,14 +2819,37 @@ input {
   padding: 0.75rem 1rem;
   border-radius: var(--r-card);
   background: var(--surface-2);
-  font-size: var(--step-s);
   color: var(--ink-2);
+}
+
+/* ── The emergency instruction ─────────────────────────────────────────────── */
+
+/* The one thing on a screen that must be read before anything else: how to
+   reach emergency services. Red is already the fixed state colour in every
+   mode, so nothing is invented here, and the shape is the ring-plus-tint the
+   nudge and the kept card already use. The words carry the meaning on their
+   own, so the colour adds weight without ever being the only signal. */
+.emergency-line {
+  border-inline-start: 3px solid var(--offline);
+  background: color-mix(in srgb, var(--offline) 12%, var(--surface));
+  color: var(--ink);
+  font-size: var(--step-0);
+}
+
+/* The mark beside the line takes the same red, so the pair reads as one. */
+.emergency-line > svg {
+  color: var(--offline);
+}
+
+/* In BlackSky every non-amber pixel stays off, so the ground goes back to true
+   black. The red rule alone marks the line, and on a screen that is otherwise
+   all amber it is the one thing in another colour. */
+:root[data-mode='blacksky'] .emergency-line {
+  background: #000000;
 }
 
 .official-channels svg {
   flex: 0 0 auto;
-  /* Optically centred on the first line of the smaller type beside it. */
-  margin-top: 0.0625rem;
 }
 
 /* A row, not a stack: the label is the statement, and it is the label element
@@ -2629,21 +2920,48 @@ input {
    an amber state word; live stays on the default card with the fixed green
    dot; unavailable takes the fixed red. The second deliberate use of state
    colour in this stylesheet, and it marks data age only — never hazard. */
+/* The postcode search sits on the page, as the pack builder's address search does. */
 .nearby-locate {
-  gap: 0.75rem;
-}
-.nearby-postcode {
   display: grid;
-  grid-template-columns: minmax(0, 1fr); /* never wider than the card, whatever the input wants */
-  gap: 0.5rem;
-}
-.postcode-row {
-  display: flex;
   gap: 0.75rem;
 }
-.postcode-row input {
-  flex: 1;
-  min-width: 0;
+/* The postcode in the origin line, picked out in the accent. */
+.nearby-origin-code {
+  color: var(--accent);
+  font-weight: var(--w-bold);
+}
+
+/* The two Nearby tabs: one pill track, the chosen half filled in teal. */
+.nearby-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+}
+.nearby-tabs [role='tab'] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-color: transparent;
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--step-s);
+}
+/* The chosen list is a filled teal pill, so the choice reads at a glance. */
+.nearby-tabs [role='tab'][aria-selected='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+/* The hotline sits on its own line under the note. */
+.nearby-note {
+  white-space: pre-line;
 }
 
 .nearby-group {
@@ -2718,15 +3036,25 @@ input {
   font-weight: var(--w-heavy);
 }
 
-.data-sources {
-  display: grid;
-  gap: 0.75rem;
-}
-.data-sources-head {
+/* The information ring and whatever sits beside it; the panel it opens takes
+   the full row beneath, so it covers nothing. */
+.hint {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.75rem;
   align-items: center;
+}
+.hint > .hint-panel {
+  grid-column: 1 / -1;
+}
+/* A long word beside the ring wraps at large text rather than pushing past
+   the screen edge. */
+.hint > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hint > .info-ring:only-of-type:last-child {
+  justify-self: start;
 }
 .info-ring[aria-expanded='true'] {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
@@ -2744,7 +3072,6 @@ input {
   --reveal: var(--accent);
   scroll-margin-top: 7rem;
   scroll-margin-bottom: 6rem;
-  outline: none;
   animation: panel-reveal 420ms ease-out;
 }
 .blacksky-info-panel.info-panel {
@@ -2774,6 +3101,15 @@ input {
   width: 100%;
   text-align: left;
 }
+/* Clear all on the saved list: a small pill in the delete red, so it never
+   reads as a neutral action. */
+.recover .clear-kept {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: var(--step-s);
+  color: var(--offline);
+}
 .recover .card a {
   align-self: start;
 }
@@ -2794,6 +3130,82 @@ input {
   align-items: center;
   gap: 0.875rem;
   padding-left: 0.5rem;
+}
+/* R1: the roadmap, the one need row filled in teal, so the way through
+   recovery is seen before the single needs. */
+.recover .roadmap-button {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.roadmap-button .glyph {
+  background: rgb(0 0 0 / 0.12);
+  color: inherit;
+}
+.roadmap-stage {
+  display: grid;
+  gap: 0.75rem;
+}
+.roadmap-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.roadmap-step {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+.roadmap-step-body {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+}
+.roadmap-step-body p {
+  margin: 0;
+}
+.roadmap-step.done .roadmap-step-body p {
+  color: var(--ink-2);
+}
+/* The tick: a 32 px ring, filled teal with a tick once done. The invisible
+   ::after keeps a 44 px tap area, as the information ring does. */
+.roadmap-tick {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+}
+.roadmap-tick::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.roadmap-tick[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.roadmap-link {
+  justify-self: start;
+  font-weight: var(--w-med);
+}
+.roadmap-source {
+  font-size: var(--step-s);
+}
+/* R3: the wellbeing lines under the numbers in Who to call. */
+.talk-to-someone {
+  display: grid;
+  gap: 0.75rem;
 }
 
 /* The source at a glance: its initials in a ring at the head of the card. */
@@ -2851,10 +3263,58 @@ input {
   border: 2px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
-.recover .keep-button {
-  align-self: start;
-  min-height: 44px;
-  padding: 0.5rem 1.25rem;
+
+/* The way into what the person already kept. It is not one more need to choose
+   between, so it sits above the list and wears the kept card's own ring and
+   tint: whoever has kept a program has already met this treatment and reads it
+   without being told. The filled glyph carries it at a glance. */
+/* Kept and All side by side over the needs, each a tile with its drawing on
+   top, its name, then one quiet line. One tile alone fills the row. */
+.recover-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.recover .recover-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-radius: var(--r-card);
+  text-align: left;
+}
+.recover-tile .glyph {
+  margin-bottom: 0.5rem;
+}
+.recover-tile-detail {
+  color: var(--ink-2);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+}
+.recover .kept-button {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--accent);
+}
+.recover .kept-button .glyph {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.program-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.program-actions .action {
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--step-s);
+  white-space: nowrap;
+}
+.program-actions .call-action {
+  grid-column: 1 / -1;
 }
 .recover .keep-button[aria-pressed='true'] {
   border-color: var(--accent);
@@ -2939,24 +3399,22 @@ input {
   width: 18px;
   height: 18px;
 }
-
-/* Nearby and the address search: the locate control carries its glyph inside
-   the pill. On the address search it is a ghost pill, as Search is the filled one. */
-.search-locate,
-.nearby-locate .main-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
+.about .info-lines p {
+  margin: 0;
 }
-.search-locate .glyph,
+.about-line-title {
+  margin: 0 0 0.125rem;
+  font-size: var(--step-0);
+  font-weight: var(--w-bold);
+  color: var(--ink);
+}
+
 .main-action .glyph {
   width: 28px;
   height: 28px;
   background: rgb(0 0 0 / 12%);
   color: inherit;
 }
-.search-locate .glyph svg,
 .main-action .glyph svg {
   width: 16px;
   height: 16px;
@@ -3057,6 +3515,13 @@ input {
   font-size: var(--step-2);
   font-weight: var(--w-med);
 }
+/* Left-aligned like the line under it; outranks .with-glyph's centring. A
+   long word wraps at 200% text rather than running off the right edge. */
+.condition-action .condition-label {
+  justify-content: flex-start;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
 /* NOT .muted. Muted is this product's convention for passive explanatory prose,
    and a control whose second line is muted reads as a card of text rather than
@@ -3124,9 +3589,10 @@ input {
   margin: 0;
 }
 
-/* Names the line beneath it as the one thing to do, so the action is never read
+/* Names the line beneath it as the reason or the one thing to do, so neither is read
    as more explanation. */
-.gap-action-label {
+.gap-action-label,
+.gap-reason-label {
   font-size: var(--step-s);
   font-weight: var(--w-heavy);
   letter-spacing: 0.04em;
@@ -3150,6 +3616,15 @@ input {
   align-self: flex-start;
   min-height: 44px;
   margin-top: 0.5rem;
+}
+
+/* The live time and distance at the top of a running rehearsal: one quiet
+   figure line in the accent, tabular so the digits do not jump each second. */
+.journey-track {
+  margin: 0;
+  font-weight: var(--w-bold);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
 }
 
 /* E5-US1-AC5 — the journey screen. The places sit in the card treatment the
@@ -3258,6 +3733,19 @@ input {
   font-weight: var(--w-bold);
 }
 
+/* The gaps line and the ring that explains it share a row, as the hold control
+   and its ring do on Home. The panel takes the full width beneath the pair, so
+   it opens in flow and covers no other rehearsal. */
+.history-gaps {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.history-gaps > .info-panel {
+  grid-column: 1 / -1;
+}
+
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
    Groups are told apart by their HEADINGS and by nothing else: no colour, no
    dot, no badge, no arrow, so the screen still reads with every colour stripped
@@ -3300,4 +3788,724 @@ input {
 .progress-pack-change {
   font-size: var(--step-s);
   margin: 0;
+}
+
+/* ── E9 the drill ──────────────────────────────────────────────────────────── */
+
+/* The label and the sound control share the top row of the first screen. */
+.drill-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.drill-sound {
+  display: grid;
+  place-items: center;
+  flex: none;
+  /* A true circle: the min sizes override the base button's 56 px height. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  cursor: pointer;
+}
+/* On: filled in the accent. Off: an outline in the quiet colour, so the two
+   states differ in shape and weight, not only in colour. */
+.drill-sound.on {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.drill-sound.off {
+  background: rgba(8, 10, 18, 0.62);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(244, 241, 234, 0.8);
+}
+
+/* While the film and the minute run, the drill is the whole screen: the
+   app's bars step aside and the page behind cannot scroll. */
+body.drill-open {
+  overflow: hidden;
+}
+body.drill-open .app-header,
+body.drill-open .back-bar,
+body.drill-open .bottom-nav,
+body.drill-open .notice-bar,
+body.drill-open .notice-sliver,
+body.drill-open .banner {
+  display: none;
+}
+
+/* The picture fills the screen inside the phone's safe edges, and every
+   control floats over it like a phone game. touch-action none so no thumb on
+   the stage scrolls or zooms the page. */
+.drill-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #06070c;
+  color: #f4f1ea;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  outline: none;
+}
+.drill-stage canvas {
+  position: absolute;
+  top: env(safe-area-inset-top);
+  bottom: env(safe-area-inset-bottom);
+  left: env(safe-area-inset-left);
+  right: env(safe-area-inset-right);
+  width: calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right));
+  height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: block;
+}
+
+/* Frosted chips over the picture: legible on flame and on floorboards alike. */
+.drill-top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.drill-counts,
+.drill-chip,
+.drill-room {
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.drill-counts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.5rem 1.1rem 0.6rem;
+  border-radius: var(--r-pill);
+}
+.drill-counts p {
+  margin: 0;
+}
+.drill-timer {
+  /* Big enough to read at a glance, mid game, on a small phone. */
+  font-size: clamp(2.1rem, 9vw, 2.75rem);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1;
+}
+/* The last ten seconds borrow BlackSky's amber: the one colour this product
+   already uses for "now". The clock still reads without it. */
+.drill-timer.late {
+  color: var(--blacksky-accent);
+}
+.drill-bag {
+  font-size: var(--step-s);
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.drill-top-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.drill-chip {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  white-space: nowrap;
+  border-radius: var(--r-pill);
+  color: inherit;
+  font: inherit;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  cursor: pointer;
+}
+.drill-close {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.drill-room {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 6.1rem);
+  left: calc(env(safe-area-inset-left) + 1rem);
+  margin: 0;
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--r-pill);
+  font-size: var(--step-s);
+}
+.drill-room::first-letter {
+  text-transform: uppercase;
+}
+
+/* The film's words: one line at a time, low on the picture, on a dark fade
+   that rises from the bottom so they read over any flame. */
+.drill-film {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 calc(env(safe-area-inset-right) + 1.5rem) calc(env(safe-area-inset-bottom) + 2.25rem)
+    calc(env(safe-area-inset-left) + 1.5rem);
+  pointer-events: none;
+}
+.drill-film > * {
+  position: relative;
+  pointer-events: auto;
+}
+.drill-film > .drill-scrim {
+  position: absolute;
+  inset: 45% 0 0 0;
+  background: linear-gradient(to bottom, rgba(4, 3, 6, 0), rgba(4, 3, 6, 0.72) 38%, rgba(4, 3, 6, 0.94));
+  pointer-events: none;
+}
+.drill-fact {
+  max-width: 30rem;
+  animation: drill-fact-in 1.2s ease-out both;
+}
+.drill-fact-text {
+  margin: 0;
+  font-size: clamp(1.4rem, 5.6vw, 2.25rem);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1.12;
+  color: #ffffff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+.drill-fact-figure {
+  color: #ffb54a;
+  font-weight: inherit;
+  white-space: nowrap; /* a date or a distance is never split across lines */
+}
+.drill-fact-source {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  font-weight: var(--w-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+@keyframes drill-fact-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-fact {
+    animation: none;
+  }
+}
+.drill-next {
+  flex: none;
+}
+/* The last line of the film sits over the person, large, just before the
+   clock starts: a gentle cue that play is about to begin. */
+.drill-fact.ready {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 40%;
+  max-width: none;
+  text-align: center;
+}
+.drill-fact.ready .drill-fact-text {
+  font-size: clamp(2rem, 9vw, 2.75rem);
+  letter-spacing: 0.02em;
+}
+
+/* The thumb controls float over the lower corners, just above the bag strip. */
+.drill-controls {
+  position: absolute;
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.75rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  pointer-events: none;
+}
+.drill-controls > * {
+  pointer-events: auto;
+}
+/* The stick is a button so it is named and reachable; the arrow keys do the
+   same job from a keyboard. */
+.drill-stick {
+  position: relative;
+  width: 7.5rem;
+  height: 7.5rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 10, 18, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  touch-action: none;
+  cursor: pointer;
+}
+.drill-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3rem;
+  height: 3rem;
+  margin: -1.5rem 0 0 -1.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+.drill-pack {
+  width: min(11rem, 44vw);
+  min-height: 5.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  font: inherit;
+  font-weight: var(--w-bold);
+  line-height: 1.2;
+  touch-action: none;
+  cursor: pointer;
+}
+.drill-pack {
+  animation: drill-pack-in 0.18s ease-out both;
+}
+@keyframes drill-pack-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-pack {
+    animation: none;
+  }
+}
+.drill-pack:disabled {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(8, 10, 18, 0.55);
+  color: rgba(244, 241, 234, 0.72);
+  cursor: default;
+}
+
+/* The report: read by shape and colour first, words second. The four kinds
+   of thing each keep one colour everywhere on it. */
+.drill-page {
+  --kind-essential: #5be38a;
+  --kind-listed: #3fc8d8;
+  --kind-neutral: #8a94a6;
+  --kind-bulky: #ff5a4f;
+}
+.debrief-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin: 0.5rem 0 1.5rem;
+}
+.debrief-hero h1 {
+  margin: 0 0 0.25rem;
+}
+.debrief-hero p {
+  margin: 0;
+}
+.debrief-ring {
+  flex: none;
+  width: 7rem;
+  height: 7rem;
+}
+.debrief-ring circle {
+  fill: none;
+  stroke-width: 10;
+}
+.debrief-ring .track {
+  stroke: var(--surface-2);
+}
+.debrief-ring .fill {
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+  animation: debrief-ring-in 1s ease-out both;
+}
+.debrief-ring.good .fill { stroke: var(--kind-essential); }
+.debrief-ring.fair .fill { stroke: var(--blacksky-accent); }
+.debrief-ring.poor .fill { stroke: var(--kind-bulky); }
+.debrief-ring text {
+  fill: var(--ink);
+  font-size: 34px;
+  font-weight: var(--w-heavy);
+  letter-spacing: -0.02em;
+}
+@keyframes debrief-ring-in {
+  from { stroke-dasharray: 0 400; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .debrief-ring .fill { animation: none; }
+}
+.debrief-over-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  background: rgba(255, 90, 79, 0.16);
+  border: 2px solid var(--kind-bulky);
+  color: var(--kind-bulky);
+}
+.debrief-over-mark .glyph {
+  background: none;
+  color: inherit;
+}
+.debrief-over-mark svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.debrief-block {
+  margin-bottom: 1.25rem;
+}
+.debrief-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  font-size: var(--step-s);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.debrief-label .figure {
+  margin-left: auto;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.debrief-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.debrief-tile,
+.debrief-empty {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 44px;
+  border-radius: 0.75rem;
+}
+.debrief-tile {
+  padding: 0;
+  border: 2px solid var(--kind, var(--line));
+  background: color-mix(in srgb, var(--kind, transparent) 14%, var(--surface));
+  cursor: pointer;
+}
+.debrief-tile[aria-pressed='true'] {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.debrief-tile.faded {
+  border-style: dashed;
+  background: var(--surface);
+}
+.debrief-tile.faded .debrief-sprite {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.debrief-empty {
+  border: 2px dashed var(--line);
+  opacity: 0.6;
+}
+.kind-essential { --kind: var(--kind-essential); }
+.kind-listed { --kind: var(--kind-listed); }
+.kind-neutral { --kind: var(--kind-neutral); }
+.kind-bulky { --kind: var(--kind-bulky); }
+.debrief-sprite {
+  display: block;
+  background-image: url('/drill/sprites.png');
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.debrief-points {
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: var(--w-heavy);
+  color: var(--kind);
+}
+.debrief-bar {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.9rem 0 0.6rem;
+}
+.debrief-bar span {
+  display: block;
+  height: 0.5rem;
+  min-width: 0;
+  border-radius: 1rem;
+}
+.debrief-bar .gained { background: var(--kind-essential); }
+.debrief-bar .lost { background: var(--kind-bulky); }
+.debrief-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.debrief-key li::before {
+  content: '';
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: var(--kind);
+}
+.debrief-why {
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.debrief-source {
+  font-size: var(--step-s);
+}
+
+/* The way into the drill from the Rehearse screens: amber and warm where
+   every other row there is neutral, with a flame and a way on, so it reads as
+   a different thing to do, not one more choice. */
+.drill-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  min-height: 72px;
+  margin: 0.25rem 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--blacksky-accent);
+  border-radius: var(--r-card);
+  background: linear-gradient(135deg, rgba(255, 150, 40, 0.22), rgba(255, 90, 30, 0.08));
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.drill-tile:hover {
+  background: linear-gradient(135deg, rgba(255, 150, 40, 0.3), rgba(255, 90, 30, 0.12));
+}
+.drill-tile .glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--blacksky-accent);
+  color: #1a0d04;
+}
+.drill-tile-text {
+  display: grid;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drill-tile-title {
+  font-weight: var(--w-heavy);
+  font-size: var(--step-1);
+}
+.drill-tile-detail {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.drill-tile-go {
+  flex: none;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--blacksky-accent);
+}
+
+/* Read by a screen reader, drawn nowhere. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Show, don't tell ──────────────────────────────────────────────────────── */
+
+/* A glyph inside a control or a line: no circle, the text's own colour. Named
+   twice so it outranks every tinted .glyph rule above. */
+.glyph.line-glyph {
+  width: auto;
+  height: auto;
+  background: none;
+  color: inherit;
+}
+.glyph.line-glyph svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+/* A control or a line led by its glyph. */
+.with-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+p.with-glyph {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+}
+/* State is told by the word and the glyph together, the colour only adds. */
+.tone-amber {
+  color: var(--stale);
+}
+/* Lines led by a glyph instead of a bold lead word. */
+.glyph-lines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+.glyph-lines .line-glyph {
+  margin-top: 0.1em;
+}
+/* Nothing saved yet: the pack drawing sits on the heading's row and the hint
+   lines up under the heading, so the card is as tall as its words. */
+.empty-state {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.25rem 0.875rem;
+}
+.empty-state p {
+  grid-column: 2;
+}
+/* The pack builder's step strip: small rings joined by a line, done steps
+   filled, the current one ringed and named. */
+.flow-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.flow-steps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.flow-steps .glyph {
+  width: 30px;
+  height: 30px;
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+.flow-steps .done .glyph {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.flow-steps .now .glyph {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.flow-steps li + li::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 2px;
+  margin-right: 0.375rem;
+  vertical-align: middle;
+  background: var(--line);
+}
+.flow-steps li {
+  display: flex;
+  align-items: center;
+}
+.tone-amber .glyph {
+  background: color-mix(in srgb, var(--stale) 16%, transparent);
+  color: var(--stale);
+}
+/* The map's key: the map's own colours as swatches, the words beside them. */
+.map-key {
+  list-style: none;
+  margin: 0 0 0.375rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  font-size: var(--step-s);
+}
+.map-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.swatch {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+}
+.swatch-inside {
+  background: #f2d64b;
+}
+.swatch-outside {
+  background: #ffffff;
+}
+.swatch-place {
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.6);
+}
+.source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.place-meta {
+  font-size: var(--step-s);
+}
+.place-distance {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  color: var(--ink);
 }

@@ -76,10 +76,8 @@ export async function chooseLastResortPlaces(page: Page) {
   const count = Math.min(2, await boxes.count());
   for (let i = 0; i < count; i += 1) await boxes.nth(i).check();
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
-  // The note step follows the places: keep the pre-filled example. Then the
-  // programs step: carry none for now.
+  // The note step follows the places: keep the pre-filled example.
   await page.getByRole('button', { name: 'Keep this note' }).click();
-  await page.getByRole('button', { name: 'Not now, choose in Recover later' }).click();
 }
 
 /** Seeds browser flags before any script on the page runs, so they are there
@@ -115,7 +113,7 @@ export async function acknowledgeFirstOpen(page: Page) {
  *  already on screen. */
 export async function startJourney(page: Page, condition: string, url?: string) {
   if (url) await page.goto(url);
-  await expect(page.getByRole('heading', { name: 'What are we rehearsing without?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Rehearse without…' })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(condition) }).click();
   await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
   await expect(page.locator('.rehearsal-bar')).toBeVisible();
@@ -187,4 +185,11 @@ export async function storedRehearsals(page: Page): Promise<Record<string, unkno
       database.close();
     }
   });
+}
+
+/** Opens every visible Source ring, so the publisher and licence lines it
+ *  holds can be read. Each click opens one, so the closed count falls to zero. */
+export async function openSources(page: Page) {
+  const closed = page.getByRole('button', { name: 'About the source', expanded: false }).locator('visible=true');
+  while ((await closed.count()) > 0) await closed.first().click();
 }

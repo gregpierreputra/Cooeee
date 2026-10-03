@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   canonicalJson,
+  canonicalOrder,
   exactTextBytes,
   formatPackBytes,
   offerMatchesStoredSize,
@@ -45,6 +46,14 @@ describe('E1-US1-AC9 canonical byte accounting', () => {
   it('sorts object keys recursively while preserving array order', () => {
     expect(canonicalJson({ z: [{ b: 2, a: 1 }], a: true, skip: undefined, n: null }))
       .toBe('{"a":true,"n":null,"z":[{"a":1,"b":2}]}');
+  });
+
+  // Pinned to one collation: under Czech 'ch' sorts after 'h', which would make
+  // a saved pack fail its check after the phone's language changed.
+  it('orders keys the same way whatever the device language', () => {
+    expect(canonicalJson({ code: 1, checkedAt: 2, chosen: 3 })).toBe('{"checkedAt":2,"chosen":3,"code":1}');
+    expect(['code', 'checkedAt', 'chosen'].sort(canonicalOrder)).toEqual(['checkedAt', 'chosen', 'code']);
+    expect(['code', 'checkedAt'].sort((a, b) => a.localeCompare(b, 'cs'))).toEqual(['code', 'checkedAt']);
   });
 
   it('counts the exact UTF-8 bytes of the canonical content', () => {

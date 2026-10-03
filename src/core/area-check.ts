@@ -51,7 +51,9 @@ export function bpaExposureLayer(packId: string, result: BushfireAreaResult): Ex
 
 type AreaCheckView = {
   resultLine: string;
-  publisherLine: string;
+  cautionLine: string | null;
+  /** The date the map was read, for the Source ring. */
+  savedOn: string;
   priorityLine: string;
 };
 
@@ -72,7 +74,8 @@ export function areaResultLine(status: VerifiedLayerStatus): string {
 export function areaCheckView(result: BushfireAreaResult): AreaCheckView {
   return {
     resultLine: areaResultLine(result.status),
-    publisherLine: copy.DTP_SAVED_DATE(formatSavedDate(result.checkedAt)),
+    cautionLine: result.status === 'present' ? null : copy.AREA_MAP_IS_NOT_FIRE_REACH,
+    savedOn: formatSavedDate(result.checkedAt),
     priorityLine: copy.OFFICIAL_INSTRUCTIONS_FIRST,
   };
 }

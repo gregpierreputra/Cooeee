@@ -1,22 +1,12 @@
-import { PACK_RADIUS_KM, PACK_REFRESH_DAYS } from './constants';
-import { NOT_RECENTLY_VERIFIED, OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from './copy';
+import { PACK_RADIUS_KM } from './constants';
+import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from './copy';
 import { savedAgeDays } from './provenance';
 import type { Pack, PackSeed, PendingPlace, Source } from './types';
 
-/** A pack past its refresh window stays FULLY USABLE and gains a label.
- *  Nothing expires, nothing auto-refreshes, nothing is replaced silently.
- *  The window is inclusive: at exactly PACK_REFRESH_DAYS the pack is not stale.
- *  Freshness derives from verifiedAt, never createdAt. */
-export const freshness = (
-  now: number,
-  verifiedAt: number,
-): { stale: boolean; label: string } => {
-  const days = savedAgeDays(now, verifiedAt);
-  const stale = days > PACK_REFRESH_DAYS;
-  return { 
-    stale, 
-    label: stale ? NOT_RECENTLY_VERIFIED(days) : SAVED_DAYS_AGO(days) };
-};
+/** How long ago a pack was saved, from verifiedAt, never createdAt. A pack
+ *  never expires and is never marked old: the age alone is stated. */
+export const packAgeLabel = (now: number, verifiedAt: number): string =>
+  SAVED_DAYS_AGO(savedAgeDays(now, verifiedAt));
 
 /** The seed for a pack built from an already-confirmed place and an
  * already-fetched official area result. 

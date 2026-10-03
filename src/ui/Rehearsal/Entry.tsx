@@ -13,6 +13,9 @@ import Run from './Run';
 import Unfinished from './Unfinished';
 import { currentRun, endRun, useRehearsalRun } from './run-state';
 import StatusPage from '../components/StatusPage';
+import { focusMain } from '../components/focusMain';
+import Drill from '../Drill/Drill';
+import { markDrilled, replayDrill, useDrilled } from '../Drill/drill-state';
 
 type EntryProps = {
   packId: string;
@@ -82,6 +85,9 @@ export default function RehearsalEntry({
   // Date.now() on every render, so watching it would read the pack, set the
   // gate, render, and read the pack again, for as long as the screen is open.
   const [openedAt] = useState(now);
+  // E9 — whether this pack has had its drill this session. Read as a hook so
+  // the debrief's way on re-renders this screen into the choice of condition.
+  const drilled = useDrilled(packId);
 
   useEffect(() => {
     let live = true;
@@ -100,6 +106,16 @@ export default function RehearsalEntry({
       live = false;
     };
   }, [loadSource, packId, openedAt]);
+
+  // Every screen below replaces the control that led to it under the same path,
+  // so focus moves to the new page whenever the screen changes. Keyed on what
+  // picks the screen, not on anything inside one, so the film and the minute
+  // keep the focus they place themselves.
+  const screen = [
+    gate?.state, isRunFor(run, packId), run?.ending !== undefined,
+    unfinished === undefined, unfinished?.id, drilled, chosen,
+  ].join();
+  useEffect(focusMain, [screen]);
 
   if (gate === null) return null;
 
@@ -131,10 +147,14 @@ export default function RehearsalEntry({
     if (unfinished !== null && unfinished.packId === gate.packId) {
       return <Unfinished rehearsal={unfinished} />;
     }
+    // E9 — the drill comes before the choice of condition, once per pack per
+    // session, whichever way in was taken. Skipping it and finishing it both
+    // mark it done.
+    if (!drilled) return <Drill packId={gate.packId} onDone={() => markDrilled(gate.packId)} />;
     return chosen !== null ? (
       <JourneyBefore packId={gate.packId} condition={chosen} onGone={() => setChosen(null)} />
     ) : (
-      <Condition packId={gate.packId} onChoose={setChosen} />
+      <Condition packId={gate.packId} onChoose={setChosen} onDrill={() => replayDrill(gate.packId)} />
     );
   }
 

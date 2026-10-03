@@ -107,7 +107,8 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
         (el) =>
           px(el) < 16 && !el.closest('.kicker, .blacksky-figure-point, .blacksky-dial-head p'),
       ).length,
-      smallTargets: [...document.querySelectorAll('main button, main summary')]
+      // An information ring is drawn at 32 px; its invisible ::after keeps the 44 px tap area.
+      smallTargets: [...document.querySelectorAll('main button:not(.info-ring), main summary')]
         .map((el) => el.getBoundingClientRect())
         .filter((box) => box.width > 0 && (box.width < 44 || box.height < 44)).length,
     };

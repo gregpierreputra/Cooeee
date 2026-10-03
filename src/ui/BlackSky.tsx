@@ -74,6 +74,9 @@ import {
 import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
+import Glyph from './components/Glyph';
+import Hint from './components/Hint';
+import KeyTerms from './components/KeyTerms';
 import { readRoadsFile } from '../data/roads';
 import BlackSkyDial, {
   DIAL_UNITS,
@@ -178,8 +181,8 @@ export default function BlackSky({
   // US3-AC2, the power rule: GPS samples land in this ref (no render). A sample
   // FIX_PUBLISH_M or more from the position on screen is shown at once, so the
   // distance follows a person who is moving; anything smaller is sensor noise
-  // and waits for the TICK_MS interval below, so a phone held still renders
-  // once per tick. The dial turns with the phone by CSS, not by a render.
+  // and waits for the TICK_MS interval below (one second), so a phone held
+  // still renders once per tick. The dial turns with the phone by CSS, not by a render.
   const latestFix = useRef<Fix | null>(null);
 
   // BS_Enhancement-AC5: the roads, loaded lazily once BlackSky is open, so the
@@ -207,9 +210,12 @@ export default function BlackSky({
         if (live) setPacks([]);
       },
     );
-    loadSites().then((snapshot) => {
-      if (live && snapshot) setSites(snapshot);
-    });
+    loadSites().then(
+      (snapshot) => {
+        if (live && snapshot) setSites(snapshot);
+      },
+      () => undefined, // with no list, the nearest-places pointer is simply absent
+    );
     return () => {
       live = false;
     };
@@ -324,9 +330,11 @@ export default function BlackSky({
 
   // The tick: publishes the clock AND the newest fix together, once per
   // TICK_MS. The fix's age needs the clock to move (an old fix must be called
-  // old), and publishing both in one place keeps renders to one per tick.
+  // old), and publishing both in one place keeps renders to one per tick. A
+  // hidden page is not drawn: the next tick after it returns catches up.
   useEffect(() => {
     const timer = setInterval(() => {
+      if (document.hidden) return;
       setNow(Date.now());
       setFix(latestFix.current);
     }, TICK_MS);
@@ -413,7 +421,9 @@ export default function BlackSky({
   const speedMps = fix && now - fix.at <= FIX_STALE_MS ? fix.speedMps : undefined;
   useWakeLock(shouldStayAwake(voiceOn, speedMps));
 
-  if (packs === null) return null;
+  // The page itself, empty, while the store answers: the route's focus lands on
+  // it, and the same element carries the screen once it arrives.
+  if (packs === null) return <main className="page blacksky" />;
 
   // One pack needs no choosing. With several, only the chosen one is loaded,
   // and a remembered id that matches no saved pack loads nothing.
@@ -588,7 +598,10 @@ export default function BlackSky({
                   <span>{titleCase(pack.name)}</span>
                   <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
                   {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
-                    <span className="blacksky-pack-here">{copy.PACK_COVERS_HERE}</span>
+                    <span className="blacksky-pack-here with-glyph">
+                      <Glyph kind="locate" line />
+                      {copy.PACK_COVERS_HERE}
+                    </span>
                   ) : null}
                 </button>
               </li>
@@ -680,10 +693,12 @@ function ScreenBody({
           <p className="muted">{copy.MARK_HINT}</p>
           <button
             type="button"
+            className="with-glyph"
             onClick={() =>
               onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
             }
           >
+            <Glyph kind="place" line />
             {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
           </button>
           {notes}
@@ -701,10 +716,16 @@ function ScreenBody({
           {dial}
           {notes}
           <ConfidenceLines confidence={screen.confidence} />
-          <section className="card blacksky-guidance">
+          <section className="card blacksky-guidance emergency-line">
             <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
-            <a href="tel:000">{copy.CALL_TRIPLE_ZERO}</a>
-            <a href="tel:1800226226">{copy.VICEMERGENCY_HOTLINE}</a>
+            <a className="with-glyph call-link" href="tel:000">
+              <Glyph kind="calls" line />
+              {copy.CALL_TRIPLE_ZERO}
+            </a>
+            <a className="with-glyph call-link" href="tel:1800226226">
+              <Glyph kind="calls" line />
+              {copy.VICEMERGENCY_HOTLINE}
+            </a>
             <p>{copy.EMERGENCY_BROADCASTER}</p>
             <p className="muted">{copy.PHONE_MAY_WORK}</p>
             <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
@@ -1212,10 +1233,23 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
 }
 
 /** The plain statement when the fix is vague or old, under the dial and never
- *  instead of it. The accuracy figure itself sits beside the distance. */
+ *  instead of it. The bare figure sits beside the distance. UAT: it was not
+ *  understood, so here it is named, and its meaning opens behind a ring. */
 function ConfidenceLines({ confidence }: { confidence: Confidence }) {
   return (
     <>
+      <Hint
+        label={copy.ABOUT_ACCURACY}
+        panelClass="blacksky-info-panel"
+        head={
+          <p className="muted figure">{`${copy.ACCURACY_LABEL} ${copy.ACCURACY_READOUT(confidence.accuracyM)}`}</p>
+        }
+      >
+        <p>{copy.ACCURACY_DETAIL(confidence.accuracyM)}</p>
+        <p>
+          <KeyTerms text={copy.DISTANCES_NOTE} />
+        </p>
+      </Hint>
       {confidence.approximate ? (
         <p className="muted">{copy.GPS_APPROXIMATE(confidence.accuracyM)}</p>
       ) : null}
