@@ -2516,15 +2516,18 @@ p.caution {
 }
 
 /* The back bar sticks below the header's 3rem plus its 1px hairline, and below
-   whatever the notice is showing above that. */
+   whatever the notice is showing above that. It tucks 2px up under the header,
+   which is drawn above it: a phone rounds the two sticky edges to its own
+   pixels separately, and without the overlap the page could show through a
+   sliver between them. */
 .app-header ~ .back-bar {
-  top: calc(3rem + 1px);
+  top: calc(3rem + 1px - 2px);
 }
 .notice-bar ~ .app-header ~ .back-bar {
-  top: calc(5.25rem + 1px);
+  top: calc(5.25rem + 1px - 2px);
 }
 .notice-sliver ~ .app-header ~ .back-bar {
-  top: calc(3rem + 1px + 6px);
+  top: calc(3rem + 1px + 6px - 2px);
 }
 
 /* ── Returning-user home (E1-US2-AC6) ──────────────────────────────────────── */
