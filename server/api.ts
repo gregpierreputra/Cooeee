@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
-import { FACILITY_SOURCE } from '../src/core/facility-sources.ts';
+import { FACILITY_SOURCE, STATIC_TYPES } from '../src/core/facility-sources.ts';
 import type { DynamicSnapshot, FacilityType, SourceHealth, StaticBundle } from '../src/core/types.ts';
 import { type Db, nowIso } from './db.ts';
 import { findNearest, type Point } from './geo.ts';
@@ -140,8 +140,11 @@ function staticBundle(db: Db, params: Params): Route {
       : (db.prepare(
           `SELECT facility_id, type_code AS type, name, address, ROUND(lat, 5) AS lat, ROUND(lon, 5) AS lon,
                   lga_name, designation_status, last_verified_at
-           FROM facilities WHERE designation_status IN ('designated', 'needs_review') ORDER BY facility_id`,
-        ).all() as unknown as StaticBundle['facilities']),
+           FROM facilities
+           WHERE designation_status IN ('designated', 'needs_review')
+             AND type_code IN (${STATIC_TYPES.map(() => '?').join(', ')})
+           ORDER BY facility_id`,
+        ).all(...STATIC_TYPES) as unknown as StaticBundle['facilities']),
     postcodes: unchanged
       ? []
       : (db.prepare(

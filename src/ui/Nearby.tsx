@@ -158,7 +158,11 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
     }
     setNotice(copy.NEARBY_SEARCHING);
     answerAfter(Date.now(), () => {
-      const point = cache ? postcodeOrigin(cache, code) : null;
+      if (!cache || cache.postcodes.length === 0) {
+        setNotice(copy.POSTCODES_NOT_DOWNLOADED);
+        return;
+      }
+      const point = postcodeOrigin(cache, code);
       if (point === null) {
         setNotice(copy.POSTCODE_UNKNOWN(code));
         return;

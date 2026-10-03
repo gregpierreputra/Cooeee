@@ -777,6 +777,7 @@ export const NEARBY_SEARCHING = 'Searching…';
 export const POSTCODE_INVALID = 'Enter a four-digit postcode.';
 export const POSTCODE_UNKNOWN = (postcode: string) =>
   `Postcode ${postcode} is not in the downloaded Victorian list.`;
+export const POSTCODES_NOT_DOWNLOADED = 'The postcode list has not downloaded yet. Connect once, or use your location.';
 export const FROM_POSITION = (accuracy: string) => `From your position, ${accuracy}`;
 /** Followed on screen by the postcode itself, in the accent. */
 export const FROM_POSTCODE = 'From the centre of postcode';
