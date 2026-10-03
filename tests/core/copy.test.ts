@@ -232,7 +232,7 @@ describe('deliberate activation', () => {
 // age wordings in the product must stay distinguishable — the card reports when
 // the pack was written, the header when its contents were last checked.
 describe('the fixed header', () => {
-  it('states the age in days inside the refresh window', () => {
+  it('states the age in days', () => {
     expect(copy.CHECKED_DAYS_AGO(0)).toBe('Checked 0 days ago');
     expect(copy.CHECKED_DAYS_AGO(30)).toBe('Checked 30 days ago');
   });

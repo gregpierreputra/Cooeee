@@ -8,6 +8,7 @@
 
 # Local documentation
 docs/*
+docs.zip
 
 # Node modules
 node_modules/

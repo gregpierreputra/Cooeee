@@ -109,6 +109,9 @@ export function resumeWithEnding(
   ending: RehearsalEnding,
   endedAt: number = Date.now(),
 ): void {
+  // It replaces any rehearsal still running, so that one stops reading the position.
+  stopCounting();
+  counting = false;
   current = {
     id: unfinished.id,
     packId: unfinished.packId,

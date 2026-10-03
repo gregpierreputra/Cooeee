@@ -45,4 +45,15 @@ describe('loadAreaMap', () => {
     expect(fetch).toHaveBeenCalledTimes(3);
     expect(new URL(file.url).searchParams.get('width')).toBe('4096');
   });
+
+  it('falls back to a smaller picture when the sharpest is too slow to arrive', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const fetch = vi.fn(async (url: string) => {
+      if (new URL(url).searchParams.get('width') === '8192') throw new DOMException('slow', 'TimeoutError');
+      return new Response(png, { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetch);
+    const file = await loadAreaMap('pack-1', centre, 1_000);
+    expect(new URL(file.url).searchParams.get('width')).toBe('6144');
+  });
 });

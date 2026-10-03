@@ -84,19 +84,27 @@ function assertHealth(value: unknown): DataHealth {
   );
 }
 
+/** The places of the types this app shows. The response is already size
+ *  bounded, so filtering before the row cap costs nothing unbounded. */
+function shownPlaces(value: unknown): unknown[] {
+  if (!Array.isArray(value)) fail('facilities must be an array');
+  return (value as unknown[]).filter(
+    (item) => typeof item === 'object' && item !== null && (STATIC_TYPES as readonly unknown[]).includes((item as { type?: unknown }).type),
+  );
+}
+
 export function assertStaticBundle(value: unknown): StaticBundle {
   const raw = record(value, 'static bundle');
   return {
     version: nullableText(raw.version, 'version'),
     generated_at: dateText(raw.generated_at, 'generated_at'),
     // A place of a type this app does not show (the server may hold more kinds,
-    // such as cool places) is skipped. Refusing the whole bundle for it would
-    // also throw away the postcode list.
-    facilities: list(raw.facilities, 'facilities').flatMap((item, i) => {
+    // such as cool places) is dropped before anything is counted or checked.
+    // Refusing the whole bundle for it would also throw away the postcode list.
+    facilities: list(shownPlaces(raw.facilities), 'facilities').map((item, i) => {
       const r = record(item, `facilities[${i}]`);
-      if (!(STATIC_TYPES as readonly unknown[]).includes(r.type)) return [];
       const at = (key: string) => `facilities[${i}].${key}`;
-      return [{
+      return {
         facility_id: integer(r.facility_id, at('facility_id')),
         type: oneOf(r.type, STATIC_TYPES, at('type')),
         name: text(r.name, at('name')),
@@ -105,7 +113,7 @@ export function assertStaticBundle(value: unknown): StaticBundle {
         lga_name: nullableText(r.lga_name, at('lga_name')),
         designation_status: oneOf(r.designation_status, DESIGNATIONS, at('designation_status')),
         last_verified_at: dateText(r.last_verified_at, at('last_verified_at')),
-      }];
+      };
     }),
     postcodes: list(raw.postcodes, 'postcodes').map((item, i) => {
       const r = record(item, `postcodes[${i}]`);

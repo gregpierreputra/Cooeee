@@ -103,11 +103,15 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   }, [refresh, now]);
 
   // Every search shows Searching… for at least SEARCH_SHOW_MS, so it is seen
-  // to happen even when the phone answers at once. A newer search, or leaving
-  // the screen, cancels the answer still waiting.
+  // to happen even when the phone answers at once. Each search gets a number;
+  // an answer is shown only if no newer search has started since, so a slow
+  // position can never replace a postcode typed after it. Leaving the screen
+  // cancels the answer still waiting.
   const searchTimer = useRef<number | undefined>(undefined);
+  const latestSearch = useRef(0);
   useEffect(() => () => clearTimeout(searchTimer.current), []);
-  const answerAfter = (startedAt: number, answer: () => void) => {
+  const answerAfter = (search: number, startedAt: number, answer: () => void) => {
+    if (search !== latestSearch.current) return;
     clearTimeout(searchTimer.current);
     searchTimer.current = window.setTimeout(answer, Math.max(0, startedAt + SEARCH_SHOW_MS - Date.now()));
   };
@@ -119,25 +123,27 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       setNotice(copy.LOCATION_FAILED);
       return;
     }
+    const search = ++latestSearch.current;
     const startedAt = Date.now();
     setLocating(true);
     setNotice(copy.NEARBY_SEARCHING);
     navigator.geolocation.getCurrentPosition(
-      (position) =>
-        answerAfter(startedAt, () => {
-          setLocating(false);
+      (position) => {
+        // The button is usable again whatever happens to this answer.
+        setLocating(false);
+        answerAfter(search, startedAt, () => {
           setNotice(null);
           setOrigin({
             lat: position.coords.latitude,
             lon: position.coords.longitude,
             label: copy.FROM_POSITION(copy.ACCURACY_READOUT(Math.round(position.coords.accuracy))),
           });
-        }),
-      () =>
-        answerAfter(startedAt, () => {
-          setLocating(false);
-          setNotice(copy.LOCATION_FAILED);
-        }),
+        });
+      },
+      () => {
+        setLocating(false);
+        answerAfter(search, startedAt, () => setNotice(copy.LOCATION_FAILED));
+      },
       { enableHighAccuracy: true, timeout: NEARBY_FIX_TIMEOUT_MS, maximumAge: NEARBY_FIX_MAX_AGE_MS },
     );
   };
@@ -145,6 +151,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   // Searched as it is typed, like the address search when building a pack.
   // The lookup is on the phone, so it answers at the fourth digit with no wait.
   const findPostcode = (text: string) => {
+    const search = ++latestSearch.current;
     setPostcode(text);
     clearTimeout(searchTimer.current);
     if (text.trim().length < 4) {
@@ -157,7 +164,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       return;
     }
     setNotice(copy.NEARBY_SEARCHING);
-    answerAfter(Date.now(), () => {
+    answerAfter(search, Date.now(), () => {
       if (!cache || cache.postcodes.length === 0) {
         setNotice(copy.POSTCODES_NOT_DOWNLOADED);
         return;

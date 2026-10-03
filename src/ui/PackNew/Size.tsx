@@ -20,8 +20,15 @@ type SizeProps = {
 type DownloadState =
   | { kind: 'offer' }
   | { kind: 'saving' }
-  | { kind: 'interrupted' }
+  | { kind: 'interrupted'; full: boolean }
   | { kind: 'saved' };
+
+/** A full device, as the browser or Dexie (which wraps it in `inner`) reports
+ *  it. Every other failure keeps the plain interrupted wording. */
+const isStorageFull = (error: unknown): boolean => {
+  const named = (value: unknown) => (value as { name?: unknown } | null)?.name === 'QuotaExceededError';
+  return named(error) || named((error as { inner?: unknown } | null)?.inner);
+};
 
 /** E1-US1-AC9 offer and result states. No callback runs before a button tap.
  *
@@ -38,8 +45,8 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     try {
       await download();
       setState({ kind: 'saved' });
-    } catch {
-      setState({ kind: 'interrupted' });
+    } catch (error) {
+      setState({ kind: 'interrupted', full: isStorageFull(error) });
     }
   }
 
@@ -62,6 +69,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
         card={
           <>
             <h1>{copy.DOWNLOAD_STOPPED}</h1>
+            {state.full ? <p>{copy.NOT_ENOUGH_SPACE}</p> : null}
             <p>{copy.PREVIOUS_PACK_UNTOUCHED}</p>
           </>
         }

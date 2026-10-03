@@ -206,11 +206,25 @@ const RATE_LIMIT_PER_MINUTE = 60;
 const WINDOW_MS = 60_000;
 const budgets = new Map<string, { count: number; windowStart: number }>();
 
+// The per-address budget trusts the address the proxy reports, and a client that
+// reaches this host directly can report a new one on every request (and so also
+// reset every budget below). So requests are also counted across every address:
+// past this many in a minute the API answers 429 until the minute is over,
+// which caps the load no spoofed address can raise.
+// ponytail: a flood can refuse honest users for up to a minute; raise the cap or
+// key on a trusted proxy hop if real traffic ever comes near it.
+const GLOBAL_REQUESTS_PER_MINUTE = 1_200;
+let globalWindow = { start: 0, count: 0 };
+
 /** Whether a request from this address is within its budget. Exported so the
  *  rule can be tested without binding a port. */
 export function allowRequest(ip: string, now: number): boolean {
+  if (now - globalWindow.start >= WINDOW_MS) globalWindow = { start: now, count: 0 };
+  globalWindow.count += 1;
+  if (globalWindow.count > GLOBAL_REQUESTS_PER_MINUTE) return false;
   // ponytail: clear every budget rather than expire each one; bounds memory under
-  // address spoofing. Swap for a per-entry sweep if the map churns in practice.
+  // address spoofing, and the global count above still holds. Swap for a
+  // per-entry sweep if the map churns in practice.
   if (budgets.size > 10_000) budgets.clear();
   const entry = budgets.get(ip);
   if (!entry || now - entry.windowStart >= WINDOW_MS) {

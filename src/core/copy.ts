@@ -141,6 +141,8 @@ export const SAVE_PACK = 'Save this pack';
 export const SAVING_PACK = 'Saving…';
 export const DOWNLOAD_STOPPED = 'Download stopped.';
 export const PREVIOUS_PACK_UNTOUCHED = 'Nothing changed. Your previous pack is untouched.';
+/** The phone ran out of room while saving. Trying again cannot help until some is freed. */
+export const NOT_ENOUGH_SPACE = 'There is not enough space on this phone for this pack. Free some space, then try again.';
 export const PLACE_SAVED = 'Place saved';
 
 // E1-US2-AC1–AC5 pack provenance and offline source access
@@ -184,7 +186,7 @@ export const MAP_ZOOM_IN = 'Zoom in';
 export const MAP_ZOOM_OUT = 'Zoom out';
 export const MAP_TURN = 'Turn the map';
 export const MAP_NORTH_UP = 'North up, whole map';
-export const MAP_HOW = 'Drag to move. Pinch to zoom. Twist with two fingers to turn.';
+export const MAP_HOW = 'Drag to move. Pinch, or Ctrl and scroll, to zoom. Twist with two fingers to turn. With a map button selected, the arrow keys move it.';
 export const AREA_MAP_SOURCE = (date: string) => `Department of Transport and Planning map, saved ${date}`;
 export const EXTERNAL_SOURCE_NOTICE = 'May use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to the web page';
@@ -498,7 +500,7 @@ export const BLACKSKY_RESUMED = `Reopened where you left off. To exit, use ${LEA
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 
-/** The header's age line, inside the refresh window. Deliberately different
+/** The header's age line. Deliberately different
  *  wording from the pack card's SAVED_DAYS_AGO: the card reports when the pack
  *  was written, the header reports when its contents were last checked, and one
  *  sentence must never be mistaken for the other. */
@@ -521,7 +523,7 @@ export const NAV_ABOUT = 'About';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
 
-// E4 Recover: needs-first support matching, read from the pack's dated snapshot
+// E4 Recover: needs-first support matching, read from the programs on this phone
 export const RECOVER_QUESTION = 'What do you need?';
 export const RECOVER_PRIVACY_LINE = 'Nothing leaves this phone. Only the programs you save and the steps you tick are remembered.';
 export const NEED_PHRASE: Record<NeedKey, string> = {

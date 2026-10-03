@@ -25,8 +25,8 @@ type World = {
   phase: 'opening' | 'play' | 'leaving';
   clock: number; // seconds this screen has been drawing
   opening: number; // seconds into the opening film
-  elapsed: number; // seconds of the minute used
-  leaving: number; // seconds since the minute ended on the mat
+  elapsed: number; // seconds of the two minutes used
+  leaving: number; // seconds since the time ended on the mat
   onMat: number; // seconds stood on the mat, ready to leave early
   x: number;
   y: number;
@@ -59,7 +59,7 @@ function withKeys(text: string, keys: string[]) {
 }
 
 type Props = {
-  /** Show the opening film first. Play again goes straight to the minute. */
+  /** Show the opening film first. Play again goes straight to the clock. */
   opening: boolean;
   seconds: number;
   onEnd: (outcome: DrillOutcome) => void;
@@ -94,7 +94,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
   const pack = () => {
     const w = world.current;
     // Checked here as well as on the button, so nothing packs out of reach,
-    // past ten, or outside the minute.
+    // past ten, or outside the two minutes.
     if (w.phase !== 'play' || !w.near || w.packed.length >= BAG_LIMIT || w.clock < w.pickUntil) return;
     w.packed = [...w.packed, w.near.id];
     w.packedAt = w.clock;
@@ -287,7 +287,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
       document.removeEventListener('visibilitychange', onVisibility);
       document.body.classList.remove('drill-open');
       audio.fire(0);
-      // Nothing plays on the screens after the minute; Play again resumes it.
+      // Nothing plays on the screens after the two minutes; Play again resumes it.
       audio.suspend();
     };
     // The loop owns its own state; it starts once with the canvas.
@@ -346,7 +346,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
       {hud.playing ? (
         <>
           <p className="drill-room">{hud.room ? copy.IN_ROOM(hud.room) : copy.DRILL_HINT}</p>
-          {/* Spoken twice in the minute, at 30 and at 10 seconds, so a reader who
+          {/* Spoken twice in the two minutes, at 30 and at 10 seconds, so a reader who
               cannot see the clock still hears it coming. */}
           <p className="visually-hidden" role="status" aria-live="polite">
             {hud.seconds === 30 || hud.seconds === 10 ? copy.SECONDS_LEFT(hud.seconds) : ''}

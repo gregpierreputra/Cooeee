@@ -42,9 +42,9 @@ export default function Recover({
   const [params, setParams] = useSearchParams();
   const choice = parseChoice(params.get('need'));
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
-  // UAT: releasing a program on the Kept list made its card vanish mid-read.
+  // UAT: releasing a program on the Saved list made its card vanish mid-read.
   // The list holds the programs kept when it was opened until the person leaves;
-  // each card still shows its live Keep or Kept state.
+  // each card still shows its live Save or Saved state.
   const [keptOnEntry, setKeptOnEntry] = useState<string[] | null>(null);
   const keptListed = choice === 'kept' ? (keptOnEntry ?? kept) : kept;
   // A share note belongs to the category it was made on, so it shows only while
@@ -128,7 +128,8 @@ export default function Recover({
   // R1: the roadmap needs no program, so it opens whatever the device holds.
   if (choice === 'roadmap') return <Roadmap />;
 
-  if (programs.length === 0) {
+  // Who to call needs no program either: the hotline and wellbeing lines ship with the app.
+  if (programs.length === 0 && choice !== 'calls') {
     return (
       <main className="page recover">
         <StateCard heading={copy.RECOVER_NONE_TITLE} detail={copy.RECOVER_NONE_LINE} />
@@ -161,7 +162,7 @@ export default function Recover({
           </p>
         </header>
         {/* The two ways into the programs that are not one need, as tiles over
-            the needs. Kept, in the ring and tint a kept card wears, is here
+            the needs. Saved, in the ring and tint a saved card wears, is here
             only while something is kept; All then fills the row alone. */}
         <div className="recover-tiles">
           {anyKept ? (
@@ -274,7 +275,7 @@ export default function Recover({
         ) : null}
       </header>
       {/* The kept list only. Every card stays on screen after a clear, each
-          with its Keep control, so one can be kept again straight away. */}
+          with its Save control, so one can be saved again straight away. */}
       {choice !== 'kept' ? null : confirmClear ? (
         <section className="card" aria-labelledby="clear-kept-question">
           <p id="clear-kept-question">{copy.CLEAR_KEPT_QUESTION}</p>
@@ -327,7 +328,7 @@ export default function Recover({
                   {copy.IN_YOUR_PACKS}
                 </p>
               ) : null}
-              {/* Keep and the web page side by side at equal size, the call
+              {/* Save and the web page side by side at equal size, the call
                   beneath at full width. */}
               <div className="program-actions">
                 <button

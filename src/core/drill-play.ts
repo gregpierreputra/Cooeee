@@ -94,7 +94,7 @@ export function nearestItem(x: number, y: number, packed: string[]): DrillItem |
   return nearest;
 }
 
-/** How thick the smoke and the dark are, 0 to 1, as the minute runs. The
+/** How thick the smoke and the dark are, 0 to 1, as the two minutes run. The
  *  power is already out, so the dark starts deep and only grows, and smoke
  *  arrives before flame. Neither is ever total: the game stays playable. */
 export function haze(elapsed: number, seconds: number) {

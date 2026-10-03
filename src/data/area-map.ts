@@ -58,20 +58,22 @@ export function areaMapUrl(centre: LatLon, px: number, dpi: number): string {
 }
 
 /** The map, read into memory, checked and hashed, as one more file of the
- *  pack. The sharpest size that fits in maxBytes is kept: a picture too big
- *  for the pack's budget falls back to the next size. Any other failure ends
- *  the attempt at once, so a slow or broken service never costs three waits.
+ *  pack. The sharpest size that fits is kept: a picture too big for the pack's
+ *  budget, or too slow to arrive on this connection, falls back to the next
+ *  size. A service that answers with an error ends the attempt at once.
  *  Nothing is written to the device here. */
 export async function loadAreaMap(packId: string, centre: LatLon, maxBytes: number): Promise<PackFile> {
   for (const [px, dpi] of MAP_SIZES) {
     const url = areaMapUrl(centre, px, dpi);
-    const response = await fetch(url, { signal: AbortSignal.timeout(AREA_MAP_TIMEOUT_MS) });
-    if (!response.ok) throw new TypeError(`area map: request failed (${response.status})`);
+    let response: Response;
     let bytes: ArrayBuffer;
     try {
+      response = await fetch(url, { signal: AbortSignal.timeout(AREA_MAP_TIMEOUT_MS) });
+      if (!response.ok) throw new TypeError(`area map: request failed (${response.status})`);
       bytes = await readBodyBounded(response, maxBytes);
     } catch (error) {
-      if (error instanceof RangeError) continue; // too big for the pack: try smaller
+      // Too big for the pack, or too slow on this connection: try smaller.
+      if (error instanceof RangeError || (error as Error | null)?.name === 'TimeoutError') continue;
       throw error;
     }
     // The service answers a bad request with an XML message and status 200, so

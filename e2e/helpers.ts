@@ -148,6 +148,23 @@ export async function rehearseToResult(
   ).toBeVisible();
 }
 
+/** How many rows one IndexedDB store holds, read straight from the device. */
+export async function storedCount(page: Page, store: string): Promise<number> {
+  return page.evaluate(async (name) => {
+    const request = <T>(req: IDBRequest<T>) =>
+      new Promise<T>((resolve, reject) => {
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    const database = await request(indexedDB.open('cooeee'));
+    try {
+      return await request(database.transaction(name).objectStore(name).count());
+    } finally {
+      database.close();
+    }
+  }, store);
+}
+
 /** Every row in the pack notes store, read straight from IndexedDB. Harness
  *  pages only, after the app has opened. */
 export async function storedNotes(page: Page): Promise<Record<string, unknown>[]> {

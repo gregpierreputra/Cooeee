@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { rehearseToResult, storedNotes, storedRehearsals } from './helpers';
+import { rehearseToResult, storedCount, storedNotes, storedRehearsals } from './helpers';
 
 const ORIGIN = 'http://127.0.0.1:4174';
 /** A pack holding the whole journey: a designation and an official place. */
@@ -192,6 +192,10 @@ test.describe('AC1 marking an action done', () => {
     await row.getByRole('button', { name: 'Mark this done' }).click();
     await expect(row.locator('.gap-done')).toHaveText(/^You marked this done \d{1,2} [A-Z][a-z]+ \d{4}$/);
     const shown = await row.locator('.gap-done').innerText();
+    // The screen shows the mark at once and writes it in the background. Wait
+    // for the write to land, as a person always would, before closing the app:
+    // on a slow machine an immediate reload can outrun it.
+    await expect.poll(() => storedCount(page, 'actionCompletions')).toBe(1);
 
     // The app is closed and reopened. The rehearsal is gone, as AC3 requires;
     // the record of what the reader has done is not.
@@ -250,10 +254,13 @@ test.describe('AC1 undoing a marking', () => {
 
     await row.getByRole('button', { name: 'Mark this done' }).click();
     await expect(row.locator('.gap-done')).toBeVisible();
+    await expect.poll(() => storedCount(page, 'actionCompletions')).toBe(1);
 
     // The same control, tapped again. No confirm step, no menu.
     await row.getByRole('button', { name: 'I have not done this' }).click();
     await expect(row.locator('.gap-done')).toHaveCount(0);
+    // The screen changes at once and the store in the background: wait for it.
+    await expect.poll(() => storedCount(page, 'actionCompletions')).toBe(0);
     await expect(row.getByRole('button', { name: 'Mark this done' })).toBeVisible();
 
     // The gap is not newly detected: it reads exactly as it did before.
@@ -294,6 +301,7 @@ test('AC1 a completion is still there on the next rehearsal', async ({ page }) =
   await expect(page.locator('.gap-row').first()).toBeVisible();
   await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
   await expect(firstRow(page).locator('.gap-done')).toBeVisible();
+  await expect.poll(() => storedCount(page, 'actionCompletions')).toBe(1);
 
   // Leave the rehearsal and run another one on the same pack.
   await page.getByRole('button', { name: 'Leave the rehearsal' }).click();

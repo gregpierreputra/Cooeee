@@ -2,7 +2,7 @@
 // art pack holds no outdoors: a home among gum trees as a bushfire arrives and
 // grows into a firestorm, while the published facts appear over it one by one.
 // Then ten seconds inside the same house the game is played in, drawn by the
-// game's own renderer, so the minute starts in that room with no break.
+// game's own renderer, so the two minutes start in that room with no break.
 // Everything is worked out from the time alone (no stored particles), so any
 // moment can also be drawn as a still picture when the phone asks for less motion.
 
@@ -415,7 +415,7 @@ export function insideScene(t: number, calm: boolean): Scene {
   const powered = t < POWER_OFF_AT;
   const [camX, camY] = powered ? TOUR[0] : tourAt((t - POWER_OFF_AT) / TOUR_SECONDS);
   // A little dim with the lights on, so the orange at the window shows; darker
-  // once they go; and at the end as dark as the minute starts.
+  // once they go; and at the end as dark as the two minutes start.
   const dark = powered ? 0.3 : t < READY_AT ? 0.45 : 0.45 + 0.17 * clamp01((t - READY_AT) / 1.5);
   return {
     time: t,

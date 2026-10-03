@@ -93,14 +93,18 @@ export default function Home({ now }: { now?: number }) {
 
   const removePack = async (id: string) => {
     await deleteCompletePack(id);
+    // The pack is gone: the sheet closes and the card goes, even if the list
+    // cannot be read again straight away.
+    sheet.current?.close();
+    setView((current) => current && { ...current, packs: current.packs.filter((row) => row.pack.id !== id) });
+    // The card and its ... have gone, so focus goes to the page.
+    focusMain();
     const loaded = await load();
     setView(homeView(seed, loaded.rows));
     setUnsaved(loaded.unsaved);
-    sheet.current?.close();
-    // The card and its ... have gone, so focus goes to the page.
-    focusMain();
   };
-  // A delete that fails closes the question and leaves the pack as it was.
+  // A delete that fails closes the question and leaves the pack as it was. A
+  // list that cannot be read again after a delete keeps the card already removed.
   const removePackSafely = (id: string) => removePack(id).catch(() => setAsking(false));
 
   return (

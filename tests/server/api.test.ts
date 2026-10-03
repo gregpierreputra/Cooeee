@@ -161,6 +161,14 @@ describe('the per-address request budget', () => {
     expect(allowRequest('203.0.113.10', t + 60)).toBe(true); // another address has its own budget
     expect(allowRequest(ip, t + 60_000)).toBe(true);
   });
+
+  it('caps requests across every address, so a new address per request cannot flood it', () => {
+    const t = 9_000_000;
+    let allowed = 0;
+    for (let i = 0; i < 1_300; i += 1) if (allowRequest(`198.51.100.${i % 250}.${i}`, t)) allowed += 1;
+    expect(allowed).toBe(1_200);
+    expect(allowRequest('203.0.113.99', t + 60_000)).toBe(true); // the next minute starts afresh
+  });
 });
 
 describe('a malformed request line', () => {

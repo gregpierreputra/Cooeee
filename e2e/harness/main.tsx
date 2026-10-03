@@ -860,7 +860,7 @@ if (window.location.pathname === '/rehearse-choose') {
   );
 }
 
-// E9. The drill on its own, with a minute as short as the spec asks for.
+// E9. The drill on its own, with a clock as short as the spec asks for.
 // ?seconds=3 ends it almost at once; the app never passes this.
 const drillSeconds = Number(new URLSearchParams(window.location.search).get('seconds')) || undefined;
 const drillFlow = (
