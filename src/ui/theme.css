@@ -1098,6 +1098,11 @@ p.caution {
   top: 0;
   z-index: 1;
   background: var(--bg);
+  /* A phone rounds the header's and this bar's sticky edges to its own pixels
+     separately, which can leave a sliver of page showing between them. This
+     backfill of the bar's own colour, just above it and under the header,
+     fills any such seam without moving the bar. */
+  box-shadow: 0 -2px 0 var(--bg);
   padding: 0.5rem 0 0.25rem;
 }
 
@@ -2516,18 +2521,15 @@ p.caution {
 }
 
 /* The back bar sticks below the header's 3rem plus its 1px hairline, and below
-   whatever the notice is showing above that. It tucks 2px up under the header,
-   which is drawn above it: a phone rounds the two sticky edges to its own
-   pixels separately, and without the overlap the page could show through a
-   sliver between them. */
+   whatever the notice is showing above that. */
 .app-header ~ .back-bar {
-  top: calc(3rem + 1px - 2px);
+  top: calc(3rem + 1px);
 }
 .notice-bar ~ .app-header ~ .back-bar {
-  top: calc(5.25rem + 1px - 2px);
+  top: calc(5.25rem + 1px);
 }
 .notice-sliver ~ .app-header ~ .back-bar {
-  top: calc(3rem + 1px + 6px - 2px);
+  top: calc(3rem + 1px + 6px);
 }
 
 /* ── Returning-user home (E1-US2-AC6) ──────────────────────────────────────── */
