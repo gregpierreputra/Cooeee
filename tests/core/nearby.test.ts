@@ -122,7 +122,7 @@ describe('nearbyView', () => {
     const relief = row(nearbyView(NOW, KALORAMA, cache({}, 61 * 60_000), OFFLINE), 'RELIEF');
     expect(relief.place).toBeNull();
     expect(relief.stateLabel).toBe(copy.STATE_CACHED(copy.HOURS_AGO(1)));
-    expect(relief.note).toBe(`${copy.TOO_OLD_TO_SHOW} ${copy.VICEMERGENCY_HOTLINE}`);
+    expect(relief.note).toBe(`${copy.TOO_OLD_TO_SHOW}\n${copy.VICEMERGENCY_HOTLINE}`);
     expect(relief.note).toContain('1800 226 226');
   });
 
@@ -142,6 +142,8 @@ describe('nearbyView', () => {
     expect(row(view, 'NSP').state).toBe('live');
     expect(row(view, 'RELIEF').state).toBe('live');
     expect(row(view, 'RELIEF').stateLabel).toBe(copy.STATE_LIVE);
+    // UAT: the label speaks of the information, never of the centre being open.
+    expect(copy.STATE_LIVE).not.toMatch(/\b(live|open)\b/i);
     expect(row(view, 'RELIEF').note).toBeNull();
   });
 

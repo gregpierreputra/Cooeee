@@ -1,0 +1,148 @@
+// E9 — the drill house as data. ONE source for the picture and the physics:
+// scripts/build-drill-art.mjs paints floors and walls from GRID, the game draws
+// FURNITURE from the sprite sheet, and drill-house.ts builds its solid cells
+// from both. So what stops the figure is always what the player can see.
+
+import type { DrillRoom } from './drill-items';
+
+/** One tile of the grid, in source pixels. The art is drawn at whole multiples. */
+export const TILE = 16;
+
+/** One string per row of tiles. A room letter is floor, '#' is wall, '+' is the
+ *  door mat and '@' is where the figure starts (both living room floor). */
+export const GRID = [
+  '############################',
+  '############################',
+  '############################',
+  '#ggggg#uuuu#kkkkkkkllll+++l#',
+  '#ggggg#uuuu#kkkkkkkllllllll#',
+  '#ggggg#uuuu#kkkkkkkllllllll#',
+  '#gggggguuuu#kkkkkkkllllllll#',
+  '#gggggguuuu#kkkkkkklllll@ll#',
+  '#ggggg#uuuu#kkkkkkkllllllll#',
+  '###gg###uu######lllllll#####',
+  '###gg###uu######lllllll#####',
+  '###gg###uu######lllllll#####',
+  '#hhhhhhhhhhhhhhhhhhhhhhhhhh#',
+  '#hhhhhhhhhhhhhhhhhhhhhhhhhh#',
+  '#####mm###bb####ss#####cc###',
+  '#####mm###bb####ss#####cc###',
+  '#####mm###bb####ss#####cc###',
+  '#mmmmmmm#bbbb#ssssss#cccccc#',
+  '#mmmmmmm#bbbb#ssssss#cccccc#',
+  '#mmmmmmm#bbbb#ssssss#cccccc#',
+  '#mmmmmmm#bbbb#ssssss#cccccc#',
+  '#mmmmmmm#bbbb#ssssss#cccccc#',
+  '############################',
+];
+
+export const MAT = '+';
+export const START = '@';
+
+/** Which room a floor letter belongs to. A cell not listed here is wall. */
+export const ROOM_OF: Record<string, DrillRoom> = {
+  g: 'garage',
+  u: 'laundry',
+  k: 'kitchen',
+  l: 'living room',
+  h: 'hall',
+  m: 'main bedroom',
+  b: 'bathroom',
+  s: 'study',
+  c: 'second bedroom',
+  [MAT]: 'living room',
+  [START]: 'living room',
+};
+
+/** One piece of furniture. x, y, w, h are its footprint in whole tiles: the
+ *  cells it blocks. The sprite is drawn centred on the footprint and standing
+ *  on its bottom edge, so a tall piece rises over the cells behind it. A flat
+ *  piece (a rug) is painted into the floor and blocks nothing. A wall piece
+ *  (a picture, a window) sits on a wall cell and is centred on the wall face.
+ *  A loose piece (a bucket, a pot plant, a toy) is small clutter the person
+ *  steps round or over, so it blocks nothing; one standing on another piece
+ *  (a globe on a nightstand) takes a fractional y at that piece's top.
+ *  `nudge` moves only the picture sideways, in pixels, for a sprite wider than
+ *  its footprint that would otherwise overhang a wall. */
+export type Piece = { sprite: string; x: number; y: number; w: number; h: number; flat?: true; wall?: true; loose?: true; nudge?: number };
+
+/** How far above the floor line a thing of this height hung on a wall is
+ *  drawn, in pixels: centred on the two tile wall face, so every picture and
+ *  window hangs on one line, clear of the skirting and the ceiling. */
+export const wallLift = (height: number): number => Math.max(1, Math.round((2 * TILE - height) / 2));
+
+export const FURNITURE: Piece[] = [
+  // living room: the front door and its mat, the television wall, a sofa facing it
+  { sprite: 'door', x: 24, y: 2, w: 1, h: 1 },
+  { sprite: 'doormat', x: 23, y: 3, w: 1, h: 1, flat: true },
+  { sprite: 'doormat', x: 24, y: 3, w: 1, h: 1, flat: true },
+  { sprite: 'doormat', x: 25, y: 3, w: 1, h: 1, flat: true },
+  { sprite: 'rug', x: 20, y: 4, w: 3, h: 2, flat: true },
+  { sprite: 'fern', x: 19, y: 3, w: 1, h: 1, loose: true },
+  { sprite: 'tvUnit', x: 20, y: 3, w: 2, h: 1 },
+  { sprite: 'sofa', x: 20, y: 6, w: 3, h: 1 },
+  { sprite: 'armchair', x: 26, y: 5, w: 1, h: 1, nudge: -2 },
+  { sprite: 'sideboard', x: 25, y: 8, w: 2, h: 1 },
+  { sprite: 'palm', x: 19, y: 8, w: 1, h: 1, loose: true },
+  // kitchen
+  { sprite: 'window', x: 15, y: 2, w: 2, h: 1, wall: true },
+  { sprite: 'fridge', x: 12, y: 3, w: 1, h: 1 },
+  { sprite: 'cabinet', x: 13, y: 3, w: 2, h: 1 },
+  { sprite: 'sink', x: 15, y: 3, w: 2, h: 1 },
+  { sprite: 'stove', x: 17, y: 3, w: 1, h: 1 },
+  { sprite: 'dining', x: 14, y: 5, w: 2, h: 2 },
+  { sprite: 'chair', x: 13, y: 6, w: 1, h: 1 },
+  { sprite: 'chairLeft', x: 16, y: 6, w: 1, h: 1 },
+  // laundry
+  { sprite: 'washer', x: 7, y: 3, w: 1, h: 1, nudge: 2 },
+  { sprite: 'shelf', x: 9, y: 3, w: 2, h: 1 },
+  { sprite: 'bucket', x: 10, y: 8, w: 1, h: 1, loose: true },
+  // garage
+  { sprite: 'bench', x: 1, y: 3, w: 3, h: 1 },
+  { sprite: 'rods', x: 4, y: 3, w: 2, h: 1 },
+  { sprite: 'pingPong', x: 1, y: 5, w: 2, h: 3 },
+  { sprite: 'boxes', x: 5, y: 8, w: 1, h: 1, loose: true },
+  // hall: pictures on the walls and a runner on the floor, nothing in the way
+  { sprite: 'fern', x: 1, y: 12, w: 1, h: 1, loose: true },
+  { sprite: 'landscape', x: 6, y: 11, w: 1, h: 1, wall: true },
+  { sprite: 'frameA', x: 10, y: 11, w: 1, h: 1, wall: true, nudge: 8 },
+  { sprite: 'frameB', x: 12, y: 11, w: 1, h: 1, wall: true, nudge: 8 },
+  { sprite: 'frameC', x: 14, y: 11, w: 1, h: 1, wall: true, nudge: 8 },
+  { sprite: 'landscape', x: 24, y: 11, w: 1, h: 1, wall: true, nudge: 8 },
+  { sprite: 'rug', x: 11, y: 12, w: 3, h: 2, flat: true },
+  { sprite: 'rug', x: 18, y: 12, w: 3, h: 2, flat: true },
+  { sprite: 'shoes', x: 25, y: 12, w: 1, h: 1, flat: true },
+  { sprite: 'smallPlant', x: 26, y: 12, w: 1, h: 1, loose: true },
+  // main bedroom
+  { sprite: 'window', x: 2, y: 16, w: 2, h: 1, wall: true },
+  { sprite: 'greenRug', x: 3, y: 20, w: 2, h: 2, flat: true },
+  { sprite: 'nightstand', x: 1, y: 17, w: 1, h: 1 },
+  { sprite: 'bed', x: 2, y: 17, w: 3, h: 2 },
+  { sprite: 'dresser', x: 7, y: 17, w: 1, h: 1 },
+  { sprite: 'basket', x: 1, y: 21, w: 1, h: 1, loose: true },
+  { sprite: 'standMirror', x: 7, y: 21, w: 1, h: 1, nudge: -2 },
+  // bathroom
+  { sprite: 'bathMat', x: 10, y: 18, w: 2, h: 1, flat: true },
+  { sprite: 'toilet', x: 9, y: 17, w: 1, h: 1 },
+  { sprite: 'dresser', x: 12, y: 17, w: 1, h: 1 },
+  { sprite: 'tub', x: 11, y: 20, w: 2, h: 2 },
+  { sprite: 'dresser', x: 9, y: 21, w: 1, h: 1 },
+  // study
+  { sprite: 'rug', x: 16, y: 19, w: 3, h: 2, flat: true },
+  { sprite: 'tvUnit', x: 14, y: 17, w: 2, h: 1 },
+  { sprite: 'officeChair', x: 15, y: 19, w: 1, h: 1 },
+  { sprite: 'bookshelf', x: 18, y: 17, w: 2, h: 1 },
+  { sprite: 'sideboard', x: 14, y: 21, w: 2, h: 1 },
+  { sprite: 'frameC', x: 14, y: 16, w: 1, h: 1, wall: true, nudge: 8 },
+  // second bedroom
+  { sprite: 'worldMap', x: 25, y: 16, w: 2, h: 1, wall: true },
+  { sprite: 'kidRug', x: 22, y: 19, w: 2, h: 2, flat: true },
+  { sprite: 'singleBed', x: 21, y: 17, w: 1, h: 2 },
+  { sprite: 'nightstand', x: 22, y: 17, w: 1, h: 1 },
+  // standing on the nightstand's top, so it sorts as a thing resting there
+  { sprite: 'globe', x: 22, y: 16.3, w: 1, h: 1, loose: true },
+  { sprite: 'dresser', x: 25, y: 17, w: 1, h: 1 },
+  { sprite: 'drum', x: 26, y: 21, w: 1, h: 1, nudge: -2, loose: true },
+  { sprite: 'teddy', x: 21, y: 21, w: 1, h: 1, loose: true },
+  { sprite: 'toyCar', x: 24, y: 21, w: 1, h: 1, flat: true },
+];

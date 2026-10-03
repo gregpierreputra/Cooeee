@@ -57,6 +57,9 @@ describe('GET /api/v1/safe-locations', () => {
     const db = seeded();
     expect(get(db, '/api/v1/safe-locations?postcode=30').status).toBe(400);
     expect(get(db, '/api/v1/safe-locations?lat=91&lon=0').status).toBe(400);
+    // Number('') is 0, so a blank coordinate must not read as the equator.
+    expect(get(db, '/api/v1/safe-locations?lat=&lon=').status).toBe(400);
+    expect(get(db, '/api/v1/safe-locations?lat=%20&lon=144.9').status).toBe(400);
     expect(get(db, '/api/v1/safe-locations').status).toBe(400);
     expect(get(db, '/api/v1/safe-locations?postcode=9999').status).toBe(404);
     expect(route(db, 'POST', new URL('http://localhost/api/v1/health')).status).toBe(405);

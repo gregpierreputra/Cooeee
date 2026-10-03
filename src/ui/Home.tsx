@@ -8,11 +8,9 @@ import { localFlagStore } from '../data/acknowledgement';
 import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
 import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
+import Hint from './components/Hint';
 import HoldButton from './components/HoldButton';
-import InfoGlyph from './components/InfoGlyph';
-import { useRevealedPanel } from './components/useRevealedPanel';
-import StateCard from './components/StateCard';
-import { startTour } from './components/Tour';
+import { focusMain } from './components/focusMain';
 
 /** E1-US2-AC6 — where someone who set up a place some time ago lands when they
  *  open Cooeee again.
@@ -49,52 +47,78 @@ export default function Home({ now }: { now?: number }) {
 
   useEffect(() => {
     let live = true;
-    load().then((loaded) => {
-      if (!live) return;
-      setView(homeView(seed, loaded.rows));
-      setUnsaved(loaded.unsaved);
-    });
+    // The cards come straight from the store; the sync below can wait on a
+    // page copy, and the screen must not stay empty for it. The nudge waits for
+    // the sync, so it never counts a program that is about to be carried.
+    listCompletePacks().then(
+      (rows) => {
+        if (live) setView((shown) => shown ?? homeView(seed, rows));
+      },
+      () => {},
+    );
+    load().then(
+      (loaded) => {
+        if (!live) return;
+        setView(homeView(seed, loaded.rows));
+        setUnsaved(loaded.unsaved);
+      },
+      // A store that cannot be read must not leave a blank screen: it renders
+      // as if nothing were saved, the same way BlackSky does.
+      () => {
+        if (live) setView(homeView(seed, []));
+      },
+    );
     return () => {
       live = false;
     };
   }, [seed]);
 
-  // Deleting a pack takes two taps: the delete control swaps that pack's card
-  // for a question, and only the second destroys data. Keep restores the card
-  // untouched. The id names which card is asking.
-  const [confirming, setConfirming] = useState<string | null>(null);
+  // A pack's settings open in one bottom sheet from the ... on its card. The
+  // browser's own dialog gives Escape, a focus trap and focus back to the ...
+  // on close. Deleting takes two taps: Delete this pack asks, and only Delete
+  // destroys data.
+  const sheet = useRef<HTMLDialogElement>(null);
+  const [settings, setSettings] = useState<{ id: string; name: string; ageLine: string } | null>(null);
+  const [asking, setAsking] = useState(false);
+  const deleteRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (confirming) cancelRef.current?.focus();
-  }, [confirming]);
+    if (settings) sheet.current?.showModal();
+  }, [settings]);
+  // Focus follows the question: onto Keep it when it appears, back to Delete
+  // this pack when it is answered with Keep it.
+  useEffect(() => {
+    (asking ? cancelRef : deleteRef).current?.focus();
+  }, [asking]);
 
   const removePack = async (id: string) => {
     await deleteCompletePack(id);
     const loaded = await load();
     setView(homeView(seed, loaded.rows));
     setUnsaved(loaded.unsaved);
-    setConfirming(null);
+    sheet.current?.close();
+    // The card and its ... have gone, so focus goes to the page.
+    focusMain();
   };
+  // A delete that fails closes the question and leaves the pack as it was.
+  const removePackSafely = (id: string) => removePack(id).catch(() => setAsking(false));
 
   return (
     <main className="page home">
-      {/* One preparation line under its own eyebrow, so it reads as the day's
-          reminder rather than as an explanation of the app; beneath it, a line
-          for the reader it was not written for, then the guidance it is drawn
-          from. It says nothing about a particular place, and nothing about
+      {/* One preparation line under its own eyebrow, with the guidance it is
+          drawn from; the line for a reader it was not written for waits behind
+          the ring. It says nothing about a particular place, and nothing about
           what is happening outside. */}
       {view === null ? null : (
         <section className="preparation">
-          {/* The ring beside the label starts the guided tour of every screen. */}
-          <div className="preparation-head">
-            <button type="button" className="info-ring" aria-label={copy.TOUR_HINT} onClick={startTour}>
-              <InfoGlyph />
-            </button>
-            <span className="kicker">{copy.PREPARATION_LABEL}</span>
-          </div>
+          <span className="kicker">{copy.PREPARATION_LABEL}</span>
           <p>{view.preparation.text}</p>
-          <p className="muted">{view.preparation.context}</p>
-          <p className="muted preparation-source">{view.preparation.source}</p>
+          <Hint
+            label={copy.PREPARATION_MORE}
+            head={<p className="muted preparation-source">{view.preparation.source}</p>}
+          >
+            <p>{view.preparation.context}</p>
+          </Hint>
         </section>
       )}
 
@@ -104,85 +128,108 @@ export default function Home({ now }: { now?: number }) {
         <section className="card nudge">
           <div className="card-head">
             <Glyph kind="kept" />
-            <div>
-              <span className="kicker">{copy.NUDGE_KICKER}</span>
-              <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
-            </div>
+            <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
           </div>
-          <p className="muted">{copy.KEPT_NOT_SAVED_LINE}</p>
-          <Link className="action" to="/packs/new">{copy.BUILD_A_PACK}</Link>
+          <Link className="action with-glyph" to="/packs/new">
+            <Glyph kind="plus" line />
+            {copy.BUILD_A_PACK}
+          </Link>
         </section>
       ) : null}
 
       {view === null ? null : view.packs.length === 0 ? (
-        <StateCard heading={copy.NO_PACK_SAVED} detail={copy.NO_PACKS_HINT} />
+        <section className="card empty-state">
+          <Glyph kind="layer" />
+          <h2>{copy.NO_PACK_SAVED}</h2>
+          <p className="muted">{copy.NO_PACKS_HINT}</p>
+        </section>
       ) : (
-        view.packs.map(({ pack, ageLine }) =>
-          confirming === pack.id ? (
-            <section key={pack.id} className="card">
-              <p>{copy.DELETE_PACK_QUESTION}</p>
-              <div className="card-confirm-actions">
-                <button
-                  ref={cancelRef}
-                  type="button"
-                  className="card-confirm-no"
-                  onClick={() => setConfirming(null)}
-                >
-                  {copy.KEEP_THIS_PACK}
-                </button>
-                <button
-                  type="button"
-                  className="card-confirm-yes"
-                  onClick={() => void removePack(pack.id)}
-                >
-                  {copy.CONFIRM_DELETE_PACK}
-                </button>
-              </div>
-            </section>
-          ) : (
+        view.packs.map(({ pack, ageLine }) => (
             <section key={pack.id} className="card pack-card saved-place">
-              <span className="kicker">{copy.SAVED_PLACE_LABEL}</span>
+              {/* The pack's settings, top right inside the card, above the
+                  card's link. */}
+              <button
+                type="button"
+                className="card-more"
+                aria-label={copy.PACK_SETTINGS(titleCase(pack.name))}
+                aria-haspopup="dialog"
+                onClick={() => setSettings({ id: pack.id, name: pack.name, ageLine })}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                  <circle cx="5" cy="12" r="2" fill="currentColor" />
+                  <circle cx="12" cy="12" r="2" fill="currentColor" />
+                  <circle cx="19" cy="12" r="2" fill="currentColor" />
+                </svg>
+              </button>
               <div className="saved-place-title">
+                <Glyph kind="place" />
                 {/* Cased by the same rule as the address line below, so the two
                     read alike: the name defaults to the locality the geocoder
                     returned, and arrives in the same capitals. Storage keeps the
                     name exactly as it was saved. The link stretches over the
-                    whole card (see .pack-card); the delete control sits above it. */}
+                    whole card (see .pack-card). */}
                 <h2>
                   <Link to={`/packs/${pack.id}`}>{titleCase(pack.name)}</Link>
                 </h2>
-                <button
-                  type="button"
-                  className="card-delete"
-                  aria-label={copy.DELETE_PACK}
-                  onClick={() => setConfirming(pack.id)}
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-                    <path
-                      d="M7 7l10 10M17 7 7 17"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
               </div>
               {/* Title-cased for reading only. The pack still stores the address
                   exactly as the custodian returned it. */}
               <p className="muted">{titleCase(pack.address)}</p>
-              <p className="muted figure saved-place-footer">
+              <p className="muted figure saved-place-footer with-glyph">
+                <Glyph kind="offline" line />
                 {ageLine}
-                {copy.OPENS_WITHOUT_SIGNAL}
               </p>
             </section>
-          ),
-        )
+        ))
       )}
+
+      <dialog
+        ref={sheet}
+        className="sheet"
+        aria-labelledby="pack-sheet-title"
+        onClose={() => {
+          setSettings(null);
+          setAsking(false);
+        }}
+      >
+        {settings ? (
+          <>
+            <h2 id="pack-sheet-title">{titleCase(settings.name)}</h2>
+            <p className="muted figure">{settings.ageLine}</p>
+            {asking ? (
+              <>
+                <p>{copy.DELETE_PACK_QUESTION}</p>
+                <div className="card-confirm-actions">
+                  <button ref={cancelRef} type="button" className="card-confirm-no" onClick={() => setAsking(false)}>
+                    {copy.KEEP_THIS_PACK}
+                  </button>
+                  <button
+                    type="button"
+                    className="card-confirm-yes with-glyph"
+                    onClick={() => void removePackSafely(settings.id)}
+                  >
+                    <Glyph kind="trash" line />
+                    {copy.CONFIRM_DELETE_PACK}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button ref={deleteRef} type="button" className="sheet-delete with-glyph" onClick={() => setAsking(true)}>
+                <Glyph kind="trash" line />
+                {copy.DELETE_PACK}
+              </button>
+            )}
+            <button type="button" onClick={() => sheet.current?.close()}>
+              {copy.CLOSE}
+            </button>
+          </>
+        ) : null}
+      </dialog>
 
       <div className="actions">
         {/* One more pack, in every state: the list grows from here. */}
-        <Link className="action main-action" to="/packs/new">
+        <Link className="action main-action with-glyph" to="/packs/new">
+          <Glyph kind="plus" line />
           {copy.BUILD_A_PACK}
         </Link>
         {/* Reachable in both states, including with no pack saved. The ring to
@@ -201,44 +248,24 @@ export default function Home({ now }: { now?: number }) {
 }
 
 /** The hold control with the information ring to its left and, after a tap
- *  or click on the ring, the panel that says what BlackSky is. The panel opens
- *  in flow beneath the pair (see .blacksky-hold-row), so it covers nothing; a
- *  second tap closes it. Never on hover: a pointer passing over the ring must
- *  not open it, on a phone or a PC alike. */
+ *  on the ring, the panel that says what BlackSky does, one glyph per line. */
 function BlackSkyHoldRow({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const panel = useRevealedPanel<HTMLElement>(open);
-
   return (
-    <div className="blacksky-hold-row">
-      <button
-        type="button"
-        className="info-ring blacksky-info"
-        aria-label={copy.ABOUT_BLACKSKY}
-        aria-expanded={open}
-        aria-controls="blacksky-info-panel"
-        onClick={() => setOpen((value) => !value)}
-      >
-        <InfoGlyph />
-      </button>
-      {children}
-      {open ? (
-        <section
-          id="blacksky-info-panel"
-          ref={panel}
-          tabIndex={-1}
-          className="blacksky-info-panel info-panel"
-        >
-          <span className="kicker">{copy.ABOUT_BLACKSKY}</span>
-          <ul className="info-lines">
-            {copy.BLACKSKY_INFO_LINES.map((line) => (
-              <li key={line.lead}>
-                <b>{line.lead}</b> {line.text}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-    </div>
+    <Hint
+      className="blacksky-hold-row"
+      ringClass="blacksky-info"
+      panelClass="blacksky-info-panel"
+      label={copy.ABOUT_BLACKSKY}
+      head={children}
+    >
+      <ul className="info-lines glyph-lines">
+        {copy.BLACKSKY_INFO_LINES.map((line) => (
+          <li key={line.glyph}>
+            <Glyph kind={line.glyph} line />
+            {line.text}
+          </li>
+        ))}
+      </ul>
+    </Hint>
   );
 }

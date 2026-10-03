@@ -45,11 +45,12 @@ const gap = (gapType: RehearsalGapType, hazard: RehearsalHazard): DetectedGap =>
 // The rows each check decides on. Exported so a walk step shows the very rows
 // the check found, rather than a second reading of the pack that could differ.
 
-/** The stored rows holding an official designation for the address. */
+/** The stored rows holding the official designation answer for the address.
+ *  UAT: "none mapped here" and "not published" are official answers too, so a
+ *  pack holding one is not missing its designation. Rebuilding would store the
+ *  same answer, so a gap there could never be closed. */
 export const designationRows = (content: CompletePackContent): ExposureLayer[] =>
-  content.layers.filter(
-    (row) => row.status === 'present' && (DESIGNATION_CODES as readonly string[]).includes(row.code),
-  );
+  content.layers.filter((row) => (DESIGNATION_CODES as readonly string[]).includes(row.code));
 
 /** The official places saved for one hazard's journey. */
 export const hazardPlaces = (content: CompletePackContent, hazard: RehearsalHazard): Destination[] =>

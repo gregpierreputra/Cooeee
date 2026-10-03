@@ -16,8 +16,8 @@ const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 
 async function reachConflict(page: Page, suffix = '') {
   await page.goto(`${CONFLICT_URL}${suffix}`);
-  await page.getByLabel('Address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Street address').fill('RIDGE');
+  await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
   await expect(page.getByRole('heading', { name: PLACE_ALREADY_SAVED })).toBeVisible();
@@ -76,7 +76,7 @@ test('AC8 replace explicitly starts the next stage while the original remains cu
   await page.getByRole('button', { name: REPLACE_SAVED_PACK }).click();
 
   await expect(page.getByRole('heading')).toHaveText(
-    'This address is inside a Designated Bushfire Prone Area.',
+    'This address is inside a Bushfire Prone Area.',
   );
   expect(await page.evaluate(() => window.__areaCheckCount)).toBe(1);
   expect(await packs(page)).toEqual(before);
@@ -84,8 +84,8 @@ test('AC8 replace explicitly starts the next stage while the original remains cu
 
 test('AC8 store failure stops before network and states that nothing changed', async ({ page }) => {
   await page.goto(`${CONFLICT_URL}?mode=unavailable`);
-  await page.getByLabel('Address').fill('RIDGE');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Street address').fill('RIDGE');
+  await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
   await page.getByRole('button', { name: 'Save this place' }).click();
 

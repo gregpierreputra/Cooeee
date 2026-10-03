@@ -14,7 +14,6 @@ export const PLACES_OFFERED = 5;
 /** How many of the nearest official places BlackSky points at from the live
  *  fix, beyond the ones saved in the pack. */
 export const NEARBY_PLACES = 3;
-export const PACK_REFRESH_DAYS = 30; // label only; nothing expires
 /** The longest personal note a pack takes. A bound on the user's own text,
  *  enforced where it is written, not a limit on the official content. */
 export const NOTE_MAX_CHARS = 2000;
@@ -109,9 +108,12 @@ export const DTP_DATASET_URL =
  *  importing the module that fetches it. */
 export const AREA_MAP_NAME = 'bushfire-prone-area-map.png';
 /** How far that picture reaches each way from the saved place, in
- *  kilometres: 8 km across, close enough to read roads, creeks and place names.
- *  A picture size only; the pack's 6 km area rule is PACK_RADIUS_KM. */
-export const AREA_MAP_HALF_KM = 4;
+ *  kilometres: 40 km across, the wider area to explore, zoomed in on the pack
+ *  page to read roads, creeks and place names. A picture size only; the pack's
+ *  6 km area rule is PACK_RADIUS_KM. */
+export const AREA_MAP_HALF_KM = 20;
+/** The most a whole pack may take on the phone, map included. */
+export const PACK_MAX_BYTES = 15 * 1_048_576;
 
 // The arrows are drawn from any fix; these decide when the screen says the fix
 // is old or vague beside them, and when a marked-position estimate expires.
@@ -126,15 +128,210 @@ export const HOLD_MS = 2_000;
 // real phones. 24 px is about half a fingertip, and the smallest target WCAG
 // 2.5.8 accepts: a pointer further off than that is no longer on this control.
 export const HOLD_LEAVE_MARGIN_PX = 24;
+// The buzz when a hold completes, where the phone has one: the cue for a finger
+// that cannot see the control under it. Entering is a longer buzz, a door into
+// another screen; leaving BlackSky a short one, so it is felt, not startling
+// (from the phone test, 28 Sep).
+export const HOLD_VIBRATE_MS = 100;
+export const HOLD_LEAVE_VIBRATE_MS = 40;
 // How long the line saying BlackSky was not opened stays on screen.
 export const BLOCKED_NOTICE_MS = 8_000;
-export const TICK_MS = 5_000;
+// BlackSky's clock: the fix's age, a small move and a marked estimate's growing
+// uncertainty all catch up within one tick, so what is on screen is never more
+// than a second behind a person who is walking.
+export const TICK_MS = 1_000;
 // A position this far from the one on screen is shown at once, not at the next
-// tick. Smaller moves are sensor noise and wait, which saves the battery.
+// tick. Smaller moves are sensor noise and wait for the tick.
 export const FIX_PUBLISH_M = 5;
+/** The readout's steadiness (28 Sep review): the distance and the compass point
+ *  on screen change only when the place, as seen from the new position, has
+ *  moved by more than the position's own error (its accuracy), and never for
+ *  less than this. Below that the change is the fix wobbling, and a figure
+ *  that flickers between 2.60 and 2.61 km while the phone lies still reads as
+ *  movement that is not there. The voice keeps its own rule. */
+export const READOUT_MIN_CHANGE_M = FIX_PUBLISH_M;
 // A position watch that has said nothing for this long is started again: some
 // phones stop delivering positions without reporting any error.
 export const WATCH_RESTART_MS = 15_000;
+
+// The dial's heading (BS_Enhancement-AC2). A car body disturbs a phone's compass
+// and most people leave a bushfire by car, so above this speed the direction of
+// movement from GPS turns the dial instead. 10 km/h is faster than a walk, where
+// the compass is the better reading, and slower than any driving. Exclusive: at
+// exactly this speed the compass still drives.
+export const HEADING_FROM_MOVEMENT_MPS = 10 / 3.6;
+// A heading source that has said nothing for this long is treated as absent,
+// and the dial is drawn north up: a dial frozen at its last angle would look
+// live while it is not.
+export const COMPASS_SILENT_MS = 3_000;
+
+// Voice (BS_Enhancement-AC3). Every figure here is a starting value, to be
+// tuned from the passenger-in-a-moving-car test, not a measured one.
+/** The distances, in metres, at which the phone speaks as they are passed in
+ *  either direction. Outermost first; the rule relies on that order. */
+export const VOICE_MILESTONES_M = [10_000, 5_000, 2_000, 1_000, 500, 200, 100] as const;
+/** Having passed a milestone, the distance must come back past it by this share
+ *  of the milestone before it counts as passed the other way. Without it a
+ *  position wandering either side of 5 km would say so every time. Starting value. */
+export const VOICE_MILESTONE_MARGIN = 0.05;
+/** Never two messages closer together than this, the GPS signal lost message
+ *  and its return excepted. Starting value. */
+export const VOICE_MIN_GAP_MS = 20_000;
+/** While moving, this long with nothing said earns one message, so a driver
+ *  knows the voice is still on. Starting value. */
+export const VOICE_SILENCE_MS = 180_000;
+/** The place must stay on its new side this long before the change is spoken:
+ *  a glance over the shoulder or one bend in the road is not a change. Starting value. */
+export const VOICE_SIDE_DWELL_MS = 5_000;
+/** Closer than this the person is at the place, within what a phone's position
+ *  can tell. Said once. Starting value. */
+export const AT_PLACE_M = 50;
+/** Where "ahead" ends and "behind" begins, in degrees either way from the top
+ *  of the phone: ahead is within 45, behind is beyond 135, and the two sides lie
+ *  between. Four equal quarters as a starting value. */
+export const VOICE_SIDE_EDGES_DEG = { ahead: 45, behind: 135 } as const;
+/** How often the voice rule is asked whether there is anything to say. It
+ *  reads refs and renders nothing; a second is fine-grained enough for a
+ *  five-second dwell. Starting value. */
+export const VOICE_CHECK_MS = 1_000;
+
+// Staying open (BS_Enhancement-AC4).
+/** Faster than this the person is moving, and the screen is kept awake. A slow
+ *  walk is about 1.4 m/s; a phone lying still reports 0 or nothing. Starting value. */
+export const AWAKE_MOVING_MPS = 1;
+
+// Roads inside the dial (BS_Enhancement-AC5). Every figure here is a starting
+// value, to be tuned on a real phone and in user testing, not a measured one.
+/** "Whole way": the view reaches the place and this share beyond it, so the pin
+ *  sits inside the ring with some road around it. Starting value. */
+export const ROADS_WHOLE_WAY_MARGIN = 0.15;
+/** The smallest and largest radius the dial ever shows. Below 1.5 km a road
+ *  map on a 340 px dial is a handful of lines; above 30 km even the main roads
+ *  run together and nothing can be named. Starting values. */
+export const ROADS_MIN_RADIUS_M = 1_500;
+export const ROADS_MAX_RADIUS_M = 30_000;
+/** "Near me": the ground a person on foot can see around them. Starting value. */
+export const ROADS_NEAR_RADIUS_M = 1_500;
+/** The map is drawn again once the person has moved more than this far from
+ *  where it was last drawn, or more than ROADS_REDRAW_SHARE of the view's
+ *  radius, whichever is larger (see redrawDistanceM in core/roads.ts). Below it
+ *  the change is under a pixel or two, and a redraw per GPS sample would cost
+ *  power for nothing. Starting value. */
+export const ROADS_REDRAW_M = 50;
+/** The share of the view's radius the person must move before a redraw. In the
+ *  30 km view 50 m is a fifth of a pixel, and a redraw every 50 m in a car
+ *  would redraw two thousand roads every two seconds; 1 % is about a pixel and
+ *  a half at every view. Starting value. */
+export const ROADS_REDRAW_SHARE = 0.01;
+/** A freeway line shorter than this is an on or off ramp. Starting value. */
+export const ROADS_RAMP_MAX_M = 1_000;
+/** Ramps are drawn only in "Near me", thin, in the freeway's colours. In the
+ *  whole way they were most of the lines drawn (593 of 804 round Clayton
+ *  South) and turned every interchange into a knot. */
+export const ROADS_RAMP_IN_WHOLE_WAY = false;
+/** Which road classes the dial draws. Drawn all at one weight, the state's
+ *  roads were an unreadable mesh on a phone (Samsung S26 test), so each view
+ *  draws only the roads a person would recognise at its scale:
+ *  - "Near me" draws every class, 0 to 3, collectors included;
+ *  - "Whole way" never draws collectors: classes 0 to 2 up to and including
+ *    `mainUpToM`, and beyond it freeways and highways (0 and 1) only, unless
+ *    the ground is so empty of main roads that fewer than `sparseLines` lines
+ *    of classes 0 to 2 are in view: then the arterials come back, or a country
+ *    view would be nearly blank.
+ *  Starting values. */
+export const ROADS_CLASS_LIMITS = { mainUpToM: 10_000, sparseLines: 40 } as const;
+/** Line widths in screen pixels, by kind and view: the whole width of a road,
+ *  its casing. Wide enough in "Near me" to read as streets on the light disc;
+ *  in the whole way the freeway stands well above the highway and the
+ *  arterial, so the hierarchy reads at a glance. A freeway ramp is drawn in
+ *  "Near me" only, at the collector width. Starting values. */
+export const ROADS_WIDTH_PX = {
+  whole: { freeway: 5.5, highway: 2.8, arterial: 1.6, collector: 1.2 },
+  near: { freeway: 11, highway: 9, arterial: 6, collector: 4 },
+} as const;
+/** The centre arrow's size, as a share of the arrow first built for the plain
+ *  dial: smaller, so it covers less of the map it sits on (at full size it hid
+ *  the middle of the map, where the roads through the person run). Starting
+ *  value. */
+export const DIAL_ARROW_SCALE = 0.5;
+/** The compass letters' size on the phone's dial: 13 px on the 328 px dial of
+ *  a 360 px phone, the card's floor for any text a person must read there.
+ *  The dial is drawn in its own units and scales, so the letters are sized as
+ *  that share of the dial. */
+export const DIAL_LETTER_PX = 13;
+export const DIAL_PHONE_PX = 328;
+/** The place's pin on the ring, tip to top, on the phone's dial: 30 px. At
+ *  22 px, the size of the drop inside the disc, the ring pin read smaller than
+ *  a compass letter on the phone (28 Sep), and it is what the person turns to
+ *  bring under the notch. The drop inside the disc stays 22 px: there it sits
+ *  on the map among the roads. */
+export const DIAL_RING_PIN_PX = 30;
+/** Looking around the map by dragging it. The map may be moved at most this
+ *  far from the person: far enough to see the next suburb, not so far that the
+ *  person loses the map (the view itself is 1.5 km round them). */
+export const ROADS_PAN_MAX_M = 3_000;
+/** A pointer that moves less than this before it lifts is a tap, and a tap on
+ *  the map does nothing: a finger resting on a phone in a hand moves a few
+ *  pixels. Screen pixels. Starting value. */
+export const ROADS_PAN_TAP_PX = 6;
+/** With the map moved and no touch for this long, it returns to the person by
+ *  itself: someone who looked away and back must find themselves at the
+ *  centre. Starting value. */
+export const ROADS_PAN_RETURN_MS = 15_000;
+/** The scale bar on the map disc: this many metres, a round figure a person
+ *  can pace out, short enough to sit in the disc's corner in "Near me". */
+export const ROADS_SCALE_BAR_M = 500;
+/** Its label, in screen pixels: as quiet as the map's own names. Starting
+ *  value. */
+export const ROADS_SCALE_LABEL_PX = 11;
+/** Each road is drawn twice, a darker casing at its full width and its fill on
+ *  top; the fill is narrower by this edge on each side: a share of the width,
+ *  never under `minPx`, so the edge shows on the thinnest road. Starting
+ *  values. */
+export const ROADS_CASING_EDGE = { share: 0.15, minPx: 0.6 } as const;
+/** At most this many road names in view: more and the dial reads as a street
+ *  map, which it is not. Starting value. */
+export const ROADS_LABEL_COUNT = 4;
+/** Road names, in screen pixels: over the card's 13 px floor, so they read at
+ *  arm's length. The label rule fits names at this size and the dial draws
+ *  them at it. Starting value. */
+export const ROADS_LABEL_PX = 14;
+/** A name may take up to this share of its line's visible length (the longest
+ *  run in view), placed on the line's straightest stretches. Starting value. */
+export const ROADS_LABEL_STRETCH = 0.9;
+/** How straight a stretch is: the straight-line distance between its ends over
+ *  its length, 1 for a straight line. Summing the turns instead counted every
+ *  pixel's wobble, so a road that was plainly straight at the dial's scale
+ *  scored as bent. Stretches within this much of the straightest count as
+ *  equally straight, so a name can move off the arrow onto a stretch that is
+ *  nearly as good. Starting value. */
+export const ROADS_LABEL_STRAIGHT_SLACK = 0.02;
+/** The least straightness the stretch under a name may have. Round a hairpin,
+ *  or along a road that wiggles, a name reads as broken letters with part of
+ *  it upside down (seen in the 20 km view): such a stretch is no room at all.
+ *  Starting value. */
+export const ROADS_LABEL_MIN_STRAIGHT = 0.9;
+/** The room a name needs beyond its own width, each end, and the clear space
+ *  between two names. Starting values. */
+export const ROADS_LABEL_PAD_PX = 4;
+export const ROADS_LABEL_GAP_PX = 3;
+/** Locality names on the map disc, "Whole way" only: the suburbs and towns a
+ *  person knows, so the far view says where the place lies among them.
+ *  Upper case at this size in screen pixels, with this much letter-spacing.
+ *  Starting values. */
+export const ROADS_LOCALITY_PX = 9.5;
+export const ROADS_LOCALITY_LETTER_SPACING_PX = 1;
+/** At most this many locality names on the disc. Starting value. */
+export const ROADS_LOCALITY_COUNT = 8;
+/** A locality is not named closer than this to the centre, where the arrow is,
+ *  nor this close to the disc's edge, where the name would be cut off, nor
+ *  this close to a locality already named. Screen pixels. Starting values. */
+export const ROADS_LOCALITY_CENTRE_PX = 46;
+export const ROADS_LOCALITY_EDGE_PX = 30;
+export const ROADS_LOCALITY_SPACING_PX = 62;
+/** A locality name keeps this much clear round its own upright box, of road
+ *  names and of the pin. Screen pixels. Starting value. */
+export const ROADS_LOCALITY_PAD_PX = 4;
 
 // Marked-position estimate (E3-US1-AC4). How well a person standing at their
 // own gate knows the spot, and how fast that knowledge decays — with no motion
@@ -181,8 +378,8 @@ export const OFFICIAL_DOMAINS = [
 export const MS_PER_DAY = 86_400_000;
 
 /** Recovery programs change faster than places do, so the pack's recovery
- *  snapshot has its own window, separate from PACK_REFRESH_DAYS and the
- *  SNAPSHOT_MAX_AGE_DAYS build gate. Label only; the programs stay shown. */
+ *  snapshot has its own window, separate from the SNAPSHOT_MAX_AGE_DAYS build
+ *  gate. Label only; the programs stay shown. */
 export const RECOVERY_STALE_DAYS = 90;
 
 /** The longest gap between "I'm going now" and "I went there" that is still
@@ -201,6 +398,8 @@ export const NEED_CHANNELS = {
   documents: 'https://www.servicesaustralia.gov.au/natural-disaster-support',
 } as const;
 export const GENERAL_CHANNEL_URL = 'https://www.disasterassist.gov.au/';
+/** Red Cross's register for letting family know you are safe, live during an emergency. */
+export const REGISTER_FIND_REUNITE_URL = 'https://register.redcross.org.au/';
 /** The VicEmergency hotline, the one number every call list opens with. */
 export const HOTLINE_NUMBER = '1800 226 226';
 
@@ -208,6 +407,8 @@ export const HOTLINE_NUMBER = '1800 226 226';
  *  the list can never grow without bound. */
 export const KEPT_KEY = 'cooeee.kept.v1';
 export const KEPT_MAX = 50;
+/** R1: the roadmap steps ticked done, as step ids. */
+export const ROADMAP_DONE_KEY = 'cooeee.roadmap.v1';
 
 /** Unit constant. The metres↔kilometres display cutoff and divisor for
  * destination.formatDistanceM — not a safety threshold. */
@@ -246,4 +447,6 @@ export const NEARBY_SYNC_TIMEOUT_MS = 15_000;
 export const NEARBY_RESYNC_MS = 5 * 60_000; // while the screen stays open and online
 export const NEARBY_CLOCK_MS = 60_000; // how often the age labels are re-read
 export const NEARBY_FIX_TIMEOUT_MS = 15_000;
+/** How long Nearby shows Searching… at least, so a search is always seen to happen. */
+export const SEARCH_SHOW_MS = 500;
 export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is fine

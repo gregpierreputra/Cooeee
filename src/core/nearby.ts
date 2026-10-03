@@ -109,7 +109,8 @@ const stateLabel = (state: PlaceState, ageMs: number): string =>
       ? copy.STATE_CACHED(ageLabel(ageMs))
       : copy.STATE_UNAVAILABLE;
 
-const withHotline = (line: string): string => `${line} ${copy.VICEMERGENCY_HOTLINE}`;
+/** The hotline goes on its own line under the note (the card keeps line breaks). */
+const withHotline = (line: string): string => `${line}\n${copy.VICEMERGENCY_HOTLINE}`;
 
 /** The line a struggling or never-read source earns on every row it answers for. */
 const sourceNote = (status: SourceStatus, type: FacilityType): string | null => {

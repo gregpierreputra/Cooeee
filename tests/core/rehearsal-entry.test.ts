@@ -349,10 +349,10 @@ describe('what each stopped state says', () => {
   });
 
   it('counts read as sentences in both the single and the plural case', () => {
-    expect(copy.PACK_NOT_FINISHED_DETAIL(1)).toContain('One pack was started');
-    expect(copy.PACK_NOT_FINISHED_DETAIL(2)).toContain('2 packs were started');
-    expect(copy.PACK_NOT_FINISHED_DETAIL(3)).toContain('3 packs were started');
-    expect(copy.PACK_NOT_FINISHED_DETAIL(21)).toContain('21 packs were started');
+    expect(copy.PACK_NOT_FINISHED_DETAIL(1)).toContain('A pack build did not finish');
+    expect(copy.PACK_NOT_FINISHED_DETAIL(2)).toContain('2 pack builds did not finish');
+    expect(copy.PACK_NOT_FINISHED_DETAIL(3)).toContain('3 pack builds did not finish');
+    expect(copy.PACK_NOT_FINISHED_DETAIL(21)).toContain('21 pack builds did not finish');
     expect(copy.NO_PACK_OTHERS_DETAIL(1)).toContain('One other pack is saved');
     expect(copy.NO_PACK_OTHERS_DETAIL(2)).toContain('2 other packs are saved');
     expect(copy.NO_PACK_OTHERS_DETAIL(4)).toContain('4 other packs are saved');

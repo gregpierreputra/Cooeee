@@ -1,7 +1,7 @@
 /** The "i" inside an information ring, and beside the quieter notes. One
  *  drawing wherever information is offered, so the same mark always means the
  *  same thing. Decorative: the ring or the line beside it carries the name. */
-export default function InfoGlyph({ size = 20 }: { size?: number }) {
+export default function InfoGlyph({ size = 16 }: { size?: number }) {
   return (
     <svg
       viewBox="0 0 24 24"

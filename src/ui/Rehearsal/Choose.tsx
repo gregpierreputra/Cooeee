@@ -3,6 +3,8 @@ import { Navigate, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 import { homeView } from '../../core/home';
 import Head from './Head';
+import DrillTile from '../Drill/DrillTile';
+import { replayDrill } from '../Drill/drill-state';
 import type { Pack } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
 import RehearsalEntry from './Entry';
@@ -42,14 +44,22 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
   if (packs.length === 0) return <RehearsalEntry packId="" />;
   if (packs.length === 1) return <Navigate to={`/rehearse/${packs[0].id}`} replace />;
 
+  const rows = homeView(Date.now(), packs).packs;
+  // The drill is played in the newest pack's home, the one most likely lived in.
+  const playDrill = () => {
+    replayDrill(rows[0].pack.id);
+    navigate(`/rehearse/${rows[0].pack.id}`);
+  };
+
   return (
     <main className="page rehearsal-condition">
       <Head />
+      <DrillTile onPlay={playDrill} />
       <h2>{copy.CHOOSE_PACK_TO_REHEARSE}</h2>
       <p>{copy.CHOOSE_PACK_TO_REHEARSE_DETAIL}</p>
 
       <ul className="list condition-list">
-        {homeView(Date.now(), packs).packs.map(({ pack, ageLine }) => (
+        {rows.map(({ pack, ageLine }) => (
           <li key={pack.id}>
             <button
               type="button"

@@ -266,11 +266,12 @@ describe('putNote', () => {
 });
 
 describe('schema', () => {
-  it('is version 9: the pack stores, the Nearby-places stores, the snapshot, files, notes, pack programs, rehearsals and completions', () => {
-    expect(db.verno).toBe(9);
+  it('is version 10: the pack stores, the Nearby-places stores, the snapshot, files, notes, pack programs, rehearsals, completions and drills', () => {
+    expect(db.verno).toBe(10);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
       'actionCompletions',
       'destinations',
+      'drills',
       'dynamicSnapshot',
       'files',
       'layers',

@@ -15,8 +15,10 @@ export default defineConfig({
     {
       command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
       url: `http://localhost:${PORT}/`,
-      // On CI the suite always tests a fresh build, never a server left running.
-      reuseExistingServer: !process.env.CI,
+      // Always a fresh build: a preview left running would serve an old dist/
+      // and the suite would test it without a word. With the port taken, the
+      // run stops instead. PW_REUSE=1 opts in when the build is known current.
+      reuseExistingServer: Boolean(process.env.PW_REUSE),
       timeout: 180_000,
     },
     {

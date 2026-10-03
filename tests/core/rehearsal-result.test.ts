@@ -55,9 +55,9 @@ describe('a result with gaps', () => {
     if (result.state !== 'gaps') throw new Error('expected gaps');
 
     const [content, persistent] = result.rows;
-    expect(content.meaning).toBe('This information is missing from your pack.');
+    expect(content.meaning).toBe('Missing from your pack.');
     expect(persistent.meaning).toBe(
-      'This is not available under this condition. Here is what to do instead.',
+      'Not available under this condition. Do this instead.',
     );
     expect(content.meaning).not.toBe(persistent.meaning);
   });
@@ -84,7 +84,7 @@ describe('a result with gaps', () => {
         'You went there. It took you 14 minutes.',
       );
       expect(rehearsalResult(rehearsal(gaps, { ending: 'dry-run' })).endingLine).toBe(
-        'This was a dry run: you ended it without going.',
+        'A dry run. You ended it without going.',
       );
       // A rehearsal recorded before the endings existed.
       expect(rehearsalResult(rehearsal(gaps)).endingLine).toBe(copy.ENDING_NOT_RECORDED);
@@ -126,7 +126,7 @@ describe('a result with no gaps', () => {
       /\bprepared\b|\bready\b|\bprotected\b|\bcovered\b|\ball set\b|\bwell done\b/i,
     );
     // It says what was checked, not what is true in general.
-    expect(result.detail).toContain('That is what was checked, on this pack, today.');
+    expect(result.detail).toContain('Checked on this pack today.');
   });
 });
 
@@ -320,14 +320,14 @@ describe('the wording of the record and of a write that did not keep', () => {
   // statements, and the screen makes the first one.
   it('says a run was not kept without saying it did not happen', () => {
     expect(copy.RUN_NOT_KEPT).toBe(
-      'This rehearsal could not be kept on this device. What it found is on this screen now, and will not be here later.',
+      'Not kept on this phone. What it found is here now, but not later.',
     );
     expect(copy.RUN_NOT_KEPT).not.toMatch(/\bdid not (run|happen)\b|\bfailed to run\b|\bno rehearsal\b/i);
   });
 
   it('says a marking was not kept, and promises no date for it', () => {
     expect(copy.ACTION_NOT_KEPT).toBe(
-      'This could not be kept on this device. Nothing was recorded, so it will still be here to mark next time.',
+      'Not kept on this phone. Mark it again next time.',
     );
     expect(copy.ACTION_NOT_KEPT).not.toMatch(/\d/);
   });

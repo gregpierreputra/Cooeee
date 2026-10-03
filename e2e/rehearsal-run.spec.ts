@@ -13,7 +13,7 @@ const UNREADABLE = `${ORIGIN}/rehearse?mode=unreadable`;
 
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
-const CHOOSE_HEADING = 'What are we rehearsing without?';
+const CHOOSE_HEADING = 'Rehearse without…';
 
 const bar = (page: Page) => page.locator('.rehearsal-bar');
 
@@ -269,7 +269,7 @@ test.describe('AC5 returning asks how it ended', () => {
     await expect(endings.nth(0)).toHaveAccessibleName(/^I went there/);
     await expect(endings.nth(1)).toHaveAccessibleName(/^I did not go, a dry run/);
     await expect(page.locator('[aria-pressed="true"], [aria-checked="true"], :checked')).toHaveCount(0);
-    await expect(page.getByText('You started a rehearsal without a location fix on')).toBeVisible();
+    await expect(page.getByText(', without a location fix. Only you can say how it ended.')).toBeVisible();
 
     // Left unanswered: away from the screen and back, then another cold start.
     await page.getByTestId('remount').click();

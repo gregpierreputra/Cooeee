@@ -12,15 +12,19 @@
 // asks how it ended. What is never kept is where the run was on screen: a cold
 // start resumes no screen and shows no partial result.
 
+import { FIX_PUBLISH_M } from './constants';
+import { distanceM } from './geo';
 import { conditionLabel, type RehearsalCondition } from './rehearsal-condition';
 import * as copy from './copy';
-import type { RehearsalEnding } from './types';
+import type { Fix, LatLon, RehearsalEnding } from './types';
 
 /** A rehearsal in progress: the pack it runs against, the one condition it runs
  *  under, and the identity it is recorded under.
  *
- *  There is no progress field, and there must not be one: progress that outlived
- *  the page would be a partial result. */
+ *  There is no field for where she is, and there must not be one: a position that
+ *  outlived the page would be a record of her movements. The distance walked is
+ *  counted beside the run (run-state.ts) and kept only as one number, with her
+ *  ending. */
 export type RehearsalRun = {
   /** The id the rehearsal is kept under, from its start to its finish. The row
    *  its start writes and the row its finish writes are the same row. */
@@ -36,7 +40,37 @@ export type RehearsalRun = {
   /** The moment she gave that ending. What is recorded as the rehearsal's end,
    *  so a result screen that remounts cannot move it. */
   endedAt?: number;
+  /** The metres counted up to that moment, where location was counted. */
+  distanceM?: number;
 };
+
+/** The walk so far: metres counted, and the last position counted, held in
+ *  memory only. */
+export type Track = { distanceM: number; last: LatLon | null };
+
+export const NO_TRACK: Track = { distanceM: 0, last: null };
+
+/** A position no better than this is too vague to add to the distance. */
+export const TRACK_ACCURACY_MAX_M = 50;
+
+/** Add one position to the walk. A vague position is skipped, and so is a move
+ *  smaller than FIX_PUBLISH_M, which is the phone's own jitter while standing. */
+export function addFix(track: Track, fix: Pick<Fix, 'lat' | 'lon' | 'accuracyM'>): Track {
+  if (fix.accuracyM > TRACK_ACCURACY_MAX_M) return track;
+  const here = { lat: fix.lat, lon: fix.lon };
+  if (track.last === null) return { distanceM: track.distanceM, last: here };
+  const moved = distanceM(track.last, here);
+  return moved < FIX_PUBLISH_M ? track : { distanceM: track.distanceM + moved, last: here };
+}
+
+/** The time since the start as a clock: "4:05", or "1:02:09" past an hour. */
+export function elapsedClock(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const two = (n: number) => String(n).padStart(2, '0');
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  return hours > 0 ? `${hours}:${two(minutes)}:${two(total % 60)}` : `${minutes}:${two(total % 60)}`;
+}
 
 /** What the bar states, as two separate strings.
  *

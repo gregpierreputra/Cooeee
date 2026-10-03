@@ -1,4 +1,4 @@
-import { BUNDLED_FILE_TIMEOUT_MS, MAX_RESPONSE_BYTES } from '../core/constants';
+import { BUNDLED_FILE_TIMEOUT_MS, MAX_RESPONSE_BYTES, PACK_MAX_BYTES } from '../core/constants';
 import { sourcePageUrls } from '../core/provenance';
 import type { PackFile, TextPackContent } from '../core/types';
 import { loadAreaMap } from './area-map';
@@ -58,16 +58,18 @@ export const loadSourceFiles = (packId: string, urls: string[]): Promise<PackFil
  *  the map of its area. Their bytes are part of the one size stated before
  *  anything is written. The map is the one file a pack can do without: a map
  *  server that is down or slow must not stop the pack, so the pack is built
- *  without it and its page simply shows no map. */
+ *  without it and its page simply shows no map. The map is loaded last, so
+ *  it takes whatever room the text and the pages leave under PACK_MAX_BYTES. */
 export async function loadPackFiles(packId: string, content: TextPackContent): Promise<PackFile[]> {
   // A kept program's page travels too, where the build rendered one; a page
   // the build could not render leaves that program with its web link only.
   const programPages = content.recovery
     .map((program) => program.officialUrl)
     .filter((url) => currentCopyName(url) !== undefined);
-  const [pages, map] = await Promise.all([
-    loadSourceFiles(packId, [...new Set([...sourcePageUrls(content), ...programPages])]),
-    loadAreaMap(packId, content.pack).catch(() => null),
-  ]);
+  const pages = await loadSourceFiles(packId, [...new Set([...sourcePageUrls(content), ...programPages])]);
+  const used =
+    new TextEncoder().encode(JSON.stringify(content)).byteLength +
+    pages.reduce((sum, page) => sum + page.sizeBytes, 0);
+  const map = await loadAreaMap(packId, content.pack, PACK_MAX_BYTES - used).catch(() => null);
   return map ? [...pages, map] : pages;
 }

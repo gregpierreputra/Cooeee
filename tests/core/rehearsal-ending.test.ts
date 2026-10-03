@@ -57,7 +57,7 @@ describe('a started rehearsal', () => {
     const view = unfinishedView(unfinishedFrom(run));
     expect(view.heading).toBe('How did this rehearsal end?');
     expect(view.detail).toBe(
-      'You started a rehearsal without a location fix on 3 September 2026. Only you can say how it ended.',
+      'Started 3 September 2026, without a location fix. Only you can say how it ended.',
     );
     expect(view.rows).toEqual(endingRows());
     const words = [view.heading, view.detail, ...view.rows.flatMap((row) => [row.label, row.detail])].join(' ');
@@ -90,11 +90,9 @@ describe('the ending of a finished rehearsal', () => {
 
   it('is stated in words, and not recorded in the shape an unknown pack change uses', () => {
     expect(endingLine({ state: 'walked' })).toBe('You went there.');
-    expect(endingLine({ state: 'dry-run' })).toBe('This was a dry run: you ended it without going.');
-    expect(endingLine({ state: 'not-recorded' })).toBe(
-      'Whether you went there or ended this rehearsal without going was not recorded, so it cannot be said either way.',
-    );
-    const shape = /^Whether .+ was not recorded, so it cannot be said either way\.$/;
+    expect(endingLine({ state: 'dry-run' })).toBe('A dry run. You ended it without going.');
+    expect(endingLine({ state: 'not-recorded' })).toBe('Whether you went there was not recorded.');
+    const shape = /^Whether .+ was not recorded\.$/;
     expect(copy.PACK_CHANGE_UNKNOWN).toMatch(shape);
     expect(copy.ENDING_NOT_RECORDED).toMatch(shape);
   });
@@ -124,6 +122,15 @@ describe('what an ending records', () => {
     const record = endingRecord(STARTED, 'walked', STARTED + twoDays);
     expect(record).toEqual({ finishedAt: STARTED + twoDays, ending: 'walked' });
     expect(endingLine({ state: 'walked' })).toBe('You went there.');
+  });
+
+  it('keeps the counted distance with a walked rehearsal, and states both', () => {
+    const record = endingRecord(STARTED, 'walked', STARTED + 900_000, 1_234);
+    expect(record).toEqual({ finishedAt: STARTED + 900_000, ending: 'walked', elapsedMs: 900_000, distanceM: 1_234 });
+    expect(endingLine({ state: 'walked', elapsedMs: 900_000, distanceM: 1_234 })).toBe(
+      'You went there. It took you 15 minutes and covered 1.2 km.',
+    );
+    expect(endingRecord(STARTED, 'dry-run', STARTED + 60_000, 1_234)).not.toHaveProperty('distanceM');
   });
 
   it('keeps no time on a dry run', () => {
@@ -192,7 +199,7 @@ describe('her time, as the result states it', () => {
     expect(lines).toEqual([
       'You went there. It took you 14 minutes.',
       'You went there.',
-      'This was a dry run: you ended it without going.',
+      'A dry run. You ended it without going.',
       copy.ENDING_NOT_RECORDED,
     ]);
     expect(lines.join(' ')).not.toMatch(

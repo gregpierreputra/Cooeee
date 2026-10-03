@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { packOfferSizeLine } from '../../core/pack-offer';
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import type { PackOffer } from '../../core/types';
 import StateCard from '../components/StateCard';
+import Glyph from '../components/Glyph';
 import StatusPage from '../components/StatusPage';
+import { focusMain } from '../components/focusMain';
+import FlowSteps from './FlowSteps';
 
 type SizeProps = {
   offer: PackOffer;
@@ -27,6 +30,8 @@ type DownloadState =
  * be a decision the user does not actually have. */
 export function Size({ offer, address, download, onContinue }: SizeProps) {
   const [state, setState] = useState<DownloadState>({ kind: 'offer' });
+  // Each state replaces the page, so focus moves with it.
+  useEffect(focusMain, [state.kind]);
 
   async function run() {
     setState({ kind: 'saving' });
@@ -42,7 +47,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     return (
       <StatusPage
         page="size-page"
-        kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+        kicker={<FlowSteps at={4} />}
         card={<p>{copy.SAVING_PACK}</p>}
       />
     );
@@ -52,7 +57,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     return (
       <StatusPage
         page="size-page"
-        kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+        kicker={<FlowSteps at={4} />}
         cardClass="size-content"
         card={
           <>
@@ -69,11 +74,14 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     return (
       <StatusPage
         page="size-page"
-        kicker={copy.EYEBROW_SAVE_YOUR_PACK}
+        kicker={<FlowSteps at={4} />}
         cardClass="size-content"
         card={
           <>
-            <h1>{copy.PLACE_SAVED}</h1>
+            <div className="card-head">
+              <Glyph kind="does" />
+              <h1>{copy.PLACE_SAVED}</h1>
+            </div>
             <p className="returned-address" data-testid="saved-address">{address}</p>
             {offer.omittedItems.length > 0 ? (
               <StateCard
@@ -105,13 +113,14 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     <main className="page size-page">
       <div className="size-content">
         <header className="hero">
-          <span className="kicker">{copy.EYEBROW_SAVE_YOUR_PACK}</span>
+          <FlowSteps at={4} />
           <h1>{copy.READY_TO_DOWNLOAD}</h1>
         </header>
         <p className="pack-size figure">{packOfferSizeLine(offer)}</p>
       </div>
       <div className="actions size-actions">
-        <button className="main-action" type="button" onClick={() => void run()}>
+        <button className="main-action with-glyph" type="button" onClick={() => void run()}>
+          <Glyph kind="bag" line />
           {copy.SAVE_PACK}
         </button>
       </div>

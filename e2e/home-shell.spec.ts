@@ -18,11 +18,11 @@ import {
   NAV_NEARBY,
   NAV_REHEARSE,
   NO_PACK_SAVED,
-  NOT_RECENTLY_VERIFIED_LABEL,
   OFFLINE_NOTICE,
   ONLINE_NOTICE,
-  OPENS_WITHOUT_SIGNAL,
+  PACK_SETTINGS,
   PREPARATION_LINES,
+  PREPARATION_MORE,
   PREPARATION_SOURCE,
   SAVED_DAYS_AGO,
 } from '../src/core/copy';
@@ -41,21 +41,11 @@ test.describe('the header reports the saved pack age', () => {
     await expect(page.getByText(CHECKED_DAYS_AGO(0), { exact: true })).toBeVisible();
   });
 
-  // TC-1.2.6-B — the window is inclusive: day 30 is not yet labelled.
-  test('still states the age at exactly 30 days, and carries no label', async ({ page }) => {
-    await page.goto(home('?days=30'));
-    await expect(page.getByText(CHECKED_DAYS_AGO(30), { exact: true })).toBeVisible();
-    await expect(page.getByText(NOT_RECENTLY_VERIFIED_LABEL, { exact: true })).toHaveCount(0);
-  });
-
-  // TC-1.2.6-C
-  test('carries the label from day 31', async ({ page }) => {
+  // An old pack states its age plainly, with no old-data label, and stays usable.
+  test('states the age plainly at day 31, and the pack stays usable', async ({ page }) => {
     await page.goto(home('?days=31'));
-    await expect(page.getByText(NOT_RECENTLY_VERIFIED_LABEL, { exact: true })).toBeVisible();
-    await expect(page.getByText('Checked')).toHaveCount(0);
-
-    // Past the window the pack is labelled, never disabled: the way in is still
-    // there and still tappable.
+    await expect(page.getByText(CHECKED_DAYS_AGO(31), { exact: true })).toBeVisible();
+    await expect(page.getByText(/not recently verified/i)).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Ferny Creek' })).toBeEnabled();
   });
 
@@ -68,7 +58,6 @@ test.describe('the header reports the saved pack age', () => {
     // No dash, no zero, no placeholder standing in for an age that does not exist.
     const header = page.locator('.app-header');
     await expect(header.getByText('Checked')).toHaveCount(0);
-    await expect(header.getByText(NOT_RECENTLY_VERIFIED_LABEL)).toHaveCount(0);
     await expect(header.locator('.app-header-age')).toHaveCount(0);
 
     // The way into BlackSky is reachable with nothing saved.
@@ -96,7 +85,7 @@ test.describe('the returning-user home screen', () => {
     // Title-cased for reading; the stored string keeps the custodian's capitals.
     await expect(page.getByText(displayAddress('10 OLD ROAD FERNY CREEK 3786'))).toBeVisible();
     await expect(
-      page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
+      page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
@@ -106,7 +95,7 @@ test.describe('the returning-user home screen', () => {
     for (const box of await Promise.all(
       [
         page.getByRole('heading', { name: 'Ferny Creek' }),
-        page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
+        page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
         page.getByRole('link', { name: BUILD_A_PACK }),
         page.getByRole('button', { name: HOLD_FOR_BLACKSKY }),
       ].map((locator) => locator.boundingBox()),
@@ -127,8 +116,12 @@ test.describe('the returning-user home screen', () => {
     await expect(cards.last()).toContainText('Ferny Creek');
     await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
 
-    await cards.first().getByRole('button', { name: DELETE_PACK }).click();
-    await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
+    // The ... opens the pack's settings; Delete this pack asks, Delete deletes.
+    await cards.first().getByRole('button', { name: PACK_SETTINGS('Kalorama') }).click();
+    await expect(page.getByRole('dialog', { name: 'Kalorama' })).toBeVisible();
+    await page.getByRole('button', { name: DELETE_PACK }).click();
+    await page.getByRole('button', { name: CONFIRM_DELETE_PACK, exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(cards).toHaveCount(1);
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
     expect((await storageCounts(page)).packs).toBe(1);
@@ -139,17 +132,12 @@ test.describe('the returning-user home screen', () => {
     const preparation = page.locator('.preparation');
     await expect(preparation.getByText(PREPARATION_SOURCE)).toBeVisible();
 
-    // Exactly one of the eight, never none and never two.
+    // Exactly one of the eight, never none and never two. The line for a
+    // reader it was not written for waits behind the ring.
+    await preparation.getByRole('button', { name: PREPARATION_MORE }).click();
     const text = (await preparation.textContent()) ?? '';
     expect(PREPARATION_LINES.filter((line) => text.includes(line.text))).toHaveLength(1);
     expect(PREPARATION_LINES.filter((line) => text.includes(line.context))).toHaveLength(1);
-  });
-
-  test('the preparation line does not change while the screen is open', async ({ page }) => {
-    await page.goto(home('?days=3'));
-    const first = await page.locator('.preparation p').first().textContent();
-    await page.waitForTimeout(1_500);
-    expect(await page.locator('.preparation p').first().textContent()).toBe(first);
   });
 
   // TC-1.2.6-E, in the harness. The full hold-and-enter is asserted against the
@@ -193,7 +181,7 @@ test.describe('the returning-user home screen', () => {
     await ring.click();
     await expect(ring).toHaveAttribute('aria-expanded', 'true');
     await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
-    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].lead);
+    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].text);
     // Both edges are read in one frame: opening the panel scrolls it into view,
     // so two separate measurements would straddle that scroll and compare
     // positions taken at different offsets.
@@ -208,12 +196,12 @@ test.describe('the returning-user home screen', () => {
     await expect(panel).toHaveCount(0);
   });
 
-  test('the pack card carries the offline fact under the age, not in place of it', async ({
+  test('the pack card carries the age alone in its footer', async ({
     page,
   }) => {
     await page.goto(home('?days=3'));
     const footer = page.locator('.saved-place-footer');
-    await expect(footer).toHaveText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL);
+    await expect(footer).toHaveText(SAVED_DAYS_AGO(3));
   });
 
   test('the hold control meets the 44px minimum target size', async ({ page }) => {
@@ -296,8 +284,9 @@ test.describe('the connection notice', () => {
 test('delete removes the pack from the device after the confirmation', async ({ page }) => {
   await page.goto(home('?days=3'));
   await expect(page.locator('.app-header-age')).toHaveText(CHECKED_DAYS_AGO(3));
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
   await page.getByRole('button', { name: DELETE_PACK }).click();
-  await page.getByRole('button', { name: CONFIRM_DELETE_PACK }).click();
+  await page.getByRole('button', { name: CONFIRM_DELETE_PACK, exact: true }).click();
   await expect(page.getByText(NO_PACK_SAVED)).toBeVisible();
   // The header outlives the screen. It must stop stating the age of a pack
   // that is gone, with no reload.

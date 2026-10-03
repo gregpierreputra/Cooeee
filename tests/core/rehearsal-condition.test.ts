@@ -20,7 +20,6 @@ describe('the supported conditions', () => {
   });
 
   it('are offered in a fixed order, so the list cannot reshuffle between mounts', () => {
-    expect(conditionRows().map((row) => row.condition)).toEqual(conditionRows().map((row) => row.condition));
     expect(conditionRows().map((row) => row.condition)).toEqual(['no-data', 'no-location-fix']);
   });
 
@@ -54,12 +53,12 @@ describe('the supported conditions', () => {
       {
         condition: 'no-data',
         label: 'No mobile data',
-        detail: 'Nothing loads. Anything the phone did not already have is not there.',
+        detail: 'Only what is saved on the phone works.',
       },
       {
         condition: 'no-location-fix',
         label: 'No location fix',
-        detail: 'The phone cannot work out where it is.',
+        detail: 'The phone cannot tell where it is.',
       },
     ]);
   });
@@ -99,20 +98,6 @@ describe('a value that is not a supported condition', () => {
 // shape in the type for a second to occupy, so "never two" holds by
 // construction rather than by a check that could be forgotten.
 describe('the chosen condition', () => {
-  it('is a single value, and choosing again replaces rather than accumulates', () => {
-    let chosen: RehearsalCondition | null = null;
-    expect(chosen).toBeNull();
-
-    chosen = 'no-data';
-    expect(chosen).toBe('no-data');
-    expect(Array.isArray(chosen)).toBe(false);
-
-    chosen = 'no-location-fix';
-    expect(chosen).toBe('no-location-fix');
-    // The condition it replaced is gone, not held alongside.
-    expect(chosen).not.toBe('no-data');
-  });
-
   it('names one condition only, whichever was chosen', () => {
     REHEARSAL_CONDITIONS.forEach((condition) => {
       const others = REHEARSAL_CONDITIONS.filter((other) => other !== condition);
@@ -122,8 +107,8 @@ describe('the chosen condition', () => {
 });
 
 describe('the wording of this screen', () => {
-  it('asks the question the criterion sets, pending the copy review', () => {
-    expect(copy.CHOOSE_CONDITION_HEADING).toBe('What are we rehearsing without?');
+  it('names what the rehearsal runs without, pending the copy review', () => {
+    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse without…');
   });
 
   it('names no hazard: a condition is a way the phone fails, not a way a hazard behaves', () => {
@@ -179,8 +164,11 @@ describe('E5-US6 making the condition real on the phone', () => {
   it('gives one phone instruction per condition, about the phone and not the person', () => {
     expect(howToLine('no-data')).toContain('aeroplane mode');
     expect(howToLine('no-location-fix')).toContain('location off');
+    // The instruction is the phone step alone; "as on the day" now sits on the
+    // offline line that confirms it took.
+    expect(copy.PHONE_IS_OFFLINE).toContain('as on the day');
     for (const line of [howToLine('no-data'), howToLine('no-location-fix')]) {
-      expect(line).toContain('as on the day');
+      expect(line).toMatch(/^Turn /);
       expect(line).not.toMatch(/you must|you should|fail/i);
     }
   });

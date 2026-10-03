@@ -5,7 +5,7 @@ const ORIGIN = 'http://127.0.0.1:4174';
 const REHEARSABLE = `${ORIGIN}/rehearse?mode=rehearsable`;
 const EMPTY = `${ORIGIN}/rehearse?mode=empty`;
 
-const HEADING = 'What are we rehearsing without?';
+const HEADING = 'Rehearse without…';
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
 /** Each condition as it reads after "without". */
@@ -29,9 +29,9 @@ test.describe('AC1 both conditions are offered, and neither is chosen for the us
     await expect(page.getByRole('button', { name: new RegExp(NO_DATA) })).toBeVisible();
     await expect(page.getByRole('button', { name: new RegExp(NO_FIX) })).toBeVisible();
     await expect(
-      page.getByText('Nothing loads. Anything the phone did not already have is not there.'),
+      page.getByText('Only what is saved on the phone works.'),
     ).toBeVisible();
-    await expect(page.getByText('The phone cannot work out where it is.')).toBeVisible();
+    await expect(page.getByText('The phone cannot tell where it is.')).toBeVisible();
   });
 
   // TC-5.1.1-A. Nothing is pre-selected, and there is nothing that COULD be:

@@ -1,32 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { MS_PER_DAY, PACK_RADIUS_KM, PACK_REFRESH_DAYS } from '../../src/core/constants';
-import { NOT_RECENTLY_VERIFIED, OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from '../../src/core/copy';
-import { buildPackSeed, diffPacks, freshness } from '../../src/core/pack';
+import { MS_PER_DAY, PACK_RADIUS_KM } from '../../src/core/constants';
+import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from '../../src/core/copy';
+import { buildPackSeed, diffPacks, packAgeLabel } from '../../src/core/pack';
 import { pack, source } from '../fixtures';
 
 const NOW = 1_800_000_000_000;
 const daysAgo = (n: number) => NOW - n * MS_PER_DAY;
 
-describe('freshness', () => {
-  it('is not stale at 29 days', () => {
-    expect(freshness(NOW, daysAgo(29))).toEqual({ stale: false, label: SAVED_DAYS_AGO(29) });
-  });
-
-  it('is not stale at exactly 30 days — the window is inclusive', () => {
-    expect(PACK_REFRESH_DAYS).toBe(30);
-    expect(freshness(NOW, daysAgo(30)).stale).toBe(false);
-  });
-
-  it('is stale at 31 days, and says so in words', () => {
-    expect(freshness(NOW, daysAgo(31))).toEqual({
-      stale: true,
-      label: NOT_RECENTLY_VERIFIED(31),
-    });
-    expect(freshness(NOW, daysAgo(31)).label).toBe('Saved 31 days ago, not recently verified');
-  });
-
-  it('labels a long-stale pack without ever suggesting it has expired', () => {
-    expect(freshness(NOW, daysAgo(96)).label).toBe('Saved 96 days ago, not recently verified');
+describe('packAgeLabel', () => {
+  it('states only the age, however old the pack is', () => {
+    expect(packAgeLabel(NOW, daysAgo(29))).toBe(SAVED_DAYS_AGO(29));
+    expect(packAgeLabel(NOW, daysAgo(96))).toBe('Saved 96 days ago');
   });
 });
 

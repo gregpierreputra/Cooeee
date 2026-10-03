@@ -1,4 +1,4 @@
-import { canonicalJson } from '../core/pack-offer';
+import { canonicalJson, canonicalOrder } from '../core/pack-offer';
 import type { PackFile, PackFileMeta } from '../core/types';
 
 /** Lower-case hex SHA-256 of any bytes. */
@@ -8,7 +8,7 @@ export async function sha256Hex(bytes: BufferSource): Promise<string> {
 }
 
 export async function manifestGroup<T extends { id: string }>(rows: readonly T[]) {
-  const ordered = [...rows].sort((left, right) => left.id.localeCompare(right.id));
+  const ordered = [...rows].sort((left, right) => canonicalOrder(left.id, right.id));
   return {
     count: ordered.length,
     sha256: await sha256Hex(new TextEncoder().encode(canonicalJson(ordered))),

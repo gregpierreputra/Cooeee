@@ -25,5 +25,10 @@ test-results/
 # API server database and its daily snapshots
 server/data/
 
+# LimeZu Modern Interiors source art. The licence forbids passing the pack on.
+# Only the baked public/drill files are tracked.
+game-assets/
+game-assets.zip
+
 # Vercel web application
 .vercel/

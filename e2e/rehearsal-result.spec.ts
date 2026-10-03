@@ -9,15 +9,15 @@ const WITH_GAP = `${ORIGIN}/rehearse?mode=gap`;
 
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
-const CHOOSE_HEADING = 'What are we rehearsing without?';
+const CHOOSE_HEADING = 'Rehearse without…';
 
 /** E5-US1-AC5: how the rehearsal ended, beside the condition line. */
 const WALKED_LINE = 'You went there. It took you 14 minutes.';
-const DRY_RUN_LINE = 'This was a dry run: you ended it without going.';
+const DRY_RUN_LINE = 'A dry run. You ended it without going.';
 
-const PACK_CONTENT_MEANING = 'This information is missing from your pack.';
+const PACK_CONTENT_MEANING = 'Missing from your pack.';
 const CONDITION_MEANING =
-  'This is not available under this condition. Here is what to do instead.';
+  'Not available under this condition. Do this instead.';
 
 // E5-US2-AC1 — one action for each gap.
 
@@ -77,7 +77,7 @@ test('AC1 a rehearsal that found nothing renders its own screen', async ({ page 
   await expect(page.locator('.gap-list')).toHaveCount(0);
   await expect(page.locator('.gap-row')).toHaveCount(0);
   // It says what was checked, and does not say the reader is prepared.
-  await expect(page.getByText('That is what was checked, on this pack, today.')).toBeVisible();
+  await expect(page.getByText('Checked on this pack today.')).toBeVisible();
   await expect(page.locator('main')).not.toContainText('prepared');
   await expect(page.locator('main')).not.toContainText('ready');
 });
@@ -364,7 +364,7 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
     const condition = await position(page.getByText('Rehearsed without mobile data.', { exact: true }));
     const ending = await position(line);
     expect(ending).toBe(condition + 1);
-    expect(ending).toBeLessThan(await position(page.getByText('That is what was checked, on this pack, today.')));
+    expect(ending).toBeLessThan(await position(page.getByText('Checked on this pack today.')));
   });
 
   test('two walks a few seconds apart read the same', async ({ page, context }) => {

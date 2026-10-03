@@ -47,13 +47,28 @@ const named = [];
 const collectFiles = (node) => {
   if (Array.isArray(node)) return node.forEach(collectFiles);
   if (node && typeof node === 'object') return Object.values(node).forEach(collectFiles);
-  if (typeof node === 'string' && /\.json$/.test(node)) named.push(node);
+  // The roads file is binary, with a JSON sidecar; both are named in the index.
+  if (typeof node === 'string' && /\.(json|bin)$/.test(node)) named.push(node);
 };
 collectFiles(index);
 const missing = named.filter((file) => !existsSync(`public/data/${file.replace(/^\/?(data\/)?/, '')}`));
 if (missing.length > 0) {
   console.error(`snapshot-age: the index names ${missing.join(', ')}, which is not in public/data`);
   process.exit(1);
+}
+
+// The app loads the NSP and recovery snapshots by a fixed path, not through the
+// index. A refresh that moves the index on without that path would pass on fresh
+// stamps while every device keeps loading the old file.
+for (const [key, module, constant] of [
+  ['nsp', 'src/data/nsp.ts', 'NSP_SNAPSHOT_PATH'],
+  ['recovery', 'src/data/recovery.ts', 'RECOVERY_SNAPSHOT_PATH'],
+]) {
+  const loaded = readFileSync(module, 'utf8').match(new RegExp(`${constant} = '/data/([^']+)'`))?.[1];
+  if (loaded !== index[key]?.file) {
+    console.error(`snapshot-age: ${module} loads ${loaded ?? 'nothing'}, but the index names ${index[key]?.file}`);
+    process.exit(1);
+  }
 }
 if (existsSync(SOURCES)) collect(JSON.parse(readFileSync(SOURCES, 'utf8')));
 

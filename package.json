@@ -10,9 +10,12 @@
     "dev": "vite",
     "build": "vite build",
     "build:data:extent": "node scripts/build-extent.mjs",
+    "build:data:localities": "node scripts/build-localities.mjs",
     "build:data:nsp": "node scripts/build-nsp.mjs",
     "build:data:recovery": "node scripts/build-recovery.mjs",
+    "build:data:roads": "node scripts/build-roads.mjs",
     "build:data:sources": "node scripts/build-source-pdfs.mjs",
+    "build:drill:art": "node scripts/build-drill-art.mjs",
     "preview": "vite preview",
     "preserver": "node -e \"if (Number(process.versions.node.split('.')[0]) < 24) { console.error('The Cooeee server needs Node 24 or newer: run nvm use first.'); process.exit(1); }\"",
     "server": "node --env-file-if-exists=.env server/index.ts",
@@ -29,6 +32,7 @@
     "react-router": "^7.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.50.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.0.0",
@@ -40,6 +44,7 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "fake-indexeddb": "^6.0.0",
     "globals": "^15.14.0",
+    "playwright": "^1.62.1",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.20.0",
     "vite": "^6.0.0",

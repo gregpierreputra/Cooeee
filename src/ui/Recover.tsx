@@ -1,18 +1,20 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
 
-import { GENERAL_CHANNEL_URL, NEED_CHANNELS } from '../core/constants';
+import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS } from '../core/constants';
 import * as copy from '../core/copy';
-import { readKept, toggleKept } from '../core/kept';
+import { readKept, toggleKept, writeKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
 import { callList, isNeed, monogram, NEEDS, parseChoice, recoveryStale, selectPrograms, shareText, type Choice } from '../core/recover';
 import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { listPrograms, listSavedProgramIds } from '../data/db';
+import { focusMain } from './components/focusMain';
 import Glyph from './components/Glyph';
-import { canStepBack } from './components/history';
 import ProvenanceLine from './components/ProvenanceLine';
 import StateCard from './components/StateCard';
+import WellbeingLines from './components/WellbeingLines';
+import Roadmap from './Roadmap';
 
 type RecoverProps = {
   loadPrograms?: () => Promise<RecoveryProgram[]>;
@@ -38,10 +40,35 @@ export default function Recover({
   // category has to land on the list of categories, not on whatever screen
   // came before Recover.
   const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
   const choice = parseChoice(params.get('need'));
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
-  const [shared, setShared] = useState<'copied' | 'unavailable' | null>(null);
+  // UAT: releasing a program on the Kept list made its card vanish mid-read.
+  // The list holds the programs kept when it was opened until the person leaves;
+  // each card still shows its live Keep or Kept state.
+  const [keptOnEntry, setKeptOnEntry] = useState<string[] | null>(null);
+  const keptListed = choice === 'kept' ? (keptOnEntry ?? kept) : kept;
+  // A share note belongs to the category it was made on, so it shows only while
+  // that category is open. Moving to another category hides it on the very first
+  // frame, and a result that arrives after the reader has moved on stays with the
+  // category it was for. The effect below then clears it on any change of category.
+  const [shared, setShared] = useState<{ on: Choice | null; state: 'copied' | 'unavailable' } | null>(null);
+  const shareNote = shared?.on === choice ? shared.state : null;
+  // Clear all asks once first. Focus goes to the choice that changes nothing,
+  // and back to Clear all if the person keeps them.
+  const [confirmClear, setConfirmClear] = useState(false);
+  const keepAllRef = useRef<HTMLButtonElement>(null);
+  const askedClear = useRef(false);
+  useEffect(() => {
+    if (confirmClear) {
+      askedClear.current = true;
+      keepAllRef.current?.focus();
+    } else if (askedClear.current) {
+      askedClear.current = false;
+      const control = document.getElementById('clear-kept');
+      if (control) control.focus();
+      else focusMain();
+    }
+  }, [confirmClear]);
 
   useEffect(() => {
     let live = true;
@@ -59,23 +86,24 @@ export default function Recover({
     };
   }, [loadPrograms, loadSaved]);
 
-  // Any change of category, however it was reached, clears the share note the
-  // last one left behind.
-  useEffect(() => setShared(null), [choice]);
+  // Any change of category, however it was reached (the app's own controls or
+  // the browser's Back and Forward), clears the note the last one left behind,
+  // and moves focus to the page, since the control that was pressed is gone.
+  useEffect(() => {
+    setShared(null);
+    setConfirmClear(false);
+    setKeptOnEntry(choice === 'kept' ? kept : null);
+    focusMain();
+  }, [choice]);
 
   const choose = (next: Choice) => setParams({ need: next });
 
-  /** Back to the list of categories. Stepping back keeps the history honest;
-   *  with nothing of ours behind this entry, the category is dropped instead. */
-  const backToChoices = () => {
-    if (canStepBack()) navigate(-1);
-    else setParams({}, { replace: true });
-  };
 
   // The phone's own share sheet where there is one (a text message needs no
   // data), otherwise the clipboard. A share the person cancels reports nothing;
   // a share sheet that refuses falls back to the clipboard.
   async function share(text: string) {
+    const on = choice;
     try {
       await navigator.share({ text });
       return;
@@ -88,13 +116,17 @@ export default function Recover({
     }
     try {
       await navigator.clipboard.writeText(text);
-      setShared('copied');
+      setShared({ on, state: 'copied' });
     } catch {
-      setShared('unavailable');
+      setShared({ on, state: 'unavailable' });
     }
   }
 
-  if (programs === null) return null;
+  // The page itself, empty, while the store answers, so focus has somewhere to land.
+  if (programs === null) return <main className="page" />;
+
+  // R1: the roadmap needs no program, so it opens whatever the device holds.
+  if (choice === 'roadmap') return <Roadmap />;
 
   if (programs.length === 0) {
     return (
@@ -108,16 +140,14 @@ export default function Recover({
     );
   }
 
-  const anyKept = programs.some((program) => kept.includes(program.id));
+  const anyKept = programs.some((program) => keptListed.includes(program.id));
   // The kept list with nothing kept is not a category. It is reached by
   // releasing the last kept program, or by an old address, and used to say
   // "This pack holds nothing for that need", which is about something else.
   // The list of categories is what is true then.
   if (choice === null || (choice === 'kept' && !anyKept)) {
     const rows: { key: Choice; label: string }[] = [
-      ...(anyKept ? [{ key: 'kept' as const, label: copy.KEPT_PROGRAMS }] : []),
       ...NEEDS.map((key) => ({ key, label: copy.NEED_PHRASE[key] })),
-      { key: 'all', label: copy.EVERY_PROGRAM },
       { key: 'calls', label: copy.WHO_TO_CALL },
     ];
     return (
@@ -125,8 +155,33 @@ export default function Recover({
         <header className="hero">
           <span className="kicker">{copy.NAV_RECOVER}</span>
           <h1>{copy.RECOVER_QUESTION}</h1>
-          <p className="muted">{copy.RECOVER_PRIVACY_LINE}</p>
+          <p className="muted with-glyph">
+            <Glyph kind="lock" line />
+            {copy.RECOVER_PRIVACY_LINE}
+          </p>
         </header>
+        {/* The two ways into the programs that are not one need, as tiles over
+            the needs. Kept, in the ring and tint a kept card wears, is here
+            only while something is kept; All then fills the row alone. */}
+        <div className="recover-tiles">
+          {anyKept ? (
+            <button type="button" className="recover-tile kept-button" onClick={() => choose('kept')}>
+              <Glyph kind="kept" />
+              <span className="recover-tile-label">{copy.KEPT_PROGRAMS}</span>{' '}
+              <span className="recover-tile-detail">{copy.KEPT_PROGRAMS_DETAIL}</span>
+            </button>
+          ) : null}
+          <button type="button" className="recover-tile" onClick={() => choose('all')}>
+            <Glyph kind="all" />
+            <span className="recover-tile-label">{copy.ALL_PROGRAMS}</span>{' '}
+            <span className="recover-tile-detail">{copy.ALL_PROGRAMS_DETAIL}</span>
+          </button>
+        </div>
+        {/* R1: the way through recovery, in teal over the single needs. */}
+        <button type="button" className="need-button roadmap-button" onClick={() => choose('roadmap')}>
+          <Glyph kind="roadmap" />
+          {copy.ROADMAP_TITLE}
+        </button>
         <ul className="list">
           {rows.map((row) => (
             <li key={row.key}>
@@ -141,10 +196,6 @@ export default function Recover({
     );
   }
 
-  const chooseAgain = (
-    <button type="button" onClick={backToChoices}>{copy.CHOOSE_ANOTHER_NEED}</button>
-  );
-
   if (choice === 'calls') {
     // E4-US10: every number already on the device, as tap-to-call links.
     return (
@@ -152,26 +203,39 @@ export default function Recover({
         <header className="hero">
           <span className="kicker">{copy.NAV_RECOVER}</span>
           <h1>{copy.WHO_TO_CALL}</h1>
-          <p className="muted">{copy.CALLS_LINE}</p>
+          <p className="muted with-glyph">
+            <Glyph kind="calls" line />
+            {copy.CALLS_LINE}
+          </p>
         </header>
         <ul className="list">
           {callList(programs).map((entry) => (
-            <li key={entry.number} className="card">
+            <li
+              key={entry.number}
+              className={entry.number === HOTLINE_NUMBER ? 'card emergency-line' : 'card'}
+            >
               <h2>{entry.label}</h2>
               {entry.org ? <p>{entry.org}</p> : null}
-              <a href={`tel:${entry.number.replaceAll(' ', '')}`}>{copy.CALL_LINE(entry.number)}</a>
+              <a className="with-glyph call-link" href={`tel:${entry.number.replaceAll(' ', '')}`}>
+                <Glyph kind="calls" line />
+                {copy.CALL_LINE(entry.number)}
+              </a>
             </li>
           ))}
         </ul>
-        <div className="actions">{chooseAgain}</div>
+        <section className="talk-to-someone" aria-labelledby="talk-to-someone">
+          <h2 id="talk-to-someone">{copy.TALK_TO_SOMEONE}</h2>
+          <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
+          <WellbeingLines />
+        </section>
       </main>
     );
   }
 
-  const heading = choice === 'all' ? copy.EVERY_PROGRAM
+  const heading = choice === 'all' ? copy.ALL_PROGRAMS
     : choice === 'kept' ? copy.KEPT_PROGRAMS
     : copy.NEED_PHRASE[choice];
-  const shown = selectPrograms(programs, choice, kept);
+  const shown = selectPrograms(programs, choice, keptListed);
 
   if (shown.length === 0) {
     // The device holds nothing: a designed screen, and never "no help exists".
@@ -185,23 +249,54 @@ export default function Recover({
         </header>
         <div className="actions">
           <OfficialChannel href={isNeed(choice) ? NEED_CHANNELS[choice] : GENERAL_CHANNEL_URL} />
-          {chooseAgain}
         </div>
       </main>
     );
   }
 
   const stale = shown.some((program) => recoveryStale(now, program.snapshotDate));
-  const anyKeptShown = shown.some((program) => kept.includes(program.id));
+  const clearKept = () => {
+    writeKept(localFlagStore(), []);
+    setKept([]);
+    setConfirmClear(false);
+  };
   return (
     <main className="page recover">
       <header className="hero">
         <span className="kicker">{copy.NAV_RECOVER}</span>
         <h1>{heading}</h1>
         <p className="caveat">{copy.RECOVER_MAY_MATCH}</p>
-        <p className="muted">{anyKeptShown ? copy.RECOVER_ORDER_LINE_KEPT : copy.RECOVER_ORDER_LINE}</p>
-        {stale ? <p>{copy.RECOVER_STALE_LINE}</p> : null}
+        {stale ? (
+          <p className="with-glyph tone-amber">
+            <Glyph kind="caution" line />
+            {copy.RECOVER_STALE_LINE}
+          </p>
+        ) : null}
       </header>
+      {/* The kept list only. Every card stays on screen after a clear, each
+          with its Keep control, so one can be kept again straight away. */}
+      {choice !== 'kept' ? null : confirmClear ? (
+        <section className="card" aria-labelledby="clear-kept-question">
+          <p id="clear-kept-question">{copy.CLEAR_KEPT_QUESTION}</p>
+          <p className="muted">{copy.CLEAR_KEPT_PACKS}</p>
+          <div className="card-confirm-actions">
+            <button ref={keepAllRef} type="button" className="card-confirm-no" onClick={() => setConfirmClear(false)}>
+              {copy.KEEP_KEPT}
+            </button>
+            <button type="button" className="card-confirm-yes with-glyph" onClick={clearKept}>
+              <Glyph kind="trash" line />
+              {copy.CLEAR_KEPT}
+            </button>
+          </div>
+        </section>
+      ) : kept.length > 0 ? (
+        <button id="clear-kept" type="button" className="clear-kept with-glyph" onClick={() => setConfirmClear(true)}>
+          <Glyph kind="trash" line />
+          {copy.CLEAR_KEPT}
+        </button>
+      ) : (
+        <p className="muted" role="status">{copy.KEPT_CLEARED}</p>
+      )}
       <ul className="list">
         {shown.map((program) => {
           const isKept = kept.includes(program.id);
@@ -225,38 +320,52 @@ export default function Recover({
                 ))}
               </ul>
               <p className="muted">{program.covers}</p>
-              <ProvenanceLine source={program.source} now={now} />
-              <p className="figure">{copy.LICENCE_LINE(program.source.licence)}</p>
-              {saved.includes(program.id) ? <p className="figure in-packs">{copy.IN_YOUR_PACKS}</p> : null}
-              <a href={program.officialUrl} target="_blank" rel="noopener noreferrer">
-                {copy.OPEN_ORIGINAL_SOURCE}
-              </a>
-              {program.telephone ? (
-                <a href={`tel:${program.telephone.replaceAll(' ', '')}`}>
-                  {copy.CALL_LINE(program.telephone)}
-                </a>
+              <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} />
+              {saved.includes(program.id) ? (
+                <p className="figure in-packs with-glyph">
+                  <Glyph kind="offline" line />
+                  {copy.IN_YOUR_PACKS}
+                </p>
               ) : null}
-              <button
-                type="button"
-                className="keep-button"
-                aria-pressed={isKept}
-                onClick={() => setKept(toggleKept(localFlagStore(), kept, program.id))}
-              >
-                {isKept ? copy.KEPT : copy.KEEP}
-              </button>
+              {/* Keep and the web page side by side at equal size, the call
+                  beneath at full width. */}
+              <div className="program-actions">
+                <button
+                  type="button"
+                  className="action keep-button with-glyph"
+                  aria-pressed={isKept}
+                  onClick={() => setKept(toggleKept(localFlagStore(), kept, program.id))}
+                >
+                  <Glyph kind="kept" line />
+                  {isKept ? copy.KEPT : copy.KEEP}
+                </button>
+                <a className="action with-glyph" href={program.officialUrl} target="_blank" rel="noopener noreferrer">
+                  <Glyph kind="web" line />
+                  {copy.OPEN_ORIGINAL_SOURCE}
+                </a>
+                {program.telephone ? (
+                  <a className="action call-action with-glyph" href={`tel:${program.telephone.replaceAll(' ', '')}`}>
+                    <Glyph kind="calls" line />
+                    {copy.CALL_LINE(program.telephone)}
+                  </a>
+                ) : null}
+              </div>
             </li>
           );
         })}
       </ul>
       <div className="actions">
         <p className="muted" role="status" aria-live="polite">
-          {shared === 'copied' ? copy.COPIED_LINE : shared === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
+          {shareNote === 'copied' ? copy.COPIED_LINE : shareNote === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
         </p>
-        <button type="button" onClick={() => void share(shareText(heading, shown))}>
+        <button type="button" className="with-glyph" onClick={() => void share(shareText(heading, shown))}>
+          <Glyph kind="share" line />
           {copy.SHARE_LIST}
         </button>
-        <button type="button" onClick={() => window.print()}>{copy.PRINT_LIST}</button>
-        {chooseAgain}
+        <button type="button" className="with-glyph" onClick={() => window.print()}>
+          <Glyph kind="print" line />
+          {copy.PRINT_LIST}
+        </button>
       </div>
     </main>
   );

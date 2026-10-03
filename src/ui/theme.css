@@ -65,6 +65,9 @@
   --online-ink: #04211c;
   --offline: #f87171;
   --offline-ink: #2a0a0a;
+  /* Keep, the choice that changes nothing, beside the red of Delete. */
+  --keep: #4ade80;
+  --keep-ink: #052e14;
   /* Data-age tier from the mockups' freshness screen: marks a cached row, never a hazard. */
   --stale: #fbbf24;
   --stale-fill: #1f1809;
@@ -116,6 +119,9 @@ body {
      entirely in blacksky by the token. */
   background-image: var(--glow);
   background-repeat: no-repeat;
+  /* Its own stacking context, so the particle canvas sits over this ground
+     and under every screen's words. */
+  isolation: isolate;
 }
 
 ::selection {
@@ -126,7 +132,7 @@ body {
 /* Single column, max 560 px, centred on desktop. There is no second layout:
    the product's centre of gravity is a phone in someone's hand. The sticky
    chrome above the page (notice bar 2.25rem, header 3rem + 1px, back bar
-   3.25rem) is outside .page, so the minimum height leaves room for it. The
+   3.5rem) is outside .page, so the minimum height leaves room for it. The
    bottom padding leaves room under the last element for the fixed bottom bar
    (56 px + hairline, plus a gap), so nothing sits beneath it. */
 .page {
@@ -135,7 +141,7 @@ body {
   padding: 1.5rem max(1.75rem, env(safe-area-inset-right))
     calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom))
     max(1.75rem, env(safe-area-inset-left));
-  min-height: calc(100dvh - 8.5rem - 1px);
+  min-height: calc(100dvh - 8.75rem - 1px);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -221,9 +227,57 @@ a {
   min-height: 44px;
   cursor: pointer;
 }
-.destination-choose-hint {
-  margin: 0;
-  color: var(--ink-2);
+
+/* The rule on top: the counter ring, then Choose two in the accent. */
+.choose-head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+.choose-hint {
+  color: var(--accent);
+  font-weight: var(--w-heavy);
+}
+.chosen-ring {
+  inline-size: 48px;
+  block-size: 48px;
+  flex: none;
+}
+.chosen-ring circle {
+  fill: none;
+  stroke-width: 4;
+}
+.chosen-ring-track {
+  stroke: var(--line);
+}
+/* Starts at twelve o'clock and fills clockwise as places are chosen. */
+.chosen-ring-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dashoffset 0.25s ease;
+}
+.chosen-ring text {
+  fill: var(--ink);
+  font-size: 14px;
+  font-weight: var(--w-heavy);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chosen-ring-fill {
+    transition: none;
+  }
+}
+
+/* Once two are chosen, the rest step back. Still tappable, so tapping one
+   still says why it cannot be added. */
+.destination-item-greyed {
+  opacity: 0.45;
+}
+
+.destination-source {
+  display: grid;
+  gap: 0.25rem;
 }
 
 /* ── Cards and lists ───────────────────────────────────────────────────────── */
@@ -231,9 +285,9 @@ a {
 /* Absence states use the SAME neutral treatment as presence states. Absence must
    read as absence — never as reassurance, never as an error. There are no alert
    colours and no warning iconography in this stylesheet, with ONE deliberate
-   exception: the destructive delete-a-pack controls below reuse the fixed
-   connection colours (--offline red, --online green) so that destroying data
-   can never look like a neutral action. */
+   exception: the delete-a-pack question below reuses the fixed connection
+   colours (--offline red, --online green) so that destroying data can never
+   look like a neutral action. */
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -271,6 +325,9 @@ a {
    (position + z-index) to stay independently clickable. */
 .pack-card {
   position: relative;
+  /* Its own layer, so the settings ring stacks inside the card and never over
+     a sticky bar. */
+  isolation: isolate;
 }
 .pack-card h2 a::after {
   content: '';
@@ -284,33 +341,70 @@ a {
   }
 }
 
-/* Delete-a-pack: the name row closes with a fingertip-sized ring, the cross
-   drawn inside it, in the fixed red (see the exception note at the top of this
-   section): a half-strength ring at rest, solid with a faint fill on touch. The
-   confirm state swaps the card body for the question and an equal-weight
-   keep/delete pair. */
-.card-delete {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  min-width: 44px;
+/* A pack's settings: a quiet ring with three dots at the card's top right,
+   inside the card, as a phone marks more options. It sits above the card's
+   stretched link and opens the pack's sheet. */
+.card-more {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1; /* above the pack-card stretched link */
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   padding: 0;
-  display: inline-grid;
+  display: grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--offline) 50%, transparent);
+  border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--surface-2);
-  color: var(--offline);
-  position: relative;
-  z-index: 1; /* above the pack-card stretched link */
+  color: var(--ink-2);
+}
+/* The ring is drawn small; the invisible ::after keeps a 44px tap area. */
+.card-more::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.pack-card .card-more:hover,
+.pack-card .card-more:focus-visible {
+  border-color: var(--accent);
+  color: var(--ink);
 }
 
-/* Named through the card so it outranks the shared accent hover on buttons. */
-.pack-card .card-delete:hover,
-.pack-card .card-delete:focus-visible,
-.pack-card .card-delete:active {
+/* A bottom sheet over the page: the browser's own modal dialog, so Escape,
+   the focus trap and the dimmed page come with it. */
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85dvh;
+  margin: auto auto 0;
+  padding: 1.5rem max(1.5rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom))
+    max(1.5rem, env(safe-area-inset-left));
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  overflow-y: auto;
+}
+.sheet[open] {
+  display: grid;
+  gap: 0.75rem;
+}
+.sheet::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+.sheet h2,
+.sheet p {
+  margin: 0;
+}
+/* The one setting that removes data reads in the delete red, as an outline:
+   the filled red is kept for the Delete that confirms it. */
+.sheet .sheet-delete {
   border-color: var(--offline);
-  background: color-mix(in srgb, var(--offline) 14%, transparent);
+  color: var(--offline);
 }
 
 /* The saved pack's two chosen places, side by side and equal: one grid rule, no
@@ -372,21 +466,47 @@ a {
   margin: 0;
 }
 
+/* Fingers and the mouse move the map, not the page, while they are on it. */
 .area-map-frame {
   position: relative;
+  /* Its own layer: the buttons and pins stack inside the map, so they scroll
+     under the sticky Back bar and header with the image, never over them. */
+  isolation: isolate;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
+  background: #ffffff;
+  touch-action: none;
+  cursor: grab;
 }
 
-.area-map-frame img {
+.area-map-frame:active {
+  cursor: grabbing;
+}
+
+/* The picture and its markers move together, about the frame's middle. */
+.area-map-layer {
+  position: relative;
+  transform-origin: center;
+}
+
+.area-map-layer img {
   display: block;
   width: 100%;
   aspect-ratio: 1;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Each marker undoes the map's turn and zoom, so it stays upright and the
+   same size, centred on its own spot. */
+.area-map-pin,
+.area-map-mark {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(calc(var(--map-angle, 0deg) * -1)) scale(calc(1 / var(--map-scale, 1)));
 }
 
 .area-map-pin {
-  position: absolute;
   top: 50%;
   left: 50%;
   width: 1rem;
@@ -395,7 +515,62 @@ a {
   border-radius: 50%;
   background: rgb(255 255 255 / 0.6);
   box-shadow: 0 0 0 2px #fff;
-  transform: translate(-50%, -50%);
+}
+
+/* An official place of last resort: the places glyph in a dark disc, so it
+   reads over the light map and is never mistaken for the ring. */
+.area-map-mark .glyph,
+.area-map-mark-key .glyph {
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.area-map-mark-key .glyph {
+  width: 20px;
+  height: 20px;
+}
+
+/* One quiet line on how to move the map, then the round buttons that do the
+   same for anyone who cannot use a gesture. */
+/* The controls float on the map's top left as one narrow frosted column, as a
+   phone's own maps app does, so the map shows round and through them. */
+.area-map-controls {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+  display: grid;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  cursor: default;
+}
+
+.area-map-how {
+  margin: 0.5rem 0 0;
+  font-size: var(--step-s);
+}
+
+/* 44 px targets with no fill or border of their own: the column is the shape. */
+.map-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #1a1f24;
+  font-size: var(--step-1);
+  line-height: 1;
+}
+.map-button:disabled {
+  color: rgb(26 31 36 / 0.35);
 }
 
 .area-map figcaption {
@@ -420,14 +595,24 @@ a {
   font-size: var(--step-s);
 }
 
+/* Keep is green and Delete is red, each filled, so the choice reads at a
+   glance. The words say the same, so colour is never the only cue. */
 .card-confirm-no {
-  color: var(--offline);
-  border-color: var(--offline);
+  color: var(--keep-ink);
+  background: var(--keep);
+  border-color: var(--keep);
 }
 
 .card-confirm-yes {
-  color: var(--online);
-  border-color: var(--online);
+  color: var(--offline-ink);
+  background: var(--offline);
+  border-color: var(--offline);
+}
+@media (hover: hover) {
+  .card-confirm-no:hover,
+  .card-confirm-yes:hover {
+    border-color: var(--ink);
+  }
 }
 
 /* Primary action sits at the bottom of the viewport, within thumb reach. */
@@ -504,8 +689,10 @@ button,
 }
 
 @media (hover: hover) {
-  button:not(:disabled):hover,
-  .action:hover {
+  /* Controls whose border colour carries meaning (red ends something, amber
+     is BlackSky, a debrief tile's kind) keep it under the pointer. */
+  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold):hover,
+  .action:not(.leave-action):hover {
     border-color: var(--accent);
   }
   .main-action:hover {
@@ -529,6 +716,11 @@ input {
   outline-offset: 2px;
 }
 
+/* The page itself takes focus on arrival; the ring belongs on controls only. */
+main:focus {
+  outline: none;
+}
+
 /* An accent ring on an accent fill would vanish. */
 .main-action:focus-visible {
   outline-color: var(--ink);
@@ -547,24 +739,33 @@ input {
   gap: 1rem;
 }
 
-/* The field's own hint sits tight under its label, at meta size. */
+/* The ring beside the title opens its panel across the full width. */
+.hero > .hint {
+  justify-self: stretch;
+}
+
+/* The field's status line sits tight above the field, at meta size, and holds
+   its height while empty so the field never jumps. */
 .search-hint {
-  margin-top: -0.5rem;
+  min-height: 1.5em;
+  margin: -0.5rem 0 0;
   font-size: var(--step-s);
 }
 
-.search-result {
-  display: grid;
+/* The field and the locate ring share one row; the ring is the field's height
+   less its border, so the two read as one control. */
+.search-row {
+  display: flex;
   gap: 0.75rem;
-  color: var(--ink-2);
+  align-items: center;
 }
-
-.search-result:empty {
-  display: none;
+.search-row input {
+  flex: 1;
+  min-width: 0;
 }
-
-.search-result p {
-  margin: 0;
+.search-row .search-locate {
+  width: 48px;
+  height: 48px;
 }
 
 .search-actions {
@@ -659,6 +860,22 @@ input {
   color: var(--ink-2);
 }
 
+/* A caution read with the heading: the map is not where fire can go, or a note
+   has no password. Amber, the attention colour, at full text strength. */
+/* A key term inside a line: the attention colour, so it is seen first. */
+.key-term {
+  color: var(--stale);
+  font-weight: 600;
+}
+
+p.caution {
+  padding: 0.75rem 1rem;
+  border-inline-start: 3px solid var(--stale);
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--stale) 10%, var(--surface));
+  color: var(--ink);
+}
+
 /* ── Conflict ──────────────────────────────────────────────────────────────── */
 
 .conflict-content {
@@ -706,14 +923,12 @@ input {
 /* ── Pack detail and provenance ────────────────────────────────────────────── */
 
 .pack-detail header,
-.provenance,
-.stale-note {
+.provenance {
   display: grid;
   gap: 0.5rem;
 }
 
-.provenance p,
-.stale-note p {
+.provenance p {
   margin: 0;
 }
 
@@ -726,18 +941,36 @@ input {
   color: var(--ink-3);
 }
 
-/* Prominence through weight and a hairline — never an alert colour. */
-.stale-note {
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
-}
-.stale-note p:first-child {
-  font-weight: var(--w-bold);
-  color: var(--ink);
-}
-.stale-note p + p {
+/* The Source ring's panel: a quiet hairline box, lighter than a card. */
+.source-panel {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
   font-size: var(--step-s);
   color: var(--ink-2);
+}
+.source-rows {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+}
+.source-rows dt {
+  font-size: 0.75rem;
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.source-rows dd {
+  margin: 0.125rem 0 0;
+  font-size: var(--step-0);
+  color: var(--ink);
+}
+.source-detail {
+  color: var(--ink-2);
+  font-size: var(--step-s);
 }
 
 .provenance-item a {
@@ -909,10 +1142,95 @@ input {
 /* The bearing figure is the biggest thing on screen — readable at arm's length,
    while walking. Everything else recedes into dim amber. */
 
-/* The mode's name in the kicker treatment, ruled off from the screen below. */
-.blacksky-title {
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--line);
+/* The top bar: the one way out, a hold across the full content width, 48 px
+   high, with the mode's name set over its right-hand end (E3-US3-AC1, restored
+   after the phone test of 28 Sep: a finger on the old pill hid it, so nobody
+   could see the hold going). A grid, so that the hold's hint and the "still
+   open" notice, which the markup places after the button, fall into
+   full-width rows UNDER the bar. They push the page down when they appear; the
+   bar above them never moves, so it cannot slide out from under the finger
+   that is holding it. */
+.blacksky-topbar {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+}
+
+.blacksky-topbar > .blacksky-hold-hint {
+  text-align: left;
+  font-size: var(--step-0); /* nothing on this screen but the two small labels is under 16 px */
+}
+
+/* The bar and its fill. The fill is the mode's full amber, sweeping left to
+   right across the whole bar for the 2 s of the hold (HOLD_MS), so both ends
+   of it show beside a thumb: amber on the black bar is 11.5 to 1. The words
+   turn dark as the fill passes under them, so they read on both. */
+.blacksky-topbar > .blacksky-leave-bar {
+  min-height: 0;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-pill);
+  flex-direction: row;
+  justify-content: flex-start;
+  white-space: nowrap;
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--accent), var(--accent));
+}
+
+.blacksky-topbar > .blacksky-leave-bar:active {
+  background-size: 100% 100%;
+  transition: background-size 2s linear; /* HOLD_MS, as on every hold control */
+}
+
+/* The words, and the mode's name over the other end, painted by the same sweep
+   as the fill: dark where the fill has reached, amber where it has not. Each
+   spans the whole bar, so its sweep and the bar's are the same. */
+.blacksky-leave-label,
+.blacksky-topbar > .blacksky-title {
+  box-sizing: border-box;
+  width: 100%;
+  background-image: linear-gradient(var(--ink-on-accent), var(--ink-on-accent)), linear-gradient(var(--accent), var(--accent));
+  background-repeat: no-repeat;
+  background-position: left;
+  background-size: 0% 100%, 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition: background-size 0.2s ease;
+}
+
+.blacksky-leave-label {
+  padding: 0 1.25rem;
+  text-align: left;
+  font-size: var(--step-0);
+  font-weight: var(--w-bold);
+  line-height: 46px;
+}
+
+/* The name: over the bar's right-hand end, never touched: the pointer goes
+   through it to the bar. Inset by the bar's 1 px border, so its sweep lines up
+   with the fill's. */
+.blacksky-topbar > .blacksky-title {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: auto;
+  right: 1px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 1.25rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.blacksky-topbar > .blacksky-leave-bar:active .blacksky-leave-label,
+.blacksky-topbar:has(> .blacksky-leave-bar:active) > .blacksky-title {
+  background-size: 100% 100%, 100% 100%;
+  transition: background-size 2s linear;
 }
 
 /* Which pack to load, when several are saved: asked under the title and left
@@ -968,69 +1286,719 @@ input {
   font-weight: var(--w-bold);
 }
 
-/* A pointed row: the compass on the left, the place it points at on the right.
-   The compass column takes what it needs; the name takes the rest. */
-.blacksky-pointed {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.75rem 1.25rem;
+/* ── The dial (BS_Enhancement-AC1) ─────────────────────────────────────────
+   One place, read in a glance: where it comes from, its name, the distance,
+   the dial. Tight gaps, so the glance (label to dial) stays together on one
+   screen; the notes may start below the fold now that the dial takes the
+   width, which the team accepted. */
+/* The dial is sized from the HEIGHT of the screen as well as its width, so
+   that the Notes heading is on the first screen of a short phone (a 360 px
+   Samsung shows about 660 px between Chrome's bars).
+   How: on a short screen the body is given exactly the height the screen has
+   left once what stands around it is taken off, and its third row, the dial's,
+   is the one flexible row (1fr). Every other row keeps its own height, so
+   whatever they need (a name on two lines, "about", the compass button) comes
+   out of the dial and nothing else. dvh, not vh, so the browser's bars count.
+   300 px is the floor: smaller than that the roads and names inside the map
+   circle stop being readable at arm's length. The floor is the row's minimum, and
+   min-height: min-content makes the body at least its rows tall, so on a
+   screen too short even for that the body grows, the page scrolls, and nothing
+   overlaps.
+   On a taller screen (over 700 px) none of this applies: the dial is simply
+   the content width up to 360 px, and the heading is in view anyway. Without
+   that limit a tall screen would stretch the body and leave a hole round the
+   dial. With no notes there is no heading to keep in view, so less is taken
+   off and the dial takes the room. */
+.blacksky {
+  --bs-gap: 6px;
+  /* Above the body: the page's top padding, the top bar (the 48 px hold), and
+     the gap under it. */
+  --bs-above: calc(max(1.5rem, env(safe-area-inset-top) + 1rem) + 48px + var(--bs-gap));
+  --bs-line: 0px; /* a line of text standing between the bar and the body */
+  --bs-bar: 0px; /* the GPS signal lost bar */
+  /* Below it: the page's bottom padding, or the Notes heading and its gap. */
+  --bs-below: max(1.75rem, env(safe-area-inset-bottom));
 }
 
-.blacksky-compass {
+.blacksky:has(.blacksky-notes) {
+  --bs-below: calc(var(--bs-gap) + 56px);
+}
+
+.blacksky:has(> .muted + .blacksky-dial-body) {
+  --bs-line: calc(1.5rem + var(--bs-gap));
+}
+
+.blacksky:has(.blacksky-bar[data-on='true']) {
+  --bs-bar: calc(2.5rem + var(--bs-gap));
+}
+
+/* Only while the dial is on screen: the no-fix reference screen keeps the
+   page's own spacing, as it was built. */
+.blacksky:has(.blacksky-dial-body) {
+  gap: var(--bs-gap);
+}
+
+/* The dial takes the full content width, the screen less 16 px each side, up
+   to 360 px: BlackSky's page runs closer to the edges than the other screens,
+   because on a phone the dial is the screen. */
+.page.blacksky:has(.blacksky-dial-body) {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+.blacksky-dial-body {
   display: grid;
-  justify-items: center;
-  gap: 0.25rem;
+  gap: 6px;
+  grid-template-rows: auto auto min(360px, calc(100vw - 2rem));
+  grid-auto-rows: auto;
+}
+
+@media (max-height: 700px) {
+  .blacksky-dial-body {
+    grid-template-rows: auto auto minmax(300px, 1fr);
+    height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    min-height: min-content;
+  }
+}
+
+/* A screen wider than any phone (a laptop, a tablet): the dial grows past
+   360 px, up to the height the other rows leave and the page's width, so it is
+   not a small circle in a large window. The body takes the screen's height as
+   on a short phone, and the dial's row is the flexible one. Phones never see
+   this: their layout is the one above. */
+@media (min-width: 701px) {
+  .blacksky-dial-body {
+    grid-template-rows: auto auto minmax(300px, 1fr);
+    height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    min-height: min-content;
+  }
+
+  /* The slot in the selector: this must beat the frame's own rule, later in
+     the file, which holds a phone's dial to 360 px. */
+  .blacksky-dial-slot .blacksky-dial-frame {
+    width: min(100cqw, 100cqh);
+  }
+}
+
+.blacksky-dial-head {
+  display: grid;
+  gap: 0.125rem;
+}
+
+/* The name block is set tight, so the dial can have the room: the label at
+   12 px, the site at 22 and the suburb at 15, all on a line-height of 1.1. */
+.blacksky-dial-head .kicker {
+  line-height: 1.1;
+}
+
+.blacksky-dial-head h2 {
+  font-size: 22px;
+  font-weight: var(--w-heavy);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.blacksky-dial-head p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+/* The distance row: the figure on the left; beside it the compass point over
+   the position's error; and at the right-hand end 48 px kept for the speaker
+   button, whether or not this build has one, so the figures never shift. A
+   grid, not a wrapping row, so nothing drops onto a line of its own. */
+.blacksky-dial-figures {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 48px;
+  /* 48 px high, the speaker button's height, and taller only when it must:
+     with "about" over the figure the cell is taller than 48 px, and a fixed
+     row let it spill upwards over the place's name (found on a laptop, whose
+     position is usually vague). A marked position's longer readout takes a
+     row of its own below. */
+  grid-template-rows: minmax(48px, auto);
+  align-items: end;
+  gap: 0 0.5rem;
   color: var(--accent);
   font-weight: var(--w-heavy);
 }
 
-/* The arrow is the biggest thing on screen — about a third of a phone's width,
-   as in the mockups. It turns by CSS from two numbers: its own bearing and the
-   phone's heading, which the compass hook writes onto the screen root once per
-   frame. No heading yet means north-up. No transition: rotate(-350deg) and
-   rotate(10deg) are the same picture, and an animated hop between them would
-   spin the long way round. */
-.blacksky-arrow {
-  width: clamp(6.5rem, 34vw, 9rem);
-  height: auto;
-  fill: currentColor;
-  transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
+/* Row 1 always: a long readout spans the row below, and without a row the
+   button was placed after it, on a row of its own. */
+.blacksky-dial-row-end {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: center;
+  display: grid;
 }
 
-/* The distance, at arm's-length size. Bounded below so three digits and a unit
-   still fit beside a name on a 320 px viewport at doubled font size. */
+.blacksky-dial-distance,
+.blacksky-dial-beside {
+  display: grid;
+  min-width: 0;
+}
+
+.blacksky-dial-beside {
+  padding-bottom: 0.25rem;
+}
+
+.blacksky-dial-readout {
+  font-weight: var(--w-med);
+}
+
+/* A marked position's readout is a sentence: full width, under the figures. */
+.blacksky-dial-beside:has([data-long='true']) {
+  display: contents;
+}
+
+.blacksky-dial-readout[data-long='true'] {
+  grid-column: 1 / -1;
+}
+
+/* Outside the pack's area, the readout is E3-US2-AC1's line, one fact a line. */
+.blacksky-outside,
+.blacksky-outside-pack {
+  display: block;
+  line-height: 1.2;
+}
+
+/* The distance is the largest text on the screen, 44 px, the height of its
+   48 px row: it gave up size so the dial could fill the width. */
 .blacksky-figure-main {
-  font-size: clamp(2.25rem, 11vw, 3rem);
-  line-height: 0.95;
+  font-size: 44px;
+  line-height: 1;
   letter-spacing: -0.04em;
 }
 
-/* The nearest-places rows sit under the saved places at a reading size, so
-   three more directions do not triple the page. */
-.blacksky-nearby .blacksky-arrow {
-  width: 4.5rem;
+/* The unit, at half the number's size: 22 px, over the 16 px floor. */
+.blacksky-figure-unit {
+  font-size: 0.5em;
+  letter-spacing: 0;
 }
 
-.blacksky-nearby .blacksky-figure-main {
-  font-size: var(--step-2);
-}
-
-/* The point by name, in capitals as in the mockups: NORTH-EAST, never NE. */
+/* The compass point as a full word, small: 14 px, letter-spaced capitals in
+   the muted amber, over the accuracy, in the narrow column between the big
+   figure and the speaker button. A lone "E" read as a stray letter; "EAST"
+   reads as what it is. A two-word point breaks at its hyphen, which browsers
+   do by themselves: NORTH- / EAST. */
 .blacksky-figure-point {
-  font-size: var(--step-0);
-  font-weight: var(--w-heavy);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  line-height: 1.2;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink);
+  color: var(--ink-2);
 }
 
-.blacksky-nearby .blacksky-figure-point {
-  font-size: var(--step-xs);
+/* BS_Enhancement-AC2: a figure from an old, vague or estimated position is
+   dimmed to the mode's second amber (5.8:1 on black, so still readable) and
+   prefixed. It steps back; it does not disappear. */
+.blacksky-dial-figures[data-about='true'] .blacksky-figure-main,
+.blacksky-dial-figures[data-about='true'] .blacksky-figure-point {
+  color: var(--ink-2);
+}
+
+.blacksky-dial-about {
+  font-size: var(--step-1);
+  line-height: 1.1;
+  color: var(--ink-2);
+}
+
+/* The dial takes the room it is given: the slot is the grid row above (the
+   content width up to 360 px, less whatever a short screen cannot spare), and
+   the frame is the largest square that fits the slot, measured with container
+   units because only the slot knows both its width and its height. It is the
+   largest element on the screen, and it is sized for the map that is to go
+   inside the ring. Everything in it is drawn in the viewBox's own units, so
+   the notch, letters, pin and arrow scale with it. */
+.blacksky-dial-slot {
+  container-type: size;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  place-content: center;
+}
+
+.blacksky-dial-frame {
+  position: relative;
+  width: min(100cqw, 100cqh, 360px);
+  aspect-ratio: 1;
+}
+
+.blacksky-dial {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--accent);
+  overflow: visible;
+}
+
+/* The turning. The compass hook writes the heading onto the document root once
+   per frame; the ring turns against it, so N stays on true north, and the pin
+   sits at the place's bearing on that ring. No heading means 0, which is north
+   up. The origin is the viewBox centre (0 0), the default for SVG content. No
+   transition: rotate(-350deg) and rotate(10deg) are the same picture, and an
+   animated hop between them would spin the long way round. */
+.blacksky-dial-ring {
+  transform: rotate(calc(var(--heading, 0) * -1deg));
+}
+
+/* The pin and the centre arrow share one rule, so they always point the same
+   way: at the place. */
+.blacksky-dial-pin,
+.blacksky-dial-arrow {
+  transform: rotate(calc((var(--bearing) - var(--heading, 0)) * 1deg));
+}
+
+/* Something set at a spot on the map (the arrow at the person, the drop at the
+   place): carried round with the map by the heading to its spot, then turned
+   back, so what is inside keeps its own turn (the arrow's bearing, the drop
+   upright). The spot is in the drawing's units, north up. */
+.blacksky-dial-at {
+  transform: rotate(calc(var(--heading, 0) * -1deg)) translate(calc(var(--at-x, 0) * 1px), calc(var(--at-y, 0) * 1px))
+    rotate(calc(var(--heading, 0) * 1deg));
+}
+
+/* Inside the view the pin's own group does not turn: its drop is placed on
+   the map by .blacksky-dial-at. */
+.blacksky-dial-pin[data-at='inside'] {
+  transform: none;
+}
+
+.blacksky-dial-ring circle {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2;
+}
+
+.blacksky-dial-ring line {
+  stroke: var(--ink-2);
+  stroke-width: 2;
+}
+
+/* Each letter turns back by the same heading about its own centre, so it
+   stays upright and readable however the ring has turned. */
+/* The size comes from the dial's geometry, to fit the band between the map
+   disc and the ring. */
+.blacksky-dial-letter {
+  font-weight: var(--w-heavy);
+  fill: var(--ink-2);
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotate(calc(var(--heading, 0) * 1deg));
+}
+
+.blacksky-dial-notch {
+  fill: currentColor;
+}
+
+/* The arrow is an outline, never filled, so the map shows through it: a 2.5 px
+   amber line over a dark line 1 px wider each side. Amber alone is 1.5 to 1 on
+   the light disc; the dark edge is 16.5 to 1 there, and the amber 12.6 to 1 on
+   the black. Widths in screen pixels at any dial size. */
+.blacksky-dial-arrow path {
+  fill: none;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.blacksky-dial-arrow .blacksky-arrow-edge {
+  stroke: var(--map-mark);
+  stroke-width: 4.5px;
+}
+
+.blacksky-dial-arrow .blacksky-arrow-line {
+  stroke: var(--map-mark-edge);
+  stroke-width: 2.5px;
+}
+
+/* An old position, or a marked one: the same outline, dashed. */
+.blacksky-dial-arrow[data-stale='true'] path {
+  stroke-dasharray: 6 4;
+}
+
+/* The North up tag sits in the dial's top corner, over the ring's line where
+   the ring comes near it. */
+.blacksky-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.125rem 0.75rem;
+  border: 1px solid var(--ink-2);
+  border-radius: 999px;
+  /* The ring reaches nearly to the box's corners, so a tag sits over its line
+     there: a solid ground keeps the line from running through the words. */
+  background: var(--bg);
+  font-weight: var(--w-bold);
+  color: var(--ink-2);
+}
+
+/* ── Roads inside the dial (BS_Enhancement-AC5) ───────────────────────────
+   The map is a light disc inside the dark ring, like a paper map held up on
+   the black screen: the ring, its ticks and letters, and every word outside
+   the disc stay in the mode's amber on black. The roads are context, not a
+   way to go: every road of a kind is drawn alike, as a casing with a fill on
+   top, each class a clear step up from the one below (ROADS_WIDTH_PX), so the
+   freeways and highways a person recognises read first. All the map's colours
+   are here, as custom properties on the dial.
+   Contrast on the disc #F2EFE9, WCAG 1.4.11 asks 3 to 1 for graphics: the
+   freeway casing #D98B21 2.4 to 1, the highway casing #D9B84A 1.7 to 1, the
+   arterial casing #C9C9C9 1.4 to 1, all BELOW it, as specified for this
+   build and flagged for the accessibility check on the card. Road names
+   #333333 on their white halo 12.6 to 1; the arrow and the drop #111111 on
+   the disc 16.5 to 1, their amber edge #FBBF24 12.6 to 1 on the black. */
+.blacksky-dial {
+  --map-disc: #f2efe9;
+  --map-freeway-casing: #d98b21;
+  --map-freeway-fill: #f2a33a;
+  --map-highway-casing: #d9b84a;
+  --map-highway-fill: #ffe082;
+  --map-highway-fill-whole: #fff1b8; /* paler in the whole way, under the freeway */
+  --map-arterial-casing: #c9c9c9;
+  --map-arterial-fill: #ffffff;
+  --map-collector-casing: #dddddd;
+  --map-collector-fill: #ffffff;
+  --map-label: #333333;
+  --map-label-halo: #ffffff;
+  --map-locality: #4a4a4a;
+  --map-locality-halo: #f2efe9;
+  --map-mark: #111111;
+  --map-mark-edge: #fbbf24;
+}
+
+/* Beats the ring's own circle rule: the disc is filled, with no stroke. */
+.blacksky-dial-ring .blacksky-map-disc {
+  fill: var(--map-disc);
+  stroke: none;
+}
+
+.blacksky-road {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.blacksky-road.freeway.casing {
+  stroke: var(--map-freeway-casing);
+}
+
+.blacksky-road.freeway.fill {
+  stroke: var(--map-freeway-fill);
+}
+
+.blacksky-road.highway.casing {
+  stroke: var(--map-highway-casing);
+}
+
+.blacksky-road.highway.fill {
+  stroke: var(--map-highway-fill);
+}
+
+.blacksky-dial-map[data-view='whole'] .blacksky-road.highway.fill {
+  stroke: var(--map-highway-fill-whole);
+}
+
+.blacksky-road.arterial.casing {
+  stroke: var(--map-arterial-casing);
+}
+
+.blacksky-road.arterial.fill {
+  stroke: var(--map-arterial-fill);
+}
+
+.blacksky-road.collector.casing {
+  stroke: var(--map-collector-casing);
+}
+
+.blacksky-road.collector.fill {
+  stroke: var(--map-collector-fill);
+}
+
+.blacksky-road-label text {
+  /* The size is set on the label from ROADS_LABEL_PX, not here. */
+  font-weight: var(--w-med);
+  fill: var(--map-label);
+  stroke: var(--map-label-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* The scale bar, in the map's label colours: a dark bar on a white halo, its
+   figure like a road name. It stands still while the map turns. */
+.blacksky-scale-halo {
+  fill: none;
+  stroke: var(--map-label-halo);
+  stroke-width: 4px;
+  stroke-linecap: butt;
+}
+
+.blacksky-scale-bar {
+  fill: none;
+  stroke: var(--map-label);
+  stroke-width: 2px;
+  stroke-linecap: butt;
+}
+
+.blacksky-scale-label {
+  font-weight: var(--w-med);
+  fill: var(--map-label);
+  stroke: var(--map-label-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* Locality names, "Whole way" only: quiet capitals in grey with a halo of the
+   disc's own colour, upright whichever way the map has turned (the same turn
+   back as the ring's letters). Size and spacing come from constants.ts. */
+.blacksky-locality {
+  font-weight: var(--w-med);
+  fill: var(--map-locality);
+  stroke: var(--map-locality-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotate(calc(var(--heading, 0) * 1deg));
+}
+
+/* With the map, the compass letters lie across the disc's edge: dark with the
+   arrow's amber edge, the edge drawn outside the letter (paint-order), so a
+   letter reads on the light disc and on the black band alike. */
+.blacksky-dial-ring.on-map .blacksky-dial-letter {
+  /* The edge's width is set on the letter, in the dial's units. */
+  fill: var(--map-mark);
+  stroke: var(--map-mark-edge);
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* A name reads the right way up while its stretch, as the dial has turned it,
+   points anywhere from straight down to straight up through the right-hand
+   side: the cosine of that angle is positive. Past that its twin, set along the
+   same stretch the other way, takes over. The small bias gives a name standing
+   exactly upright (a cosine of 0) to the first copy, so one of the two always
+   shows. The angle comes from --heading, so this follows the phone at display
+   rate with no render. */
+.blacksky-road-label .upright {
+  opacity: clamp(0, calc((cos((var(--label-deg) - var(--heading, 0)) * 1deg) + 0.0001) * 100000), 1);
+}
+
+.blacksky-road-label .turned {
+  opacity: clamp(0, calc((cos((var(--label-deg) - var(--heading, 0)) * 1deg) + 0.0001) * -100000), 1);
+}
+
+/* The place's pin inside the view: a dark drop with the mode's amber edge, its
+   tip on the spot, so it stands clear of the light disc and the roads on it.
+   Placed and kept upright by .blacksky-dial-at. */
+.blacksky-dial-drop {
+  fill: var(--map-mark);
+  stroke: var(--map-mark-edge);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+/* The same drop on the ring: amber with a dark edge, like the marker it
+   replaced, so it reads on the black band and where it reaches the disc. */
+.blacksky-dial-drop.on-ring {
+  fill: currentColor;
+  stroke: var(--map-mark);
+  stroke-width: 1.5px;
+  /* 1.5 screen pixels, however the drop is scaled to the ring pin's size. */
+  vector-effect: non-scaling-stroke;
+}
+
+/* The disc is where the map is dragged: a clear layer the size of the disc (88 %
+   of the dial's box, so 6 % in from each side), round like it, so the dial's
+   corners and everything outside the disc take no drag. touch-action none: the
+   page neither scrolls nor zooms under a finger on the map. */
+.blacksky-dial-pan {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.blacksky-dial-pan:active {
+  cursor: grabbing;
+}
+
+/* "Back to me", a pill over the dial's foot while the map is dragged: centred,
+   its bottom edge on the frame's, over the black band under the S. Out of the
+   page's flow, so the dial never changes size for it. The ring's line may pass
+   behind it; the solid ground the tags have keeps the line out of the words.
+   44 px high, the smallest target on this screen. */
+.blacksky-map-return {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 1;
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 0;
+  padding: 0 1.25rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  color: var(--accent);
+  font-size: var(--step-0);
+  white-space: nowrap;
+}
+
+/* ── Voice (BS_Enhancement-AC3) ────────────────────────────────────────────
+   The speaker button: round, 48 px, at the right-hand end of the distance row,
+   in the 48 px the row keeps for it. Outlined when off, filled in the mode's
+   amber when on, so its state is read from shape and fill, not from colour
+   alone. */
+.blacksky-speaker {
+  width: 48px;
+  height: 48px;
+  min-height: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent);
+}
+
+.blacksky-speaker[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+
+.blacksky-speaker svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+}
+
+.blacksky-speaker .waves {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* The caption: the words being spoken, over the foot of the dial. A solid
+   ground, so the ring behind it never runs through the letters. */
+.blacksky-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-weight: var(--w-med);
+  text-align: center;
+}
+
+/* Every other place, folded into one line that opens the sheet: the count and
+   the range. One line on every phone, so it never wraps and is never cut off;
+   the sides are narrower than other buttons' to make sure of that at 360 px. */
+.blacksky-others {
+  width: 100%;
+  min-height: 48px;
+  padding-inline: 1rem;
+  text-align: left;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The sheet: a native dialog pinned to the foot of the screen, at thumb reach,
+   in the mode's own colours. The page behind it goes dark, not white. */
+.blacksky-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85dvh;
+  margin: auto auto 0;
+  padding: 1.25rem max(1.75rem, env(safe-area-inset-right))
+    max(1.75rem, env(safe-area-inset-bottom)) max(1.75rem, env(safe-area-inset-left));
+  border: 0;
+  border-top: 1px solid var(--accent);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--bg);
+  color: var(--ink);
+  overflow-y: auto;
+}
+
+.blacksky-sheet[open] {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.blacksky-sheet::backdrop {
+  background: rgb(0 0 0 / 0.8);
+}
+
+.blacksky-sheet p {
+  margin: 0;
+}
+
+.blacksky-sheet h2 {
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+}
+
+.blacksky-other {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.blacksky-other h3 {
+  margin: 0;
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  overflow-wrap: anywhere;
+}
+
+/* ── The bar (BS_Enhancement-AC2) ──────────────────────────────────────────
+   GPS signal lost, filled in the mode's amber so it is the first thing seen.
+   While the position is fresh the element stays in the page for the screen
+   reader's sake but is taken out of the layout, so it costs no gap. */
+.blacksky-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.625rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  font-weight: var(--w-heavy);
+}
+
+.blacksky-bar span + span {
+  font-weight: var(--w-med);
+}
+
+.blacksky-bar[data-on='false'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 /* The notes fold: a native <details>, so no script and no re-render on the
-   tick. The summary is a ruled bar at reading size with its own open/closed
-   mark; each note is a ruled row like the places above it. */
+   tick. Beside the dial it stands open, so the notes are read without a tap;
+   on the no-fix reference screen it starts folded. The summary is a ruled bar
+   at reading size with its own open/closed mark; each note is a ruled row like
+   the places above it. */
 .blacksky-notes summary {
   min-height: 56px;
   display: flex;
@@ -1183,13 +2151,16 @@ input {
   background: var(--blacksky-fill);
 }
 
-/* An information ring: the delete control's shape in the accent. The tour ring
-   beside the daily reminder is the plain one; the BlackSky ring recolours it. */
+/* An information ring: the delete control's shape in the accent, drawn small so
+   it never competes with the screen. The invisible ::after keeps the 44px tap
+   area. The BlackSky ring recolours it; the tour ring carries a question mark. */
 .info-ring {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  min-width: 44px;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  min-width: 32px;
+  flex: none;
   padding: 0;
   display: inline-grid;
   place-items: center;
@@ -1197,12 +2168,15 @@ input {
   border-color: var(--accent);
   color: var(--accent);
 }
-/* The ring leads the label, as the BlackSky ring leads its hold control. */
-.preparation-head {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.75rem;
-  align-items: center;
+.info-ring::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+/* The tour ring in the header: the information ring with a question mark. */
+.tour-ring {
+  font-size: var(--step-s);
+  font-weight: var(--w-heavy);
 }
 
 /* ── The guided tour ──────────────────────────────────────────────────────── */
@@ -1302,6 +2276,14 @@ input {
 }
 .info-lines b {
   color: var(--accent);
+}
+/* A gap, then on its own line what to do about it. */
+.gap-line {
+  display: grid;
+  gap: 0.375rem;
+}
+.gap-line p {
+  margin: 0;
 }
 
 /* ── Splash on arrival ─────────────────────────────────────────────────────── */
@@ -1435,6 +2417,16 @@ input {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* The splash's wait is a delay, which the durations above leave alone: it
+     goes on the first frame, as promised. */
+  .splash {
+    animation-delay: 0s !important;
+  }
+  /* The hold's fill is a progress bar, not motion. On iOS, with no vibration,
+     it is the only sign of how long is left, so it keeps its two seconds. */
+  .blacksky-hold:active {
+    transition-duration: 2s !important;
+  }
 }
 
 /* ── The fixed header (E1-US2-AC6) ─────────────────────────────────────────── */
@@ -1494,6 +2486,21 @@ input {
   letter-spacing: var(--track-tight);
 }
 
+/* The right side: the age pill, then the tour ring at the far edge. */
+.app-header-end {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+/* On the narrowest phones the mark alone returns home, so the age and the
+   ring keep one line. The link's label still names it. */
+@media (max-width: 359px) {
+  .app-header-name {
+    display: none;
+  }
+}
+
 /* The age as a small pill: real text, announced like any other text — never an
    image and never a colour on its own. The card colour and the same hairline as
    every card, so it reads as a quiet fact carried by the header, not a verdict
@@ -1542,15 +2549,17 @@ input {
   color: var(--ink-3);
 }
 
-/* The name leads the row and the delete control closes it. */
+/* The name leads the row, clear of the settings ring at the top right. */
 .saved-place-title {
+  padding-right: 2.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
 .saved-place-title h2 {
-  min-width: 0; /* a long name wraps rather than pushing the delete control out */
+  min-width: 0; /* a long name wraps rather than running under the settings ring */
+  flex: 1;
 }
 
 /* The freshness line sits below a hairline, as a footer to the card rather than
@@ -1612,10 +2621,11 @@ input {
   letter-spacing: 0.01em;
 }
 
-/* The home screen has no back bar above it, so its column is taller by that
-   much: the notice and header above the page take height the viewport unit
-   does not know about. */
-.home {
+/* A screen with no back bar above it (a tab, or a builder step where Back is
+   held) is taller by the bar's height, so its actions still sit the same gap
+   above the bottom bar. The notice and header above take height the viewport
+   unit does not know about. */
+body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   min-height: calc(100dvh - 5.25rem - 1px);
 }
 
@@ -1626,6 +2636,13 @@ input {
 .first-open,
 .gate {
   padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
+}
+
+/* BlackSky's Leave control sits in the top bar, so the bar is kept clear of the
+   phone's top edge: the system's pull-down starts there, and a finger reaching
+   for one must not land on the other. */
+.blacksky {
+  padding-top: max(1.5rem, calc(env(safe-area-inset-top) + 1rem));
 }
 
 /* ── Welcome, before the disclosure ───────────────────────────────────────── */
@@ -1711,13 +2728,10 @@ input {
    sparse. */
 .first-open {
   gap: 0.75rem;
-  /* Its own stacking context, so the particle canvas below sits under the
-     page's words and above the body ground, and never above anything else. */
-  isolation: isolate;
 }
 
-/* The motes behind the welcome and the disclosure: full screen, under the
-   text, and inert to every tap. */
+/* The motes behind every screen but BlackSky: full screen, under the text,
+   and inert to every tap. */
 .particles {
   position: fixed;
   inset: 0;
@@ -1800,8 +2814,10 @@ input {
   grid-column: 2;
 }
 
-/* The quieter note under the statements: its own small card, so the line that
-   points away from Cooeee is visibly not one of Cooeee's four statements. */
+/* The note under the statements: its own small card, so the line that points
+   away from Cooeee is visibly not one of Cooeee's four statements. It carries
+   the emergency treatment below, so it reads at full strength rather than as a
+   footnote. */
 .official-channels {
   display: flex;
   align-items: start;
@@ -1809,14 +2825,37 @@ input {
   padding: 0.75rem 1rem;
   border-radius: var(--r-card);
   background: var(--surface-2);
-  font-size: var(--step-s);
   color: var(--ink-2);
+}
+
+/* ── The emergency instruction ─────────────────────────────────────────────── */
+
+/* The one thing on a screen that must be read before anything else: how to
+   reach emergency services. Red is already the fixed state colour in every
+   mode, so nothing is invented here, and the shape is the ring-plus-tint the
+   nudge and the kept card already use. The words carry the meaning on their
+   own, so the colour adds weight without ever being the only signal. */
+.emergency-line {
+  border-inline-start: 3px solid var(--offline);
+  background: color-mix(in srgb, var(--offline) 12%, var(--surface));
+  color: var(--ink);
+  font-size: var(--step-0);
+}
+
+/* The mark beside the line takes the same red, so the pair reads as one. */
+.emergency-line > svg {
+  color: var(--offline);
+}
+
+/* In BlackSky every non-amber pixel stays off, so the ground goes back to true
+   black. The red rule alone marks the line, and on a screen that is otherwise
+   all amber it is the one thing in another colour. */
+:root[data-mode='blacksky'] .emergency-line {
+  background: #000000;
 }
 
 .official-channels svg {
   flex: 0 0 auto;
-  /* Optically centred on the first line of the smaller type beside it. */
-  margin-top: 0.0625rem;
 }
 
 /* A row, not a stack: the label is the statement, and it is the label element
@@ -1887,21 +2926,48 @@ input {
    an amber state word; live stays on the default card with the fixed green
    dot; unavailable takes the fixed red. The second deliberate use of state
    colour in this stylesheet, and it marks data age only — never hazard. */
+/* The postcode search sits on the page, as the pack builder's address search does. */
 .nearby-locate {
-  gap: 0.75rem;
-}
-.nearby-postcode {
   display: grid;
-  grid-template-columns: minmax(0, 1fr); /* never wider than the card, whatever the input wants */
-  gap: 0.5rem;
-}
-.postcode-row {
-  display: flex;
   gap: 0.75rem;
 }
-.postcode-row input {
-  flex: 1;
-  min-width: 0;
+/* The postcode in the origin line, picked out in the accent. */
+.nearby-origin-code {
+  color: var(--accent);
+  font-weight: var(--w-bold);
+}
+
+/* The two Nearby tabs: one pill track, the chosen half filled in teal. */
+.nearby-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+}
+.nearby-tabs [role='tab'] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-color: transparent;
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--step-s);
+}
+/* The chosen list is a filled teal pill, so the choice reads at a glance. */
+.nearby-tabs [role='tab'][aria-selected='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+/* The hotline sits on its own line under the note. */
+.nearby-note {
+  white-space: pre-line;
 }
 
 .nearby-group {
@@ -1976,15 +3042,25 @@ input {
   font-weight: var(--w-heavy);
 }
 
-.data-sources {
-  display: grid;
-  gap: 0.75rem;
-}
-.data-sources-head {
+/* The information ring and whatever sits beside it; the panel it opens takes
+   the full row beneath, so it covers nothing. */
+.hint {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.75rem;
   align-items: center;
+}
+.hint > .hint-panel {
+  grid-column: 1 / -1;
+}
+/* A long word beside the ring wraps at large text rather than pushing past
+   the screen edge. */
+.hint > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hint > .info-ring:only-of-type:last-child {
+  justify-self: start;
 }
 .info-ring[aria-expanded='true'] {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
@@ -2002,7 +3078,6 @@ input {
   --reveal: var(--accent);
   scroll-margin-top: 7rem;
   scroll-margin-bottom: 6rem;
-  outline: none;
   animation: panel-reveal 420ms ease-out;
 }
 .blacksky-info-panel.info-panel {
@@ -2032,6 +3107,15 @@ input {
   width: 100%;
   text-align: left;
 }
+/* Clear all on the saved list: a small pill in the delete red, so it never
+   reads as a neutral action. */
+.recover .clear-kept {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: var(--step-s);
+  color: var(--offline);
+}
 .recover .card a {
   align-self: start;
 }
@@ -2052,6 +3136,82 @@ input {
   align-items: center;
   gap: 0.875rem;
   padding-left: 0.5rem;
+}
+/* R1: the roadmap, the one need row filled in teal, so the way through
+   recovery is seen before the single needs. */
+.recover .roadmap-button {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.roadmap-button .glyph {
+  background: rgb(0 0 0 / 0.12);
+  color: inherit;
+}
+.roadmap-stage {
+  display: grid;
+  gap: 0.75rem;
+}
+.roadmap-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.roadmap-step {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+.roadmap-step-body {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+}
+.roadmap-step-body p {
+  margin: 0;
+}
+.roadmap-step.done .roadmap-step-body p {
+  color: var(--ink-2);
+}
+/* The tick: a 32 px ring, filled teal with a tick once done. The invisible
+   ::after keeps a 44 px tap area, as the information ring does. */
+.roadmap-tick {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+}
+.roadmap-tick::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.roadmap-tick[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.roadmap-link {
+  justify-self: start;
+  font-weight: var(--w-med);
+}
+.roadmap-source {
+  font-size: var(--step-s);
+}
+/* R3: the wellbeing lines under the numbers in Who to call. */
+.talk-to-someone {
+  display: grid;
+  gap: 0.75rem;
 }
 
 /* The source at a glance: its initials in a ring at the head of the card. */
@@ -2109,10 +3269,58 @@ input {
   border: 2px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
-.recover .keep-button {
-  align-self: start;
-  min-height: 44px;
-  padding: 0.5rem 1.25rem;
+
+/* The way into what the person already kept. It is not one more need to choose
+   between, so it sits above the list and wears the kept card's own ring and
+   tint: whoever has kept a program has already met this treatment and reads it
+   without being told. The filled glyph carries it at a glance. */
+/* Kept and All side by side over the needs, each a tile with its drawing on
+   top, its name, then one quiet line. One tile alone fills the row. */
+.recover-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.recover .recover-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-radius: var(--r-card);
+  text-align: left;
+}
+.recover-tile .glyph {
+  margin-bottom: 0.5rem;
+}
+.recover-tile-detail {
+  color: var(--ink-2);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+}
+.recover .kept-button {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--accent);
+}
+.recover .kept-button .glyph {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.program-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.program-actions .action {
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--step-s);
+  white-space: nowrap;
+}
+.program-actions .call-action {
+  grid-column: 1 / -1;
 }
 .recover .keep-button[aria-pressed='true'] {
   border-color: var(--accent);
@@ -2197,24 +3405,22 @@ input {
   width: 18px;
   height: 18px;
 }
-
-/* Nearby and the address search: the locate control carries its glyph inside
-   the pill. On the address search it is a ghost pill, as Search is the filled one. */
-.search-locate,
-.nearby-locate .main-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
+.about .info-lines p {
+  margin: 0;
 }
-.search-locate .glyph,
+.about-line-title {
+  margin: 0 0 0.125rem;
+  font-size: var(--step-0);
+  font-weight: var(--w-bold);
+  color: var(--ink);
+}
+
 .main-action .glyph {
   width: 28px;
   height: 28px;
   background: rgb(0 0 0 / 12%);
   color: inherit;
 }
-.search-locate .glyph svg,
 .main-action .glyph svg {
   width: 16px;
   height: 16px;
@@ -2315,6 +3521,13 @@ input {
   font-size: var(--step-2);
   font-weight: var(--w-med);
 }
+/* Left-aligned like the line under it; outranks .with-glyph's centring. A
+   long word wraps at 200% text rather than running off the right edge. */
+.condition-action .condition-label {
+  justify-content: flex-start;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
 /* NOT .muted. Muted is this product's convention for passive explanatory prose,
    and a control whose second line is muted reads as a card of text rather than
@@ -2382,9 +3595,10 @@ input {
   margin: 0;
 }
 
-/* Names the line beneath it as the one thing to do, so the action is never read
+/* Names the line beneath it as the reason or the one thing to do, so neither is read
    as more explanation. */
-.gap-action-label {
+.gap-action-label,
+.gap-reason-label {
   font-size: var(--step-s);
   font-weight: var(--w-heavy);
   letter-spacing: 0.04em;
@@ -2408,6 +3622,15 @@ input {
   align-self: flex-start;
   min-height: 44px;
   margin-top: 0.5rem;
+}
+
+/* The live time and distance at the top of a running rehearsal: one quiet
+   figure line in the accent, tabular so the digits do not jump each second. */
+.journey-track {
+  margin: 0;
+  font-weight: var(--w-bold);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
 }
 
 /* E5-US1-AC5 — the journey screen. The places sit in the card treatment the
@@ -2516,6 +3739,19 @@ input {
   font-weight: var(--w-bold);
 }
 
+/* The gaps line and the ring that explains it share a row, as the hold control
+   and its ring do on Home. The panel takes the full width beneath the pair, so
+   it opens in flow and covers no other rehearsal. */
+.history-gaps {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.history-gaps > .info-panel {
+  grid-column: 1 / -1;
+}
+
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
    Groups are told apart by their HEADINGS and by nothing else: no colour, no
    dot, no badge, no arrow, so the screen still reads with every colour stripped
@@ -2558,4 +3794,724 @@ input {
 .progress-pack-change {
   font-size: var(--step-s);
   margin: 0;
+}
+
+/* ── E9 the drill ──────────────────────────────────────────────────────────── */
+
+/* The label and the sound control share the top row of the first screen. */
+.drill-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.drill-sound {
+  display: grid;
+  place-items: center;
+  flex: none;
+  /* A true circle: the min sizes override the base button's 56 px height. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  cursor: pointer;
+}
+/* On: filled in the accent. Off: an outline in the quiet colour, so the two
+   states differ in shape and weight, not only in colour. */
+.drill-sound.on {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.drill-sound.off {
+  background: rgba(8, 10, 18, 0.62);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(244, 241, 234, 0.8);
+}
+
+/* While the film and the minute run, the drill is the whole screen: the
+   app's bars step aside and the page behind cannot scroll. */
+body.drill-open {
+  overflow: hidden;
+}
+body.drill-open .app-header,
+body.drill-open .back-bar,
+body.drill-open .bottom-nav,
+body.drill-open .notice-bar,
+body.drill-open .notice-sliver,
+body.drill-open .banner {
+  display: none;
+}
+
+/* The picture fills the screen inside the phone's safe edges, and every
+   control floats over it like a phone game. touch-action none so no thumb on
+   the stage scrolls or zooms the page. */
+.drill-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #06070c;
+  color: #f4f1ea;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  outline: none;
+}
+.drill-stage canvas {
+  position: absolute;
+  top: env(safe-area-inset-top);
+  bottom: env(safe-area-inset-bottom);
+  left: env(safe-area-inset-left);
+  right: env(safe-area-inset-right);
+  width: calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right));
+  height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: block;
+}
+
+/* Frosted chips over the picture: legible on flame and on floorboards alike. */
+.drill-top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.drill-counts,
+.drill-chip,
+.drill-room {
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.drill-counts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.5rem 1.1rem 0.6rem;
+  border-radius: var(--r-pill);
+}
+.drill-counts p {
+  margin: 0;
+}
+.drill-timer {
+  /* Big enough to read at a glance, mid game, on a small phone. */
+  font-size: clamp(2.1rem, 9vw, 2.75rem);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1;
+}
+/* The last ten seconds borrow BlackSky's amber: the one colour this product
+   already uses for "now". The clock still reads without it. */
+.drill-timer.late {
+  color: var(--blacksky-accent);
+}
+.drill-bag {
+  font-size: var(--step-s);
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.drill-top-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.drill-chip {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  white-space: nowrap;
+  border-radius: var(--r-pill);
+  color: inherit;
+  font: inherit;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  cursor: pointer;
+}
+.drill-close {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.drill-room {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 6.1rem);
+  left: calc(env(safe-area-inset-left) + 1rem);
+  margin: 0;
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--r-pill);
+  font-size: var(--step-s);
+}
+.drill-room::first-letter {
+  text-transform: uppercase;
+}
+
+/* The film's words: one line at a time, low on the picture, on a dark fade
+   that rises from the bottom so they read over any flame. */
+.drill-film {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 calc(env(safe-area-inset-right) + 1.5rem) calc(env(safe-area-inset-bottom) + 2.25rem)
+    calc(env(safe-area-inset-left) + 1.5rem);
+  pointer-events: none;
+}
+.drill-film > * {
+  position: relative;
+  pointer-events: auto;
+}
+.drill-film > .drill-scrim {
+  position: absolute;
+  inset: 45% 0 0 0;
+  background: linear-gradient(to bottom, rgba(4, 3, 6, 0), rgba(4, 3, 6, 0.72) 38%, rgba(4, 3, 6, 0.94));
+  pointer-events: none;
+}
+.drill-fact {
+  max-width: 30rem;
+  animation: drill-fact-in 1.2s ease-out both;
+}
+.drill-fact-text {
+  margin: 0;
+  font-size: clamp(1.4rem, 5.6vw, 2.25rem);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-tight);
+  line-height: 1.12;
+  color: #ffffff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+.drill-fact-figure {
+  color: #ffb54a;
+  font-weight: inherit;
+  white-space: nowrap; /* a date or a distance is never split across lines */
+}
+.drill-fact-source {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  font-weight: var(--w-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+@keyframes drill-fact-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-fact {
+    animation: none;
+  }
+}
+.drill-next {
+  flex: none;
+}
+/* The last line of the film sits over the person, large, just before the
+   clock starts: a gentle cue that play is about to begin. */
+.drill-fact.ready {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 40%;
+  max-width: none;
+  text-align: center;
+}
+.drill-fact.ready .drill-fact-text {
+  font-size: clamp(2rem, 9vw, 2.75rem);
+  letter-spacing: 0.02em;
+}
+
+/* The thumb controls float over the lower corners, just above the bag strip. */
+.drill-controls {
+  position: absolute;
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.75rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  pointer-events: none;
+}
+.drill-controls > * {
+  pointer-events: auto;
+}
+/* The stick is a button so it is named and reachable; the arrow keys do the
+   same job from a keyboard. */
+.drill-stick {
+  position: relative;
+  width: 7.5rem;
+  height: 7.5rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 10, 18, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  touch-action: none;
+  cursor: pointer;
+}
+.drill-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3rem;
+  height: 3rem;
+  margin: -1.5rem 0 0 -1.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+.drill-pack {
+  width: min(11rem, 44vw);
+  min-height: 5.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  font: inherit;
+  font-weight: var(--w-bold);
+  line-height: 1.2;
+  touch-action: none;
+  cursor: pointer;
+}
+.drill-pack {
+  animation: drill-pack-in 0.18s ease-out both;
+}
+@keyframes drill-pack-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-pack {
+    animation: none;
+  }
+}
+.drill-pack:disabled {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(8, 10, 18, 0.55);
+  color: rgba(244, 241, 234, 0.72);
+  cursor: default;
+}
+
+/* The report: read by shape and colour first, words second. The four kinds
+   of thing each keep one colour everywhere on it. */
+.drill-page {
+  --kind-essential: #5be38a;
+  --kind-listed: #3fc8d8;
+  --kind-neutral: #8a94a6;
+  --kind-bulky: #ff5a4f;
+}
+.debrief-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin: 0.5rem 0 1.5rem;
+}
+.debrief-hero h1 {
+  margin: 0 0 0.25rem;
+}
+.debrief-hero p {
+  margin: 0;
+}
+.debrief-ring {
+  flex: none;
+  width: 7rem;
+  height: 7rem;
+}
+.debrief-ring circle {
+  fill: none;
+  stroke-width: 10;
+}
+.debrief-ring .track {
+  stroke: var(--surface-2);
+}
+.debrief-ring .fill {
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+  animation: debrief-ring-in 1s ease-out both;
+}
+.debrief-ring.good .fill { stroke: var(--kind-essential); }
+.debrief-ring.fair .fill { stroke: var(--blacksky-accent); }
+.debrief-ring.poor .fill { stroke: var(--kind-bulky); }
+.debrief-ring text {
+  fill: var(--ink);
+  font-size: 34px;
+  font-weight: var(--w-heavy);
+  letter-spacing: -0.02em;
+}
+@keyframes debrief-ring-in {
+  from { stroke-dasharray: 0 400; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .debrief-ring .fill { animation: none; }
+}
+.debrief-over-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  background: rgba(255, 90, 79, 0.16);
+  border: 2px solid var(--kind-bulky);
+  color: var(--kind-bulky);
+}
+.debrief-over-mark .glyph {
+  background: none;
+  color: inherit;
+}
+.debrief-over-mark svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.debrief-block {
+  margin-bottom: 1.25rem;
+}
+.debrief-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  font-size: var(--step-s);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.debrief-label .figure {
+  margin-left: auto;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.debrief-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.debrief-tile,
+.debrief-empty {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 44px;
+  border-radius: 0.75rem;
+}
+.debrief-tile {
+  padding: 0;
+  border: 2px solid var(--kind, var(--line));
+  background: color-mix(in srgb, var(--kind, transparent) 14%, var(--surface));
+  cursor: pointer;
+}
+.debrief-tile[aria-pressed='true'] {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.debrief-tile.faded {
+  border-style: dashed;
+  background: var(--surface);
+}
+.debrief-tile.faded .debrief-sprite {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.debrief-empty {
+  border: 2px dashed var(--line);
+  opacity: 0.6;
+}
+.kind-essential { --kind: var(--kind-essential); }
+.kind-listed { --kind: var(--kind-listed); }
+.kind-neutral { --kind: var(--kind-neutral); }
+.kind-bulky { --kind: var(--kind-bulky); }
+.debrief-sprite {
+  display: block;
+  background-image: url('/drill/sprites.png');
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.debrief-points {
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: var(--w-heavy);
+  color: var(--kind);
+}
+.debrief-bar {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.9rem 0 0.6rem;
+}
+.debrief-bar span {
+  display: block;
+  height: 0.5rem;
+  min-width: 0;
+  border-radius: 1rem;
+}
+.debrief-bar .gained { background: var(--kind-essential); }
+.debrief-bar .lost { background: var(--kind-bulky); }
+.debrief-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.debrief-key li::before {
+  content: '';
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: var(--kind);
+}
+.debrief-why {
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.debrief-source {
+  font-size: var(--step-s);
+}
+
+/* The way into the drill from the Rehearse screens: amber and warm where
+   every other row there is neutral, with a flame and a way on, so it reads as
+   a different thing to do, not one more choice. */
+.drill-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  min-height: 72px;
+  margin: 0.25rem 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--blacksky-accent);
+  border-radius: var(--r-card);
+  background: linear-gradient(135deg, rgba(255, 150, 40, 0.22), rgba(255, 90, 30, 0.08));
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.drill-tile:hover {
+  background: linear-gradient(135deg, rgba(255, 150, 40, 0.3), rgba(255, 90, 30, 0.12));
+}
+.drill-tile .glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--blacksky-accent);
+  color: #1a0d04;
+}
+.drill-tile-text {
+  display: grid;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drill-tile-title {
+  font-weight: var(--w-heavy);
+  font-size: var(--step-1);
+}
+.drill-tile-detail {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.drill-tile-go {
+  flex: none;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--blacksky-accent);
+}
+
+/* Read by a screen reader, drawn nowhere. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Show, don't tell ──────────────────────────────────────────────────────── */
+
+/* A glyph inside a control or a line: no circle, the text's own colour. Named
+   twice so it outranks every tinted .glyph rule above. */
+.glyph.line-glyph {
+  width: auto;
+  height: auto;
+  background: none;
+  color: inherit;
+}
+.glyph.line-glyph svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+/* A control or a line led by its glyph. */
+.with-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+p.with-glyph {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+}
+/* State is told by the word and the glyph together, the colour only adds. */
+.tone-amber {
+  color: var(--stale);
+}
+/* Lines led by a glyph instead of a bold lead word. */
+.glyph-lines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+.glyph-lines .line-glyph {
+  margin-top: 0.1em;
+}
+/* Nothing saved yet: the pack drawing sits on the heading's row and the hint
+   lines up under the heading, so the card is as tall as its words. */
+.empty-state {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.25rem 0.875rem;
+}
+.empty-state p {
+  grid-column: 2;
+}
+/* The pack builder's step strip: small rings joined by a line, done steps
+   filled, the current one ringed and named. */
+.flow-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.flow-steps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.flow-steps .glyph {
+  width: 30px;
+  height: 30px;
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+.flow-steps .done .glyph {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.flow-steps .now .glyph {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.flow-steps li + li::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 2px;
+  margin-right: 0.375rem;
+  vertical-align: middle;
+  background: var(--line);
+}
+.flow-steps li {
+  display: flex;
+  align-items: center;
+}
+.tone-amber .glyph {
+  background: color-mix(in srgb, var(--stale) 16%, transparent);
+  color: var(--stale);
+}
+/* The map's key: the map's own colours as swatches, the words beside them. */
+.map-key {
+  list-style: none;
+  margin: 0 0 0.375rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  font-size: var(--step-s);
+}
+.map-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.swatch {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+}
+.swatch-inside {
+  background: #f2d64b;
+}
+.swatch-outside {
+  background: #ffffff;
+}
+.swatch-place {
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.6);
+}
+.source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.place-meta {
+  font-size: var(--step-s);
+}
+.place-distance {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  color: var(--ink);
 }
