@@ -62,6 +62,7 @@ export const SAVED_DAYS_AGO = (days: number) => `Saved ${dayCount(days)} ago`;
 // Deleting a saved pack — the cross opens an in-card confirmation; nothing is
 // removed until the delete answer is chosen.
 export const DELETE_PACK = 'Delete this pack';
+export const PACK_SETTINGS = (name: string) => `Settings for ${name}`;
 export const DELETE_PACK_QUESTION = 'Delete this pack?';
 export const KEEP_THIS_PACK = 'Keep it';
 export const CONFIRM_DELETE_PACK = 'Delete';
@@ -112,8 +113,8 @@ export const TRY_AGAIN = 'Try again';
 
 // E1-US1-AC5–AC7 bushfire-area check
 export const AREA_CHECK_IN_PROGRESS = 'Checking the bushfire area…';
-export const INSIDE_BUSHFIRE_AREA =
-  'This address is inside a Bushfire Prone Area.';
+export const INSIDE_BPA_TERM = 'inside a Bushfire Prone Area';
+export const INSIDE_BUSHFIRE_AREA = `This address is ${INSIDE_BPA_TERM}.`;
 export const NOTHING_MAPPED_AT_ADDRESS =
   'No Bushfire Prone Area is mapped here.';
 export const AREA_NOT_PUBLISHED =
@@ -310,7 +311,6 @@ export const FLOW_STEPS = [
   { glyph: 'layer', label: 'Area' },
   { glyph: 'place', label: 'Places' },
   { glyph: 'note', label: 'Note' },
-  { glyph: 'kept', label: 'Support' },
   { glyph: 'bag', label: 'Save' },
 ] as const;
 export const FLOW_STEP_OF = (step: number, total: number, label: string) => `Step ${step} of ${total}, ${label}`;
@@ -530,20 +530,20 @@ export const NEED_PHRASE: Record<NeedKey, string> = {
 export const RECOVER_MAY_MATCH =
   'These may match. The responsible organisation decides who is eligible.';
 /** The two tiles over the needs. The programs are on the phone, not in one
- *  pack, and every saved pack carries the kept ones. */
+ *  pack, and every saved pack carries the saved ones. */
 export const ALL_PROGRAMS = 'All programs';
 export const ALL_PROGRAMS_DETAIL = 'on this phone';
-export const KEPT_PROGRAMS = 'Kept programs';
+export const KEPT_PROGRAMS = 'Saved programs';
 export const KEPT_PROGRAMS_DETAIL = 'in every pack';
-/** Clearing the kept list asks once, as deleting a pack does, because every
- *  saved pack mirrors the kept list and drops the programs with it. */
+/** Clearing the saved list asks once, as deleting a pack does, because every
+ *  saved pack mirrors the saved list and drops the programs with it. */
 export const CLEAR_KEPT = 'Clear all';
-export const CLEAR_KEPT_QUESTION = 'Clear every kept program?';
+export const CLEAR_KEPT_QUESTION = 'Clear every saved program?';
 export const CLEAR_KEPT_PACKS = 'Your saved packs stop carrying them too.';
 export const KEEP_KEPT = 'Keep them';
-export const KEPT_CLEARED = 'Nothing is kept now. Tap Keep to keep one again.';
-export const KEEP = 'Keep';
-export const KEPT = 'Kept';
+export const KEPT_CLEARED = 'Nothing is saved now. Tap Save to save one again.';
+export const KEEP = 'Save';
+export const KEPT = 'Saved';
 export const SHARE_LIST = 'Share this list';
 export const COPIED_LINE = 'Copied. Paste it into a message.';
 export const SHARE_UNAVAILABLE = 'Sharing is not available in this browser.';
@@ -560,19 +560,10 @@ export const SHOW = 'Show';
 export const HIDE = 'Hide';
 export const SHOW_SECTION = (title: string) => `Show ${title}`;
 export const HIDE_SECTION = (title: string) => `Hide ${title}`;
-export const NO_SAVED_PROGRAMS = 'None kept yet. Keep them in';
+export const NO_SAVED_PROGRAMS = 'None saved yet. Save them in';
 export const KEPT_NOT_SAVED = (count: number) =>
-  `${count} kept ${count === 1 ? 'program is' : 'programs are'} not offline yet`;
+  `${count} saved ${count === 1 ? 'program is' : 'programs are'} not in a pack yet`;
 export const IN_YOUR_PACKS = 'In your packs';
-export const PROGRAMS_STEP_TITLE = 'Carry support programs?';
-export const PROGRAMS_STEP_LINE = 'Ticked programs open with no signal. Nothing about you is stored.';
-export const CARRY_PROGRAMS = (count: number) =>
-  count === 0 ? 'Keep none and continue' : `Carry ${count} ${count === 1 ? 'program' : 'programs'}`;
-export const CHOOSE_LATER = 'Not now';
-/** One control over the programs list: ticks every program while none is
- *  ticked, and unticks them all once any is. Nothing is kept until the step goes on. */
-export const SELECT_ALL = 'Select all';
-export const SELECT_NONE = 'Select none';
 export const CHOOSE_IN_RECOVER = 'Choose programs in Recover';
 export const WHO_TO_CALL = 'Who to call';
 export const HOTLINE_LABEL = 'VicEmergency hotline';
@@ -630,8 +621,8 @@ export const PREPARATION_LINES: readonly { text: string; context: string; source
     source: PREPARATION_SOURCE_RECOVERY,
   },
   {
-    text: 'Keep the programs that fit your household, so they list first when you need them.',
-    context: 'Tap Keep on a program in Recover. Only the program is remembered, on this phone, and nothing about you.',
+    text: 'Save the programs that fit your household, so they list first when you need them.',
+    context: 'Tap Save on a program in Recover. Only the program is remembered, on this phone, and nothing about you.',
     source: PREPARATION_SOURCE_RECOVERY,
   },
 ];
@@ -647,7 +638,6 @@ export const PREPARATION_MORE = 'If this does not fit you';
  *  than written into it: the age is a fact about the pack, and this is a fact
  *  about the pack's whole point — it is on the device, so it opens with the
  *  radios off. It states what the pack does, never what it protects you from. */
-export const OPENS_WITHOUT_SIGNAL = ' · works offline';
 
 /** Under the hold control only while nothing is saved: the mode is reachable
  *  with no pack, which is the one thing a new user would not expect. */

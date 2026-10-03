@@ -22,7 +22,7 @@ import * as copy from '../../core/copy';
 import { chosenDestinations, orderByDistance } from '../../core/destination';
 import { titleCase } from '../../core/home';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
-import { readKept, writeKept } from '../../core/kept';
+import { readKept } from '../../core/kept';
 import { buildPackSeed } from '../../core/pack';
 import { packProgramsFor } from '../../core/recover';
 import type {
@@ -60,7 +60,6 @@ import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
 import FlowSteps from './FlowSteps';
 import { Note } from './Note';
-import { Programs } from './Programs';
 import { Size } from './Size';
 
 /** Module scope, so the default has one stable identity for the life of the
@@ -91,7 +90,7 @@ function typedSearchLine(live: ReturnType<typeof liveSearchState>): string {
 }
 
 /** The builder's steps, in order. Back goes to the one before. */
-type Step = 'search' | 'confirm' | 'conflict' | 'area' | 'places' | 'note' | 'programs' | 'size';
+type Step = 'search' | 'confirm' | 'conflict' | 'area' | 'places' | 'note' | 'size';
 
 type ConflictState =
   | { kind: 'checking' }
@@ -101,7 +100,7 @@ type ConflictState =
 type OfferState =
   | { kind: 'building' }
   | { kind: 'ready'; offer: PackOffer; content: TextPackContent; files: PackFile[] }
-  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[]; ticked: string[] };
+  | { kind: 'failed'; result: BushfireAreaResult; destinations: Destination[] };
 
 /** E2-US1/US2: the official places of last resort for the confirmed place,
  * read from the precached CFA snapshot. Nothing here is written to the device. */
@@ -201,8 +200,6 @@ export function Search({
   // note itself once it is past. Both in memory only until the pack save.
   const [chosenPlaces, setChosenPlaces] = useState<Destination[] | null>(null);
   const [note, setNote] = useState<string | undefined>(undefined);
-  // The programs step: null until the note is kept, then the list to tick.
-  const [programs, setPrograms] = useState<RecoveryProgram[] | null>(null);
   // Made once per confirmed place, before the places step: destination rows
   // carry the pack id, so the id must exist before the user chooses them.
   const [packId, setPackId] = useState('');
@@ -399,19 +396,20 @@ export function Search({
     place: PendingPlace,
     result: BushfireAreaResult,
     destinations: Destination[],
-    ticked: string[],
   ) {
     const flow = flowRef.current;
     setOfferState({ kind: 'building' });
     try {
+      // The programs saved in Recover go into the pack, or none if nothing is
+      // saved. A store that cannot be read gives none, never a failed pack.
+      const programs = await loadPrograms().catch(() => []);
       const seed = buildPackSeed(packId, now(), place, result.lgaName, result.source, supersedesId);
       const content: TextPackContent = {
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
         destinations,
-        // The programs ticked on the programs step, copied so the pack carries
-        // them and their pages with no signal.
-        recovery: packProgramsFor(seed.id, programs ?? [], ticked),
+        // Copied so the pack carries them and their pages with no signal.
+        recovery: packProgramsFor(seed.id, programs, readKept(localFlagStore())),
       };
       // The PDF copies of the source pages and the map of the area travel with
       // the pack, so their bytes are part of the one size stated before
@@ -420,7 +418,7 @@ export function Search({
       const offer = await buildOffer(content, files);
       if (flow === flowRef.current) setOfferState({ kind: 'ready', offer, content, files });
     } catch {
-      if (flow === flowRef.current) setOfferState({ kind: 'failed', result, destinations, ticked });
+      if (flow === flowRef.current) setOfferState({ kind: 'failed', result, destinations });
     }
   }
 
@@ -460,12 +458,10 @@ export function Search({
     setPlacesState(null);
     setChosenPlaces(null);
     setNote(undefined);
-    setPrograms(null);
   }
 
   // The step on screen, read from what the builder holds.
   const at: Step = offerState ? 'size'
-    : programs ? 'programs'
     : chosenPlaces ? 'note'
     : placesState ? 'places'
     : areaState ? 'area'
@@ -487,7 +483,6 @@ export function Search({
       setSupersedesId(undefined);
     } else if (at === 'places') setPlacesState(null);
     else if (at === 'note') setChosenPlaces(null);
-    else if (at === 'programs') setPrograms(null);
     else if (at === 'size') setOfferState(null);
   }
 
@@ -530,7 +525,7 @@ export function Search({
   // here; the route change that would otherwise do it never happens.
   const step = [
     !!candidate, !!pendingPlace, conflictState?.kind, areaState?.kind,
-    placesState?.kind, !!chosenPlaces, !!programs, offerState?.kind,
+    placesState?.kind, !!chosenPlaces, offerState?.kind,
   ].join();
   useEffect(focusMain, [step]);
 
@@ -587,7 +582,7 @@ export function Search({
       return (
         <StatusPage
           page="size-page"
-          kicker={<FlowSteps at={5} />}
+          kicker={<FlowSteps at={4} />}
           card={<p>{copy.PREPARING_PACK_OFFER}</p>}
         />
       );
@@ -597,7 +592,7 @@ export function Search({
       return (
         <StatusPage
           page="size-page"
-          kicker={<FlowSteps at={5} />}
+          kicker={<FlowSteps at={4} />}
           card={<p>{copy.PACK_OFFER_FAILED}</p>}
           actions={
             <>
@@ -609,7 +604,6 @@ export function Search({
                     pendingPlace,
                     offerState.result,
                     offerState.destinations,
-                    offerState.ticked,
                   )
                 }
               >
@@ -645,25 +639,6 @@ export function Search({
 
   // The note step, after the places and before the size. The example names the
   // nearest chosen place, so the note is about this pack from the first word.
-  // The programs step, after the note: the ticks become the kept list, so
-  // every pack mirrors the same choice. Not now leaves the list as it is and
-  // the pack carries what is kept, exactly as Home would make it.
-  if (pendingPlace && areaState?.kind === 'result' && chosenPlaces && programs) {
-    const { result } = areaState;
-    const kept = readKept(localFlagStore());
-    return (
-      <Programs
-        programs={programs}
-        kept={kept}
-        onContinue={(ticked) => {
-          writeKept(localFlagStore(), ticked);
-          void buildPackOfferForResult(pendingPlace, result, chosenPlaces, ticked);
-        }}
-        onSkip={() => void buildPackOfferForResult(pendingPlace, result, chosenPlaces, kept)}
-      />
-    );
-  }
-
   if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
     const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
     return (
@@ -672,11 +647,7 @@ export function Search({
         initial={note}
         onContinue={(text) => {
           setNote(text);
-          const flow = flowRef.current;
-          const show = (list: RecoveryProgram[]) => {
-            if (flow === flowRef.current) setPrograms(list);
-          };
-          void loadPrograms().then(show).catch(() => show([]));
+          void buildPackOfferForResult(pendingPlace, areaState.result, chosenPlaces);
         }}
       />
     );

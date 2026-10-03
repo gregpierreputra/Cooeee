@@ -47,7 +47,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     return (
       <StatusPage
         page="size-page"
-        kicker={<FlowSteps at={5} />}
+        kicker={<FlowSteps at={4} />}
         card={<p>{copy.SAVING_PACK}</p>}
       />
     );
@@ -57,7 +57,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     return (
       <StatusPage
         page="size-page"
-        kicker={<FlowSteps at={5} />}
+        kicker={<FlowSteps at={4} />}
         cardClass="size-content"
         card={
           <>
@@ -74,7 +74,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     return (
       <StatusPage
         page="size-page"
-        kicker={<FlowSteps at={5} />}
+        kicker={<FlowSteps at={4} />}
         cardClass="size-content"
         card={
           <>
@@ -113,7 +113,7 @@ export function Size({ offer, address, download, onContinue }: SizeProps) {
     <main className="page size-page">
       <div className="size-content">
         <header className="hero">
-          <FlowSteps at={5} />
+          <FlowSteps at={4} />
           <h1>{copy.READY_TO_DOWNLOAD}</h1>
         </header>
         <p className="pack-size figure">{packOfferSizeLine(offer)}</p>

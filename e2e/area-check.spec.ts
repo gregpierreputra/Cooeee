@@ -19,6 +19,8 @@ test('AC5 shows designation, publisher/date and instruction priority in order', 
   await expect(state.locator('h1')).toHaveText(
     'This address is inside a Bushfire Prone Area.',
   );
+  // Inside, only the words that say so are in amber, beside the amber flame.
+  await expect(state.locator('.key-term')).toHaveText(['inside a Bushfire Prone Area']);
   await openSources(page);
   await expect(state.locator('.source-rows dd')).toHaveText([
     'Department of Transport and Planning',
@@ -40,8 +42,8 @@ test('AC6 shows the published-but-nothing-mapped state exactly', async ({ page }
   await expect(state.locator('p').nth(0)).toHaveText(
     'Fire can still reach you. This map only sets building rules.',
   );
-  // UAT: the words that matter stand out in the attention colour.
-  await expect(state.locator('.key-term')).toHaveText(['Bushfire Prone Area', 'Fire can still reach you']);
+  // Outside, nothing is in amber: no coloured words and no flame.
+  await expect(state.locator('.key-term, .tone-amber')).toHaveCount(0);
   await expect(state.locator('.source-rows')).toContainText('Department of Transport and Planning');
   await expect(state).not.toContainText(/not designated|none found|no results|all clear|safe|no risk|low risk/i);
 });

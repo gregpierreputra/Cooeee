@@ -21,7 +21,7 @@ import {
   NOT_RECENTLY_VERIFIED_LABEL,
   OFFLINE_NOTICE,
   ONLINE_NOTICE,
-  OPENS_WITHOUT_SIGNAL,
+  PACK_SETTINGS,
   PREPARATION_LINES,
   PREPARATION_MORE,
   PREPARATION_SOURCE,
@@ -97,7 +97,7 @@ test.describe('the returning-user home screen', () => {
     // Title-cased for reading; the stored string keeps the custodian's capitals.
     await expect(page.getByText(displayAddress('10 OLD ROAD FERNY CREEK 3786'))).toBeVisible();
     await expect(
-      page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
+      page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
@@ -107,7 +107,7 @@ test.describe('the returning-user home screen', () => {
     for (const box of await Promise.all(
       [
         page.getByRole('heading', { name: 'Ferny Creek' }),
-        page.getByText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL, { exact: true }),
+        page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
         page.getByRole('link', { name: BUILD_A_PACK }),
         page.getByRole('button', { name: HOLD_FOR_BLACKSKY }),
       ].map((locator) => locator.boundingBox()),
@@ -128,8 +128,12 @@ test.describe('the returning-user home screen', () => {
     await expect(cards.last()).toContainText('Ferny Creek');
     await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
 
-    await cards.first().getByRole('button', { name: DELETE_PACK }).click();
+    // The ... opens the pack's settings; Delete this pack asks, Delete deletes.
+    await cards.first().getByRole('button', { name: PACK_SETTINGS('Kalorama') }).click();
+    await expect(page.getByRole('dialog', { name: 'Kalorama' })).toBeVisible();
+    await page.getByRole('button', { name: DELETE_PACK }).click();
     await page.getByRole('button', { name: CONFIRM_DELETE_PACK, exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(cards).toHaveCount(1);
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
     expect((await storageCounts(page)).packs).toBe(1);
@@ -204,12 +208,12 @@ test.describe('the returning-user home screen', () => {
     await expect(panel).toHaveCount(0);
   });
 
-  test('the pack card carries the offline fact under the age, not in place of it', async ({
+  test('the pack card carries the age alone in its footer', async ({
     page,
   }) => {
     await page.goto(home('?days=3'));
     const footer = page.locator('.saved-place-footer');
-    await expect(footer).toHaveText(SAVED_DAYS_AGO(3) + OPENS_WITHOUT_SIGNAL);
+    await expect(footer).toHaveText(SAVED_DAYS_AGO(3));
   });
 
   test('the hold control meets the 44px minimum target size', async ({ page }) => {
@@ -292,6 +296,7 @@ test.describe('the connection notice', () => {
 test('delete removes the pack from the device after the confirmation', async ({ page }) => {
   await page.goto(home('?days=3'));
   await expect(page.locator('.app-header-age')).toHaveText(CHECKED_DAYS_AGO(3));
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
   await page.getByRole('button', { name: DELETE_PACK }).click();
   await page.getByRole('button', { name: CONFIRM_DELETE_PACK, exact: true }).click();
   await expect(page.getByText(NO_PACK_SAVED)).toBeVisible();

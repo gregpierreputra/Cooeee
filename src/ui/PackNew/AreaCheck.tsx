@@ -4,7 +4,6 @@ import * as copy from '../../core/copy';
 import type { BushfireAreaResult, PendingPlace } from '../../core/types';
 import Glyph from '../components/Glyph';
 import { SourceRing } from '../components/ProvenanceLine';
-import KeyTerms from '../components/KeyTerms';
 import StatusPage from '../components/StatusPage';
 import FlowSteps from './FlowSteps';
 
@@ -62,6 +61,9 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
   }
 
   const view = areaCheckView(state.result);
+  const inside = state.result.status === 'present';
+  // Inside, only the words that say so are in amber.
+  const [before, after] = view.resultLine.split(copy.INSIDE_BPA_TERM);
   return (
     <StatusPage
       page="area-page"
@@ -69,18 +71,28 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
       cardClass="area-result"
       card={
         <>
-          {/* The flame in amber marks a designated area; every other answer
-              shares the neutral layer drawing, so an absence never reads as
-              reassurance. The words carry the meaning either way. */}
+          {/* Amber, the flame and the coloured words, only inside a designated
+              area. Every other answer is plain, with the calm layer drawing.
+              The words carry the meaning either way. */}
           <div className="card-head">
-            {state.result.status === 'present' ? (
+            {inside ? (
               <span className="tone-amber"><Glyph kind="drill" /></span>
             ) : (
               <Glyph kind="layer" />
             )}
-            <h1><KeyTerms text={view.resultLine} /></h1>
+            <h1>
+              {inside ? (
+                <>
+                  {before}
+                  <strong className="key-term">{copy.INSIDE_BPA_TERM}</strong>
+                  {after}
+                </>
+              ) : (
+                view.resultLine
+              )}
+            </h1>
           </div>
-          {view.cautionLine && <p className="caution"><KeyTerms text={view.cautionLine} /></p>}
+          {view.cautionLine && <p className="muted">{view.cautionLine}</p>}
           <SourceRing
             rows={[
               { label: copy.SOURCE_PUBLISHED_BY, value: DTP_PUBLISHER },

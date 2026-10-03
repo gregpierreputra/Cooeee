@@ -77,14 +77,15 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => indexedDB.deleteDatabase('cooeee'));
 });
 
-// E4-US8: the programs step after the note; a ticked program is carried in the
-// saved pack with its page copy, and becomes the kept list.
-test('the wizard carries a ticked program into the saved pack', async ({ page }) => {
+// A program saved in Recover goes into every new pack with its page copy, with
+// no step of its own in the wizard.
+test('the wizard carries a saved program into the saved pack', async ({ page }) => {
   await mockOfficialServices(page, {
     candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
     lgaName: LGA_NAME,
     bpaHits: [bpaHitFeature(LGA_NAME)],
   });
+  await page.evaluate(() => localStorage.setItem('cooeee.kept.v1', '["services-australia-crisis-payment"]'));
   await page.goto('/packs/new');
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
@@ -99,20 +100,6 @@ test('the wizard carries a ticked program into the saved pack', async ({ page })
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
   await page.getByRole('button', { name: 'Keep this note' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Carry support programs?' })).toBeVisible();
-  // Select all ticks every program, then turns into Select none, which unticks them.
-  // One tick by hand turns it into Select none as well.
-  const programBoxes = page.getByRole('checkbox');
-  await programBoxes.first().check();
-  await page.getByRole('button', { name: 'Select none' }).click();
-  await expect(programBoxes.first()).not.toBeChecked();
-  await page.getByRole('button', { name: 'Select all' }).click();
-  for (const box of await programBoxes.all()) await expect(box).toBeChecked();
-  await expect(page.getByRole('button', { name: `Carry ${await programBoxes.count()} programs` })).toBeVisible();
-  await page.getByRole('button', { name: 'Select none' }).click();
-  for (const box of await programBoxes.all()) await expect(box).not.toBeChecked();
-  await page.getByRole('checkbox', { name: 'Crisis Payment for extreme circumstances' }).check();
-  await page.getByRole('button', { name: 'Carry 1 program' }).click();
   await expect(page.getByRole('heading')).toHaveText('Ready to download');
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
@@ -269,9 +256,9 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
   await page.getByLabel('Your note').fill('Meet at the oval gate.');
   await page.getByRole('button', { name: 'Keep this note' }).click();
-  await expect(page.getByRole('heading', { name: 'Carry support programs?' })).toBeVisible();
+  await expect(page.getByRole('heading')).toHaveText('Ready to download');
 
-  // The Back bar: programs, then the note as written.
+  // The Back bar: the size, then the note as written.
   await back.click();
   await expect(page.getByLabel('Your note')).toHaveValue('Meet at the oval gate.');
   // The phone's Back button: the places, with the same two ticked.

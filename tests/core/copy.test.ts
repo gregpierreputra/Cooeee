@@ -114,13 +114,12 @@ describe('E1-US2 mandated provenance and offline-source copy', () => {
 // string in the DOM is spelled out letter by letter by some screen readers — so
 // it is asserted here rather than left to whoever next edits the file.
 describe('screen eyebrows and flow steps', () => {
-  it('names the six steps of the build flow, one glyph and one word each', () => {
+  it('names the five steps of the build flow, one glyph and one word each', () => {
     expect(copy.FLOW_STEPS.map((step) => step.label)).toEqual([
       'Address',
       'Area',
       'Places',
       'Note',
-      'Support',
       'Save',
     ]);
     for (const step of copy.FLOW_STEPS) {
@@ -417,17 +416,12 @@ describe('E4 Recover mandated copy', () => {
     expect(copy.SHOW_SECTION('Saved programs')).toBe('Show Saved programs');
     expect(copy.HIDE_SECTION('Notes')).toBe('Hide Notes');
     expect(copy.STORED_INFORMATION).toBe('Stored information');
-    expect(copy.KEPT_NOT_SAVED(1)).toBe('1 kept program is not offline yet');
-    expect(copy.KEPT_NOT_SAVED(2)).toBe('2 kept programs are not offline yet');
+    expect(copy.KEPT_NOT_SAVED(1)).toBe('1 saved program is not in a pack yet');
+    expect(copy.KEPT_NOT_SAVED(2)).toBe('2 saved programs are not in a pack yet');
   });
 
-  it('names the wizard step, its two ways on, and the in-your-packs line', () => {
-    expect(copy.PROGRAMS_STEP_TITLE).toBe('Carry support programs?');
-    expect(copy.CARRY_PROGRAMS(0)).toBe('Keep none and continue');
+  it('names the way to programs, and the in-your-packs line', () => {
     expect(copy.VICEMERGENCY_HOTLINE).toContain(HOTLINE_NUMBER);
-    expect(copy.CARRY_PROGRAMS(1)).toBe('Carry 1 program');
-    expect(copy.CARRY_PROGRAMS(2)).toBe('Carry 2 programs');
-    expect(copy.CHOOSE_LATER).toBe('Not now');
     expect(copy.CHOOSE_IN_RECOVER).toBe('Choose programs in Recover');
     expect(copy.IN_YOUR_PACKS).toBe('In your packs');
     for (const line of copy.COOEEE_INFO_LINES) expect(line.glyph).toBeTruthy();

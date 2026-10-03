@@ -73,35 +73,35 @@ export default function Home({ now }: { now?: number }) {
     };
   }, [seed]);
 
-  // Deleting a pack takes two taps: the delete control swaps that pack's card
-  // for a question, and only the second destroys data. Keep restores the card
-  // untouched. The id names which card is asking.
-  const [confirming, setConfirming] = useState<string | null>(null);
+  // A pack's settings open in one bottom sheet from the ... on its card. The
+  // browser's own dialog gives Escape, a focus trap and focus back to the ...
+  // on close. Deleting takes two taps: Delete this pack asks, and only Delete
+  // destroys data.
+  const sheet = useRef<HTMLDialogElement>(null);
+  const [settings, setSettings] = useState<{ id: string; name: string; ageLine: string } | null>(null);
+  const [asking, setAsking] = useState(false);
+  const deleteRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  // Once the question closes, focus returns to that card's delete control, or
-  // to the page when the card has gone with the pack.
-  const asked = useRef<string | null>(null);
   useEffect(() => {
-    if (confirming) {
-      asked.current = confirming;
-      cancelRef.current?.focus();
-    } else if (asked.current) {
-      const control = document.getElementById(`delete-${asked.current}`);
-      if (control) control.focus();
-      else focusMain();
-      asked.current = null;
-    }
-  }, [confirming]);
+    if (settings) sheet.current?.showModal();
+  }, [settings]);
+  // Focus follows the question: onto Keep it when it appears, back to Delete
+  // this pack when it is answered with Keep it.
+  useEffect(() => {
+    (asking ? cancelRef : deleteRef).current?.focus();
+  }, [asking]);
 
   const removePack = async (id: string) => {
     await deleteCompletePack(id);
     const loaded = await load();
     setView(homeView(seed, loaded.rows));
     setUnsaved(loaded.unsaved);
-    setConfirming(null);
+    sheet.current?.close();
+    // The card and its ... have gone, so focus goes to the page.
+    focusMain();
   };
-  // A delete that fails closes the question and leaves the card as it was.
-  const removePackSafely = (id: string) => removePack(id).catch(() => setConfirming(null));
+  // A delete that fails closes the question and leaves the pack as it was.
+  const removePackSafely = (id: string) => removePack(id).catch(() => setAsking(false));
 
   return (
     <main className="page home">
@@ -144,42 +144,21 @@ export default function Home({ now }: { now?: number }) {
           <p className="muted">{copy.NO_PACKS_HINT}</p>
         </section>
       ) : (
-        view.packs.map(({ pack, ageLine }) =>
-          confirming === pack.id ? (
-            <section key={pack.id} className="card">
-              <p>{copy.DELETE_PACK_QUESTION}</p>
-              <div className="card-confirm-actions">
-                <button
-                  ref={cancelRef}
-                  type="button"
-                  className="card-confirm-no"
-                  onClick={() => setConfirming(null)}
-                >
-                  {copy.KEEP_THIS_PACK}
-                </button>
-                <button
-                  type="button"
-                  className="card-confirm-yes with-glyph"
-                  onClick={() => void removePackSafely(pack.id)}
-                >
-                  <Glyph kind="trash" line />
-                  {copy.CONFIRM_DELETE_PACK}
-                </button>
-              </div>
-            </section>
-          ) : (
+        view.packs.map(({ pack, ageLine }) => (
             <section key={pack.id} className="card pack-card saved-place">
-              {/* A small grey ring on the card's top left corner, as a phone
-                  marks an app it can remove. It sits above the card's link. */}
+              {/* The pack's settings, top right inside the card, above the
+                  card's link. */}
               <button
                 type="button"
-                id={`delete-${pack.id}`}
-                className="card-delete"
-                aria-label={copy.DELETE_PACK}
-                onClick={() => setConfirming(pack.id)}
+                className="card-more"
+                aria-label={copy.PACK_SETTINGS(titleCase(pack.name))}
+                aria-haspopup="dialog"
+                onClick={() => setSettings({ id: pack.id, name: pack.name, ageLine })}
               >
-                <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">
-                  <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                  <circle cx="5" cy="12" r="2" fill="currentColor" />
+                  <circle cx="12" cy="12" r="2" fill="currentColor" />
+                  <circle cx="19" cy="12" r="2" fill="currentColor" />
                 </svg>
               </button>
               <div className="saved-place-title">
@@ -199,12 +178,53 @@ export default function Home({ now }: { now?: number }) {
               <p className="muted figure saved-place-footer with-glyph">
                 <Glyph kind="offline" line />
                 {ageLine}
-                {copy.OPENS_WITHOUT_SIGNAL}
               </p>
             </section>
-          ),
-        )
+        ))
       )}
+
+      <dialog
+        ref={sheet}
+        className="sheet"
+        aria-labelledby="pack-sheet-title"
+        onClose={() => {
+          setSettings(null);
+          setAsking(false);
+        }}
+      >
+        {settings ? (
+          <>
+            <h2 id="pack-sheet-title">{titleCase(settings.name)}</h2>
+            <p className="muted figure">{settings.ageLine}</p>
+            {asking ? (
+              <>
+                <p>{copy.DELETE_PACK_QUESTION}</p>
+                <div className="card-confirm-actions">
+                  <button ref={cancelRef} type="button" className="card-confirm-no" onClick={() => setAsking(false)}>
+                    {copy.KEEP_THIS_PACK}
+                  </button>
+                  <button
+                    type="button"
+                    className="card-confirm-yes with-glyph"
+                    onClick={() => void removePackSafely(settings.id)}
+                  >
+                    <Glyph kind="trash" line />
+                    {copy.CONFIRM_DELETE_PACK}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button ref={deleteRef} type="button" className="sheet-delete with-glyph" onClick={() => setAsking(true)}>
+                <Glyph kind="trash" line />
+                {copy.DELETE_PACK}
+              </button>
+            )}
+            <button type="button" onClick={() => sheet.current?.close()}>
+              {copy.CLOSE}
+            </button>
+          </>
+        ) : null}
+      </dialog>
 
       <div className="actions">
         {/* One more pack, in every state: the list grows from here. */}
