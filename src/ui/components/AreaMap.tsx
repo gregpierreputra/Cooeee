@@ -111,22 +111,24 @@ export default function AreaMap({ src, box, places }: { src: string; box: MapBox
             ) : null;
           })}
         </div>
+        {/* On the map, top left, outside the turning layer. A press here
+            never reaches the frame, so tapping a button never drags the map. */}
+        <div className="area-map-controls" onPointerDown={(event) => event.stopPropagation()}>
+          <button type="button" className="map-button" aria-label={copy.MAP_ZOOM_IN} disabled={view.scale >= MAP_MAX_SCALE} onClick={() => fromButton(BUTTON_ZOOM, 0)}>
+            +
+          </button>
+          <button type="button" className="map-button" aria-label={copy.MAP_ZOOM_OUT} disabled={view.scale <= 1} onClick={() => fromButton(1 / BUTTON_ZOOM, 0)}>
+            −
+          </button>
+          <button type="button" className="map-button" aria-label={copy.MAP_TURN} onClick={() => fromButton(1, BUTTON_TURN)}>
+            ↻
+          </button>
+          <button type="button" className="map-button" aria-label={copy.MAP_NORTH_UP} onClick={() => setView(MAP_HOME)}>
+            N
+          </button>
+        </div>
       </div>
-      <div className="area-map-controls">
-        <p className="muted">{copy.MAP_HOW}</p>
-        <button type="button" className="map-button" aria-label={copy.MAP_ZOOM_IN} disabled={view.scale >= MAP_MAX_SCALE} onClick={() => fromButton(BUTTON_ZOOM, 0)}>
-          +
-        </button>
-        <button type="button" className="map-button" aria-label={copy.MAP_ZOOM_OUT} disabled={view.scale <= 1} onClick={() => fromButton(1 / BUTTON_ZOOM, 0)}>
-          −
-        </button>
-        <button type="button" className="map-button" aria-label={copy.MAP_TURN} onClick={() => fromButton(1, BUTTON_TURN)}>
-          ↻
-        </button>
-        <button type="button" className="map-button" aria-label={copy.MAP_NORTH_UP} onClick={() => setView(MAP_HOME)}>
-          N
-        </button>
-      </div>
+      <p className="muted area-map-how">{copy.MAP_HOW}</p>
     </>
   );
 }

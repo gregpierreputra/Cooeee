@@ -773,6 +773,7 @@ export const USE_MY_LOCATION = 'Use my location';
 export const LOCATING = 'Reading your position…';
 export const LOCATION_FAILED = 'Your position could not be read. Enter a postcode instead.';
 export const POSTCODE_LABEL = 'Type a postcode';
+export const NEARBY_SEARCHING = 'Searching…';
 export const POSTCODE_INVALID = 'Enter a four-digit postcode.';
 export const POSTCODE_UNKNOWN = (postcode: string) =>
   `Postcode ${postcode} is not in the downloaded Victorian list.`;

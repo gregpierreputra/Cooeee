@@ -109,10 +109,12 @@ export const DTP_DATASET_URL =
  *  importing the module that fetches it. */
 export const AREA_MAP_NAME = 'bushfire-prone-area-map.png';
 /** How far that picture reaches each way from the saved place, in
- *  kilometres: 80 km across, the wider area to explore, zoomed in on the pack
+ *  kilometres: 40 km across, the wider area to explore, zoomed in on the pack
  *  page to read roads, creeks and place names. A picture size only; the pack's
  *  6 km area rule is PACK_RADIUS_KM. */
-export const AREA_MAP_HALF_KM = 40;
+export const AREA_MAP_HALF_KM = 20;
+/** The most a whole pack may take on the phone, map included. */
+export const PACK_MAX_BYTES = 15 * 1_048_576;
 
 // The arrows are drawn from any fix; these decide when the screen says the fix
 // is old or vague beside them, and when a marked-position estimate expires.
@@ -442,4 +444,6 @@ export const NEARBY_SYNC_TIMEOUT_MS = 15_000;
 export const NEARBY_RESYNC_MS = 5 * 60_000; // while the screen stays open and online
 export const NEARBY_CLOCK_MS = 60_000; // how often the age labels are re-read
 export const NEARBY_FIX_TIMEOUT_MS = 15_000;
+/** How long Nearby shows Searching… at least, so a search is always seen to happen. */
+export const SEARCH_SHOW_MS = 500;
 export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is fine

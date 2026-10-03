@@ -1,7 +1,8 @@
-import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   NEARBY_CLOCK_MS,
   NEARBY_FIX_MAX_AGE_MS,
+  SEARCH_SHOW_MS,
   NEARBY_FIX_TIMEOUT_MS,
   NEARBY_RESYNC_MS,
 } from '../core/constants';
@@ -101,6 +102,16 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
     };
   }, [refresh, now]);
 
+  // Every search shows Searching… for at least SEARCH_SHOW_MS, so it is seen
+  // to happen even when the phone answers at once. A newer search, or leaving
+  // the screen, cancels the answer still waiting.
+  const searchTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
+  const answerAfter = (startedAt: number, answer: () => void) => {
+    clearTimeout(searchTimer.current);
+    searchTimer.current = window.setTimeout(answer, Math.max(0, startedAt + SEARCH_SHOW_MS - Date.now()));
+  };
+
   // GPS works without a data connection, so it is offered first; the postcode
   // is the fallback when a position cannot be read (spec §7.3).
   const locate = () => {
@@ -108,21 +119,25 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       setNotice(copy.LOCATION_FAILED);
       return;
     }
+    const startedAt = Date.now();
     setLocating(true);
-    setNotice(null);
+    setNotice(copy.NEARBY_SEARCHING);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocating(false);
-        setOrigin({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-          label: copy.FROM_POSITION(copy.ACCURACY_READOUT(Math.round(position.coords.accuracy))),
-        });
-      },
-      () => {
-        setLocating(false);
-        setNotice(copy.LOCATION_FAILED);
-      },
+      (position) =>
+        answerAfter(startedAt, () => {
+          setLocating(false);
+          setNotice(null);
+          setOrigin({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            label: copy.FROM_POSITION(copy.ACCURACY_READOUT(Math.round(position.coords.accuracy))),
+          });
+        }),
+      () =>
+        answerAfter(startedAt, () => {
+          setLocating(false);
+          setNotice(copy.LOCATION_FAILED);
+        }),
       { enableHighAccuracy: true, timeout: NEARBY_FIX_TIMEOUT_MS, maximumAge: NEARBY_FIX_MAX_AGE_MS },
     );
   };
@@ -131,6 +146,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   // The lookup is on the phone, so it answers at the fourth digit with no wait.
   const findPostcode = (text: string) => {
     setPostcode(text);
+    clearTimeout(searchTimer.current);
     if (text.trim().length < 4) {
       setNotice(null);
       return;
@@ -140,19 +156,22 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       setNotice(copy.POSTCODE_INVALID);
       return;
     }
-    const point = cache ? postcodeOrigin(cache, code) : null;
-    if (point === null) {
-      setNotice(copy.POSTCODE_UNKNOWN(code));
-      return;
-    }
-    setNotice(null);
-    setOrigin({
-      ...point,
-      label: (
-        <>
-          {copy.FROM_POSTCODE} <span className="nearby-origin-code">{code}</span>
-        </>
-      ),
+    setNotice(copy.NEARBY_SEARCHING);
+    answerAfter(Date.now(), () => {
+      const point = cache ? postcodeOrigin(cache, code) : null;
+      if (point === null) {
+        setNotice(copy.POSTCODE_UNKNOWN(code));
+        return;
+      }
+      setNotice(null);
+      setOrigin({
+        ...point,
+        label: (
+          <>
+            {copy.FROM_POSTCODE} <span className="nearby-origin-code">{code}</span>
+          </>
+        ),
+      });
     });
   };
 
@@ -185,7 +204,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
         />
       ) : (
         <>
-          <section className="card nearby-locate">
+          <section className="nearby-locate">
             {/* The pack builder's search: one polite line above the field, then
                 the field with the Use my location ring beside it. */}
             <p id="nearby-postcode-status" className="muted search-hint" role="status" aria-live="polite">

@@ -529,29 +529,42 @@ a {
 
 /* One quiet line on how to move the map, then the round buttons that do the
    same for anyone who cannot use a gesture. */
+/* The controls float on the map's top left as one narrow frosted column, as a
+   phone's own maps app does, so the map shows round and through them. */
 .area-map-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+  display: grid;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  cursor: default;
 }
 
-.area-map-controls p {
-  flex: 1 1 100%;
-  margin: 0;
+.area-map-how {
+  margin: 0.5rem 0 0;
   font-size: var(--step-s);
 }
 
+/* 44 px targets with no fill or border of their own: the column is the shape. */
 .map-button {
   width: 44px;
   height: 44px;
   min-width: 44px;
   min-height: 44px;
   padding: 0;
+  border: 0;
   border-radius: 50%;
+  background: transparent;
+  color: #1a1f24;
   font-size: var(--step-1);
   line-height: 1;
+}
+.map-button:disabled {
+  color: rgb(26 31 36 / 0.35);
 }
 
 .area-map figcaption {
@@ -2915,7 +2928,9 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
    an amber state word; live stays on the default card with the fixed green
    dot; unavailable takes the fixed red. The second deliberate use of state
    colour in this stylesheet, and it marks data age only — never hazard. */
+/* The postcode search sits on the page, as the pack builder's address search does. */
 .nearby-locate {
+  display: grid;
   gap: 0.75rem;
 }
 /* The postcode in the origin line, picked out in the accent. */
