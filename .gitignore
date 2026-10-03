@@ -1,7 +1,6 @@
-# Local configs and env files. Named one by one, so a new dotfile or folder is
-# reviewed rather than silently untracked.
+# Local configs and env files
 .cache/
-.claude/
+.cl*
 .env
 .env.*
 .DS_Store
@@ -26,10 +25,8 @@ test-results/
 # API server database and its daily snapshots
 server/data/
 
-# LimeZu Modern Interiors source art. The licence forbids passing the pack on.
-# Only the baked public/drill files are tracked.
-game-assets/
-game-assets.zip
+# Drill gamification assets
+game-assets*
 
 # Vercel web application
 .vercel/
