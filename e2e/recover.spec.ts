@@ -286,6 +286,14 @@ test('the recovery roadmap ticks steps, keeps them, and links each step to its h
   await page.reload();
   await page.getByRole('button', { name: copy.ROADMAP_TITLE }).click();
   await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(1, first.steps.length) })).toBeVisible();
+  // Clear progress asks once, then unticks every step.
+  await page.getByRole('button', { name: copy.ROADMAP_CLEAR }).click();
+  await page.getByRole('button', { name: copy.KEEP_KEPT }).click();
+  await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(1, first.steps.length) })).toBeVisible();
+  await page.getByRole('button', { name: copy.ROADMAP_CLEAR }).click();
+  await page.locator('.card-confirm-yes').click();
+  await expect(stage.getByRole('img', { name: copy.ROADMAP_DONE_COUNT(0, first.steps.length) })).toBeVisible();
+  await expect(page.getByRole('button', { name: copy.ROADMAP_CLEAR })).toBeDisabled();
   await page.getByRole('link', { name: copy.NEED_PHRASE.money }).click();
   await expect(page.getByRole('heading', { name: copy.NEED_PHRASE.money })).toBeVisible();
 });

@@ -19,6 +19,15 @@ export function readDone(store: FlagStore | null): string[] {
   }
 }
 
+/** Untick every step. */
+export function clearDone(store: FlagStore | null): void {
+  try {
+    store?.removeItem(ROADMAP_DONE_KEY);
+  } catch {
+    // Storage refused: the screen still shows nothing ticked for this visit.
+  }
+}
+
 /** Tick or untick one step, and return the new list. */
 export function toggleDone(store: FlagStore | null, done: readonly string[], id: string): string[] {
   const next = done.includes(id) ? done.filter((each) => each !== id) : [...done, id];

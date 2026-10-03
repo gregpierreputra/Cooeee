@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FlagStore } from '../../src/core/acknowledgement';
 import { ROADMAP_DONE_KEY } from '../../src/core/constants';
 import { NEED_PHRASE, ROADMAP_STAGES } from '../../src/core/copy';
-import { readDone, toggleDone } from '../../src/core/roadmap-done';
+import { clearDone, readDone, toggleDone } from '../../src/core/roadmap-done';
 
 const memoryStore = (seed: Record<string, string> = {}): FlagStore => ({
   getItem: (key) => seed[key] ?? null,
@@ -22,6 +22,9 @@ describe('recovery roadmap ticks', () => {
     const done = toggleDone(store, [], 'insurer');
     expect(readDone(store)).toEqual(['insurer']);
     expect(toggleDone(store, done, 'insurer')).toEqual([]);
+    expect(readDone(store)).toEqual([]);
+    toggleDone(store, [], 'talk');
+    clearDone(store);
     expect(readDone(store)).toEqual([]);
   });
 

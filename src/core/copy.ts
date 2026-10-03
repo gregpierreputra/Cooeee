@@ -581,7 +581,10 @@ export const WHO_TO_CALL = 'Who to call';
 // Cross guidance. Each step may link to the programs for one need, to Who to
 // call, to Nearby, or to Red Cross Register.Find.Reunite.
 export const ROADMAP_TITLE = 'Recovery roadmap';
-export const ROADMAP_LINE = 'What usually comes first after a fire. Tick each step as you go.';
+export const ROADMAP_LINE =
+  'A step by step guide to the first days, weeks and months after a fire. Work down each stage, tick a step when it is done, and tap its link to find help for it. Your progress is saved on this phone.';
+export const ROADMAP_CLEAR = 'Clear progress';
+export const ROADMAP_CLEAR_QUESTION = 'Untick every step?';
 export const ROADMAP_SOURCE = 'Based on Emergency Recovery Victoria and Australian Red Cross guidance.';
 export const ROADMAP_DONE_COUNT = (done: number, total: number) => `${done} of ${total} done`;
 export const ROADMAP_MARK = (step: string) => `Done: ${step}`;
