@@ -3207,10 +3207,48 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .roadmap-source {
   font-size: var(--step-s);
 }
-/* R3: the wellbeing lines under the numbers in Who to call. */
-.talk-to-someone {
+/* Who to call: two groups under their eyebrows, and each number a card. The
+   number is the largest thing on the card, so it can be read out to someone.
+   Call is tinted and Copy is a ghost pill. Only the hotline's Call is filled. */
+.call-group {
   display: grid;
   gap: 0.75rem;
+}
+.call-card {
+  gap: 0.875rem;
+}
+.call-card h3 {
+  margin: 0;
+  font-size: var(--step-1);
+}
+.call-card .card-head p {
+  margin: 0.125rem 0 0;
+  font-size: var(--step-s);
+}
+.call-number {
+  margin: 0;
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.02em;
+}
+.call-button {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+.emergency-line .card-head .glyph {
+  background: color-mix(in srgb, var(--offline) 18%, transparent);
+  color: var(--offline);
+}
+/* The hotline: the amber rule and ground, the attention colour, so it stands
+   out without reading as the number to call in danger. Red is kept for 000. */
+.caution-line {
+  border-inline-start: 3px solid var(--stale);
+  background: color-mix(in srgb, var(--stale) 10%, var(--surface));
+}
+.caution-line .card-head .glyph {
+  background: color-mix(in srgb, var(--stale) 18%, transparent);
+  color: var(--stale);
 }
 
 /* The source at a glance: its initials in a ring at the head of the card. */

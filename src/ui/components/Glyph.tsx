@@ -10,7 +10,7 @@ export type GlyphKind =
   | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate'
   | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag'
   | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline'
-  | 'caution' | 'web' | 'tour' | 'moon';
+  | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check';
 
 const GLYPH_PATHS: Record<GlyphKind, string> = {
   stay: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
@@ -56,6 +56,8 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   tour: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M10 8.5v7l5.5-3.5z',
   moon: 'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z',
   calls: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z',
+  copy: 'M9 9h11v11H9zM15 9V4H4v11h5',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
 };
 
 /** `line` drops the tinted circle, for a glyph inside a button or a line of text. */

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
-import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS } from '../core/constants';
+import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS, TRIPLE_ZERO } from '../core/constants';
 import * as copy from '../core/copy';
 import { readKept, toggleKept, writeKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
@@ -9,6 +9,7 @@ import { callList, isNeed, monogram, NEEDS, parseChoice, recoveryStale, selectPr
 import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { listPrograms, listSavedProgramIds } from '../data/db';
+import CallCard from './components/CallCard';
 import { focusMain } from './components/focusMain';
 import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
@@ -215,23 +216,26 @@ export default function Recover({
             {copy.CALLS_LINE}
           </p>
         </header>
-        <ul className="list">
-          {callList(programs).map((entry) => (
-            <li
-              key={entry.number}
-              className={entry.number === HOTLINE_NUMBER ? 'card emergency-line' : 'card'}
-            >
-              <h2>{entry.label}</h2>
-              {entry.org ? <p>{entry.org}</p> : null}
-              <a className="with-glyph call-link" href={`tel:${entry.number.replaceAll(' ', '')}`}>
-                <Glyph kind="calls" line />
-                {copy.CALL_LINE(entry.number)}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <section className="talk-to-someone" aria-labelledby="talk-to-someone">
-          <h2 id="talk-to-someone">{copy.TALK_TO_SOMEONE}</h2>
+        {/* Two groups under the eyebrows used across Recover: the lines for the
+            recovery itself, 000 then the hotline first, then the lines for how a
+            person is coping. */}
+        <section className="call-group">
+          <h2 className="kicker">{copy.RECOVERY_LINES}</h2>
+          <ul className="list">
+            <CallCard name={copy.TRIPLE_ZERO_LABEL} detail={copy.TRIPLE_ZERO_DETAIL} number={TRIPLE_ZERO} tone="danger" />
+            {callList(programs).map((entry) => (
+              <CallCard
+                key={entry.number}
+                name={entry.label}
+                detail={entry.org ?? copy.HOTLINE_DETAIL}
+                number={entry.number}
+                tone={entry.number === HOTLINE_NUMBER ? 'caution' : undefined}
+              />
+            ))}
+          </ul>
+        </section>
+        <section className="call-group">
+          <h2 className="kicker">{copy.TALK_TO_SOMEONE}</h2>
           <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
           <WellbeingLines />
         </section>

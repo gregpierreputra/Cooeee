@@ -628,6 +628,19 @@ export const ROADMAP_STAGES: readonly {
   },
 ];
 export const HOTLINE_LABEL = 'VicEmergency hotline';
+export const HOTLINE_DETAIL = 'Victorian information line for emergencies and recovery.';
+/** Who to call opens with 000, the one red card, so the hotline is never
+ *  taken for the number to call in danger. */
+export const TRIPLE_ZERO_LABEL = 'Triple Zero (000)';
+export const TRIPLE_ZERO_DETAIL = 'For life-threatening emergencies.';
+/** Who to call: each number as a card with Call and Copy. Copy says what
+ *  happened in the button itself for a few seconds, then reads Copy again. */
+export const RECOVERY_LINES = 'Recovery lines';
+export const CALL = 'Call';
+export const COPY = 'Copy';
+export const COPIED = 'Copied';
+export const NOT_COPIED = 'Not copied';
+export const NUMBER_COPIED = (name: string) => `${name} number copied.`;
 export const CALLS_LINE = 'Calls often work when data does not.';
 /** R3: free lines for how a person is coping, in Who to call and on every pack
  *  page. Bundled, so they show with no signal and no pack. Numbers and hours

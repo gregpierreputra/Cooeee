@@ -121,6 +121,9 @@ export const FIX_STALE_MS = 30_000;
 export const ACCURACY_MAX_M = 100;
 
 export const HOLD_MS = 2_000;
+// How long a call card's Copy says Copied or Not copied before it reads Copy
+// again. It reports a moment, not what the clipboard holds later.
+export const COPY_CONFIRM_MS = 3_000;
 // How far outside the hold button a pointer may stray before the hold is
 // cancelled. A finger held down for two seconds rolls and slides by several
 // pixels, and a thumb near the button's edge slips just past it, so leaving
@@ -402,6 +405,7 @@ export const GENERAL_CHANNEL_URL = 'https://www.disasterassist.gov.au/';
 export const REGISTER_FIND_REUNITE_URL = 'https://register.redcross.org.au/';
 /** The VicEmergency hotline, the one number every call list opens with. */
 export const HOTLINE_NUMBER = '1800 226 226';
+export const TRIPLE_ZERO = '000';
 
 /** Programs the user chose to keep: program ids only, on this phone, capped so
  *  the list can never grow without bound. */
