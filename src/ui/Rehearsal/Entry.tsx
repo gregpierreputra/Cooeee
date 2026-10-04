@@ -12,6 +12,7 @@ import Result from './Result';
 import Run from './Run';
 import Unfinished from './Unfinished';
 import { currentRun, endRun, useRehearsalRun } from './run-state';
+import Glyph from '../components/Glyph';
 import StatusPage from '../components/StatusPage';
 import { focusMain } from '../components/focusMain';
 import Drill from '../Drill/Drill';
@@ -180,8 +181,9 @@ export default function RehearsalEntry({
       // The order is the order of what the reader most likely wants. They
       // arrived from the pack page one tap ago, so going back to that pack
       // comes first; building is what would make a rehearsal possible, so it
-      // comes second and carries the accent; Home is the escape and stays last,
-      // where it is on every other screen in the app.
+      // comes second and carries the accent. Rehearse is a tab, so the tab bar
+      // is the way Home, not a link here.
+      backHome={false}
       actions={
         <>
           {returnPackId ? (
@@ -189,7 +191,9 @@ export default function RehearsalEntry({
               {copy.BACK_TO_THIS_PACK}
             </Link>
           ) : null}
-          <Link className={buildingIsTheFix(gate) ? 'action main-action' : 'action'} to="/packs/new">
+          {/* Drawn as on Home: the plus, then the words. */}
+          <Link className={`action with-glyph${buildingIsTheFix(gate) ? ' main-action' : ''}`} to="/packs/new">
+            <Glyph kind="plus" line />
             {copy.BUILD_A_PACK}
           </Link>
         </>
@@ -207,7 +211,7 @@ export default function RehearsalEntry({
  *  would be the one action wearing the accent while being the one action that
  *  does not help.
  *
- *  That state therefore runs all three actions neutral rather than moving the
+ *  That state therefore runs both actions neutral rather than moving the
  *  accent onto going back. Moving it would make the accent mean "the fix" on
  *  one screen and "the way back" on the next, and there is no fix here to point
  *  at. A screen with no filled control is what this stylesheet already allows:

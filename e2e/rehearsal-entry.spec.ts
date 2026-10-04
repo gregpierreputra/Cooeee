@@ -149,17 +149,16 @@ test.describe('AC4 the gate makes no request', () => {
 
 // The user arrived from the pack page one tap ago, so the way back to that pack
 // is offered first; building is what would make a rehearsal possible and takes
-// the accent; Home is the escape and stays last, as on every other screen.
+// the accent. Rehearse is a tab, so the tab bar is the way Home, not a link.
 test.describe('AC4 the way on from a stopped state', () => {
   for (const [name, url] of [['nothing to rehearse', EMPTY], ['could not be read', UNREADABLE]] as const) {
-    test(`${name} offers the pack, the build and Home, in that order`, async ({ page }) => {
+    test(`${name} offers the pack then the build, and no link Home`, async ({ page }) => {
       await page.goto(url);
       await expect(page.locator('.card h2')).toBeVisible();
 
       await expect(page.locator('.actions a')).toHaveText([
         'Back to this pack',
         'New offline pack',
-        'Back to Home',
       ]);
       await expect(page.getByRole('link', { name: 'Back to this pack' })).toHaveAttribute(
         'href',

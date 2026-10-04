@@ -104,7 +104,7 @@ test('AC4 every action meets the minimum target size', async ({ page }) => {
   await page.goto(`${ORIGIN}/rehearse?mode=empty`);
   await cardHeading(page).waitFor();
 
-  for (const name of ['Back to this pack', 'New offline pack', 'Back to Home']) {
+  for (const name of ['Back to this pack', 'New offline pack']) {
     const box = await page.getByRole('link', { name }).boundingBox();
     expect(box, `${name} has no box`).not.toBeNull();
     expect(box!.width, `${name} width`).toBeGreaterThanOrEqual(24);
@@ -224,11 +224,10 @@ test('AC4 nothing to rehearse fills no action, because none of them fixes it', a
   await cardHeading(page).waitFor();
 
   await expect(page.locator('.actions .main-action')).toHaveCount(0);
-  // All three are still there, and still in order: only the weight changed.
+  // Both are still there, and still in order: only the weight changed.
   await expect(page.locator('.actions a')).toHaveText([
     'Back to this pack',
     'New offline pack',
-    'Back to Home',
   ]);
 });
 
