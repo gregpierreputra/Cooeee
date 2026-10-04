@@ -2832,7 +2832,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 /* The one thing on a screen that must be read before anything else: how to
    reach emergency services. Red is already the fixed state colour in every
    mode, so nothing is invented here, and the shape is the ring-plus-tint the
-   nudge and the kept card already use. The words carry the meaning on their
+   kept card already uses. The words carry the meaning on their
    own, so the colour adds weight without ever being the only signal. */
 .emergency-line {
   border-inline-start: 3px solid var(--offline);
@@ -3357,13 +3357,11 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   align-items: center;
   gap: 0.75rem;
 }
-.pack-section-head .glyph,
-.nudge .glyph {
+.pack-section-head .glyph {
   width: 36px;
   height: 36px;
 }
-.pack-section-head .glyph svg,
-.nudge .glyph svg {
+.pack-section-head .glyph svg {
   width: 18px;
   height: 18px;
 }
@@ -3384,28 +3382,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-s);
 }
 
-/* The Home nudge: the mockups' amber "honesty check" card. Amber is the
-   attention colour already used for key terms, so the nudge is distinct from
-   the teal accent and from the red and green of the connection notice, yet
-   stays inside the palette. */
-.nudge {
-  border: 2px solid var(--stale);
-  background: color-mix(in srgb, var(--stale) 10%, var(--surface));
-}
-.nudge .kicker {
-  color: var(--stale);
-}
-.nudge .glyph {
-  background: color-mix(in srgb, var(--stale) 18%, transparent);
-  color: var(--stale);
-}
-.nudge .action {
-  align-self: start;
-  background: var(--stale);
-  border-color: var(--stale);
-  color: #3a2a00;
-  font-weight: var(--w-heavy);
-}
 
 /* About: a glyph ring leads each line, so the shape says what the line is.
    Scoped to the About page: the BlackSky panel and the tour cards share the

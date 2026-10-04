@@ -213,8 +213,11 @@ test('Home nudges towards a pack while a kept program is not saved offline', asy
   await expect(page.locator('.nudge')).toHaveCount(0);
   await page.evaluate(() => window.localStorage.setItem('cooeee.kept.v1', '["services-australia-crisis-payment"]'));
   await page.goto('/');
-  await expect(page.locator('.nudge')).toContainText(copy.KEPT_NOT_SAVED(1));
-  await expect(page.locator('.nudge').getByRole('link', { name: copy.BUILD_A_PACK })).toBeVisible();
+  // One card, not two: the nudge is a line in the empty card, and the main
+  // button is the one way to build a pack.
+  await expect(page.locator('.empty-state .nudge')).toContainText(copy.KEPT_NOT_SAVED(1));
+  await expect(page.locator('.home .card')).toHaveCount(1);
+  await expect(page.getByRole('link', { name: copy.BUILD_A_PACK })).toHaveCount(1);
 });
 
 // E4-US9: a program kept after a pack exists flows into that pack on the next

@@ -32,8 +32,8 @@ export default function Home({ now }: { now?: number }) {
   const [seed] = useState(() => now ?? Date.now());
 
   // E4-US7-AC4: the kept programs no saved pack carries yet, for the amber
-  // nudge. Read with the packs on every arrival, so coming back from Recover
-  // shows the current count.
+  // nudge line in the empty card. Read with the packs on every arrival, so
+  // coming back from Recover shows the current count.
   const [unsaved, setUnsaved] = useState(0);
   const load = async () => {
     const kept = readKept(localFlagStore());
@@ -126,26 +126,20 @@ export default function Home({ now }: { now?: number }) {
         </section>
       )}
 
-      {/* The nudge: the kept card treatment, so it reads as the same object the
-          person kept, and one way to act on it. */}
-      {view !== null && unsaved > 0 ? (
-        <section className="card nudge">
-          <div className="card-head">
-            <Glyph kind="kept" />
-            <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
-          </div>
-          <Link className="action with-glyph" to="/packs/new">
-            <Glyph kind="plus" line />
-            {copy.BUILD_A_PACK}
-          </Link>
-        </section>
-      ) : null}
-
       {view === null ? null : view.packs.length === 0 ? (
         <section className="card empty-state">
           <Glyph kind="layer" />
           <h2>{copy.NO_PACK_SAVED}</h2>
           <p className="muted">{copy.NO_PACKS_HINT}</p>
+          {/* The nudge, one amber line in the same card: saved programs are
+              one more reason to build. The New offline pack button below is
+              the one way to act on it. */}
+          {unsaved > 0 ? (
+            <p className="nudge key-term with-glyph">
+              <Glyph kind="kept" line />
+              {copy.KEPT_NOT_SAVED(unsaved)}
+            </p>
+          ) : null}
         </section>
       ) : (
         view.packs.map(({ pack, ageLine }) => (
