@@ -578,6 +578,8 @@ export const WHO_TO_CALL = 'Who to call';
 // Cross guidance. Each step may link to the programs for one need, to Who to
 // call, to Nearby, or to Red Cross Register.Find.Reunite.
 export const ROADMAP_TITLE = 'Recovery roadmap';
+/** The eyebrow over the single needs on Recover. */
+export const BY_NEED = 'By need';
 export const ROADMAP_LINE =
   'A step by step guide to the first days, weeks and months after a fire. Work down each stage, tick a step when it is done, and tap its link to find help for it. Your progress is saved on this phone.';
 export const ROADMAP_CLEAR = 'Clear progress';

@@ -3274,12 +3274,22 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
    tint: whoever has kept a program has already met this treatment and reads it
    without being told. The filled glyph carries it at a glance. */
 /* Kept and All side by side over the needs, each a tile with its drawing on
-   top, its name, then one quiet line. One tile alone fills the row. */
+   top, its name, then one quiet line. One tile alone fills the row as a row,
+   shaped like the need buttons below it, not a tall box. */
 .recover-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-bottom: 0.5rem;
+}
+/* The roadmap and the tiles held close as one group, and the needs under
+   their eyebrow set further down, so the two read apart with no rule. */
+.recover-start,
+.recover-needs {
+  display: grid;
+  gap: 0.75rem;
+}
+.recover-needs {
+  margin-top: 0.75rem;
 }
 .recover .recover-tile {
   display: flex;
@@ -3292,6 +3302,15 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .recover-tile .glyph {
   margin-bottom: 0.5rem;
+}
+.recover .recover-tile:only-child {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 1.5rem 0.75rem 0.5rem;
+}
+.recover-tile:only-child .glyph {
+  margin-bottom: 0;
 }
 .recover-tile-detail {
   color: var(--ink-2);

@@ -161,38 +161,44 @@ export default function Recover({
             {copy.RECOVER_PRIVACY_LINE}
           </p>
         </header>
-        {/* The two ways into the programs that are not one need, as tiles over
-            the needs. Saved, in the ring and tint a saved card wears, is here
-            only while something is kept; All then fills the row alone. */}
-        <div className="recover-tiles">
-          {anyKept ? (
-            <button type="button" className="recover-tile kept-button" onClick={() => choose('kept')}>
-              <Glyph kind="kept" />
-              <span className="recover-tile-label">{copy.KEPT_PROGRAMS}</span>{' '}
-              <span className="recover-tile-detail">{copy.KEPT_PROGRAMS_DETAIL}</span>
-            </button>
-          ) : null}
-          <button type="button" className="recover-tile" onClick={() => choose('all')}>
-            <Glyph kind="all" />
-            <span className="recover-tile-label">{copy.ALL_PROGRAMS}</span>{' '}
-            <span className="recover-tile-detail">{copy.ALL_PROGRAMS_DETAIL}</span>
+        <div className="recover-start">
+          {/* R1: the way through recovery, in teal, first: where to start. */}
+          <button type="button" className="need-button roadmap-button" onClick={() => choose('roadmap')}>
+            <Glyph kind="roadmap" />
+            {copy.ROADMAP_TITLE}
           </button>
-        </div>
-        {/* R1: the way through recovery, in teal over the single needs. */}
-        <button type="button" className="need-button roadmap-button" onClick={() => choose('roadmap')}>
-          <Glyph kind="roadmap" />
-          {copy.ROADMAP_TITLE}
-        </button>
-        <ul className="list">
-          {rows.map((row) => (
-            <li key={row.key}>
-              <button type="button" className="need-button" onClick={() => choose(row.key)}>
-                <Glyph kind={row.key} />
-                {row.label}
+          {/* The two ways into the programs that are not one need, as tiles.
+              Saved, in the ring and tint a saved card wears, is here only
+              while something is kept; All then fills the row alone. */}
+          <div className="recover-tiles">
+            {anyKept ? (
+              <button type="button" className="recover-tile kept-button" onClick={() => choose('kept')}>
+                <Glyph kind="kept" />
+                <span className="recover-tile-label">{copy.KEPT_PROGRAMS}</span>{' '}
+                <span className="recover-tile-detail">{copy.KEPT_PROGRAMS_DETAIL}</span>
               </button>
-            </li>
-          ))}
-        </ul>
+            ) : null}
+            <button type="button" className="recover-tile" onClick={() => choose('all')}>
+              <Glyph kind="all" />
+              <span className="recover-tile-label">{copy.ALL_PROGRAMS}</span>{' '}
+              <span className="recover-tile-detail">{copy.ALL_PROGRAMS_DETAIL}</span>
+            </button>
+          </div>
+        </div>
+        {/* The single needs under their own eyebrow, set apart from the group above. */}
+        <section className="recover-needs">
+          <h2 className="kicker">{copy.BY_NEED}</h2>
+          <ul className="list">
+            {rows.map((row) => (
+              <li key={row.key}>
+                <button type="button" className="need-button" onClick={() => choose(row.key)}>
+                  <Glyph kind={row.key} />
+                  {row.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       </main>
     );
   }
