@@ -60,6 +60,7 @@ import {
 import * as copy from '../core/copy';
 import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
 import { shownPackName, titleCase } from '../core/home';
+import { packIcon } from '../core/pack';
 import { isPanned, NO_PAN, panOffset, panShouldReturn, type PanOffset } from '../core/pan';
 import { steadyReadout, type ShownReadout } from '../core/readout';
 import {
@@ -595,14 +596,18 @@ export default function BlackSky({
                   aria-pressed={pack.id === chosen?.pack.id}
                   onClick={() => choosePack(pack.id)}
                 >
-                  <span>{shownPackName(pack.name)}</span>
-                  <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
-                  {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
-                    <span className="blacksky-pack-here with-glyph">
-                      <Glyph kind="locate" line />
-                      {copy.PACK_COVERS_HERE}
-                    </span>
-                  ) : null}
+                  {/* The pack's own drawing, in amber like everything here. */}
+                  <Glyph kind={packIcon(pack)} />
+                  <span className="blacksky-pack-text">
+                    <span>{shownPackName(pack.name)}</span>
+                    <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
+                    {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
+                      <span className="blacksky-pack-here with-glyph">
+                        <Glyph kind="locate" line />
+                        {copy.PACK_COVERS_HERE}
+                      </span>
+                    ) : null}
+                  </span>
                 </button>
               </li>
             ))}

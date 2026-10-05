@@ -67,7 +67,8 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   family: 'M9 11a3 3 0 1 0 0-6a3 3 0 1 0 0 6M3 20a6 6 0 0 1 12 0M16.5 11a2.5 2.5 0 1 0 0-5M16 14.2a5 5 0 0 1 5 5.8',
   holiday: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
   school: 'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5M22 9v6',
-  farm: 'M3 21V10l9-6 9 6v11zM9 21v-6h6v6M9 15l6 6M15 15l-6 6',
+  // A wheat ear, in open strokes: a barn read as a second house at this size.
+  farm: 'M12 22V3M12 7.5 8 4M12 7.5l4-3.5M12 12.5 6.5 8.5M12 12.5l5.5-4M12 17.5 5.5 13M12 17.5l6.5-4.5',
   close: 'M6 6l12 12M18 6 6 18',
 };
 

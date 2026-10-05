@@ -1347,7 +1347,9 @@ main:focus {
 .blacksky-pack {
   width: 100%;
   display: grid;
-  gap: 0.125rem;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.875rem;
   text-align: left;
   padding: 0.875rem 1.25rem;
   border-radius: var(--r-card); /* three lines of text: the card's corner, not the pill's */
@@ -1355,6 +1357,17 @@ main:focus {
 .blacksky-pack[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
+  color: var(--ink-on-accent);
+}
+.blacksky-pack-text {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+/* On the filled amber of the chosen pack, the drawing turns black on a faint
+   dark ring, so it never disappears into the fill. */
+.blacksky-pack[aria-pressed='true'] .glyph {
+  background: rgb(0 0 0 / 0.15);
   color: var(--ink-on-accent);
 }
 .blacksky-pack-address {
@@ -3655,6 +3668,18 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .condition-label {
   font-size: var(--step-2);
   font-weight: var(--w-med);
+}
+/* The Rehearse pack list: the pack's drawing beside its three lines. */
+.condition-action.pack-choice {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.875rem;
+}
+.pack-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
 }
 /* Left-aligned like the line under it; outranks .with-glyph's centring. A
    long word wraps at 200% text rather than running off the right edge. */
