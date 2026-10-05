@@ -26,6 +26,8 @@ import {
   SAVE,
   CLOSE,
   PACK_NAME_TAKEN,
+  CHANGE_ICON,
+  PACK_ICON_NAMES,
   PREPARATION_LINES,
   PREPARATION_MORE,
   PREPARATION_SOURCE,
@@ -305,6 +307,24 @@ test('the pack menu opens on Close and renames the pack', async ({ page }) => {
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('.pack-card h2')).toHaveText('Mum and Dad');
   await expect(page.getByRole('button', { name: PACK_SETTINGS('Mum and Dad') })).toBeFocused();
+});
+
+// Change icon: one drawing per pack, chosen in the menu, and the menu closes
+// onto the card. Opening it again shows the drawing chosen.
+test('Change icon gives the pack a drawing', async ({ page }) => {
+  await page.goto(home('?days=3'));
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
+  await page.getByRole('button', { name: CHANGE_ICON }).click();
+  await expect(page.getByRole('radio', { name: PACK_ICON_NAMES.place })).toBeChecked();
+  await expect(page.getByRole('radio', { name: PACK_ICON_NAMES.place })).toBeFocused();
+
+  await page.getByRole('radio', { name: PACK_ICON_NAMES.family }).check();
+  await page.getByRole('button', { name: SAVE, exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
+  await page.getByRole('button', { name: CHANGE_ICON }).click();
+  await expect(page.getByRole('radio', { name: PACK_ICON_NAMES.family })).toBeChecked();
 });
 
 // One name per pack: a name another pack has, whatever its capitals, is refused

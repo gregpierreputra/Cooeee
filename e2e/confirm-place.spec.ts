@@ -34,6 +34,7 @@ test('AC1 keeps a name as typed in memory only, and a blank name cannot be saved
   await expect(page.getByRole('button', { name: 'Save this place' })).toBeDisabled();
 
   await page.getByLabel('Place name').fill('  Home base  ');
+  await page.getByRole('radio', { name: 'Home' }).check();
   await page.getByRole('button', { name: 'Save this place' }).click();
 
   await expect.poll(() => page.evaluate(() => window.__confirmedPlace)).toEqual({
@@ -41,6 +42,7 @@ test('AC1 keeps a name as typed in memory only, and a blank name cannot be saved
     address: '6 RIDGE ROAD KALORAMA 3766',
     lat: -37.817939,
     lon: 145.36594,
+    icon: 'home',
   });
   expect(await storageState(page)).toEqual({
     indexedDbNames: [],
@@ -85,8 +87,10 @@ test('AC1 keyboard order, focus and targets are accessible', async ({ page }) =>
   // React renders after the load event; a Tab pressed before then lands nowhere.
   await expect(page.getByLabel('Place name')).toBeVisible();
 
+  // The icon choice is one stop, on the chosen drawing, as for any radio group.
   for (const target of [
     page.getByLabel('Place name'),
+    page.getByRole('radio', { name: 'Place' }),
     page.getByRole('button', { name: 'Save this place' }),
     page.getByRole('button', { name: 'Search again' }),
   ]) {

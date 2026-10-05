@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MS_PER_DAY, PACK_RADIUS_KM } from '../../src/core/constants';
 import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from '../../src/core/copy';
-import { buildPackSeed, defaultPackName, diffPacks, packAgeLabel, samePackName, streetPart } from '../../src/core/pack';
+import { buildPackSeed, defaultPackName, diffPacks, packAgeLabel, packIcon, samePackName, streetPart } from '../../src/core/pack';
 import { pack, source } from '../fixtures';
 
 const NOW = 1_800_000_000_000;
@@ -19,6 +19,20 @@ describe('samePackName', () => {
     expect(samePackName('Home', ' home ')).toBe(true);
     expect(samePackName('Home', 'Home 2')).toBe(false);
     expect(samePackName('Mum and Dad', 'Mum & Dad')).toBe(false);
+  });
+});
+
+describe('packIcon', () => {
+  it('is the pack’s own drawing, or the pin when it has none or an unknown one', () => {
+    expect(packIcon({ icon: 'family' })).toBe('family');
+    expect(packIcon({})).toBe('place');
+    expect(packIcon({ icon: '<img>' as never })).toBe('place');
+  });
+
+  it('is carried into a new pack only when it is a pack drawing', () => {
+    const place = { name: 'Home', address: 'A', lat: 0, lon: 0 };
+    expect(buildPackSeed('p', 1, { ...place, icon: 'home' }, 'L', source()).icon).toBe('home');
+    expect(buildPackSeed('p', 1, { ...place, icon: 'x' as never }, 'L', source())).not.toHaveProperty('icon');
   });
 });
 

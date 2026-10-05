@@ -1,7 +1,7 @@
 import Dexie, { liveQuery, type Table } from 'dexie';
 import { BAG_LIMIT, DRILL_ITEM_IDS } from '../core/drill-items';
 import { NOTE_MAX_CHARS, PACK_NAME_MAX_CHARS } from '../core/constants';
-import { samePackName } from '../core/pack';
+import { isPackIcon, samePackName } from '../core/pack';
 import { isRehearsalEnding, isUnfinished } from '../core/rehearsal-ending';
 import type { RehearsalInput } from '../core/rehearsal-entry';
 import type {
@@ -15,6 +15,7 @@ import type {
   NspSnapshot,
   Pack,
   PackFile,
+  PackIcon,
   PackNote,
   PackWithPlaces,
   PackProgram,
@@ -426,6 +427,18 @@ export function checkedPackName(name: string): string {
     throw new RangeError('pack name is empty or too long');
   }
   return trimmed;
+}
+
+/** Give one complete pack a drawing from the pack drawings. Only the icon
+ *  changes, and a value that is not one of them is refused. */
+export async function setPackIcon(id: string, icon: PackIcon): Promise<void> {
+  if (!isPackIcon(icon)) throw new RangeError('not a pack icon');
+  await db.transaction('rw', db.packs, async () => {
+    if ((await db.packs.get(id))?.status !== 'complete') {
+      throw new Error('only a complete pack can change its icon');
+    }
+    await db.packs.update(id, { icon });
+  });
 }
 
 /** The complete packs' names, for the builder's first name. A phone that has

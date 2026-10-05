@@ -5,7 +5,7 @@
 // string carries an em dash: scripts/banned-terms.mjs fails the build on one.
 // Never reword them without updating the tests.
 
-import type { Destination, FacilityType, NeedKey, SourceStatus } from './types';
+import type { Destination, FacilityType, NeedKey, PackIcon, SourceStatus } from './types';
 
 // Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
@@ -67,6 +67,19 @@ export const RENAME_PACK = 'Rename';
 export const SAVE = 'Save';
 export const CANCEL = 'Cancel';
 export const PACK_NAME_NOT_SAVED = 'The name was not saved. Try again.';
+/** The pack drawings: chosen on the name step and with Change icon. */
+export const PACK_ICON_LABEL = 'Icon';
+export const CHANGE_ICON = 'Change icon';
+export const PACK_ICON_NOT_SAVED = 'The icon was not saved. Try again.';
+export const PACK_ICON_NAMES: Record<PackIcon, string> = {
+  place: 'Place',
+  home: 'Home',
+  work: 'Work',
+  family: 'Family',
+  holiday: 'Holiday',
+  school: 'School',
+  farm: 'Farm',
+};
 /** One name per pack, in the builder and in Rename alike. The name itself is
  *  in the field right above, so the line does not repeat it. */
 export const PACK_NAME_TAKEN = 'Another pack has this name.';

@@ -754,6 +754,7 @@ export function Search({
         // The default is offered in normal case, not the official list's
         // capitals, so a pack saved with it reads right everywhere.
         initialName={pendingPlace?.name ?? titleCase(defaultPackName(candidate, savedNames))}
+        initialIcon={pendingPlace?.icon}
         takenName={takenName}
         onConfirm={(place) => void handleConfirmedPlace(place)}
         onSearchAgain={resetToSearch}

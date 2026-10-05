@@ -9,6 +9,7 @@ import {
   listCompletePacksWithPlaces,
   putNote,
   renamePack,
+  setPackIcon,
   PackNameTakenError,
   readRehearsalSource,
   listRehearsalsForPack,
@@ -205,6 +206,20 @@ describe('renamePack', () => {
 
     await renamePack('p', 'HOME');
     expect((await db.packs.get('p'))?.name).toBe('HOME');
+  });
+});
+
+describe('setPackIcon', () => {
+  it('changes only the icon, and refuses one that is not a pack drawing or a pack being built', async () => {
+    await db.packs.bulkPut([pack({ id: 'p' }), pack({ id: 'b', status: 'building' })]);
+    const before = await db.packs.get('p');
+
+    await setPackIcon('p', 'farm');
+    expect(await db.packs.get('p')).toEqual({ ...before, icon: 'farm' });
+
+    await expect(setPackIcon('p', 'x' as never)).rejects.toThrow(RangeError);
+    await expect(setPackIcon('b', 'home')).rejects.toThrow();
+    expect(await db.packs.get('b')).not.toHaveProperty('icon');
   });
 });
 

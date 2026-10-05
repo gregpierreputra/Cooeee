@@ -6,10 +6,20 @@ import { readKept } from '../core/kept';
 import { unsavedKept } from '../core/recover';
 import { localFlagStore } from '../data/acknowledgement';
 import { PACK_NAME_MAX_CHARS } from '../core/constants';
-import { deleteCompletePack, listCompletePacks, listSavedProgramIds, PackNameTakenError, renamePack } from '../data/db';
+import { packIcon } from '../core/pack';
+import type { PackIcon } from '../core/types';
+import {
+  deleteCompletePack,
+  listCompletePacks,
+  listSavedProgramIds,
+  PackNameTakenError,
+  renamePack,
+  setPackIcon,
+} from '../data/db';
 import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
+import IconPicker from './components/IconPicker';
 import HoldButton from './components/HoldButton';
 import { focusMain } from './components/focusMain';
 
@@ -80,12 +90,15 @@ export default function Home({ now }: { now?: number }) {
   // ... on close. It opens on the close cross, never on Delete. Deleting takes
   // two taps: Delete this pack asks, and only Delete destroys data.
   const sheet = useRef<HTMLDialogElement>(null);
-  const [settings, setSettings] = useState<{ id: string; name: string; ageLine: string } | null>(null);
-  const [step, setStep] = useState<'menu' | 'rename' | 'delete'>('menu');
+  const [settings, setSettings] = useState<{ id: string; name: string; icon: PackIcon; ageLine: string } | null>(null);
+  const [step, setStep] = useState<'menu' | 'rename' | 'icon' | 'delete'>('menu');
+  const [iconDraft, setIconDraft] = useState<PackIcon>('place');
+  const [iconFailed, setIconFailed] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   // Why the last save did not go through, or null.
   const [renameError, setRenameError] = useState<string | null>(null);
   const renameRowRef = useRef<HTMLButtonElement>(null);
+  const iconRowRef = useRef<HTMLButtonElement>(null);
   const deleteRowRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -97,8 +110,10 @@ export default function Home({ now }: { now?: number }) {
   // appear, and back to the row that opened them when the person returns.
   useEffect(() => {
     if (step === 'rename') nameRef.current?.focus();
+    else if (step === 'icon') sheet.current?.querySelector<HTMLInputElement>('.icon-picker input:checked')?.focus();
     else if (step === 'delete') cancelRef.current?.focus();
     else if (lastStep.current === 'rename') renameRowRef.current?.focus();
+    else if (lastStep.current === 'icon') iconRowRef.current?.focus();
     else if (lastStep.current === 'delete') deleteRowRef.current?.focus();
     lastStep.current = step;
   }, [step]);
@@ -108,6 +123,28 @@ export default function Home({ now }: { now?: number }) {
     setRenameError(null);
     setStep('rename');
   };
+  const startIcon = () => {
+    setIconDraft(settings?.icon ?? 'place');
+    setIconFailed(false);
+    setStep('icon');
+  };
+  // A saved icon closes the sheet onto the card, as a saved name does.
+  const saveIcon = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!settings) return;
+    try {
+      await setPackIcon(settings.id, iconDraft);
+    } catch {
+      setIconFailed(true);
+      return;
+    }
+    setView((current) => current && {
+      ...current,
+      packs: current.packs.map((row) => (row.pack.id === settings.id ? { ...row, pack: { ...row.pack, icon: iconDraft } } : row)),
+    });
+    sheet.current?.close();
+  };
+
   // A saved name closes the sheet onto the card, which shows the new name at
   // once; focus returns to the card's ..., now named for it. Only the name
   // changes, so the list keeps its order and nothing is read again.
@@ -188,7 +225,7 @@ export default function Home({ now }: { now?: number }) {
                 className="card-more"
                 aria-label={copy.PACK_SETTINGS(shownPackName(pack.name))}
                 aria-haspopup="dialog"
-                onClick={() => setSettings({ id: pack.id, name: pack.name, ageLine })}
+                onClick={() => setSettings({ id: pack.id, name: pack.name, icon: packIcon(pack), ageLine })}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
                   <circle cx="5" cy="12" r="2" fill="currentColor" />
@@ -197,7 +234,7 @@ export default function Home({ now }: { now?: number }) {
                 </svg>
               </button>
               <div className="saved-place-title">
-                <Glyph kind="place" />
+                <Glyph kind={packIcon(pack)} />
                 {/* Cased by the same rule as the address line below, so the two
                     read alike: the name defaults to the locality the geocoder
                     returned, and arrives in the same capitals. Storage keeps the
@@ -270,6 +307,24 @@ export default function Home({ now }: { now?: number }) {
                   </button>
                 </div>
               </form>
+            ) : step === 'icon' ? (
+              <form className="sheet-form" onSubmit={(event) => void saveIcon(event)}>
+                <IconPicker name="pack-icon" value={iconDraft} onChange={setIconDraft} />
+                {iconFailed ? (
+                  <p className="field-message with-glyph" role="alert">
+                    <Glyph kind="caution" line />
+                    {copy.PACK_ICON_NOT_SAVED}
+                  </p>
+                ) : null}
+                <div className="card-confirm-actions">
+                  <button type="button" onClick={() => setStep('menu')}>
+                    {copy.CANCEL}
+                  </button>
+                  <button type="submit" className="main-action">
+                    {copy.SAVE}
+                  </button>
+                </div>
+              </form>
             ) : step === 'delete' ? (
               <>
                 <p>{copy.DELETE_PACK_QUESTION}</p>
@@ -293,6 +348,12 @@ export default function Home({ now }: { now?: number }) {
                   <button ref={renameRowRef} type="button" className="sheet-row with-glyph" onClick={startRename}>
                     <Glyph kind="edit" line />
                     {copy.RENAME_PACK}
+                  </button>
+                </li>
+                <li>
+                  <button ref={iconRowRef} type="button" className="sheet-row with-glyph" onClick={startIcon}>
+                    <Glyph kind={settings.icon} line />
+                    {copy.CHANGE_ICON}
                   </button>
                 </li>
                 <li>

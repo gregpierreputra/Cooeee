@@ -1,7 +1,7 @@
 import { PACK_RADIUS_KM } from './constants';
 import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from './copy';
 import { savedAgeDays } from './provenance';
-import type { Pack, PackSeed, PendingPlace, Source } from './types';
+import type { Pack, PackIcon, PackSeed, PendingPlace, Source } from './types';
 
 /** How long ago a pack was saved, from verifiedAt, never createdAt. A pack
  *  never expires and is never marked old: the age alone is stated. */
@@ -13,6 +13,18 @@ export const packAgeLabel = (now: number, verifiedAt: number): string =>
  *  told apart by name, most of all when choosing one in BlackSky. */
 export const samePackName = (a: string, b: string): boolean =>
   a.trim().toLocaleLowerCase('en-AU') === b.trim().toLocaleLowerCase('en-AU');
+
+/** Every drawing a pack may carry, in the order the picker shows them. The
+ *  pin comes first: it is the default, and what every older pack shows. */
+export const PACK_ICONS: readonly PackIcon[] = ['place', 'home', 'work', 'family', 'holiday', 'school', 'farm'];
+
+/** Whether a value is one of the pack drawings. Checked where an icon is
+ *  stored and where it is read, so a changed value on the phone is never drawn. */
+export const isPackIcon = (value: unknown): value is PackIcon =>
+  typeof value === 'string' && (PACK_ICONS as readonly string[]).includes(value);
+
+/** The drawing a pack shows: its own, or the pin when it has none. */
+export const packIcon = (pack: Pick<Pack, 'icon'>): PackIcon => (isPackIcon(pack.icon) ? pack.icon : 'place');
 
 /** The address without the suburb and postcode at its end, as the official
  *  list writes them: "8 RIDGE ROAD KALORAMA 3766" gives "8 RIDGE ROAD". An
@@ -58,6 +70,7 @@ export function buildPackSeed(
     createdAt,
     reminder: OFFICIAL_INSTRUCTIONS_FIRST,
     sources: [source],
+    ...(isPackIcon(place.icon) ? { icon: place.icon } : {}),
     ...(existingPackId ? { supersedes: existingPackId } : {}),
   };
 }
@@ -75,6 +88,7 @@ const DIFFED_FIELDS = [
   'lgaName',
   'builtWithTiles',
   'reminder',
+  'icon',
 ] as const;
 
 /** What changed between the pack on the device and the pack just built, for the

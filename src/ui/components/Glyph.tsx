@@ -1,4 +1,5 @@
 import type { Choice } from '../../core/recover';
+import type { PackIcon } from '../../core/types';
 
 /** One line drawing per kind: the six needs, every program, kept, and the pack
  *  page's sections. Drawn inline like the bottom bar's icons, so it costs no
@@ -10,7 +11,8 @@ export type GlyphKind =
   | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate'
   | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag'
   | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline'
-  | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close';
+  | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close'
+  | Exclude<PackIcon, 'place'>;
 
 const GLYPH_PATHS: Record<GlyphKind, string> = {
   stay: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
@@ -59,6 +61,13 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   copy: 'M9 9h11v11H9zM15 9V4H4v11h5',
   check: 'M5 12.5l4.5 4.5L19 7.5',
   edit: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
+  // The pack drawings (the pin is 'place' above).
+  home: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
+  work: 'M3 8h18v11H3zM9 8V5h6v3M3 13h18',
+  family: 'M9 11a3 3 0 1 0 0-6a3 3 0 1 0 0 6M3 20a6 6 0 0 1 12 0M16.5 11a2.5 2.5 0 1 0 0-5M16 14.2a5 5 0 0 1 5 5.8',
+  holiday: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  school: 'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5M22 9v6',
+  farm: 'M3 21V10l9-6 9 6v11zM9 21v-6h6v6M9 15l6 6M15 15l-6 6',
   close: 'M6 6l12 12M18 6 6 18',
 };
 
