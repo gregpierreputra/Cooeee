@@ -200,9 +200,13 @@ export default function Home({ now }: { now?: number }) {
         </section>
       )}
 
+      {/* The packs under their own eyebrow, as Today's reminder is. */}
+      {view === null ? null : <span className="kicker">{copy.YOUR_PACKS}</span>}
+
       {view === null ? null : view.packs.length === 0 ? (
-        <section className="card empty-state">
-          <Glyph kind="layer" />
+        // The space the packs will fill, drawn dashed so it reads as empty
+        // rather than as a card. The New offline pack button below fills it.
+        <section className="empty-state">
           <h2>{copy.NO_PACK_SAVED}</h2>
           <p className="muted">{copy.NO_PACKS_HINT}</p>
           {/* The nudge, one amber line in the same card: saved programs are

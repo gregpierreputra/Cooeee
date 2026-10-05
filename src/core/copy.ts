@@ -547,7 +547,9 @@ export const HEADER_HOME_LABEL = 'Cooeee home';
 export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a network.';
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
 
-export const NO_PACK_SAVED = 'No pack saved yet.';
+/** Home with no pack: a dashed space where packs will be, under YOUR PACKS. */
+export const NO_PACK_SAVED = 'Packs you save will show up here.';
+export const YOUR_PACKS = 'Your packs';
 
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';

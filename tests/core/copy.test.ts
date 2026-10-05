@@ -249,8 +249,9 @@ describe('the fixed header', () => {
 });
 
 describe('the returning-user home', () => {
-  it('states that no pack is saved, and offers to build one', () => {
-    expect(copy.NO_PACK_SAVED).toBe('No pack saved yet.');
+  it('says where packs will show, under their own eyebrow, and offers to build one', () => {
+    expect(copy.NO_PACK_SAVED).toBe('Packs you save will show up here.');
+    expect(copy.YOUR_PACKS).toBe('Your packs');
     expect(copy.BUILD_A_PACK).toBe('New offline pack');
   });
 
