@@ -4,7 +4,9 @@ import {
   BLACKSKY_INFO_LINES,
   BLACKSKY_WORKS_WITHOUT_PACK,
   BUILD_A_PACK,
-  CHECKED_DAYS_AGO,
+  CHECKED_AGO,
+  ITEM_DAYS_AGO,
+  JUST_NOW,
   CONFIRM_DELETE_PACK,
   CONNECTION_ONLINE_LABEL,
   DELETE_PACK,
@@ -31,7 +33,7 @@ import {
   PREPARATION_LINES,
   PREPARATION_MORE,
   PREPARATION_SOURCE,
-  SAVED_DAYS_AGO,
+  SAVED_AGO,
 } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import { acknowledgeFirstOpen, HARNESS, storageCounts } from './helpers';
@@ -43,15 +45,15 @@ const home = (query: string) => `${HARNESS}/home${query}`;
 
 test.describe('the header reports the saved pack age', () => {
   // TC-1.2.6-A
-  test('states the age in days on the day the pack was saved', async ({ page }) => {
+  test('states the age in words on the day the pack was saved', async ({ page }) => {
     await page.goto(home('?days=0'));
-    await expect(page.getByText(CHECKED_DAYS_AGO(0), { exact: true })).toBeVisible();
+    await expect(page.getByText(CHECKED_AGO(JUST_NOW), { exact: true })).toBeVisible();
   });
 
   // An old pack states its age plainly, with no old-data label, and stays usable.
   test('states the age plainly at day 31, and the pack stays usable', async ({ page }) => {
     await page.goto(home('?days=31'));
-    await expect(page.getByText(CHECKED_DAYS_AGO(31), { exact: true })).toBeVisible();
+    await expect(page.getByText(CHECKED_AGO(ITEM_DAYS_AGO(31)), { exact: true })).toBeVisible();
     await expect(page.getByText(/not recently verified/i)).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Ferny Creek' })).toBeEnabled();
   });
@@ -76,7 +78,7 @@ test.describe('the header reports the saved pack age', () => {
   }) => {
     await page.goto(home('?days=12'));
     const age = page.locator('.app-header-age');
-    await expect(age).toHaveText(CHECKED_DAYS_AGO(12));
+    await expect(age).toHaveText(CHECKED_AGO(ITEM_DAYS_AGO(12)));
     await expect(age.locator('img, svg')).toHaveCount(0);
   });
 });
@@ -92,7 +94,7 @@ test.describe('the returning-user home screen', () => {
     // Title-cased for reading; the stored string keeps the custodian's capitals.
     await expect(page.getByText(displayAddress('10 OLD ROAD FERNY CREEK 3786'))).toBeVisible();
     await expect(
-      page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
+      page.getByText(SAVED_AGO(ITEM_DAYS_AGO(3)), { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
@@ -102,7 +104,7 @@ test.describe('the returning-user home screen', () => {
     for (const box of await Promise.all(
       [
         page.getByRole('heading', { name: 'Ferny Creek' }),
-        page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
+        page.getByText(SAVED_AGO(ITEM_DAYS_AGO(3)), { exact: true }),
         page.getByRole('link', { name: BUILD_A_PACK }),
         page.getByRole('button', { name: HOLD_FOR_BLACKSKY }),
       ].map((locator) => locator.boundingBox()),
@@ -208,7 +210,7 @@ test.describe('the returning-user home screen', () => {
   }) => {
     await page.goto(home('?days=3'));
     const footer = page.locator('.saved-place-footer');
-    await expect(footer).toHaveText(SAVED_DAYS_AGO(3));
+    await expect(footer).toHaveText(SAVED_AGO(ITEM_DAYS_AGO(3)));
   });
 
   test('the hold control meets the 44px minimum target size', async ({ page }) => {
@@ -280,7 +282,7 @@ test.describe('the connection notice', () => {
     expect((await header.textContent()) ?? '').not.toContain('BlackSky');
     // The age still reads: it is stored on the device, and losing the network
     // changes nothing about it.
-    await expect(page.getByText(CHECKED_DAYS_AGO(3), { exact: true })).toBeVisible();
+    await expect(page.getByText(CHECKED_AGO(ITEM_DAYS_AGO(3)), { exact: true })).toBeVisible();
 
     await context.setOffline(false);
   });
@@ -346,7 +348,7 @@ test('Rename refuses a name another pack already has', async ({ page }) => {
 // entirely: the card gives way to the no-pack state and the store holds nothing.
 test('delete removes the pack from the device after the confirmation', async ({ page }) => {
   await page.goto(home('?days=3'));
-  await expect(page.locator('.app-header-age')).toHaveText(CHECKED_DAYS_AGO(3));
+  await expect(page.locator('.app-header-age')).toHaveText(CHECKED_AGO(ITEM_DAYS_AGO(3)));
   await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
   await page.getByRole('button', { name: DELETE_PACK }).click();
   await page.getByRole('button', { name: CONFIRM_DELETE_PACK, exact: true }).click();

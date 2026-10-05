@@ -6,7 +6,7 @@ import { readKept } from '../core/kept';
 import { unsavedKept } from '../core/recover';
 import { localFlagStore } from '../data/acknowledgement';
 import { PACK_NAME_MAX_CHARS } from '../core/constants';
-import { packIcon } from '../core/pack';
+import { packAgeLabel, packIcon } from '../core/pack';
 import type { PackIcon } from '../core/types';
 import {
   deleteCompletePack,
@@ -22,6 +22,7 @@ import Hint from './components/Hint';
 import IconPicker from './components/IconPicker';
 import HoldButton from './components/HoldButton';
 import { focusMain } from './components/focusMain';
+import { useMinuteClock } from './components/useMinuteClock';
 
 /** E1-US2-AC6 — where someone who set up a place some time ago lands when they
  *  open Cooeee again.
@@ -41,6 +42,8 @@ export default function Home({ now }: { now?: number }) {
   // it is fixed for the life of the screen and does not reshuffle when the user
   // navigates away and comes back.
   const [seed] = useState(() => now ?? Date.now());
+  // Each pack's age moves on with the clock while Home stays open.
+  const clock = useMinuteClock(now);
 
   // E4-US7-AC4: the kept programs no saved pack carries yet, for the amber
   // nudge line in the empty card. Read with the packs on every arrival, so
@@ -90,7 +93,7 @@ export default function Home({ now }: { now?: number }) {
   // ... on close. It opens on the close cross, never on Delete. Deleting takes
   // two taps: Delete this pack asks, and only Delete destroys data.
   const sheet = useRef<HTMLDialogElement>(null);
-  const [settings, setSettings] = useState<{ id: string; name: string; icon: PackIcon; ageLine: string } | null>(null);
+  const [settings, setSettings] = useState<{ id: string; name: string; icon: PackIcon; verifiedAt: number } | null>(null);
   const [step, setStep] = useState<'menu' | 'rename' | 'icon' | 'delete'>('menu');
   const [iconDraft, setIconDraft] = useState<PackIcon>('place');
   const [iconFailed, setIconFailed] = useState(false);
@@ -220,7 +223,7 @@ export default function Home({ now }: { now?: number }) {
           ) : null}
         </section>
       ) : (
-        view.packs.map(({ pack, ageLine }) => (
+        view.packs.map(({ pack }) => (
             <section key={pack.id} className="card pack-card saved-place">
               {/* The pack's settings, top right inside the card, above the
                   card's link. */}
@@ -229,7 +232,7 @@ export default function Home({ now }: { now?: number }) {
                 className="card-more"
                 aria-label={copy.PACK_SETTINGS(shownPackName(pack.name))}
                 aria-haspopup="dialog"
-                onClick={() => setSettings({ id: pack.id, name: pack.name, icon: packIcon(pack), ageLine })}
+                onClick={() => setSettings({ id: pack.id, name: pack.name, icon: packIcon(pack), verifiedAt: pack.verifiedAt })}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
                   <circle cx="5" cy="12" r="2" fill="currentColor" />
@@ -253,7 +256,7 @@ export default function Home({ now }: { now?: number }) {
               <p className="muted">{titleCase(pack.address)}</p>
               <p className="muted figure saved-place-footer with-glyph">
                 <Glyph kind="offline" line />
-                {ageLine}
+                {packAgeLabel(clock, pack.verifiedAt)}
               </p>
             </section>
         ))
@@ -274,7 +277,7 @@ export default function Home({ now }: { now?: number }) {
             <div className="sheet-head">
               <div>
                 <h2 id="pack-sheet-title">{shownPackName(settings.name)}</h2>
-                <p className="muted figure">{settings.ageLine}</p>
+                <p className="muted figure">{packAgeLabel(clock, settings.verifiedAt)}</p>
               </div>
               <button type="button" className="sheet-close" aria-label={copy.CLOSE} onClick={() => sheet.current?.close()}>
                 <Glyph kind="close" line />

@@ -77,6 +77,17 @@ export function savedAgeDays(now: number, savedAt: number): number {
   return Math.max(0, Math.floor((now - savedAt) / MS_PER_DAY));
 }
 
+/** How long ago, in words, for every age in the app: 'just now' under a
+ *  minute, then minutes, hours and days. A clock set behind reads as now. */
+export function ageLabel(ms: number): string {
+  const minutes = Math.floor(Math.max(0, ms) / 60_000);
+  if (minutes < 1) return copy.JUST_NOW;
+  if (minutes < 60) return copy.MINUTES_AGO(minutes);
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return copy.HOURS_AGO(hours);
+  return copy.ITEM_DAYS_AGO(Math.floor(hours / 24));
+}
+
 
 /** Who published an item, when it was saved, and how long ago, as separate
  *  facts so the Source ring can label each one. */
@@ -85,11 +96,12 @@ export function provenanceView(now: number, source: Source): {
   savedOn: string;
   age: string;
 } {
-  const days = savedAgeDays(now, source.retrievedAt);
+  const age = ageLabel(now - source.retrievedAt);
   return {
     publisher: source.publisher,
     savedOn: formatSavedDate(source.retrievedAt),
-    age: days === 0 ? copy.SOURCE_TODAY : copy.ITEM_DAYS_AGO(days),
+    // Shown on its own, so it starts with a capital: "Just now".
+    age: age.charAt(0).toUpperCase() + age.slice(1),
   };
 }
 

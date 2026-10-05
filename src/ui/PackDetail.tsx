@@ -28,6 +28,7 @@ import Section from './components/Section';
 import WellbeingLines from './components/WellbeingLines';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
+import { useMinuteClock } from './components/useMinuteClock';
 import { useRevealedPanel } from './components/useRevealedPanel';
 import { PlaceFacts } from './PackNew/Destinations';
 import { PackNotes } from './PackNotes';
@@ -48,8 +49,10 @@ export default function PackDetail({
   loadContent = getCompletePackContent,
   loadRehearsals = listRehearsalsForPack,
   loadDrills = listDrills,
-  now = Date.now(),
+  now: fixedNow,
 }: PackDetailProps) {
+  // Every age on the page moves on with the clock while it stays open.
+  const now = useMinuteClock(fixedNow);
   const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [drills, setDrills] = useState<DrillRow[]>([]);

@@ -127,6 +127,9 @@ export const HOLD_MS = 2_000;
 // How long a call card's Copy says Copied or Not copied before it reads Copy
 // again. It reports a moment, not what the clipboard holds later.
 export const COPY_CONFIRM_MS = 3_000;
+// How often an age in words ("just now", "5 minutes ago") moves on while a
+// screen stays open, so it never goes stale in front of the person.
+export const AGE_CLOCK_MS = 60_000;
 // How far outside the hold button a pointer may stray before the hold is
 // cancelled. A finger held down for two seconds rolls and slides by several
 // pixels, and a thumb near the button's edge slips just past it, so leaving

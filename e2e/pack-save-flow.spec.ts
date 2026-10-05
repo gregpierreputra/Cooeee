@@ -266,6 +266,27 @@ test('a second address becomes a second pack beside the first, with no question 
   await expect(page.locator('.condition-list button')).toHaveCount(2);
 });
 
+// An age in words moves on while the screen stays open: a pack saved just now
+// reads one minute old a minute later, in the header and on its card.
+test('the header and the pack card move from just now to 1 minute ago', async ({ page }) => {
+  await page.clock.install();
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await searchConfirmAndReachOffer(page);
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Home', exact: true }).click();
+
+  await expect(page.locator('.app-header-age')).toHaveText('Checked just now');
+  await expect(page.locator('.saved-place-footer')).toHaveText('Saved just now');
+  await page.clock.fastForward(61_000);
+  await expect(page.locator('.app-header-age')).toHaveText('Checked 1 minute ago');
+  await expect(page.locator('.saved-place-footer')).toHaveText('Saved 1 minute ago');
+});
+
 // Print this pack, from the pack's menu on Home, opens that pack's print page
 // in the real app, and Back returns Home.
 test('the pack menu opens the pack\'s print page', async ({ page }) => {

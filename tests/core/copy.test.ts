@@ -42,7 +42,7 @@ describe('mandated literals', () => {
 
 describe('composed lines', () => {
   it('a fresh pack is dated without a verdict attached', () => {
-    expect(copy.SAVED_DAYS_AGO(3)).toBe('Saved 3 days ago');
+    expect(copy.SAVED_AGO(copy.ITEM_DAYS_AGO(3))).toBe('Saved 3 days ago');
   });
 
   it('the choose hint counts one place versus two', () => {
@@ -232,14 +232,15 @@ describe('deliberate activation', () => {
 // age wordings in the product must stay distinguishable — the card reports when
 // the pack was written, the header when its contents were last checked.
 describe('the fixed header', () => {
-  it('states the age in days', () => {
-    expect(copy.CHECKED_DAYS_AGO(0)).toBe('Checked 0 days ago');
-    expect(copy.CHECKED_DAYS_AGO(30)).toBe('Checked 30 days ago');
+  it('states the age in words, from just now to days', () => {
+    expect(copy.CHECKED_AGO(copy.JUST_NOW)).toBe('Checked just now');
+    expect(copy.CHECKED_AGO(copy.MINUTES_AGO(5))).toBe('Checked 5 minutes ago');
+    expect(copy.CHECKED_AGO(copy.ITEM_DAYS_AGO(30))).toBe('Checked 30 days ago');
   });
 
 
   it('keeps the header wording distinct from the pack card wording', () => {
-    expect(copy.CHECKED_DAYS_AGO(3)).not.toBe(copy.SAVED_DAYS_AGO(3));
+    expect(copy.CHECKED_AGO(copy.ITEM_DAYS_AGO(3))).not.toBe(copy.SAVED_AGO(copy.ITEM_DAYS_AGO(3)));
   });
 
   it('gives the wordless dismissed connection notice its whole meaning in its name', () => {
@@ -520,12 +521,14 @@ describe('the choice of condition', () => {
   });
 });
 
-describe('an age of one day', () => {
-  it('reads "1 day ago", never "1 days ago", wherever an age is stated', () => {
-    expect(copy.SAVED_DAYS_AGO(1)).toBe('Saved 1 day ago');
+describe('an age of one', () => {
+  it('reads "1 minute", "1 hour" and "1 day", never "1 days", wherever an age is stated', () => {
+    expect(copy.MINUTES_AGO(1)).toBe('1 minute ago');
+    expect(copy.MINUTES_AGO(2)).toBe('2 minutes ago');
+    expect(copy.HOURS_AGO(1)).toBe('1 hour ago');
+    expect(copy.HOURS_AGO(2)).toBe('2 hours ago');
     expect(copy.ITEM_DAYS_AGO(1)).toBe('1 day ago');
-    expect(copy.CHECKED_DAYS_AGO(1)).toBe('Checked 1 day ago');
-    expect(copy.SAVED_DAYS_AGO(2)).toBe('Saved 2 days ago');
+    expect(copy.SAVED_AGO(copy.ITEM_DAYS_AGO(2))).toBe('Saved 2 days ago');
   });
 });
 

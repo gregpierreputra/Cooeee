@@ -53,7 +53,8 @@ export const DISMISS_NOTICE = 'Dismiss connection notice';
 export const NO_PACKS_HINT = 'Build one while you have a connection.';
 /** "1 day", "3 days": a pack saved yesterday must not read "1 days ago". */
 const dayCount = (days: number) => (days === 1 ? '1 day' : `${days} days`);
-export const SAVED_DAYS_AGO = (days: number) => `Saved ${dayCount(days)} ago`;
+/** A pack card's age, from ageLabel: "Saved just now", "Saved 5 minutes ago". */
+export const SAVED_AGO = (age: string) => `Saved ${age}`;
 
 // Deleting a saved pack — the cross opens an in-card confirmation; nothing is
 // removed until the delete answer is chosen.
@@ -181,7 +182,6 @@ export const SOURCE_PUBLISHED_BY = 'Published by';
 export const SOURCE_SAVED = 'Saved';
 export const SOURCE_LICENCE = 'Licence';
 export const SOURCE_LIST_DATE = 'List date';
-export const SOURCE_TODAY = 'Today';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
 export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;
@@ -533,10 +533,10 @@ export const BLACKSKY_RESUMED = `Reopened where you left off. To exit, use ${LEA
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 
 /** The header's age line. Deliberately different
- *  wording from the pack card's SAVED_DAYS_AGO: the card reports when the pack
+ *  wording from the pack card's SAVED_AGO: the card reports when the pack
  *  was written, the header reports when its contents were last checked, and one
  *  sentence must never be mistaken for the other. */
-export const CHECKED_DAYS_AGO = (days: number) => `Checked ${dayCount(days)} ago`;
+export const CHECKED_AGO = (age: string) => `Checked ${age}`;
 
 /** The header's home control. The mark is decorative; this names it. */
 export const HEADER_HOME_LABEL = 'Cooeee home';
@@ -930,8 +930,9 @@ export const STATE_LIVE = 'Updated just now';
 export const STATE_CACHED = (age: string) => `Cached · ${age}`;
 export const STATE_UNAVAILABLE = 'Unavailable';
 export const JUST_NOW = 'just now';
-export const MINUTES_AGO = (minutes: number) => `${minutes} min ago`;
-export const HOURS_AGO = (hours: number) => `${hours} h ago`;
+/** One age wording everywhere, through ageLabel: "1 minute ago", "3 hours ago". */
+export const MINUTES_AGO = (minutes: number) => (minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`);
+export const HOURS_AGO = (hours: number) => (hours === 1 ? '1 hour ago' : `${hours} hours ago`);
 export const NEVER = 'never';
 
 export const VERIFIED_ON = (date: string) => `Verified ${date}`;

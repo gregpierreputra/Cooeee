@@ -1,12 +1,12 @@
 import { PACK_RADIUS_KM } from './constants';
-import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from './copy';
-import { savedAgeDays } from './provenance';
+import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_AGO } from './copy';
+import { ageLabel } from './provenance';
 import type { Pack, PackIcon, PackSeed, PendingPlace, Source } from './types';
 
 /** How long ago a pack was saved, from verifiedAt, never createdAt. A pack
  *  never expires and is never marked old: the age alone is stated. */
 export const packAgeLabel = (now: number, verifiedAt: number): string =>
-  SAVED_DAYS_AGO(savedAgeDays(now, verifiedAt));
+  SAVED_AGO(ageLabel(now - verifiedAt));
 
 /** Whether two pack names are the same to a reader: capitals and spaces at
  *  either end do not make a name different. One name per pack, so packs are

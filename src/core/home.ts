@@ -5,7 +5,7 @@
 import { MS_PER_DAY } from './constants';
 import * as copy from './copy';
 import { packAgeLabel } from './pack';
-import { savedAgeDays } from './provenance';
+import { ageLabel, savedAgeDays } from './provenance';
 import type { Pack } from './types';
 
 /** What the right-hand side of the header reports: the age in days, or
@@ -22,12 +22,12 @@ export function oldestPack(packs: Pack[]): Pack | null {
   );
 }
 
-/** The day arithmetic is savedAgeDays(), shared with the pack card — only the
- *  wording differs, deliberately. */
+/** The age is ageLabel(), shared with the pack card — only the wording
+ *  differs, deliberately. */
 export function headerAge(now: number, verifiedAt: number | null): HeaderAge {
   if (verifiedAt === null) return { kind: 'none' };
   const days = savedAgeDays(now, verifiedAt);
-  return { kind: 'checked', days, text: copy.CHECKED_DAYS_AGO(days) };
+  return { kind: 'checked', days, text: copy.CHECKED_AGO(ageLabel(now - verifiedAt)) };
 }
 
 const melbourneDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Melbourne' });
