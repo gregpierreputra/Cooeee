@@ -59,7 +59,7 @@ import {
 } from '../core/constants';
 import * as copy from '../core/copy';
 import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
-import { titleCase } from '../core/home';
+import { shownPackName, titleCase } from '../core/home';
 import { isPanned, NO_PAN, panOffset, panShouldReturn, type PanOffset } from '../core/pan';
 import { steadyReadout, type ShownReadout } from '../core/readout';
 import {
@@ -595,7 +595,7 @@ export default function BlackSky({
                   aria-pressed={pack.id === chosen?.pack.id}
                   onClick={() => choosePack(pack.id)}
                 >
-                  <span>{titleCase(pack.name)}</span>
+                  <span>{shownPackName(pack.name)}</span>
                   <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
                   {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
                     <span className="blacksky-pack-here with-glyph">
@@ -923,7 +923,7 @@ function OutsideArea({ packs }: { packs: { pack: Pack; distanceKm: number }[] })
       <span className="blacksky-outside">{copy.OUTSIDE_AREAS}</span>
       {packs.map(({ pack, distanceKm }) => (
         <span key={pack.id} className="blacksky-outside-pack">
-          <b>{titleCase(pack.name)}</b> · {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
+          <b>{shownPackName(pack.name)}</b> · {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
         </span>
       ))}
     </>

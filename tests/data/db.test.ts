@@ -8,6 +8,8 @@ import {
   listCompletePacks,
   listCompletePacksWithPlaces,
   putNote,
+  renamePack,
+  PackNameTakenError,
   readRehearsalSource,
   listRehearsalsForPack,
   saveFinishedRehearsal,
@@ -173,6 +175,36 @@ describe('sweepBuilding', () => {
     await sweepBuilding();
     await sweepBuilding();
     expect(await db.packs.count()).toBe(0);
+  });
+});
+
+describe('renamePack', () => {
+  it('changes only the name, trimmed, and leaves the address as it was', async () => {
+    await db.packs.put(pack({ id: 'p', name: 'Ferny Creek' }));
+    const before = await db.packs.get('p');
+
+    await renamePack('p', '  Mum and Dad  ');
+
+    expect(await db.packs.get('p')).toEqual({ ...before, name: 'Mum and Dad' });
+  });
+
+  it('refuses an empty or too long name, and a pack still being built', async () => {
+    await db.packs.bulkPut([pack({ id: 'p' }), pack({ id: 'b', status: 'building' })]);
+
+    await expect(renamePack('p', '   ')).rejects.toThrow(RangeError);
+    await expect(renamePack('p', 'x'.repeat(61))).rejects.toThrow(RangeError);
+    await expect(renamePack('b', 'Home')).rejects.toThrow();
+    expect((await db.packs.get('b'))?.name).toBe(pack().name);
+  });
+
+  it('refuses a name another pack has, whatever its capitals, but lets a pack keep its own', async () => {
+    await db.packs.bulkPut([pack({ id: 'p', name: 'Home' }), pack({ id: 'q', name: 'Work' })]);
+
+    await expect(renamePack('q', ' home ')).rejects.toThrow(PackNameTakenError);
+    expect((await db.packs.get('q'))?.name).toBe('Work');
+
+    await renamePack('p', 'HOME');
+    expect((await db.packs.get('p'))?.name).toBe('HOME');
   });
 });
 

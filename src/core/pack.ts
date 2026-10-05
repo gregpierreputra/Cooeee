@@ -8,6 +8,33 @@ import type { Pack, PackSeed, PendingPlace, Source } from './types';
 export const packAgeLabel = (now: number, verifiedAt: number): string =>
   SAVED_DAYS_AGO(savedAgeDays(now, verifiedAt));
 
+/** Whether two pack names are the same to a reader: capitals and spaces at
+ *  either end do not make a name different. One name per pack, so packs are
+ *  told apart by name, most of all when choosing one in BlackSky. */
+export const samePackName = (a: string, b: string): boolean =>
+  a.trim().toLocaleLowerCase('en-AU') === b.trim().toLocaleLowerCase('en-AU');
+
+/** The address without the suburb and postcode at its end, as the official
+ *  list writes them: "8 RIDGE ROAD KALORAMA 3766" gives "8 RIDGE ROAD". An
+ *  address that does not end that way is returned whole, never guessed at. */
+export function streetPart(address: string, locality: string): string {
+  const end = ` ${locality} `;
+  const at = address.toUpperCase().lastIndexOf(end.toUpperCase());
+  const postcode = address.slice(at + end.length);
+  return at > 0 && /^\d{4}$/.test(postcode) ? address.slice(0, at) : address;
+}
+
+/** The name the builder offers: the suburb, or the street when another pack
+ *  already has the suburb's name, so a second pack in one suburb is told
+ *  apart by what it is, not by a number. */
+export const defaultPackName = (
+  candidate: { address: string; localityName: string },
+  savedNames: readonly string[],
+): string =>
+  savedNames.some((name) => samePackName(name, candidate.localityName))
+    ? streetPart(candidate.address, candidate.localityName)
+    : candidate.localityName;
+
 /** The seed for a pack built from an already-confirmed place and an
  * already-fetched official area result. 
  * The reminder defaults to the same mandated priority line shown on the area-result screen — 

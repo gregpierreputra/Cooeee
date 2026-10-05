@@ -1,6 +1,7 @@
 import Dexie, { liveQuery, type Table } from 'dexie';
 import { BAG_LIMIT, DRILL_ITEM_IDS } from '../core/drill-items';
-import { NOTE_MAX_CHARS } from '../core/constants';
+import { NOTE_MAX_CHARS, PACK_NAME_MAX_CHARS } from '../core/constants';
+import { samePackName } from '../core/pack';
 import { isRehearsalEnding, isUnfinished } from '../core/rehearsal-ending';
 import type { RehearsalInput } from '../core/rehearsal-entry';
 import type {
@@ -416,6 +417,45 @@ export async function putNote(note: PackNote): Promise<void> {
 }
 
 export const deleteNote = (id: string): Promise<void> => db.notes.delete(id);
+
+/** The one rule for a pack name given after the pack is built: trimmed, never
+ *  empty, never past PACK_NAME_MAX_CHARS. */
+export function checkedPackName(name: string): string {
+  const trimmed = name.trim();
+  if (trimmed.length === 0 || trimmed.length > PACK_NAME_MAX_CHARS) {
+    throw new RangeError('pack name is empty or too long');
+  }
+  return trimmed;
+}
+
+/** The complete packs' names, for the builder's first name. A phone that has
+ *  never saved a pack has no database yet, and this read must not create one:
+ *  nothing is stored until the person saves. */
+export async function listSavedPackNames(): Promise<string[]> {
+  if (!(await Dexie.exists(db.name))) return [];
+  return (await listCompletePacks()).map((pack) => pack.name);
+}
+
+/** Thrown when another pack already has the name, so the screen can say so. */
+export class PackNameTakenError extends Error {}
+
+/** Rename one complete pack. Only the name changes: the address stays exactly
+ *  as the official list returned it, and nothing the pack's record checks is
+ *  touched. A name another complete pack already has is refused; the pack's
+ *  own name, or a change of capitals only, is not. */
+export async function renamePack(id: string, name: string): Promise<void> {
+  const checked = checkedPackName(name);
+  await db.transaction('rw', db.packs, async () => {
+    if ((await db.packs.get(id))?.status !== 'complete') {
+      throw new Error('only a complete pack can be renamed');
+    }
+    const others = (await listCompletePacks()).filter((pack) => pack.id !== id);
+    if (others.some((pack) => samePackName(pack.name, checked))) {
+      throw new PackNameTakenError('another pack has this name');
+    }
+    await db.packs.update(id, { name: checked });
+  });
+}
 
 /** THE read API — one complete pack, or undefined. 
  * A building pack is indistinguishable from a pack that does not exist, which is the point. */

@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
+import { PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import {
   acknowledgeFirstOpen,
@@ -232,6 +232,15 @@ test('a second address becomes a second pack beside the first, with no question 
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: NEW_ADDRESS }).click();
+  // One name per pack: the suburb is already the first pack's name, so the
+  // name step starts on the street instead, in normal case. A name typed over
+  // it that another pack has is said, and a different one goes on.
+  await expect(page.getByLabel('Place name')).toHaveValue('8 Ridge Road');
+  await page.getByLabel('Place name').fill('kalorama');
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await expect(page.getByRole('alert')).toHaveText(PACK_NAME_TAKEN);
+  await page.getByLabel('Place name').fill('8 Ridge Road');
+  await expect(page.getByRole('alert')).toHaveCount(0);
   await page.getByRole('button', { name: 'Save this place' }).click();
 
   await expect(page.getByRole('heading')).toHaveText(

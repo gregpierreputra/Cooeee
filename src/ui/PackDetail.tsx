@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { mapAcrossKm, mapBoxOf } from '../core/area-map-view';
 import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
+import { shownPackName } from '../core/home';
 import { formatDistanceM, placeName } from '../core/destination';
 import {
   decideOriginalSourceAccess,
@@ -162,7 +163,7 @@ export default function PackDetail({
         <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
         <div className="card-head">
           <Glyph kind="place" />
-          <h1>{content.pack.name}</h1>
+          <h1>{shownPackName(content.pack.name)}</h1>
         </div>
         <p className="muted">{content.pack.address}</p>
       </header>

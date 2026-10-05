@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
-import { homeView, titleCase, type HomeView } from '../core/home';
+import { homeView, shownPackName, titleCase, type HomeView } from '../core/home';
 import { readKept } from '../core/kept';
 import { unsavedKept } from '../core/recover';
 import { localFlagStore } from '../data/acknowledgement';
-import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
+import { PACK_NAME_MAX_CHARS } from '../core/constants';
+import { deleteCompletePack, listCompletePacks, listSavedProgramIds, PackNameTakenError, renamePack } from '../data/db';
 import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
@@ -73,23 +74,59 @@ export default function Home({ now }: { now?: number }) {
     };
   }, [seed]);
 
-  // A pack's settings open in one bottom sheet from the ... on its card. The
-  // browser's own dialog gives Escape, a focus trap and focus back to the ...
-  // on close. Deleting takes two taps: Delete this pack asks, and only Delete
-  // destroys data.
+  // A pack's settings open in one bottom sheet from the ... on its card: a
+  // short menu of rows, then Rename's form or Delete's question in its place.
+  // The browser's own dialog gives Escape, a focus trap and focus back to the
+  // ... on close. It opens on the close cross, never on Delete. Deleting takes
+  // two taps: Delete this pack asks, and only Delete destroys data.
   const sheet = useRef<HTMLDialogElement>(null);
   const [settings, setSettings] = useState<{ id: string; name: string; ageLine: string } | null>(null);
-  const [asking, setAsking] = useState(false);
-  const deleteRef = useRef<HTMLButtonElement>(null);
+  const [step, setStep] = useState<'menu' | 'rename' | 'delete'>('menu');
+  const [nameDraft, setNameDraft] = useState('');
+  // Why the last save did not go through, or null.
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const renameRowRef = useRef<HTMLButtonElement>(null);
+  const deleteRowRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const lastStep = useRef(step);
   useEffect(() => {
-    if (settings) sheet.current?.showModal();
+    if (settings && !sheet.current?.open) sheet.current?.showModal();
   }, [settings]);
-  // Focus follows the question: onto Keep it when it appears, back to Delete
-  // this pack when it is answered with Keep it.
+  // Focus follows the step: into the name field or onto Keep it when they
+  // appear, and back to the row that opened them when the person returns.
   useEffect(() => {
-    (asking ? cancelRef : deleteRef).current?.focus();
-  }, [asking]);
+    if (step === 'rename') nameRef.current?.focus();
+    else if (step === 'delete') cancelRef.current?.focus();
+    else if (lastStep.current === 'rename') renameRowRef.current?.focus();
+    else if (lastStep.current === 'delete') deleteRowRef.current?.focus();
+    lastStep.current = step;
+  }, [step]);
+
+  const startRename = () => {
+    setNameDraft(settings?.name ?? '');
+    setRenameError(null);
+    setStep('rename');
+  };
+  // A saved name closes the sheet onto the card, which shows the new name at
+  // once; focus returns to the card's ..., now named for it. Only the name
+  // changes, so the list keeps its order and nothing is read again.
+  const saveName = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!settings) return;
+    const name = nameDraft.trim();
+    try {
+      await renamePack(settings.id, name);
+    } catch (error) {
+      setRenameError(error instanceof PackNameTakenError ? copy.PACK_NAME_TAKEN : copy.PACK_NAME_NOT_SAVED);
+      return;
+    }
+    setView((current) => current && {
+      ...current,
+      packs: current.packs.map((row) => (row.pack.id === settings.id ? { ...row, pack: { ...row.pack, name } } : row)),
+    });
+    sheet.current?.close();
+  };
 
   const removePack = async (id: string) => {
     await deleteCompletePack(id);
@@ -105,7 +142,7 @@ export default function Home({ now }: { now?: number }) {
   };
   // A delete that fails closes the question and leaves the pack as it was. A
   // list that cannot be read again after a delete keeps the card already removed.
-  const removePackSafely = (id: string) => removePack(id).catch(() => setAsking(false));
+  const removePackSafely = (id: string) => removePack(id).catch(() => setStep('menu'));
 
   return (
     <main className="page home">
@@ -149,7 +186,7 @@ export default function Home({ now }: { now?: number }) {
               <button
                 type="button"
                 className="card-more"
-                aria-label={copy.PACK_SETTINGS(titleCase(pack.name))}
+                aria-label={copy.PACK_SETTINGS(shownPackName(pack.name))}
                 aria-haspopup="dialog"
                 onClick={() => setSettings({ id: pack.id, name: pack.name, ageLine })}
               >
@@ -167,7 +204,7 @@ export default function Home({ now }: { now?: number }) {
                     name exactly as it was saved. The link stretches over the
                     whole card (see .pack-card). */}
                 <h2>
-                  <Link to={`/packs/${pack.id}`}>{titleCase(pack.name)}</Link>
+                  <Link to={`/packs/${pack.id}`}>{shownPackName(pack.name)}</Link>
                 </h2>
               </div>
               {/* Title-cased for reading only. The pack still stores the address
@@ -187,18 +224,57 @@ export default function Home({ now }: { now?: number }) {
         aria-labelledby="pack-sheet-title"
         onClose={() => {
           setSettings(null);
-          setAsking(false);
+          setStep('menu');
         }}
       >
         {settings ? (
           <>
-            <h2 id="pack-sheet-title">{titleCase(settings.name)}</h2>
-            <p className="muted figure">{settings.ageLine}</p>
-            {asking ? (
+            {/* The close cross comes first, so the sheet opens on it. */}
+            <div className="sheet-head">
+              <div>
+                <h2 id="pack-sheet-title">{shownPackName(settings.name)}</h2>
+                <p className="muted figure">{settings.ageLine}</p>
+              </div>
+              <button type="button" className="sheet-close" aria-label={copy.CLOSE} onClick={() => sheet.current?.close()}>
+                <Glyph kind="close" line />
+              </button>
+            </div>
+            {step === 'rename' ? (
+              <form className="sheet-form" onSubmit={(event) => void saveName(event)}>
+                <label htmlFor="pack-name">{copy.PLACE_NAME_LABEL}</label>
+                <input
+                  ref={nameRef}
+                  id="pack-name"
+                  type="text"
+                  value={nameDraft}
+                  maxLength={PACK_NAME_MAX_CHARS}
+                  aria-invalid={renameError !== null || undefined}
+                  aria-describedby={renameError ? 'pack-name-error' : undefined}
+                  onChange={(event) => {
+                    setNameDraft(event.currentTarget.value);
+                    setRenameError(null);
+                  }}
+                />
+                {renameError ? (
+                  <p id="pack-name-error" className="field-message with-glyph" role="alert">
+                    <Glyph kind="caution" line />
+                    {renameError}
+                  </p>
+                ) : null}
+                <div className="card-confirm-actions">
+                  <button type="button" onClick={() => setStep('menu')}>
+                    {copy.CANCEL}
+                  </button>
+                  <button type="submit" className="main-action" disabled={nameDraft.trim() === ''}>
+                    {copy.SAVE}
+                  </button>
+                </div>
+              </form>
+            ) : step === 'delete' ? (
               <>
                 <p>{copy.DELETE_PACK_QUESTION}</p>
                 <div className="card-confirm-actions">
-                  <button ref={cancelRef} type="button" className="card-confirm-no" onClick={() => setAsking(false)}>
+                  <button ref={cancelRef} type="button" className="card-confirm-no" onClick={() => setStep('menu')}>
                     {copy.KEEP_THIS_PACK}
                   </button>
                   <button
@@ -212,14 +288,26 @@ export default function Home({ now }: { now?: number }) {
                 </div>
               </>
             ) : (
-              <button ref={deleteRef} type="button" className="sheet-delete with-glyph" onClick={() => setAsking(true)}>
-                <Glyph kind="trash" line />
-                {copy.DELETE_PACK}
-              </button>
+              <ul className="sheet-menu">
+                <li>
+                  <button ref={renameRowRef} type="button" className="sheet-row with-glyph" onClick={startRename}>
+                    <Glyph kind="edit" line />
+                    {copy.RENAME_PACK}
+                  </button>
+                </li>
+                <li>
+                  <button
+                    ref={deleteRowRef}
+                    type="button"
+                    className="sheet-row sheet-delete with-glyph"
+                    onClick={() => setStep('delete')}
+                  >
+                    <Glyph kind="trash" line />
+                    {copy.DELETE_PACK}
+                  </button>
+                </li>
+              </ul>
             )}
-            <button type="button" onClick={() => sheet.current?.close()}>
-              {copy.CLOSE}
-            </button>
           </>
         ) : null}
       </dialog>

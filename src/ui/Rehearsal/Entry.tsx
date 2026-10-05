@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import * as copy from '../../core/copy';
+import { shownPackName } from '../../core/home';
 import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../core/rehearsal-entry';
 import type { RehearsalCondition } from '../../core/rehearsal-condition';
 import { isRunFor } from '../../core/rehearsal-run';
@@ -247,7 +248,7 @@ function detail(gate: Exclude<RehearsalGate, { state: 'ready' }>): string[] {
       ];
     case 'nothing-to-rehearse':
       return [
-        copy.NOTHING_TO_REHEARSE_DETAIL(gate.packName, gate.savedOn),
+        copy.NOTHING_TO_REHEARSE_DETAIL(shownPackName(gate.packName), gate.savedOn),
         copy.NOTHING_TO_REHEARSE_NEXT,
       ];
     case 'unreadable':

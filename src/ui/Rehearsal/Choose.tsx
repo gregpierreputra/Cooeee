@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
-import { homeView } from '../../core/home';
+import { homeView, shownPackName, titleCase } from '../../core/home';
 import Head from './Head';
 import DrillTile from '../Drill/DrillTile';
 import { replayDrill } from '../Drill/drill-state';
@@ -66,8 +66,8 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
               className="candidate-action condition-action"
               onClick={() => navigate(`/rehearse/${pack.id}`)}
             >
-              <span className="condition-label">{pack.name}</span>
-              <span className="condition-detail">{pack.address}</span>
+              <span className="condition-label">{shownPackName(pack.name)}</span>
+              <span className="condition-detail">{titleCase(pack.address)}</span>
               <span className="condition-detail">{ageLine}</span>
             </button>
           </li>

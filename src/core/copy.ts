@@ -62,6 +62,14 @@ export const PACK_SETTINGS = (name: string) => `Settings for ${name}`;
 export const DELETE_PACK_QUESTION = 'Delete this pack?';
 export const KEEP_THIS_PACK = 'Keep it';
 export const CONFIRM_DELETE_PACK = 'Delete';
+/** The pack settings menu: Rename opens the name field in the sheet. */
+export const RENAME_PACK = 'Rename';
+export const SAVE = 'Save';
+export const CANCEL = 'Cancel';
+export const PACK_NAME_NOT_SAVED = 'The name was not saved. Try again.';
+/** One name per pack, in the builder and in Rename alike. The name itself is
+ *  in the field right above, so the line does not repeat it. */
+export const PACK_NAME_TAKEN = 'Another pack has this name.';
 
 export const NEW_VERSION_READY = 'Update ready. Nothing changes until you reload.';
 export const RELOAD_NOW = 'Reload';

@@ -27,13 +27,17 @@ test('AC1 renders the confirmation order and immutable address', async ({ page }
   await expect(address).toHaveText('6 RIDGE ROAD KALORAMA 3766');
 });
 
-test('AC1 preserves whitespace names in memory only', async ({ page }) => {
+test('AC1 keeps a name as typed in memory only, and a blank name cannot be saved', async ({ page }) => {
   await page.goto(HARNESS_URL);
+  // A pack always has a name, so a blank one cannot be saved.
   await page.getByLabel('Place name').fill('   ');
+  await expect(page.getByRole('button', { name: 'Save this place' })).toBeDisabled();
+
+  await page.getByLabel('Place name').fill('  Home base  ');
   await page.getByRole('button', { name: 'Save this place' }).click();
 
   await expect.poll(() => page.evaluate(() => window.__confirmedPlace)).toEqual({
-    name: '   ',
+    name: '  Home base  ',
     address: '6 RIDGE ROAD KALORAMA 3766',
     lat: -37.817939,
     lon: 145.36594,

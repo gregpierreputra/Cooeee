@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MS_PER_DAY, PACK_RADIUS_KM } from '../../src/core/constants';
 import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from '../../src/core/copy';
-import { buildPackSeed, diffPacks, packAgeLabel } from '../../src/core/pack';
+import { buildPackSeed, defaultPackName, diffPacks, packAgeLabel, samePackName, streetPart } from '../../src/core/pack';
 import { pack, source } from '../fixtures';
 
 const NOW = 1_800_000_000_000;
@@ -11,6 +11,32 @@ describe('packAgeLabel', () => {
   it('states only the age, however old the pack is', () => {
     expect(packAgeLabel(NOW, daysAgo(29))).toBe(SAVED_DAYS_AGO(29));
     expect(packAgeLabel(NOW, daysAgo(96))).toBe('Saved 96 days ago');
+  });
+});
+
+describe('samePackName', () => {
+  it('ignores capitals and spaces at either end, and nothing else', () => {
+    expect(samePackName('Home', ' home ')).toBe(true);
+    expect(samePackName('Home', 'Home 2')).toBe(false);
+    expect(samePackName('Mum and Dad', 'Mum & Dad')).toBe(false);
+  });
+});
+
+describe('defaultPackName', () => {
+  const candidate = { address: '8 RIDGE ROAD KALORAMA 3766', localityName: 'KALORAMA' };
+
+  it('is the suburb while no other pack has its name', () => {
+    expect(defaultPackName(candidate, ['Work'])).toBe('KALORAMA');
+  });
+
+  it('is the street when another pack has the suburb name, whatever its capitals', () => {
+    expect(defaultPackName(candidate, ['Kalorama'])).toBe('8 RIDGE ROAD');
+  });
+
+  it('keeps a unit in the street, and keeps an address that does not end in suburb and postcode whole', () => {
+    expect(streetPart('UNIT 2 8 RIDGE ROAD KALORAMA 3766', 'KALORAMA')).toBe('UNIT 2 8 RIDGE ROAD');
+    expect(streetPart('8 RIDGE ROAD KALORAMA', 'KALORAMA')).toBe('8 RIDGE ROAD KALORAMA');
+    expect(streetPart('KALORAMA 3766', 'KALORAMA')).toBe('KALORAMA 3766');
   });
 });
 

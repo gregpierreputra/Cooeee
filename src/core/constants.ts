@@ -17,6 +17,9 @@ export const NEARBY_PLACES = 3;
 /** The longest personal note a pack takes. A bound on the user's own text,
  *  enforced where it is written, not a limit on the official content. */
 export const NOTE_MAX_CHARS = 2000;
+/** The longest name a pack takes when renamed. Long enough for "Mum and Dad's
+ *  place in Ferny Creek", short enough to sit on one pack card. */
+export const PACK_NAME_MAX_CHARS = 60;
 
 /** The number of last-resort places a pack holds. Two equal-status places, with
  * no ordering of worth between them. A hard cap, not a target: an area may

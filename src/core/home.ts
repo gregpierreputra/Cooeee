@@ -88,6 +88,12 @@ export function homeView(now: number, packs: Pack[]): HomeView {
   };
 }
 
+/** A pack's name as every screen shows it: exactly as the person gave it. A
+ *  name with no small letter at all is the official list's capitals, which
+ *  packs saved before the defaults were offered in normal case still hold, so
+ *  that one is title-cased for reading. Storage is never touched. */
+export const shownPackName = (name: string): string => (/[a-z]/.test(name) ? name : titleCase(name));
+
 /** Title-cases a stored string FOR DISPLAY ONLY.
  *
  *  What is STORED is never touched: the pack keeps the string it was saved

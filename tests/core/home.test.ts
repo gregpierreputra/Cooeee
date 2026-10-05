@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
-import {
-  headerAge,
-  homeView,
-  NAV_ITEMS,
-  oldestPack,
-  preparationLine,
-  preparationLineIndex,
-  titleCase,
-} from '../../src/core/home';
+import { headerAge, homeView, NAV_ITEMS, oldestPack, preparationLine, preparationLineIndex, shownPackName, titleCase } from '../../src/core/home';
 import { pack } from '../fixtures';
 
 const NOW = Date.UTC(2026, 8, 1, 9);
@@ -230,5 +222,17 @@ describe('place name for display', () => {
   it('leaves a name the user typed themselves as they wrote it', () => {
     expect(titleCase('Kalorama')).toBe('Kalorama');
     expect(titleCase("Mum's Place")).toBe("Mum's Place");
+  });
+});
+
+describe('shownPackName', () => {
+  it('shows a name exactly as the person gave it', () => {
+    expect(shownPackName('name Me')).toBe('name Me');
+    expect(shownPackName('CFA hq')).toBe('CFA hq');
+  });
+
+  it('title-cases a name in the official list capitals, as older packs hold', () => {
+    expect(shownPackName('KALORAMA')).toBe('Kalorama');
+    expect(shownPackName('8 RIDGE ROAD')).toBe('8 Ridge Road');
   });
 });

@@ -392,6 +392,60 @@ a {
 .sheet[open] {
   display: grid;
   gap: 0.75rem;
+  /* Only as tall as what it holds, rows packed at the top. Without these an
+     older Safari stretches the dialog to the screen and spreads the rows. */
+  height: fit-content;
+  align-content: start;
+}
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.sheet .sheet-close {
+  flex: none;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+/* The menu: one row per action, the drawing then the words, thin rules
+   between, as a phone's own action list. */
+.sheet-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.sheet-menu li {
+  border-bottom: 1px solid var(--line);
+}
+.sheet .sheet-row {
+  width: 100%;
+  min-height: 52px;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0.25rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.sheet-form {
+  display: grid;
+  gap: 0.5rem;
+}
+/* Why a name cannot be saved: amber, the attention colour, with the caution
+   drawing, and the field's edge in the same amber. Red stays for danger and
+   delete. The words carry the meaning on their own. */
+.field-message {
+  color: var(--stale);
+  font-weight: var(--w-bold);
+  font-size: var(--step-s);
+}
+input[aria-invalid='true'] {
+  border-color: var(--stale);
 }
 .sheet::backdrop {
   background: rgb(0 0 0 / 0.6);
@@ -400,8 +454,8 @@ a {
 .sheet p {
   margin: 0;
 }
-/* The one setting that removes data reads in the delete red, as an outline:
-   the filled red is kept for the Delete that confirms it. */
+/* The one setting that removes data reads in the delete red: the filled red
+   is kept for the Delete that confirms it. */
 .sheet .sheet-delete {
   border-color: var(--offline);
   color: var(--offline);

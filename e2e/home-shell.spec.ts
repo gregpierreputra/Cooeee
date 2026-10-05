@@ -21,6 +21,11 @@ import {
   OFFLINE_NOTICE,
   ONLINE_NOTICE,
   PACK_SETTINGS,
+  PLACE_NAME_LABEL,
+  RENAME_PACK,
+  SAVE,
+  CLOSE,
+  PACK_NAME_TAKEN,
   PREPARATION_LINES,
   PREPARATION_MORE,
   PREPARATION_SOURCE,
@@ -277,6 +282,44 @@ test.describe('the connection notice', () => {
 
     await context.setOffline(false);
   });
+});
+
+// The pack's menu opens on its close cross, never on Delete, and Rename changes
+// the name on the card and in the menu at once.
+test('the pack menu opens on Close and renames the pack', async ({ page }) => {
+  await page.goto(home('?days=3'));
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
+  const menu = page.getByRole('dialog', { name: 'Ferny Creek' });
+  await expect(menu.getByRole('button', { name: CLOSE })).toBeFocused();
+
+  await menu.getByRole('button', { name: RENAME_PACK }).click();
+  await expect(menu.getByLabel(PLACE_NAME_LABEL)).toBeFocused();
+  await expect(menu.getByLabel(PLACE_NAME_LABEL)).toHaveValue('Ferny Creek');
+  await menu.getByLabel(PLACE_NAME_LABEL).fill('  ');
+  await expect(menu.getByRole('button', { name: SAVE, exact: true })).toBeDisabled();
+  await menu.getByLabel(PLACE_NAME_LABEL).fill('Mum and Dad');
+  await menu.getByRole('button', { name: SAVE, exact: true }).click();
+
+  // A saved name closes the menu onto the card, shown exactly as typed, and
+  // focus returns to its ..., now named for the new name.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.pack-card h2')).toHaveText('Mum and Dad');
+  await expect(page.getByRole('button', { name: PACK_SETTINGS('Mum and Dad') })).toBeFocused();
+});
+
+// One name per pack: a name another pack has, whatever its capitals, is refused
+// and said, and the pack keeps its name.
+test('Rename refuses a name another pack already has', async ({ page }) => {
+  await page.goto(home('?days=3&packs=2'));
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
+  const menu = page.getByRole('dialog', { name: 'Ferny Creek' });
+  await menu.getByRole('button', { name: RENAME_PACK }).click();
+  await menu.getByLabel(PLACE_NAME_LABEL).fill('kalorama ');
+  await menu.getByRole('button', { name: SAVE, exact: true }).click();
+
+  await expect(menu.getByRole('alert')).toHaveText(PACK_NAME_TAKEN);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.pack-card h2')).toHaveText(['Kalorama', 'Ferny Creek']);
 });
 
 // Deleting the pack takes two taps, and the second removes it from the device
