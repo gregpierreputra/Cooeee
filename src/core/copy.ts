@@ -323,6 +323,11 @@ export const NOTE_SAVED = 'Note saved.';
 export const NOTE_DELETED = 'Note deleted.';
 export const NOTE_EMPTY = 'Write something before saving.';
 export const NOTE_CHANGE_FAILED = 'That change was not saved. Try again.';
+/** The pack page's notes: read as cards, edited one at a time. */
+export const EDIT_NOTE = 'Edit';
+export const NOTE_UNSAVED = 'Not saved yet.';
+export const DELETE_NOTE_QUESTION = 'Delete this note?';
+export const KEEP_IT = 'Keep it';
 
 // Screen eyebrows
 // The small label above each screen's heading, rendered as the hero kicker. 

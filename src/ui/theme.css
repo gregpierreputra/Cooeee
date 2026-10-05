@@ -560,6 +560,28 @@ input[aria-invalid='true'] {
   flex: 1;
 }
 
+/* The pack page's notes. Read as plain cards with a small Edit; one note at a
+   time opens with Cancel, the filled Save and the red outlined Delete. */
+.note-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.note-read .note-edit {
+  justify-self: end;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: var(--step-s);
+}
+.note-editing .note-actions {
+  flex-wrap: wrap;
+}
+.note-editing .note-actions button {
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--step-s);
+}
+
 /* The stored picture of the pack's area: square, with the saved place marked
    at its centre by a ring in the accent colour, so it reads over any ground. */
 .area-map {
@@ -700,7 +722,8 @@ input[aria-invalid='true'] {
    the same weight, so the choice reads at a glance without either shouting.
    The words say the same, so colour is never the only cue. */
 .card-confirm-no,
-.card-confirm-yes {
+.card-confirm-yes,
+.note-delete {
   background: transparent;
   border-width: 2px;
 }
@@ -708,13 +731,15 @@ input[aria-invalid='true'] {
   color: var(--accent);
   border-color: var(--accent);
 }
-.card-confirm-yes {
+.card-confirm-yes,
+.note-delete {
   color: var(--offline);
   border-color: var(--offline);
 }
 @media (hover: hover) {
   .card-confirm-no:hover,
-  .card-confirm-yes:hover {
+  .card-confirm-yes:hover,
+  .note-delete:hover {
     background: color-mix(in srgb, currentColor 12%, transparent);
   }
 }
@@ -795,7 +820,7 @@ button,
 @media (hover: hover) {
   /* Controls whose border colour carries meaning (red ends something, amber
      is BlackSky, a debrief tile's kind) keep it under the pointer. */
-  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold, .card-confirm-yes):hover,
+  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold, .card-confirm-yes, .note-delete):hover,
   .action:not(.leave-action):hover {
     border-color: var(--accent);
   }
