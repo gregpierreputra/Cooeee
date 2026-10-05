@@ -3618,6 +3618,65 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   .recover .hero * {
     color: #000;
   }
+  /* Print this pack: black on white, the button left off, and the 000 line
+     kept apart by its rule alone. */
+  .print-actions {
+    display: none;
+  }
+  .pack-print * {
+    color: #000;
+  }
+  .pack-print .glyph {
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .pack-print .emergency-line {
+    background: #fff;
+    border-inline-start-color: #000;
+  }
+  .print-section {
+    break-inside: avoid;
+  }
+}
+/* Print this pack, on screen and on paper: sections under eyebrows, one line
+   per fact, the numbers written out in full. */
+.print-section {
+  display: grid;
+  gap: 0.5rem;
+}
+.print-section p {
+  margin: 0;
+}
+.print-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.print-list li {
+  display: grid;
+  gap: 0.125rem;
+}
+.print-calls li {
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 3px solid var(--line);
+}
+.print-calls .figure {
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+}
+.print-note {
+  white-space: pre-wrap;
+}
+.print-footer {
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.print-footer p {
+  margin: 0;
 }
 /* E5-US1-AC1 — the two conditions a rehearsal can run under. IDENTICAL rows:
    same treatment, same weight, same target, in a fixed order that is

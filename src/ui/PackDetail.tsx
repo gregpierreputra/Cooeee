@@ -338,6 +338,11 @@ export default function PackDetail({
           <Glyph kind="rehearse" line />
           {copy.REHEARSE_THIS_PACK}
         </Link>
+        {/* The same page the pack's menu on Home prints. */}
+        <Link className="action with-glyph" to={`/packs/${content.pack.id}/print`}>
+          <Glyph kind="print" line />
+          {copy.PRINT_PACK}
+        </Link>
       </div>
 
       {offlineSource ? (

@@ -266,6 +266,28 @@ test('a second address becomes a second pack beside the first, with no question 
   await expect(page.locator('.condition-list button')).toHaveCount(2);
 });
 
+// Print this pack, from the pack's menu on Home, opens that pack's print page
+// in the real app, and Back returns Home.
+test('the pack menu opens the pack\'s print page', async ({ page }) => {
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await searchConfirmAndReachOffer(page);
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings for Kalorama' }).click();
+  await page.getByRole('button', { name: 'Print this pack' }).click();
+
+  await expect(page).toHaveURL(/\/packs\/[^/]+\/print$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kalorama');
+  await expect(page.locator('.print-section').first()).toContainText('Bushfire area');
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
 // UR-US36: Back steps back through the builder one step at a time, keeping
 // every answer, and the phone's Back button does the same.
 test('Back steps back through the pack builder and keeps every answer', async ({ page }) => {

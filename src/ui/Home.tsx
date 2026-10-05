@@ -358,6 +358,19 @@ export default function Home({ now }: { now?: number }) {
                 </li>
                 <li>
                   <button
+                    type="button"
+                    className="sheet-row with-glyph"
+                    onClick={() => {
+                      sheet.current?.close();
+                      navigate(`/packs/${settings.id}/print`);
+                    }}
+                  >
+                    <Glyph kind="print" line />
+                    {copy.PRINT_PACK}
+                  </button>
+                </li>
+                <li>
+                  <button
                     ref={deleteRowRef}
                     type="button"
                     className="sheet-row sheet-delete with-glyph"

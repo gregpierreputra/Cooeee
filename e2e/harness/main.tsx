@@ -14,6 +14,7 @@ import BlackSky from '../../src/ui/BlackSky';
 import Home from '../../src/ui/Home';
 import Nearby from '../../src/ui/Nearby';
 import PackDetail from '../../src/ui/PackDetail';
+import PackPrint from '../../src/ui/PackPrint';
 import Recover from '../../src/ui/Recover';
 import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
@@ -271,7 +272,7 @@ const detailRecovery: PackProgram = {
   },
 };
 
-if (window.location.pathname === '/detail' || window.location.pathname === '/detail-launch') {
+if (['/detail', '/detail-launch', '/detail-print'].includes(window.location.pathname)) {
   await Promise.all(db.tables.map((table) => table.clear()));
   // A synthetic PDF copy of the dataset page, so the file link renders here.
   const bytes = new TextEncoder().encode('%PDF-1.7 synthetic').buffer;
@@ -906,6 +907,8 @@ createRoot(root).render(
         : window.location.pathname === '/drill' ? drillFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
+        : window.location.pathname === '/detail-print'
+          ? <PackPrint packId="detail-pack" now={detailNow} />
         : window.location.pathname === '/search' ? (
       <Search loadFiles={noFiles} onPendingPlace={(place) => { window.__confirmedPlace = place; }} />
     ) : confirmation}

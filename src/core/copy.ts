@@ -69,6 +69,12 @@ export const CANCEL = 'Cancel';
 export const PACK_NAME_NOT_SAVED = 'The name was not saved. Try again.';
 /** The pack drawings: chosen on the name step and with Change icon. */
 export const PACK_ICON_LABEL = 'Icon';
+/** Print this pack: one page of the pack on paper, from the menu. */
+export const PRINT_PACK = 'Print this pack';
+export const PRINT_SAVED_ON = (date: string) => `Saved ${date}`;
+export const PRINT_AREA_TITLE = 'Bushfire area';
+export const PRINTED_FROM = (printed: string, saved: string) =>
+  `Printed ${printed} from information saved ${saved}. Check VicEmergency for current warnings.`;
 export const CHANGE_ICON = 'Change icon';
 export const PACK_ICON_NOT_SAVED = 'The icon was not saved. Try again.';
 export const PACK_ICON_NAMES: Record<PackIcon, string> = {
