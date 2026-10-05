@@ -262,6 +262,15 @@ export default function Home({ now }: { now?: number }) {
         ))
       )}
 
+      {/* One more pack, in every state, at the end of the list it adds to:
+          under the last card, or under the empty space. */}
+      {view === null ? null : (
+        <Link className="action main-action with-glyph" to="/packs/new">
+          <Glyph kind="plus" line />
+          {copy.BUILD_A_PACK}
+        </Link>
+      )}
+
       <dialog
         ref={sheet}
         className="sheet"
@@ -394,11 +403,6 @@ export default function Home({ now }: { now?: number }) {
       </dialog>
 
       <div className="actions">
-        {/* One more pack, in every state: the list grows from here. */}
-        <Link className="action main-action with-glyph" to="/packs/new">
-          <Glyph kind="plus" line />
-          {copy.BUILD_A_PACK}
-        </Link>
         {/* Reachable in both states, including with no pack saved. The ring to
             its left opens the lines that say what the mode is. */}
         <BlackSkyHoldRow>
