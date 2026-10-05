@@ -2376,6 +2376,23 @@ main:focus {
   gap: 0.5rem;
   max-height: 40dvh;
   overflow-y: auto;
+  /* Where a browser draws its scrollbar (a computer, mostly), it is thin and
+     rounded in a quiet grey, kept off the panel's top and bottom
+     edges, with a little room between it and the words. */
+  padding-inline-end: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink-3) 55%, transparent) transparent;
+}
+.tour-body::-webkit-scrollbar {
+  width: 6px;
+}
+.tour-body::-webkit-scrollbar-track {
+  margin-block: 0.5rem;
+  background: transparent;
+}
+.tour-body::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink-3) 55%, transparent);
 }
 .tour-body p {
   margin: 0;
