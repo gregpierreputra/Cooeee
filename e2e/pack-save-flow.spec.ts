@@ -238,9 +238,9 @@ test('a second address becomes a second pack beside the first, with no question 
   await expect(page.getByLabel('Place name')).toHaveValue('8 Ridge Road');
   await page.getByLabel('Place name').fill('kalorama');
   await page.getByRole('button', { name: 'Save this place' }).click();
-  await expect(page.getByRole('alert')).toHaveText(PACK_NAME_TAKEN);
+  await expect(page.locator('.field-message')).toHaveText(PACK_NAME_TAKEN);
   await page.getByLabel('Place name').fill('8 Ridge Road');
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.locator('.field-message')).toHaveCount(0);
   await page.getByRole('button', { name: 'Save this place' }).click();
 
   await expect(page.getByRole('heading')).toHaveText(

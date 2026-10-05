@@ -300,7 +300,7 @@ export default function Home({ now }: { now?: number }) {
                   }}
                 />
                 {renameError ? (
-                  <p id="pack-name-error" className="field-message with-glyph" role="alert">
+                  <p id="pack-name-error" className="field-message with-glyph" role="status">
                     <Glyph kind="caution" line />
                     {renameError}
                   </p>
@@ -318,7 +318,7 @@ export default function Home({ now }: { now?: number }) {
               <form className="sheet-form" onSubmit={(event) => void saveIcon(event)}>
                 <IconPicker name="pack-icon" value={iconDraft} onChange={setIconDraft} />
                 {iconFailed ? (
-                  <p className="field-message with-glyph" role="alert">
+                  <p className="field-message with-glyph" role="status">
                     <Glyph kind="caution" line />
                     {copy.PACK_ICON_NOT_SAVED}
                   </p>

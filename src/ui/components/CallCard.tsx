@@ -7,16 +7,16 @@ import Glyph from './Glyph';
  *  card never leaves two cards claiming the clipboard. */
 let clearShownCard: (() => void) | null = null;
 
-/** Red for danger, amber for caution: the colours the app already uses. */
-const TONE_CLASS = { danger: 'emergency-line', caution: 'caution-line' } as const;
+/** Red for an emergency, amber for caution: the colours the app already uses. */
+const TONE_CLASS = { emergency: 'emergency-line', caution: 'caution-line' } as const;
 
 /** One number to call: who answers, the number large enough to read out, then
  *  Call and Copy side by side. Copy is for a number to text to someone or dial
  *  from another phone. The button says what happened for a few seconds and
  *  then reads Copy again: it reports a moment, not what the clipboard holds
- *  later. A danger card (000) carries the red rule and the screen's one filled
+ *  later. The emergency card (000) carries the red rule and the screen's one filled
  *  button. A caution card (the hotline) carries the amber rule: important,
- *  but not the number to call in danger. */
+ *  but not the number to call in an emergency. */
 export default function CallCard({
   name,
   detail,
@@ -26,7 +26,7 @@ export default function CallCard({
   name: string;
   detail?: string;
   number: string;
-  tone?: 'danger' | 'caution';
+  tone?: 'emergency' | 'caution';
 }) {
   const [copied, setCopied] = useState<'copied' | 'failed' | null>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -69,7 +69,7 @@ export default function CallCard({
           controls says whose number it is, not Call, Call, Call. */}
       <div className="program-actions">
         <a
-          className={tone === 'danger' ? 'action main-action with-glyph' : 'action call-button with-glyph'}
+          className={tone === 'emergency' ? 'action main-action with-glyph' : 'action call-button with-glyph'}
           href={`tel:${number.replaceAll(' ', '')}`}
         >
           <Glyph kind="calls" line />

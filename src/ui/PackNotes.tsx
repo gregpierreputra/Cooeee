@@ -154,7 +154,7 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
         </p>
       ) : null}
       {current.failed ? (
-        <p className="field-message with-glyph" role="alert">
+        <p className="field-message with-glyph" role="status">
           <Glyph kind="caution" line />
           {copy.NOTE_CHANGE_FAILED}
         </p>

@@ -222,7 +222,7 @@ export default function Recover({
         <section className="call-group">
           <h2 className="kicker">{copy.RECOVERY_LINES}</h2>
           <ul className="list">
-            <CallCard name={copy.TRIPLE_ZERO_LABEL} detail={copy.TRIPLE_ZERO_DETAIL} number={TRIPLE_ZERO} tone="danger" />
+            <CallCard name={copy.TRIPLE_ZERO_LABEL} detail={copy.TRIPLE_ZERO_DETAIL} number={TRIPLE_ZERO} tone="emergency" />
             {callList(programs).map((entry) => (
               <CallCard
                 key={entry.number}

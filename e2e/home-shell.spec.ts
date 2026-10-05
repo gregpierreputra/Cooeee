@@ -339,7 +339,7 @@ test('Rename refuses a name another pack already has', async ({ page }) => {
   await menu.getByLabel(PLACE_NAME_LABEL).fill('kalorama ');
   await menu.getByRole('button', { name: SAVE, exact: true }).click();
 
-  await expect(menu.getByRole('alert')).toHaveText(PACK_NAME_TAKEN);
+  await expect(menu.locator('.field-message')).toHaveText(PACK_NAME_TAKEN);
   await page.keyboard.press('Escape');
   await expect(page.locator('.pack-card h2')).toHaveText(['Kalorama', 'Ferny Creek']);
 });

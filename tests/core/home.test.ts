@@ -13,11 +13,11 @@ const daysAgo = (days: number) => NOW - days * MS_PER_DAY;
 describe('header age', () => {
   it('states the age in minutes and hours on the day the pack was saved', () => {
     expect(headerAge(NOW, daysAgo(0))).toEqual({ kind: 'checked', days: 0, text: 'Checked just now' });
-    expect(headerAge(NOW, NOW - 60_000).text).toBe('Checked 1 minute ago');
-    expect(headerAge(NOW, NOW - 59 * 60_000).text).toBe('Checked 59 minutes ago');
-    expect(headerAge(NOW, NOW - 60 * 60_000).text).toBe('Checked 1 hour ago');
-    expect(headerAge(NOW, NOW - 23 * 3_600_000).text).toBe('Checked 23 hours ago');
-    expect(headerAge(NOW, NOW - 24 * 3_600_000).text).toBe('Checked 1 day ago');
+    expect(headerAge(NOW, NOW - 60_000)).toMatchObject({ text: 'Checked 1 minute ago' });
+    expect(headerAge(NOW, NOW - 59 * 60_000)).toMatchObject({ text: 'Checked 59 minutes ago' });
+    expect(headerAge(NOW, NOW - 60 * 60_000)).toMatchObject({ text: 'Checked 1 hour ago' });
+    expect(headerAge(NOW, NOW - 23 * 3_600_000)).toMatchObject({ text: 'Checked 23 hours ago' });
+    expect(headerAge(NOW, NOW - 24 * 3_600_000)).toMatchObject({ text: 'Checked 1 day ago' });
   });
 
   it('states the age in days at 29 days, one inside the window', () => {

@@ -62,7 +62,7 @@ export function Confirm({ candidate, initialName, initialIcon, takenName, onConf
             onChange={(event) => setName(event.currentTarget.value)}
           />
           {taken ? (
-            <p id="place-name-taken" className="field-message with-glyph" role="alert">
+            <p id="place-name-taken" className="field-message with-glyph" role="status">
               <Glyph kind="caution" line />
               {copy.PACK_NAME_TAKEN}
             </p>
