@@ -424,6 +424,8 @@ export const NORTH_UP = 'North up';
  *  person: it puts them back at the centre. */
 export const MAP_RETURN_BUTTON = 'Back to me';
 /** The attribution the road layer's licence asks for, on the About screen. */
+/** The road and locality credits, under a small Map data toggle on the pack page. */
+export const MAP_DATA = 'Map data';
 export const ROADS_ATTRIBUTION = 'Roads: Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
 /** The same for the locality names on the map disc, under the roads line. */
 export const LOCALITIES_ATTRIBUTION = 'Localities: Vicmap Admin, Department of Transport and Planning, CC BY 4.0';
@@ -553,7 +555,6 @@ export const YOUR_PACKS = 'Your packs';
 
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
-export const NAV_ABOUT = 'About';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
 
@@ -769,7 +770,17 @@ export const BLACKSKY_WORKS_WITHOUT_PACK = 'No pack needed';
 /** The About page: what Cooeee is, why, what it does and does not do, and
  *  where the information stays, each a glyph, a heading and one line. No
  *  colon, semicolon or dash anywhere. */
-export const ABOUT_COOEEE = 'About Cooeee';
+/** The tour's welcome: what Cooeee is called, how it is said, what the name
+ *  means and what it does, with the longer lines behind one toggle. */
+export const ABOUT_COOEEE = 'More about Cooeee';
+export const WELCOME_SAY = 'Said koo-EE.';
+export const WELCOME_NAME = 'From guuu-wii in the Dharug language of the Sydney area, a call that means come here.';
+export const WELCOME_DOES = 'Official bushfire information for your places, kept on your phone, for when the signal goes.';
+export const WELCOME_KICKER = 'Welcome';
+/** The words in the welcome picked out in the accent: how to say the name,
+ *  where it comes from, what it means, and where the packs are kept. Plain
+ *  words only: they are joined into a regex. */
+export const WELCOME_TERMS = ['koo-EE', 'guuu-wii', 'Dharug', 'come here', 'kept on your phone'] as const;
 export const COOEEE_INFO_LINES = [
   { glyph: 'what', title: 'What it is', text: 'Official bushfire information for your places, kept on your phone.' },
   { glyph: 'why', title: 'Why it exists', text: 'In a fire, the power and the signal often go first.' },
@@ -790,16 +801,15 @@ export const SKIP_TOUR = 'Skip tour';
 /** One glyph and one line per stop, 12 words at most (tests hold the limit). */
 export const TOUR_STEPS = [
   { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'One small preparation step a day, from Country Fire Authority guidance.' },
-  { path: '/', target: '.home .card', glyph: 'layer', title: 'Your saved packs', line: 'Each card is a place, ready with no signal. Tap to open.' },
+  { path: '/', target: '.home .pack-card, .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
   { path: '/', target: '.home .main-action', glyph: 'plus', title: 'New offline pack', line: 'Add a pack for home, work, school or family.' },
   { path: '/', target: '.blacksky-hold-row', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold two seconds. Points to official places when the signal is gone.' },
   { path: '/', target: '.app-header-inner', glyph: 'clock', title: 'The header', line: "Tap Cooeee to go home. The pill shows your oldest pack's age." },
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
-  { path: '/packs/new', target: '.search-form', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
+  { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
   { path: '/nearby', target: '.nearby .hero', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
-  { path: '/rehearse', target: '.rehearsal-entry, .rehearsal-condition', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
-  { path: '/recover', target: '.recover', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
-  { path: '/about', target: '.about .card', glyph: 'what', title: 'About Cooeee', line: 'What Cooeee does, and what it does not do.' },
+  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
+  { path: '/recover', target: '.recover .hero', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
 
 /** The information ring beside the hold control, and the panel a tap on it

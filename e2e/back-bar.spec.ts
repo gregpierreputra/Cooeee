@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
 
 test('no Back on any tab screen', async ({ page }) => {
   await expect(back(page)).toHaveCount(0);
-  for (const name of ['Nearby', 'Rehearse', 'Recover', 'About', 'Home']) {
+  for (const name of ['Nearby', 'Rehearse', 'Recover', 'Home']) {
     await tab(page, name).click();
     await expect(page.locator('main').first(), name).toBeVisible();
     await expect(back(page), name).toHaveCount(0);
@@ -27,8 +27,8 @@ test('no Back on any tab screen', async ({ page }) => {
 test('Back from a need goes to the list of needs, even with another tab behind it', async ({ page }) => {
   await tab(page, 'Recover').click();
   await page.getByRole('button', { name: copy.NEED_PHRASE.money }).click();
-  await tab(page, 'About').click();
-  // The phone's back button returns to the need, with About behind it.
+  await tab(page, 'Nearby').click();
+  // The phone's back button returns to the need, with Nearby behind it.
   await page.goBack();
   await expect(page).toHaveURL(/\/recover\?need=money$/);
 

@@ -4,6 +4,7 @@ import {
   Route,
   Routes,
   useLocation,
+  Navigate,
   useNavigate,
   useNavigationType,
   useParams,
@@ -18,7 +19,6 @@ import { pruneKept } from './core/kept';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
 import { loadRecoveryPrograms } from './data/recovery';
-import About from './ui/About';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
 import Gate from './ui/Gate';
@@ -309,7 +309,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
           <Route path="/nearby" element={<Nearby />} />
           <Route path="/recover" element={<Recover />} />
-          <Route path="/about" element={<About />} />
+          {/* About moved into the tour's welcome; an old link lands Home. */}
+          <Route path="/about" element={<Navigate to="/" replace />} />
           <Route path="/blacksky" element={<BlackSkyRoute />} />
         </Routes>
         <Tour />

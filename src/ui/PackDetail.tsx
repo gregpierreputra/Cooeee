@@ -348,6 +348,15 @@ export default function PackDetail({
         </Link>
       </div>
 
+      {/* BS_Enhancement-AC5: the road and locality layers BlackSky draws are
+          published under CC BY 4.0, which asks for this credit. BlackSky has no
+          room for it, so it stands here, one tap away. */}
+      <details className="map-credits">
+        <summary>{copy.MAP_DATA}</summary>
+        <p>{copy.ROADS_ATTRIBUTION}</p>
+        <p>{copy.LOCALITIES_ATTRIBUTION}</p>
+      </details>
+
       {offlineSource ? (
         <div className="sheet-backdrop">
           <section

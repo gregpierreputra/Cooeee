@@ -1,58 +1,97 @@
-import { expect, test } from '@playwright/test';
-import { ACKNOWLEDGE_CHECKBOX, CONTINUE, SEE_HOW_IT_WORKS, SKIP_TOUR, TOUR_BACK, TOUR_HINT, TOUR_NEXT, TOUR_STEPS } from '../src/core/copy';
+import { expect, test, type Page } from '@playwright/test';
+import {
+  ABOUT_COOEEE,
+  ACKNOWLEDGE_CHECKBOX,
+  CONTINUE,
+  COOEEE_INFO_LINES,
+  SEE_HOW_IT_WORKS,
+  SKIP_TOUR,
+  TOUR_BACK,
+  TOUR_HINT,
+  TOUR_NEXT,
+  TOUR_STEPS,
+  WELCOME_SAY,
+} from '../src/core/copy';
 import { acknowledgeFirstOpen, passGate } from './helpers';
 
 // The guided tour on the real bundle: it starts once, right after the
-// first-open acknowledgement, walks across screens, and can be skipped; a
-// returning user starts it from the ring and can leave it with Escape.
-const N = TOUR_STEPS.length;
+// first-open acknowledgement, with a welcome, then walks across screens and
+// can be skipped; a returning user starts it from the ring and can leave it
+// with Escape.
+const N = TOUR_STEPS.length + 1;
 const count = (n: number) => `${n}/${N}`;
 // The grey never lifts: at every moment the layer either dims the screen
 // itself or holds the spotlight whose shadow dims it.
-const dimmed = (page: import('@playwright/test').Page) =>
-  expect(page.locator('.tour.tour-dim, .tour:has(.tour-spot)')).toHaveCount(1);
+const dimmed = (page: Page) => expect(page.locator('.tour.tour-dim, .tour:has(.tour-spot)')).toHaveCount(1);
+const box = async (page: Page, selector: string) => (await page.locator(selector).boundingBox())!;
 
-test('starts after the acknowledgement, steps across screens, and skips', async ({ page }) => {
+// UAT: the feature must never sit under the panel or the bars above it.
+async function inTheClear(page: Page) {
+  const spot = await box(page, '.tour-spot');
+  const panel = await box(page, '.tour-panel');
+  const header = await box(page, '.app-header');
+  expect(spot.y + spot.height).toBeLessThanOrEqual(panel.y + 1);
+  expect(spot.y).toBeGreaterThanOrEqual(header.y + header.height - 9);
+}
+
+test('opens on a welcome, steps across screens with the controls held still, and skips', async ({ page }) => {
   await passGate(page);
   await page.goto('/');
   await page.getByRole('button', { name: SEE_HOW_IT_WORKS }).click();
   await page.getByRole('checkbox', { name: ACKNOWLEDGE_CHECKBOX }).check();
   await page.getByRole('button', { name: CONTINUE }).click();
 
+  // The welcome: the name, how it is said, and the old About lines behind a toggle.
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText(count(1));
-  await expect(dialog.getByRole('button', { name: TOUR_BACK })).toHaveCount(0);
-  await expect(page.locator('.tour-spot')).toBeVisible();
+  await expect(dialog).toContainText(WELCOME_SAY);
+  await expect(page.locator('.tour-spot')).toHaveCount(0);
+  await expect(dialog.getByText(COOEEE_INFO_LINES[0].text)).toBeHidden();
+  await dialog.getByText(ABOUT_COOEEE).click();
+  await expect(dialog.getByText(COOEEE_INFO_LINES[0].text)).toBeVisible();
+  // Back has nothing to do yet, but keeps its room.
+  await expect(dialog.getByRole('button', { name: TOUR_BACK })).toBeHidden();
 
-  await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  const next = dialog.getByRole('button', { name: TOUR_NEXT });
+  await next.click();
   await dimmed(page);
   await expect(dialog).toContainText(count(2));
+  await expect(page.locator('.tour-spot')).toBeVisible();
+  await inTheClear(page);
+  // UAT: Next does not move from stop to stop.
+  const nextAt = (await next.boundingBox())!;
+
   await dialog.getByRole('button', { name: TOUR_BACK }).click();
   await dimmed(page);
   await expect(dialog).toContainText(count(1));
+  await next.click();
 
-  // Stop seven lives on the address search: the tour moves there itself.
-  for (let i = 1; i < 7; i += 1) {
-    await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  // Stop eight is the address search: the tour moves there itself.
+  for (let i = 2; i < 8; i += 1) {
+    await next.click();
     await dimmed(page);
   }
-  await expect(dialog).toContainText(count(7));
+  await expect(dialog).toContainText(count(8));
   await expect(page).toHaveURL(/\/packs\/new$/);
   await expect(page.locator('.tour-spot')).toBeVisible();
+  await inTheClear(page);
+  expect((await next.boundingBox())!.y).toBeCloseTo(nextAt.y, 0);
 
   // The page still scrolls beneath the tour, and the spotlight follows it.
-  const before = (await page.locator('.tour-spot').boundingBox())!;
-  await page.mouse.wheel(0, 200);
-  await expect
-    .poll(async () => (await page.locator('.tour-spot').boundingBox())!.y)
-    .toBeLessThan(before.y);
+  // Scrolled whichever way has room: bringing the feature into view may
+  // already have taken the page to its foot.
+  const before = await box(page, '.tour-spot');
+  const atTop = await page.evaluate(() => window.scrollY === 0);
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.wheel(0, atTop ? 200 : -200);
+  await expect.poll(async () => Math.round((await box(page, '.tour-spot')).y)).not.toBe(Math.round(before.y));
 
-  // Stop nine is Rehearse: with no pack saved it lands on the entry screen.
-  await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  // Stop ten is Rehearse: with no pack saved it lands on the entry screen.
+  await next.click();
   await dimmed(page);
-  await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  await next.click();
   await dimmed(page);
-  await expect(dialog).toContainText(count(9));
+  await expect(dialog).toContainText(count(10));
   await expect(page).toHaveURL(/\/rehearse$/);
   await expect(page.locator('.tour-spot')).toBeVisible();
 
@@ -71,4 +110,23 @@ test('never starts on a later open; the ring starts it and Escape ends it', asyn
   await expect(page.getByRole('dialog')).toContainText(count(1));
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+// UAT: on a phone, every stop's feature is brought clear of the panel and the
+// bars, the bottom bar excepted, which sits below the panel in view.
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('every stop shows its feature in the clear', async ({ page }) => {
+    await acknowledgeFirstOpen(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: TOUR_HINT }).click();
+    const dialog = page.getByRole('dialog');
+    for (let stop = 2; stop <= N; stop += 1) {
+      await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+      await expect(dialog).toContainText(count(stop));
+      await expect(page.locator('.tour-spot')).toBeVisible();
+      if (TOUR_STEPS[stop - 2].target !== '.bottom-nav-inner') await inTheClear(page);
+      if (stop === N) break;
+    }
+  });
 });

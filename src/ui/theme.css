@@ -2346,40 +2346,116 @@ main:focus {
     width 0.2s ease,
     height 0.2s ease;
 }
-.tour-card {
+.tour-panel {
+  /* Docked just above the tab bar, the same place on every stop, so the eye
+     and the thumb always find it. The tab bar stays visible below it. */
   position: absolute;
   inset-inline: 1rem;
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  bottom: calc(3.5rem + 1px + env(safe-area-inset-bottom) + 0.75rem);
   margin: 0 auto;
   max-width: 560px;
   gap: 0.75rem;
-  /* At 200% text on a short screen the card can outgrow the screen. It scrolls
-     inside itself then, so Skip and Next can always be reached. */
-  max-height: calc(100dvh - 2rem);
-  overflow-y: auto;
-}
-.tour-card-top {
-  bottom: auto;
-  top: max(1rem, env(safe-area-inset-top));
 }
 .tour-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.tour-head .figure {
+.tour-head .tour-skip {
+  min-height: 44px;
+  width: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+/* The words scroll inside themselves when they are long (the welcome opened,
+   or 200% text), so the controls below never move. */
+.tour-body {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 40dvh;
+  overflow-y: auto;
+}
+.tour-body p {
+  margin: 0;
+}
+.tour-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+}
+.tour-controls button {
+  min-height: 44px;
+  padding: 0.5rem;
+  font-size: var(--step-s);
+}
+.tour-count {
   color: var(--ink-2);
   font-size: var(--step-s);
 }
-.tour-actions {
-  display: flex;
-  gap: 0.5rem;
+/* A control with nothing to do on this stop keeps its room, unseen, so the
+   others never shift. */
+.tour-hold-place {
+  visibility: hidden;
 }
-.tour-actions button {
-  flex: 1;
+/* The welcome: the mark in a ring beside the name and how it is said. */
+.welcome-mark {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.welcome-head h2 {
+  margin: 0;
+}
+/* The welcome's own words picked out in the accent, not the attention amber:
+   they are the name and what it means, not a warning. */
+.welcome-term {
+  color: var(--accent);
+  font-weight: var(--w-bold);
+}
+.tour-body .welcome-does {
+  margin-top: 0.5rem;
+}
+.welcome-more summary {
+  cursor: pointer;
   min-height: 44px;
-  padding: 0.5rem 0.5rem;
-  font-size: var(--step-s);
+  display: flex;
+  align-items: center;
+  font-weight: var(--w-bold);
+  color: var(--accent);
+}
+.welcome-more .info-lines {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+/* The map data credit at the foot of the pack page: small and quiet, opened
+   on a tap. */
+.map-credits {
+  font-size: var(--step-xs);
+  color: var(--ink-3);
+}
+.map-credits summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.map-credits p {
+  margin: 0.25rem 0 0;
+}
+/* While the tour runs, every page has room at its foot to bring its last
+   feature clear of the panel. */
+body.touring .page {
+  padding-bottom: 60dvh;
 }
 
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a
@@ -3562,23 +3638,23 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 
-/* About: a glyph ring leads each line, so the shape says what the line is.
-   Scoped to the About page: the BlackSky panel and the tour cards share the
-   led-line list without a glyph, and read as prose. */
-.about .info-lines li {
+/* More about Cooeee, in the tour's welcome: a glyph ring leads each line, so
+   the shape says what the line is. Scoped here: the BlackSky panel shares the
+   led-line list without a glyph, and reads as prose. */
+.welcome-more .info-lines li {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
 }
-.about .info-lines .glyph {
+.welcome-more .info-lines .glyph {
   width: 36px;
   height: 36px;
 }
-.about .info-lines .glyph svg {
+.welcome-more .info-lines .glyph svg {
   width: 18px;
   height: 18px;
 }
-.about .info-lines p {
+.welcome-more .info-lines p {
   margin: 0;
 }
 .about-line-title {

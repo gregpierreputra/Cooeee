@@ -260,7 +260,7 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
-  it('tours eleven features across every screen, each a title, a glyph and one short line', () => {
+  it('tours ten features across every screen after the welcome, each a title, a glyph and one short line', () => {
     expect(copy.TOUR_STEPS.map((step) => step.title)).toEqual([
       "Today's reminder",
       'Your saved packs',
@@ -272,7 +272,6 @@ describe('the returning-user home', () => {
       'Nearby official places',
       'Rehearse',
       'Recover',
-      'About Cooeee',
     ]);
     for (const step of copy.TOUR_STEPS) {
       expect(step.path.startsWith('/')).toBe(true);
@@ -282,8 +281,13 @@ describe('the returning-user home', () => {
     expect(copy.SKIP_TOUR).toBe('Skip tour');
   });
 
-  it('says what Cooeee is on the About page, glyph-led plain sentences with no colon, semicolon or dash', () => {
-    expect(copy.ABOUT_COOEEE).toBe('About Cooeee');
+  it('says what Cooeee is in the tour welcome, glyph-led plain sentences with no colon, semicolon or dash', () => {
+    expect(copy.ABOUT_COOEEE).toBe('More about Cooeee');
+    expect(copy.WELCOME_SAY).toBe('Said koo-EE.');
+    expect(copy.WELCOME_NAME).toContain('come here');
+    // Every picked out word is in the welcome, so none is left uncoloured.
+    const welcome = [copy.WELCOME_SAY, copy.WELCOME_NAME, copy.WELCOME_DOES].join(' ');
+    for (const term of copy.WELCOME_TERMS) expect(welcome).toContain(term);
     expect(copy.COOEEE_INFO_LINES.map((line) => line.glyph)).toEqual([
       'what',
       'why',

@@ -27,7 +27,7 @@ for (const offline of [false, true]) {
     // full page load.
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Main' });
-    for (const name of ['Nearby', 'Rehearse', 'Recover', 'About', 'Home']) {
+    for (const name of ['Nearby', 'Rehearse', 'Recover', 'Home']) {
       await nav.getByRole('link', { name, exact: true }).click();
       await expect(page.locator('main, [role="main"]').first(), name).toBeVisible();
     }

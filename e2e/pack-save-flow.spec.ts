@@ -417,7 +417,7 @@ test('US2 the global Back bar works offline and the stored pack survives it', as
 test('Back from a pack goes Home with another tab behind it, and a lone pack\'s rehearsal has no Back', async ({ page }) => {
   await saveAPackAndOpenIt(page);
   const nav = page.getByRole('navigation', { name: 'Main' });
-  await nav.getByRole('link', { name: 'About', exact: true }).click();
+  await nav.getByRole('link', { name: 'Nearby', exact: true }).click();
   await page.goBack();
   await expect(page.locator('.pack-detail h1')).toBeVisible();
 

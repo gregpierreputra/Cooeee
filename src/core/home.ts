@@ -53,7 +53,7 @@ export function preparationLine(seed: number): PreparationLine {
 }
 
 export type NavItem = {
-  key: 'home' | 'nearby' | 'rehearse' | 'recover' | 'about';
+  key: 'home' | 'nearby' | 'rehearse' | 'recover';
   label: string;
   to: string;
 };
@@ -67,7 +67,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'nearby', label: copy.NAV_NEARBY, to: '/nearby' },
   { key: 'rehearse', label: copy.NAV_REHEARSE, to: '/rehearse' },
   { key: 'recover', label: copy.NAV_RECOVER, to: '/recover' },
-  { key: 'about', label: copy.NAV_ABOUT, to: '/about' },
 ];
 
 /** Everything the home screen renders, decided in one place: every saved pack,
