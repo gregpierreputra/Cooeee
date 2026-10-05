@@ -303,7 +303,7 @@ describe('the returning-user home', () => {
   });
 
   it('says what BlackSky does in four glyph-led lines, the last naming the two-second hold', () => {
-    expect(copy.ABOUT_BLACKSKY).toBe('About BlackSky');
+    expect(copy.ABOUT_BLACKSKY).toBe('More about BlackSky');
     expect(copy.BLACKSKY_INFO_LINES.map((line) => line.glyph)).toEqual([
       'go',
       'offline',

@@ -1,7 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  ABOUT_BLACKSKY,
   ABOUT_COOEEE,
   ACKNOWLEDGE_CHECKBOX,
+  BLACKSKY_INFO_LINES,
   CONTINUE,
   COOEEE_INFO_LINES,
   SEE_HOW_IT_WORKS,
@@ -129,4 +131,21 @@ test.describe('on a phone', () => {
       if (stop === N) break;
     }
   });
+});
+
+// BlackSky's stop points at the compass in the tab bar, and carries what the
+// mode does behind its own toggle.
+test('the BlackSky stop rings the compass and opens what BlackSky does', async ({ page }) => {
+  await acknowledgeFirstOpen(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: TOUR_HINT }).click();
+  const dialog = page.getByRole('dialog');
+  const stop = TOUR_STEPS.findIndex((step) => step.target === '.nav-blacksky') + 2;
+  for (let n = 2; n <= stop; n += 1) await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  await expect(dialog).toContainText(count(stop));
+  const spot = (await page.locator('.tour-spot').boundingBox())!;
+  const compass = (await page.locator('.nav-blacksky').boundingBox())!;
+  expect(Math.abs(spot.x + spot.width / 2 - (compass.x + compass.width / 2))).toBeLessThan(2);
+  await dialog.getByText(ABOUT_BLACKSKY).click();
+  await expect(dialog.getByText(BLACKSKY_INFO_LINES[0].text)).toBeVisible();
 });

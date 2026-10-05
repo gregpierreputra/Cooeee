@@ -1,8 +1,5 @@
 import { expect, test } from '@playwright/test';
 import {
-  ABOUT_BLACKSKY,
-  BLACKSKY_INFO_LINES,
-  BLACKSKY_WORKS_WITHOUT_PACK,
   BUILD_A_PACK,
   CHECKED_AGO,
   ITEM_DAYS_AGO,
@@ -34,6 +31,7 @@ import {
   PREPARATION_SOURCE,
   SAVED_AGO,
 } from '../src/core/copy';
+import { NAV_HOLD_HINT_MS } from '../src/core/constants';
 import { titleCase as displayAddress } from '../src/core/home';
 import { acknowledgeFirstOpen, HARNESS, storageCounts } from './helpers';
 
@@ -160,48 +158,23 @@ test.describe('the returning-user home screen', () => {
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
   });
 
-  test('the hold control carries a sub-line only while nothing is saved', async ({ page }) => {
-    await page.goto(home('?days=3'));
-    const hold = page.getByRole('button', { name: HOLD_FOR_BLACKSKY });
-    await expect(hold).toHaveText(HOLD_FOR_BLACKSKY);
-
-    await page.goto(home('?mode=none'));
-    await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toContainText(
-      BLACKSKY_WORKS_WITHOUT_PACK,
-    );
+  test('the compass in the tab bar is the way into BlackSky, with or without a pack', async ({ page }) => {
+    for (const query of ['?days=3', '?mode=none']) {
+      await page.goto(home(query));
+      const nav = page.getByRole('navigation', { name: NAV_LABEL });
+      await expect(nav.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
+      await expect(page.locator('main').getByRole('button', { name: HOLD_FOR_BLACKSKY })).toHaveCount(0);
+    }
   });
 
-  // The ring beside the hold control: hovering it does nothing; a click opens
-  // the lines beneath the hold control, in flow, and a second click closes them.
-  test('the information ring opens the About BlackSky panel on a click, never on hover', async ({
-    page,
-  }) => {
+  // The bar is on every screen, so its hint goes again on its own.
+  test('the compass hint fades after a few seconds', async ({ page }) => {
+    await page.clock.install();
     await page.goto(home('?days=3'));
-    const ring = page.getByRole('button', { name: ABOUT_BLACKSKY });
-    const panel = page.locator('.blacksky-info-panel');
-    await expect(ring).toHaveAttribute('aria-expanded', 'false');
-    await expect(panel).toHaveCount(0);
-
-    await ring.hover();
-    await expect(ring).toHaveAttribute('aria-expanded', 'false');
-    await expect(panel).toHaveCount(0);
-
-    await ring.click();
-    await expect(ring).toHaveAttribute('aria-expanded', 'true');
-    await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
-    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].text);
-    // Both edges are read in one frame: opening the panel scrolls it into view,
-    // so two separate measurements would straddle that scroll and compare
-    // positions taken at different offsets.
-    const below = await page.evaluate(() => {
-      const hold = document.querySelector('.blacksky-hold')!.getBoundingClientRect();
-      const box = document.querySelector('.blacksky-info-panel')!.getBoundingClientRect();
-      return box.y >= hold.y + hold.height;
-    });
-    expect(below).toBe(true);
-
-    await ring.click();
-    await expect(panel).toHaveCount(0);
+    await page.getByRole('button', { name: HOLD_FOR_BLACKSKY }).click();
+    await expect(page.getByText(HOLD_TO_ENTER)).toBeVisible();
+    await page.clock.fastForward(NAV_HOLD_HINT_MS);
+    await expect(page.getByText(HOLD_TO_ENTER)).toHaveCount(0);
   });
 
   test('the pack card carries the age alone in its footer', async ({
@@ -219,7 +192,7 @@ test.describe('the returning-user home screen', () => {
     expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('the bottom navigation names its destinations, and BlackSky is not one', async ({
+  test('the bottom navigation names its destinations, and BlackSky is held, not a tab', async ({
     page,
   }) => {
     await page.goto(home('?days=3'));
@@ -228,8 +201,9 @@ test.describe('the returning-user home screen', () => {
     await expect(nav.getByRole('link', { name: NAV_NEARBY })).toBeVisible();
     await expect(nav.getByRole('link', { name: NAV_REHEARSE })).toBeVisible();
     await expect(nav.getByRole('link')).toHaveCount(4);
-    await expect(nav.getByRole('link', { name: HOLD_FOR_BLACKSKY })).toHaveCount(0);
-    expect((await nav.textContent()) ?? '').not.toContain('BlackSky');
+    // BlackSky is never a tab: the compass is a button that needs a hold.
+    await expect(nav.getByRole('link', { name: /BlackSky/ })).toHaveCount(0);
+    await expect(nav.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
   });
 
   test('the header returns home and never offers a way into BlackSky', async ({ page }) => {

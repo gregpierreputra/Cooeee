@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
 import { homeView, shownPackName, titleCase, type HomeView } from '../core/home';
@@ -20,7 +20,6 @@ import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
 import IconPicker from './components/IconPicker';
-import HoldButton from './components/HoldButton';
 import { focusMain } from './components/focusMain';
 import { useMinuteClock } from './components/useMinuteClock';
 
@@ -28,8 +27,8 @@ import { useMinuteClock } from './components/useMinuteClock';
  *  open Cooeee again.
  *
  *  Every saved pack, newest first, each card the way into its pack; then the
- *  control that builds one more, and the BlackSky control with the ring that
- *  says what BlackSky is. It reads IndexedDB, asks for no position, and makes
+ *  control that builds one more. BlackSky is held from the compass in the tab
+ *  bar, on every screen. It reads IndexedDB, asks for no position, and makes
  *  no request other than a kept program's page copy from the precache. */
 export default function Home({ now }: { now?: number }) {
   // null = the store has not answered yet.
@@ -401,42 +400,6 @@ export default function Home({ now }: { now?: number }) {
           </>
         ) : null}
       </dialog>
-
-      <div className="actions">
-        {/* Reachable in both states, including with no pack saved. The ring to
-            its left opens the lines that say what the mode is. */}
-        <BlackSkyHoldRow>
-          <HoldButton onHold={() => navigate('/blacksky', { state: { held: true } })} hint={copy.HOLD_TO_ENTER}>
-            <span className="blacksky-hold-label">{copy.HOLD_FOR_BLACKSKY}</span>
-            {view !== null && view.packs.length === 0 ? (
-              <span className="blacksky-hold-sub">{copy.BLACKSKY_WORKS_WITHOUT_PACK}</span>
-            ) : null}
-          </HoldButton>
-        </BlackSkyHoldRow>
-      </div>
     </main>
-  );
-}
-
-/** The hold control with the information ring to its left and, after a tap
- *  on the ring, the panel that says what BlackSky does, one glyph per line. */
-function BlackSkyHoldRow({ children }: { children: ReactNode }) {
-  return (
-    <Hint
-      className="blacksky-hold-row"
-      ringClass="blacksky-info"
-      panelClass="blacksky-info-panel"
-      label={copy.ABOUT_BLACKSKY}
-      head={children}
-    >
-      <ul className="info-lines glyph-lines">
-        {copy.BLACKSKY_INFO_LINES.map((line) => (
-          <li key={line.glyph}>
-            <Glyph kind={line.glyph} line />
-            {line.text}
-          </li>
-        ))}
-      </ul>
-    </Hint>
   );
 }

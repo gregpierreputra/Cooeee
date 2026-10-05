@@ -765,7 +765,6 @@ export const PREPARATION_MORE = 'If this does not fit you';
 
 /** Under the hold control only while nothing is saved: the mode is reachable
  *  with no pack, which is the one thing a new user would not expect. */
-export const BLACKSKY_WORKS_WITHOUT_PACK = 'No pack needed';
 
 /** The About page: what Cooeee is, why, what it does and does not do, and
  *  where the information stays, each a glyph, a heading and one line. No
@@ -803,7 +802,7 @@ export const TOUR_STEPS = [
   { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'One small preparation step a day, from Country Fire Authority guidance.' },
   { path: '/', target: '.home .pack-card, .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
   { path: '/', target: '.home .main-action', glyph: 'plus', title: 'New offline pack', line: 'Add a pack for home, work, school or family.' },
-  { path: '/', target: '.blacksky-hold-row', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold two seconds. Points to official places when the signal is gone.' },
+  { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to official places offline.', more: 'blacksky' },
   { path: '/', target: '.app-header-inner', glyph: 'clock', title: 'The header', line: "Tap Cooeee to go home. The pill shows your oldest pack's age." },
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
   { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
@@ -814,7 +813,7 @@ export const TOUR_STEPS = [
 
 /** The information ring beside the hold control, and the panel a tap on it
  *  opens: what BlackSky does, each line led by its glyph. */
-export const ABOUT_BLACKSKY = 'About BlackSky';
+export const ABOUT_BLACKSKY = 'More about BlackSky';
 export const BLACKSKY_INFO_LINES = [
   { glyph: 'go', text: 'Points to the nearest official places of last resort.' },
   { glyph: 'offline', text: 'Works with no signal. Your pack is already on this phone.' },

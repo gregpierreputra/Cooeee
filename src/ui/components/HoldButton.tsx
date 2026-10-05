@@ -9,6 +9,11 @@ type HoldButtonProps = {
   className?: string;
   /** How long the completed hold's buzz lasts, where the phone can buzz. */
   vibrateMs?: number;
+  /** The name read out, when the button shows a drawing rather than its words. */
+  label?: string;
+  /** Hides the hint again after this long. Only for a hint that floats over
+   *  the screen, so taking it away moves nothing under the finger. */
+  hintMs?: number;
 };
 
 /** A mode switch fires on a HOLD, not a tap: a pocket press must not flip the
@@ -36,8 +41,15 @@ export default function HoldButton({
   children,
   className,
   vibrateMs = HOLD_VIBRATE_MS,
+  label,
+  hintMs,
 }: HoldButtonProps) {
   const [showHint, setShowHint] = useState(false);
+  useEffect(() => {
+    if (!showHint || hintMs === undefined) return undefined;
+    const hide = window.setTimeout(() => setShowHint(false), hintMs);
+    return () => window.clearTimeout(hide);
+  }, [showHint, hintMs]);
   const holdTimer = useRef<number | null>(null);
   // Which kind of pointer is pressing, from its pointerdown until it lifts. The
   // contextmenu event must be answered differently for a finger and a mouse,
@@ -93,6 +105,7 @@ export default function HoldButton({
       <button
         type="button"
         className={className ? `blacksky-hold ${className}` : 'blacksky-hold'}
+        aria-label={label}
         // Only the main button holds. A right click opens a menu that swallows
         // the pointerup, and the timer would then enter BlackSky with no hold.
         onPointerDown={(e) => {

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 import Glyph from './Glyph';
@@ -232,13 +232,7 @@ function Welcome() {
       <p className="muted welcome-does">
         <KeyTerms text={copy.WELCOME_DOES} terms={copy.WELCOME_TERMS} className="welcome-term" />
       </p>
-      {/* Opened, its lines are brought into view inside the panel's words. */}
-      <details
-        className="welcome-more"
-        onToggle={(event) => {
-          if (event.currentTarget.open) event.currentTarget.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        }}
-      >
+      <details className="welcome-more" onToggle={revealOpened}>
         <summary>{copy.ABOUT_COOEEE}</summary>
         <ul className="info-lines">
           {copy.COOEEE_INFO_LINES.map((line) => (
@@ -257,16 +251,36 @@ function Welcome() {
 }
 
 function Stop({ index }: { index: number }) {
-  const { title, line, glyph } = STEPS[index];
+  const step = STEPS[index];
   return (
     <>
       <div className="card-head">
-        <Glyph kind={glyph} />
-        <h2 id="tour-title">{title}</h2>
+        <Glyph kind={step.glyph} />
+        <h2 id="tour-title">{step.title}</h2>
       </div>
-      <p className="muted">{line}</p>
+      <p className="muted">{step.line}</p>
+      {/* BlackSky's stop carries what the mode does, which sat behind a ring
+          beside the hold on Home before the hold moved to the tab bar. */}
+      {'more' in step ? (
+        <details className="welcome-more" onToggle={revealOpened}>
+          <summary>{copy.ABOUT_BLACKSKY}</summary>
+          <ul className="info-lines glyph-lines">
+            {copy.BLACKSKY_INFO_LINES.map((line) => (
+              <li key={line.glyph}>
+                <Glyph kind={line.glyph} line />
+                {line.text}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </>
   );
+}
+
+/** An opened toggle in the panel brings its lines into view inside it. */
+function revealOpened(event: SyntheticEvent<HTMLDetailsElement>) {
+  if (event.currentTarget.open) event.currentTarget.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
 /** Where the clear space starts: under the header and, where there is one,
