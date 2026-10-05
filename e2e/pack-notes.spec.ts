@@ -70,3 +70,22 @@ test('leaving the page with unsaved words brings up the browser’s warning', as
   expect(shown.type()).toBe('beforeunload');
   await shown.dismiss();
 });
+
+// Unsaved words are kept on the phone: after a reload the note opens again with
+// them, said to be unsaved, and Cancel clears the draft for good.
+test('unsaved words come back after a reload until they are saved or cancelled', async ({ page }) => {
+  await page.goto(`${HARNESS}/detail`);
+  await page.getByRole('button', { name: ADD_NOTE }).click();
+  await page.getByLabel(NOTE_LABEL).fill('Pack the dog lead.');
+
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page.reload();
+  await expect(page.getByLabel(NOTE_LABEL)).toHaveValue('Pack the dog lead.');
+  await expect(page.getByText(NOTE_UNSAVED)).toBeVisible();
+  // The draft does not take focus when the page opens.
+  await expect(page.getByLabel(NOTE_LABEL)).not.toBeFocused();
+
+  await page.getByRole('button', { name: CANCEL }).click();
+  await page.reload();
+  await expect(page.getByLabel(NOTE_LABEL)).toHaveCount(0);
+});

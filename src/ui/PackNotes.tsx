@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { NOTE_MAX_CHARS } from '../core/constants';
 import * as copy from '../core/copy';
 import type { PackNote } from '../core/types';
+import { clearNoteDraft, readNoteDraft, writeNoteDraft } from '../core/note-draft';
+import { localFlagStore } from '../data/acknowledgement';
 import { deleteNote, putNote } from '../data/db';
 import Glyph from './components/Glyph';
 
@@ -23,11 +25,21 @@ const EDIT_NAME_CHARS = 40;
 /** The pack's notes, online or off: every write is to the device alone. They
  *  read as plain cards, and one at a time opens for editing, with Save, Cancel
  *  and Delete only there. Words that differ from the saved note are said to be
- *  unsaved, and the browser warns before the page is left with them. Delete
- *  asks first, as every removal in the app does. */
+ *  unsaved, and kept on the phone as a draft, so leaving the page or a flat
+ *  battery never loses them: the note opens again with them on the next
+ *  visit. The browser also warns before a reload or a closed tab. Delete asks
+ *  first, as every removal in the app does. */
 export function PackNotes({ packId, notes: stored, save = putNote, remove = deleteNote }: PackNotesProps) {
   const [notes, setNotes] = useState(stored);
-  const [editing, setEditing] = useState<Editing | null>(null);
+  // A draft left from an earlier visit opens its note again with the words.
+  // Words the same as the saved note are no draft at all.
+  const [editing, setEditing] = useState<Editing | null>(() => {
+    const draft = readNoteDraft(localFlagStore(), packId);
+    const saved = draft && stored.find((note) => note.id === draft.id);
+    if (!draft || saved?.text === draft.text) return null;
+    // A note deleted since its draft was kept comes back as a new note.
+    return { id: draft.id, draft: draft.text, isNew: !saved, asking: false, failed: false };
+  });
   // The answer to the last finished action, said once under the notes.
   const [status, setStatus] = useState<'saved' | 'deleted' | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -36,12 +48,20 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
   const addRef = useRef<HTMLButtonElement>(null);
   // The note whose Edit takes focus back when editing ends; null for Add.
   const returnTo = useRef<string | null>(null);
-  // Whether a note was open at the last step, so the page's first paint never
-  // moves focus: only the end of an edit hands it back.
-  const wasEditing = useRef(false);
+
 
   const savedText = editing ? (notes.find((note) => note.id === editing.id)?.text ?? '') : '';
   const unsaved = editing !== null && editing.draft !== savedText;
+
+  // The unsaved words are kept as they are typed, and cleared once they are
+  // saved, cancelled or deleted.
+  useEffect(() => {
+    if (editing && unsaved) {
+      writeNoteDraft(localFlagStore(), packId, { id: editing.id, text: editing.draft, isNew: editing.isNew });
+    } else {
+      clearNoteDraft(localFlagStore(), packId);
+    }
+  }, [editing, unsaved, packId]);
 
   // Leaving the page with unsaved words: the browser's own warning.
   useEffect(() => {
@@ -53,19 +73,24 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
 
   // Focus follows the step: into the words, onto Keep it when Delete asks, and
   // back to the note's Edit (or to Add a note) when editing ends.
+  // Focus moves only when the open note or its question changes, never on the
+  // page's first paint, so a draft opened from an earlier visit takes no focus.
   const editingId = editing?.id;
   const asking = editing?.asking;
+  const shown = useRef({ editingId, asking });
   useEffect(() => {
+    const before = shown.current;
+    if (before.editingId === editingId && before.asking === asking) return;
+    shown.current = { editingId, asking };
     if (asking) keepRef.current?.focus();
     else if (editingId) textRef.current?.focus();
-    else if (wasEditing.current) {
+    else {
       const edit = returnTo.current
         ? listRef.current?.querySelector<HTMLButtonElement>(`[data-note="${returnTo.current}"] .note-edit`)
         : null;
       (edit ?? addRef.current)?.focus();
       returnTo.current = null;
     }
-    wasEditing.current = editingId !== undefined;
   }, [editingId, asking]);
 
   const change = (next: Partial<Editing>) => setEditing((current) => current && { ...current, ...next });

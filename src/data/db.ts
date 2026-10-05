@@ -1,7 +1,9 @@
 import Dexie, { liveQuery, type Table } from 'dexie';
 import { BAG_LIMIT, DRILL_ITEM_IDS } from '../core/drill-items';
 import { NOTE_MAX_CHARS, PACK_NAME_MAX_CHARS } from '../core/constants';
+import { clearNoteDraft } from '../core/note-draft';
 import { isPackIcon, samePackName } from '../core/pack';
+import { localFlagStore } from './acknowledgement';
 import { isRehearsalEnding, isUnfinished } from '../core/rehearsal-ending';
 import type { RehearsalInput } from '../core/rehearsal-entry';
 import type {
@@ -215,6 +217,8 @@ export async function carryHistoryToNewPack(oldId: string, newId: string): Promi
  *  transaction, which must list ownedTables(). */
 export async function deleteOwnedRows(packIds: string[]): Promise<void> {
   await Promise.all(ownedTables().map((table) => table.where('packId').anyOf(packIds).delete()));
+  // A note's unsaved words belong to the pack too, so nothing of it is left.
+  packIds.forEach((id) => clearNoteDraft(localFlagStore(), id));
 }
 
 /** THE read API — complete packs only. */

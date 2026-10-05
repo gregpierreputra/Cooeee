@@ -446,6 +446,9 @@ export const BLACKSKY_LATCH_VALUE = 'latched';
  * chooses one, read on the next visit, and only ever compared against the
  * packs in the store, so a stale or foreign value simply matches nothing. */
 export const BLACKSKY_PACK_KEY = 'cooeee.blacksky-pack.v1';
+/** The unsaved words of a pack's note, one draft per pack, under this prefix
+ *  and the pack id. Cleared by Save, Cancel and Delete, and with the pack. */
+export const NOTE_DRAFT_KEY_PREFIX = 'cooeee.note-draft.v1:';
 
 /** Nearby places (spec §7). A dynamic snapshot whose feed is older than this is
  *  no longer shown as a place to go — only the stale notice and the hotline stay. */

@@ -223,6 +223,28 @@ describe('setPackIcon', () => {
   });
 });
 
+describe('a note draft goes with its pack', () => {
+  it('is cleared when its pack is deleted, and another pack keeps its own', async () => {
+    const stored: Record<string, string> = {
+      'cooeee.note-draft.v1:gone': '{"id":"n","text":"x","isNew":true}',
+      'cooeee.note-draft.v1:kept': '{"id":"n","text":"y","isNew":true}',
+    };
+    const localStorage = {
+      getItem: (key: string) => stored[key] ?? null,
+      setItem: (key: string, value: string) => { stored[key] = value; },
+      removeItem: (key: string) => { delete stored[key]; },
+    };
+    (globalThis as { window?: unknown }).window = { localStorage };
+    try {
+      await db.packs.bulkPut([pack({ id: 'gone' }), pack({ id: 'kept' })]);
+      await deleteCompletePack('gone');
+      expect(Object.keys(stored)).toEqual(['cooeee.note-draft.v1:kept']);
+    } finally {
+      delete (globalThis as { window?: unknown }).window;
+    }
+  });
+});
+
 describe('deleteCompletePack', () => {
   // A pack whose manifest records program rows.
   const withRecovery = (id: string, status: 'building' | 'complete' = 'complete') =>
