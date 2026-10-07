@@ -23,11 +23,13 @@ type DownloadState =
   | { kind: 'interrupted'; full: boolean }
   | { kind: 'saved' };
 
-/** A full device, as the browser or Dexie (which wraps it in `inner`) reports
- *  it. Every other failure keeps the plain interrupted wording. */
+/** A full device, as the browser or Dexie reports it: Dexie wraps it in
+ *  `inner`, or, when a bulk write is refused row by row, in `failures`. Every
+ *  other failure keeps the plain interrupted wording. */
 const isStorageFull = (error: unknown): boolean => {
   const named = (value: unknown) => (value as { name?: unknown } | null)?.name === 'QuotaExceededError';
-  return named(error) || named((error as { inner?: unknown } | null)?.inner);
+  const { inner, failures } = (error ?? {}) as { inner?: unknown; failures?: unknown };
+  return named(error) || named(inner) || (Array.isArray(failures) && failures.some(named));
 };
 
 /** E1-US1-AC9 offer and result states. No callback runs before a button tap.

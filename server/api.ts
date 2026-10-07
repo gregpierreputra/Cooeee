@@ -1,7 +1,9 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
-import { FACILITY_SOURCE, STATIC_TYPES } from '../src/core/facility-sources.ts';
+import { gzipSync } from 'node:zlib';
+import { isInsideVictoria } from '../src/core/constants.ts';
+import { DYNAMIC_TYPES, FACILITY_SOURCE, STATIC_TYPES } from '../src/core/facility-sources.ts';
 import type { DynamicSnapshot, FacilityType, SourceHealth, StaticBundle } from '../src/core/types.ts';
-import { type Db, nowIso } from './db.ts';
+import { type Db, nowIso, statement } from './db.ts';
 import { findNearest, type Point } from './geo.ts';
 import { checkGate, readJson } from './gate.ts';
 import { dataHealth } from './sources.ts';
@@ -38,25 +40,27 @@ type Query = { postcode: string | null; lat: number; lon: number };
 const round1 = (km: number): number => Math.round(km * 10) / 10;
 
 /** Where to search from. A four-digit postcode is looked up in the Victorian
- *  list; otherwise finite lat/lon within range. Anything else is refused. */
+ *  list; otherwise a plain decimal lat and lon inside Victoria. Anything else,
+ *  hex or exponent forms included, is refused. */
 function parseQuery(db: Db, params: Params): { query: Query } | { error: Route } {
   const postcode = params.get('postcode');
   if (postcode !== null) {
     if (!/^\d{4}$/.test(postcode)) return { error: { status: 400, body: { error: 'postcode must be four digits' } } };
-    const row = db
-      .prepare('SELECT centroid_lat AS lat, centroid_lon AS lon FROM postcodes WHERE postcode = ?')
+    const row = statement(db, 'SELECT centroid_lat AS lat, centroid_lon AS lon FROM postcodes WHERE postcode = ?')
       .get(postcode) as Point | undefined;
     if (!row) return { error: { status: 404, body: { error: 'postcode not found in the Victorian list' } } };
     return { query: { postcode, lat: row.lat, lon: row.lon } };
   }
-  // Number('') is 0, so a blank value is refused before it is converted.
-  const coordinate = (key: string): number => Number(params.get(key)?.trim() || NaN);
+  const coordinate = (key: string): number => {
+    const text = params.get(key)?.trim() ?? '';
+    return /^-?\d{1,3}(\.\d{1,10})?$/.test(text) ? Number(text) : NaN;
+  };
   const lat = coordinate('lat');
   const lon = coordinate('lon');
-  const valid =
-    Number.isFinite(lat) && Number.isFinite(lon) &&
-    Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
-  if (!valid) return { error: { status: 400, body: { error: 'provide postcode=NNNN, or lat and lon' } } };
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return { error: { status: 400, body: { error: 'provide postcode=NNNN, or lat and lon' } } };
+  }
+  if (!isInsideVictoria(lat, lon)) return { error: { status: 400, body: { error: 'lat and lon must be in Victoria' } } };
   return { query: { postcode: null, lat, lon } };
 }
 
@@ -79,8 +83,14 @@ function safeLocations(db: Db, params: Params): Route {
   if ('error' in parsed) return parsed.error;
   const { query } = parsed;
   const health = dataHealth(db);
-  const types = db.prepare('SELECT type_code, description, is_dynamic FROM facility_types').all() as unknown as TypeRow[];
-  const precomputed = db.prepare(
+  // Only the types this code knows how to answer for, whatever else the table holds.
+  const known = [...STATIC_TYPES, ...DYNAMIC_TYPES];
+  const types = statement(
+    db,
+    `SELECT type_code, description, is_dynamic FROM facility_types
+     WHERE type_code IN (${known.map(() => '?').join(', ')})`,
+  ).all(...known) as unknown as TypeRow[];
+  const precomputed = statement(db,
     `SELECT n.distance_km, f.facility_id, f.name, f.address, f.lat, f.lon, f.designation_status, f.last_verified_at
      FROM postcode_nearest_static n LEFT JOIN facilities f ON f.facility_id = n.facility_id
      WHERE n.postcode = ? AND n.type_code = ?`,
@@ -127,9 +137,16 @@ function safeLocations(db: Db, params: Params): Route {
 // Coordinates leave rounded to five decimals (about a metre): a smaller payload
 // for every device, and no false precision.
 function staticBundle(db: Db, params: Params): Route {
-  const { version } = db
-    .prepare("SELECT MAX(last_success_at) AS version FROM data_sources WHERE source_kind = 'static'")
-    .get() as { version: string | null };
+  // The newest of the last successful sync and the newest row: a sync that
+  // changed rows but failed afterwards still gives a new version.
+  const { version } = statement(
+    db,
+    `SELECT MAX(at) AS version FROM (
+       SELECT MAX(last_success_at) AS at FROM data_sources WHERE source_kind = 'static'
+       UNION ALL SELECT MAX(updated_at) FROM facilities
+       UNION ALL SELECT MAX(updated_at) FROM postcodes
+     )`,
+  ).get() as { version: string | null };
   // The client already holds this version: answer with the same shape and nothing to load.
   const unchanged = version !== null && params.get('since') === version;
   const body: StaticBundle = {
@@ -137,7 +154,7 @@ function staticBundle(db: Db, params: Params): Route {
     generated_at: nowIso(),
     facilities: unchanged
       ? []
-      : (db.prepare(
+      : (statement(db,
           `SELECT facility_id, type_code AS type, name, address, ROUND(lat, 5) AS lat, ROUND(lon, 5) AS lon,
                   lga_name, designation_status, last_verified_at
            FROM facilities
@@ -147,7 +164,7 @@ function staticBundle(db: Db, params: Params): Route {
         ).all(...STATIC_TYPES) as unknown as StaticBundle['facilities']),
     postcodes: unchanged
       ? []
-      : (db.prepare(
+      : (statement(db,
           'SELECT postcode, ROUND(centroid_lat, 5) AS centroid_lat, ROUND(centroid_lon, 5) AS centroid_lon FROM postcodes ORDER BY postcode',
         ).all() as unknown as StaticBundle['postcodes']),
     data_health: dataHealth(db),
@@ -161,7 +178,7 @@ function dynamicSnapshot(db: Db): Route {
     generated_at: nowIso(),
     source_status: feed.status,
     source_last_success_at: feed.last_success_at,
-    activations: db.prepare(
+    activations: statement(db,
       `SELECT activation_id, type_code AS type, name, address, ROUND(lat, 5) AS lat, ROUND(lon, 5) AS lon, source_updated_at
        FROM activations WHERE status = 'active' ORDER BY activation_id`,
     ).all() as unknown as DynamicSnapshot['activations'],
@@ -175,7 +192,7 @@ const health = (db: Db): Route => ({
   status: 200,
   body: {
     generated_at: nowIso(),
-    sources: db.prepare(
+    sources: statement(db,
       `SELECT source_id, name, source_kind, status, last_attempt_at, last_success_at, consecutive_failures
        FROM data_sources`,
     ).all(),
@@ -241,15 +258,37 @@ export function allowRequest(ip: string, now: number): boolean {
 function clientAddress(request: IncomingMessage): string {
   const forwarded = request.headers['x-forwarded-for'];
   const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim();
-  return first || request.socket.remoteAddress || 'unknown';
+  return addressKey(first || request.socket.remoteAddress || 'unknown');
 }
+
+/** The key a budget is kept under. One home or phone is handed a whole IPv6
+ *  /64, so an IPv6 address is keyed on its first four groups: keyed whole, one
+ *  client would have endless fresh budgets. Exported so it can be tested. */
+export function addressKey(ip: string): string {
+  if (!ip.includes(':') || ip.toLowerCase().startsWith('::ffff:')) return ip;
+  const [head, tail] = ip.toLowerCase().split('%')[0].split('::');
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = tail === undefined ? left : [...left, ...Array(8 - left.length - right.length).fill('0'), ...right];
+  return `${groups.slice(0, 4).map((group) => group.replace(/^0+(?=.)/, '')).join(':')}::/64`;
+}
+
+const GATE_BODY_MAX_BYTES = 1024;
 
 /** The one POST: the development gate. Read here, not in route(), so route()
  *  stays a pure function of the URL. */
 async function gate(request: IncomingMessage, gatePassword: string | undefined): Promise<Route> {
+  // JSON only: a plain-text post from another site skips the browser's
+  // cross-origin check, and must not reach the password.
+  if (!/^application\/json\b/i.test(request.headers['content-type'] ?? '')) {
+    return { status: 415, body: { error: 'unsupported media type' } };
+  }
+  if (Number(request.headers['content-length']) > GATE_BODY_MAX_BYTES) {
+    return { status: 413, body: { error: 'request too large' } };
+  }
   let body: unknown;
   try {
-    body = await readJson(request);
+    body = await readJson(request, GATE_BODY_MAX_BYTES);
   } catch {
     return { status: 400, body: { error: 'bad request' } };
   }
@@ -269,8 +308,12 @@ export function parseRequestUrl(raw: string | undefined): URL | null {
   }
 }
 
+// A reply this large or larger is compressed when the client accepts it: the
+// static bundle is about 150 KB of JSON, and a rural phone pays for every byte.
+const COMPRESS_MIN_BYTES = 1024;
+
 export function createApi(db: Db, gatePassword: string | undefined): Server {
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     const method = request.method ?? 'GET';
     const url = parseRequestUrl(request.url);
     let result: Route;
@@ -288,17 +331,29 @@ export function createApi(db: Db, gatePassword: string | undefined): Server {
       console.error('[api]', error);
       result = { status: 500, body: { error: 'internal error' } };
     }
-    const payload = JSON.stringify(result.body);
+    const json = Buffer.from(JSON.stringify(result.body));
+    const gzip = json.length >= COMPRESS_MIN_BYTES && /\bgzip\b/.test(String(request.headers['accept-encoding']));
+    const payload = gzip ? gzipSync(json) : json;
     response.writeHead(result.status, {
       'content-type': 'application/json; charset=utf-8',
-      'content-length': Buffer.byteLength(payload),
+      'content-length': payload.length,
       'cache-control': 'no-store',
       'x-content-type-options': 'nosniff',
-      ...(result.status === 405 ? { allow: 'GET, HEAD' } : {}),
+      vary: 'accept-encoding',
+      ...(gzip ? { 'content-encoding': 'gzip' } : {}),
+      ...(result.status === 405 ? { allow: url?.pathname === '/api/v1/gate' ? 'POST' : 'GET, HEAD' } : {}),
       ...(result.status === 429 ? { 'retry-after': String(retryAfter(result.body)) } : {}),
+      // A refused body was never read, so the connection is not reused.
+      ...(result.status === 413 || result.status === 415 ? { connection: 'close' } : {}),
     });
     response.end(method === 'HEAD' ? undefined : payload);
   });
+  // Every request is small and answered at once, so a slow one is cut off
+  // instead of holding a connection open for minutes.
+  server.headersTimeout = 5_000;
+  server.requestTimeout = 10_000;
+  server.maxConnections = 512;
+  return server;
 }
 
 function retryAfter(body: unknown): number {

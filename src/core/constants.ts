@@ -165,6 +165,11 @@ export const READOUT_MIN_CHANGE_M = FIX_PUBLISH_M;
 // A position watch that has said nothing for this long is started again: some
 // phones stop delivering positions without reporting any error.
 export const WATCH_RESTART_MS = 15_000;
+/** A fix vaguer than this, and more than twice as vague as one taken within
+ *  FIX_PREFER_PRECISE_MS, is the phone's coarse network guess while GPS
+ *  restarts. The precise fix stays on screen instead of jumping away. */
+export const FIX_COARSE_M = 100;
+export const FIX_PREFER_PRECISE_MS = 10_000;
 
 // The dial's heading (BS_Enhancement-AC2). A car body disturbs a phone's compass
 // and most people leave a bushfire by car, so above this speed the direction of
@@ -211,6 +216,9 @@ export const VOICE_CHECK_MS = 1_000;
 /** Faster than this the person is moving, and the screen is kept awake. A slow
  *  walk is about 1.4 m/s; a phone lying still reports 0 or nothing. Starting value. */
 export const AWAKE_MOVING_MPS = 1;
+/** The screen stays awake this long after the last moving sample, so a pause
+ *  at a crossing does not let the phone sleep and the distance freeze. */
+export const AWAKE_HOLD_MS = 60_000;
 
 // Roads inside the dial (BS_Enhancement-AC5). Every figure here is a starting
 // value, to be tuned on a real phone and in user testing, not a measured one.

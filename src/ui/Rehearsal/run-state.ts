@@ -38,7 +38,10 @@ function startCounting(condition: RehearsalCondition): void {
   stopCounting();
   track = NO_TRACK;
   counting = condition !== 'no-location-fix' && 'geolocation' in navigator;
-  if (!counting) return;
+  if (counting) watchFixes();
+}
+
+function watchFixes(): void {
   watch = navigator.geolocation.watchPosition(
     (position) => {
       track = addFix(track, {
@@ -54,6 +57,17 @@ function startCounting(condition: RehearsalCondition): void {
     },
     { enableHighAccuracy: true, maximumAge: 0 },
   );
+}
+
+// Some phones never resume a watch paused while the screen was off, as
+// BlackSky found on walking tests. Back on screen, the watch starts fresh and
+// the walk counted so far is kept.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || watch === null) return;
+    stopCounting();
+    watchFixes();
+  });
 }
 
 /** The metres walked so far, or null when the distance is not being counted. */

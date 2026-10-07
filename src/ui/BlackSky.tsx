@@ -46,6 +46,8 @@ import {
   type VoiceState,
 } from '../core/blacksky-voice';
 import {
+  FIX_COARSE_M,
+  FIX_PREFER_PRECISE_MS,
   FIX_PUBLISH_M,
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
@@ -127,7 +129,13 @@ function holdRoads(load: () => Promise<ArrayBuffer | undefined>): Promise<RoadMa
       })
       // A file that cannot be read or is not whole is the same as no file: the
       // plain dial, and nothing else on the screen changes.
-      .catch(() => null);
+      .catch(() => null)
+      // Only a decoded map is kept. A miss, say before the first download has
+      // finished, is tried again the next time BlackSky opens.
+      .then((map) => {
+        if (!map) decodedRoads.delete(load);
+        return map;
+      });
     decodedRoads.set(load, held);
   }
   return held;
@@ -185,6 +193,8 @@ export default function BlackSky({
   // and waits for the TICK_MS interval below (one second), so a phone held
   // still renders once per tick. The dial turns with the phone by CSS, not by a render.
   const latestFix = useRef<Fix | null>(null);
+  // When a sample last said the person was moving, for the wake lock's hold.
+  const lastMovingAt = useRef<number | null>(null);
 
   // BS_Enhancement-AC5: the roads, loaded lazily once BlackSky is open, so the
   // file costs nothing on any other screen.
@@ -257,6 +267,14 @@ export default function BlackSky({
         ...(typeof heading === 'number' && Number.isFinite(heading) ? { headingDeg: heading } : {}),
         ...(typeof speed === 'number' && Number.isFinite(speed) ? { speedMps: speed } : {}),
       };
+      const last = latestFix.current;
+      if (
+        last &&
+        heardAt - last.at < FIX_PREFER_PRECISE_MS &&
+        next.accuracyM > Math.max(FIX_COARSE_M, 2 * last.accuracyM)
+      )
+        return; // a coarse guess never replaces a fresh precise fix
+      if (isMoving(next.speedMps)) lastMovingAt.current = heardAt;
       latestFix.current = next;
       // Straight to the compass hook, every sample, without a render: above
       // walking speed this is what turns the dial.
@@ -283,11 +301,13 @@ export default function BlackSky({
       if (watch !== null) return;
       startWatch();
       // A watch that has gone quiet reports no error, so it is started again.
+      // Checked three times per limit, so the restart comes well before the
+      // fix is called old.
       watchdog = setInterval(() => {
         if (watch === null || Date.now() - heardAt < WATCH_RESTART_MS) return;
         navigator.geolocation.clearWatch(watch);
         startWatch();
-      }, WATCH_RESTART_MS);
+      }, WATCH_RESTART_MS / 3);
     };
     const sleep = () => {
       clearInterval(watchdog);
@@ -417,10 +437,11 @@ export default function BlackSky({
   };
 
   // BS_Enhancement-AC4: the screen is kept awake only while voice is on or the
-  // person is moving. The speed of an old position says nothing about now, so
-  // it does not count. Released on Leave, because Leave unmounts this screen.
+  // person moved in the last minute. The speed of an old position says nothing
+  // about now, so it does not count. Released on Leave, because Leave unmounts
+  // this screen.
   const speedMps = fix && now - fix.at <= FIX_STALE_MS ? fix.speedMps : undefined;
-  useWakeLock(shouldStayAwake(voiceOn, speedMps));
+  useWakeLock(shouldStayAwake(voiceOn, lastMovingAt.current, now));
 
   // The page itself, empty, while the store answers: the route's focus lands on
   // it, and the same element carries the screen once it arrives.

@@ -10,6 +10,9 @@ type OrientationEvents = typeof DeviceOrientationEvent & {
 };
 const orientationEvents = (): OrientationEvents | undefined =>
   typeof DeviceOrientationEvent === 'undefined' ? undefined : DeviceOrientationEvent;
+// iOS keeps the grant for the life of the page, so BlackSky opened again from
+// the tab bar turns at once instead of asking for the tap a second time.
+let grantedThisPage = false;
 
 /** Turns the dial with the phone. Two sources feed it: the orientation sensor,
  *  corrected from magnetic to true north by `declinationDeg`, and the direction
@@ -31,7 +34,7 @@ export function useCompass(declinationDeg: number) {
   const declination = useRef(declinationDeg);
   declination.current = declinationDeg;
   const [granted, setGranted] = useState(
-    () => typeof orientationEvents()?.requestPermission !== 'function',
+    () => grantedThisPage || typeof orientationEvents()?.requestPermission !== 'function',
   );
   const [live, setLive] = useState(false);
 
@@ -118,7 +121,13 @@ export function useCompass(declinationDeg: number) {
 
   const enable = async () => {
     const request = orientationEvents()?.requestPermission;
-    if (request && (await request()) === 'granted') setGranted(true);
+    if (!request) return;
+    try {
+      grantedThisPage = (await request()) === 'granted';
+    } catch {
+      return; // refused outside a tap: the button stays for the next one
+    }
+    if (grantedThisPage) setGranted(true);
   };
 
   /** The heading turning the dial right now, TRUE north, or null when the dial

@@ -1,4 +1,4 @@
-import { useId, type CSSProperties } from 'react';
+import { memo, useId, type CSSProperties } from 'react';
 import type { DialCentre } from '../../core/blacksky-dial';
 import {
   DIAL_ARROW_SCALE,
@@ -250,8 +250,17 @@ const ROAD_KIND: Record<number, string> = { 0: 'freeway', 1: 'highway', 2: 'arte
 
 /** The roads and their names. Worked out in screen pixels, so a line of 2 px
  *  is 2 px however large the dial is; the inner group scales them back into
- *  the drawing's units. One path per road. */
-function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: string; idPrefix: string }) {
+ *  the drawing's units. One path per road. Memoised: the layer only changes on
+ *  a redraw, so the screen's one second tick never walks every road again. */
+const MapLayer = memo(function MapLayer({
+  layer,
+  clipId,
+  idPrefix,
+}: {
+  layer: DialMapLayer;
+  clipId: string;
+  idPrefix: string;
+}) {
   const { map, places = [], pxPerUnit } = layer;
   return (
     <g
@@ -325,4 +334,4 @@ function MapLayer({ layer, clipId, idPrefix }: { layer: DialMapLayer; clipId: st
       </g>
     </g>
   );
-}
+});

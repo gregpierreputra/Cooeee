@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allowRequest, parseRequestUrl, route } from '../../server/api';
+import { addressKey, allowRequest, parseRequestUrl, route } from '../../server/api';
 import { type Db, openDb } from '../../server/db';
 import { upsertPostcodes } from '../../server/ingest/postcodes';
 import { rebuildNearestStatic, upsertFacilities } from '../../server/ingest/static';
@@ -62,6 +62,9 @@ describe('GET /api/v1/safe-locations', () => {
     expect(get(db, '/api/v1/safe-locations?lat=%20&lon=144.9').status).toBe(400);
     expect(get(db, '/api/v1/safe-locations').status).toBe(400);
     expect(get(db, '/api/v1/safe-locations?postcode=9999').status).toBe(404);
+    // Only plain decimals, and only inside Victoria.
+    expect(get(db, '/api/v1/safe-locations?lat=0x10&lon=1e2').status).toBe(400);
+    expect(get(db, '/api/v1/safe-locations?lat=-33.86&lon=151.2').status).toBe(400);
     expect(route(db, 'POST', new URL('http://localhost/api/v1/health')).status).toBe(405);
   });
 
@@ -179,5 +182,15 @@ describe('a malformed request line', () => {
   it('reads an ordinary request line, and a missing one as the root', () => {
     expect(parseRequestUrl('/api/v1/health?x=1')?.pathname).toBe('/api/v1/health');
     expect(parseRequestUrl(undefined)?.pathname).toBe('/');
+  });
+});
+
+describe('the address a budget is kept under', () => {
+  it('keys IPv4 whole and IPv6 on its /64', () => {
+    expect(addressKey('203.0.113.7')).toBe('203.0.113.7');
+    expect(addressKey('::ffff:203.0.113.7')).toBe('::ffff:203.0.113.7');
+    expect(addressKey('2001:db8:0:1:aaaa::1')).toBe('2001:db8:0:1::/64');
+    expect(addressKey('2001:DB8:0:1:bbbb:cccc:dddd:eeee')).toBe('2001:db8:0:1::/64');
+    expect(addressKey('2001:db8::1')).toBe('2001:db8:0:0::/64');
   });
 });

@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync, type StatementSync } from 'node:sqlite';
 
 export type Db = DatabaseSync;
 
@@ -56,6 +56,7 @@ export function openDb(path: string): Db {
     PRAGMA foreign_keys = ON;
     PRAGMA synchronous = NORMAL;
     PRAGMA journal_size_limit = 1048576;
+    PRAGMA busy_timeout = 2000;
   `);
   // A file made before that order was fixed has auto_vacuum off, so the daily
   // incremental_vacuum did nothing. One VACUUM converts it, once.
@@ -70,6 +71,19 @@ export function openDb(path: string): Db {
   );
   for (const row of SOURCES) seed.run(...row);
   return db;
+}
+
+const statements = new WeakMap<Db, Map<string, StatementSync>>();
+
+/** The prepared statement for this SQL, prepared once per connection and reused
+ *  on every request after. Safe to share: the server runs on one thread and
+ *  each call finishes before the next begins. */
+export function statement(db: Db, sql: string): StatementSync {
+  let cache = statements.get(db);
+  if (!cache) statements.set(db, (cache = new Map()));
+  let prepared = cache.get(sql);
+  if (!prepared) cache.set(sql, (prepared = db.prepare(sql)));
+  return prepared;
 }
 
 /** Run `fn` inside one transaction: all of its writes land, or none do. */

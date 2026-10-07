@@ -40,3 +40,10 @@ export function clearNoteDraft(store: FlagStore | null, packId: string): void {
     // Storage refused: nothing more can be done from here.
   }
 }
+
+/** A rebuilt pack takes over the old pack's notes, so its unsaved words follow. */
+export function moveNoteDraft(store: FlagStore | null, fromPackId: string, toPackId: string): void {
+  const draft = readNoteDraft(store, fromPackId);
+  if (draft) writeNoteDraft(store, toPackId, draft);
+  clearNoteDraft(store, fromPackId);
+}

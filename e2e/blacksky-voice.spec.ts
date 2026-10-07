@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { relativeBearing } from '../src/core/blacksky-dial';
 import { sideOf } from '../src/core/blacksky-voice';
-import { FIX_STALE_MS, VOICE_CHECK_MS, VOICE_MIN_GAP_MS } from '../src/core/constants';
+import { AWAKE_HOLD_MS, FIX_STALE_MS, VOICE_CHECK_MS, VOICE_MIN_GAP_MS } from '../src/core/constants';
 import {
   HOLD_FOR_BLACKSKY,
   LEAVE_BLACKSKY,
@@ -308,9 +308,10 @@ test('Unavailable: with no speech on the phone the button is not shown', async (
   await expect(speaker(offline)).toHaveCount(0);
 });
 
-test('the screen is kept awake with voice on or while moving, and let go when still and silent', async ({
+test('the screen is kept awake with voice on or while moving, and let go a minute after still and silent', async ({
   page,
 }) => {
+  await page.clock.install();
   await stubPhone(page);
   await openDial(page, 'no-pack');
   await pushPosition(page, { ...southOf(5.5), speed: 0 });
@@ -327,6 +328,10 @@ test('the screen is kept awake with voice on or while moving, and let go when st
   await pushPosition(page, { ...southOf(5.49), speed: 1.4, heading: 0 });
   await expect.poll(() => held(page)).toBe(1);
   await pushPosition(page, { ...southOf(5.48), speed: 0 });
+  // A pause at a crossing keeps it awake, so the distance never freezes.
+  await page.clock.fastForward(AWAKE_HOLD_MS - 2_000);
+  expect(await held(page)).toBe(1);
+  await page.clock.fastForward(4_000);
   await expect.poll(() => held(page)).toBe(0);
   expect(await wake(page)).toEqual({ requests: 2, releases: 2 });
 });
