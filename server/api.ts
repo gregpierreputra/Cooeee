@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { gzipSync } from 'node:zlib';
 import { isInsideVictoria } from '../src/core/constants.ts';
@@ -252,13 +253,32 @@ export function allowRequest(ip: string, now: number): boolean {
   return entry.count <= RATE_LIMIT_PER_MINUTE;
 }
 
-/** The address a request came from. Vercel's rewrite and Railway's proxy both
- *  put the real client first in x-forwarded-for; the socket itself is the proxy,
- *  and keying on it would give every user one shared budget. */
-function clientAddress(request: IncomingMessage): string {
-  const forwarded = request.headers['x-forwarded-for'];
-  const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim();
-  return addressKey(first || request.socket.remoteAddress || 'unknown');
+// Set by the Vercel middleware (middleware.ts) on every request it forwards:
+// the secret both sides hold in PROXY_SECRET, and the client address Vercel
+// measured itself, which a caller cannot write.
+const PROXY_HEADER = 'x-cooeee-proxy';
+const CLIENT_HEADER = 'x-cooeee-client';
+
+const sha256 = (text: string): Buffer => createHash('sha256').update(text).digest();
+
+/** Whether the request came through the Vercel middleware. Hashed first so the
+ *  comparison takes the same time whatever was sent. */
+function fromProxy(request: IncomingMessage, secret: string): boolean {
+  const sent = request.headers[PROXY_HEADER];
+  return typeof sent === 'string' && timingSafeEqual(sha256(sent), sha256(secret));
+}
+
+/** The address a request came from. Behind the middleware it is the address
+ *  Vercel measured. Without a configured secret (local development) it is the
+ *  first x-forwarded-for entry, which a caller can write; the socket itself is
+ *  the proxy, and keying on it would give every user one shared budget. */
+function clientAddress(request: IncomingMessage, proxied: boolean): string {
+  const header = (name: string) => {
+    const value = request.headers[name];
+    return (Array.isArray(value) ? value[0] : value)?.split(',')[0].trim();
+  };
+  const address = proxied ? header(CLIENT_HEADER) : header('x-forwarded-for') || request.socket.remoteAddress;
+  return addressKey(address || 'unknown');
 }
 
 /** The key a budget is kept under. One home or phone is handed a whole IPv6
@@ -277,7 +297,7 @@ const GATE_BODY_MAX_BYTES = 1024;
 
 /** The one POST: the development gate. Read here, not in route(), so route()
  *  stays a pure function of the URL. */
-async function gate(request: IncomingMessage, gatePassword: string | undefined): Promise<Route> {
+async function gate(request: IncomingMessage, gatePassword: string | undefined, address: string): Promise<Route> {
   // JSON only: a plain-text post from another site skips the browser's
   // cross-origin check, and must not reach the password.
   if (!/^application\/json\b/i.test(request.headers['content-type'] ?? '')) {
@@ -293,7 +313,7 @@ async function gate(request: IncomingMessage, gatePassword: string | undefined):
     return { status: 400, body: { error: 'bad request' } };
   }
   const password = typeof body === 'object' && body !== null ? (body as { password?: unknown }).password : undefined;
-  return checkGate(gatePassword, clientAddress(request), password, Date.now());
+  return checkGate(gatePassword, address, password, Date.now());
 }
 
 /** The request line as a URL, or null when it is not one. A request line such
@@ -312,18 +332,24 @@ export function parseRequestUrl(raw: string | undefined): URL | null {
 // static bundle is about 150 KB of JSON, and a rural phone pays for every byte.
 const COMPRESS_MIN_BYTES = 1024;
 
-export function createApi(db: Db, gatePassword: string | undefined): Server {
+/** The API. With `proxySecret` set, as in production, only requests through
+ *  the Vercel middleware are answered; the one exception is the health check,
+ *  which a host may call directly and which costs no budget. */
+export function createApi(db: Db, gatePassword: string | undefined, proxySecret?: string): Server {
   const server = createServer(async (request, response) => {
     const method = request.method ?? 'GET';
     const url = parseRequestUrl(request.url);
+    const proxied = proxySecret ? fromProxy(request, proxySecret) : false;
     let result: Route;
     try {
       if (url === null) {
         result = { status: 400, body: { error: 'bad request' } };
-      } else if (!allowRequest(clientAddress(request), Date.now())) {
+      } else if (proxySecret && !proxied) {
+        result = url.pathname === '/api/v1/health' ? route(db, method, url) : { status: 403, body: { error: 'forbidden' } };
+      } else if (!allowRequest(clientAddress(request, proxied), Date.now())) {
         result = { status: 429, body: { error: 'too many requests' } };
       } else if (method === 'POST' && url.pathname === '/api/v1/gate') {
-        result = await gate(request, gatePassword);
+        result = await gate(request, gatePassword, clientAddress(request, proxied));
       } else {
         result = route(db, method, url);
       }

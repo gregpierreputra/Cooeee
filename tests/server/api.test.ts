@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { addressKey, allowRequest, parseRequestUrl, route } from '../../server/api';
+import type { AddressInfo } from 'node:net';
+import { addressKey, allowRequest, createApi, parseRequestUrl, route } from '../../server/api';
 import { type Db, openDb } from '../../server/db';
 import { upsertPostcodes } from '../../server/ingest/postcodes';
 import { rebuildNearestStatic, upsertFacilities } from '../../server/ingest/static';
@@ -192,5 +193,29 @@ describe('the address a budget is kept under', () => {
     expect(addressKey('2001:db8:0:1:aaaa::1')).toBe('2001:db8:0:1::/64');
     expect(addressKey('2001:DB8:0:1:bbbb:cccc:dddd:eeee')).toBe('2001:db8:0:1::/64');
     expect(addressKey('2001:db8::1')).toBe('2001:db8:0:0::/64');
+  });
+});
+
+describe('behind the Vercel middleware', () => {
+  it('answers only requests carrying the proxy secret, and keeps the health check open', async () => {
+    const server = createApi(seeded(), 'right', 'proxy-secret').listen(0);
+    await new Promise((resolve) => server.once('listening', resolve));
+    const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1`;
+    const proxied = { 'x-cooeee-proxy': 'proxy-secret', 'x-cooeee-client': '203.0.113.9' };
+    try {
+      expect((await fetch(`${base}/sync/dynamic-snapshot`)).status).toBe(403);
+      expect((await fetch(`${base}/sync/dynamic-snapshot`, { headers: { 'x-cooeee-proxy': 'wrong' } })).status).toBe(403);
+      expect((await fetch(`${base}/health`)).status).toBe(200);
+      expect((await fetch(`${base}/sync/dynamic-snapshot`, { headers: proxied })).status).toBe(200);
+      // A gate post straight to the server is refused before any password is read.
+      const direct = await fetch(`${base}/gate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.1' },
+        body: JSON.stringify({ password: 'right' }),
+      });
+      expect(direct.status).toBe(403);
+    } finally {
+      server.close();
+    }
   });
 });

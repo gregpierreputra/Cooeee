@@ -474,3 +474,8 @@ export const NEARBY_FIX_TIMEOUT_MS = 15_000;
 /** How long Nearby shows Searching… at least, so a search is always seen to happen. */
 export const SEARCH_SHOW_MS = 500;
 export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is fine
+/** Use my location: a position vaguer than this cannot pick out one house, so
+ *  the list says how rough it is. Vaguer than LOCATE_TOO_ROUGH_M the nearest
+ *  addresses would be someone else's, so the position is not used. */
+export const LOCATE_ROUGH_M = 50;
+export const LOCATE_TOO_ROUGH_M = 1_000;

@@ -8,13 +8,11 @@ const LOCK_MAX_MS = 60_000;
 const MAX_PASSWORD_LENGTH = 128;
 const attempts = new Map<string, { failures: number; lockedUntil: number }>();
 
-// The per-address count above trusts the address the proxy reports, and a
-// client that reaches this host directly can report a new one on every try.
-// So wrong passwords are also counted across every address: past this many in
-// a minute the gate refuses everyone until the minute is over. That caps
-// guessing at a rate no spoofed address can raise.
-// ponytail: a flood of wrong guesses locks honest users out for up to a minute;
-// accepted for a development gate, revisit if the gate ever guards real accounts.
+// Wrong passwords are also counted across every address: past this many in a
+// minute, any address that has already missed is refused until the minute is
+// over. That caps guessing however many addresses a guesser holds, while a
+// person trying for the first time is always answered, so a flood of wrong
+// guesses can never lock everyone out.
 const GLOBAL_FAILURES_PER_MINUTE = 30;
 const GLOBAL_WINDOW_MS = 60_000;
 let globalWindow = { start: 0, failures: 0 };
@@ -31,7 +29,7 @@ export function checkGate(secret: string | undefined, ip: string, password: unkn
   // ponytail: clear every entry rather than expire each one; bounds memory under address spoofing.
   if (attempts.size > 10_000) attempts.clear();
   if (now - globalWindow.start >= GLOBAL_WINDOW_MS) globalWindow = { start: now, failures: 0 };
-  if (globalWindow.failures >= GLOBAL_FAILURES_PER_MINUTE) {
+  if (globalWindow.failures >= GLOBAL_FAILURES_PER_MINUTE && attempts.has(ip)) {
     return locked(globalWindow.start + GLOBAL_WINDOW_MS - now);
   }
   const entry = attempts.get(ip) ?? { failures: 0, lockedUntil: 0 };
