@@ -60,12 +60,13 @@ describe('E1-US2 saved date and age', () => {
     expect(formatGazettalDate('')).toBe('');
   });
 
-  it('gives the publisher, the saved date and same-day wording as separate facts', () => {
+  it('gives the publisher, the saved date and the age as separate facts', () => {
     expect(provenanceView(NOW, source({ retrievedAt: NOW }))).toEqual({
       publisher: 'Country Fire Authority',
       savedOn: formatSavedDate(NOW),
-      age: copy.SOURCE_TODAY,
+      age: 'Just now',
     });
+    expect(provenanceView(NOW, source({ retrievedAt: NOW - 2 * 3_600_000 })).age).toBe('2 hours ago');
   });
 
   it('shows whole elapsed days without rounding a partial day up', () => {

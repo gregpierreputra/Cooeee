@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { NEED_CHANNELS } from '../src/core/constants';
+import { COPY_CONFIRM_MS, NEED_CHANNELS } from '../src/core/constants';
 import * as copy from '../src/core/copy';
 import { acknowledgeFirstOpen, HARNESS, openSources } from './helpers';
 
@@ -213,8 +213,11 @@ test('Home nudges towards a pack while a kept program is not saved offline', asy
   await expect(page.locator('.nudge')).toHaveCount(0);
   await page.evaluate(() => window.localStorage.setItem('cooeee.kept.v1', '["services-australia-crisis-payment"]'));
   await page.goto('/');
-  await expect(page.locator('.nudge')).toContainText(copy.KEPT_NOT_SAVED(1));
-  await expect(page.locator('.nudge').getByRole('link', { name: copy.BUILD_A_PACK })).toBeVisible();
+  // One place, not two: the nudge is a line in the dashed empty space, which
+  // is no card, and the main button is the one way to build a pack.
+  await expect(page.locator('.empty-state .nudge')).toContainText(copy.KEPT_NOT_SAVED(1));
+  await expect(page.locator('.home .card')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: copy.BUILD_A_PACK })).toHaveCount(1);
 });
 
 // E4-US9: a program kept after a pack exists flows into that pack on the next
@@ -233,16 +236,22 @@ test('a Recover card says when it is in your packs', async ({ page }) => {
   await expect(page.locator('.card .in-packs')).toHaveText(copy.IN_YOUR_PACKS);
 });
 
-// E4-US10: every number on the device, the hotline first, as tap-to-call links.
+// E4-US10: every number on the device, 000 then the hotline first, as tap-to-call links.
 test('who to call lists the hotline and each program number as a call link', async ({ page }) => {
   await page.goto(RECOVER_URL);
   await page.getByRole('button', { name: copy.WHO_TO_CALL }).click();
   await expect(page.getByRole('heading', { name: copy.WHO_TO_CALL })).toBeVisible();
   // The wellbeing lines follow in their own group (R3).
   const links = page.locator('.list').first().locator('.card a');
-  await expect(links).toHaveCount(2);
-  await expect(links.first()).toHaveAttribute('href', 'tel:1800226226');
-  await expect(links.nth(1)).toHaveAttribute('href', 'tel:1802266');
+  await expect(links).toHaveCount(3);
+  await expect(links.first()).toHaveAttribute('href', 'tel:000');
+  await expect(links.nth(1)).toHaveAttribute('href', 'tel:1800226226');
+  await expect(links.nth(2)).toHaveAttribute('href', 'tel:1802266');
+  // Red for 000 only, with the one filled Call. The hotline is amber.
+  await expect(page.locator('.call-card.emergency-line')).toHaveCount(1);
+  await expect(page.locator('.call-card.emergency-line')).toContainText(copy.TRIPLE_ZERO_LABEL);
+  await expect(page.locator('.call-card.caution-line')).toContainText(copy.HOTLINE_LABEL);
+  await expect(page.locator('.main-action')).toHaveCount(1);
 });
 
 // E4-US11: one print control, and nothing leaves the phone.
@@ -304,7 +313,31 @@ test('Who to call ends with the wellbeing lines', async ({ page }) => {
   await page.getByRole('button', { name: copy.WHO_TO_CALL }).click();
   await expect(page.getByRole('heading', { name: copy.TALK_TO_SOMEONE })).toBeVisible();
   for (const line of copy.WELLBEING_LINES) {
-    await expect(page.getByRole('link', { name: copy.CALL_LINE(line.number) }))
+    await expect(page.getByRole('link', { name: `${copy.CALL} ${line.name}` }))
       .toHaveAttribute('href', `tel:${line.number.replaceAll(' ', '')}`);
   }
+});
+
+// Copy puts the number on the clipboard and says so for a moment: one card at a
+// time, and back to Copy after COPY_CONFIRM_MS.
+test('Copy on a Who to call card copies its number and says Copied for a moment', async ({ page }) => {
+  await page.clock.install();
+  await page.goto(RECOVER_URL);
+  await page.evaluate(() => {
+    const copied: string[] = [];
+    (window as Window & { __copied?: string[] }).__copied = copied;
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (text: string) => { copied.push(text); } } });
+  });
+  await page.getByRole('button', { name: copy.WHO_TO_CALL }).click();
+  await page.getByRole('button', { name: `${copy.COPY} Lifeline` }).click();
+  await expect(page.getByRole('button', { name: `${copy.COPIED} Lifeline` })).toBeVisible();
+  expect(await page.evaluate(() => (window as Window & { __copied?: string[] }).__copied)).toEqual(['13 11 14']);
+
+  await page.getByRole('button', { name: `${copy.COPY} Beyond Blue` }).click();
+  await expect(page.getByRole('button', { name: `${copy.COPIED} Beyond Blue` })).toBeVisible();
+  await expect(page.getByRole('button', { name: `${copy.COPY} Lifeline` })).toBeVisible();
+
+  await page.clock.fastForward(COPY_CONFIRM_MS);
+  await expect(page.getByRole('button', { name: `${copy.COPY} Beyond Blue` })).toBeVisible();
+  await expect(page.getByRole('button', { name: new RegExp(copy.COPIED) })).toHaveCount(0);
 });

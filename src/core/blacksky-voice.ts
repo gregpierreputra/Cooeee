@@ -1,5 +1,6 @@
 import {
   AT_PLACE_M,
+  AWAKE_HOLD_MS,
   AWAKE_MOVING_MPS,
   VOICE_MILESTONES_M,
   VOICE_MILESTONE_MARGIN,
@@ -41,10 +42,10 @@ export const isMoving = (speedMps: number | null | undefined): boolean =>
   typeof speedMps === 'number' && Number.isFinite(speedMps) && speedMps > AWAKE_MOVING_MPS;
 
 /** BS_Enhancement-AC4: the screen is kept awake while voice is on (a driver is
- *  listening, not touching the phone) or the person is moving. Still and
- *  silent, the phone sleeps on its own timer. */
-export const shouldStayAwake = (voiceOn: boolean, speedMps: number | null | undefined): boolean =>
-  voiceOn || isMoving(speedMps);
+ *  listening, not touching the phone) or the person moved within AWAKE_HOLD_MS.
+ *  Still and silent, the phone sleeps on its own timer. */
+export const shouldStayAwake = (voiceOn: boolean, lastMovingAt: number | null, now: number): boolean =>
+  voiceOn || (lastMovingAt !== null && now - lastMovingAt < AWAKE_HOLD_MS);
 
 /** What the screen knows at this moment, in the terms the voice speaks. */
 export type VoiceState = {

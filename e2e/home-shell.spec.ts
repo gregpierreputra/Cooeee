@@ -1,10 +1,9 @@
 import { expect, test } from '@playwright/test';
 import {
-  ABOUT_BLACKSKY,
-  BLACKSKY_INFO_LINES,
-  BLACKSKY_WORKS_WITHOUT_PACK,
   BUILD_A_PACK,
-  CHECKED_DAYS_AGO,
+  CHECKED_AGO,
+  ITEM_DAYS_AGO,
+  JUST_NOW,
   CONFIRM_DELETE_PACK,
   CONNECTION_ONLINE_LABEL,
   DELETE_PACK,
@@ -12,7 +11,6 @@ import {
   HEADER_HOME_LABEL,
   HOLD_FOR_BLACKSKY,
   HOLD_TO_ENTER,
-  NAV_ABOUT,
   NAV_HOME,
   NAV_LABEL,
   NAV_NEARBY,
@@ -21,11 +19,19 @@ import {
   OFFLINE_NOTICE,
   ONLINE_NOTICE,
   PACK_SETTINGS,
+  PLACE_NAME_LABEL,
+  RENAME_PACK,
+  SAVE,
+  CLOSE,
+  PACK_NAME_TAKEN,
+  CHANGE_ICON,
+  PACK_ICON_NAMES,
   PREPARATION_LINES,
   PREPARATION_MORE,
   PREPARATION_SOURCE,
-  SAVED_DAYS_AGO,
+  SAVED_AGO,
 } from '../src/core/copy';
+import { NAV_HOLD_HINT_MS } from '../src/core/constants';
 import { titleCase as displayAddress } from '../src/core/home';
 import { acknowledgeFirstOpen, HARNESS, storageCounts } from './helpers';
 
@@ -36,15 +42,15 @@ const home = (query: string) => `${HARNESS}/home${query}`;
 
 test.describe('the header reports the saved pack age', () => {
   // TC-1.2.6-A
-  test('states the age in days on the day the pack was saved', async ({ page }) => {
+  test('states the age in words on the day the pack was saved', async ({ page }) => {
     await page.goto(home('?days=0'));
-    await expect(page.getByText(CHECKED_DAYS_AGO(0), { exact: true })).toBeVisible();
+    await expect(page.getByText(CHECKED_AGO(JUST_NOW), { exact: true })).toBeVisible();
   });
 
   // An old pack states its age plainly, with no old-data label, and stays usable.
   test('states the age plainly at day 31, and the pack stays usable', async ({ page }) => {
     await page.goto(home('?days=31'));
-    await expect(page.getByText(CHECKED_DAYS_AGO(31), { exact: true })).toBeVisible();
+    await expect(page.getByText(CHECKED_AGO(ITEM_DAYS_AGO(31)), { exact: true })).toBeVisible();
     await expect(page.getByText(/not recently verified/i)).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Ferny Creek' })).toBeEnabled();
   });
@@ -69,7 +75,7 @@ test.describe('the header reports the saved pack age', () => {
   }) => {
     await page.goto(home('?days=12'));
     const age = page.locator('.app-header-age');
-    await expect(age).toHaveText(CHECKED_DAYS_AGO(12));
+    await expect(age).toHaveText(CHECKED_AGO(ITEM_DAYS_AGO(12)));
     await expect(age.locator('img, svg')).toHaveCount(0);
   });
 });
@@ -85,7 +91,7 @@ test.describe('the returning-user home screen', () => {
     // Title-cased for reading; the stored string keeps the custodian's capitals.
     await expect(page.getByText(displayAddress('10 OLD ROAD FERNY CREEK 3786'))).toBeVisible();
     await expect(
-      page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
+      page.getByText(SAVED_AGO(ITEM_DAYS_AGO(3)), { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: BUILD_A_PACK })).toBeVisible();
     await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
@@ -95,7 +101,7 @@ test.describe('the returning-user home screen', () => {
     for (const box of await Promise.all(
       [
         page.getByRole('heading', { name: 'Ferny Creek' }),
-        page.getByText(SAVED_DAYS_AGO(3), { exact: true }),
+        page.getByText(SAVED_AGO(ITEM_DAYS_AGO(3)), { exact: true }),
         page.getByRole('link', { name: BUILD_A_PACK }),
         page.getByRole('button', { name: HOLD_FOR_BLACKSKY }),
       ].map((locator) => locator.boundingBox()),
@@ -152,48 +158,23 @@ test.describe('the returning-user home screen', () => {
     await expect(page.getByRole('heading', { name: 'Ferny Creek' })).toBeVisible();
   });
 
-  test('the hold control carries a sub-line only while nothing is saved', async ({ page }) => {
-    await page.goto(home('?days=3'));
-    const hold = page.getByRole('button', { name: HOLD_FOR_BLACKSKY });
-    await expect(hold).toHaveText(HOLD_FOR_BLACKSKY);
-
-    await page.goto(home('?mode=none'));
-    await expect(page.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toContainText(
-      BLACKSKY_WORKS_WITHOUT_PACK,
-    );
+  test('the compass in the tab bar is the way into BlackSky, with or without a pack', async ({ page }) => {
+    for (const query of ['?days=3', '?mode=none']) {
+      await page.goto(home(query));
+      const nav = page.getByRole('navigation', { name: NAV_LABEL });
+      await expect(nav.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
+      await expect(page.locator('main').getByRole('button', { name: HOLD_FOR_BLACKSKY })).toHaveCount(0);
+    }
   });
 
-  // The ring beside the hold control: hovering it does nothing; a click opens
-  // the lines beneath the hold control, in flow, and a second click closes them.
-  test('the information ring opens the About BlackSky panel on a click, never on hover', async ({
-    page,
-  }) => {
+  // The bar is on every screen, so its hint goes again on its own.
+  test('the compass hint fades after a few seconds', async ({ page }) => {
+    await page.clock.install();
     await page.goto(home('?days=3'));
-    const ring = page.getByRole('button', { name: ABOUT_BLACKSKY });
-    const panel = page.locator('.blacksky-info-panel');
-    await expect(ring).toHaveAttribute('aria-expanded', 'false');
-    await expect(panel).toHaveCount(0);
-
-    await ring.hover();
-    await expect(ring).toHaveAttribute('aria-expanded', 'false');
-    await expect(panel).toHaveCount(0);
-
-    await ring.click();
-    await expect(ring).toHaveAttribute('aria-expanded', 'true');
-    await expect(panel.locator('li')).toHaveCount(BLACKSKY_INFO_LINES.length);
-    await expect(panel).toContainText(BLACKSKY_INFO_LINES[0].text);
-    // Both edges are read in one frame: opening the panel scrolls it into view,
-    // so two separate measurements would straddle that scroll and compare
-    // positions taken at different offsets.
-    const below = await page.evaluate(() => {
-      const hold = document.querySelector('.blacksky-hold')!.getBoundingClientRect();
-      const box = document.querySelector('.blacksky-info-panel')!.getBoundingClientRect();
-      return box.y >= hold.y + hold.height;
-    });
-    expect(below).toBe(true);
-
-    await ring.click();
-    await expect(panel).toHaveCount(0);
+    await page.getByRole('button', { name: HOLD_FOR_BLACKSKY }).click();
+    await expect(page.getByText(HOLD_TO_ENTER)).toBeVisible();
+    await page.clock.fastForward(NAV_HOLD_HINT_MS);
+    await expect(page.getByText(HOLD_TO_ENTER)).toHaveCount(0);
   });
 
   test('the pack card carries the age alone in its footer', async ({
@@ -201,7 +182,7 @@ test.describe('the returning-user home screen', () => {
   }) => {
     await page.goto(home('?days=3'));
     const footer = page.locator('.saved-place-footer');
-    await expect(footer).toHaveText(SAVED_DAYS_AGO(3));
+    await expect(footer).toHaveText(SAVED_AGO(ITEM_DAYS_AGO(3)));
   });
 
   test('the hold control meets the 44px minimum target size', async ({ page }) => {
@@ -211,7 +192,7 @@ test.describe('the returning-user home screen', () => {
     expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('the bottom navigation names its destinations, and BlackSky is not one', async ({
+  test('the bottom navigation names its destinations, and BlackSky is held, not a tab', async ({
     page,
   }) => {
     await page.goto(home('?days=3'));
@@ -219,9 +200,10 @@ test.describe('the returning-user home screen', () => {
     await expect(nav.getByRole('link', { name: NAV_HOME })).toBeVisible();
     await expect(nav.getByRole('link', { name: NAV_NEARBY })).toBeVisible();
     await expect(nav.getByRole('link', { name: NAV_REHEARSE })).toBeVisible();
-    await expect(nav.getByRole('link', { name: NAV_ABOUT })).toBeVisible();
-    await expect(nav.getByRole('link', { name: HOLD_FOR_BLACKSKY })).toHaveCount(0);
-    expect((await nav.textContent()) ?? '').not.toContain('BlackSky');
+    await expect(nav.getByRole('link')).toHaveCount(4);
+    // BlackSky is never a tab: the compass is a button that needs a hold.
+    await expect(nav.getByRole('link', { name: /BlackSky/ })).toHaveCount(0);
+    await expect(nav.getByRole('button', { name: HOLD_FOR_BLACKSKY })).toBeVisible();
   });
 
   test('the header returns home and never offers a way into BlackSky', async ({ page }) => {
@@ -273,17 +255,73 @@ test.describe('the connection notice', () => {
     expect((await header.textContent()) ?? '').not.toContain('BlackSky');
     // The age still reads: it is stored on the device, and losing the network
     // changes nothing about it.
-    await expect(page.getByText(CHECKED_DAYS_AGO(3), { exact: true })).toBeVisible();
+    await expect(page.getByText(CHECKED_AGO(ITEM_DAYS_AGO(3)), { exact: true })).toBeVisible();
 
     await context.setOffline(false);
   });
+});
+
+// The pack's menu opens on its close cross, never on Delete, and Rename changes
+// the name on the card and in the menu at once.
+test('the pack menu opens on Close and renames the pack', async ({ page }) => {
+  await page.goto(home('?days=3'));
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
+  const menu = page.getByRole('dialog', { name: 'Ferny Creek' });
+  await expect(menu.getByRole('button', { name: CLOSE })).toBeFocused();
+
+  await menu.getByRole('button', { name: RENAME_PACK }).click();
+  await expect(menu.getByLabel(PLACE_NAME_LABEL)).toBeFocused();
+  await expect(menu.getByLabel(PLACE_NAME_LABEL)).toHaveValue('Ferny Creek');
+  await menu.getByLabel(PLACE_NAME_LABEL).fill('  ');
+  await expect(menu.getByRole('button', { name: SAVE, exact: true })).toBeDisabled();
+  await menu.getByLabel(PLACE_NAME_LABEL).fill('Mum and Dad');
+  await menu.getByRole('button', { name: SAVE, exact: true }).click();
+
+  // A saved name closes the menu onto the card, shown exactly as typed, and
+  // focus returns to its ..., now named for the new name.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.pack-card h2')).toHaveText('Mum and Dad');
+  await expect(page.getByRole('button', { name: PACK_SETTINGS('Mum and Dad') })).toBeFocused();
+});
+
+// Change icon: one drawing per pack, chosen in the menu, and the menu closes
+// onto the card. Opening it again shows the drawing chosen.
+test('Change icon gives the pack a drawing', async ({ page }) => {
+  await page.goto(home('?days=3'));
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
+  await page.getByRole('button', { name: CHANGE_ICON }).click();
+  await expect(page.getByRole('radio', { name: PACK_ICON_NAMES.place })).toBeChecked();
+  await expect(page.getByRole('radio', { name: PACK_ICON_NAMES.place })).toBeFocused();
+
+  await page.getByRole('radio', { name: PACK_ICON_NAMES.family }).check();
+  await page.getByRole('button', { name: SAVE, exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
+  await page.getByRole('button', { name: CHANGE_ICON }).click();
+  await expect(page.getByRole('radio', { name: PACK_ICON_NAMES.family })).toBeChecked();
+});
+
+// One name per pack: a name another pack has, whatever its capitals, is refused
+// and said, and the pack keeps its name.
+test('Rename refuses a name another pack already has', async ({ page }) => {
+  await page.goto(home('?days=3&packs=2'));
+  await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
+  const menu = page.getByRole('dialog', { name: 'Ferny Creek' });
+  await menu.getByRole('button', { name: RENAME_PACK }).click();
+  await menu.getByLabel(PLACE_NAME_LABEL).fill('kalorama ');
+  await menu.getByRole('button', { name: SAVE, exact: true }).click();
+
+  await expect(menu.locator('.field-message')).toHaveText(PACK_NAME_TAKEN);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.pack-card h2')).toHaveText(['Kalorama', 'Ferny Creek']);
 });
 
 // Deleting the pack takes two taps, and the second removes it from the device
 // entirely: the card gives way to the no-pack state and the store holds nothing.
 test('delete removes the pack from the device after the confirmation', async ({ page }) => {
   await page.goto(home('?days=3'));
-  await expect(page.locator('.app-header-age')).toHaveText(CHECKED_DAYS_AGO(3));
+  await expect(page.locator('.app-header-age')).toHaveText(CHECKED_AGO(ITEM_DAYS_AGO(3)));
   await page.getByRole('button', { name: PACK_SETTINGS('Ferny Creek') }).click();
   await page.getByRole('button', { name: DELETE_PACK }).click();
   await page.getByRole('button', { name: CONFIRM_DELETE_PACK, exact: true }).click();

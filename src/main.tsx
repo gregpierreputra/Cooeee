@@ -14,7 +14,11 @@ const updateSW = registerSW({
   onNeedRefresh: markUpdateReady,
   onRegisterError: console.error,
   onRegisteredSW: (_url, registration) => {
-    if (registration) setInterval(() => navigator.onLine && void registration.update(), UPDATE_CHECK_MS);
+    // A connection that reports online but carries nothing fails the check
+    // quietly; the next hour tries again.
+    if (registration) {
+      setInterval(() => navigator.onLine && registration.update().catch(() => undefined), UPDATE_CHECK_MS);
+    }
   },
 });
 

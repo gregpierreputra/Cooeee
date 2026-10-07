@@ -1,5 +1,5 @@
 import type { DataHealth, SourceStatus } from '../src/core/types.ts';
-import { type Db, nowIso } from './db.ts';
+import { type Db, nowIso, statement } from './db.ts';
 
 export type SyncCounts = { seen: number; added: number; updated: number; skipped?: number };
 
@@ -77,8 +77,7 @@ export function consecutiveFailures(db: Db, sourceId: string): number {
 
 /** Every source's status, keyed by id — the `data_health` block of every response. */
 export function dataHealth(db: Db): DataHealth {
-  const rows = db
-    .prepare('SELECT source_id, status, last_success_at FROM data_sources')
+  const rows = statement(db, 'SELECT source_id, status, last_success_at FROM data_sources')
     .all() as { source_id: string; status: SourceStatus; last_success_at: string | null }[];
   return Object.fromEntries(
     rows.map((row) => [row.source_id, { status: row.status, last_success_at: row.last_success_at }]),

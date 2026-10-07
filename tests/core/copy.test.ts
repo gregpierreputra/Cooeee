@@ -42,7 +42,7 @@ describe('mandated literals', () => {
 
 describe('composed lines', () => {
   it('a fresh pack is dated without a verdict attached', () => {
-    expect(copy.SAVED_DAYS_AGO(3)).toBe('Saved 3 days ago');
+    expect(copy.SAVED_AGO(copy.ITEM_DAYS_AGO(3))).toBe('Saved 3 days ago');
   });
 
   it('the choose hint counts one place versus two', () => {
@@ -232,14 +232,15 @@ describe('deliberate activation', () => {
 // age wordings in the product must stay distinguishable — the card reports when
 // the pack was written, the header when its contents were last checked.
 describe('the fixed header', () => {
-  it('states the age in days', () => {
-    expect(copy.CHECKED_DAYS_AGO(0)).toBe('Checked 0 days ago');
-    expect(copy.CHECKED_DAYS_AGO(30)).toBe('Checked 30 days ago');
+  it('states the age in words, from just now to days', () => {
+    expect(copy.CHECKED_AGO(copy.JUST_NOW)).toBe('Checked just now');
+    expect(copy.CHECKED_AGO(copy.MINUTES_AGO(5))).toBe('Checked 5 minutes ago');
+    expect(copy.CHECKED_AGO(copy.ITEM_DAYS_AGO(30))).toBe('Checked 30 days ago');
   });
 
 
   it('keeps the header wording distinct from the pack card wording', () => {
-    expect(copy.CHECKED_DAYS_AGO(3)).not.toBe(copy.SAVED_DAYS_AGO(3));
+    expect(copy.CHECKED_AGO(copy.ITEM_DAYS_AGO(3))).not.toBe(copy.SAVED_AGO(copy.ITEM_DAYS_AGO(3)));
   });
 
   it('gives the wordless dismissed connection notice its whole meaning in its name', () => {
@@ -249,8 +250,9 @@ describe('the fixed header', () => {
 });
 
 describe('the returning-user home', () => {
-  it('states that no pack is saved, and offers to build one', () => {
-    expect(copy.NO_PACK_SAVED).toBe('No pack saved yet.');
+  it('says where packs will show, under their own eyebrow, and offers to build one', () => {
+    expect(copy.NO_PACK_SAVED).toBe('Packs you save will show up here.');
+    expect(copy.YOUR_PACKS).toBe('Your packs');
     expect(copy.BUILD_A_PACK).toBe('New offline pack');
   });
 
@@ -258,7 +260,7 @@ describe('the returning-user home', () => {
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
-  it('tours eleven features across every screen, each a title, a glyph and one short line', () => {
+  it('tours ten features across every screen after the welcome, each a title, a glyph and one short line', () => {
     expect(copy.TOUR_STEPS.map((step) => step.title)).toEqual([
       "Today's reminder",
       'Your saved packs',
@@ -270,7 +272,6 @@ describe('the returning-user home', () => {
       'Nearby official places',
       'Rehearse',
       'Recover',
-      'About Cooeee',
     ]);
     for (const step of copy.TOUR_STEPS) {
       expect(step.path.startsWith('/')).toBe(true);
@@ -280,8 +281,13 @@ describe('the returning-user home', () => {
     expect(copy.SKIP_TOUR).toBe('Skip tour');
   });
 
-  it('says what Cooeee is on the About page, glyph-led plain sentences with no colon, semicolon or dash', () => {
-    expect(copy.ABOUT_COOEEE).toBe('About Cooeee');
+  it('says what Cooeee is in the tour welcome, glyph-led plain sentences with no colon, semicolon or dash', () => {
+    expect(copy.ABOUT_COOEEE).toBe('More about Cooeee');
+    expect(copy.WELCOME_SAY).toBe('Said koo-EE.');
+    expect(copy.WELCOME_NAME).toContain('come here');
+    // Every picked out word is in the welcome, so none is left uncoloured.
+    const welcome = [copy.WELCOME_SAY, copy.WELCOME_NAME, copy.WELCOME_DOES].join(' ');
+    for (const term of copy.WELCOME_TERMS) expect(welcome).toContain(term);
     expect(copy.COOEEE_INFO_LINES.map((line) => line.glyph)).toEqual([
       'what',
       'why',
@@ -297,7 +303,7 @@ describe('the returning-user home', () => {
   });
 
   it('says what BlackSky does in four glyph-led lines, the last naming the two-second hold', () => {
-    expect(copy.ABOUT_BLACKSKY).toBe('About BlackSky');
+    expect(copy.ABOUT_BLACKSKY).toBe('More about BlackSky');
     expect(copy.BLACKSKY_INFO_LINES.map((line) => line.glyph)).toEqual([
       'go',
       'offline',
@@ -519,12 +525,14 @@ describe('the choice of condition', () => {
   });
 });
 
-describe('an age of one day', () => {
-  it('reads "1 day ago", never "1 days ago", wherever an age is stated', () => {
-    expect(copy.SAVED_DAYS_AGO(1)).toBe('Saved 1 day ago');
+describe('an age of one', () => {
+  it('reads "1 minute", "1 hour" and "1 day", never "1 days", wherever an age is stated', () => {
+    expect(copy.MINUTES_AGO(1)).toBe('1 minute ago');
+    expect(copy.MINUTES_AGO(2)).toBe('2 minutes ago');
+    expect(copy.HOURS_AGO(1)).toBe('1 hour ago');
+    expect(copy.HOURS_AGO(2)).toBe('2 hours ago');
     expect(copy.ITEM_DAYS_AGO(1)).toBe('1 day ago');
-    expect(copy.CHECKED_DAYS_AGO(1)).toBe('Checked 1 day ago');
-    expect(copy.SAVED_DAYS_AGO(2)).toBe('Saved 2 days ago');
+    expect(copy.SAVED_AGO(copy.ITEM_DAYS_AGO(2))).toBe('Saved 2 days ago');
   });
 });
 

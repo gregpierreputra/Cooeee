@@ -17,6 +17,9 @@ export const NEARBY_PLACES = 3;
 /** The longest personal note a pack takes. A bound on the user's own text,
  *  enforced where it is written, not a limit on the official content. */
 export const NOTE_MAX_CHARS = 2000;
+/** The longest name a pack takes when renamed. Long enough for "Mum and Dad's
+ *  place in Ferny Creek", short enough to sit on one pack card. */
+export const PACK_NAME_MAX_CHARS = 60;
 
 /** The number of last-resort places a pack holds. Two equal-status places, with
  * no ordering of worth between them. A hard cap, not a target: an area may
@@ -121,6 +124,15 @@ export const FIX_STALE_MS = 30_000;
 export const ACCURACY_MAX_M = 100;
 
 export const HOLD_MS = 2_000;
+// How long the tab bar's BlackSky button keeps its "hold" hint after a tap.
+// The bar is on every screen, so a hint that stayed would never go away.
+export const NAV_HOLD_HINT_MS = 4_000;
+// How long a call card's Copy says Copied or Not copied before it reads Copy
+// again. It reports a moment, not what the clipboard holds later.
+export const COPY_CONFIRM_MS = 3_000;
+// How often an age in words ("just now", "5 minutes ago") moves on while a
+// screen stays open, so it never goes stale in front of the person.
+export const AGE_CLOCK_MS = 60_000;
 // How far outside the hold button a pointer may stray before the hold is
 // cancelled. A finger held down for two seconds rolls and slides by several
 // pixels, and a thumb near the button's edge slips just past it, so leaving
@@ -153,6 +165,11 @@ export const READOUT_MIN_CHANGE_M = FIX_PUBLISH_M;
 // A position watch that has said nothing for this long is started again: some
 // phones stop delivering positions without reporting any error.
 export const WATCH_RESTART_MS = 15_000;
+/** A fix vaguer than this, and more than twice as vague as one taken within
+ *  FIX_PREFER_PRECISE_MS, is the phone's coarse network guess while GPS
+ *  restarts. The precise fix stays on screen instead of jumping away. */
+export const FIX_COARSE_M = 100;
+export const FIX_PREFER_PRECISE_MS = 10_000;
 
 // The dial's heading (BS_Enhancement-AC2). A car body disturbs a phone's compass
 // and most people leave a bushfire by car, so above this speed the direction of
@@ -199,6 +216,9 @@ export const VOICE_CHECK_MS = 1_000;
 /** Faster than this the person is moving, and the screen is kept awake. A slow
  *  walk is about 1.4 m/s; a phone lying still reports 0 or nothing. Starting value. */
 export const AWAKE_MOVING_MPS = 1;
+/** The screen stays awake this long after the last moving sample, so a pause
+ *  at a crossing does not let the phone sleep and the distance freeze. */
+export const AWAKE_HOLD_MS = 60_000;
 
 // Roads inside the dial (BS_Enhancement-AC5). Every figure here is a starting
 // value, to be tuned on a real phone and in user testing, not a measured one.
@@ -402,6 +422,7 @@ export const GENERAL_CHANNEL_URL = 'https://www.disasterassist.gov.au/';
 export const REGISTER_FIND_REUNITE_URL = 'https://register.redcross.org.au/';
 /** The VicEmergency hotline, the one number every call list opens with. */
 export const HOTLINE_NUMBER = '1800 226 226';
+export const TRIPLE_ZERO = '000';
 
 /** Programs the user chose to keep: program ids only, on this phone, capped so
  *  the list can never grow without bound. */
@@ -439,6 +460,9 @@ export const BLACKSKY_LATCH_VALUE = 'latched';
  * chooses one, read on the next visit, and only ever compared against the
  * packs in the store, so a stale or foreign value simply matches nothing. */
 export const BLACKSKY_PACK_KEY = 'cooeee.blacksky-pack.v1';
+/** The unsaved words of a pack's note, one draft per pack, under this prefix
+ *  and the pack id. Cleared by Save, Cancel and Delete, and with the pack. */
+export const NOTE_DRAFT_KEY_PREFIX = 'cooeee.note-draft.v1:';
 
 /** Nearby places (spec §7). A dynamic snapshot whose feed is older than this is
  *  no longer shown as a place to go — only the stale notice and the hotline stay. */
@@ -450,3 +474,8 @@ export const NEARBY_FIX_TIMEOUT_MS = 15_000;
 /** How long Nearby shows Searching… at least, so a search is always seen to happen. */
 export const SEARCH_SHOW_MS = 500;
 export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is fine
+/** Use my location: a position vaguer than this cannot pick out one house, so
+ *  the list says how rough it is. Vaguer than LOCATE_TOO_ROUGH_M the nearest
+ *  addresses would be someone else's, so the position is not used. */
+export const LOCATE_ROUGH_M = 50;
+export const LOCATE_TOO_ROUGH_M = 1_000;

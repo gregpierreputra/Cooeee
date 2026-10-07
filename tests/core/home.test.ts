@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MS_PER_DAY } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
-import {
-  headerAge,
-  homeView,
-  NAV_ITEMS,
-  oldestPack,
-  preparationLine,
-  preparationLineIndex,
-  titleCase,
-} from '../../src/core/home';
+import { headerAge, homeView, NAV_ITEMS, oldestPack, preparationLine, preparationLineIndex, shownPackName, titleCase } from '../../src/core/home';
 import { pack } from '../fixtures';
 
 const NOW = Date.UTC(2026, 8, 1, 9);
@@ -19,12 +11,13 @@ const daysAgo = (days: number) => NOW - days * MS_PER_DAY;
 // around the inclusive 30-day window. Day 30 is INSIDE the window: the label
 // starts on day 31, never on day 30.
 describe('header age', () => {
-  it('states the age in days on the day the pack was saved', () => {
-    expect(headerAge(NOW, daysAgo(0))).toEqual({
-      kind: 'checked',
-      days: 0,
-      text: 'Checked 0 days ago',
-    });
+  it('states the age in minutes and hours on the day the pack was saved', () => {
+    expect(headerAge(NOW, daysAgo(0))).toEqual({ kind: 'checked', days: 0, text: 'Checked just now' });
+    expect(headerAge(NOW, NOW - 60_000)).toMatchObject({ text: 'Checked 1 minute ago' });
+    expect(headerAge(NOW, NOW - 59 * 60_000)).toMatchObject({ text: 'Checked 59 minutes ago' });
+    expect(headerAge(NOW, NOW - 60 * 60_000)).toMatchObject({ text: 'Checked 1 hour ago' });
+    expect(headerAge(NOW, NOW - 23 * 3_600_000)).toMatchObject({ text: 'Checked 23 hours ago' });
+    expect(headerAge(NOW, NOW - 24 * 3_600_000)).toMatchObject({ text: 'Checked 1 day ago' });
   });
 
   it('states the age in days at 29 days, one inside the window', () => {
@@ -59,7 +52,7 @@ describe('header age', () => {
     expect(headerAge(NOW, NOW + 5 * MS_PER_DAY)).toEqual({
       kind: 'checked',
       days: 0,
-      text: 'Checked 0 days ago',
+      text: 'Checked just now',
     });
   });
 });
@@ -142,13 +135,12 @@ describe('preparation line selection', () => {
 
 // BlackSky is entered by a deliberate hold. It is never a tab, in any state.
 describe('bottom navigation', () => {
-  it('offers home, nearby places, Rehearse, Recover and About, the same whether or not a pack is saved', () => {
+  it('offers home, nearby places, Rehearse and Recover, the same whether or not a pack is saved', () => {
     expect(NAV_ITEMS).toEqual([
       { key: 'home', label: 'Home', to: '/' },
       { key: 'nearby', label: 'Nearby', to: '/nearby' },
       { key: 'rehearse', label: 'Rehearse', to: '/rehearse' },
       { key: 'recover', label: 'Recover', to: '/recover' },
-      { key: 'about', label: 'About', to: '/about' },
     ]);
   });
 
@@ -230,5 +222,17 @@ describe('place name for display', () => {
   it('leaves a name the user typed themselves as they wrote it', () => {
     expect(titleCase('Kalorama')).toBe('Kalorama');
     expect(titleCase("Mum's Place")).toBe("Mum's Place");
+  });
+});
+
+describe('shownPackName', () => {
+  it('shows a name exactly as the person gave it', () => {
+    expect(shownPackName('name Me')).toBe('name Me');
+    expect(shownPackName('CFA hq')).toBe('CFA hq');
+  });
+
+  it('title-cases a name in the official list capitals, as older packs hold', () => {
+    expect(shownPackName('KALORAMA')).toBe('Kalorama');
+    expect(shownPackName('8 RIDGE ROAD')).toBe('8 Ridge Road');
   });
 });

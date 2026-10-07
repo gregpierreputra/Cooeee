@@ -1,14 +1,14 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
-import { PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
+import { expect, test, type Page } from '@playwright/test';
+import { PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import {
   acknowledgeFirstOpen,
   addressFeature,
+  bpaHitFeature,
   chooseLastResortPlaces,
+  mockOfficialServices,
   openSources,
   waitForController,
-  WFS_PATTERN,
-  WMS_PATTERN,
 } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
@@ -17,42 +17,6 @@ import {
 
 const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 const LGA_NAME = 'YARRA RANGES';
-
-async function mockOfficialServices(page: Page, opts: {
-  candidates: unknown[];
-  lgaName: string;
-  bpaHits: unknown[];
-}) {
-  await page.route(WFS_PATTERN, (route: Route) => {
-    const typeNames = new URL(route.request().url()).searchParams.get('typeNames');
-    if (typeNames === 'open-data-platform:address') {
-      return route.fulfill({ json: { type: 'FeatureCollection', features: opts.candidates } });
-    }
-    if (typeNames === 'open-data-platform:lga_polygon') {
-      return route.fulfill({
-        json: { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { lga_name: opts.lgaName } }] },
-      });
-    }
-    if (typeNames === 'open-data-platform:bushfire_prone_area') {
-      return route.fulfill({ json: { type: 'FeatureCollection', features: opts.bpaHits } });
-    }
-    return route.continue();
-  });
-  // The area map from the same host's Web Map Service: the smallest PNG that
-  // decodes, so the journey never depends on the live map server.
-  const png = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
-    'base64',
-  );
-  await page.route(WMS_PATTERN, (route: Route) => route.fulfill({ body: png, contentType: 'image/png' }));
-}
-
-function bpaHitFeature(lgaName: string) {
-  return {
-    type: 'Feature',
-    properties: { lga_name: lgaName, plan_number: 'LEGL./25-138', gazettal_date: '10/07/2025' },
-  };
-}
 
 async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   await page.goto('/packs/new');
@@ -232,6 +196,15 @@ test('a second address becomes a second pack beside the first, with no question 
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: NEW_ADDRESS }).click();
+  // One name per pack: the suburb is already the first pack's name, so the
+  // name step starts on the street instead, in normal case. A name typed over
+  // it that another pack has is said, and a different one goes on.
+  await expect(page.getByLabel('Place name')).toHaveValue('8 Ridge Road');
+  await page.getByLabel('Place name').fill('kalorama');
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await expect(page.locator('.field-message')).toHaveText(PACK_NAME_TAKEN);
+  await page.getByLabel('Place name').fill('8 Ridge Road');
+  await expect(page.locator('.field-message')).toHaveCount(0);
   await page.getByRole('button', { name: 'Save this place' }).click();
 
   await expect(page.getByRole('heading')).toHaveText(
@@ -255,6 +228,49 @@ test('a second address becomes a second pack beside the first, with no question 
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(/\/rehearse$/);
   await expect(page.locator('.condition-list button')).toHaveCount(2);
+});
+
+// An age in words moves on while the screen stays open: a pack saved just now
+// reads one minute old a minute later, in the header and on its card.
+test('the header and the pack card move from just now to 1 minute ago', async ({ page }) => {
+  await page.clock.install();
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await searchConfirmAndReachOffer(page);
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Home', exact: true }).click();
+
+  await expect(page.locator('.app-header-age')).toHaveText('Checked just now');
+  await expect(page.locator('.saved-place-footer')).toHaveText('Saved just now');
+  await page.clock.fastForward(61_000);
+  await expect(page.locator('.app-header-age')).toHaveText('Checked 1 minute ago');
+  await expect(page.locator('.saved-place-footer')).toHaveText('Saved 1 minute ago');
+});
+
+// Print this pack, from the pack's menu on Home, opens that pack's print page
+// in the real app, and Back returns Home.
+test('the pack menu opens the pack\'s print page', async ({ page }) => {
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await searchConfirmAndReachOffer(page);
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings for Kalorama' }).click();
+  await page.getByRole('button', { name: 'Print this pack' }).click();
+
+  await expect(page).toHaveURL(/\/packs\/[^/]+\/print$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kalorama');
+  await expect(page.locator('.print-section').first()).toContainText('Bushfire area');
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
 });
 
 // UR-US36: Back steps back through the builder one step at a time, keeping
@@ -365,7 +381,7 @@ test('US2 the global Back bar works offline and the stored pack survives it', as
 test('Back from a pack goes Home with another tab behind it, and a lone pack\'s rehearsal has no Back', async ({ page }) => {
   await saveAPackAndOpenIt(page);
   const nav = page.getByRole('navigation', { name: 'Main' });
-  await nav.getByRole('link', { name: 'About', exact: true }).click();
+  await nav.getByRole('link', { name: 'Nearby', exact: true }).click();
   await page.goBack();
   await expect(page.locator('.pack-detail h1')).toBeVisible();
 

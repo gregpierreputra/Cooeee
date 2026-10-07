@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
-import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS } from '../core/constants';
+import { GENERAL_CHANNEL_URL, HOTLINE_NUMBER, NEED_CHANNELS, TRIPLE_ZERO } from '../core/constants';
 import * as copy from '../core/copy';
 import { readKept, toggleKept, writeKept } from '../core/kept';
 import { formatSavedDate } from '../core/provenance';
@@ -9,6 +9,7 @@ import { callList, isNeed, monogram, NEEDS, parseChoice, recoveryStale, selectPr
 import type { RecoveryProgram } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { listPrograms, listSavedProgramIds } from '../data/db';
+import CallCard from './components/CallCard';
 import { focusMain } from './components/focusMain';
 import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
@@ -161,38 +162,44 @@ export default function Recover({
             {copy.RECOVER_PRIVACY_LINE}
           </p>
         </header>
-        {/* The two ways into the programs that are not one need, as tiles over
-            the needs. Saved, in the ring and tint a saved card wears, is here
-            only while something is kept; All then fills the row alone. */}
-        <div className="recover-tiles">
-          {anyKept ? (
-            <button type="button" className="recover-tile kept-button" onClick={() => choose('kept')}>
-              <Glyph kind="kept" />
-              <span className="recover-tile-label">{copy.KEPT_PROGRAMS}</span>{' '}
-              <span className="recover-tile-detail">{copy.KEPT_PROGRAMS_DETAIL}</span>
-            </button>
-          ) : null}
-          <button type="button" className="recover-tile" onClick={() => choose('all')}>
-            <Glyph kind="all" />
-            <span className="recover-tile-label">{copy.ALL_PROGRAMS}</span>{' '}
-            <span className="recover-tile-detail">{copy.ALL_PROGRAMS_DETAIL}</span>
+        <div className="recover-start">
+          {/* R1: the way through recovery, in teal, first: where to start. */}
+          <button type="button" className="need-button roadmap-button" onClick={() => choose('roadmap')}>
+            <Glyph kind="roadmap" />
+            {copy.ROADMAP_TITLE}
           </button>
-        </div>
-        {/* R1: the way through recovery, in teal over the single needs. */}
-        <button type="button" className="need-button roadmap-button" onClick={() => choose('roadmap')}>
-          <Glyph kind="roadmap" />
-          {copy.ROADMAP_TITLE}
-        </button>
-        <ul className="list">
-          {rows.map((row) => (
-            <li key={row.key}>
-              <button type="button" className="need-button" onClick={() => choose(row.key)}>
-                <Glyph kind={row.key} />
-                {row.label}
+          {/* The two ways into the programs that are not one need, as tiles.
+              Saved, in the ring and tint a saved card wears, is here only
+              while something is kept; All then fills the row alone. */}
+          <div className="recover-tiles">
+            {anyKept ? (
+              <button type="button" className="recover-tile kept-button" onClick={() => choose('kept')}>
+                <Glyph kind="kept" />
+                <span className="recover-tile-label">{copy.KEPT_PROGRAMS}</span>{' '}
+                <span className="recover-tile-detail">{copy.KEPT_PROGRAMS_DETAIL}</span>
               </button>
-            </li>
-          ))}
-        </ul>
+            ) : null}
+            <button type="button" className="recover-tile" onClick={() => choose('all')}>
+              <Glyph kind="all" />
+              <span className="recover-tile-label">{copy.ALL_PROGRAMS}</span>{' '}
+              <span className="recover-tile-detail">{copy.ALL_PROGRAMS_DETAIL}</span>
+            </button>
+          </div>
+        </div>
+        {/* The single needs under their own eyebrow, set apart from the group above. */}
+        <section className="recover-needs">
+          <h2 className="kicker">{copy.BY_NEED}</h2>
+          <ul className="list">
+            {rows.map((row) => (
+              <li key={row.key}>
+                <button type="button" className="need-button" onClick={() => choose(row.key)}>
+                  <Glyph kind={row.key} />
+                  {row.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       </main>
     );
   }
@@ -209,23 +216,26 @@ export default function Recover({
             {copy.CALLS_LINE}
           </p>
         </header>
-        <ul className="list">
-          {callList(programs).map((entry) => (
-            <li
-              key={entry.number}
-              className={entry.number === HOTLINE_NUMBER ? 'card emergency-line' : 'card'}
-            >
-              <h2>{entry.label}</h2>
-              {entry.org ? <p>{entry.org}</p> : null}
-              <a className="with-glyph call-link" href={`tel:${entry.number.replaceAll(' ', '')}`}>
-                <Glyph kind="calls" line />
-                {copy.CALL_LINE(entry.number)}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <section className="talk-to-someone" aria-labelledby="talk-to-someone">
-          <h2 id="talk-to-someone">{copy.TALK_TO_SOMEONE}</h2>
+        {/* Two groups under the eyebrows used across Recover: the lines for the
+            recovery itself, 000 then the hotline first, then the lines for how a
+            person is coping. */}
+        <section className="call-group">
+          <h2 className="kicker">{copy.RECOVERY_LINES}</h2>
+          <ul className="list">
+            <CallCard name={copy.TRIPLE_ZERO_LABEL} detail={copy.TRIPLE_ZERO_DETAIL} number={TRIPLE_ZERO} tone="emergency" />
+            {callList(programs).map((entry) => (
+              <CallCard
+                key={entry.number}
+                name={entry.label}
+                detail={entry.org ?? copy.HOTLINE_DETAIL}
+                number={entry.number}
+                tone={entry.number === HOTLINE_NUMBER ? 'caution' : undefined}
+              />
+            ))}
+          </ul>
+        </section>
+        <section className="call-group">
+          <h2 className="kicker">{copy.TALK_TO_SOMEONE}</h2>
           <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
           <WellbeingLines />
         </section>

@@ -5,7 +5,7 @@ import { backTarget, ONE_STEP } from '../../src/core/back';
 const NONE = { packCount: null, runPackId: null, builder: 'step' } as const;
 
 describe('backTarget, the screen above each screen', () => {
-  it.each(['/', '/nearby', '/rehearse', '/recover', '/about'])('hides Back on the tab %s', (path) => {
+  it.each(['/', '/nearby', '/rehearse', '/recover'])('hides Back on the tab %s', (path) => {
     expect(backTarget(path, '', NONE)).toBeNull();
   });
 

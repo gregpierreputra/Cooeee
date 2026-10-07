@@ -1,4 +1,5 @@
 import type { Choice } from '../../core/recover';
+import type { PackIcon } from '../../core/types';
 
 /** One line drawing per kind: the six needs, every program, kept, and the pack
  *  page's sections. Drawn inline like the bottom bar's icons, so it costs no
@@ -10,7 +11,8 @@ export type GlyphKind =
   | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate'
   | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag'
   | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline'
-  | 'caution' | 'web' | 'tour' | 'moon';
+  | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close'
+  | Exclude<PackIcon, 'place'>;
 
 const GLYPH_PATHS: Record<GlyphKind, string> = {
   stay: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
@@ -56,6 +58,18 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   tour: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M10 8.5v7l5.5-3.5z',
   moon: 'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z',
   calls: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z',
+  copy: 'M9 9h11v11H9zM15 9V4H4v11h5',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  edit: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
+  // The pack drawings (the pin is 'place' above).
+  home: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
+  work: 'M3 8h18v11H3zM9 8V5h6v3M3 13h18',
+  family: 'M9 11a3 3 0 1 0 0-6a3 3 0 1 0 0 6M3 20a6 6 0 0 1 12 0M16.5 11a2.5 2.5 0 1 0 0-5M16 14.2a5 5 0 0 1 5 5.8',
+  holiday: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  school: 'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5M22 9v6',
+  // A wheat ear, in open strokes: a barn read as a second house at this size.
+  farm: 'M12 22V3M12 7.5 8 4M12 7.5l4-3.5M12 12.5 6.5 8.5M12 12.5l5.5-4M12 17.5 5.5 13M12 17.5l6.5-4.5',
+  close: 'M6 6l12 12M18 6 6 18',
 };
 
 /** `line` drops the tinted circle, for a glyph inside a button or a line of text. */

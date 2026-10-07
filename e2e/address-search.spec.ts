@@ -566,3 +566,27 @@ test('Use my location lists the nearest register addresses, and typing takes the
   await addressField(page).fill('RIDGE');
   await expect(page.getByRole('status')).not.toContainText('Addresses nearest you');
 });
+
+test('Use my location says how rough a vague position is, refuses one too rough, and says when location is off', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['geolocation']);
+  await countAddressRequests(page, [addressFeature('1778 DANDENONG ROAD CLAYTON 3168', 'CLAYTON', 145.1297, -37.9164)]);
+  await page.goto(SEARCH_URL);
+  const locate = page.getByRole('button', { name: 'Use my location' });
+  const status = page.getByRole('status');
+
+  await context.setGeolocation({ latitude: -37.916205, longitude: 145.129435, accuracy: 400 });
+  await locate.click();
+  await expect(status).toContainText('Your position is only known to within 400 m.');
+  await expect(page.getByRole('listitem').first()).toContainText('1778 DANDENONG ROAD');
+
+  await context.setGeolocation({ latitude: -37.916205, longitude: 145.129435, accuracy: 5_000 });
+  await locate.click();
+  await expect(status).toContainText('Your position is too rough to find your address.');
+
+  await context.clearPermissions();
+  await locate.click();
+  await expect(status).toContainText('Location is off for Cooeee.');
+});

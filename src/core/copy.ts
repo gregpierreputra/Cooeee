@@ -5,7 +5,7 @@
 // string carries an em dash: scripts/banned-terms.mjs fails the build on one.
 // Never reword them without updating the tests.
 
-import type { Destination, FacilityType, NeedKey, SourceStatus } from './types';
+import type { Destination, FacilityType, NeedKey, PackIcon, SourceStatus } from './types';
 
 // Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
@@ -53,7 +53,8 @@ export const DISMISS_NOTICE = 'Dismiss connection notice';
 export const NO_PACKS_HINT = 'Build one while you have a connection.';
 /** "1 day", "3 days": a pack saved yesterday must not read "1 days ago". */
 const dayCount = (days: number) => (days === 1 ? '1 day' : `${days} days`);
-export const SAVED_DAYS_AGO = (days: number) => `Saved ${dayCount(days)} ago`;
+/** A pack card's age, from ageLabel: "Saved just now", "Saved 5 minutes ago". */
+export const SAVED_AGO = (age: string) => `Saved ${age}`;
 
 // Deleting a saved pack — the cross opens an in-card confirmation; nothing is
 // removed until the delete answer is chosen.
@@ -62,6 +63,33 @@ export const PACK_SETTINGS = (name: string) => `Settings for ${name}`;
 export const DELETE_PACK_QUESTION = 'Delete this pack?';
 export const KEEP_THIS_PACK = 'Keep it';
 export const CONFIRM_DELETE_PACK = 'Delete';
+/** The pack settings menu: Rename opens the name field in the sheet. */
+export const RENAME_PACK = 'Rename';
+export const SAVE = 'Save';
+export const CANCEL = 'Cancel';
+export const PACK_NAME_NOT_SAVED = 'The name was not saved. Try again.';
+/** The pack drawings: chosen on the name step and with Change icon. */
+export const PACK_ICON_LABEL = 'Icon';
+/** Print this pack: one page of the pack on paper, from the menu. */
+export const PRINT_PACK = 'Print this pack';
+export const PRINT_SAVED_ON = (date: string) => `Saved ${date}`;
+export const PRINT_AREA_TITLE = 'Bushfire area';
+export const PRINTED_FROM = (printed: string, saved: string) =>
+  `Printed ${printed} from information saved ${saved}. Check VicEmergency for current warnings.`;
+export const CHANGE_ICON = 'Change icon';
+export const PACK_ICON_NOT_SAVED = 'The icon was not saved. Try again.';
+export const PACK_ICON_NAMES: Record<PackIcon, string> = {
+  place: 'Place',
+  home: 'Home',
+  work: 'Work',
+  family: 'Family',
+  holiday: 'Holiday',
+  school: 'School',
+  farm: 'Farm',
+};
+/** One name per pack, in the builder and in Rename alike. The name itself is
+ *  in the field right above, so the line does not repeat it. */
+export const PACK_NAME_TAKEN = 'Another pack has this name.';
 
 export const NEW_VERSION_READY = 'Update ready. Nothing changes until you reload.';
 export const RELOAD_NOW = 'Reload';
@@ -89,6 +117,11 @@ export const ADDRESS_SEARCH_DISCLOSURE =
 export const ADDRESS_LOCATE_DISCLOSURE = 'Sends your position to the Victorian address register. Not stored.';
 export const ADDRESS_LOCATE_FOUND = 'Addresses nearest you';
 export const ADDRESS_LOCATE_FAILED = 'Position unavailable. Type the address.';
+export const ADDRESS_LOCATE_DENIED = 'Location is off for Cooeee. Turn it on in your phone settings, or type the address.';
+export const ADDRESS_LOCATE_SLOW = 'Your position took too long to find. Try again, or type the address.';
+export const ADDRESS_LOCATE_ROUGH = (within: string) =>
+  `Your position is only known to within ${within}. Check the address is yours.`;
+export const ADDRESS_LOCATE_TOO_ROUGH = 'Your position is too rough to find your address. Type it instead.';
 export const ADDRESS_LOCATE_OUTSIDE = 'You are outside Victoria. Type a Victorian address.';
 export const ADDRESS_LOCATE_NONE = 'No address near you. Type it instead.';
 export const SEARCH_IN_PROGRESS = 'Searching…';
@@ -154,7 +187,6 @@ export const SOURCE_PUBLISHED_BY = 'Published by';
 export const SOURCE_SAVED = 'Saved';
 export const SOURCE_LICENCE = 'Licence';
 export const SOURCE_LIST_DATE = 'List date';
-export const SOURCE_TODAY = 'Today';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
 export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;
@@ -296,6 +328,11 @@ export const NOTE_SAVED = 'Note saved.';
 export const NOTE_DELETED = 'Note deleted.';
 export const NOTE_EMPTY = 'Write something before saving.';
 export const NOTE_CHANGE_FAILED = 'That change was not saved. Try again.';
+/** The pack page's notes: read as cards, edited one at a time. */
+export const EDIT_NOTE = 'Edit';
+export const NOTE_UNSAVED = 'Not saved yet.';
+export const DELETE_NOTE_QUESTION = 'Delete this note?';
+export const KEEP_IT = 'Keep it';
 
 // Screen eyebrows
 // The small label above each screen's heading, rendered as the hero kicker. 
@@ -392,6 +429,8 @@ export const NORTH_UP = 'North up';
  *  person: it puts them back at the centre. */
 export const MAP_RETURN_BUTTON = 'Back to me';
 /** The attribution the road layer's licence asks for, on the About screen. */
+/** The road and locality credits, under a small Map data toggle on the pack page. */
+export const MAP_DATA = 'Map data';
 export const ROADS_ATTRIBUTION = 'Roads: Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
 /** The same for the locality names on the map disc, under the roads line. */
 export const LOCALITIES_ATTRIBUTION = 'Localities: Vicmap Admin, Department of Transport and Planning, CC BY 4.0';
@@ -501,10 +540,10 @@ export const BLACKSKY_RESUMED = `Reopened where you left off. To exit, use ${LEA
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 
 /** The header's age line. Deliberately different
- *  wording from the pack card's SAVED_DAYS_AGO: the card reports when the pack
+ *  wording from the pack card's SAVED_AGO: the card reports when the pack
  *  was written, the header reports when its contents were last checked, and one
  *  sentence must never be mistaken for the other. */
-export const CHECKED_DAYS_AGO = (days: number) => `Checked ${dayCount(days)} ago`;
+export const CHECKED_AGO = (age: string) => `Checked ${age}`;
 
 /** The header's home control. The mark is decorative; this names it. */
 export const HEADER_HOME_LABEL = 'Cooeee home';
@@ -515,11 +554,12 @@ export const HEADER_HOME_LABEL = 'Cooeee home';
 export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a network.';
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
 
-export const NO_PACK_SAVED = 'No pack saved yet.';
+/** Home with no pack: a dashed space where packs will be, under YOUR PACKS. */
+export const NO_PACK_SAVED = 'Packs you save will show up here.';
+export const YOUR_PACKS = 'Your packs';
 
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
-export const NAV_ABOUT = 'About';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
 
@@ -578,6 +618,8 @@ export const WHO_TO_CALL = 'Who to call';
 // Cross guidance. Each step may link to the programs for one need, to Who to
 // call, to Nearby, or to Red Cross Register.Find.Reunite.
 export const ROADMAP_TITLE = 'Recovery roadmap';
+/** The eyebrow over the single needs on Recover. */
+export const BY_NEED = 'By need';
 export const ROADMAP_LINE =
   'A step by step guide to the first days, weeks and months after a fire. Work down each stage, tick a step when it is done, and tap its link to find help for it. Your progress is saved on this phone.';
 export const ROADMAP_CLEAR = 'Clear progress';
@@ -626,6 +668,19 @@ export const ROADMAP_STAGES: readonly {
   },
 ];
 export const HOTLINE_LABEL = 'VicEmergency hotline';
+export const HOTLINE_DETAIL = 'Victorian information line for emergencies and recovery.';
+/** Who to call opens with 000, the one red card, so the hotline is never
+ *  taken for the number to call in danger. */
+export const TRIPLE_ZERO_LABEL = 'Triple Zero (000)';
+export const TRIPLE_ZERO_DETAIL = 'For life-threatening emergencies.';
+/** Who to call: each number as a card with Call and Copy. Copy says what
+ *  happened in the button itself for a few seconds, then reads Copy again. */
+export const RECOVERY_LINES = 'Recovery lines';
+export const CALL = 'Call';
+export const COPY = 'Copy';
+export const COPIED = 'Copied';
+export const NOT_COPIED = 'Not copied';
+export const NUMBER_COPIED = (name: string) => `${name} number copied.`;
 export const CALLS_LINE = 'Calls often work when data does not.';
 /** R3: free lines for how a person is coping, in Who to call and on every pack
  *  page. Bundled, so they show with no signal and no pack. Numbers and hours
@@ -715,12 +770,21 @@ export const PREPARATION_MORE = 'If this does not fit you';
 
 /** Under the hold control only while nothing is saved: the mode is reachable
  *  with no pack, which is the one thing a new user would not expect. */
-export const BLACKSKY_WORKS_WITHOUT_PACK = 'No pack needed';
 
 /** The About page: what Cooeee is, why, what it does and does not do, and
  *  where the information stays, each a glyph, a heading and one line. No
  *  colon, semicolon or dash anywhere. */
-export const ABOUT_COOEEE = 'About Cooeee';
+/** The tour's welcome: what Cooeee is called, how it is said, what the name
+ *  means and what it does, with the longer lines behind one toggle. */
+export const ABOUT_COOEEE = 'More about Cooeee';
+export const WELCOME_SAY = 'Said koo-EE.';
+export const WELCOME_NAME = 'From guuu-wii in the Dharug language of the Sydney area, a call that means come here.';
+export const WELCOME_DOES = 'Official bushfire information for your places, kept on your phone, for when the signal goes.';
+export const WELCOME_KICKER = 'Welcome';
+/** The words in the welcome picked out in the accent: how to say the name,
+ *  where it comes from, what it means, and where the packs are kept. Plain
+ *  words only: they are joined into a regex. */
+export const WELCOME_TERMS = ['koo-EE', 'guuu-wii', 'Dharug', 'come here', 'kept on your phone'] as const;
 export const COOEEE_INFO_LINES = [
   { glyph: 'what', title: 'What it is', text: 'Official bushfire information for your places, kept on your phone.' },
   { glyph: 'why', title: 'Why it exists', text: 'In a fire, the power and the signal often go first.' },
@@ -741,21 +805,20 @@ export const SKIP_TOUR = 'Skip tour';
 /** One glyph and one line per stop, 12 words at most (tests hold the limit). */
 export const TOUR_STEPS = [
   { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'One small preparation step a day, from Country Fire Authority guidance.' },
-  { path: '/', target: '.home .card', glyph: 'layer', title: 'Your saved packs', line: 'Each card is a place, ready with no signal. Tap to open.' },
+  { path: '/', target: '.home .pack-card, .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
   { path: '/', target: '.home .main-action', glyph: 'plus', title: 'New offline pack', line: 'Add a pack for home, work, school or family.' },
-  { path: '/', target: '.blacksky-hold-row', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold two seconds. Points to official places when the signal is gone.' },
+  { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to official places offline.', more: 'blacksky' },
   { path: '/', target: '.app-header-inner', glyph: 'clock', title: 'The header', line: "Tap Cooeee to go home. The pill shows your oldest pack's age." },
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
-  { path: '/packs/new', target: '.search-form', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
+  { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
   { path: '/nearby', target: '.nearby .hero', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
-  { path: '/rehearse', target: '.rehearsal-entry, .rehearsal-condition', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
-  { path: '/recover', target: '.recover', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
-  { path: '/about', target: '.about .card', glyph: 'what', title: 'About Cooeee', line: 'What Cooeee does, and what it does not do.' },
+  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
+  { path: '/recover', target: '.recover .hero', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
 
 /** The information ring beside the hold control, and the panel a tap on it
  *  opens: what BlackSky does, each line led by its glyph. */
-export const ABOUT_BLACKSKY = 'About BlackSky';
+export const ABOUT_BLACKSKY = 'More about BlackSky';
 export const BLACKSKY_INFO_LINES = [
   { glyph: 'go', text: 'Points to the nearest official places of last resort.' },
   { glyph: 'offline', text: 'Works with no signal. Your pack is already on this phone.' },
@@ -881,8 +944,9 @@ export const STATE_LIVE = 'Updated just now';
 export const STATE_CACHED = (age: string) => `Cached · ${age}`;
 export const STATE_UNAVAILABLE = 'Unavailable';
 export const JUST_NOW = 'just now';
-export const MINUTES_AGO = (minutes: number) => `${minutes} min ago`;
-export const HOURS_AGO = (hours: number) => `${hours} h ago`;
+/** One age wording everywhere, through ageLabel: "1 minute ago", "3 hours ago". */
+export const MINUTES_AGO = (minutes: number) => (minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`);
+export const HOURS_AGO = (hours: number) => (hours === 1 ? '1 hour ago' : `${hours} hours ago`);
 export const NEVER = 'never';
 
 export const VERIFIED_ON = (date: string) => `Verified ${date}`;

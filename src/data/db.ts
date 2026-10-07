@@ -1,6 +1,9 @@
 import Dexie, { liveQuery, type Table } from 'dexie';
 import { BAG_LIMIT, DRILL_ITEM_IDS } from '../core/drill-items';
-import { NOTE_MAX_CHARS } from '../core/constants';
+import { NOTE_MAX_CHARS, PACK_NAME_MAX_CHARS } from '../core/constants';
+import { clearNoteDraft } from '../core/note-draft';
+import { isPackIcon, samePackName } from '../core/pack';
+import { localFlagStore } from './acknowledgement';
 import { isRehearsalEnding, isUnfinished } from '../core/rehearsal-ending';
 import type { RehearsalInput } from '../core/rehearsal-entry';
 import type {
@@ -14,6 +17,7 @@ import type {
   NspSnapshot,
   Pack,
   PackFile,
+  PackIcon,
   PackNote,
   PackWithPlaces,
   PackProgram,
@@ -210,7 +214,9 @@ export async function carryHistoryToNewPack(oldId: string, newId: string): Promi
 }
 
 /** Remove every row the given packs own. Callers run this inside their own
- *  transaction, which must list ownedTables(). */
+ *  transaction, which must list ownedTables(). A note's unsaved words are not
+ *  rows: the caller clears or moves them once the transaction has committed,
+ *  so an aborted delete never loses them. */
 export async function deleteOwnedRows(packIds: string[]): Promise<void> {
   await Promise.all(ownedTables().map((table) => table.where('packId').anyOf(packIds).delete()));
 }
@@ -244,7 +250,7 @@ export async function readRehearsalSource(packId: string): Promise<Omit<Rehearsa
     const [completeCount, unfinishedCount, content] = await Promise.all([
       db.packs.where('status').equals('complete').count(),
       db.packs.where('status').equals('building').count(),
-      getCompletePackContent(packId),
+      getCompletePackWithoutFiles(packId),
     ]);
     return { completeCount, unfinishedCount, content: content ?? null };
   } catch {
@@ -318,18 +324,17 @@ export async function saveFinishedRehearsal(rehearsal: Rehearsal): Promise<void>
 
 /** Every FINISHED rehearsal for one pack, oldest first.
  *
- *  Read through the finishedAt index, and the index is the guarantee, not a
- *  filter: IndexedDB leaves a record out of an index when the record has no
- *  value at that index's key path. An unfinished rehearsal is kept with no
- *  finishedAt, so it is not in this index at all and cannot come back from this
- *  read. This is the only read behind comparableEarlier (E5-US2-AC2), so a
- *  journey that never happened can never be compared against. The cast states
- *  that guarantee as a type; tests/data/db.test.ts proves it. */
+ *  Read through the packId index, so only this pack's rows are touched. An
+ *  unfinished rehearsal is kept with no finishedAt, and the filter leaves it
+ *  out, so this read, the only one behind comparableEarlier (E5-US2-AC2), can
+ *  never compare against a journey that never happened. The cast states that
+ *  guarantee as a type; tests/data/db.test.ts proves it. */
 export const listRehearsalsForPack = (packId: string): Promise<Rehearsal[]> =>
   db.rehearsals
-    .orderBy('finishedAt')
-    .filter((row) => row.packId === packId)
-    .toArray() as Promise<Rehearsal[]>;
+    .where('packId')
+    .equals(packId)
+    .filter((row) => !isUnfinished(row))
+    .sortBy('finishedAt') as Promise<Rehearsal[]>;
 
 /** Record that the reader has taken one of the actions a rehearsal gave them.
  *
@@ -417,6 +422,57 @@ export async function putNote(note: PackNote): Promise<void> {
 
 export const deleteNote = (id: string): Promise<void> => db.notes.delete(id);
 
+/** The one rule for a pack name given after the pack is built: trimmed, never
+ *  empty, never past PACK_NAME_MAX_CHARS. */
+export function checkedPackName(name: string): string {
+  const trimmed = name.trim();
+  if (trimmed.length === 0 || trimmed.length > PACK_NAME_MAX_CHARS) {
+    throw new RangeError('pack name is empty or too long');
+  }
+  return trimmed;
+}
+
+/** Give one complete pack a drawing from the pack drawings. Only the icon
+ *  changes, and a value that is not one of them is refused. */
+export async function setPackIcon(id: string, icon: PackIcon): Promise<void> {
+  if (!isPackIcon(icon)) throw new RangeError('not a pack icon');
+  await db.transaction('rw', db.packs, async () => {
+    if ((await db.packs.get(id))?.status !== 'complete') {
+      throw new Error('only a complete pack can change its icon');
+    }
+    await db.packs.update(id, { icon });
+  });
+}
+
+/** The complete packs' names, for the builder's first name. A phone that has
+ *  never saved a pack has no database yet, and this read must not create one:
+ *  nothing is stored until the person saves. */
+export async function listSavedPackNames(): Promise<string[]> {
+  if (!(await Dexie.exists(db.name))) return [];
+  return (await listCompletePacks()).map((pack) => pack.name);
+}
+
+/** Thrown when another pack already has the name, so the screen can say so. */
+export class PackNameTakenError extends Error {}
+
+/** Rename one complete pack. Only the name changes: the address stays exactly
+ *  as the official list returned it, and nothing the pack's record checks is
+ *  touched. A name another complete pack already has is refused; the pack's
+ *  own name, or a change of capitals only, is not. */
+export async function renamePack(id: string, name: string): Promise<void> {
+  const checked = checkedPackName(name);
+  await db.transaction('rw', db.packs, async () => {
+    if ((await db.packs.get(id))?.status !== 'complete') {
+      throw new Error('only a complete pack can be renamed');
+    }
+    const others = (await listCompletePacks()).filter((pack) => pack.id !== id);
+    if (others.some((pack) => samePackName(pack.name, checked))) {
+      throw new PackNameTakenError('another pack has this name');
+    }
+    await db.packs.update(id, { name: checked });
+  });
+}
+
 /** THE read API — one complete pack, or undefined. 
  * A building pack is indistinguishable from a pack that does not exist, which is the point. */
 export const getCompletePack = async (id: string): Promise<Pack | undefined> => {
@@ -441,18 +497,28 @@ export async function listCompletePacksWithPlaces(): Promise<PackWithPlaces[]> {
 
 /** Load only children of an already sanctioned complete pack. Every group the
  *  manifest names is re-hashed here, the same way it was hashed when written;
- *  a group that no longer matches is withheld and reported, never shown. */
-export async function getCompletePackContent(id: string): Promise<CompletePackContent | undefined> {
-  const pack = await getCompletePack(id);
+ *  a group that no longer matches is withheld and reported, never shown.
+ *  The pack and its rows are read in one transaction, so a sync committing in
+ *  between can never pair an old manifest with new rows. The hashing runs
+ *  after it, as a transaction left waiting on it would commit early. */
+export async function getCompletePackContent(
+  id: string,
+  { withFiles = true }: { withFiles?: boolean } = {},
+): Promise<CompletePackContent | undefined> {
+  const tables = [db.packs, db.layers, db.destinations, db.files, db.notes, db.packPrograms];
+  const read = await db.transaction('r', tables, () =>
+    Promise.all([
+      getCompletePack(id),
+      db.layers.where('packId').equals(id).toArray(),
+      db.destinations.where('packId').equals(id).toArray(),
+      withFiles ? db.files.where('packId').equals(id).toArray() : [],
+      listNotes(id),
+      db.packPrograms.where('packId').equals(id).toArray(),
+    ]),
+  );
+  const [pack, layers, destinations, files, notes, programs] = read;
   if (!pack) return undefined;
   const groups = pack.manifest.groups;
-  const [layers, destinations, files, notes, programs] = await Promise.all([
-    db.layers.where('packId').equals(id).toArray(),
-    db.destinations.where('packId').equals(id).toArray(),
-    db.files.where('packId').equals(id).toArray(),
-    listNotes(id),
-    db.packPrograms.where('packId').equals(id).toArray(),
-  ]);
 
   const layersVerified = await groupMatches(groups.layers, layers);
   const destinationsVerified = await groupMatches(groups.destinations, destinations);
@@ -462,8 +528,8 @@ export async function getCompletePackContent(id: string): Promise<CompletePackCo
   // A manifest with no files group belongs to a pack that owns no file rows.
   const fileRows = files.map((file) => fileMeta({ ...file, sizeBytes: file.bytes.byteLength }));
   const fileHashes = await Promise.all(files.map((file) => sha256Hex(file.bytes)));
-  const filesVerified = await groupMatches(groups.files ?? { count: 0, sha256: '' }, fileRows)
-    && fileHashes.every((hash, i) => hash === files[i].sha256);
+  const filesVerified = !withFiles || (await groupMatches(groups.files ?? { count: 0, sha256: '' }, fileRows)
+    && fileHashes.every((hash, i) => hash === files[i].sha256));
 
   return {
     pack,
@@ -476,6 +542,12 @@ export async function getCompletePackContent(id: string): Promise<CompletePackCo
     contentVerified: layersVerified && destinationsVerified && filesVerified,
   };
 }
+
+/** The same read without the saved page copies, for the rehearsal screens,
+ *  which never show them. Skips reading and hashing megabytes of bytes on
+ *  every step of a rehearsal. Its contentVerified covers the rows it read. */
+export const getCompletePackWithoutFiles = (id: string): Promise<CompletePackContent | undefined> =>
+  getCompletePackContent(id, { withFiles: false });
 
 /** Delete every status:'building' pack and its children. Runs in main.tsx before
  *  render and immediately on every build cancel, so an interrupted download
@@ -493,12 +565,15 @@ export async function sweepBuilding(): Promise<void> {
  *  programs are not owned by any pack: they are the app's own precached
  *  snapshot, read by Recover with or without a pack, so a delete leaves them. */
 export async function deleteCompletePack(id: string): Promise<void> {
-  await db.transaction('rw', [db.packs, ...ownedTables()], async () => {
+  const deleted = await db.transaction('rw', [db.packs, ...ownedTables()], async () => {
     const target = await db.packs.get(id);
-    if (target?.status !== 'complete') return;
+    if (target?.status !== 'complete') return false;
     await deleteOwnedRows([id]);
     await db.packs.delete(id);
+    return true;
   });
+  // A note's unsaved words belong to the pack too, so nothing of it is left.
+  if (deleted) clearNoteDraft(localFlagStore(), id);
 }
 
 // Every read of `packs` that leaves this file goes through the complete-only

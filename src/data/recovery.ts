@@ -2,7 +2,7 @@ import { BUNDLED_FILE_TIMEOUT_MS, MAX_RESPONSE_BYTES } from '../core/constants';
 import { isAllowedSourceUrl } from '../core/provenance';
 import { NEEDS } from '../core/recover';
 import type { NeedKey, RecoveryProgram, Source } from '../core/types';
-import { readJsonBounded } from './bounded-body';
+import { readJsonBounded, timeoutSignal } from './bounded-body';
 import { putPrograms } from './db';
 
 // The precached recovery programs snapshot: a curated list of official program
@@ -88,7 +88,7 @@ export function assertRecoverySnapshot(value: unknown): RecoveryProgram[] {
 export async function loadRecoveryPrograms(fetchImpl: typeof fetch = fetch): Promise<RecoveryProgram[]> {
   const response = await fetchImpl(RECOVERY_SNAPSHOT_PATH, {
     cache: 'force-cache',
-    signal: AbortSignal.timeout(BUNDLED_FILE_TIMEOUT_MS),
+    signal: timeoutSignal(BUNDLED_FILE_TIMEOUT_MS),
   });
   if (!response.ok) fail(`request failed (${response.status})`);
   const programs = assertRecoverySnapshot(await readJsonBounded(response, MAX_RESPONSE_BYTES));

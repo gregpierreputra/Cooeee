@@ -1,4 +1,4 @@
-import type { Db } from './db.ts';
+import { type Db, statement } from './db.ts';
 
 export type Point = { lat: number; lon: number };
 
@@ -18,14 +18,17 @@ export function haversineKm(a: Point, b: Point): number {
 
 // Spec §4: widen the search box step by step, then look statewide.
 const RADII_KM = [20, 50, 250, Infinity];
-const KM_PER_DEGREE_LAT = 111.32;
+// The same earth as haversineKm, so the box never falls short of the radius.
+const KM_PER_DEGREE_LAT = (EARTH_RADIUS_KM * Math.PI) / 180;
+// Longitude degrees shrink unevenly across the box, so it is drawn a little wide.
+const BOX_MARGIN = 1.01;
 
 type Box = { minLat: number; maxLat: number; minLon: number; maxLon: number };
 
 function boundingBox(origin: Point, radiusKm: number): Box {
   if (!Number.isFinite(radiusKm)) return { minLat: -90, maxLat: 90, minLon: -180, maxLon: 180 };
-  const dLat = radiusKm / KM_PER_DEGREE_LAT;
-  const dLon = radiusKm / (KM_PER_DEGREE_LAT * Math.cos(toRadians(origin.lat)));
+  const dLat = (radiusKm * BOX_MARGIN) / KM_PER_DEGREE_LAT;
+  const dLon = (radiusKm * BOX_MARGIN) / (KM_PER_DEGREE_LAT * Math.cos(toRadians(origin.lat)));
   return {
     minLat: origin.lat - dLat,
     maxLat: origin.lat + dLat,
@@ -57,7 +60,7 @@ export function findNearest<T extends Point>(
   origin: Point,
   typeCode: string,
 ): Nearest<T> | null {
-  const query = db.prepare(CANDIDATES[table]);
+  const query = statement(db, CANDIDATES[table]);
   for (const radiusKm of RADII_KM) {
     const box = boundingBox(origin, radiusKm);
     const rows = query.all(box.minLat, box.maxLat, box.minLon, box.maxLon, typeCode) as unknown as T[];

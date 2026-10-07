@@ -13,17 +13,18 @@ import {
   ADDRESS_QUERY_DEBOUNCE_MS,
   ADDRESS_QUERY_MAX_CHARS,
   isInsideVictoria,
-  NEARBY_FIX_MAX_AGE_MS,
+  LOCATE_ROUGH_M,
+  LOCATE_TOO_ROUGH_M,
   NEARBY_FIX_TIMEOUT_MS,
   PACK_HAZARD,
   PLACES_OFFERED,
 } from '../../core/constants';
 import * as copy from '../../core/copy';
-import { chosenDestinations, orderByDistance } from '../../core/destination';
+import { chosenDestinations, formatDistanceM, orderByDistance } from '../../core/destination';
 import { titleCase } from '../../core/home';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
 import { readKept } from '../../core/kept';
-import { buildPackSeed } from '../../core/pack';
+import { buildPackSeed, defaultPackName, samePackName } from '../../core/pack';
 import { packProgramsFor } from '../../core/recover';
 import type {
   AddressCandidate,
@@ -38,7 +39,7 @@ import type {
   RecoveryProgram,
   TextPackContent,
 } from '../../core/types';
-import { listCompletePacks, listPrograms } from '../../data/db';
+import { listCompletePacks, listPrograms, listSavedPackNames } from '../../data/db';
 import { localFlagStore } from '../../data/acknowledgement';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
@@ -182,6 +183,8 @@ export function Search({
   const [locating, setLocating] = useState(false);
   const [located, setLocated] = useState<AddressCandidate[] | null>(null);
   const [locateNotice, setLocateNotice] = useState<string | null>(null);
+  // How rough the position behind the list is, when too rough to pick out one house.
+  const [roughM, setRoughM] = useState<number | null>(null);
   // Bumped by every tap and every keystroke, so a late answer is dropped.
   const locateIdRef = useRef(0);
   // Stops the nearby lookup on the wire when the user moves on: its wider
@@ -193,6 +196,15 @@ export function Search({
   const [pendingPlace, setPendingPlace] = useState<PendingPlace | null>(null);
   const [areaState, setAreaState] = useState<AreaCheckState | null>(null);
   const [conflictState, setConflictState] = useState<ConflictState | null>(null);
+  // A name another saved pack already has, shown on the name step.
+  const [takenName, setTakenName] = useState<string | undefined>(undefined);
+  // The saved packs' names, read from the phone once as the builder opens, so
+  // the name step can start on a name no other pack has. A store that cannot
+  // be read gives none, and the check on Save is still made.
+  const [savedNames, setSavedNames] = useState<string[]>([]);
+  useEffect(() => {
+    listSavedPackNames().then(setSavedNames, () => {});
+  }, []);
   const [supersedesId, setSupersedesId] = useState<string | undefined>(undefined);
   const [offerState, setOfferState] = useState<OfferState | null>(null);
   const [placesState, setPlacesState] = useState<PlacesState | null>(null);
@@ -219,7 +231,9 @@ export function Search({
   const statusLine = locating
     ? copy.LOCATING
     : located
-      ? copy.ADDRESS_LOCATE_FOUND
+      ? roughM === null
+        ? copy.ADDRESS_LOCATE_FOUND
+        : copy.ADDRESS_LOCATE_ROUGH(formatDistanceM(roughM))
       : (locateNotice ?? typedSearchLine(live));
 
   // Read through a ref so that a caller passing an inline function cannot make
@@ -286,6 +300,7 @@ export function Search({
     setLocating(false);
     setLocated(null);
     setLocateNotice(null);
+    setRoughM(null);
   }
 
   /** Read one position, then ask the register for the addresses nearest it.
@@ -307,6 +322,8 @@ export function Search({
         let candidates: AddressCandidate[] | null = null;
         if (!isInsideVictoria(position.lat, position.lon)) {
           notice = copy.ADDRESS_LOCATE_OUTSIDE;
+        } else if (coords.accuracy > LOCATE_TOO_ROUGH_M) {
+          notice = copy.ADDRESS_LOCATE_TOO_ROUGH;
         } else {
           try {
             const controller = new AbortController();
@@ -321,13 +338,21 @@ export function Search({
         setLocating(false);
         setLocateNotice(notice);
         setLocated(notice ? null : candidates);
+        setRoughM(coords.accuracy > LOCATE_ROUGH_M ? coords.accuracy : null);
       },
-      () => {
+      (error) => {
         if (id !== locateIdRef.current) return;
         setLocating(false);
-        setLocateNotice(copy.ADDRESS_LOCATE_FAILED);
+        setLocateNotice(
+          error.code === error.PERMISSION_DENIED
+            ? copy.ADDRESS_LOCATE_DENIED
+            : error.code === error.TIMEOUT
+              ? copy.ADDRESS_LOCATE_SLOW
+              : copy.ADDRESS_LOCATE_FAILED,
+        );
       },
-      { enableHighAccuracy: true, timeout: NEARBY_FIX_TIMEOUT_MS, maximumAge: NEARBY_FIX_MAX_AGE_MS },
+      // A fresh position every tap: an older one may be the rough guess just shown.
+      { enableHighAccuracy: true, timeout: NEARBY_FIX_TIMEOUT_MS, maximumAge: 0 },
     );
   }
 
@@ -433,6 +458,13 @@ export function Search({
       // the next network call; any other address goes straight on.
       const packs = await loadPacks();
       if (flow !== flowRef.current) return;
+      // One name per pack. The pack for this same address is not counted: it
+      // is the one a replace would take the place of.
+      if (packs.some((pack) => pack.address !== place.address && samePackName(pack.name, place.name))) {
+        setConflictState(null);
+        setTakenName(place.name);
+        return;
+      }
       const same = packs.find((pack) => pack.address === place.address);
       if (same) {
         setConflictState({ kind: 'conflict', savedPack: same });
@@ -447,6 +479,7 @@ export function Search({
 
   function resetToSearch() {
     flowRef.current += 1;
+    setTakenName(undefined);
     setPackId('');
     setPlaceIds([]);
     setPendingPlace(null);
@@ -734,7 +767,11 @@ export function Search({
     return (
       <Confirm
         candidate={candidate}
-        initialName={pendingPlace?.name}
+        // The default is offered in normal case, not the official list's
+        // capitals, so a pack saved with it reads right everywhere.
+        initialName={pendingPlace?.name ?? titleCase(defaultPackName(candidate, savedNames))}
+        initialIcon={pendingPlace?.icon}
+        takenName={takenName}
         onConfirm={(place) => void handleConfirmedPlace(place)}
         onSearchAgain={resetToSearch}
       />

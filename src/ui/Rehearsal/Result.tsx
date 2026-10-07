@@ -7,7 +7,7 @@ import { rehearsalResult } from '../../core/rehearsal-result';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { ActionCompletion, CompletePackContent, Rehearsal } from '../../core/types';
 import {
-  getCompletePackContent,
+  getCompletePackWithoutFiles,
   listActionCompletions,
   listRehearsalsForPack,
   markActionDone,
@@ -44,7 +44,7 @@ type ResultProps = {
  *  could not be relied on; it does not mark the reader's work. */
 export default function Result({
   run,
-  loadContent = getCompletePackContent,
+  loadContent = getCompletePackWithoutFiles,
   loadCompletions = listActionCompletions,
   loadRehearsals = listRehearsalsForPack,
   save = saveFinishedRehearsal,

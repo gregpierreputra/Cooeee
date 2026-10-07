@@ -2,7 +2,7 @@ import { isInsideVictoria, MAX_RESPONSE_BYTES, MAX_SYNC_ROWS, NEARBY_SYNC_TIMEOU
 import { STATIC_TYPES, DYNAMIC_TYPES } from '../core/facility-sources';
 import type { NearbyCache, NearbySession } from '../core/nearby';
 import type { DataHealth, DynamicSnapshot, StaticBundle, SyncMetaRow } from '../core/types';
-import { readJsonBounded } from './bounded-body';
+import { readJsonBounded, timeoutSignal } from './bounded-body';
 import { db } from './db';
 
 // Same-origin paths: Vite proxies /api in development and Vercel rewrites it in
@@ -172,7 +172,7 @@ export async function readNearbyCache(): Promise<NearbyCache> {
 async function getJson(fetcher: typeof fetch, path: string): Promise<unknown> {
   const response = await fetcher(path, {
     cache: 'no-store',
-    signal: AbortSignal.timeout(NEARBY_SYNC_TIMEOUT_MS),
+    signal: timeoutSignal(NEARBY_SYNC_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`${path} returned HTTP ${response.status}`);
   return readJsonBounded(response, MAX_RESPONSE_BYTES);

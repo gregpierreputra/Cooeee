@@ -4,6 +4,7 @@ import {
   Route,
   Routes,
   useLocation,
+  Navigate,
   useNavigate,
   useNavigationType,
   useParams,
@@ -18,7 +19,6 @@ import { pruneKept } from './core/kept';
 import { localFlagStore } from './data/acknowledgement';
 import { cacheNspSnapshot } from './data/nsp';
 import { loadRecoveryPrograms } from './data/recovery';
-import About from './ui/About';
 import BlackSky from './ui/BlackSky';
 import FirstOpen from './ui/FirstOpen';
 import Gate from './ui/Gate';
@@ -34,6 +34,7 @@ import Splash from './ui/components/Splash';
 import Tour, { startTour } from './ui/components/Tour';
 import { focusMain } from './ui/components/focusMain';
 import PackDetail from './ui/PackDetail';
+import PackPrint from './ui/PackPrint';
 import Recover from './ui/Recover';
 import Choose from './ui/Rehearsal/Choose';
 import RehearsalEntry from './ui/Rehearsal/Entry';
@@ -206,6 +207,12 @@ function PackDetailRoute() {
   return <PackDetail packId={packId} />;
 }
 
+/** One page of a pack, to print, from the pack's menu on Home. */
+function PackPrintRoute() {
+  const { packId = '' } = useParams();
+  return <PackPrint packId={packId} />;
+}
+
 /** E5-US1-AC4 — the way into a rehearsal, from the pack page or from the bar's
  *  picker. The gate it renders decides from the device whether a rehearsal can
  *  start at all. */
@@ -296,12 +303,14 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/packs/:packId" element={<PackDetailRoute />} />
+          <Route path="/packs/:packId/print" element={<PackPrintRoute />} />
           <Route path="/packs/new" element={<Search />} />
           <Route path="/rehearse" element={<Choose />} />
           <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
           <Route path="/nearby" element={<Nearby />} />
           <Route path="/recover" element={<Recover />} />
-          <Route path="/about" element={<About />} />
+          {/* About moved into the tour's welcome; an old link lands Home. */}
+          <Route path="/about" element={<Navigate to="/" replace />} />
           <Route path="/blacksky" element={<BlackSkyRoute />} />
         </Routes>
         <Tour />

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
-import { homeView } from '../../core/home';
+import { homeView, shownPackName, titleCase } from '../../core/home';
+import { packIcon } from '../../core/pack';
+import Glyph from '../components/Glyph';
+import { useMinuteClock } from '../components/useMinuteClock';
 import Head from './Head';
 import DrillTile from '../Drill/DrillTile';
 import { replayDrill } from '../Drill/drill-state';
@@ -23,6 +26,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
   const navigate = useNavigate();
   const run = useRehearsalRun();
   const [packs, setPacks] = useState<Pack[] | null>(null);
+  const clock = useMinuteClock();
 
   useEffect(() => {
     let live = true;
@@ -44,7 +48,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
   if (packs.length === 0) return <RehearsalEntry packId="" />;
   if (packs.length === 1) return <Navigate to={`/rehearse/${packs[0].id}`} replace />;
 
-  const rows = homeView(Date.now(), packs).packs;
+  const rows = homeView(clock, packs).packs;
   // The drill is played in the newest pack's home, the one most likely lived in.
   const playDrill = () => {
     replayDrill(rows[0].pack.id);
@@ -63,12 +67,15 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
           <li key={pack.id}>
             <button
               type="button"
-              className="candidate-action condition-action"
+              className="candidate-action condition-action pack-choice"
               onClick={() => navigate(`/rehearse/${pack.id}`)}
             >
-              <span className="condition-label">{pack.name}</span>
-              <span className="condition-detail">{pack.address}</span>
-              <span className="condition-detail">{ageLine}</span>
+              <Glyph kind={packIcon(pack)} />
+              <span className="pack-choice-text">
+                <span className="condition-label">{shownPackName(pack.name)}</span>
+                <span className="condition-detail">{titleCase(pack.address)}</span>
+                <span className="condition-detail">{ageLine}</span>
+              </span>
             </button>
           </li>
         ))}

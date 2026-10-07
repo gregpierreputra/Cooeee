@@ -33,3 +33,13 @@ export async function readBodyBounded(response: Response, maxBytes: number): Pro
 export async function readJsonBounded(response: Response, maxBytes: number): Promise<unknown> {
   return JSON.parse(new TextDecoder().decode(await readBodyBounded(response, maxBytes)));
 }
+
+/** A signal that aborts after `ms`, bounding a request in time as the reads
+ *  above bound it in size. AbortSignal.timeout is missing before Safari 16 and
+ *  Chrome 103, so there a timer does the same. */
+export function timeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(ms);
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(new DOMException('The request timed out.', 'TimeoutError')), ms);
+  return controller.signal;
+}

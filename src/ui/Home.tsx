@@ -1,23 +1,34 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as copy from '../core/copy';
-import { homeView, titleCase, type HomeView } from '../core/home';
+import { homeView, shownPackName, titleCase, type HomeView } from '../core/home';
 import { readKept } from '../core/kept';
 import { unsavedKept } from '../core/recover';
 import { localFlagStore } from '../data/acknowledgement';
-import { deleteCompletePack, listCompletePacks, listSavedProgramIds } from '../data/db';
+import { PACK_NAME_MAX_CHARS } from '../core/constants';
+import { packAgeLabel, packIcon } from '../core/pack';
+import type { PackIcon } from '../core/types';
+import {
+  deleteCompletePack,
+  listCompletePacks,
+  listSavedProgramIds,
+  PackNameTakenError,
+  renamePack,
+  setPackIcon,
+} from '../data/db';
 import { syncKeptIntoPacks } from '../data/pack-programs';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
-import HoldButton from './components/HoldButton';
+import IconPicker from './components/IconPicker';
 import { focusMain } from './components/focusMain';
+import { useMinuteClock } from './components/useMinuteClock';
 
 /** E1-US2-AC6 — where someone who set up a place some time ago lands when they
  *  open Cooeee again.
  *
  *  Every saved pack, newest first, each card the way into its pack; then the
- *  control that builds one more, and the BlackSky control with the ring that
- *  says what BlackSky is. It reads IndexedDB, asks for no position, and makes
+ *  control that builds one more. BlackSky is held from the compass in the tab
+ *  bar, on every screen. It reads IndexedDB, asks for no position, and makes
  *  no request other than a kept program's page copy from the precache. */
 export default function Home({ now }: { now?: number }) {
   // null = the store has not answered yet.
@@ -30,10 +41,12 @@ export default function Home({ now }: { now?: number }) {
   // it is fixed for the life of the screen and does not reshuffle when the user
   // navigates away and comes back.
   const [seed] = useState(() => now ?? Date.now());
+  // Each pack's age moves on with the clock while Home stays open.
+  const clock = useMinuteClock(now);
 
   // E4-US7-AC4: the kept programs no saved pack carries yet, for the amber
-  // nudge. Read with the packs on every arrival, so coming back from Recover
-  // shows the current count.
+  // nudge line in the empty card. Read with the packs on every arrival, so
+  // coming back from Recover shows the current count.
   const [unsaved, setUnsaved] = useState(0);
   const load = async () => {
     const kept = readKept(localFlagStore());
@@ -73,23 +86,86 @@ export default function Home({ now }: { now?: number }) {
     };
   }, [seed]);
 
-  // A pack's settings open in one bottom sheet from the ... on its card. The
-  // browser's own dialog gives Escape, a focus trap and focus back to the ...
-  // on close. Deleting takes two taps: Delete this pack asks, and only Delete
-  // destroys data.
+  // A pack's settings open in one bottom sheet from the ... on its card: a
+  // short menu of rows, then Rename's form or Delete's question in its place.
+  // The browser's own dialog gives Escape, a focus trap and focus back to the
+  // ... on close. It opens on the close cross, never on Delete. Deleting takes
+  // two taps: Delete this pack asks, and only Delete destroys data.
   const sheet = useRef<HTMLDialogElement>(null);
-  const [settings, setSettings] = useState<{ id: string; name: string; ageLine: string } | null>(null);
-  const [asking, setAsking] = useState(false);
-  const deleteRef = useRef<HTMLButtonElement>(null);
+  const [settings, setSettings] = useState<{ id: string; name: string; icon: PackIcon; verifiedAt: number } | null>(null);
+  const [step, setStep] = useState<'menu' | 'rename' | 'icon' | 'delete'>('menu');
+  const [iconDraft, setIconDraft] = useState<PackIcon>('place');
+  const [iconFailed, setIconFailed] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  // Why the last save did not go through, or null.
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const renameRowRef = useRef<HTMLButtonElement>(null);
+  const iconRowRef = useRef<HTMLButtonElement>(null);
+  const deleteRowRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const lastStep = useRef(step);
   useEffect(() => {
-    if (settings) sheet.current?.showModal();
+    if (settings && !sheet.current?.open) sheet.current?.showModal();
   }, [settings]);
-  // Focus follows the question: onto Keep it when it appears, back to Delete
-  // this pack when it is answered with Keep it.
+  // Focus follows the step: into the name field or onto Keep it when they
+  // appear, and back to the row that opened them when the person returns.
   useEffect(() => {
-    (asking ? cancelRef : deleteRef).current?.focus();
-  }, [asking]);
+    if (step === 'rename') nameRef.current?.focus();
+    else if (step === 'icon') sheet.current?.querySelector<HTMLInputElement>('.icon-picker input:checked')?.focus();
+    else if (step === 'delete') cancelRef.current?.focus();
+    else if (lastStep.current === 'rename') renameRowRef.current?.focus();
+    else if (lastStep.current === 'icon') iconRowRef.current?.focus();
+    else if (lastStep.current === 'delete') deleteRowRef.current?.focus();
+    lastStep.current = step;
+  }, [step]);
+
+  const startRename = () => {
+    setNameDraft(settings?.name ?? '');
+    setRenameError(null);
+    setStep('rename');
+  };
+  const startIcon = () => {
+    setIconDraft(settings?.icon ?? 'place');
+    setIconFailed(false);
+    setStep('icon');
+  };
+  // A saved icon closes the sheet onto the card, as a saved name does.
+  const saveIcon = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!settings) return;
+    try {
+      await setPackIcon(settings.id, iconDraft);
+    } catch {
+      setIconFailed(true);
+      return;
+    }
+    setView((current) => current && {
+      ...current,
+      packs: current.packs.map((row) => (row.pack.id === settings.id ? { ...row, pack: { ...row.pack, icon: iconDraft } } : row)),
+    });
+    sheet.current?.close();
+  };
+
+  // A saved name closes the sheet onto the card, which shows the new name at
+  // once; focus returns to the card's ..., now named for it. Only the name
+  // changes, so the list keeps its order and nothing is read again.
+  const saveName = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!settings) return;
+    const name = nameDraft.trim();
+    try {
+      await renamePack(settings.id, name);
+    } catch (error) {
+      setRenameError(error instanceof PackNameTakenError ? copy.PACK_NAME_TAKEN : copy.PACK_NAME_NOT_SAVED);
+      return;
+    }
+    setView((current) => current && {
+      ...current,
+      packs: current.packs.map((row) => (row.pack.id === settings.id ? { ...row, pack: { ...row.pack, name } } : row)),
+    });
+    sheet.current?.close();
+  };
 
   const removePack = async (id: string) => {
     await deleteCompletePack(id);
@@ -105,7 +181,7 @@ export default function Home({ now }: { now?: number }) {
   };
   // A delete that fails closes the question and leaves the pack as it was. A
   // list that cannot be read again after a delete keeps the card already removed.
-  const removePackSafely = (id: string) => removePack(id).catch(() => setAsking(false));
+  const removePackSafely = (id: string) => removePack(id).catch(() => setStep('menu'));
 
   return (
     <main className="page home">
@@ -126,38 +202,36 @@ export default function Home({ now }: { now?: number }) {
         </section>
       )}
 
-      {/* The nudge: the kept card treatment, so it reads as the same object the
-          person kept, and one way to act on it. */}
-      {view !== null && unsaved > 0 ? (
-        <section className="card nudge">
-          <div className="card-head">
-            <Glyph kind="kept" />
-            <h2>{copy.KEPT_NOT_SAVED(unsaved)}</h2>
-          </div>
-          <Link className="action with-glyph" to="/packs/new">
-            <Glyph kind="plus" line />
-            {copy.BUILD_A_PACK}
-          </Link>
-        </section>
-      ) : null}
+      {/* The packs under their own eyebrow, as Today's reminder is. */}
+      {view === null ? null : <span className="kicker">{copy.YOUR_PACKS}</span>}
 
       {view === null ? null : view.packs.length === 0 ? (
-        <section className="card empty-state">
-          <Glyph kind="layer" />
+        // The space the packs will fill, drawn dashed so it reads as empty
+        // rather than as a card. The New offline pack button below fills it.
+        <section className="empty-state">
           <h2>{copy.NO_PACK_SAVED}</h2>
           <p className="muted">{copy.NO_PACKS_HINT}</p>
+          {/* The nudge, one amber line in the same card: saved programs are
+              one more reason to build. The New offline pack button below is
+              the one way to act on it. */}
+          {unsaved > 0 ? (
+            <p className="nudge key-term with-glyph">
+              <Glyph kind="kept" line />
+              {copy.KEPT_NOT_SAVED(unsaved)}
+            </p>
+          ) : null}
         </section>
       ) : (
-        view.packs.map(({ pack, ageLine }) => (
+        view.packs.map(({ pack }) => (
             <section key={pack.id} className="card pack-card saved-place">
               {/* The pack's settings, top right inside the card, above the
                   card's link. */}
               <button
                 type="button"
                 className="card-more"
-                aria-label={copy.PACK_SETTINGS(titleCase(pack.name))}
+                aria-label={copy.PACK_SETTINGS(shownPackName(pack.name))}
                 aria-haspopup="dialog"
-                onClick={() => setSettings({ id: pack.id, name: pack.name, ageLine })}
+                onClick={() => setSettings({ id: pack.id, name: pack.name, icon: packIcon(pack), verifiedAt: pack.verifiedAt })}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
                   <circle cx="5" cy="12" r="2" fill="currentColor" />
@@ -166,14 +240,14 @@ export default function Home({ now }: { now?: number }) {
                 </svg>
               </button>
               <div className="saved-place-title">
-                <Glyph kind="place" />
+                <Glyph kind={packIcon(pack)} />
                 {/* Cased by the same rule as the address line below, so the two
                     read alike: the name defaults to the locality the geocoder
                     returned, and arrives in the same capitals. Storage keeps the
                     name exactly as it was saved. The link stretches over the
                     whole card (see .pack-card). */}
                 <h2>
-                  <Link to={`/packs/${pack.id}`}>{titleCase(pack.name)}</Link>
+                  <Link to={`/packs/${pack.id}`}>{shownPackName(pack.name)}</Link>
                 </h2>
               </div>
               {/* Title-cased for reading only. The pack still stores the address
@@ -181,10 +255,19 @@ export default function Home({ now }: { now?: number }) {
               <p className="muted">{titleCase(pack.address)}</p>
               <p className="muted figure saved-place-footer with-glyph">
                 <Glyph kind="offline" line />
-                {ageLine}
+                {packAgeLabel(clock, pack.verifiedAt)}
               </p>
             </section>
         ))
+      )}
+
+      {/* One more pack, in every state, at the end of the list it adds to:
+          under the last card, or under the empty space. */}
+      {view === null ? null : (
+        <Link className="action main-action with-glyph" to="/packs/new">
+          <Glyph kind="plus" line />
+          {copy.BUILD_A_PACK}
+        </Link>
       )}
 
       <dialog
@@ -193,18 +276,75 @@ export default function Home({ now }: { now?: number }) {
         aria-labelledby="pack-sheet-title"
         onClose={() => {
           setSettings(null);
-          setAsking(false);
+          setStep('menu');
         }}
       >
         {settings ? (
           <>
-            <h2 id="pack-sheet-title">{titleCase(settings.name)}</h2>
-            <p className="muted figure">{settings.ageLine}</p>
-            {asking ? (
+            {/* The close cross comes first, so the sheet opens on it. */}
+            <div className="sheet-head">
+              <div>
+                <h2 id="pack-sheet-title">{shownPackName(settings.name)}</h2>
+                <p className="muted figure">{packAgeLabel(clock, settings.verifiedAt)}</p>
+              </div>
+              <button type="button" className="sheet-close" aria-label={copy.CLOSE} onClick={() => sheet.current?.close()}>
+                <Glyph kind="close" line />
+              </button>
+            </div>
+            {step === 'rename' ? (
+              <form className="sheet-form" onSubmit={(event) => void saveName(event)}>
+                <label htmlFor="pack-name">{copy.PLACE_NAME_LABEL}</label>
+                <input
+                  ref={nameRef}
+                  id="pack-name"
+                  type="text"
+                  value={nameDraft}
+                  maxLength={PACK_NAME_MAX_CHARS}
+                  aria-invalid={renameError !== null || undefined}
+                  aria-describedby={renameError ? 'pack-name-error' : undefined}
+                  onChange={(event) => {
+                    setNameDraft(event.currentTarget.value);
+                    setRenameError(null);
+                  }}
+                />
+                {renameError ? (
+                  <p id="pack-name-error" className="field-message with-glyph" role="status">
+                    <Glyph kind="caution" line />
+                    {renameError}
+                  </p>
+                ) : null}
+                <div className="card-confirm-actions">
+                  <button type="button" onClick={() => setStep('menu')}>
+                    {copy.CANCEL}
+                  </button>
+                  <button type="submit" className="main-action" disabled={nameDraft.trim() === ''}>
+                    {copy.SAVE}
+                  </button>
+                </div>
+              </form>
+            ) : step === 'icon' ? (
+              <form className="sheet-form" onSubmit={(event) => void saveIcon(event)}>
+                <IconPicker name="pack-icon" value={iconDraft} onChange={setIconDraft} />
+                {iconFailed ? (
+                  <p className="field-message with-glyph" role="status">
+                    <Glyph kind="caution" line />
+                    {copy.PACK_ICON_NOT_SAVED}
+                  </p>
+                ) : null}
+                <div className="card-confirm-actions">
+                  <button type="button" onClick={() => setStep('menu')}>
+                    {copy.CANCEL}
+                  </button>
+                  <button type="submit" className="main-action">
+                    {copy.SAVE}
+                  </button>
+                </div>
+              </form>
+            ) : step === 'delete' ? (
               <>
                 <p>{copy.DELETE_PACK_QUESTION}</p>
                 <div className="card-confirm-actions">
-                  <button ref={cancelRef} type="button" className="card-confirm-no" onClick={() => setAsking(false)}>
+                  <button ref={cancelRef} type="button" className="card-confirm-no" onClick={() => setStep('menu')}>
                     {copy.KEEP_THIS_PACK}
                   </button>
                   <button
@@ -218,58 +358,48 @@ export default function Home({ now }: { now?: number }) {
                 </div>
               </>
             ) : (
-              <button ref={deleteRef} type="button" className="sheet-delete with-glyph" onClick={() => setAsking(true)}>
-                <Glyph kind="trash" line />
-                {copy.DELETE_PACK}
-              </button>
+              <ul className="sheet-menu">
+                <li>
+                  <button ref={renameRowRef} type="button" className="sheet-row with-glyph" onClick={startRename}>
+                    <Glyph kind="edit" line />
+                    {copy.RENAME_PACK}
+                  </button>
+                </li>
+                <li>
+                  <button ref={iconRowRef} type="button" className="sheet-row with-glyph" onClick={startIcon}>
+                    <Glyph kind={settings.icon} line />
+                    {copy.CHANGE_ICON}
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    className="sheet-row with-glyph"
+                    onClick={() => {
+                      sheet.current?.close();
+                      navigate(`/packs/${settings.id}/print`);
+                    }}
+                  >
+                    <Glyph kind="print" line />
+                    {copy.PRINT_PACK}
+                  </button>
+                </li>
+                <li>
+                  <button
+                    ref={deleteRowRef}
+                    type="button"
+                    className="sheet-row sheet-delete with-glyph"
+                    onClick={() => setStep('delete')}
+                  >
+                    <Glyph kind="trash" line />
+                    {copy.DELETE_PACK}
+                  </button>
+                </li>
+              </ul>
             )}
-            <button type="button" onClick={() => sheet.current?.close()}>
-              {copy.CLOSE}
-            </button>
           </>
         ) : null}
       </dialog>
-
-      <div className="actions">
-        {/* One more pack, in every state: the list grows from here. */}
-        <Link className="action main-action with-glyph" to="/packs/new">
-          <Glyph kind="plus" line />
-          {copy.BUILD_A_PACK}
-        </Link>
-        {/* Reachable in both states, including with no pack saved. The ring to
-            its left opens the lines that say what the mode is. */}
-        <BlackSkyHoldRow>
-          <HoldButton onHold={() => navigate('/blacksky', { state: { held: true } })} hint={copy.HOLD_TO_ENTER}>
-            <span className="blacksky-hold-label">{copy.HOLD_FOR_BLACKSKY}</span>
-            {view !== null && view.packs.length === 0 ? (
-              <span className="blacksky-hold-sub">{copy.BLACKSKY_WORKS_WITHOUT_PACK}</span>
-            ) : null}
-          </HoldButton>
-        </BlackSkyHoldRow>
-      </div>
     </main>
-  );
-}
-
-/** The hold control with the information ring to its left and, after a tap
- *  on the ring, the panel that says what BlackSky does, one glyph per line. */
-function BlackSkyHoldRow({ children }: { children: ReactNode }) {
-  return (
-    <Hint
-      className="blacksky-hold-row"
-      ringClass="blacksky-info"
-      panelClass="blacksky-info-panel"
-      label={copy.ABOUT_BLACKSKY}
-      head={children}
-    >
-      <ul className="info-lines glyph-lines">
-        {copy.BLACKSKY_INFO_LINES.map((line) => (
-          <li key={line.glyph}>
-            <Glyph kind={line.glyph} line />
-            {line.text}
-          </li>
-        ))}
-      </ul>
-    </Hint>
   );
 }

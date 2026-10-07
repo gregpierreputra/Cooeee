@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MS_PER_DAY, PACK_RADIUS_KM } from '../../src/core/constants';
-import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_DAYS_AGO } from '../../src/core/copy';
-import { buildPackSeed, diffPacks, packAgeLabel } from '../../src/core/pack';
+import { OFFICIAL_INSTRUCTIONS_FIRST } from '../../src/core/copy';
+import { buildPackSeed, defaultPackName, diffPacks, packAgeLabel, packIcon, samePackName, streetPart } from '../../src/core/pack';
 import { pack, source } from '../fixtures';
 
 const NOW = 1_800_000_000_000;
@@ -9,8 +9,56 @@ const daysAgo = (n: number) => NOW - n * MS_PER_DAY;
 
 describe('packAgeLabel', () => {
   it('states only the age, however old the pack is', () => {
-    expect(packAgeLabel(NOW, daysAgo(29))).toBe(SAVED_DAYS_AGO(29));
+    expect(packAgeLabel(NOW, daysAgo(29))).toBe('Saved 29 days ago');
     expect(packAgeLabel(NOW, daysAgo(96))).toBe('Saved 96 days ago');
+  });
+
+  it('states minutes and hours on the day the pack was saved', () => {
+    expect(packAgeLabel(NOW, NOW - 30_000)).toBe('Saved just now');
+    expect(packAgeLabel(NOW, NOW - 5 * 60_000)).toBe('Saved 5 minutes ago');
+    expect(packAgeLabel(NOW, NOW - 3 * 3_600_000)).toBe('Saved 3 hours ago');
+    // A phone clock set behind never gives a negative age.
+    expect(packAgeLabel(NOW, NOW + 60_000)).toBe('Saved just now');
+  });
+});
+
+describe('samePackName', () => {
+  it('ignores capitals and spaces at either end, and nothing else', () => {
+    expect(samePackName('Home', ' home ')).toBe(true);
+    expect(samePackName('Home', 'Home 2')).toBe(false);
+    expect(samePackName('Mum and Dad', 'Mum & Dad')).toBe(false);
+  });
+});
+
+describe('packIcon', () => {
+  it('is the pack’s own drawing, or the pin when it has none or an unknown one', () => {
+    expect(packIcon({ icon: 'family' })).toBe('family');
+    expect(packIcon({})).toBe('place');
+    expect(packIcon({ icon: '<img>' as never })).toBe('place');
+  });
+
+  it('is carried into a new pack only when it is a pack drawing', () => {
+    const place = { name: 'Home', address: 'A', lat: 0, lon: 0 };
+    expect(buildPackSeed('p', 1, { ...place, icon: 'home' }, 'L', source()).icon).toBe('home');
+    expect(buildPackSeed('p', 1, { ...place, icon: 'x' as never }, 'L', source())).not.toHaveProperty('icon');
+  });
+});
+
+describe('defaultPackName', () => {
+  const candidate = { address: '8 RIDGE ROAD KALORAMA 3766', localityName: 'KALORAMA' };
+
+  it('is the suburb while no other pack has its name', () => {
+    expect(defaultPackName(candidate, ['Work'])).toBe('KALORAMA');
+  });
+
+  it('is the street when another pack has the suburb name, whatever its capitals', () => {
+    expect(defaultPackName(candidate, ['Kalorama'])).toBe('8 RIDGE ROAD');
+  });
+
+  it('keeps a unit in the street, and keeps an address that does not end in suburb and postcode whole', () => {
+    expect(streetPart('UNIT 2 8 RIDGE ROAD KALORAMA 3766', 'KALORAMA')).toBe('UNIT 2 8 RIDGE ROAD');
+    expect(streetPart('8 RIDGE ROAD KALORAMA', 'KALORAMA')).toBe('8 RIDGE ROAD KALORAMA');
+    expect(streetPart('KALORAMA 3766', 'KALORAMA')).toBe('KALORAMA 3766');
   });
 });
 

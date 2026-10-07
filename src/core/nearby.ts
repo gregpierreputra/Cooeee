@@ -3,7 +3,7 @@ import * as copy from './copy';
 import { formatDistanceM } from './destination';
 import { DYNAMIC_TYPES, FACILITY_SOURCE, STATIC_TYPES } from './facility-sources';
 import { distanceM } from './geo';
-import { formatSavedDate } from './provenance';
+import { ageLabel, formatSavedDate } from './provenance';
 import type {
   SourceLine,
   BundleFacility,
@@ -77,15 +77,8 @@ export function nearestOfType<T extends LatLon & { type: FacilityType }>(
   return nearest;
 }
 
-/** 'just now' → 'N min ago' → 'N h ago' → 'N days ago'. A future clock reads as now. */
-export function ageLabel(ms: number): string {
-  const minutes = Math.floor(Math.max(0, ms) / 60_000);
-  if (minutes < 1) return copy.JUST_NOW;
-  if (minutes < 60) return copy.MINUTES_AGO(minutes);
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return copy.HOURS_AGO(hours);
-  return copy.ITEM_DAYS_AGO(Math.floor(hours / 24));
-}
+/** The one age rule, shared with the pack card, the header and the Source ring. */
+export { ageLabel };
 
 const melbourne = (options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat =>
   new Intl.DateTimeFormat('en-AU', { ...options, timeZone: 'Australia/Melbourne' });

@@ -1,3 +1,4 @@
+import { moveNoteDraft } from '../core/note-draft';
 import { canonicalJson, canonicalOrder, exactTextBytes, offerMatchesStoredSize } from '../core/pack-offer';
 import { hasCompleteSource, prepareProvenancedContent, type OmittedItem } from '../core/provenance';
 import type {
@@ -8,6 +9,7 @@ import type {
   PackOffer,
   TextPackContent,
 } from '../core/types';
+import { localFlagStore } from './acknowledgement';
 import {
   carryHistoryToNewPack,
   checkedNoteText,
@@ -156,7 +158,7 @@ export async function verifyAndFinalizeTextOnlyPack(
     throw new Error('staged pack failed manifest or size verification');
   }
 
-  await db.transaction('rw', [db.packs, ...ownedTables(), ...historyTables()], async () => {
+  const oldId = await db.transaction('rw', [db.packs, ...ownedTables(), ...historyTables()], async () => {
     const current = await db.packs.get(staged.id);
     if (current?.status !== 'building') throw new Error('building pack changed before finalisation');
     const oldId = current.supersedes;
@@ -176,7 +178,10 @@ export async function verifyAndFinalizeTextOnlyPack(
       await db.packs.delete(oldId);
     }
     await db.packs.update(current.id, { status: 'complete', verifiedAt });
+    return oldId;
   });
+  // The unsaved words of a note move with the notes, once the move is committed.
+  if (oldId) moveNoteDraft(localFlagStore(), oldId, staged.id);
 }
 
 export async function saveTextOnlyPack(

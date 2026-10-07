@@ -16,6 +16,9 @@ export type Source = {
  * absent value means bushfire. Neighbourhood Safer Places are a bushfire concept
  * and are never offered for flood or heat. */
 export type HazardType = 'bushfire' | 'flood' | 'heat';
+/** The drawing a person picks for a pack, so several packs are told apart at
+ *  a glance. One of the app's own drawings, never an uploaded image. */
+export type PackIcon = 'place' | 'home' | 'work' | 'family' | 'holiday' | 'school' | 'farm';
 
 export type PackManifest = {
   version: 1;
@@ -78,6 +81,7 @@ export type Pack = {
   sources: Source[];
   supersedes?: string;              // optional attribute, set by "update" the old pack lives until acknowledged
   hazardType?: HazardType;          // absent = 'bushfire' (Iteration 1 builds bushfire only)
+  icon?: PackIcon;                  // absent = 'place' (packs built before icons)
 };
 
 /** A file saved inside the pack so it opens with no signal: a PDF copy of one
@@ -245,6 +249,7 @@ export type PendingPlace = {
   address: string;
   lat: number;
   lon: number;
+  icon?: PackIcon;
 };
 
 /** A transient official BPA check. It remains in memory until the complete

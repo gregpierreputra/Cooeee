@@ -5,7 +5,7 @@
 import { MS_PER_DAY } from './constants';
 import * as copy from './copy';
 import { packAgeLabel } from './pack';
-import { savedAgeDays } from './provenance';
+import { ageLabel, savedAgeDays } from './provenance';
 import type { Pack } from './types';
 
 /** What the right-hand side of the header reports: the age in days, or
@@ -22,12 +22,12 @@ export function oldestPack(packs: Pack[]): Pack | null {
   );
 }
 
-/** The day arithmetic is savedAgeDays(), shared with the pack card — only the
- *  wording differs, deliberately. */
+/** The age is ageLabel(), shared with the pack card — only the wording
+ *  differs, deliberately. */
 export function headerAge(now: number, verifiedAt: number | null): HeaderAge {
   if (verifiedAt === null) return { kind: 'none' };
   const days = savedAgeDays(now, verifiedAt);
-  return { kind: 'checked', days, text: copy.CHECKED_DAYS_AGO(days) };
+  return { kind: 'checked', days, text: copy.CHECKED_AGO(ageLabel(now - verifiedAt)) };
 }
 
 const melbourneDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Melbourne' });
@@ -53,7 +53,7 @@ export function preparationLine(seed: number): PreparationLine {
 }
 
 export type NavItem = {
-  key: 'home' | 'nearby' | 'rehearse' | 'recover' | 'about';
+  key: 'home' | 'nearby' | 'rehearse' | 'recover';
   label: string;
   to: string;
 };
@@ -67,7 +67,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'nearby', label: copy.NAV_NEARBY, to: '/nearby' },
   { key: 'rehearse', label: copy.NAV_REHEARSE, to: '/rehearse' },
   { key: 'recover', label: copy.NAV_RECOVER, to: '/recover' },
-  { key: 'about', label: copy.NAV_ABOUT, to: '/about' },
 ];
 
 /** Everything the home screen renders, decided in one place: every saved pack,
@@ -87,6 +86,12 @@ export function homeView(now: number, packs: Pack[]): HomeView {
     preparation: preparationLine(now),
   };
 }
+
+/** A pack's name as every screen shows it: exactly as the person gave it. A
+ *  name with no small letter at all is the official list's capitals, which
+ *  packs saved before the defaults were offered in normal case still hold, so
+ *  that one is title-cased for reading. Storage is never touched. */
+export const shownPackName = (name: string): string => (/[a-z]/.test(name) ? name : titleCase(name));
 
 /** Title-cases a stored string FOR DISPLAY ONLY.
  *

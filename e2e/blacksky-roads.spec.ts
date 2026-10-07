@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { LOCALITIES_ATTRIBUTION, MAP_RETURN_BUTTON, NO_PACK_HERE, ROADS_ATTRIBUTION } from '../src/core/copy';
+import { LOCALITIES_ATTRIBUTION, MAP_DATA, MAP_RETURN_BUTTON, NO_PACK_HERE, ROADS_ATTRIBUTION } from '../src/core/copy';
 import { acknowledgeFirstOpen, HARNESS, waitForController } from './helpers';
 import { AT_FERNY_CREEK, PHONE, pushPosition, stubPositions, turnPhone } from './blacksky-position';
 
@@ -333,9 +333,10 @@ test('Empty: without the roads file the dial is the plain dial, and nothing else
   await expect(page.locator('.blacksky-dial-drop:not(.on-ring)')).toHaveCount(0);
 });
 
-test('About names the road data under its licence', async ({ page }) => {
-  await acknowledgeFirstOpen(page);
-  await page.goto('/about');
+test('the pack page names the road data under its licence, behind Map data', async ({ page }) => {
+  await page.goto(`${HARNESS}/detail`);
+  await expect(page.getByText(ROADS_ATTRIBUTION)).toBeHidden();
+  await page.getByText(MAP_DATA).click();
   await expect(page.getByText(ROADS_ATTRIBUTION)).toBeVisible();
   await expect(page.getByText(LOCALITIES_ATTRIBUTION)).toBeVisible();
 });

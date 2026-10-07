@@ -8,6 +8,9 @@ import {
   listCompletePacks,
   listCompletePacksWithPlaces,
   putNote,
+  renamePack,
+  setPackIcon,
+  PackNameTakenError,
   readRehearsalSource,
   listRehearsalsForPack,
   saveFinishedRehearsal,
@@ -173,6 +176,72 @@ describe('sweepBuilding', () => {
     await sweepBuilding();
     await sweepBuilding();
     expect(await db.packs.count()).toBe(0);
+  });
+});
+
+describe('renamePack', () => {
+  it('changes only the name, trimmed, and leaves the address as it was', async () => {
+    await db.packs.put(pack({ id: 'p', name: 'Ferny Creek' }));
+    const before = await db.packs.get('p');
+
+    await renamePack('p', '  Mum and Dad  ');
+
+    expect(await db.packs.get('p')).toEqual({ ...before, name: 'Mum and Dad' });
+  });
+
+  it('refuses an empty or too long name, and a pack still being built', async () => {
+    await db.packs.bulkPut([pack({ id: 'p' }), pack({ id: 'b', status: 'building' })]);
+
+    await expect(renamePack('p', '   ')).rejects.toThrow(RangeError);
+    await expect(renamePack('p', 'x'.repeat(61))).rejects.toThrow(RangeError);
+    await expect(renamePack('b', 'Home')).rejects.toThrow();
+    expect((await db.packs.get('b'))?.name).toBe(pack().name);
+  });
+
+  it('refuses a name another pack has, whatever its capitals, but lets a pack keep its own', async () => {
+    await db.packs.bulkPut([pack({ id: 'p', name: 'Home' }), pack({ id: 'q', name: 'Work' })]);
+
+    await expect(renamePack('q', ' home ')).rejects.toThrow(PackNameTakenError);
+    expect((await db.packs.get('q'))?.name).toBe('Work');
+
+    await renamePack('p', 'HOME');
+    expect((await db.packs.get('p'))?.name).toBe('HOME');
+  });
+});
+
+describe('setPackIcon', () => {
+  it('changes only the icon, and refuses one that is not a pack drawing or a pack being built', async () => {
+    await db.packs.bulkPut([pack({ id: 'p' }), pack({ id: 'b', status: 'building' })]);
+    const before = await db.packs.get('p');
+
+    await setPackIcon('p', 'farm');
+    expect(await db.packs.get('p')).toEqual({ ...before, icon: 'farm' });
+
+    await expect(setPackIcon('p', 'x' as never)).rejects.toThrow(RangeError);
+    await expect(setPackIcon('b', 'home')).rejects.toThrow();
+    expect(await db.packs.get('b')).not.toHaveProperty('icon');
+  });
+});
+
+describe('a note draft goes with its pack', () => {
+  it('is cleared when its pack is deleted, and another pack keeps its own', async () => {
+    const stored: Record<string, string> = {
+      'cooeee.note-draft.v1:gone': '{"id":"n","text":"x","isNew":true}',
+      'cooeee.note-draft.v1:kept': '{"id":"n","text":"y","isNew":true}',
+    };
+    const localStorage = {
+      getItem: (key: string) => stored[key] ?? null,
+      setItem: (key: string, value: string) => { stored[key] = value; },
+      removeItem: (key: string) => { delete stored[key]; },
+    };
+    (globalThis as { window?: unknown }).window = { localStorage };
+    try {
+      await db.packs.bulkPut([pack({ id: 'gone' }), pack({ id: 'kept' })]);
+      await deleteCompletePack('gone');
+      expect(Object.keys(stored)).toEqual(['cooeee.note-draft.v1:kept']);
+    } finally {
+      delete (globalThis as { window?: unknown }).window;
+    }
   });
 });
 

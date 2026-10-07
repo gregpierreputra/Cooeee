@@ -65,9 +65,6 @@
   --online-ink: #04211c;
   --offline: #f87171;
   --offline-ink: #2a0a0a;
-  /* Keep, the choice that changes nothing, beside the red of Delete. */
-  --keep: #4ade80;
-  --keep-ink: #052e14;
   /* Data-age tier from the mockups' freshness screen: marks a cached row, never a hazard. */
   --stale: #fbbf24;
   --stale-fill: #1f1809;
@@ -138,8 +135,9 @@ body {
 .page {
   max-width: 560px;
   margin: 0 auto;
+  /* The foot clears the tab bar and the compass raised above it. */
   padding: 1.5rem max(1.75rem, env(safe-area-inset-right))
-    calc(3.5rem + 1px + 1.25rem + env(safe-area-inset-bottom))
+    calc(3.5rem + 1px + 3.25rem + env(safe-area-inset-bottom))
     max(1.75rem, env(safe-area-inset-left));
   min-height: calc(100dvh - 8.75rem - 1px);
   display: flex;
@@ -392,6 +390,109 @@ a {
 .sheet[open] {
   display: grid;
   gap: 0.75rem;
+  /* Only as tall as what it holds, rows packed at the top. Without these an
+     older Safari stretches the dialog to the screen and spreads the rows. */
+  height: fit-content;
+  align-content: start;
+}
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.sheet .sheet-close {
+  flex: none;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+/* The menu: one row per action, the drawing then the words, thin rules
+   between, as a phone's own action list. */
+.sheet-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.sheet-menu li {
+  border-bottom: 1px solid var(--line);
+}
+.sheet .sheet-row {
+  width: 100%;
+  min-height: 52px;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0.25rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.sheet-form {
+  display: grid;
+  gap: 0.5rem;
+}
+/* The pack drawings: four rings to a row, each named under it, the chosen
+   one filled in the accent. The radio itself is kept for the keyboard and
+   screen readers, and its focus ring is drawn on the drawing. */
+.icon-picker {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem 0.5rem;
+}
+.icon-picker legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  color: var(--ink-2);
+}
+.icon-choice {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  font-weight: var(--w-med);
+  cursor: pointer;
+}
+.icon-choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.icon-choice .glyph {
+  width: 48px;
+  height: 48px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.icon-choice input:checked + .glyph {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.icon-choice:has(input:checked) {
+  color: var(--ink);
+}
+.icon-choice input:focus-visible + .glyph {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Why a name cannot be saved: amber, the attention colour, with the caution
+   drawing, and the field's edge in the same amber. Red stays for danger and
+   delete. The words carry the meaning on their own. */
+.field-message {
+  color: var(--stale);
+  font-weight: var(--w-bold);
+  font-size: var(--step-s);
+}
+input[aria-invalid='true'] {
+  border-color: var(--stale);
 }
 .sheet::backdrop {
   background: rgb(0 0 0 / 0.6);
@@ -400,8 +501,8 @@ a {
 .sheet p {
   margin: 0;
 }
-/* The one setting that removes data reads in the delete red, as an outline:
-   the filled red is kept for the Delete that confirms it. */
+/* The one setting that removes data reads in the delete red: the filled red
+   is kept for the Delete that confirms it. */
 .sheet .sheet-delete {
   border-color: var(--offline);
   color: var(--offline);
@@ -458,6 +559,28 @@ a {
 
 .note-actions button {
   flex: 1;
+}
+
+/* The pack page's notes. Read as plain cards with a small Edit; one note at a
+   time opens with Cancel, the filled Save and the red outlined Delete. */
+.note-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.note-read .note-edit {
+  justify-self: end;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: var(--step-s);
+}
+.note-editing .note-actions {
+  flex-wrap: wrap;
+}
+.note-editing .note-actions button {
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--step-s);
 }
 
 /* The stored picture of the pack's area: square, with the saved place marked
@@ -596,23 +719,29 @@ a {
   font-size: var(--step-s);
 }
 
-/* Keep is green and Delete is red, each filled, so the choice reads at a
-   glance. The words say the same, so colour is never the only cue. */
-.card-confirm-no {
-  color: var(--keep-ink);
-  background: var(--keep);
-  border-color: var(--keep);
+/* Keep in the app's own accent and Delete in the delete red, both outlined at
+   the same weight, so the choice reads at a glance without either shouting.
+   The words say the same, so colour is never the only cue. */
+.card-confirm-no,
+.card-confirm-yes,
+.note-delete {
+  background: transparent;
+  border-width: 2px;
 }
-
-.card-confirm-yes {
-  color: var(--offline-ink);
-  background: var(--offline);
+.card-confirm-no {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.card-confirm-yes,
+.note-delete {
+  color: var(--offline);
   border-color: var(--offline);
 }
 @media (hover: hover) {
   .card-confirm-no:hover,
-  .card-confirm-yes:hover {
-    border-color: var(--ink);
+  .card-confirm-yes:hover,
+  .note-delete:hover {
+    background: color-mix(in srgb, currentColor 12%, transparent);
   }
 }
 
@@ -692,7 +821,7 @@ button,
 @media (hover: hover) {
   /* Controls whose border colour carries meaning (red ends something, amber
      is BlackSky, a debrief tile's kind) keep it under the pointer. */
-  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold):hover,
+  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold, .card-confirm-yes, .note-delete):hover,
   .action:not(.leave-action):hover {
     border-color: var(--accent);
   }
@@ -1244,7 +1373,9 @@ main:focus {
 .blacksky-pack {
   width: 100%;
   display: grid;
-  gap: 0.125rem;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.875rem;
   text-align: left;
   padding: 0.875rem 1.25rem;
   border-radius: var(--r-card); /* three lines of text: the card's corner, not the pill's */
@@ -1252,6 +1383,17 @@ main:focus {
 .blacksky-pack[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
+  color: var(--ink-on-accent);
+}
+.blacksky-pack-text {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+/* On the filled amber of the chosen pack, the drawing turns black on a faint
+   dark ring, so it never disappears into the fill. */
+.blacksky-pack[aria-pressed='true'] .glyph {
+  background: rgb(0 0 0 / 0.15);
   color: var(--ink-on-accent);
 }
 .blacksky-pack-address {
@@ -2205,40 +2347,133 @@ main:focus {
     width 0.2s ease,
     height 0.2s ease;
 }
-.tour-card {
+.tour-panel {
+  /* Docked just above the tab bar, the same place on every stop, so the eye
+     and the thumb always find it. The tab bar stays visible below it. */
   position: absolute;
   inset-inline: 1rem;
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  bottom: calc(3.5rem + 1px + env(safe-area-inset-bottom) + 2.75rem); /* clear of the raised compass */
   margin: 0 auto;
   max-width: 560px;
   gap: 0.75rem;
-  /* At 200% text on a short screen the card can outgrow the screen. It scrolls
-     inside itself then, so Skip and Next can always be reached. */
-  max-height: calc(100dvh - 2rem);
-  overflow-y: auto;
-}
-.tour-card-top {
-  bottom: auto;
-  top: max(1rem, env(safe-area-inset-top));
 }
 .tour-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.tour-head .figure {
+.tour-head .tour-skip {
+  min-height: 44px;
+  width: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+/* The words scroll inside themselves when they are long (the welcome opened,
+   or 200% text), so the controls below never move. */
+.tour-body {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 40dvh;
+  overflow-y: auto;
+  /* Where a browser draws its scrollbar (a computer, mostly), it is thin and
+     rounded in a quiet grey, kept off the panel's top and bottom
+     edges, with a little room between it and the words. */
+  padding-inline-end: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink-3) 55%, transparent) transparent;
+}
+.tour-body::-webkit-scrollbar {
+  width: 6px;
+}
+.tour-body::-webkit-scrollbar-track {
+  margin-block: 0.5rem;
+  background: transparent;
+}
+.tour-body::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink-3) 55%, transparent);
+}
+.tour-body p {
+  margin: 0;
+}
+.tour-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+}
+.tour-controls button {
+  min-height: 44px;
+  padding: 0.5rem;
+  font-size: var(--step-s);
+}
+.tour-count {
   color: var(--ink-2);
   font-size: var(--step-s);
 }
-.tour-actions {
-  display: flex;
-  gap: 0.5rem;
+/* A control with nothing to do on this stop keeps its room, unseen, so the
+   others never shift. */
+.tour-hold-place {
+  visibility: hidden;
 }
-.tour-actions button {
-  flex: 1;
+/* The welcome: the mark in a ring beside the name and how it is said. */
+.welcome-mark {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.welcome-head h2 {
+  margin: 0;
+}
+/* The welcome's own words picked out in the accent, not the attention amber:
+   they are the name and what it means, not a warning. */
+.welcome-term {
+  color: var(--accent);
+  font-weight: var(--w-bold);
+}
+.tour-body .welcome-does {
+  margin-top: 0.5rem;
+}
+.welcome-more summary {
+  cursor: pointer;
   min-height: 44px;
-  padding: 0.5rem 0.5rem;
-  font-size: var(--step-s);
+  display: flex;
+  align-items: center;
+  font-weight: var(--w-bold);
+  color: var(--accent);
+}
+.welcome-more .info-lines {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+/* The map data credit at the foot of the pack page: small and quiet, opened
+   on a tap. */
+.map-credits {
+  font-size: var(--step-xs);
+  color: var(--ink-3);
+}
+.map-credits summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.map-credits p {
+  margin: 0.25rem 0 0;
+}
+/* While the tour runs, every page has room at its foot to bring its last
+   feature clear of the panel. */
+body.touring .page {
+  padding-bottom: 60dvh;
 }
 
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a
@@ -2423,7 +2658,8 @@ main:focus {
   }
   /* The hold's fill is a progress bar, not motion. On iOS, with no vibration,
      it is the only sign of how long is left, so it keeps its two seconds. */
-  .blacksky-hold:active {
+  .blacksky-hold:active,
+  .nav-blacksky:active .nav-blacksky-sweep circle {
     transition-duration: 2s !important;
   }
 }
@@ -2573,13 +2809,37 @@ main:focus {
    thumb reach whatever the page above it does. On every screen but BlackSky.
    Five equal destinations: none is weighted, and BlackSky is not among them. */
 .bottom-nav {
+  --notch: 36px; /* the compass's radius and the gap around it */
   position: fixed;
   inset-inline: 0;
   bottom: 0;
   z-index: 2;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+/* The bar itself, with a round notch cut from the middle of its top edge for
+   the compass to sit in, and the notch's edge drawn as the bar's line. */
+.bottom-nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--surface);
   border-top: 1px solid var(--line);
-  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-mask: radial-gradient(circle var(--notch) at 50% 0, #0000 calc(var(--notch) - 0.5px), #000 var(--notch));
+  mask: radial-gradient(circle var(--notch) at 50% 0, #0000 calc(var(--notch) - 0.5px), #000 var(--notch));
+}
+.bottom-nav::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: calc(-1 * var(--notch));
+  width: calc(2 * var(--notch));
+  height: calc(2 * var(--notch));
+  transform: translateX(-50%);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  clip-path: inset(50% 0 0 0);
+  pointer-events: none;
 }
 
 /* The same centred column as every page. */
@@ -2588,6 +2848,80 @@ main:focus {
   margin: 0 auto;
   display: flex;
   gap: 0.75rem;
+}
+
+/* The middle of the bar: the compass rises out of the notch, and BlackSky
+   sits under it in line with the other names. */
+.nav-blacksky-slot {
+  position: relative;
+  flex: 1;
+  min-height: 56px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.375rem 0;
+  font-size: var(--step-xs);
+  font-weight: var(--w-bold);
+  color: var(--blacksky-accent);
+}
+/* BlackSky's own look, true black under amber, so it reads as the door to that
+   mode and not one more tab. Two seconds of holding sweep amber round its
+   ring, as a compass needle turns; a release before then snaps it back. */
+.bottom-nav .nav-blacksky {
+  position: absolute;
+  left: 50%;
+  top: -32px;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  min-height: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--blacksky-accent);
+  border-radius: 50%;
+  background: #000;
+  background-image: none;
+  color: var(--blacksky-accent);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 45%);
+}
+/* The sweep is a circle's stroke drawn round from the top: a stroke offset
+   animates in every browser, where a gradient's angle does not repaint in
+   Safari. */
+.nav-blacksky-sweep {
+  position: absolute;
+  inset: -7px;
+  width: calc(100% + 14px);
+  height: calc(100% + 14px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.nav-blacksky-sweep circle {
+  fill: none;
+  stroke: var(--blacksky-accent);
+  stroke-width: 3;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 0.2s ease;
+}
+.nav-blacksky:active .nav-blacksky-sweep circle {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 2s linear;
+}
+/* The hint after a tap floats above the compass, so it moves nothing. */
+.nav-blacksky-slot .blacksky-hold-hint {
+  position: absolute;
+  bottom: calc(100% + 36px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--blacksky-accent);
+  border-radius: var(--r-pill);
+  background: #000;
+  color: var(--blacksky-accent);
+  font-size: var(--step-xs);
 }
 
 .bottom-nav-item {
@@ -2832,7 +3166,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 /* The one thing on a screen that must be read before anything else: how to
    reach emergency services. Red is already the fixed state colour in every
    mode, so nothing is invented here, and the shape is the ring-plus-tint the
-   nudge and the kept card already use. The words carry the meaning on their
+   kept card already uses. The words carry the meaning on their
    own, so the colour adds weight without ever being the only signal. */
 .emergency-line {
   border-inline-start: 3px solid var(--offline);
@@ -3207,10 +3541,48 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .roadmap-source {
   font-size: var(--step-s);
 }
-/* R3: the wellbeing lines under the numbers in Who to call. */
-.talk-to-someone {
+/* Who to call: two groups under their eyebrows, and each number a card. The
+   number is the largest thing on the card, so it can be read out to someone.
+   Call is tinted and Copy is a ghost pill. Only the hotline's Call is filled. */
+.call-group {
   display: grid;
   gap: 0.75rem;
+}
+.call-card {
+  gap: 0.875rem;
+}
+.call-card h3 {
+  margin: 0;
+  font-size: var(--step-1);
+}
+.call-card .card-head p {
+  margin: 0.125rem 0 0;
+  font-size: var(--step-s);
+}
+.call-number {
+  margin: 0;
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
+  letter-spacing: 0.02em;
+}
+.call-button {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+.emergency-line .card-head .glyph {
+  background: color-mix(in srgb, var(--offline) 18%, transparent);
+  color: var(--offline);
+}
+/* The hotline: the amber rule and ground, the attention colour, so it stands
+   out without reading as the number to call in danger. Red is kept for 000. */
+.caution-line {
+  border-inline-start: 3px solid var(--stale);
+  background: color-mix(in srgb, var(--stale) 10%, var(--surface));
+}
+.caution-line .card-head .glyph {
+  background: color-mix(in srgb, var(--stale) 18%, transparent);
+  color: var(--stale);
 }
 
 /* The source at a glance: its initials in a ring at the head of the card. */
@@ -3274,12 +3646,22 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
    tint: whoever has kept a program has already met this treatment and reads it
    without being told. The filled glyph carries it at a glance. */
 /* Kept and All side by side over the needs, each a tile with its drawing on
-   top, its name, then one quiet line. One tile alone fills the row. */
+   top, its name, then one quiet line. One tile alone fills the row as a row,
+   shaped like the need buttons below it, not a tall box. */
 .recover-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-bottom: 0.5rem;
+}
+/* The roadmap and the tiles held close as one group, and the needs under
+   their eyebrow set further down, so the two read apart with no rule. */
+.recover-start,
+.recover-needs {
+  display: grid;
+  gap: 0.75rem;
+}
+.recover-needs {
+  margin-top: 0.75rem;
 }
 .recover .recover-tile {
   display: flex;
@@ -3292,6 +3674,15 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .recover-tile .glyph {
   margin-bottom: 0.5rem;
+}
+.recover .recover-tile:only-child {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 1.5rem 0.75rem 0.5rem;
+}
+.recover-tile:only-child .glyph {
+  margin-bottom: 0;
 }
 .recover-tile-detail {
   color: var(--ink-2);
@@ -3338,13 +3729,11 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   align-items: center;
   gap: 0.75rem;
 }
-.pack-section-head .glyph,
-.nudge .glyph {
+.pack-section-head .glyph {
   width: 36px;
   height: 36px;
 }
-.pack-section-head .glyph svg,
-.nudge .glyph svg {
+.pack-section-head .glyph svg {
   width: 18px;
   height: 18px;
 }
@@ -3365,46 +3754,24 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-s);
 }
 
-/* The Home nudge: the mockups' amber "honesty check" card. Amber is the
-   attention colour already used for key terms, so the nudge is distinct from
-   the teal accent and from the red and green of the connection notice, yet
-   stays inside the palette. */
-.nudge {
-  border: 2px solid var(--stale);
-  background: color-mix(in srgb, var(--stale) 10%, var(--surface));
-}
-.nudge .kicker {
-  color: var(--stale);
-}
-.nudge .glyph {
-  background: color-mix(in srgb, var(--stale) 18%, transparent);
-  color: var(--stale);
-}
-.nudge .action {
-  align-self: start;
-  background: var(--stale);
-  border-color: var(--stale);
-  color: #3a2a00;
-  font-weight: var(--w-heavy);
-}
 
-/* About: a glyph ring leads each line, so the shape says what the line is.
-   Scoped to the About page: the BlackSky panel and the tour cards share the
-   led-line list without a glyph, and read as prose. */
-.about .info-lines li {
+/* More about Cooeee, in the tour's welcome: a glyph ring leads each line, so
+   the shape says what the line is. Scoped here: the BlackSky panel shares the
+   led-line list without a glyph, and reads as prose. */
+.welcome-more .info-lines li {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
 }
-.about .info-lines .glyph {
+.welcome-more .info-lines .glyph {
   width: 36px;
   height: 36px;
 }
-.about .info-lines .glyph svg {
+.welcome-more .info-lines .glyph svg {
   width: 18px;
   height: 18px;
 }
-.about .info-lines p {
+.welcome-more .info-lines p {
   margin: 0;
 }
 .about-line-title {
@@ -3449,6 +3816,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
     border: 1px solid #000;
     color: #000;
   }
+  .banner,
+  .particles,
   .notice-bar,
   .notice-sliver,
   .app-header,
@@ -3469,6 +3838,65 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   .recover .hero * {
     color: #000;
   }
+  /* Print this pack: black on white, the button left off, and the 000 line
+     kept apart by its rule alone. */
+  .print-actions {
+    display: none;
+  }
+  .pack-print * {
+    color: #000;
+  }
+  .pack-print .glyph {
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .pack-print .emergency-line {
+    background: #fff;
+    border-inline-start-color: #000;
+  }
+  .print-section {
+    break-inside: avoid;
+  }
+}
+/* Print this pack, on screen and on paper: sections under eyebrows, one line
+   per fact, the numbers written out in full. */
+.print-section {
+  display: grid;
+  gap: 0.5rem;
+}
+.print-section p {
+  margin: 0;
+}
+.print-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.print-list li {
+  display: grid;
+  gap: 0.125rem;
+}
+.print-calls li {
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 3px solid var(--line);
+}
+.print-calls .figure {
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+}
+.print-note {
+  white-space: pre-wrap;
+}
+.print-footer {
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.print-footer p {
+  margin: 0;
 }
 /* E5-US1-AC1 — the two conditions a rehearsal can run under. IDENTICAL rows:
    same treatment, same weight, same target, in a fixed order that is
@@ -3519,6 +3947,18 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .condition-label {
   font-size: var(--step-2);
   font-weight: var(--w-med);
+}
+/* The Rehearse pack list: the pack's drawing beside its three lines. */
+.condition-action.pack-choice {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.875rem;
+}
+.pack-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
 }
 /* Left-aligned like the line under it; outranks .with-glyph's centring. A
    long word wraps at 200% text rather than running off the right edge. */
@@ -4411,16 +4851,30 @@ p.with-glyph {
 .glyph-lines .line-glyph {
   margin-top: 0.1em;
 }
-/* Nothing saved yet: the pack drawing sits on the heading's row and the hint
-   lines up under the heading, so the card is as tall as its words. */
+/* Nothing saved yet: a dashed space where the packs will be, its words
+   centred and quiet, so it reads as room waiting to be filled, not a card. */
 .empty-state {
   display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.25rem 0.875rem;
+  justify-items: center;
+  gap: 0.375rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  border: 1.5px dashed color-mix(in srgb, var(--ink-3) 60%, transparent);
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+.empty-state h2 {
+  font-size: var(--step-0);
+  font-weight: var(--w-med);
+  color: var(--ink-2);
 }
 .empty-state p {
-  grid-column: 2;
+  margin: 0;
+  font-size: var(--step-s);
+}
+.empty-state .nudge {
+  justify-content: center;
+  margin-top: 0.375rem;
 }
 /* The pack builder's step strip: small rings joined by a line, done steps
    filled, the current one ringed and named. */

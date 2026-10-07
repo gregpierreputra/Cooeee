@@ -4,6 +4,8 @@ import { Link } from 'react-router';
 import { mapAcrossKm, mapBoxOf } from '../core/area-map-view';
 import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
 import * as copy from '../core/copy';
+import { shownPackName } from '../core/home';
+import { packIcon } from '../core/pack';
 import { formatDistanceM, placeName } from '../core/destination';
 import {
   decideOriginalSourceAccess,
@@ -26,6 +28,7 @@ import Section from './components/Section';
 import WellbeingLines from './components/WellbeingLines';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
+import { useMinuteClock } from './components/useMinuteClock';
 import { useRevealedPanel } from './components/useRevealedPanel';
 import { PlaceFacts } from './PackNew/Destinations';
 import { PackNotes } from './PackNotes';
@@ -46,8 +49,10 @@ export default function PackDetail({
   loadContent = getCompletePackContent,
   loadRehearsals = listRehearsalsForPack,
   loadDrills = listDrills,
-  now = Date.now(),
+  now: fixedNow,
 }: PackDetailProps) {
+  // Every age on the page moves on with the clock while it stays open.
+  const now = useMinuteClock(fixedNow);
   const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [drills, setDrills] = useState<DrillRow[]>([]);
@@ -161,8 +166,8 @@ export default function PackDetail({
       <header className="hero">
         <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
         <div className="card-head">
-          <Glyph kind="place" />
-          <h1>{content.pack.name}</h1>
+          <Glyph kind={packIcon(content.pack)} />
+          <h1>{shownPackName(content.pack.name)}</h1>
         </div>
         <p className="muted">{content.pack.address}</p>
       </header>
@@ -336,7 +341,21 @@ export default function PackDetail({
           <Glyph kind="rehearse" line />
           {copy.REHEARSE_THIS_PACK}
         </Link>
+        {/* The same page the pack's menu on Home prints. */}
+        <Link className="action with-glyph" to={`/packs/${content.pack.id}/print`}>
+          <Glyph kind="print" line />
+          {copy.PRINT_PACK}
+        </Link>
       </div>
+
+      {/* BS_Enhancement-AC5: the road and locality layers BlackSky draws are
+          published under CC BY 4.0, which asks for this credit. BlackSky has no
+          room for it, so it stands here, one tap away. */}
+      <details className="map-credits">
+        <summary>{copy.MAP_DATA}</summary>
+        <p>{copy.ROADS_ATTRIBUTION}</p>
+        <p>{copy.LOCALITIES_ATTRIBUTION}</p>
+      </details>
 
       {offlineSource ? (
         <div className="sheet-backdrop">
