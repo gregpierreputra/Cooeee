@@ -921,7 +921,7 @@ export const DISTANCES_NOTE = 'Straight-line distances, not by road.';
 export const NOT_A_RANKING = 'Not a ranking.';
 /** UAT: the words a person must not miss, coloured wherever they appear in a
  *  line passed through KeyTerms. Plain words only: they are joined into a regex. */
-export const KEY_TERMS = ['Bushfire Prone Area', 'Fire can still reach you', 'no password'] as const;
+export const KEY_TERMS = ['Bushfire Prone Area', 'Fire can still reach you'] as const;
 
 export const DOWNLOADING_PLACES = 'Downloading the official places…';
 export const FIRST_RUN_TITLE = 'Nothing downloaded yet';
