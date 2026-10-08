@@ -2868,6 +2868,13 @@ body.touring .page {
   padding-top: 0.625rem;
   border-top: 1px solid var(--line);
 }
+/* The grey chevron at the right end of the footer, matching the age line:
+   the card opens. */
+.saved-place-footer .card-chevron {
+  margin-left: auto;
+  flex: none;
+  color: var(--ink-3);
+}
 
 /* A fixed bar on the panel colour, inside the safe area, so it stays within
    thumb reach whatever the page above it does. On every screen but BlackSky.
