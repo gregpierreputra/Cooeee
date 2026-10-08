@@ -3492,6 +3492,13 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 /* Name on the left, the distance as the bold right-aligned figure. */
+/* The card's date, smaller and close under its status, so the two read as
+   one line about how current the card is. */
+.nearby-stamp {
+  margin-top: -0.25rem;
+  font-size: var(--step-s);
+}
+
 .nearby-place {
   display: flex;
   justify-content: space-between;

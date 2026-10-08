@@ -311,6 +311,9 @@ function PlaceRow({ row }: { row: NearbyRow }) {
           {row.stateLabel}
         </span>
       </div>
+      {/* How current the card is: the date sits under the status, on every
+          card, whether or not a place is listed. */}
+      {row.timestamp ? <p className="muted figure nearby-stamp">{row.timestamp}</p> : null}
       {row.place ? (
         <div className="nearby-place">
           <div>
@@ -323,7 +326,6 @@ function PlaceRow({ row }: { row: NearbyRow }) {
           </p>
         </div>
       ) : null}
-      {row.timestamp ? <p className="muted figure">{row.timestamp}</p> : null}
       {row.note ? <p className="nearby-note">{row.note}</p> : null}
     </li>
   );
