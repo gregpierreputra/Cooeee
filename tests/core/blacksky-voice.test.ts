@@ -10,6 +10,7 @@ import {
 } from '../../src/core/blacksky-voice';
 import {
   AT_PLACE_M,
+  AWAKE_HOLD_MS,
   AWAKE_MOVING_MPS,
   VOICE_MILESTONES_M,
   VOICE_MIN_GAP_MS,
@@ -343,12 +344,12 @@ describe('when the screen is kept awake', () => {
     expect(isMoving(Number.NaN)).toBe(false);
   });
 
-  it('truth table: awake when voice is on or the person is moving', () => {
-    expect(shouldStayAwake(false, 0)).toBe(false);
-    expect(shouldStayAwake(false, null)).toBe(false);
-    expect(shouldStayAwake(false, 5)).toBe(true);
-    expect(shouldStayAwake(true, 0)).toBe(true);
-    expect(shouldStayAwake(true, undefined)).toBe(true);
-    expect(shouldStayAwake(true, 5)).toBe(true);
+  it('truth table: awake when voice is on or the person moved within the hold', () => {
+    const now = 1_000_000;
+    expect(shouldStayAwake(false, null, now)).toBe(false);
+    expect(shouldStayAwake(false, now - AWAKE_HOLD_MS + 1, now)).toBe(true);
+    expect(shouldStayAwake(false, now - AWAKE_HOLD_MS, now)).toBe(false);
+    expect(shouldStayAwake(true, null, now)).toBe(true);
+    expect(shouldStayAwake(true, now - AWAKE_HOLD_MS, now)).toBe(true);
   });
 });

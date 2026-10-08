@@ -1,14 +1,14 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import {
   acknowledgeFirstOpen,
   addressFeature,
+  bpaHitFeature,
   chooseLastResortPlaces,
+  mockOfficialServices,
   openSources,
   waitForController,
-  WFS_PATTERN,
-  WMS_PATTERN,
 } from './helpers';
 
 // The real production journey, against the real built app (baseURL), not the
@@ -17,42 +17,6 @@ import {
 
 const ADDRESS = '6 RIDGE ROAD KALORAMA 3766';
 const LGA_NAME = 'YARRA RANGES';
-
-async function mockOfficialServices(page: Page, opts: {
-  candidates: unknown[];
-  lgaName: string;
-  bpaHits: unknown[];
-}) {
-  await page.route(WFS_PATTERN, (route: Route) => {
-    const typeNames = new URL(route.request().url()).searchParams.get('typeNames');
-    if (typeNames === 'open-data-platform:address') {
-      return route.fulfill({ json: { type: 'FeatureCollection', features: opts.candidates } });
-    }
-    if (typeNames === 'open-data-platform:lga_polygon') {
-      return route.fulfill({
-        json: { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { lga_name: opts.lgaName } }] },
-      });
-    }
-    if (typeNames === 'open-data-platform:bushfire_prone_area') {
-      return route.fulfill({ json: { type: 'FeatureCollection', features: opts.bpaHits } });
-    }
-    return route.continue();
-  });
-  // The area map from the same host's Web Map Service: the smallest PNG that
-  // decodes, so the journey never depends on the live map server.
-  const png = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
-    'base64',
-  );
-  await page.route(WMS_PATTERN, (route: Route) => route.fulfill({ body: png, contentType: 'image/png' }));
-}
-
-function bpaHitFeature(lgaName: string) {
-  return {
-    type: 'Feature',
-    properties: { lga_name: lgaName, plan_number: 'LEGL./25-138', gazettal_date: '10/07/2025' },
-  };
-}
 
 async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   await page.goto('/packs/new');

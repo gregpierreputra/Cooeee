@@ -117,6 +117,7 @@ describe('the walk so far', () => {
     expect(track.distanceM).toBeGreaterThan(105);
     expect(track.distanceM).toBeLessThan(117);
     expect(addFix(track, at(-37.80102))).toBe(track); // about 2 m: jitter
+    expect(addFix(track, at(-37.80118, 30))).toBe(track); // about 20 m, inside its 30 m error
     expect(addFix(track, at(-37.9, 80))).toBe(track); // too vague to count
   });
 

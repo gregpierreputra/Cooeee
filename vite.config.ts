@@ -27,6 +27,10 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//], // an API path is never the app shell
         runtimeCaching: [], // user data lives in IndexedDB; nothing else is cached at runtime
+        // The first install takes over the open page at once, so a phone that
+        // loses signal before the app is ever reopened still has everything.
+        // An update is still only taken when the user chooses Reload.
+        clientsClaim: true,
       },
       manifest: {
         id: '/',

@@ -5,7 +5,7 @@ import {
 } from '../core/constants';
 import { mapBoxAround } from '../core/area-map-view';
 import type { LatLon, PackFile } from '../core/types';
-import { readBodyBounded } from './bounded-body';
+import { readBodyBounded, timeoutSignal } from './bounded-body';
 import { sha256Hex } from './integrity';
 
 // The picture of a pack's own area, drawn by the Department of Transport and
@@ -68,7 +68,7 @@ export async function loadAreaMap(packId: string, centre: LatLon, maxBytes: numb
     let response: Response;
     let bytes: ArrayBuffer;
     try {
-      response = await fetch(url, { signal: AbortSignal.timeout(AREA_MAP_TIMEOUT_MS) });
+      response = await fetch(url, { signal: timeoutSignal(AREA_MAP_TIMEOUT_MS) });
       if (!response.ok) throw new TypeError(`area map: request failed (${response.status})`);
       bytes = await readBodyBounded(response, maxBytes);
     } catch (error) {

@@ -1,6 +1,6 @@
 import { BUNDLED_FILE_TIMEOUT_MS, isInsideVictoria, MAX_RESPONSE_BYTES } from '../core/constants';
 import type { NspSite, NspSnapshot, Source } from '../core/types';
-import { readJsonBounded } from './bounded-body';
+import { readJsonBounded, timeoutSignal } from './bounded-body';
 import { getNspSnapshot, putNspSnapshot } from './db';
 
 // The precached CFA Neighbourhood Safer Places snapshot. Same-origin static
@@ -126,7 +126,7 @@ export async function cacheNspSnapshot(): Promise<void> {
 export async function loadNspSnapshot(fetchImpl: typeof fetch = fetch): Promise<NspSnapshot> {
   const response = await fetchImpl(NSP_SNAPSHOT_PATH, {
     cache: 'force-cache',
-    signal: AbortSignal.timeout(BUNDLED_FILE_TIMEOUT_MS),
+    signal: timeoutSignal(BUNDLED_FILE_TIMEOUT_MS),
   });
   if (!response.ok) fail(`request failed (${response.status})`);
   return assertNspSnapshot(await readJsonBounded(response, MAX_RESPONSE_BYTES));

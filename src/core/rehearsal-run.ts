@@ -54,13 +54,14 @@ export const NO_TRACK: Track = { distanceM: 0, last: null };
 export const TRACK_ACCURACY_MAX_M = 50;
 
 /** Add one position to the walk. A vague position is skipped, and so is a move
- *  smaller than FIX_PUBLISH_M, which is the phone's own jitter while standing. */
+ *  inside the position's own error, never less than FIX_PUBLISH_M: that is the
+ *  phone's jitter while standing. A real walk passes it and is counted whole. */
 export function addFix(track: Track, fix: Pick<Fix, 'lat' | 'lon' | 'accuracyM'>): Track {
   if (fix.accuracyM > TRACK_ACCURACY_MAX_M) return track;
   const here = { lat: fix.lat, lon: fix.lon };
   if (track.last === null) return { distanceM: track.distanceM, last: here };
   const moved = distanceM(track.last, here);
-  return moved < FIX_PUBLISH_M ? track : { distanceM: track.distanceM + moved, last: here };
+  return moved < Math.max(FIX_PUBLISH_M, fix.accuracyM) ? track : { distanceM: track.distanceM + moved, last: here };
 }
 
 /** The time since the start as a clock: "4:05", or "1:02:09" past an hour. */

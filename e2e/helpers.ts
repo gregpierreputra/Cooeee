@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Route } from '@playwright/test';
 import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE, GATE_KEY, GATE_VALUE } from '../src/core/constants';
 
 /** The isolated component harness (e2e/harness), served on its own port. */
@@ -7,6 +7,44 @@ export const HARNESS = 'http://127.0.0.1:4174';
 /** The one official endpoint the app may call; specs intercept it here. */
 export const WFS_PATTERN = 'https://opendata.maps.vic.gov.au/geoserver/wfs**';
 export const WMS_PATTERN = 'https://opendata.maps.vic.gov.au/geoserver/wms**';
+
+/** The official register, the council and the bushfire prone area, answered
+ *  from fixtures, and the area map as the smallest PNG that decodes. */
+export async function mockOfficialServices(page: Page, opts: {
+  candidates: unknown[];
+  lgaName: string;
+  bpaHits: unknown[];
+}) {
+  await page.route(WFS_PATTERN, (route: Route) => {
+    const typeNames = new URL(route.request().url()).searchParams.get('typeNames');
+    if (typeNames === 'open-data-platform:address') {
+      return route.fulfill({ json: { type: 'FeatureCollection', features: opts.candidates } });
+    }
+    if (typeNames === 'open-data-platform:lga_polygon') {
+      return route.fulfill({
+        json: { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { lga_name: opts.lgaName } }] },
+      });
+    }
+    if (typeNames === 'open-data-platform:bushfire_prone_area') {
+      return route.fulfill({ json: { type: 'FeatureCollection', features: opts.bpaHits } });
+    }
+    return route.continue();
+  });
+  // The area map from the same host's Web Map Service: the smallest PNG that
+  // decodes, so the journey never depends on the live map server.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  await page.route(WMS_PATTERN, (route: Route) => route.fulfill({ body: png, contentType: 'image/png' }));
+}
+
+export function bpaHitFeature(lgaName: string) {
+  return {
+    type: 'Feature',
+    properties: { lga_name: lgaName, plan_number: 'LEGL./25-138', gazettal_date: '10/07/2025' },
+  };
+}
 
 /** A Vicmap address feature shaped exactly as the register returns it. */
 export function addressFeature(

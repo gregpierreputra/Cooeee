@@ -117,6 +117,11 @@ export const ADDRESS_SEARCH_DISCLOSURE =
 export const ADDRESS_LOCATE_DISCLOSURE = 'Sends your position to the Victorian address register. Not stored.';
 export const ADDRESS_LOCATE_FOUND = 'Addresses nearest you';
 export const ADDRESS_LOCATE_FAILED = 'Position unavailable. Type the address.';
+export const ADDRESS_LOCATE_DENIED = 'Location is off for Cooeee. Turn it on in your phone settings, or type the address.';
+export const ADDRESS_LOCATE_SLOW = 'Your position took too long to find. Try again, or type the address.';
+export const ADDRESS_LOCATE_ROUGH = (within: string) =>
+  `Your position is only known to within ${within}. Check the address is yours.`;
+export const ADDRESS_LOCATE_TOO_ROUGH = 'Your position is too rough to find your address. Type it instead.';
 export const ADDRESS_LOCATE_OUTSIDE = 'You are outside Victoria. Type a Victorian address.';
 export const ADDRESS_LOCATE_NONE = 'No address near you. Type it instead.';
 export const SEARCH_IN_PROGRESS = 'Searching…';

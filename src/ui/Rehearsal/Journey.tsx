@@ -13,7 +13,7 @@ import { journeyEndingRows, unfinishedFrom } from '../../core/rehearsal-ending';
 import { journeyNotes, journeyPlaces, type JourneyPlace } from '../../core/rehearsal-journey';
 import { elapsedClock, type RehearsalRun } from '../../core/rehearsal-run';
 import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types';
-import { getCompletePackContent, saveStartedRehearsal } from '../../data/db';
+import { getCompletePackWithoutFiles, saveStartedRehearsal } from '../../data/db';
 import Glyph from '../components/Glyph';
 import Hint from '../components/Hint';
 import NoteText from '../components/NoteText';
@@ -98,7 +98,7 @@ export function JourneyBefore({
   packId,
   condition,
   onGone,
-  loadContent = getCompletePackContent,
+  loadContent = getCompletePackWithoutFiles,
   keep = saveStartedRehearsal,
 }: {
   packId: string;
@@ -178,7 +178,7 @@ function TrackLine({ startedAt }: { startedAt: number }) {
  *  identical controls told apart by their words alone. */
 export function JourneyRunning({
   run,
-  loadContent = getCompletePackContent,
+  loadContent = getCompletePackWithoutFiles,
 }: {
   run: RehearsalRun;
   loadContent?: LoadContent;

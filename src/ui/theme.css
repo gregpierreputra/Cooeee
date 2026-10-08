@@ -4036,6 +4036,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
     border: 1px solid #000;
     color: #000;
   }
+  .banner,
+  .particles,
   .notice-bar,
   .notice-sliver,
   .app-header,
