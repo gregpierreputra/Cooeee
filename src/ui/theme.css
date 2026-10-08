@@ -3380,6 +3380,15 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   display: grid;
   gap: 0.75rem;
 }
+/* The origin line and its footnote read as one: the footnote smaller, in
+   grey, close beneath it. */
+.nearby-origin {
+  display: grid;
+  gap: 0.25rem;
+}
+.nearby-origin .muted {
+  font-size: var(--step-s);
+}
 /* The postcode in the origin line, picked out in the accent. */
 .nearby-origin-code {
   color: var(--accent);
