@@ -266,7 +266,7 @@ export default function Home({ now }: { now?: number }) {
                   exactly as the custodian returned it. */}
               <p className="muted">{titleCase(pack.address)}</p>
               <p className="muted figure saved-place-footer with-glyph">
-                <Glyph kind="offline" line />
+                <Glyph kind="saved" line />
                 {packAgeLabel(clock, pack.verifiedAt)}
                 {/* A hint that the card opens. Hidden from screen readers,
                     which already announce the pack name as a link. */}

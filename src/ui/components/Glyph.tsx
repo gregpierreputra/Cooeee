@@ -10,7 +10,7 @@ export type GlyphKind =
   | 'map' | 'layer' | 'place' | 'note'
   | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate'
   | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag'
-  | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline'
+  | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline' | 'saved'
   | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close'
   | Exclude<PackIcon, 'place'>;
 
@@ -53,6 +53,10 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   print: 'M7 9V4h10v5M7 17H4V9h16v8h-3M7 14h10v7H7z',
   online: 'M4 9.5a12 12 0 0 1 16 0M7 12.8a7.5 7.5 0 0 1 10 0M10 16a3 3 0 0 1 4 0M12 19.5v.01',
   offline: 'M4 9.5a12 12 0 0 1 16 0M7 12.8a7.5 7.5 0 0 1 10 0M10 16a3 3 0 0 1 4 0M12 19.5v.01M4 4l16 16',
+  // Downloaded into a tray: kept on this phone for use offline. A filled tick
+  // badge sits over its lower right (see Glyph below). The crossed-out signal
+  // above stays for being offline now.
+  saved: 'M10 3.5v9M6.5 9l3.5 3.5L13.5 9M3.5 14.5v3a1.5 1.5 0 0 0 1.5 1.5h6',
   caution: 'M12 4 21 20H3zM12 10v4.5M12 17.5v.01',
   web: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5',
   tour: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M10 8.5v7l5.5-3.5z',
@@ -89,6 +93,12 @@ export default function Glyph({ kind, size = 22, line = false }: { kind: GlyphKi
         focusable="false"
       >
         <path d={GLYPH_PATHS[kind]} />
+        {kind === 'saved' ? (
+          <>
+            <circle cx="17.5" cy="17" r="5.2" fill="currentColor" stroke="none" />
+            <path className="glyph-badge-tick" d="M15.2 17.1l1.6 1.6 3-3.2" />
+          </>
+        ) : null}
       </svg>
     </span>
   );

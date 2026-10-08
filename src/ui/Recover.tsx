@@ -334,7 +334,7 @@ export default function Recover({
               <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} />
               {saved.includes(program.id) ? (
                 <p className="figure in-packs with-glyph">
-                  <Glyph kind="offline" line />
+                  <Glyph kind="saved" line />
                   {copy.IN_YOUR_PACKS}
                 </p>
               ) : null}
