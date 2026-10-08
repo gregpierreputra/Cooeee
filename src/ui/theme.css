@@ -3380,6 +3380,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 /* The postcode search sits on the page, as the pack builder's address search does. */
 .nearby-locate {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* the postcode box narrows to fit a small phone */
   gap: 0.75rem;
 }
 /* The origin line and its footnote read as one: the footnote smaller, in
@@ -3440,9 +3441,10 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 .nearby-row-head {
   display: flex;
+  flex-wrap: wrap; /* the pill drops under the type when both do not fit */
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.375rem 0.75rem;
 }
 .nearby-row-head h3 {
   margin: 0;
@@ -3492,6 +3494,11 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   justify-content: space-between;
   align-items: baseline;
   gap: 0.75rem;
+}
+/* The name wraps, so the distance keeps its place on the right. */
+.nearby-place > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .nearby-place-name {
   font-weight: var(--w-bold);
