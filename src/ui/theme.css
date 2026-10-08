@@ -3842,17 +3842,19 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 /* More about Cooeee, in the tour's welcome: a glyph ring leads each line, so
    the shape says what the line is. Scoped here: the BlackSky panel shares the
-   led-line list without a glyph, and reads as prose. */
+   led-line list without a glyph, and reads as prose. The rings only: the
+   inline glyphs of More about BlackSky keep their text size, so each sits
+   level with the first line of its sentence. */
 .welcome-more .info-lines li {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
 }
-.welcome-more .info-lines .glyph {
+.welcome-more .info-lines .glyph:not(.line-glyph) {
   width: 36px;
   height: 36px;
 }
-.welcome-more .info-lines .glyph svg {
+.welcome-more .info-lines .glyph:not(.line-glyph) svg {
   width: 18px;
   height: 18px;
 }
