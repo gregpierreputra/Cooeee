@@ -554,7 +554,7 @@ export const HEADER_HOME_LABEL = 'Cooeee home';
 export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a network.';
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
 
-/** Home with no pack: a dashed space where packs will be, under YOUR PACKS. */
+/** Home with no pack: a dashed space where packs will be, under Your packs. */
 export const NO_PACK_SAVED = 'Packs you save will show up here.';
 export const YOUR_PACKS = 'Your packs';
 
@@ -700,17 +700,23 @@ export const WELLBEING_LINES = [
 export const PRINT_LIST = 'Print this list';
 export const RECOVER_NONE_LINE = 'Build a pack online. It carries the programs, so they open with no signal.';
 
+/** Home's heading, a greeting by the hour on this phone. Late at night it is
+ *  a plain "Hi", since good morning at 2am reads oddly. */
+export const GREETING = (hour: number): string =>
+  hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 18 ? 'Good afternoon' : hour >= 18 ? 'Good evening' : 'Hi';
+
 /** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
  *  is written here in sentence case and read out as words, not as letters. */
 export const PREPARATION_LABEL = "Today's reminder";
 
-/** Eight preparation lines, each grounded in Country Fire Authority plan-and-
- *  prepare guidance. One is shown per day and named with its source on screen;
- *  none of them is advice about a particular place, and none of them says
+/** Ten preparation lines: eight grounded in Country Fire Authority plan-and-
+ *  prepare guidance, and two about the programs carried in the pack, which
+ *  credit the pack instead. One is shown per day and named with its source on
+ *  screen; none of them is advice about a particular place, and none of them says
  *  anything about what is happening outside. Each carries a second line for
  *  the reader the first was not written for: someone without a car, a garden,
  *  animals, tools or a household of their own. */
-export const PREPARATION_SOURCE_RECOVERY = 'From the programs in your pack';
+export const PREPARATION_SOURCE_RECOVERY = 'From your pack';
 export const PREPARATION_LINES: readonly { text: string; context: string; source?: string }[] = [
   {
     text: 'Write your household bushfire plan down, and decide who does what.',
@@ -757,11 +763,12 @@ export const PREPARATION_LINES: readonly { text: string; context: string; source
 ];
 
 /** Attribution, not citation: the lines above are Cooeee's own wording of
- *  Country Fire Authority plan-and-prepare guidance, so the byline credits the
- *  guidance rather than quoting it. Nothing here is ever shown in quotes. */
-export const PREPARATION_SOURCE = 'Country Fire Authority guidance';
-/** The ring beside the source: the line for a reader the first was not written for. */
-export const PREPARATION_MORE = 'If this does not fit you';
+ *  Country Fire Authority plan-and-prepare guidance, so the byline names the
+ *  authority rather than quoting it. Nothing here is ever shown in quotes. */
+export const PREPARATION_SOURCE = 'Country Fire Authority';
+/** The toggle beside the source: the line for a reader the first was not
+ *  written for. Short, so it and the source share one line on any phone. */
+export const PREPARATION_MORE = 'Not for you?';
 
 /** The pack card's footer line. Appended to the card's own age wording rather
  *  than written into it: the age is a fact about the pack, and this is a fact
@@ -804,7 +811,7 @@ export const TOUR_FINISH = 'Finish';
 export const SKIP_TOUR = 'Skip tour';
 /** One glyph and one line per stop, 12 words at most (tests hold the limit). */
 export const TOUR_STEPS = [
-  { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'One small preparation step a day, from Country Fire Authority guidance.' },
+  { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'A daily preparation step, from Country Fire Authority guidance or your pack.' },
   { path: '/', target: '.home .pack-card, .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
   { path: '/', target: '.home .main-action', glyph: 'plus', title: 'New offline pack', line: 'Add a pack for home, work, school or family.' },
   { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to official places offline.', more: 'blacksky' },

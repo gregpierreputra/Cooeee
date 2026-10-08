@@ -13,6 +13,24 @@
   font-display: swap;
 }
 
+/* Lora, Latin only, for Today's reminder on Home: italic for the greeting,
+   upright for the line. Self-hosted the same way; licensed under the SIL Open
+   Font License (public/fonts/Lora-OFL.txt). */
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/Lora-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/Lora-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
 
@@ -33,6 +51,8 @@
   --font:
     'InterVariable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
+  /* For Today's reminder on Home only, falling back to the phone's own serif. */
+  --font-serif: 'Lora', ui-serif, Georgia, 'Times New Roman', serif;
 
   --step-0: 1rem; /* 16px — body never goes below this */
   --step-1: 1.25rem; /* 20 */
@@ -2766,14 +2786,58 @@ body.touring .page {
 
 /* The preparation line and the organisation that publishes it. Body text, with
    the source quieter beneath — a line with no named source would not be worth
-   showing. */
+   showing. Open on the page rather than boxed, so it never reads as one more
+   pack card; the larger line carries it. */
 .preparation {
   display: grid;
   gap: 0.375rem;
 }
+.preparation > p {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  font-weight: normal;
+  line-height: 1.4;
+}
 
+/* The greeting reads into the eyebrow as one line, "Good afternoon, today's
+   reminder": white in Lora italic, then the teal eyebrow. On the narrowest
+   phones the eyebrow moves whole to a second line. */
+.preparation-head {
+  font-size: var(--step-xs);
+  line-height: 1.6;
+  /* A thin teal line under the header, fading out to the right. */
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(90deg, var(--accent), transparent) bottom / 100% 1px no-repeat;
+}
+.preparation-head h1 {
+  display: inline;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: var(--step-1);
+  font-weight: normal;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.preparation-head .kicker {
+  white-space: nowrap;
+}
+
+/* The toggle on the left and the source on the right, on one line. */
 .preparation-source {
   font-size: var(--step-s);
+  text-align: right;
+}
+
+/* The eyebrow over the packs, set like Today's reminder, with space above it
+   so it starts a new section rather than trailing the reminder. */
+.packs-title {
+  margin-top: 1.25rem;
+}
+.packs-count {
+  margin-left: 0.5rem;
+  color: var(--ink-3);
 }
 
 /* The saved place. The same neutral card as everything else on the screen. */
@@ -3385,6 +3449,20 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .hint > .hint-panel {
   grid-column: 1 / -1;
+}
+/* A hint opened by its label as text rather than by the ring. */
+.hint-text {
+  min-height: 32px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  justify-self: start;
 }
 /* A long word beside the ring wraps at large text rather than pushing past
    the screen edge. */

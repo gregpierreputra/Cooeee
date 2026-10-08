@@ -185,16 +185,22 @@ export default function Home({ now }: { now?: number }) {
 
   return (
     <main className="page home">
-      {/* One preparation line under its own eyebrow, with the guidance it is
-          drawn from; the line for a reader it was not written for waits behind
-          the ring. It says nothing about a particular place, and nothing about
-          what is happening outside. */}
+      {/* A greeting by the hour, the page's heading, which moves on with the
+          clock and reads into the eyebrow as one line. Then one preparation
+          line, with the guidance it is drawn from; the line for a reader it
+          was not written for waits behind the toggle. It says nothing about a
+          particular place, and nothing about what is happening outside. */}
       {view === null ? null : (
         <section className="preparation">
-          <span className="kicker">{copy.PREPARATION_LABEL}</span>
+          <div className="preparation-head">
+            <h1 className="kicker">{copy.GREETING(new Date(clock).getHours())},</h1>{' '}
+            <span className="kicker">{copy.PREPARATION_LABEL}</span>
+          </div>
           <p>{view.preparation.text}</p>
           <Hint
             label={copy.PREPARATION_MORE}
+            asText
+            titled={false}
             head={<p className="muted preparation-source">{view.preparation.source}</p>}
           >
             <p>{view.preparation.context}</p>
@@ -202,8 +208,14 @@ export default function Home({ now }: { now?: number }) {
         </section>
       )}
 
-      {/* The packs under their own eyebrow, as Today's reminder is. */}
-      {view === null ? null : <span className="kicker">{copy.YOUR_PACKS}</span>}
+      {/* The packs under their own eyebrow, set like Today's reminder, with
+          their count and space above. No count when there are none. */}
+      {view === null ? null : (
+        <span className="kicker packs-title">
+          {copy.YOUR_PACKS}
+          {view.packs.length > 0 ? <span className="packs-count">{view.packs.length}</span> : null}
+        </span>
+      )}
 
       {view === null ? null : view.packs.length === 0 ? (
         // The space the packs will fill, drawn dashed so it reads as empty

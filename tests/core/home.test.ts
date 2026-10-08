@@ -118,7 +118,7 @@ describe('preparation line selection', () => {
   it('names its source alongside the line it chose', () => {
     const line = preparationLine(NOW);
     expect(copy.PREPARATION_LINES.map((row) => row.text)).toContain(line.text);
-    expect(line.source).toBe('Country Fire Authority guidance');
+    expect(line.source).toBe(copy.PREPARATION_SOURCE);
   });
 
   it('offers ten lines, none of them about a place or about conditions', () => {
