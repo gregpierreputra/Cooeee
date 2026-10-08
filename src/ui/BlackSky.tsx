@@ -600,7 +600,7 @@ export default function BlackSky({
                   {/* The pack's own drawing, in amber like everything here. */}
                   <Glyph kind={packIcon(pack)} />
                   <span className="blacksky-pack-text">
-                    <span>{shownPackName(pack.name)}</span>
+                    <span className="pack-name">{shownPackName(pack.name)}</span>
                     <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
                     {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
                       <span className="blacksky-pack-here with-glyph">
@@ -929,7 +929,7 @@ function OutsideArea({ packs }: { packs: { pack: Pack; distanceKm: number }[] })
       <span className="blacksky-outside">{copy.OUTSIDE_AREAS}</span>
       {packs.map(({ pack, distanceKm }) => (
         <span key={pack.id} className="blacksky-outside-pack">
-          <b>{shownPackName(pack.name)}</b> · {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
+          <b className="pack-name">{shownPackName(pack.name)}</b> · {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
         </span>
       ))}
     </>

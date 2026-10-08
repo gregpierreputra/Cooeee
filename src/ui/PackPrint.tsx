@@ -61,7 +61,7 @@ export default function PackPrint({
         <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
         <div className="card-head">
           <Glyph kind={packIcon(pack)} />
-          <h1>{shownPackName(pack.name)}</h1>
+          <h1 className="pack-name">{shownPackName(pack.name)}</h1>
         </div>
         <p>{titleCase(pack.address)}</p>
         <p className="muted">{copy.PRINT_SAVED_ON(formatSavedDate(pack.verifiedAt))}</p>

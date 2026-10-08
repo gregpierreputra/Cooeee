@@ -258,7 +258,7 @@ export default function Home({ now }: { now?: number }) {
                     returned, and arrives in the same capitals. Storage keeps the
                     name exactly as it was saved. The link stretches over the
                     whole card (see .pack-card). */}
-                <h2>
+                <h2 className="pack-name">
                   <Link to={`/packs/${pack.id}`}>{shownPackName(pack.name)}</Link>
                 </h2>
               </div>
@@ -301,7 +301,7 @@ export default function Home({ now }: { now?: number }) {
             {/* The close cross comes first, so the sheet opens on it. */}
             <div className="sheet-head">
               <div>
-                <h2 id="pack-sheet-title">{shownPackName(settings.name)}</h2>
+                <h2 id="pack-sheet-title" className="pack-name">{shownPackName(settings.name)}</h2>
                 <p className="muted figure">{packAgeLabel(clock, settings.verifiedAt)}</p>
               </div>
               <button type="button" className="sheet-close" aria-label={copy.CLOSE} onClick={() => sheet.current?.close()}>
