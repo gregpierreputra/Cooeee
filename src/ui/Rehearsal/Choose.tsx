@@ -80,6 +80,10 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
                   {ageLine}
                 </span>
               </span>
+              {/* The card opens, said by a chevron centred at its right. */}
+              <svg className="card-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           </li>
         ))}
