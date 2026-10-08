@@ -247,8 +247,12 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
 
           {view && origin ? (
             <>
-              <p className="caveat">{origin.label}</p>
-              <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /> {copy.NOT_A_RANKING}</p>
+              {/* Where the distances are measured from, with how to read them
+                  tucked beneath as its footnote. */}
+              <div className="nearby-origin">
+                <p className="caveat">{origin.label}</p>
+                <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /> {copy.NOT_A_RANKING}</p>
+              </div>
               <div className="nearby-tabs" role="tablist" aria-label={copy.NEARBY_TABS_LABEL}>
                 {TABS.map((each) => (
                   <button
