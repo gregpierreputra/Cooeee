@@ -4096,6 +4096,17 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   flex-direction: row;
   align-items: center;
   gap: 0.875rem;
+  position: relative;
+  padding-right: 1.4375rem; /* 3px more than before, the room the chevron needs */
+}
+/* The chevron, centred down the card's right side and mostly in its padding,
+   so it takes almost nothing from the words beside the pack's picture. */
+.pack-choice .card-chevron {
+  position: absolute;
+  right: 0.375rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-3);
 }
 .pack-choice-text {
   display: flex;
