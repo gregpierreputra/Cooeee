@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import {
-  ABOUT_DATA_SOURCES,
+  DATA_SOURCES_LABEL,
   FIRST_RUN_LINE,
   FIRST_RUN_TITLE,
   HOURS_AGO,
@@ -84,18 +84,35 @@ test('AC4 offline, static places come from IndexedDB labelled cached with their 
   // E1-US3-AC7: one drawing per kind, carried on its tab.
   await expect(page.getByRole('tab').locator('.glyph')).toHaveCount(2);
 
-  // The data sources sit behind the information ring: closed until tapped,
-  // then plain words naming each list and when it was last checked.
-  const ring = page.getByRole('button', { name: ABOUT_DATA_SOURCES });
+  // The data sources sit behind their toggle: closed until tapped, then each of
+  // this tab's lists by name with its status and when it was last checked beneath.
+  const ring = page.getByRole('button', { name: DATA_SOURCES_LABEL });
   await expect(ring).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.data-sources .hint-panel')).toHaveCount(0);
   await ring.click();
   await expect(page.locator('.data-sources .hint-panel')).toBeVisible();
-  await expect(page.locator('.data-sources .info-lines li')).toContainText([
-    /Country Fire Authority Neighbourhood Safer Places list\. Reachable when last checked/,
-  ]);
+  const feed = page.locator('.data-sources .source-health li').first();
+  await expect(feed.locator('.source-health-name')).toHaveText('VicEmergency feed');
+  await expect(feed.locator('.source-health-state')).toHaveText(/^Reachable · checked /);
   await ring.click();
   await expect(page.locator('.data-sources .hint-panel')).toHaveCount(0);
+});
+
+// Each tab lists only the sources behind its own cards, closed again after a switch.
+test('each tab has its own data sources, closed after a switch', async ({ page, context }) => {
+  await openOffline(page, context, 'cached');
+  await findPostcode(page);
+  const sources = page.getByRole('button', { name: DATA_SOURCES_LABEL });
+  const names = page.locator('.data-sources .source-health-name');
+  await sources.click();
+  await expect(names.filter({ hasText: 'Country Fire Authority Neighbourhood Safer Places list' })).toHaveCount(1);
+  await expect(names.filter({ hasText: 'VicEmergency feed' })).toHaveCount(0);
+
+  await openTab(page, 'Relief centres');
+  await expect(sources).toHaveAttribute('aria-expanded', 'false');
+  await sources.click();
+  await expect(names.filter({ hasText: 'VicEmergency feed' })).toHaveCount(1);
+  await expect(names.filter({ hasText: 'Country Fire Authority' })).toHaveCount(0);
 });
 
 test('AC5 offline with a snapshot past the threshold, no relief centre is shown — only the stale line and the hotline', async ({ page, context }) => {

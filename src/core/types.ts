@@ -524,9 +524,9 @@ export type ActionCompletion = {
 /** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */
 export type SyncMetaRow = { key: string; value: string };
 
-/** One data source as a screen names it: what the list is, and in plain words
- *  how it read when last checked. */
-export type SourceLine = { lead: string; text: string };
+/** One data source as a screen names it: what the list is, its status (which
+ *  colours its dot), and in plain words how it read when last checked. */
+export type SourceLine = { lead: string; status: SourceStatus; text: string };
 
 /** E9 — ONE FINISHED drill: the timed packing game played before a rehearsal.
  *  Kept on the phone so the pack page can list it. The score is about the bag

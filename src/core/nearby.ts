@@ -47,8 +47,24 @@ export type NearbyRow = {
   timestamp: string | null;
   note: string | null;
 };
-export type NearbyGroup = { kind: 'bushfire' | 'relief'; heading: string; note: string; rows: NearbyRow[] };
-export type NearbyView = { groups: NearbyGroup[]; health: SourceLine[] };
+export type NearbyGroup = {
+  kind: 'bushfire' | 'relief';
+  heading: string;
+  note: string;
+  rows: NearbyRow[];
+  /** The data sources behind this group's cards, and any that serve both. */
+  sources: SourceLine[];
+};
+export type NearbyView = { groups: NearbyGroup[] };
+
+/** Which group each data source feeds, in the order a group lists them. A
+ *  source not named here, such as the postcode list both groups measure from,
+ *  is listed with both, after each group's own. */
+const SOURCE_GROUP: Record<string, NearbyGroup['kind']> = {
+  cfa_nsp_arcgis: 'bushfire',
+  cfr_static_list: 'bushfire',
+  vicemergency_feed: 'relief',
+};
 
 /** The device has something to answer from once either bundle has ever landed. */
 export const hasNearbyData = (cache: NearbyCache): boolean =>
@@ -196,7 +212,7 @@ function dynamicRow(
   };
 }
 
-function healthLines(now: number, cache: NearbyCache): SourceLine[] {
+function healthLines(now: number, cache: NearbyCache, kind: NearbyGroup['kind']): SourceLine[] {
   const health = parseHealth(cache);
   // The dynamic snapshot carries a fresher reading of the feed than the static bundle.
   if (cache.meta.dynamic_source_status) {
@@ -205,11 +221,18 @@ function healthLines(now: number, cache: NearbyCache): SourceLine[] {
       last_success_at: cache.meta.dynamic_source_last_success_at ?? null,
     };
   }
-  return Object.entries(health).map(([id, source]) => ({
+  const forGroup = Object.entries(health).filter(([id]) => (SOURCE_GROUP[id] ?? kind) === kind);
+  // The group's own sources first, in SOURCE_GROUP's order; shared ones after,
+  // in the order the data gave them. The sort keeps equal ranks in place.
+  const own = Object.keys(SOURCE_GROUP);
+  const rank = (id: string) => (id in SOURCE_GROUP ? own.indexOf(id) : own.length);
+  forGroup.sort(([a], [b]) => rank(a) - rank(b));
+  return forGroup.map(([id, source]) => ({
     lead: copy.SOURCE_NAMES[id] ?? id,
+    status: source.status,
     text: copy.HEALTH_TEXT(
       copy.SOURCE_STATUS_WORD[source.status],
-      source.last_success_at ? ageLabel(now - Date.parse(source.last_success_at)) : copy.NEVER,
+      source.last_success_at ? ageLabel(now - Date.parse(source.last_success_at)) : null,
     ),
   }));
 }
@@ -228,14 +251,15 @@ export function nearbyView(
         heading: copy.GROUP_BUSHFIRE,
         note: copy.GROUP_BUSHFIRE_NOTE,
         rows: STATIC_TYPES.map((type) => staticRow(now, origin, cache, session, type)),
+        sources: healthLines(now, cache, 'bushfire'),
       },
       {
         kind: 'relief',
         heading: copy.GROUP_RELIEF,
         note: copy.GROUP_RELIEF_NOTE,
         rows: DYNAMIC_TYPES.map((type) => dynamicRow(now, origin, cache, session, type)),
+        sources: healthLines(now, cache, 'relief'),
       },
     ],
-    health: healthLines(now, cache),
   };
 }

@@ -272,15 +272,18 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
                 ))}
               </div>
               {group ? (
+                // Keyed by the tab, so its notes and data sources start closed
+                // whenever the tab changes.
                 <section
+                  key={tab}
                   id="nearby-panel"
                   className="nearby-group"
                   role="tabpanel"
                   aria-labelledby={`nearby-tab-${tab}`}
                 >
-                  {/* Keyed by the tab, so each tab's note starts closed. The heading
-                      beside the ring already names the note, so its panel has no title. */}
-                  <Hint key={tab} label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>} titled={false}>
+                  {/* The heading beside the ring already names the note, so its
+                      panel has no title. */}
+                  <Hint label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>} titled={false}>
                     <p>{group.note}</p>
                   </Hint>
                   <ul className="list">
@@ -288,9 +291,10 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
                       <PlaceRow key={row.type} row={row} />
                     ))}
                   </ul>
+                  {/* This tab's own sources. */}
+                  <DataSources lines={group.sources} />
                 </section>
               ) : null}
-              <DataSources lines={view.health} />
             </>
           ) : null}
         </>
