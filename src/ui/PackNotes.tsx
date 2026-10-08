@@ -8,6 +8,7 @@ import { localFlagStore } from '../data/acknowledgement';
 import { deleteNote, putNote } from '../data/db';
 import Glyph from './components/Glyph';
 import NoteText from './components/NoteText';
+import { continueBullets, typeBullets } from './components/bulletTyping';
 
 type PackNotesProps = {
   packId: string;
@@ -146,7 +147,8 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
         aria-describedby={unsaved ? 'note-unsaved' : undefined}
         value={current.draft}
         maxLength={NOTE_MAX_CHARS}
-        onChange={(event) => change({ draft: event.currentTarget.value, failed: false })}
+        onChange={(event) => change({ draft: typeBullets(event), failed: false })}
+        onKeyDown={(event) => continueBullets(event, (draft) => change({ draft, failed: false }))}
       />
       {unsaved ? (
         <p id="note-unsaved" className="field-message with-glyph">

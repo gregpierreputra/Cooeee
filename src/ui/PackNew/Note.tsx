@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { NOTE_MAX_CHARS } from '../../core/constants';
 import * as copy from '../../core/copy';
 import Glyph from '../components/Glyph';
+import { continueBullets, typeBullets } from '../components/bulletTyping';
 import FlowSteps from './FlowSteps';
 
 type NoteProps = {
@@ -35,7 +36,8 @@ export function Note({ example, initial, onContinue }: NoteProps) {
           id="pack-note"
           value={text}
           maxLength={NOTE_MAX_CHARS}
-          onChange={(event) => setText(event.currentTarget.value)}
+          onChange={(event) => setText(typeBullets(event))}
+          onKeyDown={(event) => continueBullets(event, setText)}
         />
       </div>
       <div className="actions confirm-actions">

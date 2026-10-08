@@ -5,6 +5,7 @@ import { wayNote } from '../../core/rehearsal-note';
 import type { PackNote } from '../../core/types';
 import { putNote } from '../../data/db';
 import Glyph from '../components/Glyph';
+import { continueBullets, typeBullets } from '../components/bulletTyping';
 
 type Mark = 'saved' | 'empty' | 'failed';
 
@@ -64,9 +65,15 @@ export default function WayNote({
           value={text}
           maxLength={NOTE_MAX_CHARS}
           onChange={(event) => {
-            setText(event.currentTarget.value);
+            setText(typeBullets(event));
             setMark(null);
           }}
+          onKeyDown={(event) =>
+            continueBullets(event, (next) => {
+              setText(next);
+              setMark(null);
+            })
+          }
         />
         {/* Always present, so the live region exists before it speaks. */}
         <p

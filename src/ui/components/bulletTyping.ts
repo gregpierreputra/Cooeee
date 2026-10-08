@@ -1,0 +1,43 @@
+import type { ChangeEvent, KeyboardEvent } from 'react';
+
+const BULLET = '• ';
+/** A dash or a star and a space at the start of a line, as typed, even
+ *  straight after a bullet the box already started. */
+const TYPED_BULLET = /^([ \t]*)(?:• )?[-*] /gm;
+
+/** Put new text into the box and keep the caret where it was meant to be.
+ *  Written to the box directly, so React finds nothing to change and leaves
+ *  the caret alone. */
+function place(box: HTMLTextAreaElement, text: string, caret: number) {
+  box.value = text;
+  box.setSelectionRange(caret, caret);
+}
+
+/** The box's text after a change, with a dash or a star typed at the start of
+ *  a line shown at once as a bullet. The change is just behind the caret, so
+ *  the caret moves back by however many characters went. */
+export function typeBullets(event: ChangeEvent<HTMLTextAreaElement>): string {
+  const box = event.currentTarget;
+  const text = box.value.replace(TYPED_BULLET, `$1${BULLET}`);
+  if (text !== box.value) place(box, text, Math.max(0, box.selectionStart - (box.value.length - text.length)));
+  return text;
+}
+
+/** Enter on a bullet line starts the next line with a bullet, and Enter on an
+ *  empty bullet ends the list. Any other key, or Enter anywhere else, types
+ *  as usual. */
+export function continueBullets(event: KeyboardEvent<HTMLTextAreaElement>, onText: (text: string) => void) {
+  if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+  const box = event.currentTarget;
+  const { value, selectionStart: at, selectionEnd } = box;
+  const lineStart = value.lastIndexOf('\n', at - 1) + 1;
+  const lineEnd = value.indexOf('\n', at) === -1 ? value.length : value.indexOf('\n', at);
+  if (at !== selectionEnd || !value.slice(lineStart).startsWith(BULLET)) return;
+
+  const empty = value.slice(lineStart, lineEnd) === BULLET;
+  const text = empty ? value.slice(0, lineStart) + value.slice(lineEnd) : `${value.slice(0, at)}\n${BULLET}${value.slice(at)}`;
+  if (text.length > box.maxLength && box.maxLength > 0) return;
+  event.preventDefault();
+  place(box, text, empty ? lineStart : at + 1 + BULLET.length);
+  onText(text);
+}
