@@ -16,6 +16,7 @@ import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types'
 import { getCompletePackContent, saveStartedRehearsal } from '../../data/db';
 import Glyph from '../components/Glyph';
 import Hint from '../components/Hint';
+import NoteText from '../components/NoteText';
 import HoldButton from '../components/HoldButton';
 import { focusMain } from '../components/focusMain';
 import { useOnline } from '../components/useOnline';
@@ -210,9 +211,9 @@ export function JourneyRunning({
         </h3>
         {journey.notes.length > 0 ? (
           journey.notes.map((note) => (
-            <p key={note.id} className="card journey-note">
-              {note.text}
-            </p>
+            <div key={note.id} className="card journey-note">
+              <NoteText text={note.text} />
+            </div>
           ))
         ) : (
           <p>{copy.NO_NOTES_ON_JOURNEY}</p>

@@ -301,17 +301,17 @@ export const NOTE_DISCLOSURE = 'Kept on this phone and opens with no signal, her
 /** UAT: the risk was lost at the end of the disclosure, so it stands alone as a caution. */
 export const NOTE_LABEL = 'Your note';
 /** The box is never blank: an example written for this place and, when one
- *  was chosen, its nearest official place of last resort. One point per
- *  paragraph, so it reads at a glance. Every word is the user's to change. */
+ *  was chosen, its nearest official place of last resort, its official name
+ *  whole and its address on the next bullet. One bullet per point, so it reads
+ *  at a glance. Every word is the user's to change. */
 export const NOTE_EXAMPLE = (placeName: string, chosen?: Destination) =>
   [
     `Leave ${placeName} early on a hot, windy day.`,
-    chosen?.name
-      ? `Place of last resort: ${chosen.name}${chosen.addressText ? `, ${chosen.addressText}` : ''}.`
-      : '',
+    chosen?.name ? `Place of last resort: ${chosen.name}` : '',
+    chosen?.name && chosen.addressText ? `Its address: ${chosen.addressText}` : '',
     'Take the medication box, water, phone chargers and the dog lead.',
     'Turn the gas off at the meter before leaving.',
-  ].filter(Boolean).join('\n\n');
+  ].filter(Boolean).map((point) => `• ${point}`).join('\n');
 export const KEEP_NOTE = 'Keep this note';
 export const SKIP_NOTE = 'Not now';
 

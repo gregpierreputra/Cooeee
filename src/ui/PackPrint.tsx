@@ -9,6 +9,7 @@ import { formatSavedDate, packDetailAbsence, packDetailItems, packDetailPlaces }
 import type { CompletePackContent } from '../core/types';
 import { getCompletePackContent } from '../data/db';
 import Glyph from './components/Glyph';
+import NoteText from './components/NoteText';
 import StatusPage from './components/StatusPage';
 
 /** One page of the pack on paper, for when the phone is flat: the place, its
@@ -99,7 +100,9 @@ export default function PackPrint({
         <section className="print-section">
           <h2 className="kicker">{copy.NOTES}</h2>
           {content.notes.map((note) => (
-            <p key={note.id} className="print-note">{note.text}</p>
+            <div key={note.id} className="print-note">
+              <NoteText text={note.text} />
+            </div>
           ))}
         </section>
       ) : null}
