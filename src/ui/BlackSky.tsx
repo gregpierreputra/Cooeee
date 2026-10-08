@@ -79,6 +79,7 @@ import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
+import NoteText from './components/NoteText';
 import KeyTerms from './components/KeyTerms';
 import { readRoadsFile } from '../data/roads';
 import BlackSkyDial, {
@@ -545,7 +546,7 @@ export default function BlackSky({
         <ul className="list">
           {notes.map((note) => (
             <li key={note.id} className="blacksky-place blacksky-note">
-              {note.text}
+              <NoteText text={note.text} />
             </li>
           ))}
         </ul>

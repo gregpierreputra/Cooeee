@@ -588,6 +588,17 @@ input[aria-invalid='true'] {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* A note's own lines and bullets (NoteText), wherever the note is shown. A
+   long bullet wraps under its words, not under its dot. */
+.note-lines {
+  display: block;
+}
+.note-list {
+  margin: 0;
+  padding-left: 1.25em;
+  list-style: disc;
+}
 .note-read .note-edit {
   justify-self: end;
   min-height: 44px;
@@ -4202,6 +4213,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .journey-note {
   margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .journey-place-list {
