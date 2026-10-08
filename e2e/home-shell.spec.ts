@@ -138,8 +138,8 @@ test.describe('the returning-user home screen', () => {
     const preparation = page.locator('.preparation');
     await expect(preparation.getByText(PREPARATION_SOURCE)).toBeVisible();
 
-    // Exactly one of the eight, never none and never two. The line for a
-    // reader it was not written for waits behind the ring.
+    // Exactly one of the ten, never none and never two. The line for a
+    // reader it was not written for waits behind the toggle.
     await preparation.getByRole('button', { name: PREPARATION_MORE }).click();
     const text = (await preparation.textContent()) ?? '';
     expect(PREPARATION_LINES.filter((line) => text.includes(line.text))).toHaveLength(1);
