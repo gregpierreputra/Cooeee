@@ -79,14 +79,15 @@ test('opens on a welcome, steps across screens with the controls held still, and
   await inTheClear(page);
   expect((await next.boundingBox())!.y).toBeCloseTo(nextAt.y, 0);
 
-  // The page still scrolls beneath the tour, and the spotlight follows it.
-  // Scrolled whichever way has room: bringing the feature into view may
-  // already have taken the page to its foot.
+  // The page holds still beneath the tour, so the spotlight stays on its
+  // feature. Wheeled whichever way would have room: bringing the feature into
+  // view may already have taken the page to its foot.
   const before = await box(page, '.tour-spot');
   const atTop = await page.evaluate(() => window.scrollY === 0);
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.wheel(0, atTop ? 200 : -200);
-  await expect.poll(async () => Math.round((await box(page, '.tour-spot')).y)).not.toBe(Math.round(before.y));
+  await page.waitForTimeout(300);
+  expect(Math.round((await box(page, '.tour-spot')).y)).toBe(Math.round(before.y));
 
   // Stop ten is Rehearse: with no pack saved it lands on the entry screen.
   await next.click();
@@ -115,7 +116,8 @@ test('never starts on a later open; the ring starts it and Escape ends it', asyn
 });
 
 // UAT: on a phone, every stop's feature is brought clear of the panel and the
-// bars, the bottom bar excepted, which sits below the panel in view.
+// bars, the fixed bars themselves excepted, which are always in view. A
+// screen's stop also rings the tab that opens it.
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
   test('every stop shows its feature in the clear', async ({ page }) => {
@@ -127,9 +129,30 @@ test.describe('on a phone', () => {
       await dialog.getByRole('button', { name: TOUR_NEXT }).click();
       await expect(dialog).toContainText(count(stop));
       await expect(page.locator('.tour-spot')).toBeVisible();
-      if (TOUR_STEPS[stop - 2].target !== '.bottom-nav-inner') await inTheClear(page);
+      // The header, the bottom bar and the compass in it are fixed bars, in
+      // view by design, so only the features on the page are checked.
+      if (!['.app-header-inner', '.bottom-nav-inner', '.nav-blacksky'].includes(TOUR_STEPS[stop - 2].target)) await inTheClear(page);
+      // Nearby, Rehearse and Recover also ring their tab in the bottom bar.
+      await expect(page.locator('.tour-tab-spot')).toHaveCount('tab' in TOUR_STEPS[stop - 2] ? 1 : 0);
       if (stop === N) break;
     }
+  });
+
+  // UAT: a swipe or a wheel cannot move the ringed feature away while the
+  // tour runs, and the page scrolls again once it ends.
+  test('the page holds still under the tour', async ({ page }) => {
+    await acknowledgeFirstOpen(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: TOUR_HINT }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+    await expect(dialog).toContainText(count(2));
+    const placed = await page.evaluate(() => window.scrollY);
+    await page.mouse.move(200, 300);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(placed);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
   });
 });
 

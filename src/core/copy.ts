@@ -306,17 +306,17 @@ export const NOTE_DISCLOSURE = 'Kept on this phone and opens with no signal, her
 /** UAT: the risk was lost at the end of the disclosure, so it stands alone as a caution. */
 export const NOTE_LABEL = 'Your note';
 /** The box is never blank: an example written for this place and, when one
- *  was chosen, its nearest official place of last resort. One point per
- *  paragraph, so it reads at a glance. Every word is the user's to change. */
+ *  was chosen, its nearest official place of last resort, its official name
+ *  whole and its address on the next bullet. One bullet per point, so it reads
+ *  at a glance. Every word is the user's to change. */
 export const NOTE_EXAMPLE = (placeName: string, chosen?: Destination) =>
   [
     `Leave ${placeName} early on a hot, windy day.`,
-    chosen?.name
-      ? `Place of last resort: ${chosen.name}${chosen.addressText ? `, ${chosen.addressText}` : ''}.`
-      : '',
+    chosen?.name ? `Place of last resort: ${chosen.name}` : '',
+    chosen?.name && chosen.addressText ? `Its address: ${chosen.addressText}` : '',
     'Take the medication box, water, phone chargers and the dog lead.',
     'Turn the gas off at the meter before leaving.',
-  ].filter(Boolean).join('\n\n');
+  ].filter(Boolean).map((point) => `• ${point}`).join('\n');
 export const KEEP_NOTE = 'Keep this note';
 export const SKIP_NOTE = 'Not now';
 
@@ -554,7 +554,7 @@ export const HEADER_HOME_LABEL = 'Cooeee home';
 export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a network.';
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
 
-/** Home with no pack: a dashed space where packs will be, under YOUR PACKS. */
+/** Home with no pack: a dashed space where packs will be, under Your packs. */
 export const NO_PACK_SAVED = 'Packs you save will show up here.';
 export const YOUR_PACKS = 'Your packs';
 
@@ -700,17 +700,23 @@ export const WELLBEING_LINES = [
 export const PRINT_LIST = 'Print this list';
 export const RECOVER_NONE_LINE = 'Build a pack online. It carries the programs, so they open with no signal.';
 
+/** Home's heading, a greeting by the hour on this phone. Late at night it is
+ *  a plain "Hi", since good morning at 2am reads oddly. */
+export const GREETING = (hour: number): string =>
+  hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 18 ? 'Good afternoon' : hour >= 18 ? 'Good evening' : 'Hi';
+
 /** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
  *  is written here in sentence case and read out as words, not as letters. */
 export const PREPARATION_LABEL = "Today's reminder";
 
-/** Eight preparation lines, each grounded in Country Fire Authority plan-and-
- *  prepare guidance. One is shown per day and named with its source on screen;
- *  none of them is advice about a particular place, and none of them says
+/** Ten preparation lines: eight grounded in Country Fire Authority plan-and-
+ *  prepare guidance, and two about the programs carried in the pack, which
+ *  credit the pack instead. One is shown per day and named with its source on
+ *  screen; none of them is advice about a particular place, and none of them says
  *  anything about what is happening outside. Each carries a second line for
  *  the reader the first was not written for: someone without a car, a garden,
  *  animals, tools or a household of their own. */
-export const PREPARATION_SOURCE_RECOVERY = 'From the programs in your pack';
+export const PREPARATION_SOURCE_RECOVERY = 'From your pack';
 export const PREPARATION_LINES: readonly { text: string; context: string; source?: string }[] = [
   {
     text: 'Write your household bushfire plan down, and decide who does what.',
@@ -757,11 +763,12 @@ export const PREPARATION_LINES: readonly { text: string; context: string; source
 ];
 
 /** Attribution, not citation: the lines above are Cooeee's own wording of
- *  Country Fire Authority plan-and-prepare guidance, so the byline credits the
- *  guidance rather than quoting it. Nothing here is ever shown in quotes. */
-export const PREPARATION_SOURCE = 'Country Fire Authority guidance';
-/** The ring beside the source: the line for a reader the first was not written for. */
-export const PREPARATION_MORE = 'If this does not fit you';
+ *  Country Fire Authority plan-and-prepare guidance, so the byline names the
+ *  authority rather than quoting it. Nothing here is ever shown in quotes. */
+export const PREPARATION_SOURCE = 'Country Fire Authority';
+/** The toggle beside the source: the line for a reader the first was not
+ *  written for. Short, so it and the source share one line on any phone. */
+export const PREPARATION_MORE = 'Not for you?';
 
 /** The pack card's footer line. Appended to the card's own age wording rather
  *  than written into it: the age is a fact about the pack, and this is a fact
@@ -804,16 +811,16 @@ export const TOUR_FINISH = 'Finish';
 export const SKIP_TOUR = 'Skip tour';
 /** One glyph and one line per stop, 12 words at most (tests hold the limit). */
 export const TOUR_STEPS = [
-  { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'One small preparation step a day, from Country Fire Authority guidance.' },
+  { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'A daily preparation step, from Country Fire Authority guidance or your pack.' },
   { path: '/', target: '.home .pack-card, .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
   { path: '/', target: '.home .main-action', glyph: 'plus', title: 'New offline pack', line: 'Add a pack for home, work, school or family.' },
   { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to official places offline.', more: 'blacksky' },
   { path: '/', target: '.app-header-inner', glyph: 'clock', title: 'The header', line: "Tap Cooeee to go home. The pill shows your oldest pack's age." },
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
   { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
-  { path: '/nearby', target: '.nearby .hero', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
-  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
-  { path: '/recover', target: '.recover .hero', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
+  { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
+  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
+  { path: '/recover', target: '.recover .hero', tab: '.bottom-nav-item[href="/recover"]', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
 
 /** The information ring beside the hold control, and the panel a tap on it

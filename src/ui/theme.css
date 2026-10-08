@@ -13,6 +13,24 @@
   font-display: swap;
 }
 
+/* Lora, Latin only, for Today's reminder on Home: italic for the greeting,
+   upright for the line. Self-hosted the same way; licensed under the SIL Open
+   Font License (public/fonts/Lora-OFL.txt). */
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/Lora-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/Lora-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
 
@@ -33,6 +51,8 @@
   --font:
     'InterVariable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
+  /* For Today's reminder on Home only, falling back to the phone's own serif. */
+  --font-serif: 'Lora', ui-serif, Georgia, 'Times New Roman', serif;
 
   --step-0: 1rem; /* 16px — body never goes below this */
   --step-1: 1.25rem; /* 20 */
@@ -567,6 +587,17 @@ input[aria-invalid='true'] {
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* A note's own lines and bullets (NoteText), wherever the note is shown. A
+   long bullet wraps under its words, not under its dot. */
+.note-lines {
+  display: block;
+}
+.note-list {
+  margin: 0;
+  padding-left: 1.25em;
+  list-style: disc;
 }
 .note-read .note-edit {
   justify-self: end;
@@ -2335,17 +2366,27 @@ main:focus {
 .tour-dim {
   background: rgb(2 6 10 / 78%);
 }
-.tour-spot {
+/* The shade over the screen, with a hole for each ringed part (Tour.tsx). */
+.tour-shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: rgb(2 6 10 / 78%);
+  pointer-events: none;
+}
+/* The teal ring round the feature a stop explains, and a smaller one round
+   the tab that opens its screen. They sit over the holes in the shade, so
+   they move with them and do not glide. */
+.tour-spot,
+.tour-tab-spot {
   position: absolute;
   border-radius: var(--r-card);
   outline: 2px solid var(--accent);
-  box-shadow: 0 0 0 4000px rgb(2 6 10 / 78%);
   pointer-events: none;
-  transition:
-    top 0.2s ease,
-    left 0.2s ease,
-    width 0.2s ease,
-    height 0.2s ease;
+}
+.tour-tab-spot {
+  border-radius: 12px;
 }
 .tour-panel {
   /* Docked just above the tab bar, the same place on every stop, so the eye
@@ -2376,6 +2417,9 @@ main:focus {
   gap: 0.5rem;
   max-height: 40dvh;
   overflow-y: auto;
+  /* A swipe that reaches the end of the words stops here, never moving the
+     page behind. */
+  overscroll-behavior: contain;
   /* Where a browser draws its scrollbar (a computer, mostly), it is thin and
      rounded in a quiet grey, kept off the panel's top and bottom
      edges, with a little room between it and the words. */
@@ -2475,10 +2519,18 @@ main:focus {
 body.touring .page {
   padding-bottom: 60dvh;
 }
+/* The page holds still under the tour: a swipe or a wheel cannot move the
+   ringed feature under the panel. The tour still scrolls each feature into
+   view itself, which a hidden overflow allows. */
+:root:has(body.touring) {
+  overflow: hidden;
+}
 
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a
    glimpse of the mode rather than one more card on the screen. */
 .blacksky-info-panel {
+  --bubble-bg: #000000;
+  --bubble-line: var(--blacksky-fill);
   display: grid;
   gap: 0.75rem;
   padding: 1.125rem 1.25rem;
@@ -2766,14 +2818,58 @@ body.touring .page {
 
 /* The preparation line and the organisation that publishes it. Body text, with
    the source quieter beneath — a line with no named source would not be worth
-   showing. */
+   showing. Open on the page rather than boxed, so it never reads as one more
+   pack card; the larger line carries it. */
 .preparation {
   display: grid;
   gap: 0.375rem;
 }
+.preparation > p {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  font-weight: normal;
+  line-height: 1.4;
+}
 
+/* The greeting reads into the eyebrow as one line, "Good afternoon, today's
+   reminder": white in Lora italic, then the teal eyebrow. On the narrowest
+   phones the eyebrow moves whole to a second line. */
+.preparation-head {
+  font-size: var(--step-xs);
+  line-height: 1.6;
+  /* A thin teal line under the header, fading out to the right. */
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(90deg, var(--accent), transparent) bottom / 100% 1px no-repeat;
+}
+.preparation-head h1 {
+  display: inline;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: var(--step-1);
+  font-weight: normal;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.preparation-head .kicker {
+  white-space: nowrap;
+}
+
+/* The toggle on the left and the source on the right, on one line. */
 .preparation-source {
   font-size: var(--step-s);
+  text-align: right;
+}
+
+/* The eyebrow over the packs, set like Today's reminder, with space above it
+   so it starts a new section rather than trailing the reminder. */
+.packs-title {
+  margin-top: 1.25rem;
+}
+.packs-count {
+  margin-left: 0.5rem;
+  color: var(--ink-3);
 }
 
 /* The saved place. The same neutral card as everything else on the screen. */
@@ -2795,6 +2891,21 @@ body.touring .page {
 .saved-place-title h2 {
   min-width: 0; /* a long name wraps rather than running under the settings ring */
   flex: 1;
+  /* Two lines at most on the card, ending in an ellipsis. The full name shows
+     in its menu and on the pack page, and screen readers read it whole. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  color: var(--accent); /* the ellipsis in the name's teal */
+}
+
+/* A pack name, wherever it shows. A long name with no spaces breaks inside
+   its word rather than pushing past its box and scrolling the page sideways. */
+.pack-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* The freshness line sits below a hairline, as a footer to the card rather than
@@ -2803,6 +2914,13 @@ body.touring .page {
   margin-top: 0.25rem;
   padding-top: 0.625rem;
   border-top: 1px solid var(--line);
+}
+/* The grey chevron at the right end of the footer, matching the age line:
+   the card opens. */
+.saved-place-footer .card-chevron {
+  margin-left: auto;
+  flex: none;
+  color: var(--ink-3);
 }
 
 /* A fixed bar on the panel colour, inside the safe area, so it stays within
@@ -3262,7 +3380,17 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 /* The postcode search sits on the page, as the pack builder's address search does. */
 .nearby-locate {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* the postcode box narrows to fit a small phone */
   gap: 0.75rem;
+}
+/* The origin line and its footnote read as one: the footnote smaller, in
+   grey, close beneath it. */
+.nearby-origin {
+  display: grid;
+  gap: 0.25rem;
+}
+.nearby-origin .muted {
+  font-size: var(--step-s);
 }
 /* The postcode in the origin line, picked out in the accent. */
 .nearby-origin-code {
@@ -3313,9 +3441,10 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 .nearby-row-head {
   display: flex;
+  flex-wrap: wrap; /* the pill drops under the type when both do not fit */
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.375rem 0.75rem;
 }
 .nearby-row-head h3 {
   margin: 0;
@@ -3366,6 +3495,11 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   align-items: baseline;
   gap: 0.75rem;
 }
+/* The name wraps, so the distance keeps its place on the right. */
+.nearby-place > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .nearby-place-name {
   font-weight: var(--w-bold);
 }
@@ -3385,6 +3519,71 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .hint > .hint-panel {
   grid-column: 1 / -1;
+}
+/* A note opened from a ring or a toggle is a speech bubble, not a card: a
+   step darker, with a small pointer up at what opened it. Every opener sits at
+   the left of its row, so the pointer sits under it there. A screen sets its
+   own colours with --bubble-bg and --bubble-line (BlackSky below). */
+.hint-panel {
+  position: relative;
+  margin-top: 0.375rem;
+  background: var(--bubble-bg, var(--surface-2));
+  border: 1px solid var(--bubble-line, var(--line));
+  /* A tighter corner by the pointer, so the pointer stands on the straight top
+     edge rather than on the curve. */
+  border-top-left-radius: 8px;
+}
+/* The pointer: a square turned on its corner, trimmed to its upper half (and
+   a hair more, to cover the bubble's edge beneath it). */
+.hint-panel::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 14px;
+  width: 12px;
+  height: 12px;
+  background: var(--bubble-bg, var(--surface-2));
+  border-left: 1px solid var(--bubble-line, var(--line));
+  border-top: 1px solid var(--bubble-line, var(--line));
+  transform: rotate(45deg);
+  border-top-left-radius: 3px; /* a softened tip, which the opening light follows cleanly */
+  clip-path: polygon(-60% -60%, calc(160% + 1.5px) -60%, -60% calc(160% + 1.5px));
+}
+.hint-panel.info-panel {
+  --bubble-ring-lit: drop-shadow(1px 0 0 var(--reveal)) drop-shadow(1px 0 0 var(--reveal))
+    drop-shadow(-1px 0 0 var(--reveal)) drop-shadow(-1px 0 0 var(--reveal))
+    drop-shadow(0 1px 0 var(--reveal)) drop-shadow(0 1px 0 var(--reveal))
+    drop-shadow(0 -1px 0 var(--reveal)) drop-shadow(0 -1px 0 var(--reveal));
+  --bubble-ring-unlit: drop-shadow(1px 0 0 transparent) drop-shadow(1px 0 0 transparent)
+    drop-shadow(-1px 0 0 transparent) drop-shadow(-1px 0 0 transparent)
+    drop-shadow(0 1px 0 transparent) drop-shadow(0 1px 0 transparent)
+    drop-shadow(0 -1px 0 transparent) drop-shadow(0 -1px 0 transparent);
+  animation: bubble-reveal 420ms ease-out;
+}
+/* A hint opened by its label as text rather than by the ring. */
+.hint-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 32px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  justify-self: start;
+}
+/* The chevron after the words turns down while the panel is open. */
+.hint-chevron {
+  flex: none;
+  transition: transform 0.15s ease;
+}
+.hint-text[aria-expanded='true'] .hint-chevron {
+  transform: rotate(90deg);
 }
 /* A long word beside the ring wraps at large text rather than pushing past
    the screen edge. */
@@ -3415,6 +3614,25 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .blacksky-info-panel.info-panel {
   --reveal: var(--blacksky-accent);
+}
+/* panel-reveal for a speech bubble: the light traces the bubble and its
+   pointer as one shape, so there is no seam where they meet. The shape is
+   copied a pixel at a time, twice each way, which makes a solid 2px ring with
+   no gap at the pointer's tip. */
+@keyframes bubble-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    filter: var(--bubble-ring-lit);
+  }
+  60% {
+    opacity: 1;
+    transform: none;
+    filter: var(--bubble-ring-lit);
+  }
+  to {
+    filter: var(--bubble-ring-unlit);
+  }
 }
 @keyframes panel-reveal {
   from {
@@ -3757,17 +3975,19 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 /* More about Cooeee, in the tour's welcome: a glyph ring leads each line, so
    the shape says what the line is. Scoped here: the BlackSky panel shares the
-   led-line list without a glyph, and reads as prose. */
+   led-line list without a glyph, and reads as prose. The rings only: the
+   inline glyphs of More about BlackSky keep their text size, so each sits
+   level with the first line of its sentence. */
 .welcome-more .info-lines li {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
 }
-.welcome-more .info-lines .glyph {
+.welcome-more .info-lines .glyph:not(.line-glyph) {
   width: 36px;
   height: 36px;
 }
-.welcome-more .info-lines .glyph svg {
+.welcome-more .info-lines .glyph:not(.line-glyph) svg {
   width: 18px;
   height: 18px;
 }
@@ -3953,6 +4173,17 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   flex-direction: row;
   align-items: center;
   gap: 0.875rem;
+  position: relative;
+  padding-right: 1.4375rem; /* 3px more than before, the room the chevron needs */
+}
+/* The chevron, centred down the card's right side and mostly in its padding,
+   so it takes almost nothing from the words beside the pack's picture. */
+.pack-choice .card-chevron {
+  position: absolute;
+  right: 0.375rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-3);
 }
 .pack-choice-text {
   display: flex;
@@ -4115,6 +4346,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .journey-note {
   margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .journey-place-list {
@@ -4816,6 +5049,22 @@ body.drill-open .banner {
 
 /* A glyph inside a control or a line: no circle, the text's own colour. Named
    twice so it outranks every tinted .glyph rule above. */
+/* The age on a Rehearse pack choice, led by the saved glyph from the left. */
+.pack-choice-age.with-glyph {
+  justify-content: flex-start;
+}
+/* The tick on the saved glyph's badge, cut out in the card's own colour. */
+.glyph-badge-tick {
+  stroke: var(--surface);
+}
+/* The saved glyph is drawn as tall as its line (1.5em, 21px beside 14px
+   words), so its arrow, tray and tick read as one picture. */
+.saved-place-footer .glyph.line-glyph svg,
+.in-packs .glyph.line-glyph svg,
+.pack-choice-age .glyph.line-glyph svg {
+  width: 1.5em;
+  height: 1.5em;
+}
 .glyph.line-glyph {
   width: auto;
   height: auto;

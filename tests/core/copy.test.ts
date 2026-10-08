@@ -256,7 +256,11 @@ describe('the returning-user home', () => {
     expect(copy.BUILD_A_PACK).toBe('New offline pack');
   });
 
-  it('labels the preparation line as a daily reminder', () => {
+  it('greets by the hour, and labels the preparation line as a daily reminder', () => {
+    expect(copy.GREETING(4)).toBe('Hi');
+    expect(copy.GREETING(5)).toBe('Good morning');
+    expect(copy.GREETING(12)).toBe('Good afternoon');
+    expect(copy.GREETING(18)).toBe('Good evening');
     expect(copy.PREPARATION_LABEL).toBe("Today's reminder");
   });
 
@@ -318,7 +322,7 @@ describe('the returning-user home', () => {
   });
 
   it('credits the guidance behind the preparation line, without quoting it', () => {
-    expect(copy.PREPARATION_SOURCE).toBe('Country Fire Authority guidance');
+    expect(copy.PREPARATION_SOURCE).toBe('Country Fire Authority');
     expect(copy.PREPARATION_SOURCE).not.toMatch(/["“”]/);
   });
 

@@ -185,16 +185,22 @@ export default function Home({ now }: { now?: number }) {
 
   return (
     <main className="page home">
-      {/* One preparation line under its own eyebrow, with the guidance it is
-          drawn from; the line for a reader it was not written for waits behind
-          the ring. It says nothing about a particular place, and nothing about
-          what is happening outside. */}
+      {/* A greeting by the hour, the page's heading, which moves on with the
+          clock and reads into the eyebrow as one line. Then one preparation
+          line, with the guidance it is drawn from; the line for a reader it
+          was not written for waits behind the toggle. It says nothing about a
+          particular place, and nothing about what is happening outside. */}
       {view === null ? null : (
         <section className="preparation">
-          <span className="kicker">{copy.PREPARATION_LABEL}</span>
+          <div className="preparation-head">
+            <h1 className="kicker">{copy.GREETING(new Date(clock).getHours())},</h1>{' '}
+            <span className="kicker">{copy.PREPARATION_LABEL}</span>
+          </div>
           <p>{view.preparation.text}</p>
           <Hint
             label={copy.PREPARATION_MORE}
+            asText
+            titled={false}
             head={<p className="muted preparation-source">{view.preparation.source}</p>}
           >
             <p>{view.preparation.context}</p>
@@ -202,8 +208,14 @@ export default function Home({ now }: { now?: number }) {
         </section>
       )}
 
-      {/* The packs under their own eyebrow, as Today's reminder is. */}
-      {view === null ? null : <span className="kicker">{copy.YOUR_PACKS}</span>}
+      {/* The packs under their own eyebrow, set like Today's reminder, with
+          their count and space above. No count when there are none. */}
+      {view === null ? null : (
+        <span className="kicker packs-title">
+          {copy.YOUR_PACKS}
+          {view.packs.length > 0 ? <span className="packs-count">{view.packs.length}</span> : null}
+        </span>
+      )}
 
       {view === null ? null : view.packs.length === 0 ? (
         // The space the packs will fill, drawn dashed so it reads as empty
@@ -246,7 +258,7 @@ export default function Home({ now }: { now?: number }) {
                     returned, and arrives in the same capitals. Storage keeps the
                     name exactly as it was saved. The link stretches over the
                     whole card (see .pack-card). */}
-                <h2>
+                <h2 className="pack-name">
                   <Link to={`/packs/${pack.id}`}>{shownPackName(pack.name)}</Link>
                 </h2>
               </div>
@@ -254,8 +266,13 @@ export default function Home({ now }: { now?: number }) {
                   exactly as the custodian returned it. */}
               <p className="muted">{titleCase(pack.address)}</p>
               <p className="muted figure saved-place-footer with-glyph">
-                <Glyph kind="offline" line />
+                <Glyph kind="saved" line />
                 {packAgeLabel(clock, pack.verifiedAt)}
+                {/* A hint that the card opens. Hidden from screen readers,
+                    which already announce the pack name as a link. */}
+                <svg className="card-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                  <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </p>
             </section>
         ))
@@ -284,7 +301,7 @@ export default function Home({ now }: { now?: number }) {
             {/* The close cross comes first, so the sheet opens on it. */}
             <div className="sheet-head">
               <div>
-                <h2 id="pack-sheet-title">{shownPackName(settings.name)}</h2>
+                <h2 id="pack-sheet-title" className="pack-name">{shownPackName(settings.name)}</h2>
                 <p className="muted figure">{packAgeLabel(clock, settings.verifiedAt)}</p>
               </div>
               <button type="button" className="sheet-close" aria-label={copy.CLOSE} onClick={() => sheet.current?.close()}>

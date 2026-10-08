@@ -43,6 +43,21 @@ test('the tabs move with the arrow keys and show one group at a time', async ({ 
   await expect(page.getByRole('tabpanel', { name: 'Relief centres' })).toBeVisible();
 });
 
+// Each tab's note starts closed, and opens with no title of its own: the
+// heading beside its ring already names it.
+test('each tab opens its own note, closed again after a switch', async ({ page, context }) => {
+  await openOffline(page, context, 'cached');
+  await findPostcode(page);
+  const ring = page.locator('.nearby-group .info-ring');
+  await ring.click();
+  await expect(ring).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.nearby-group .hint-panel .kicker')).toHaveCount(0);
+
+  await openTab(page, 'Relief centres');
+  await expect(ring).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.nearby-group .hint-panel')).toHaveCount(0);
+});
+
 const rowFor = (page: Page, title: string) =>
   page.locator('li.card', { has: page.getByRole('heading', { level: 3, name: title, exact: true }) });
 
