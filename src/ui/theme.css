@@ -2529,6 +2529,8 @@ body.touring .page {
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a
    glimpse of the mode rather than one more card on the screen. */
 .blacksky-info-panel {
+  --bubble-bg: #000000;
+  --bubble-line: var(--blacksky-fill);
   display: grid;
   gap: 0.75rem;
   padding: 1.125rem 1.25rem;
@@ -3511,6 +3513,46 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .hint > .hint-panel {
   grid-column: 1 / -1;
 }
+/* A note opened from a ring or a toggle is a speech bubble, not a card: a
+   step darker, with a small pointer up at what opened it. Every opener sits at
+   the left of its row, so the pointer sits under it there. A screen sets its
+   own colours with --bubble-bg and --bubble-line (BlackSky below). */
+.hint-panel {
+  position: relative;
+  margin-top: 0.375rem;
+  background: var(--bubble-bg, var(--surface-2));
+  border: 1px solid var(--bubble-line, var(--line));
+  /* A tighter corner by the pointer, so the pointer stands on the straight top
+     edge rather than on the curve. */
+  border-top-left-radius: 8px;
+}
+/* The pointer: a square turned on its corner, trimmed to its upper half (and
+   a hair more, to cover the bubble's edge beneath it). */
+.hint-panel::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 14px;
+  width: 12px;
+  height: 12px;
+  background: var(--bubble-bg, var(--surface-2));
+  border-left: 1px solid var(--bubble-line, var(--line));
+  border-top: 1px solid var(--bubble-line, var(--line));
+  transform: rotate(45deg);
+  border-top-left-radius: 3px; /* a softened tip, which the opening light follows cleanly */
+  clip-path: polygon(-60% -60%, calc(160% + 1.5px) -60%, -60% calc(160% + 1.5px));
+}
+.hint-panel.info-panel {
+  --bubble-ring-lit: drop-shadow(1px 0 0 var(--reveal)) drop-shadow(1px 0 0 var(--reveal))
+    drop-shadow(-1px 0 0 var(--reveal)) drop-shadow(-1px 0 0 var(--reveal))
+    drop-shadow(0 1px 0 var(--reveal)) drop-shadow(0 1px 0 var(--reveal))
+    drop-shadow(0 -1px 0 var(--reveal)) drop-shadow(0 -1px 0 var(--reveal));
+  --bubble-ring-unlit: drop-shadow(1px 0 0 transparent) drop-shadow(1px 0 0 transparent)
+    drop-shadow(-1px 0 0 transparent) drop-shadow(-1px 0 0 transparent)
+    drop-shadow(0 1px 0 transparent) drop-shadow(0 1px 0 transparent)
+    drop-shadow(0 -1px 0 transparent) drop-shadow(0 -1px 0 transparent);
+  animation: bubble-reveal 420ms ease-out;
+}
 /* A hint opened by its label as text rather than by the ring. */
 .hint-text {
   display: inline-flex;
@@ -3565,6 +3607,25 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .blacksky-info-panel.info-panel {
   --reveal: var(--blacksky-accent);
+}
+/* panel-reveal for a speech bubble: the light traces the bubble and its
+   pointer as one shape, so there is no seam where they meet. The shape is
+   copied a pixel at a time, twice each way, which makes a solid 2px ring with
+   no gap at the pointer's tip. */
+@keyframes bubble-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    filter: var(--bubble-ring-lit);
+  }
+  60% {
+    opacity: 1;
+    transform: none;
+    filter: var(--bubble-ring-lit);
+  }
+  to {
+    filter: var(--bubble-ring-unlit);
+  }
 }
 @keyframes panel-reveal {
   from {
