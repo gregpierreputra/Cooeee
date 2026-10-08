@@ -36,7 +36,17 @@ export default function Hint({ label, head, children, className = 'hint', ringCl
         aria-controls={id}
         onClick={() => setOpen((value) => !value)}
       >
-        {asText ? label : <InfoGlyph />}
+        {asText ? (
+          <>
+            {label}
+            {/* Points right while closed and down while open (see .hint-text). */}
+            <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+              <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </>
+        ) : (
+          <InfoGlyph />
+        )}
       </button>
       {head}
       {open ? (
