@@ -2417,6 +2417,9 @@ main:focus {
   gap: 0.5rem;
   max-height: 40dvh;
   overflow-y: auto;
+  /* A swipe that reaches the end of the words stops here, never moving the
+     page behind. */
+  overscroll-behavior: contain;
   /* Where a browser draws its scrollbar (a computer, mostly), it is thin and
      rounded in a quiet grey, kept off the panel's top and bottom
      edges, with a little room between it and the words. */
@@ -2515,6 +2518,12 @@ main:focus {
    feature clear of the panel. */
 body.touring .page {
   padding-bottom: 60dvh;
+}
+/* The page holds still under the tour: a swipe or a wheel cannot move the
+   ringed feature under the panel. The tour still scrolls each feature into
+   view itself, which a hidden overflow allows. */
+:root:has(body.touring) {
+  overflow: hidden;
 }
 
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a
