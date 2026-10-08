@@ -115,7 +115,8 @@ test('never starts on a later open; the ring starts it and Escape ends it', asyn
 });
 
 // UAT: on a phone, every stop's feature is brought clear of the panel and the
-// bars, the bottom bar excepted, which sits below the panel in view.
+// bars, the fixed bars themselves excepted, which are always in view. A
+// screen's stop also rings the tab that opens it.
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
   test('every stop shows its feature in the clear', async ({ page }) => {
@@ -127,7 +128,11 @@ test.describe('on a phone', () => {
       await dialog.getByRole('button', { name: TOUR_NEXT }).click();
       await expect(dialog).toContainText(count(stop));
       await expect(page.locator('.tour-spot')).toBeVisible();
-      if (TOUR_STEPS[stop - 2].target !== '.bottom-nav-inner') await inTheClear(page);
+      // The header, the bottom bar and the compass in it are fixed bars, in
+      // view by design, so only the features on the page are checked.
+      if (!['.app-header-inner', '.bottom-nav-inner', '.nav-blacksky'].includes(TOUR_STEPS[stop - 2].target)) await inTheClear(page);
+      // Nearby, Rehearse and Recover also ring their tab in the bottom bar.
+      await expect(page.locator('.tour-tab-spot')).toHaveCount('tab' in TOUR_STEPS[stop - 2] ? 1 : 0);
       if (stop === N) break;
     }
   });

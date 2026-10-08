@@ -818,9 +818,9 @@ export const TOUR_STEPS = [
   { path: '/', target: '.app-header-inner', glyph: 'clock', title: 'The header', line: "Tap Cooeee to go home. The pill shows your oldest pack's age." },
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
   { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
-  { path: '/nearby', target: '.nearby .hero', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
-  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
-  { path: '/recover', target: '.recover .hero', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
+  { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
+  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
+  { path: '/recover', target: '.recover .hero', tab: '.bottom-nav-item[href="/recover"]', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
 
 /** The information ring beside the hold control, and the panel a tap on it
