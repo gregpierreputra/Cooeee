@@ -2366,17 +2366,27 @@ main:focus {
 .tour-dim {
   background: rgb(2 6 10 / 78%);
 }
-.tour-spot {
+/* The shade over the screen, with a hole for each ringed part (Tour.tsx). */
+.tour-shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: rgb(2 6 10 / 78%);
+  pointer-events: none;
+}
+/* The teal ring round the feature a stop explains, and a smaller one round
+   the tab that opens its screen. They sit over the holes in the shade, so
+   they move with them and do not glide. */
+.tour-spot,
+.tour-tab-spot {
   position: absolute;
   border-radius: var(--r-card);
   outline: 2px solid var(--accent);
-  box-shadow: 0 0 0 4000px rgb(2 6 10 / 78%);
   pointer-events: none;
-  transition:
-    top 0.2s ease,
-    left 0.2s ease,
-    width 0.2s ease,
-    height 0.2s ease;
+}
+.tour-tab-spot {
+  border-radius: 12px;
 }
 .tour-panel {
   /* Docked just above the tab bar, the same place on every stop, so the eye

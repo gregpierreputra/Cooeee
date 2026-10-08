@@ -20,6 +20,10 @@ const STEPS = copy.TOUR_STEPS;
 /** The welcome comes first, then one stop per feature. */
 const TOTAL = STEPS.length + 1;
 const PAD = 8; // px of breathing room around the spotlit feature
+// The tab a screen's stop also rings fills the bar to its foot, so its ring
+// stands a little wider than the tab and a little inside it top and bottom.
+const TAB_PAD_X = 6;
+const TAB_PAD_Y = -4;
 const GAP = 12; // px between the bars above and the feature brought into view
 const TRIES = 30; // a screen has 3 s to render its target before the panel shows alone
 
@@ -39,6 +43,8 @@ export default function Tour() {
     return start ? 0 : null;
   });
   const [rect, setRect] = useState<DOMRect | null>(null);
+  // The tab in the bottom bar that opens the stop's screen, when it has one.
+  const [tabRect, setTabRect] = useState<DOMRect | null>(null);
   const panel = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -77,7 +83,9 @@ export default function Tour() {
       if (pathname !== '/') navigate('/', { replace: true });
       return;
     }
-    const { path, target } = STEPS[step - 1];
+    const stop = STEPS[step - 1];
+    const { path, target } = stop;
+    const tab = 'tab' in stop ? stop.tab : null;
     // A stop's path may forward on arrival (/rehearse goes to the one saved
     // pack), so the stop is reached when the path is a prefix, not an equal.
     if (!matchPath({ path, end: path === '/' }, pathname)) {
@@ -99,6 +107,8 @@ export default function Tour() {
         }
       }
       setRect(union(found));
+      const tabFound = tab ? document.querySelector(tab) : null;
+      setTabRect(tabFound ? tabFound.getBoundingClientRect() : null);
       return true;
     };
     let tries = 0;
@@ -149,15 +159,20 @@ export default function Tour() {
   return (
     <div className={rect ? 'tour' : 'tour tour-dim'}>
       {rect ? (
-        <div
-          className="tour-spot"
-          style={{
-            top: rect.top - PAD,
-            left: rect.left - PAD,
-            width: rect.width + 2 * PAD,
-            height: rect.height + 2 * PAD,
-          }}
-        />
+        <>
+          {/* One shade over the screen with a hole for each ringed part, so a
+              stop can show its feature and its tab together. */}
+          <svg className="tour-shade" aria-hidden="true">
+            <mask id="tour-holes">
+              <rect width="100%" height="100%" fill="white" />
+              <rect {...grown(rect, PAD)} rx="16" fill="black" />
+              {tabRect ? <rect {...grown(tabRect, TAB_PAD_X, TAB_PAD_Y)} rx="12" fill="black" /> : null}
+            </mask>
+            <rect width="100%" height="100%" mask="url(#tour-holes)" />
+          </svg>
+          <div className="tour-spot" style={box(grown(rect, PAD))} />
+          {tabRect ? <div className="tour-tab-spot" style={box(grown(tabRect, TAB_PAD_X, TAB_PAD_Y))} /> : null}
+        </>
       ) : null}
       <section
         ref={panel}
@@ -288,6 +303,17 @@ function revealOpened(event: SyntheticEvent<HTMLDetailsElement>) {
 function clearTop(): number {
   const bars = document.querySelectorAll('.app-header, .back-bar');
   return Math.max(0, ...Array.from(bars, (bar) => bar.getBoundingClientRect().bottom));
+}
+
+/** A box made larger by `pad` across and `padY` up and down, or smaller
+ *  where either is negative. */
+function grown(rect: DOMRect, pad: number, padY = pad) {
+  return { x: rect.left - pad, y: rect.top - padY, width: rect.width + 2 * pad, height: rect.height + 2 * padY };
+}
+
+/** The style that places a ring over a box. */
+function box({ x, y, width, height }: ReturnType<typeof grown>) {
+  return { left: x, top: y, width, height };
 }
 
 /** The smallest box around every matched element, in viewport coordinates. */
