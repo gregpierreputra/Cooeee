@@ -72,7 +72,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
             >
               <Glyph kind={packIcon(pack)} />
               <span className="pack-choice-text">
-                <span className="condition-label">{shownPackName(pack.name)}</span>
+                <span className="condition-label pack-name">{shownPackName(pack.name)}</span>
                 <span className="condition-detail">{titleCase(pack.address)}</span>
                 <span className="condition-detail">{ageLine}</span>
               </span>

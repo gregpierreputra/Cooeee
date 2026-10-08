@@ -2889,6 +2889,21 @@ body.touring .page {
 .saved-place-title h2 {
   min-width: 0; /* a long name wraps rather than running under the settings ring */
   flex: 1;
+  /* Two lines at most on the card, ending in an ellipsis. The full name shows
+     in its menu and on the pack page, and screen readers read it whole. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  color: var(--accent); /* the ellipsis in the name's teal */
+}
+
+/* A pack name, wherever it shows. A long name with no spaces breaks inside
+   its word rather than pushing past its box and scrolling the page sideways. */
+.pack-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* The freshness line sits below a hairline, as a footer to the card rather than

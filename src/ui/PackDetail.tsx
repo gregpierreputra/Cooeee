@@ -167,7 +167,7 @@ export default function PackDetail({
         <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
         <div className="card-head">
           <Glyph kind={packIcon(content.pack)} />
-          <h1>{shownPackName(content.pack.name)}</h1>
+          <h1 className="pack-name">{shownPackName(content.pack.name)}</h1>
         </div>
         <p className="muted">{content.pack.address}</p>
       </header>
