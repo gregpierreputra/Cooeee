@@ -268,6 +268,11 @@ export default function Home({ now }: { now?: number }) {
               <p className="muted figure saved-place-footer with-glyph">
                 <Glyph kind="offline" line />
                 {packAgeLabel(clock, pack.verifiedAt)}
+                {/* A hint that the card opens. Hidden from screen readers,
+                    which already announce the pack name as a link. */}
+                <svg className="card-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                  <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </p>
             </section>
         ))
