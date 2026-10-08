@@ -3470,6 +3470,9 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 /* A hint opened by its label as text rather than by the ring. */
 .hint-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   min-height: 32px;
   min-width: 0;
   padding: 0;
@@ -3481,6 +3484,14 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   text-decoration: underline;
   text-underline-offset: 3px;
   justify-self: start;
+}
+/* The chevron after the words turns down while the panel is open. */
+.hint-chevron {
+  flex: none;
+  transition: transform 0.15s ease;
+}
+.hint-text[aria-expanded='true'] .hint-chevron {
+  transform: rotate(90deg);
 }
 /* A long word beside the ring wraps at large text rather than pushing past
    the screen edge. */
