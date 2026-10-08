@@ -954,7 +954,6 @@ export const JUST_NOW = 'just now';
 /** One age wording everywhere, through ageLabel: "1 minute ago", "3 hours ago". */
 export const MINUTES_AGO = (minutes: number) => (minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`);
 export const HOURS_AGO = (hours: number) => (hours === 1 ? '1 hour ago' : `${hours} hours ago`);
-export const NEVER = 'never';
 
 export const VERIFIED_ON = (date: string) => `Verified ${date}`;
 export const SAVED_LINE = (date: string) => `Saved ${date}`;
@@ -982,9 +981,12 @@ export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
   down: 'unreachable',
   unknown: 'not yet read',
 };
-export const ABOUT_DATA_SOURCES = 'About the data sources';
-export const HEALTH_TEXT = (status: string, when: string) =>
-  `${status[0].toUpperCase()}${status.slice(1)} when last checked, ${when}.`;
+/** A source's status and when it was last read, or the status alone for a
+ *  source that has never been read. */
+export const HEALTH_TEXT = (status: string, when: string | null) => {
+  const word = `${status[0].toUpperCase()}${status.slice(1)}`;
+  return when === null ? word : `${word} · checked ${when}`;
+};
 
 // ── E5-US1-AC4 the rehearsal entry gate ───────────────────────────────────
 // Four states, four screens. Each names what is missing from the PACK. None of

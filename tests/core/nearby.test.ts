@@ -190,13 +190,26 @@ describe('nearbyView', () => {
     expect(row(view, 'NSP').note).toContain(copy.SOURCE_NOT_READ('Country Fire Authority Neighbourhood Safer Places list'));
   });
 
-  it('lists every source with its status and age; the snapshot reading of the feed wins', () => {
+  it('lists each tab\'s own sources with their status and age; the snapshot reading of the feed wins', () => {
     const view = nearbyView(NOW, KALORAMA, cache(), OFFLINE);
-    expect(view.health).toContainEqual({ lead: 'Country Fire Authority Neighbourhood Safer Places list', text: copy.HEALTH_TEXT('reachable', copy.ITEM_DAYS_AGO(1)) });
-    expect(view.health).toContainEqual({ lead: 'VicEmergency feed', text: copy.HEALTH_TEXT('reachable', copy.MINUTES_AGO(10)) });
-    expect(view.health).toContainEqual({ lead: 'other', text: copy.HEALTH_TEXT('reachable', copy.HOURS_AGO(1)) });
-    expect(copy.HEALTH_TEXT('reachable', 'a day ago')).toBe('Reachable when last checked, a day ago.');
+    const sources = (kind: 'bushfire' | 'relief', v = view) => v.groups.find((group) => group.kind === kind)!.sources;
+    const cfa = { lead: 'Country Fire Authority Neighbourhood Safer Places list', status: 'healthy', text: copy.HEALTH_TEXT('reachable', copy.ITEM_DAYS_AGO(1)) };
+    const feed = { lead: 'VicEmergency feed', status: 'healthy', text: copy.HEALTH_TEXT('reachable', copy.MINUTES_AGO(10)) };
+    const other = { lead: 'other', status: 'healthy', text: copy.HEALTH_TEXT('reachable', copy.HOURS_AGO(1)) };
+    // Each tab lists the sources behind its cards; one it does not know serves both.
+    expect(sources('bushfire')).toContainEqual(cfa);
+    expect(sources('bushfire')).not.toContainEqual(feed);
+    expect(sources('relief')).toContainEqual(feed);
+    expect(sources('relief')).not.toContainEqual(cfa);
+    expect(sources('bushfire')).toContainEqual(other);
+    expect(sources('relief')).toContainEqual(other);
+    // A tab's own sources come first, whatever order the data gives them.
+    const shuffled = nearbyView(NOW, KALORAMA, cache({ meta: { ...cache().meta, data_health: JSON.stringify({ other: healthy(HOUR), cfr_static_list: healthy(24 * HOUR), cfa_nsp_arcgis: healthy(24 * HOUR) }) } }), OFFLINE);
+    expect(sources('bushfire', shuffled).map((line) => line.lead)).toEqual(['Country Fire Authority Neighbourhood Safer Places list', 'Community Fire Refuge list', 'other']);
+    expect(sources('relief', shuffled).map((line) => line.lead)).toEqual(['VicEmergency feed', 'other']);
+    expect(copy.HEALTH_TEXT('reachable', 'a day ago')).toBe('Reachable · checked a day ago');
+    expect(copy.HEALTH_TEXT('not yet read', null)).toBe('Not yet read');
     const never = nearbyView(NOW, KALORAMA, cache({ meta: { static_synced_at: ago(0), data_health: JSON.stringify({ vicemergency_feed: { status: 'unknown', last_success_at: null } }) } }), OFFLINE);
-    expect(never.health).toContainEqual({ lead: 'VicEmergency feed', text: copy.HEALTH_TEXT('not yet read', copy.NEVER) });
+    expect(sources('relief', never)).toContainEqual({ lead: 'VicEmergency feed', status: 'unknown', text: copy.HEALTH_TEXT('not yet read', null) });
   });
 });

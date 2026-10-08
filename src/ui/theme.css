@@ -3471,6 +3471,44 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   border-radius: var(--r-pill);
   background: var(--ink-3);
 }
+/* Data sources: each list by name, then its status beneath in smaller grey
+   words, led by a dot in the status's colour, like the place cards above. */
+.source-health {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.875rem;
+}
+.source-health li {
+  display: grid;
+  gap: 0.25rem;
+}
+.source-health-name {
+  font-weight: var(--w-med);
+}
+.source-health-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: var(--step-s);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+/* Level with the first line when the status wraps onto two. */
+.source-health-state .state-dot {
+  flex: none;
+  margin-top: 0.4em;
+}
+.source-healthy .state-dot {
+  background: var(--online);
+}
+.source-degraded .state-dot {
+  background: var(--stale);
+}
+.source-down .state-dot {
+  background: var(--offline);
+}
 .state-live .state-dot {
   background: var(--online);
 }
