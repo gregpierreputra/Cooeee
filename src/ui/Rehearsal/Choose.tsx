@@ -74,7 +74,11 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
               <span className="pack-choice-text">
                 <span className="condition-label pack-name">{shownPackName(pack.name)}</span>
                 <span className="condition-detail">{titleCase(pack.address)}</span>
-                <span className="condition-detail">{ageLine}</span>
+                {/* The same downloaded sign as the pack card on Home. */}
+                <span className="condition-detail pack-choice-age with-glyph">
+                  <Glyph kind="saved" line />
+                  {ageLine}
+                </span>
               </span>
             </button>
           </li>

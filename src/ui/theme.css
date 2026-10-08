@@ -4959,6 +4959,10 @@ body.drill-open .banner {
 
 /* A glyph inside a control or a line: no circle, the text's own colour. Named
    twice so it outranks every tinted .glyph rule above. */
+/* The age on a Rehearse pack choice, led by the saved glyph from the left. */
+.pack-choice-age.with-glyph {
+  justify-content: flex-start;
+}
 /* The tick on the saved glyph's badge, cut out in the card's own colour. */
 .glyph-badge-tick {
   stroke: var(--surface);
@@ -4966,7 +4970,8 @@ body.drill-open .banner {
 /* The saved glyph is drawn as tall as its line (1.5em, 21px beside 14px
    words), so its arrow, tray and tick read as one picture. */
 .saved-place-footer .glyph.line-glyph svg,
-.in-packs .glyph.line-glyph svg {
+.in-packs .glyph.line-glyph svg,
+.pack-choice-age .glyph.line-glyph svg {
   width: 1.5em;
   height: 1.5em;
 }
