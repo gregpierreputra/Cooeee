@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import {
   ADD_NOTE,
   CANCEL,
@@ -14,11 +14,19 @@ import {
 } from '../src/core/copy';
 import { HARNESS, storageCounts } from './helpers';
 
+/** The pack page opens on Area; the notes live in its Notes tab. The test page
+ *  keeps no address, so a reload opens on Area again. */
+async function openNotes(page: Page) {
+  await page.getByRole('tab', { name: 'Notes' }).click();
+  await expect(page.getByRole('tab', { name: 'Notes' })).toHaveAttribute('aria-selected', 'true');
+}
+
 // Notes read as cards and open one at a time for editing. Save, Cancel and
 // Delete show only while editing, unsaved words are said in amber, Delete
 // asks first, and the device store agrees with what the screen says.
 test('a note is added, read, edited, kept and deleted, and the store follows', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
+  await openNotes(page);
   const notes = page.locator('.pack-notes');
   await expect(notes.getByRole('button', { name: SAVE_NOTE })).toHaveCount(0);
 
@@ -60,6 +68,7 @@ test('a note is added, read, edited, kept and deleted, and the store follows', a
 
 test('leaving the page with unsaved words brings up the browser’s warning', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
+  await openNotes(page);
   await page.getByRole('button', { name: ADD_NOTE }).click();
   await page.getByLabel(NOTE_LABEL).fill('Not saved');
 
@@ -75,11 +84,13 @@ test('leaving the page with unsaved words brings up the browser’s warning', as
 // them, said to be unsaved, and Cancel clears the draft for good.
 test('unsaved words come back after a reload until they are saved or cancelled', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
+  await openNotes(page);
   await page.getByRole('button', { name: ADD_NOTE }).click();
   await page.getByLabel(NOTE_LABEL).fill('Pack the dog lead.');
 
   page.once('dialog', (dialog) => void dialog.accept());
   await page.reload();
+  await openNotes(page);
   await expect(page.getByLabel(NOTE_LABEL)).toHaveValue('Pack the dog lead.');
   await expect(page.getByText(NOTE_UNSAVED)).toBeVisible();
   // The draft does not take focus when the page opens.

@@ -70,8 +70,8 @@ test('every offline feature works in airplane mode, and the online ones say they
   await expect(page.locator('.pack-detail h1')).toHaveText('Kalorama');
   await openSources(page);
   await expect(page.locator('.area-map img')).toBeVisible();
+  await page.getByRole('tab', { name: 'Support' }).click();
   const programs = page.locator('.pack-section', { hasText: 'Saved programs' });
-  await programs.getByRole('button', { name: 'Show Saved programs' }).click();
   await expect(programs.getByRole('link', { name: 'Saved PDF' })).toBeVisible();
 
   // Print this pack.

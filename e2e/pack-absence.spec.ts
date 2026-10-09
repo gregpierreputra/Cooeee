@@ -1,12 +1,19 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const URL = 'http://127.0.0.1:4174/detail?mode=absence';
 const ORIGIN = 'http://127.0.0.1:4174';
 const ABSENCE_LINE = 'No official place of last resort is published for this area, Yarra Ranges.';
 
+// The absence is said in the pack page's Places tab.
+async function openPlaces(page: Page) {
+  await page.getByRole('tab', { name: 'Places' }).click();
+  await expect(page.getByRole('tab', { name: 'Places' })).toHaveAttribute('aria-selected', 'true');
+}
+
 test('AC3 a saved pack with no published places states so plainly', async ({ page }) => {
   await page.goto(URL);
   await expect(page.locator('.pack-detail h1')).toBeVisible();
+  await openPlaces(page);
   await expect(page.getByText(ABSENCE_LINE)).toBeVisible();
 });
 
@@ -35,6 +42,7 @@ test('AC3 renders the saved pack with no off-origin request', async ({ page }) =
   });
 
   await page.goto(URL);
+  await openPlaces(page);
   await expect(page.getByText(ABSENCE_LINE)).toBeVisible();
 
   expect(offOrigin).toEqual([]);

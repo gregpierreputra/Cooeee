@@ -600,10 +600,13 @@ export const OFFICIAL_CHANNEL = 'Official channel (web)';
 export const RECOVER_NONE_TITLE = 'No support information is held on this phone.';
 export const SAVED_PROGRAMS = 'Saved programs';
 export const BUSHFIRE_AREA = 'Bushfire area';
-export const SHOW = 'Show';
-export const HIDE = 'Hide';
-export const SHOW_SECTION = (title: string) => `Show ${title}`;
-export const HIDE_SECTION = (title: string) => `Hide ${title}`;
+/** The pack page's tabs: one word each, so five sit side by side on a phone. */
+export const PACK_TABS_LABEL = 'Parts of this pack';
+export const PACK_TAB_AREA = 'Area';
+export const PACK_TAB_PLACES = 'Places';
+export const PACK_TAB_SUPPORT = 'Support';
+export const PACK_TAB_NOTES = 'Notes';
+export const PACK_TAB_PRACTICE = 'Practice';
 export const NO_SAVED_PROGRAMS = 'None saved yet. Save them in';
 export const KEPT_NOT_SAVED = (count: number) =>
   `${count} saved ${count === 1 ? 'program is' : 'programs are'} not in a pack yet`;

@@ -70,9 +70,9 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   await expect(page.getByRole('link', { name: 'Choose programs in Recover' })).toHaveCount(0);
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["services-australia-crisis-payment"]');
   await page.getByRole('button', { name: 'Open saved pack' }).click();
+  await page.getByRole('tab', { name: 'Support' }).click();
   const section = page.locator('.pack-section', { hasText: 'Saved programs' });
   await expect(section.locator('.section-count')).toHaveText('1');
-  await section.getByRole('button', { name: 'Show Saved programs' }).click();
   await expect(section.getByRole('link', { name: 'Saved PDF' })).toHaveAttribute('download', /crisis-payment/);
 });
 
@@ -140,8 +140,12 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
+  // The open tab is kept in the address, so a reload comes back to it.
+  await page.getByRole('tab', { name: 'Places' }).click();
+  await expect(page).toHaveURL(/[?&]tab=places/);
   // AC1 TC-1.1.1-B: a full close and reopen still shows the saved place.
   await page.reload();
+  await expect(page.getByRole('tab', { name: 'Places' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.pack-detail h1')).toBeVisible();
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
 
