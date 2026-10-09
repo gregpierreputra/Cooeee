@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
 import { mapAcrossKm, mapBoxOf } from '../core/area-map-view';
+import { areaResultLine } from '../core/area-check';
 import { AREA_MAP_NAME, DTP_DATASET_URL, DTP_LICENCE, DTP_PUBLISHER } from '../core/constants';
 import * as copy from '../core/copy';
 import { shownPackName } from '../core/home';
@@ -20,7 +21,6 @@ import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } 
 import { getCompletePackContent, listDrills, listRehearsalsForPack } from '../data/db';
 import AreaMap from './components/AreaMap';
 import Glyph from './components/Glyph';
-import Hint from './components/Hint';
 import InfoGlyph from './components/InfoGlyph';
 import KeyTerms from './components/KeyTerms';
 import ProvenanceLine from './components/ProvenanceLine';
@@ -150,6 +150,16 @@ export default function PackDetail({
   const areaMap = content.files.find((file) => file.name === AREA_MAP_NAME);
   // The box the stored map was drawn for, read from its own request.
   const mapBox = areaMap ? mapBoxOf(areaMap.url) : null;
+  // The stored map's picture, once its bytes are read; absent on older packs.
+  const mapSrc = areaMap ? fileUrls[areaMap.id] : undefined;
+  // The bushfire area layer is the one layer a pack saves: its item is stated
+  // as the area check stated it. Any other item keeps its own name.
+  const bpa = content.layers.find((row) => row.code === 'BPA');
+  const answerOf = (item: PackDetailItem) => (item.id === bpa?.id ? areaResultLine(bpa.status) : item.name);
+  // The answer and the map are both the Department's: one Source row for them.
+  const areaSource =
+    items[0]?.source ??
+    (areaMap ? { publisher: DTP_PUBLISHER, url: areaMap.url, licence: DTP_LICENCE, retrievedAt: areaMap.retrievedAt } : null);
   const interceptSource = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
     event.preventDefault();
     setOfflineSource(decideOriginalSourceAccess(item).item);
@@ -172,39 +182,56 @@ export default function PackDetail({
         <p className="muted">{content.pack.address}</p>
       </header>
 
-      {/* The map of the pack's own area, from the bytes stored with the pack,
-          to zoom and move, north up. Absent on packs built before the map was stored. */}
-      {areaMap && fileUrls[areaMap.id] ? (
-        <Section kind="map" title={copy.AREA_MAP_LABEL}>
-          <figure className="area-map">
-            <AreaMap
-              src={fileUrls[areaMap.id]}
-              box={mapBox}
-              places={places}
-              scale={mapBox ? copy.AREA_MAP_ACROSS(mapAcrossKm(mapBox)) : undefined}
-            />
-            {/* The key is the map's own footer, inside its frame, and stays in
-                view, as the shading cannot be read without it. Each picture sits
-                in a slot of one width, so both columns of words start in line. */}
-            <figcaption>
-              <ul className="map-key">
-                <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-inside" /></span>{copy.AREA_MAP_KEY.inside}</li>
-                <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-outside" /></span>{copy.AREA_MAP_KEY.outside}</li>
-                <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-place" /></span>{copy.AREA_MAP_KEY.place}</li>
-                <li><span className="map-key-icon area-map-mark-key" aria-hidden="true"><Glyph kind="place" size={14} /></span>{copy.AREA_MAP_KEY.lastResort}</li>
-              </ul>
-            </figcaption>
-          </figure>
-          {/* Every credit for the map behind one text toggle, set as Not for
-              you? is on Home. */}
-          <Hint label={copy.SOURCE_LABEL} asText titled={false} panelClass="source-panel">
+      {/* The bushfire area: the answer the area check gave, in its own words,
+          with the plan it matched, then the map that shades the same area, then
+          one Source row for both. The map is absent on packs built before it
+          was stored; it zooms and moves, north up. */}
+      {items.length > 0 || mapSrc ? (
+        <Section kind="map" title={copy.BUSHFIRE_AREA}>
+          {items.map((item) => (
+            <div key={item.id} className="area-answer">
+              <h2>
+                <KeyTerms text={answerOf(item)} />
+              </h2>
+              {item.id === bpa?.id && bpa.status !== 'present' ? (
+                <p className="muted">
+                  <KeyTerms text={copy.AREA_MAP_IS_NOT_FIRE_REACH} />
+                </p>
+              ) : null}
+              {item.citation ? <p className="muted area-plan">{item.citation}</p> : null}
+            </div>
+          ))}
+          {mapSrc ? (
+            <figure className="area-map">
+              <AreaMap
+                src={mapSrc}
+                box={mapBox}
+                places={places}
+                scale={mapBox ? copy.AREA_MAP_ACROSS(mapAcrossKm(mapBox)) : undefined}
+              />
+              {/* The key is the map's own footer, inside its frame, and stays in
+                  view, as the shading cannot be read without it. Each picture sits
+                  in a slot of one width, so both columns of words start in line. */}
+              <figcaption>
+                <ul className="map-key">
+                  <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-inside" /></span>{copy.AREA_MAP_KEY.inside}</li>
+                  <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-outside" /></span>{copy.AREA_MAP_KEY.outside}</li>
+                  <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-place" /></span>{copy.AREA_MAP_KEY.place}</li>
+                  <li><span className="map-key-icon area-map-mark-key" aria-hidden="true"><Glyph kind="place" size={14} /></span>{copy.AREA_MAP_KEY.lastResort}</li>
+                </ul>
+              </figcaption>
+            </figure>
+          ) : null}
+          {/* One row: Source, set as Not for you? is on Home, then the saved
+              copy and the web page as small links beside it. */}
+          {areaSource ? (
             <ProvenanceLine
-              source={{ publisher: DTP_PUBLISHER, url: areaMap.url, licence: DTP_LICENCE, retrievedAt: areaMap.retrievedAt }}
+              source={areaSource}
               now={now}
-              open
-              extra={[{ label: copy.SOURCE_LICENCE, value: DTP_LICENCE }]}
+              extra={[{ label: copy.SOURCE_LICENCE, value: areaSource.licence }]}
+              links={items[0] ? sourceLinks(items[0]) : null}
             />
-          </Hint>
+          ) : null}
         </Section>
       ) : null}
 
@@ -219,19 +246,7 @@ export default function PackDetail({
           list and never a source to open. */}
       {absence ? <StateCard heading={absence} /> : null}
 
-      {items.length > 0 ? (
-        <Section kind="layer" title={copy.STORED_INFORMATION} count={items.length}>
-          <ul className="list pack-item-list">
-            {items.map((item) => (
-              <li key={item.id} className="card provenance-item">
-                <h2>{item.name}</h2>
-                <ProvenanceLine source={item.source} now={now} />
-                {sourceLinks(item)}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : absence || places.length > 0 ? null : (
+      {items.length > 0 || absence || places.length > 0 ? null : (
         <StateCard heading={copy.NO_STORED_ITEMS} />
       )}
 
@@ -259,8 +274,7 @@ export default function PackDetail({
                       {formatDistanceM(place.distanceM)}
                     </p>
                   ) : null}
-                  <PlaceFacts place={place} now={now} />
-                  {sourceLinks(item)}
+                  <PlaceFacts place={place} now={now} links={sourceLinks(item)} />
                 </li>
               );
             })}
@@ -293,8 +307,11 @@ export default function PackDetail({
                     </li>
                   ))}
                 </ul>
-                <ProvenanceLine source={program.source} now={now} />
-                {sourceLinks({ id: program.id, name: program.title, source: program.source, pageUrl: program.officialUrl })}
+                <ProvenanceLine
+                  source={program.source}
+                  now={now}
+                  links={sourceLinks({ id: program.id, name: program.title, source: program.source, pageUrl: program.officialUrl })}
+                />
               </li>
             ))}
           </ul>
@@ -481,27 +498,25 @@ function SourceLinks({
   onWeb: (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => void;
 }) {
   return (
-    <>
-      {/* The saved copy opens with no signal, so it leads; the web page
-          follows. Each is told apart by its glyph. */}
-      <div className="source-links">
-        {file && href ? (
-          <a className="action with-glyph" href={href} download={file.name}>
-            <Glyph kind="documents" line />
-            {copy.OPEN_SOURCE_FILE}
-          </a>
-        ) : null}
-        <a
-          className="action with-glyph"
-          href={item.pageUrl ?? DTP_DATASET_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(event) => onWeb(event, item)}
-        >
-          <Glyph kind="web" line />
-          {copy.OPEN_ORIGINAL_SOURCE}
+    // The saved copy opens with no signal, so it leads; the web page follows.
+    // Small text links, so a card reads as its place, not as its buttons.
+    <div className="source-links">
+      {file && href ? (
+        <a className="source-link" href={href} download={file.name}>
+          <Glyph kind="documents" line size={16} />
+          {copy.OPEN_SOURCE_FILE}
         </a>
-      </div>
-    </>
+      ) : null}
+      <a
+        className="source-link"
+        href={item.pageUrl ?? DTP_DATASET_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(event) => onWeb(event, item)}
+      >
+        <Glyph kind="web" line size={16} />
+        {copy.OPEN_ORIGINAL_SOURCE}
+      </a>
+    </div>
   );
 }

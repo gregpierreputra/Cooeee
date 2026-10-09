@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import * as copy from '../../core/copy';
 import {
@@ -45,7 +45,7 @@ type RowSelection = { chosen: boolean; full: boolean; onToggle: () => void };
 /** What every official place states about itself, in the wizard list and in the
  *  saved pack alike: its address, then council and the CFA's dates on one quiet
  *  line, then provenance. The kind is the heading of the list it sits in. */
-export function PlaceFacts({ place, now }: { place: Destination; now: number }) {
+export function PlaceFacts({ place, now, links }: { place: Destination; now: number; links?: ReactNode }) {
   const meta = [
     place.council ? copy.NSP_COUNCIL_LABEL(place.council) : null,
     place.designatedAt ? copy.NSP_DESIGNATED_ON(formatIsoDateShort(place.designatedAt)) : null,
@@ -55,7 +55,7 @@ export function PlaceFacts({ place, now }: { place: Destination; now: number }) 
     <>
       {place.addressText ? <p className="muted">{place.addressText}</p> : null}
       {meta.length > 0 ? <p className="muted figure place-meta">{meta.join(' · ')}</p> : null}
-      <ProvenanceLine source={place.source} now={now} />
+      <ProvenanceLine source={place.source} now={now} links={links} />
     </>
   );
 }

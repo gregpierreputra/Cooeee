@@ -201,7 +201,6 @@ export const OPEN_ORIGINAL_SOURCE = 'Web page';
 
 /** The map of the pack's area stored with it: the Department's own drawing of
  *  its designation layer, and one line on how to read the picture. */
-export const AREA_MAP_LABEL = 'Map of the area';
 export const AREA_MAP_ALT =
   'Map of the area around the saved place, with the Designated Bushfire Prone Area shaded';
 /** The map's key, drawn as swatches beside these words rather than said. */
@@ -600,7 +599,7 @@ export const RECOVER_NO_MATCH_LINE = 'Help may still exist. Try the official cha
 export const OFFICIAL_CHANNEL = 'Official channel (web)';
 export const RECOVER_NONE_TITLE = 'No support information is held on this phone.';
 export const SAVED_PROGRAMS = 'Saved programs';
-export const STORED_INFORMATION = 'Stored information';
+export const BUSHFIRE_AREA = 'Bushfire area';
 export const SHOW = 'Show';
 export const HIDE = 'Hide';
 export const SHOW_SECTION = (title: string) => `Show ${title}`;

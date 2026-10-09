@@ -10,8 +10,9 @@ test('US2 AC1 lists every available stored item with grouped publisher and full 
 
   await expect(page.locator('.pack-detail h1')).toBeVisible();
   await openSources(page);
-  // The saved programs section is closed: its card is in the page but hidden.
-  const items = page.locator('.provenance-item').locator('visible=true');
+  // The bushfire area and the place each carry a Source; the saved programs
+  // section is closed, so its card is in the page but hidden.
+  const items = page.locator('.provenance').locator('visible=true');
   await expect(items.locator('visible=true')).toHaveCount(2);
   // Each Source ring labels who published the item, then when it was saved.
   const saved = items.locator('.source-rows dd', { hasText: '27 August 2026' }).locator('visible=true');
@@ -32,7 +33,7 @@ test('US2 AC1 provenance remains readable at 200 percent text size', async ({ pa
   await page.goto(DETAIL_URL);
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
 
-  await expect(page.locator('.provenance-item').locator('visible=true')).toHaveCount(2);
+  await expect(page.locator('.provenance').locator('visible=true')).toHaveCount(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
@@ -57,7 +58,7 @@ test('US2 AC2 leaves missing-provenance content out of both storage and the save
 test('US2 AC3 opens the same provenance offline with zero requests and no loading state', async ({ context, page }) => {
   const onlinePage = await context.newPage();
   await onlinePage.goto(DETAIL_URL);
-  await expect(onlinePage.locator('.provenance-item').locator('visible=true')).toHaveCount(2);
+  await expect(onlinePage.locator('.provenance').locator('visible=true')).toHaveCount(2);
   const onlineText = await onlinePage.locator('main').innerText();
   await onlinePage.close();
 
@@ -70,7 +71,7 @@ test('US2 AC3 opens the same provenance offline with zero requests and no loadin
   await context.setOffline(true);
   await page.getByRole('button', { name: 'Open test pack' }).click();
 
-  await expect(page.locator('.provenance-item').locator('visible=true')).toHaveCount(2);
+  await expect(page.locator('.provenance').locator('visible=true')).toHaveCount(2);
   expect(await page.locator('main').innerText()).toBe(onlineText);
   await expect(page.locator('main')).not.toContainText(/Loading|Reconnect|Refreshing|details are not available/i);
   expect(requests).toBe(0);
@@ -84,7 +85,7 @@ test('an item saved 31 days ago states its age, with no old-data note, and stays
   await expect(page.locator('.source-rows dd', { hasText: '31 days ago' }).locator('visible=true')).toHaveCount(2);
   await expect(page.getByText(/not recently verified|refresh it when next online/i)).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Web page' }).locator('visible=true')).toHaveCount(2);
-  expect(await page.locator('.provenance-item').evaluateAll(
+  expect(await page.locator('.provenance').evaluateAll(
     (items) => items.every((item) => !item.classList.contains('disabled')),
   )).toBe(true);
 });
@@ -118,7 +119,7 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
 
   await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.locator('.provenance-item').locator('visible=true')).toHaveCount(2);
+  await expect(page.locator('.provenance').locator('visible=true')).toHaveCount(2);
 });
 
 test('US2 AC5 leaves the sheet as it was for an item with no citation to state', async ({ page }) => {
