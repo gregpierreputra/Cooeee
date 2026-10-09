@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { LOCALITIES_ATTRIBUTION, MAP_DATA, MAP_RETURN_BUTTON, NO_PACK_HERE, ROADS_ATTRIBUTION } from '../src/core/copy';
+import { MAP_CREDIT_DATA, MAP_CREDIT_OWNER, MAP_RETURN_BUTTON, NO_PACK_HERE } from '../src/core/copy';
 import { acknowledgeFirstOpen, HARNESS, waitForController } from './helpers';
 import { AT_FERNY_CREEK, PHONE, pushPosition, stubPositions, turnPhone } from './blacksky-position';
 
@@ -325,6 +325,7 @@ test('Empty: without the roads file the dial is the plain dial, and nothing else
   await page.waitForTimeout(500);
   await expect(map(page)).toHaveCount(0);
   await expect(page.locator('.blacksky-scale')).toHaveCount(0);
+  await expect(page.locator('.blacksky-map-credit')).toHaveCount(0); // no map, nothing to credit
   await expect(page.locator('.blacksky-dial-frame button')).toHaveCount(0);
   await expect(page.locator('.blacksky-dial-pan')).toHaveCount(0);
   expect(await pinAt(page)).toBe('ring');
@@ -333,12 +334,21 @@ test('Empty: without the roads file the dial is the plain dial, and nothing else
   await expect(page.locator('.blacksky-dial-drop:not(.on-ring)')).toHaveCount(0);
 });
 
-test('the pack page names the road data under its licence, behind Map data', async ({ page }) => {
-  await page.goto(`${HARNESS}/detail`);
-  await expect(page.getByText(ROADS_ATTRIBUTION)).toBeHidden();
-  await page.getByText(MAP_DATA).click();
-  await expect(page.getByText(ROADS_ATTRIBUTION)).toBeVisible();
-  await expect(page.getByText(LOCALITIES_ATTRIBUTION)).toBeVisible();
+test('the road map carries its Vicmap credit in the dial box, clear of the ring', async ({ page }) => {
+  await openRoads(page, 'fixture');
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(page.getByText(MAP_CREDIT_OWNER)).toBeVisible();
+  await expect(page.getByText(MAP_CREDIT_DATA)).toBeVisible();
+  // Each half sits in a bottom corner, outside the ring's circle.
+  const frame = (await page.locator('.blacksky-dial-frame').boundingBox())!;
+  const r = (frame.width / 2) * 0.97;
+  for (const text of [MAP_CREDIT_OWNER, MAP_CREDIT_DATA]) {
+    const box = (await page.getByText(text).boundingBox())!;
+    const cx = frame.x + frame.width / 2;
+    const cy = frame.y + frame.height / 2;
+    const near = { x: Math.max(box.x, Math.min(cx, box.x + box.width)), y: Math.max(box.y, Math.min(cy, box.y + box.height)) };
+    expect(Math.hypot(near.x - cx, near.y - cy)).toBeGreaterThan(r);
+  }
 });
 
 // The real bundle: the roads file is precached with the shell, and BlackSky

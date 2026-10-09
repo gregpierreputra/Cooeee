@@ -915,6 +915,15 @@ function DialBody({
               button and has no name; the dial's own text equivalent stands. */}
           {map.layer ? <div ref={pan} className="blacksky-dial-pan" data-panned={panned} /> : null}
           {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
+          {/* The roads and place names are Vicmap's, under CC BY 4.0, which asks
+              for this credit where they are shown: in the box's two bottom
+              corners, outside the ring, so it covers no map and never turns. */}
+          {map.layer ? (
+            <p className="blacksky-map-credit">
+              <span>{copy.MAP_CREDIT_OWNER}</span>
+              <span>{copy.MAP_CREDIT_DATA}</span>
+            </p>
+          ) : null}
           {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
               over the foot of the dial, for as long as they are being said. Not
               a live region: a screen reader would say them on top of the voice. */}

@@ -218,12 +218,7 @@ export const MAP_ZOOM_IN = 'Zoom in';
 export const MAP_ZOOM_OUT = 'Zoom out';
 /** Read out with the map buttons only: pinch and drag need no telling. */
 export const MAP_HOW = 'Pinch, or Ctrl and scroll, to zoom. Once zoomed in, drag to move. With a map button selected, the arrow keys move it.';
-/** BlackSky's road and place name layers, credited in the map's Source panel
- *  as their CC BY 4.0 licence asks. */
-export const MAP_SOURCE_ROADS = 'BlackSky roads';
-export const MAP_SOURCE_PLACE_NAMES = 'BlackSky place names';
-export const VICMAP_TRANSPORT = 'Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
-export const VICMAP_ADMIN = 'Vicmap Admin, Department of Transport and Planning, CC BY 4.0';
+
 export const EXTERNAL_SOURCE_NOTICE = 'May use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to the web page';
 /** The citation a stored designation can state in the app itself: the gazetted
@@ -432,12 +427,11 @@ export const NORTH_UP = 'North up';
 /** The button under the dial while the map has been dragged away from the
  *  person: it puts them back at the centre. */
 export const MAP_RETURN_BUTTON = 'Back to me';
-/** The road and locality credits, under a small Map data toggle at the foot of
- *  a pack page that has no map of its own to carry them. */
-export const MAP_DATA = 'Map data';
-export const ROADS_ATTRIBUTION = 'Roads: Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
-/** The same for the locality names on the map disc, under the roads line. */
-export const LOCALITIES_ATTRIBUTION = 'Localities: Vicmap Admin, Department of Transport and Planning, CC BY 4.0';
+/** The credit BlackSky's roads and place names carry under their CC BY 4.0
+ *  licence, in the dial's two bottom corners while the map is drawn. The
+ *  owner is as the Vicmap dataset pages state it. */
+export const MAP_CREDIT_OWNER = '© State of Victoria';
+export const MAP_CREDIT_DATA = 'Vicmap, CC BY 4.0';
 
 // BS_Enhancement-AC3 say the place, distance and side aloud
 // Everything the phone speaks, and the caption shows the same words. Each

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK, VICMAP_TRANSPORT } from '../src/core/copy';
+import { PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import {
   acknowledgeFirstOpen,
@@ -103,11 +103,11 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   // Both chosen places are marked on it, and the buttons zoom it. North stays
   // up, and fully zoomed out the map does not move: it already fills the frame.
   await expect(page.locator('.area-map-mark')).toHaveCount(2);
-  // Every credit for the map, BlackSky's roads among them, opens from its Source toggle.
-  await expect(page.locator('.map-credits')).toHaveCount(0);
-  const mapSource = page.locator('.pack-section', { hasText: 'Map of the area' }).getByRole('button', { name: 'Source' });
+  // The map's own credits open from its Source toggle: publisher, saved and licence.
+  const mapSection = page.locator('.pack-section', { hasText: 'Map of the area' });
+  const mapSource = mapSection.getByRole('button', { name: 'Source' });
   await mapSource.click();
-  await expect(page.getByText(VICMAP_TRANSPORT)).toBeVisible();
+  await expect(mapSection.locator('.source-rows dt')).toHaveText(['Published by', 'Saved', 'Licence']);
   await mapSource.click();
   const layer = page.locator('.area-map-layer');
   const transform = () => layer.evaluate((el) => (el as HTMLElement).style.transform);

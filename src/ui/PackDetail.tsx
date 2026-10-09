@@ -202,11 +202,7 @@ export default function PackDetail({
               source={{ publisher: DTP_PUBLISHER, url: areaMap.url, licence: DTP_LICENCE, retrievedAt: areaMap.retrievedAt }}
               now={now}
               open
-              extra={[
-                { label: copy.SOURCE_LICENCE, value: DTP_LICENCE },
-                { label: copy.MAP_SOURCE_ROADS, value: copy.VICMAP_TRANSPORT },
-                { label: copy.MAP_SOURCE_PLACE_NAMES, value: copy.VICMAP_ADMIN },
-              ]}
+              extra={[{ label: copy.SOURCE_LICENCE, value: DTP_LICENCE }]}
             />
           </Hint>
         </Section>
@@ -368,17 +364,6 @@ export default function PackDetail({
         </Link>
       </div>
 
-      {/* BS_Enhancement-AC5: the road and locality layers BlackSky draws are
-          published under CC BY 4.0, which asks for this credit. BlackSky has no
-          room for it, so it stands in the map's Source panel, or here, one tap
-          away, on a pack saved before the map was stored. */}
-      {areaMap ? null : (
-        <details className="map-credits">
-          <summary>{copy.MAP_DATA}</summary>
-          <p>{copy.ROADS_ATTRIBUTION}</p>
-          <p>{copy.LOCALITIES_ATTRIBUTION}</p>
-        </details>
-      )}
 
       {offlineSource ? (
         <div className="sheet-backdrop">
