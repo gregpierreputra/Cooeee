@@ -363,6 +363,8 @@ export type SourceStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 export type SourceHealth = { status: SourceStatus; last_success_at: string | null };
 export type DataHealth = Record<string, SourceHealth>;
 
+/** CFA's word for what an NSP is: a building, or open ground such as an oval. */
+export type SiteKind = 'building' | 'open_space';
 export type BundleFacility = {
   facility_id: number;
   type: StaticType;
@@ -371,6 +373,8 @@ export type BundleFacility = {
   lat: number;
   lon: number;
   lga_name: string | null;
+  // Missing for a refuge, a server that does not send it yet, or places saved before it.
+  site_kind?: SiteKind | null;
   designation_status: 'designated' | 'needs_review'; // needs_review = missing from the latest upstream run
   last_verified_at: string; // ISO-8601
 };

@@ -105,8 +105,19 @@ describe('nearbyView', () => {
     expect(nsp.state).toBe('cached');
     expect(nsp.stateLabel).toBe(copy.STATE_CACHED(copy.HOURS_AGO(2)));
     expect(nsp.timestamp).toBe(copy.VERIFIED_ON('31 August 2026'));
-    expect(nsp.place).toEqual({ name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', distance: '580 m' });
+    expect(nsp.place).toEqual({
+      name: 'Kalorama Memorial Reserve',
+      address: 'Ridge Road, Kalorama',
+      distance: '580 m',
+      about: { kind: null, note: copy.NSP_NO_SERVICES },
+    });
     expect(nsp.note).toBeNull();
+  });
+
+  it("an NSP says CFA's word for the place and that no one is there; a refuge says neither", () => {
+    const view = nearbyView(NOW, KALORAMA, cache({ facilities: [facility({ site_kind: 'open_space' }), facility({ facility_id: 2, type: 'CFR', site_kind: 'building' })] }), OFFLINE);
+    expect(row(view, 'NSP').place?.about).toEqual({ kind: 'Open space', note: copy.NSP_NO_SERVICES });
+    expect(row(view, 'CFR').place?.about).toBeUndefined();
   });
 
   it('a fresh dynamic snapshot offline shows the centre as cached and possibly outdated', () => {

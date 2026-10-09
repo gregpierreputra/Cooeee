@@ -599,7 +599,7 @@ if (window.location.pathname === '/nearby') {
     const feedAge = nearbyMode === 'stale' ? 3 * 3_600_000 : 10 * 60_000;
     const verified = ago(2 * 86_400_000);
     await db.staticFacilities.bulkAdd([
-      { facility_id: 1, type: 'NSP', name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', lat: -37.808, lon: 145.36, lga_name: 'Yarra Ranges', designation_status: 'designated', last_verified_at: verified },
+      { facility_id: 1, type: 'NSP', name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', lat: -37.808, lon: 145.36, lga_name: 'Yarra Ranges', site_kind: 'open_space', designation_status: 'designated', last_verified_at: verified },
       { facility_id: 2, type: 'CFR', name: 'Ferny Creek Community Fire Refuge', address: 'School Road, Ferny Creek 3786', lat: -37.88323, lon: 145.333062, lga_name: 'Yarra Ranges', designation_status: 'designated', last_verified_at: verified },
     ]);
     await db.postcodes.bulkAdd([{ postcode: '3766', centroid_lat: -37.813, centroid_lon: 145.362 }]);

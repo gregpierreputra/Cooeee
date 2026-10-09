@@ -51,6 +51,7 @@ CREATE TABLE facilities (
     lat                  REAL NOT NULL,
     lon                  REAL NOT NULL,
     lga_name             TEXT,
+    site_kind            TEXT CHECK (site_kind IN ('building','open_space')),
     capacity              INTEGER,
     designation_status    TEXT NOT NULL DEFAULT 'designated'
                           CHECK (designation_status IN ('designated','candidate','needs_review','decommissioned')),

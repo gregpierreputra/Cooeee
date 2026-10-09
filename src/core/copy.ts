@@ -5,7 +5,7 @@
 // string carries an em dash: scripts/banned-terms.mjs fails the build on one.
 // Never reword them without updating the tests.
 
-import type { Destination, FacilityType, NeedKey, PackIcon, SourceStatus } from './types';
+import type { Destination, FacilityType, NeedKey, PackIcon, SiteKind, SourceStatus } from './types';
 
 // Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
@@ -968,6 +968,10 @@ export const MAY_BE_OUTDATED = 'May be outdated. Check by radio or the hotline.'
 export const TOO_OLD_TO_SHOW = 'Over an hour old, so no place is shown.';
 export const SOURCE_UNCONFIRMED = (source: string) => `The ${source} was not reachable lately, so this is unconfirmed.`;
 export const SOURCE_NOT_READ = (source: string) => `The ${source} has not been read yet, so nothing is confirmed.`;
+/** Under an NSP's address: CFA's word for the place, then CFA's own words that
+ *  no one will be there ("There will be no staff or services available"). */
+export const NSP_SITE_KIND: Record<SiteKind, string> = { building: 'Building', open_space: 'Open space' };
+export const NSP_NO_SERVICES = 'No staff or services';
 export const NEEDS_REVIEW_NOTE = 'Missing from the latest Country Fire Authority list. Check before relying on it.';
 
 export const DATA_SOURCES_LABEL = 'Data sources';
