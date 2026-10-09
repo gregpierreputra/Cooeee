@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
-import { MAP_HOME, MAP_MAX_SCALE, clampView, mapPoint, zoomTurnAbout, type MapBox, type MapView } from '../../core/area-map-view';
+import { MAP_HOME, MAP_MAX_SCALE, clampView, mapPoint, zoomAbout, type MapBox, type MapView } from '../../core/area-map-view';
 import * as copy from '../../core/copy';
 import type { Destination } from '../../core/types';
 import Glyph from './Glyph';
@@ -10,11 +10,11 @@ const WHEEL_STEP = 0.01; // zoom per pixel of wheel travel, with Ctrl held or a 
 const WHEEL_MAX = 50; // one wheel notch zooms about as much as a button press
 const KEY_PAN = 48; // pixels an arrow key moves the map
 const BUTTON_ZOOM = 1.6;
-const BUTTON_TURN = 45;
 
 /** The stored map of the pack's area, to explore with a finger or a mouse: one
- *  finger drags it, two pinch to zoom and twist to turn it, a wheel zooms at
- *  the pointer, and round buttons do the same for anyone who cannot. The
+ *  finger drags it, two pinch to zoom, a wheel zooms at the pointer, and round
+ *  buttons zoom for anyone who cannot. North stays up, and the picture always
+ *  fills the frame, as nothing was saved past its edge. The
  *  saved place sits at the middle by construction; each official place of
  *  last resort is placed from its own coordinates. Everything is drawn from
  *  bytes already on the phone, so it works the same with no signal. */
@@ -41,7 +41,7 @@ export default function AreaMap({ src, box, places }: { src: string; box: MapBox
       event.preventDefault();
       const at = measure(event.clientX, event.clientY);
       const travel = Math.max(-WHEEL_MAX, Math.min(WHEEL_MAX, event.deltaY));
-      setView((v) => zoomTurnAbout(v, at.x, at.y, Math.exp(-travel * WHEEL_STEP), 0, at.half));
+      setView((v) => zoomAbout(v, at.x, at.y, Math.exp(-travel * WHEEL_STEP), at.half));
     };
     element.addEventListener('wheel', onWheel, { passive: false });
     return () => element.removeEventListener('wheel', onWheel);
@@ -70,24 +70,20 @@ export default function AreaMap({ src, box, places }: { src: string; box: MapBox
       setView((v) => clampView({ ...v, x: v.x + now.x - before.x, y: v.y + now.y - before.y }, half));
       return;
     }
-    // Two fingers. Each move event moves one finger, so the map zooms and turns
-    // about the other, still finger: the change in their spacing is the zoom,
-    // the change in the line between them the turn, and the ground under each
-    // finger stays under it.
+    // Two fingers. Each move event moves one finger, so the map zooms about the
+    // other, still finger: the change in their spacing is the zoom.
     const other = others[0];
     const factor = Math.hypot(now.x - other.x, now.y - other.y) / Math.max(1, Math.hypot(before.x - other.x, before.y - other.y));
-    const turnRad = Math.atan2(now.y - other.y, now.x - other.x) - Math.atan2(before.y - other.y, before.x - other.x);
-    const turn = (((turnRad * 180) / Math.PI + 540) % 360) - 180;
     const pivot = measure(other.x, other.y);
-    setView((v) => zoomTurnAbout(v, pivot.x, pivot.y, factor, turn, half));
+    setView((v) => zoomAbout(v, pivot.x, pivot.y, factor, half));
   };
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => pointers.current.delete(event.pointerId);
 
   // The buttons act about the middle of the frame.
-  const fromButton = (factor: number, turn: number) => {
+  const fromButton = (factor: number) => {
     const half = frame.current!.getBoundingClientRect().width / 2;
-    setView((v) => zoomTurnAbout(v, 0, 0, factor, turn, half));
+    setView((v) => zoomAbout(v, 0, 0, factor, half));
   };
 
   // From the keyboard, with any map button focused: the arrows move the map,
@@ -98,8 +94,8 @@ export default function AreaMap({ src, box, places }: { src: string; box: MapBox
       event.preventDefault();
       const half = frame.current!.getBoundingClientRect().width / 2;
       setView((v) => clampView({ ...v, x: v.x + move[0], y: v.y + move[1] }, half));
-    } else if (event.key === '+' || event.key === '=') fromButton(BUTTON_ZOOM, 0);
-    else if (event.key === '-') fromButton(1 / BUTTON_ZOOM, 0);
+    } else if (event.key === '+' || event.key === '=') fromButton(BUTTON_ZOOM);
+    else if (event.key === '-') fromButton(1 / BUTTON_ZOOM);
   };
   // At a limit the button stays focusable and simply does nothing, so a
   // keyboard user is never dropped out of the controls.
@@ -107,9 +103,8 @@ export default function AreaMap({ src, box, places }: { src: string; box: MapBox
   const atMin = view.scale <= 1;
 
   const layer = {
-    transform: `translate(${view.x}px, ${view.y}px) rotate(${view.angle}deg) scale(${view.scale})`,
-    // The markers undo the turn and the zoom, so they stay upright and one size.
-    '--map-angle': `${view.angle}deg`,
+    transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+    // The markers undo the zoom, so they stay one size.
     '--map-scale': view.scale,
   } as CSSProperties;
 
@@ -144,17 +139,11 @@ export default function AreaMap({ src, box, places }: { src: string; box: MapBox
         {/* On the map, top left, outside the turning layer. A press here
             never reaches the frame, so tapping a button never drags the map. */}
         <div className="area-map-controls" onPointerDown={(event) => event.stopPropagation()}>
-          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_ZOOM_IN} aria-disabled={atMax} onClick={() => !atMax && fromButton(BUTTON_ZOOM, 0)}>
+          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_ZOOM_IN} aria-disabled={atMax} onClick={() => !atMax && fromButton(BUTTON_ZOOM)}>
             +
           </button>
-          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_ZOOM_OUT} aria-disabled={atMin} onClick={() => !atMin && fromButton(1 / BUTTON_ZOOM, 0)}>
+          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_ZOOM_OUT} aria-disabled={atMin} onClick={() => !atMin && fromButton(1 / BUTTON_ZOOM)}>
             −
-          </button>
-          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_TURN} onClick={() => fromButton(1, BUTTON_TURN)}>
-            ↻
-          </button>
-          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_NORTH_UP} onClick={() => setView(MAP_HOME)}>
-            N
           </button>
         </div>
       </div>

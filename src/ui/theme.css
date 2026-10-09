@@ -652,12 +652,12 @@ input[aria-invalid='true'] {
   -webkit-user-drag: none;
 }
 
-/* Each marker undoes the map's turn and zoom, so it stays upright and the
-   same size, centred on its own spot. */
+/* Each marker undoes the map's zoom, so it stays the same size, centred on
+   its own spot. */
 .area-map-pin,
 .area-map-mark {
   position: absolute;
-  transform: translate(-50%, -50%) rotate(calc(var(--map-angle, 0deg) * -1)) scale(calc(1 / var(--map-scale, 1)));
+  transform: translate(-50%, -50%) scale(calc(1 / var(--map-scale, 1)));
 }
 
 .area-map-pin {

@@ -44,39 +44,28 @@ export function mapPoint(box: MapBox, { lat, lon }: LatLon): { x: number; y: num
   return x >= 0 && x <= 1 && y >= 0 && y <= 1 ? { x, y } : null;
 }
 
-/** The viewer's state: a shift in pixels, a zoom and a turn in degrees, applied
- *  about the middle of the frame. */
-export type MapView = { x: number; y: number; scale: number; angle: number };
+/** The viewer's state: a shift in pixels and a zoom, applied about the middle
+ *  of the frame. North is always up: a turned square leaves blank corners. */
+export type MapView = { x: number; y: number; scale: number };
 
-export const MAP_HOME: MapView = { x: 0, y: 0, scale: 1, angle: 0 };
+export const MAP_HOME: MapView = { x: 0, y: 0, scale: 1 };
 export const MAP_MAX_SCALE = 8;
 
-/** Keeps the zoom between 1 and MAP_MAX_SCALE, and the picture's middle within
- *  reach of the frame, so the map can never be lost off screen. half is half
- *  the frame's width in pixels. */
+/** Keeps the zoom between 1 and MAP_MAX_SCALE, and the picture over the whole
+ *  frame: nothing lies past its edge, so the map moves only as far as the edge.
+ *  Fully zoomed out it does not move at all. half is half the frame's width. */
 export function clampView(view: MapView, half: number): MapView {
   const scale = Math.min(MAP_MAX_SCALE, Math.max(1, view.scale));
-  const limit = half * scale;
+  const limit = half * (scale - 1);
   const bound = (value: number) => Math.min(limit, Math.max(-limit, value));
-  return { x: bound(view.x), y: bound(view.y), scale, angle: view.angle };
+  return { x: bound(view.x), y: bound(view.y), scale };
 }
 
-/** The view after zooming by factor and turning by turn degrees about the point
- *  at (px, py) from the frame's middle, so the ground under that point stays
- *  under it, as under two fingers. */
-export function zoomTurnAbout(view: MapView, px: number, py: number, factor: number, turn: number, half: number): MapView {
+/** The view after zooming by factor about the point at (px, py) from the
+ *  frame's middle, so the ground under that point stays under it, as under two
+ *  fingers. */
+export function zoomAbout(view: MapView, px: number, py: number, factor: number, half: number): MapView {
   const scale = Math.min(MAP_MAX_SCALE, Math.max(1, view.scale * factor));
   const k = scale / view.scale;
-  const r = (turn * Math.PI) / 180;
-  const dx = view.x - px;
-  const dy = view.y - py;
-  return clampView(
-    {
-      x: px + k * (dx * Math.cos(r) - dy * Math.sin(r)),
-      y: py + k * (dx * Math.sin(r) + dy * Math.cos(r)),
-      scale,
-      angle: (view.angle + turn) % 360,
-    },
-    half,
-  );
+  return clampView({ x: px + k * (view.x - px), y: py + k * (view.y - py), scale }, half);
 }
