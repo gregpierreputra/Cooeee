@@ -648,6 +648,9 @@ export default function BlackSky({
         ) : null}
         {trust?.bar === 'mark' ? <span>{copy.FROM_YOUR_SAVED_PLACE}</span> : null}
       </div>
+      {/* With no dial yet, the compass is offered here, so an iPhone can turn
+          it on before the first position and the dial turns once it arrives. */}
+      {model && trust ? null : <TurnOnCompass compass={compass} />}
       {chosen && !chosen.placesVerified ? (
         <p className="muted">{copy.PLACES_UNVERIFIED}</p>
       ) : null}
@@ -929,15 +932,24 @@ function DialBody({
           ) : null}
         </div>
       </div>
-      {/* On an iPhone that is usually because the compass has not been allowed
-          yet, which is one tap. */}
-      {!compass.live && compass.needsPermission ? (
-        <button type="button" onClick={() => void compass.enable()}>
-          {copy.TURN_ON_COMPASS}
-        </button>
-      ) : null}
+      <TurnOnCompass compass={compass} />
       {others.length > 0 ? <OtherPlaces places={others} onShow={onShow} /> : null}
     </section>
+  );
+}
+
+/** On an iPhone the compass stays off until it is allowed, which takes one
+ *  tap of its own: iOS refuses the lift that ends the hold into BlackSky. */
+function TurnOnCompass({
+  compass,
+}: {
+  compass: { live: boolean; needsPermission: boolean; enable: () => Promise<void> };
+}) {
+  if (compass.live || !compass.needsPermission) return null;
+  return (
+    <button type="button" onClick={() => void compass.enable()}>
+      {copy.TURN_ON_COMPASS}
+    </button>
   );
 }
 
