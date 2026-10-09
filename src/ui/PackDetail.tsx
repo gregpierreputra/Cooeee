@@ -2,14 +2,13 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
 import { mapAcrossKm, mapBoxOf } from '../core/area-map-view';
-import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
+import { AREA_MAP_NAME, DTP_DATASET_URL, DTP_LICENCE, DTP_PUBLISHER } from '../core/constants';
 import * as copy from '../core/copy';
 import { shownPackName } from '../core/home';
 import { packIcon } from '../core/pack';
 import { formatDistanceM, placeName } from '../core/destination';
 import {
   decideOriginalSourceAccess,
-  formatSavedDate,
   packDetailAbsence,
   packDetailItems,
   packDetailPlaces,
@@ -21,6 +20,7 @@ import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } 
 import { getCompletePackContent, listDrills, listRehearsalsForPack } from '../data/db';
 import AreaMap from './components/AreaMap';
 import Glyph from './components/Glyph';
+import Hint from './components/Hint';
 import InfoGlyph from './components/InfoGlyph';
 import KeyTerms from './components/KeyTerms';
 import ProvenanceLine from './components/ProvenanceLine';
@@ -173,22 +173,42 @@ export default function PackDetail({
       </header>
 
       {/* The map of the pack's own area, from the bytes stored with the pack,
-          to pan, zoom and turn. Absent on packs built before the map was stored. */}
+          to zoom and move, north up. Absent on packs built before the map was stored. */}
       {areaMap && fileUrls[areaMap.id] ? (
         <Section kind="map" title={copy.AREA_MAP_LABEL}>
           <figure className="area-map">
-            <AreaMap src={fileUrls[areaMap.id]} box={mapBox} places={places} />
-            <figcaption className="muted">
+            <AreaMap
+              src={fileUrls[areaMap.id]}
+              box={mapBox}
+              places={places}
+              scale={mapBox ? copy.AREA_MAP_ACROSS(mapAcrossKm(mapBox)) : undefined}
+            />
+            {/* The key is the map's own footer, inside its frame, and stays in
+                view, as the shading cannot be read without it. Each picture sits
+                in a slot of one width, so both columns of words start in line. */}
+            <figcaption>
               <ul className="map-key">
-                <li><span className="swatch swatch-inside" aria-hidden="true" />{copy.AREA_MAP_KEY.inside}</li>
-                <li><span className="swatch swatch-outside" aria-hidden="true" />{copy.AREA_MAP_KEY.outside}</li>
-                <li><span className="swatch swatch-place" aria-hidden="true" />{copy.AREA_MAP_KEY.place}</li>
-                <li><span className="area-map-mark-key" aria-hidden="true"><Glyph kind="place" size={14} /></span>{copy.AREA_MAP_KEY.lastResort}</li>
-                {mapBox ? <li>{copy.AREA_MAP_ACROSS(mapAcrossKm(mapBox))}</li> : null}
+                <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-inside" /></span>{copy.AREA_MAP_KEY.inside}</li>
+                <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-outside" /></span>{copy.AREA_MAP_KEY.outside}</li>
+                <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-place" /></span>{copy.AREA_MAP_KEY.place}</li>
+                <li><span className="map-key-icon area-map-mark-key" aria-hidden="true"><Glyph kind="place" size={14} /></span>{copy.AREA_MAP_KEY.lastResort}</li>
               </ul>
-              <p>{copy.AREA_MAP_SOURCE(formatSavedDate(areaMap.retrievedAt))}</p>
             </figcaption>
           </figure>
+          {/* Every credit for the map behind one text toggle, set as Not for
+              you? is on Home. */}
+          <Hint label={copy.SOURCE_LABEL} asText titled={false} panelClass="source-panel">
+            <ProvenanceLine
+              source={{ publisher: DTP_PUBLISHER, url: areaMap.url, licence: DTP_LICENCE, retrievedAt: areaMap.retrievedAt }}
+              now={now}
+              open
+              extra={[
+                { label: copy.SOURCE_LICENCE, value: DTP_LICENCE },
+                { label: copy.MAP_SOURCE_ROADS, value: copy.VICMAP_TRANSPORT },
+                { label: copy.MAP_SOURCE_PLACE_NAMES, value: copy.VICMAP_ADMIN },
+              ]}
+            />
+          </Hint>
         </Section>
       ) : null}
 
@@ -350,12 +370,15 @@ export default function PackDetail({
 
       {/* BS_Enhancement-AC5: the road and locality layers BlackSky draws are
           published under CC BY 4.0, which asks for this credit. BlackSky has no
-          room for it, so it stands here, one tap away. */}
-      <details className="map-credits">
-        <summary>{copy.MAP_DATA}</summary>
-        <p>{copy.ROADS_ATTRIBUTION}</p>
-        <p>{copy.LOCALITIES_ATTRIBUTION}</p>
-      </details>
+          room for it, so it stands in the map's Source panel, or here, one tap
+          away, on a pack saved before the map was stored. */}
+      {areaMap ? null : (
+        <details className="map-credits">
+          <summary>{copy.MAP_DATA}</summary>
+          <p>{copy.ROADS_ATTRIBUTION}</p>
+          <p>{copy.LOCALITIES_ATTRIBUTION}</p>
+        </details>
+      )}
 
       {offlineSource ? (
         <div className="sheet-backdrop">

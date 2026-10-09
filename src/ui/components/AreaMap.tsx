@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { MAP_HOME, MAP_MAX_SCALE, clampView, mapPoint, zoomAbout, type MapBox, type MapView } from '../../core/area-map-view';
 import * as copy from '../../core/copy';
 import type { Destination } from '../../core/types';
@@ -18,7 +18,19 @@ const BUTTON_ZOOM = 1.6;
  *  saved place sits at the middle by construction; each official place of
  *  last resort is placed from its own coordinates. Everything is drawn from
  *  bytes already on the phone, so it works the same with no signal. */
-export default function AreaMap({ src, box, places }: { src: string; box: MapBox | null; places: Destination[] }) {
+export default function AreaMap({
+  src,
+  box,
+  places,
+  scale,
+}: {
+  src: string;
+  box: MapBox | null;
+  places: Destination[];
+  /** How far the map reaches, shown in its corner as a map's scale is. */
+  scale?: string;
+}) {
+  const howId = useId();
   const frame = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, Point>());
   const [view, setView] = useState<MapView>(MAP_HOME);
@@ -139,15 +151,18 @@ export default function AreaMap({ src, box, places }: { src: string; box: MapBox
         {/* On the map, top left, outside the turning layer. A press here
             never reaches the frame, so tapping a button never drags the map. */}
         <div className="area-map-controls" onPointerDown={(event) => event.stopPropagation()}>
-          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_ZOOM_IN} aria-disabled={atMax} onClick={() => !atMax && fromButton(BUTTON_ZOOM)}>
+          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_ZOOM_IN} aria-describedby={howId} aria-disabled={atMax} onClick={() => !atMax && fromButton(BUTTON_ZOOM)}>
             +
           </button>
-          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_ZOOM_OUT} aria-disabled={atMin} onClick={() => !atMin && fromButton(1 / BUTTON_ZOOM)}>
+          <button type="button" className="map-button" onKeyDown={onKeyDown} aria-label={copy.MAP_ZOOM_OUT} aria-describedby={howId} aria-disabled={atMin} onClick={() => !atMin && fromButton(1 / BUTTON_ZOOM)}>
             −
           </button>
         </div>
+        {scale ? <span className="area-map-scale">{scale}</span> : null}
       </div>
-      <p className="muted area-map-how">{copy.MAP_HOW}</p>
+      {/* Pinch and drag are what every phone map does, so the how-to is read
+          out with the buttons rather than shown. */}
+      <p id={howId} className="visually-hidden">{copy.MAP_HOW}</p>
     </>
   );
 }
