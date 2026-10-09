@@ -8,7 +8,7 @@ import {
   placeName,
   savableCount,
 } from '../../core/destination';
-import { formatIsoDateShort, nspListDateLabel } from '../../core/nsp';
+import { formatIsoDateShort } from '../../core/nsp';
 import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
 import CountRing from '../components/CountRing';
@@ -42,20 +42,19 @@ type DestinationsProps = {
  *  marked unavailable, and the hint over the list says why. */
 type RowSelection = { chosen: boolean; full: boolean; onToggle: () => void };
 
-/** What every official place states about itself, in the wizard list and in the
- *  saved pack alike: its address, then council and the CFA's dates on one quiet
- *  line, then provenance. The kind is the heading of the list it sits in. */
+/** What a saved official place states about itself: its address, then its
+ *  Source, which holds the publisher, the saved date, the council and the CFA's
+ *  two dates. UAT: those lines crowded every card, as they did in the wizard. */
 export function PlaceFacts({ place, now, links }: { place: Destination; now: number; links?: ReactNode }) {
-  const meta = [
-    place.council ? copy.NSP_COUNCIL_LABEL(place.council) : null,
-    place.designatedAt ? copy.NSP_DESIGNATED_ON(formatIsoDateShort(place.designatedAt)) : null,
-    place.listAsAt ? nspListDateLabel(place.listAsAt) : null,
-  ].filter(Boolean);
+  const extra = [
+    place.council ? { label: copy.SOURCE_COUNCIL, value: place.council } : null,
+    place.designatedAt ? { label: copy.SOURCE_DESIGNATED, value: formatIsoDateShort(place.designatedAt) } : null,
+    place.listAsAt ? { label: copy.SOURCE_LIST_DATE, value: formatIsoDateShort(place.listAsAt) } : null,
+  ].filter((row) => row !== null);
   return (
     <>
       {place.addressText ? <p className="muted">{place.addressText}</p> : null}
-      {meta.length > 0 ? <p className="muted figure place-meta">{meta.join(' · ')}</p> : null}
-      <ProvenanceLine source={place.source} now={now} links={links} />
+      <ProvenanceLine source={place.source} now={now} extra={extra} links={links} />
     </>
   );
 }

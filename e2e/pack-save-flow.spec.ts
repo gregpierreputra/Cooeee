@@ -136,7 +136,12 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   const [shiftX, shiftY, scale] = (await transform()).match(/[-\d.]+/g)!.map(Number);
   expect(shiftX).toBeCloseTo((box.width / 2) * (scale - 1), 0);
   expect(shiftY).toBeCloseTo((box.width / 2) * (scale - 1), 0);
-  await expect(savedPlaces.locator('.place-meta')).toHaveCount(2);
+  // Each place's council and the CFA's dates sit in its own Source.
+  await page.getByRole('tab', { name: 'Places' }).click();
+  await expect(page.getByRole('tab', { name: 'Places' })).toHaveAttribute('aria-selected', 'true');
+  await openSources(page);
+  await expect(savedPlaces.locator('.source-rows dt', { hasText: 'Council' })).toHaveCount(2);
+  await expect(savedPlaces.locator('.source-rows dt', { hasText: 'List date' })).toHaveCount(2);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
