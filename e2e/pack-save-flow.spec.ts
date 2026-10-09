@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
+import { INSIDE_BUSHFIRE_AREA, PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import {
   acknowledgeFirstOpen,
@@ -92,7 +92,8 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.locator('.pack-detail h1')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible(); // the bar follows to every page
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
-  await expect(page.getByRole('heading', { name: 'Designated Bushfire Prone Area' })).toBeVisible();
+  // The bushfire area answer leads its section, in the area check's own words.
+  await expect(page.getByRole('heading', { name: INSIDE_BUSHFIRE_AREA })).toBeVisible();
   await openSources(page);
   await expect(page.locator('.source-rows', { hasText: 'Department of Transport and Planning' }).first()).toBeVisible();
   // E2-US2: both chosen places are in the saved pack, each with its council.
@@ -103,12 +104,10 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   // Both chosen places are marked on it, and the buttons zoom it. North stays
   // up, and fully zoomed out the map does not move: it already fills the frame.
   await expect(page.locator('.area-map-mark')).toHaveCount(2);
-  // The map's own credits open from its Source toggle: publisher, saved and licence.
-  const mapSection = page.locator('.pack-section', { hasText: 'Map of the area' });
-  const mapSource = mapSection.getByRole('button', { name: 'Source' });
-  await mapSource.click();
-  await expect(mapSection.locator('.source-rows dt')).toHaveText(['Published by', 'Saved', 'Licence']);
-  await mapSource.click();
+  // The bushfire area's Source, opened above with the others: publisher, saved and licence.
+  const areaSection = page.locator('.pack-section', { hasText: 'Bushfire area' });
+  await expect(areaSection.locator('.source-rows dt')).toHaveText(['Published by', 'Saved', 'Licence']);
+  await areaSection.getByRole('button', { name: 'Source' }).click();
   const layer = page.locator('.area-map-layer');
   const transform = () => layer.evaluate((el) => (el as HTMLElement).style.transform);
   const home = await transform();

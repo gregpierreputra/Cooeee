@@ -419,7 +419,7 @@ describe('E4 Recover mandated copy', () => {
     expect(copy.HIDE).toBe('Hide');
     expect(copy.SHOW_SECTION('Saved programs')).toBe('Show Saved programs');
     expect(copy.HIDE_SECTION('Notes')).toBe('Hide Notes');
-    expect(copy.STORED_INFORMATION).toBe('Stored information');
+    expect(copy.BUSHFIRE_AREA).toBe('Bushfire area');
     expect(copy.KEPT_NOT_SAVED(1)).toBe('1 saved program is not in a pack yet');
     expect(copy.KEPT_NOT_SAVED(2)).toBe('2 saved programs are not in a pack yet');
   });
