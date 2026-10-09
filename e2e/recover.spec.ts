@@ -173,37 +173,36 @@ test('the list is shared as plain text that starts with the caveat', async ({ pa
   expect(text.endsWith(copy.SHARED_FROM)).toBe(true);
 });
 
-// E4-US7: the saved programs are sectioned off on the pack page under one
-// control, each with the copy of its own page.
-test('the pack page sections off its saved programs, each with its own page copy', async ({ page }) => {
+// E4-US7: the saved programs sit in the pack page's Support tab, each with the
+// copy of its own page.
+test('the pack page keeps its saved programs in Support, each with its own page copy', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
   const section = page.locator('.pack-section', { hasText: copy.SAVED_PROGRAMS });
   await expect(section.locator('.section-count')).toHaveText('1');
   await expect(section.locator('.card').first()).toBeHidden();
-  const toggle = section.getByRole('button', { name: copy.SHOW_SECTION(copy.SAVED_PROGRAMS) });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await toggle.click();
+  await page.getByRole('tab', { name: copy.PACK_TAB_SUPPORT }).click();
   await expect(section.locator('.card')).toHaveCount(1);
   await expect(section.locator('.monogram')).toHaveText('SA');
   await expect(section.locator('.need-pill')).toHaveText([copy.NEED_PHRASE.money]);
   await expect(section.getByRole('link', { name: copy.OPEN_SOURCE_FILE })).toHaveAttribute('download', 'program.pdf');
-  await section.getByRole('button', { name: copy.HIDE_SECTION(copy.SAVED_PROGRAMS) }).click();
-  await expect(section.locator('.card').first()).toBeHidden();
 });
 
-// E1-US2-AC10: every block of the pack page has a glyph and one control.
-test('every pack page section carries a glyph and opens and closes under one control', async ({ page }) => {
+// The pack page's five tabs: it opens on Area, each tab shows only its own
+// panel, and the arrow keys move between them. Every block keeps its glyph.
+test('the pack page opens on Area and shows one tab at a time', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
-  const heads = page.locator('.pack-section-head');
-  // Seven since R3 added the wellbeing lines.
-  await expect(heads).toHaveCount(7);
-  await expect(heads.locator('.glyph')).toHaveCount(7);
-  const places = page.locator('.pack-section', { hasText: copy.DESTINATIONS_STEP_TITLE });
-  await expect(places.locator('.card')).toHaveCount(1);
-  await places.getByRole('button', { name: copy.HIDE_SECTION(copy.DESTINATIONS_STEP_TITLE) }).click();
+  const tabs = page.getByRole('tab');
+  await expect(tabs).toHaveText([copy.PACK_TAB_AREA, copy.PACK_TAB_PLACES, copy.PACK_TAB_SUPPORT, copy.PACK_TAB_NOTES, copy.PACK_TAB_PRACTICE]);
+  await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tabpanel')).toHaveCount(1);
+  const places = page.locator('#pack-panel-places');
   await expect(places.locator('.card').first()).toBeHidden();
-  await places.getByRole('button', { name: copy.SHOW_SECTION(copy.DESTINATIONS_STEP_TITLE) }).click();
+  await tabs.first().focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(tabs.nth(1)).toBeFocused();
+  await expect(places.locator('.card')).toHaveCount(1);
   await expect(places.locator('.card').first()).toBeVisible();
+  await expect(places.locator('.pack-section-head .glyph')).toBeVisible();
 });
 
 // E4-US7-AC4: kept programs with no pack to carry them earn one nudge on Home.

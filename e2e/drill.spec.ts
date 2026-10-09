@@ -46,7 +46,7 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await expect(sound).toHaveAttribute('aria-pressed', 'false');
     await expect(sound).toHaveClass(/off/);
     await page.goto(`${HARNESS}/detail`);
-    await page.getByRole('button', { name: /Show Drills/ }).click();
+    await page.getByRole('tab', { name: 'Practice' }).click();
     await expect(page.locator('main')).toContainText('Not yet drilled.');
   });
 

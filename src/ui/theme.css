@@ -3428,6 +3428,52 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 /* The two Nearby tabs: one pill track, the chosen half filled in teal. */
+/* The pack page's five tabs, set as Nearby's: a pill of choices, the open one
+   filled teal. Each is a picture over one word, so five fit on a phone. */
+.pack-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+}
+.pack-tabs [role='tab'] {
+  display: grid;
+  justify-items: center;
+  gap: 0.125rem;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0.375rem 0.125rem;
+  border-color: transparent;
+  border-radius: calc(var(--r-card) - 0.25rem);
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--step-xs);
+}
+.pack-tabs [role='tab'][aria-selected='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.pack-panel {
+  display: grid;
+  gap: 1rem;
+}
+.pack-panel[hidden] {
+  display: none;
+}
+/* Print, a small ring at the top right of the pack's header. */
+.pack-detail-hero {
+  position: relative;
+  padding-right: 3rem;
+}
+.pack-print {
+  top: 0;
+  right: 0;
+}
+
 .nearby-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4055,14 +4101,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-weight: var(--w-heavy);
   font-variant-numeric: tabular-nums;
 }
-.section-toggle {
-  margin-left: auto;
-  min-height: 44px;
-  padding: 0.5rem 1rem;
-  font-size: var(--step-s);
-}
-
-
 /* More about Cooeee, in the tour's welcome: a glyph ring leads each line, so
    the shape says what the line is. Scoped here: the BlackSky panel shares the
    led-line list without a glyph, and reads as prose. The rings only: the

@@ -1,23 +1,23 @@
 import { expect, test } from '@playwright/test';
-import { HIDE_SECTION, NOT_YET_REHEARSED, REHEARSALS, SHOW_SECTION } from '../src/core/copy';
+import { NOT_YET_REHEARSED, PACK_TAB_PRACTICE } from '../src/core/copy';
 import { HARNESS } from './helpers';
 
-// E5-US5 — the pack page lists its own rehearsals, newest first, closed by
-// default, in the result screen's words. A count of gaps and never a score.
+// E5-US5 — the pack page lists its own rehearsals, newest first, in its
+// Practice tab, in the result screen's words. A count of gaps and never a score.
 
-test('a pack never rehearsed says so behind a closed section', async ({ page }) => {
+test('a pack never rehearsed says so in its Practice tab', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
-  const toggle = page.getByRole('button', { name: SHOW_SECTION(REHEARSALS) });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const tab = page.getByRole('tab', { name: PACK_TAB_PRACTICE });
+  await expect(tab).toHaveAttribute('aria-selected', 'false');
   await expect(page.getByText(NOT_YET_REHEARSED)).toBeHidden();
-  await toggle.click();
+  await tab.click();
+  await expect(tab).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText(NOT_YET_REHEARSED)).toBeVisible();
-  await expect(page.getByRole('button', { name: HIDE_SECTION(REHEARSALS) })).toBeVisible();
 });
 
 test('a rehearsed pack lists the rehearsal with its date, condition, ending and gaps', async ({ page }) => {
   await page.goto(`${HARNESS}/detail?mode=rehearsed`);
-  await page.getByRole('button', { name: SHOW_SECTION(REHEARSALS) }).click();
+  await page.getByRole('tab', { name: PACK_TAB_PRACTICE }).click();
   const row = page.locator('.history-row');
   await expect(row).toHaveCount(1);
   await expect(row).toContainText('3 March 2026');

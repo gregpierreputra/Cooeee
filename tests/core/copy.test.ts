@@ -413,12 +413,10 @@ describe('E4 Recover mandated copy', () => {
     expect(copy.PREPARATION_LINES.filter((line) => line.source === copy.PREPARATION_SOURCE_RECOVERY)).toHaveLength(2);
   });
 
-  it('names the saved programs section, its one control and the Home nudge', () => {
+  it('names the saved programs section, the pack tabs and the Home nudge', () => {
     expect(copy.SAVED_PROGRAMS).toBe('Saved programs');
-    expect(copy.SHOW).toBe('Show');
-    expect(copy.HIDE).toBe('Hide');
-    expect(copy.SHOW_SECTION('Saved programs')).toBe('Show Saved programs');
-    expect(copy.HIDE_SECTION('Notes')).toBe('Hide Notes');
+    expect([copy.PACK_TAB_AREA, copy.PACK_TAB_PLACES, copy.PACK_TAB_SUPPORT, copy.PACK_TAB_NOTES, copy.PACK_TAB_PRACTICE])
+      .toEqual(['Area', 'Places', 'Support', 'Notes', 'Practice']);
     expect(copy.BUSHFIRE_AREA).toBe('Bushfire area');
     expect(copy.KEPT_NOT_SAVED(1)).toBe('1 saved program is not in a pack yet');
     expect(copy.KEPT_NOT_SAVED(2)).toBe('2 saved programs are not in a pack yet');

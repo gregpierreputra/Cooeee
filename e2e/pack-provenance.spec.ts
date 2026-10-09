@@ -1,26 +1,41 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { DTP_DATASET_URL } from '../src/core/constants';
 import { HARNESS, openSources } from './helpers';
 
 const DETAIL_URL = `${HARNESS}/detail`;
 const SIZE_URL = `${HARNESS}/size`;
 
+// The bushfire area answer sits in the Area tab and the saved place in Places:
+// the two stored items, wherever the open tab is.
+const storedItems = (page: Page) => page.locator('#pack-panel-area .provenance, #pack-panel-places .provenance');
+const storedWebPages = (page: Page) =>
+  page.locator('#pack-panel-area, #pack-panel-places').getByRole('link', { name: 'Web page', includeHidden: true });
+/** Opens every Source in the Area tab, then in the Places tab. */
+async function openStoredSources(page: Page) {
+  await openSources(page);
+  await openTab(page, 'Places');
+  await openSources(page);
+}
+
+/** Opens a pack tab and waits for its panel: the router draws it a moment later. */
+async function openTab(page: Page, name: string) {
+  await page.getByRole('tab', { name }).click();
+  await expect(page.getByRole('tab', { name })).toHaveAttribute('aria-selected', 'true');
+}
+
 test('US2 AC1 lists every available stored item with grouped publisher and full saved date', async ({ page }) => {
   await page.goto(DETAIL_URL);
 
   await expect(page.locator('.pack-detail h1')).toBeVisible();
-  await openSources(page);
-  // The bushfire area and the place each carry a Source; the saved programs
-  // section is closed, so its card is in the page but hidden.
-  const items = page.locator('.provenance').locator('visible=true');
-  await expect(items.locator('visible=true')).toHaveCount(2);
-  // Each Source ring labels who published the item, then when it was saved.
-  const saved = items.locator('.source-rows dd', { hasText: '27 August 2026' }).locator('visible=true');
+  await openStoredSources(page);
+  // The bushfire area and the place each carry a Source.
+  await expect(storedItems(page)).toHaveCount(2);
+  // Each Source labels who published the item, then when it was saved.
+  const saved = storedItems(page).locator('.source-rows dd', { hasText: '27 August 2026' });
   await expect(saved).toHaveCount(2);
   await expect(saved.first()).toHaveText('2 days ago · 27 August 2026');
-  await expect(page.getByRole('link', { name: 'Web page' }).locator('visible=true')).toHaveCount(2);
-  await expect(page.getByRole('link', { name: 'Web page' }).first())
-    .toHaveAttribute('href', DTP_DATASET_URL);
+  await expect(storedWebPages(page)).toHaveCount(2);
+  await expect(storedWebPages(page).first()).toHaveAttribute('href', DTP_DATASET_URL);
   await expect(page.locator('main')).not.toContainText(
     /Unknown publisher|Unknown|Source unavailable|n\/a/i,
   );
@@ -33,7 +48,9 @@ test('US2 AC1 provenance remains readable at 200 percent text size', async ({ pa
   await page.goto(DETAIL_URL);
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
 
-  await expect(page.locator('.provenance').locator('visible=true')).toHaveCount(2);
+  await expect(storedItems(page)).toHaveCount(2);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await openTab(page, 'Places');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
@@ -58,7 +75,7 @@ test('US2 AC2 leaves missing-provenance content out of both storage and the save
 test('US2 AC3 opens the same provenance offline with zero requests and no loading state', async ({ context, page }) => {
   const onlinePage = await context.newPage();
   await onlinePage.goto(DETAIL_URL);
-  await expect(onlinePage.locator('.provenance').locator('visible=true')).toHaveCount(2);
+  await expect(storedItems(onlinePage)).toHaveCount(2);
   const onlineText = await onlinePage.locator('main').innerText();
   await onlinePage.close();
 
@@ -71,7 +88,7 @@ test('US2 AC3 opens the same provenance offline with zero requests and no loadin
   await context.setOffline(true);
   await page.getByRole('button', { name: 'Open test pack' }).click();
 
-  await expect(page.locator('.provenance').locator('visible=true')).toHaveCount(2);
+  await expect(storedItems(page)).toHaveCount(2);
   expect(await page.locator('main').innerText()).toBe(onlineText);
   await expect(page.locator('main')).not.toContainText(/Loading|Reconnect|Refreshing|details are not available/i);
   expect(requests).toBe(0);
@@ -80,11 +97,11 @@ test('US2 AC3 opens the same provenance offline with zero requests and no loadin
 test('an item saved 31 days ago states its age, with no old-data note, and stays usable', async ({ page }) => {
   await page.goto(`${DETAIL_URL}?mode=stale`);
   await expect(page.locator('.pack-detail h1')).toBeVisible();
-  await openSources(page);
+  await openStoredSources(page);
 
-  await expect(page.locator('.source-rows dd', { hasText: '31 days ago' }).locator('visible=true')).toHaveCount(2);
+  await expect(storedItems(page).locator('.source-rows dd', { hasText: '31 days ago' })).toHaveCount(2);
   await expect(page.getByText(/not recently verified|refresh it when next online/i)).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Web page' }).locator('visible=true')).toHaveCount(2);
+  await expect(storedWebPages(page)).toHaveCount(2);
   expect(await page.locator('.provenance').evaluateAll(
     (items) => items.every((item) => !item.classList.contains('disabled')),
   )).toBe(true);
@@ -119,12 +136,13 @@ test('US2 AC5 always explains before an original source can leave Cooeee', async
 
   await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.locator('.provenance').locator('visible=true')).toHaveCount(2);
+  await expect(storedItems(page)).toHaveCount(2);
 });
 
 test('US2 AC5 leaves the sheet as it was for an item with no citation to state', async ({ page }) => {
   await page.goto(DETAIL_URL);
-  await page.getByRole('link', { name: 'Web page' }).nth(1).click();
+  await openTab(page, 'Places');
+  await page.locator('#pack-panel-places').getByRole('link', { name: 'Web page' }).click();
 
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('Opens on the web');
