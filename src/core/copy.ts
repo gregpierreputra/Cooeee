@@ -213,12 +213,10 @@ export const AREA_MAP_KEY = {
 } as const;
 /** Read from the stored map itself, so an older, smaller map says its own size. */
 export const AREA_MAP_ACROSS = (km: number) => `${km} km across`;
-/** The viewer's buttons. A finger pans, pinches and turns; these do the same. */
+/** The viewer's buttons. A finger pinches and moves; these zoom. */
 export const MAP_ZOOM_IN = 'Zoom in';
 export const MAP_ZOOM_OUT = 'Zoom out';
-export const MAP_TURN = 'Turn the map';
-export const MAP_NORTH_UP = 'North up, whole map';
-export const MAP_HOW = 'Drag to move. Pinch, or Ctrl and scroll, to zoom. Twist with two fingers to turn. With a map button selected, the arrow keys move it.';
+export const MAP_HOW = 'Pinch, or Ctrl and scroll, to zoom. Once zoomed in, drag to move. With a map button selected, the arrow keys move it.';
 export const AREA_MAP_SOURCE = (date: string) => `Department of Transport and Planning map, saved ${date}`;
 export const EXTERNAL_SOURCE_NOTICE = 'May use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to the web page';

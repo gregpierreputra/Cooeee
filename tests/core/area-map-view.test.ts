@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapAcrossKm, mapBoxAround, mapBoxOf, mapPoint, MAP_HOME, zoomTurnAbout } from '../../src/core/area-map-view';
+import { clampView, mapAcrossKm, mapBoxAround, mapBoxOf, mapPoint, MAP_HOME, zoomAbout } from '../../src/core/area-map-view';
 
 const centre = { lat: -37.8, lon: 145.3 };
 const box = mapBoxAround(centre, 40);
@@ -22,20 +22,28 @@ describe('the stored map box', () => {
   });
 });
 
-describe('zoomTurnAbout', () => {
-  it('keeps the ground under the fingers still while zooming and turning', () => {
-    const view = zoomTurnAbout(MAP_HOME, 40, -20, 2, 30, 200);
+describe('zoomAbout', () => {
+  it('keeps the ground under the fingers still while zooming', () => {
+    const view = zoomAbout(MAP_HOME, 40, -20, 2, 200);
     // The layer point that was under (40, -20) maps back to (40, -20).
-    const r = (view.angle * Math.PI) / 180;
-    const q = { x: 40, y: -20 };
-    const x = view.x + view.scale * (q.x * Math.cos(r) - q.y * Math.sin(r));
-    const y = view.y + view.scale * (q.x * Math.sin(r) + q.y * Math.cos(r));
-    expect(x).toBeCloseTo(40, 9);
-    expect(y).toBeCloseTo(-20, 9);
+    expect(view.x + view.scale * 40).toBeCloseTo(40, 9);
+    expect(view.y + view.scale * -20).toBeCloseTo(-20, 9);
   });
 
   it('never zooms out past the whole map or in past eight times', () => {
-    expect(zoomTurnAbout(MAP_HOME, 0, 0, 0.5, 0, 200).scale).toBe(1);
-    expect(zoomTurnAbout(MAP_HOME, 0, 0, 20, 0, 200).scale).toBe(8);
+    expect(zoomAbout(MAP_HOME, 0, 0, 0.5, 200).scale).toBe(1);
+    expect(zoomAbout(MAP_HOME, 0, 0, 20, 200).scale).toBe(8);
+  });
+});
+
+describe('clampView', () => {
+  it('never moves the picture off any part of the frame', () => {
+    // Fully zoomed out the picture already fills the frame: it cannot move.
+    const still = clampView({ x: 150, y: -150, scale: 1 }, 200);
+    expect(still.x).toBeCloseTo(0);
+    expect(still.y).toBeCloseTo(0);
+    expect(still.scale).toBe(1);
+    // At twice the size it moves at most half the frame, to the picture's edge.
+    expect(clampView({ x: 900, y: -900, scale: 2 }, 200)).toEqual({ x: 200, y: -200, scale: 2 });
   });
 });

@@ -100,17 +100,19 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(savedPlaces).toHaveCount(2);
   // The map of the area, from the bytes stored with the pack.
   await expect(page.locator('.area-map img')).toBeVisible();
-  // Both chosen places are marked on it, and the buttons zoom and turn it.
+  // Both chosen places are marked on it, and the buttons zoom it. North stays
+  // up, and fully zoomed out the map does not move: it already fills the frame.
   await expect(page.locator('.area-map-mark')).toHaveCount(2);
   const layer = page.locator('.area-map-layer');
   const transform = () => layer.evaluate((el) => (el as HTMLElement).style.transform);
   const home = await transform();
+  await expect(page.getByRole('button', { name: 'Turn the map' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Zoom in' }).click();
-  await page.getByRole('button', { name: 'Turn the map' }).click();
-  expect(await transform()).toMatch(/rotate\(45deg\) scale\(1\.6\)/);
-  await page.getByRole('button', { name: 'North up, whole map' }).click();
+  expect(await transform()).toMatch(/scale\(1\.6\)/);
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  expect(await transform()).toBe(home);
   // Two real fingers, through the browser's touch input: spreading them zooms
-  // in, and turning them turns the map.
+  // in, and turning them does not turn the map.
   await page.locator('.area-map-frame').scrollIntoViewIfNeeded();
   const box = (await page.locator('.area-map-frame').boundingBox())!;
   const [cx, cy] = [box.x + box.width / 2, box.y + box.height / 2];
@@ -121,9 +123,14 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await touch('touchStart', [[cx - 40, cy], [cx + 40, cy]]);
   await touch('touchMove', [[cx - 70, cy - 30], [cx + 70, cy + 30]]);
   await touch('touchEnd', []);
-  expect(await transform()).toMatch(/rotate\((?!0deg)[-\d.]+deg\) scale\((?!1\))[\d.]+\)/);
-  await page.getByRole('button', { name: 'North up, whole map' }).click();
-  expect(await transform()).toBe(home);
+  expect(await transform()).toMatch(/^translate\([-\d.]+px, [-\d.]+px\) scale\((?!1\))[\d.]+\)$/);
+  // A long drag stops at the picture's edge: no blank ground comes into view.
+  await touch('touchStart', [[cx, cy]]);
+  await touch('touchMove', [[cx + 2000, cy + 2000]]);
+  await touch('touchEnd', []);
+  const [shiftX, shiftY, scale] = (await transform()).match(/[-\d.]+/g)!.map(Number);
+  expect(shiftX).toBeCloseTo((box.width / 2) * (scale - 1), 0);
+  expect(shiftY).toBeCloseTo((box.width / 2) * (scale - 1), 0);
   await expect(savedPlaces.locator('.place-meta')).toHaveCount(2);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
