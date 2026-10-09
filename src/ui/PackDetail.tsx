@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 
 import { mapAcrossKm, mapBoxOf } from '../core/area-map-view';
 import { areaResultLine } from '../core/area-check';
+import { siteNameBlock } from '../core/blacksky-dial';
 import { AREA_MAP_NAME, DTP_DATASET_URL, DTP_LICENCE, DTP_PUBLISHER } from '../core/constants';
 import * as copy from '../core/copy';
 import { shownPackName } from '../core/home';
@@ -312,12 +313,13 @@ export default function PackDetail({
         {/* A stored absence row: its own plain statement, never an item in the
             list and never a source to open. */}
         {absence ? <StateCard heading={absence} /> : null}
-        {/* E2-US2: the two places the user chose, side by side with equal weight.
-            Distance is a fact about each; there is no ordinal and no ranking. */}
+        {/* E2-US2: the two places the user chose, one under the other with equal
+            weight. Distance is a fact about each; there is no ordinal and no
+            ranking. No count: a pack always holds the two it was saved with. */}
         {places.length > 0 ? (
-          <Section kind="place" title={copy.DESTINATIONS_STEP_TITLE} count={places.length}>
+          <Section kind="place" title={copy.DESTINATIONS_STEP_TITLE}>
             {places.some((place) => typeof place.distanceM === 'number') ? (
-              <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
+              <p className="muted place-note"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
             ) : null}
             <ul className="list saved-destinations">
               {places.map((place) => {
@@ -327,15 +329,22 @@ export default function PackDetail({
                   source: place.source,
                   pageUrl: place.source.url,
                 };
+                // Set as a card on Nearby: the kind as a small teal label, the
+                // site in bold with its distance beside it, then where it is.
+                const { site, line } = siteNameBlock(item.name);
                 return (
                   <li key={place.id} className="card provenance-item">
-                    <h2>{item.name}</h2>
-                    {typeof place.distanceM === 'number' ? (
-                      <p className="figure with-glyph place-distance">
-                        <Glyph kind="go" line />
-                        {formatDistanceM(place.distanceM)}
-                      </p>
-                    ) : null}
+                    <p className="place-kind">{copy.FACILITY_TYPE_NAME.NSP}</p>
+                    <div className="nearby-place">
+                      <h2 className="nearby-place-name">{site}</h2>
+                      {typeof place.distanceM === 'number' ? (
+                        <p className="figure nearby-distance with-glyph">
+                          <Glyph kind="go" line />
+                          {formatDistanceM(place.distanceM)}
+                        </p>
+                      ) : null}
+                    </div>
+                    {line ? <p className="muted">{line}</p> : null}
                     <PlaceFacts place={place} now={now} links={sourceLinks(item)} />
                   </li>
                 );
