@@ -2018,6 +2018,22 @@ main:focus {
    page's flow, so the dial never changes size for it. The ring's line may pass
    behind it; the solid ground the tags have keeps the line out of the words.
    44 px high, the smallest target on this screen. */
+/* The road map's credit, split across the dial box's two bottom corners,
+   where the ring leaves black space: small, in the dim amber, never tapped. */
+.blacksky-map-credit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.5625rem;
+  line-height: 1.2;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
 .blacksky-map-return {
   position: absolute;
   left: 50%;
@@ -2513,19 +2529,6 @@ main:focus {
 }
 /* The map data credit at the foot of the pack page: small and quiet, opened
    on a tap. */
-.map-credits {
-  font-size: var(--step-xs);
-  color: var(--ink-3);
-}
-.map-credits summary {
-  cursor: pointer;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-.map-credits p {
-  margin: 0.25rem 0 0;
-}
 /* While the tour runs, every page has room at its foot to bring its last
    feature clear of the panel. */
 body.touring .page {
