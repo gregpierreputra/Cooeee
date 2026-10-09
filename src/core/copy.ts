@@ -608,7 +608,11 @@ export const PACK_TAB_PLACES = 'Places';
 export const PACK_TAB_SUPPORT = 'Support';
 export const PACK_TAB_NOTES = 'Notes';
 export const PACK_TAB_PRACTICE = 'Practice';
-export const NO_SAVED_PROGRAMS = 'None saved yet. Save them in';
+export const NO_SAVED_PROGRAMS = 'None saved yet.';
+/** Every pack carries the programs saved in Recover, so the pack says so. */
+export const SAVED_PROGRAMS_SHARED = 'The same in every pack. Choose them in Recover.';
+/** "More" only once there is one already. */
+export const SAVE_MORE_PROGRAMS = (saved: number) => (saved === 0 ? 'Save programs in Recover' : 'Save more in Recover');
 export const KEPT_NOT_SAVED = (count: number) =>
   `${count} saved ${count === 1 ? 'program is' : 'programs are'} not in a pack yet`;
 export const IN_YOUR_PACKS = 'In your packs';

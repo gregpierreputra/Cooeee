@@ -356,11 +356,13 @@ export default function PackDetail({
 
       <TabPanel tab="support" open={tab}>
         {!content.recoveryVerified ? <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} /> : null}
-        {/* E4-US7: the programs kept when the pack was built, each with the copy
-            of its own page. */}
+        {/* E4-US7: the programs saved in Recover, each with the copy of its own
+            page. Every pack carries the same list, so the line says so, and the
+            way to save more is to Recover's full list. */}
         <Section kind="kept" title={copy.SAVED_PROGRAMS} count={content.recovery.length}>
+          <p className="muted place-note">{copy.SAVED_PROGRAMS_SHARED}</p>
           {content.recovery.length === 0 ? (
-            <p className="muted">{copy.NO_SAVED_PROGRAMS} <Link to="/recover">{copy.NAV_RECOVER}</Link></p>
+            <p className="muted">{copy.NO_SAVED_PROGRAMS}</p>
           ) : (
             <ul className="list saved-programs">
               {content.recovery.map((program) => (
@@ -389,6 +391,11 @@ export default function PackDetail({
               ))}
             </ul>
           )}
+          {/* Drawn as New offline pack is: the plus, then the words. */}
+          <Link className="action with-glyph" to="/recover?need=all">
+            <Glyph kind="plus" line />
+            {copy.SAVE_MORE_PROGRAMS(content.recovery.length)}
+          </Link>
         </Section>
 
         {/* R3: the wellbeing lines travel with every pack. */}
