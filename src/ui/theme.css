@@ -4554,17 +4554,42 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-weight: var(--w-bold);
 }
 
-/* The gaps line and the ring that explains it share a row, as the hold control
-   and its ring do on Home. The panel takes the full width beneath the pair, so
-   it opens in flow and covers no other rehearsal. */
-.history-gaps {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.5rem;
-  align-items: center;
+/* A rehearsal, set as the other cards on the pack page: the condition as the
+   teal label with the date at the right, the ending in bold, then what it
+   found under a hairline, as a Nearby card's footer is. */
+.rehearsal-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
 }
-.history-gaps > .info-panel {
-  grid-column: 1 / -1;
+.rehearsal-date {
+  font-size: var(--step-s);
+}
+.rehearsal-ending {
+  font-weight: var(--w-bold);
+}
+.rehearsal-gaps {
+  display: grid;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--line);
+}
+.rehearsal-gaps-line {
+  font-weight: var(--w-med);
+}
+.gap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.625rem;
+  font-size: var(--step-s);
+}
+.gap-title {
+  font-weight: var(--w-bold);
 }
 
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
