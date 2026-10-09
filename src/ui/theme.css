@@ -3544,7 +3544,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   gap: 0.75rem;
 }
 /* The name wraps, so the distance keeps its place on the right. */
-.nearby-place > div {
+.nearby-place-name {
   min-width: 0;
   overflow-wrap: anywhere;
 }

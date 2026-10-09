@@ -6,6 +6,7 @@ import {
   NEARBY_FIX_TIMEOUT_MS,
   NEARBY_RESYNC_MS,
 } from '../core/constants';
+import { siteNameBlock } from '../core/blacksky-dial';
 import * as copy from '../core/copy';
 import DataSources from './components/DataSources';
 import {
@@ -306,6 +307,10 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
 /** One facility type. Each row carries its own state word and timestamp, so a
  *  live static place and a cached relief centre can never read as equals. */
 function PlaceRow({ row }: { row: NearbyRow }) {
+  // The official name set as BlackSky sets it: the site in bold, and the town
+  // with any bracketed detail on the line beneath. Nothing is dropped but the
+  // closing words the card's label already says.
+  const name = row.place ? siteNameBlock(row.place.name) : null;
   return (
     <li className={row.state === 'cached' ? 'card card-stale' : 'card'}>
       <div className="nearby-row-head">
@@ -319,15 +324,18 @@ function PlaceRow({ row }: { row: NearbyRow }) {
           card, whether or not a place is listed. */}
       {row.timestamp ? <p className="muted figure nearby-stamp">{row.timestamp}</p> : null}
       {row.place ? (
-        <div className="nearby-place">
-          <div>
-            <p className="nearby-place-name">{row.place.name}</p>
-            {row.place.address ? <p className="muted">{row.place.address}</p> : null}
+        <div>
+          {/* Only the site sits beside the distance; where it is and its
+              address run the card's full width beneath. */}
+          <div className="nearby-place">
+            <p className="nearby-place-name">{name?.site}</p>
+            <p className="figure nearby-distance with-glyph">
+              <Glyph kind="go" line />
+              {row.place.distance}
+            </p>
           </div>
-          <p className="figure nearby-distance with-glyph">
-            <Glyph kind="go" line />
-            {row.place.distance}
-          </p>
+          {name?.line ? <p className="muted">{name.line}</p> : null}
+          {row.place.address ? <p className="muted">{row.place.address}</p> : null}
         </div>
       ) : null}
       {row.note ? <p className="nearby-note">{row.note}</p> : null}
