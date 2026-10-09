@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   destinationsForPack,
   formatIsoDateShort,
-  nspListDateLabel,
   sameLga,
   selectSitesForPack,
   toDestination,
@@ -195,12 +194,6 @@ describe('formatIsoDateShort', () => {
     expect(() => formatIsoDateShort('18/08/2026')).toThrow();
     expect(() => formatIsoDateShort('2026-08-18T00:00:00Z')).toThrow();
     expect(() => formatIsoDateShort('')).toThrow();
-  });
-});
-
-describe('nspListDateLabel', () => {
-  it('is the list’s own date, labelled as the list’s date', () => {
-    expect(nspListDateLabel('2026-08-18')).toBe('Country Fire Authority list, 18 Aug 2026');
   });
 });
 

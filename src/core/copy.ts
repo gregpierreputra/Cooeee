@@ -187,6 +187,9 @@ export const SOURCE_PUBLISHED_BY = 'Published by';
 export const SOURCE_SAVED = 'Saved';
 export const SOURCE_LICENCE = 'Licence';
 export const SOURCE_LIST_DATE = 'List date';
+/** An official place's council and its own designation date, in its Source. */
+export const SOURCE_COUNCIL = 'Council';
+export const SOURCE_DESIGNATED = 'Designated';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
 export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;
@@ -267,8 +270,6 @@ export const OFFLINE_BASEMAP = 'Offline basemap';
 
 export const DESTINATIONS_STEP_TITLE = 'Official places of last resort';
 export const NSP_COUNCIL_LABEL = (council: string) => `${council} council`;
-export const NSP_LIST_AS_AT = (date: string) => `Country Fire Authority list, ${date}`;
-export const NSP_DESIGNATED_ON = (date: string) => `Designated ${date}`;
 export const NSP_UNLOCATED_HEADING = 'Listed, but not on the map';
 export const OFFICIAL_LIST_UNAVAILABLE =
   'The official list could not be included for this area.';
