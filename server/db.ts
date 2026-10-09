@@ -64,6 +64,11 @@ export function openDb(path: string): Db {
   if (path !== ':memory:' && vacuum.auto_vacuum === 0) db.exec('PRAGMA auto_vacuum = INCREMENTAL; VACUUM');
   const exists = db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'facilities'").get();
   if (!exists) db.exec(readFileSync(SCHEMA_URL, 'utf8'));
+  // A database made before site_kind gains the column once; the next CFA sync fills it.
+  const columns = db.prepare('PRAGMA table_info(facilities)').all() as { name: string }[];
+  if (!columns.some((column) => column.name === 'site_kind')) {
+    db.exec("ALTER TABLE facilities ADD COLUMN site_kind TEXT CHECK (site_kind IN ('building','open_space'))");
+  }
   const seed = db.prepare(
     `INSERT OR IGNORE INTO data_sources
        (source_id, name, source_kind, endpoint_url, refresh_interval_seconds)

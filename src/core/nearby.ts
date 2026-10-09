@@ -11,6 +11,7 @@ import type {
   DataHealth,
   FacilityType,
   LatLon,
+  SiteKind,
   SnapshotActivation,
   SourceStatus,
 } from './types';
@@ -41,7 +42,13 @@ export type PlaceState = 'live' | 'cached' | 'unavailable';
 export type NearbyRow = {
   type: FacilityType;
   title: string;
-  place: { name: string; address: string | null; distance: string } | null;
+  /** `about` is an NSP's footer: CFA's word for the place, when known, and that no one is there. */
+  place: {
+    name: string;
+    address: string | null;
+    distance: string;
+    about?: { kind: string | null; note: string };
+  } | null;
   state: PlaceState;
   stateLabel: string;
   timestamp: string | null;
@@ -139,6 +146,12 @@ const unavailableRow = (type: FacilityType, title: string): NearbyRow => ({
   note: withHotline(copy.NOT_DOWNLOADED_YET(title)),
 });
 
+/** CFA's word for the place, or null when it is not known, and that no one is there. */
+const nspAbout = (kind: SiteKind | null | undefined) => ({
+  kind: kind ? copy.NSP_SITE_KIND[kind] : null,
+  note: copy.NSP_NO_SERVICES,
+});
+
 function staticRow(
   now: number,
   origin: LatLon,
@@ -160,7 +173,12 @@ function staticRow(
     type,
     title,
     place: nearest
-      ? { name: nearest.row.name, address: nearest.row.address, distance: formatDistanceM(nearest.distanceM) }
+      ? {
+          name: nearest.row.name,
+          address: nearest.row.address,
+          distance: formatDistanceM(nearest.distanceM),
+          ...(type === 'NSP' ? { about: nspAbout(nearest.row.site_kind) } : {}),
+        }
       : null,
     state,
     stateLabel: stateLabel(state, now - Date.parse(syncedAt)),

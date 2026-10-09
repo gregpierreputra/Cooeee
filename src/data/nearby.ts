@@ -12,6 +12,7 @@ export const DYNAMIC_SNAPSHOT_PATH = '/api/v1/sync/dynamic-snapshot';
 
 const STATUSES = ['healthy', 'degraded', 'down', 'unknown'] as const;
 const DESIGNATIONS = ['designated', 'needs_review'] as const;
+const SITE_KINDS = ['building', 'open_space'] as const;
 
 // ── Asserting parsers. Anything the server sends is checked before it is stored;
 //    a malformed payload throws and the previous cache stays as it was. ──────
@@ -111,6 +112,8 @@ export function assertStaticBundle(value: unknown): StaticBundle {
         address: nullableText(r.address, at('address')),
         ...point(r.lat, r.lon, at('lat'), at('lon')),
         lga_name: nullableText(r.lga_name, at('lga_name')),
+        // Absent from an older server: read as unknown, never refused.
+        site_kind: r.site_kind == null ? null : oneOf(r.site_kind, SITE_KINDS, at('site_kind')),
         designation_status: oneOf(r.designation_status, DESIGNATIONS, at('designation_status')),
         last_verified_at: dateText(r.last_verified_at, at('last_verified_at')),
       };

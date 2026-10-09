@@ -3537,6 +3537,17 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-s);
 }
 
+/* An NSP's footer: below a hairline so it never reads as part of the
+   address, as small as the date so the place still leads the card. */
+.nearby-about {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--line);
+  font-size: var(--step-s);
+}
+
 .nearby-place {
   display: flex;
   justify-content: space-between;

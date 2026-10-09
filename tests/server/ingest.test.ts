@@ -18,6 +18,16 @@ describe('toFacility', () => {
     expect(toFacility(feature([0, 0]))).toBeNull();
     expect(toFacility(feature([OLINDA.lat, OLINDA.lon]))).toBeNull();
   });
+
+  it("reads CFA's Building and Open Space, and stores anything else as unknown", () => {
+    const kind = (loc_type: unknown) => {
+      const row = feature([OLINDA.lon, OLINDA.lat]);
+      return toFacility({ ...row, properties: { ...row.properties, loc_type } })?.siteKind;
+    };
+    expect([kind('Building'), kind('Open Space'), kind('constructor'), kind(undefined)]).toEqual([
+      'building', 'open_space', null, null,
+    ]);
+  });
 });
 
 describe('firstPoint', () => {

@@ -157,7 +157,7 @@ function staticBundle(db: Db, params: Params): Route {
       ? []
       : (statement(db,
           `SELECT facility_id, type_code AS type, name, address, ROUND(lat, 5) AS lat, ROUND(lon, 5) AS lon,
-                  lga_name, designation_status, last_verified_at
+                  lga_name, site_kind, designation_status, last_verified_at
            FROM facilities
            WHERE designation_status IN ('designated', 'needs_review')
              AND type_code IN (${STATIC_TYPES.map(() => '?').join(', ')})
