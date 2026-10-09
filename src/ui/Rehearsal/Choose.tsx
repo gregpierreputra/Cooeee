@@ -62,7 +62,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
       <h2>{copy.CHOOSE_PACK_TO_REHEARSE}</h2>
       <p>{copy.CHOOSE_PACK_TO_REHEARSE_DETAIL}</p>
 
-      <ul className="list condition-list">
+      <ul className="list condition-list pack-choice-list">
         {rows.map(({ pack, ageLine }) => (
           <li key={pack.id}>
             <button
