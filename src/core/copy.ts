@@ -1160,18 +1160,11 @@ export const GAP_REASON_LIVE_DIRECTION = 'Without a location fix the phone canno
  *  is, then each gap that rehearsal found with its reason and action, or what
  *  was checked when it found none. A count, never a mark. */
 export const ABOUT_GAPS = 'About gaps';
-export const GAP_WHAT_IS = {
-  lead: 'What a gap is.',
-  text: 'One thing the rehearsal looked for and could not rely on that day, either because it was not in the pack or because the condition took it away.',
-};
-export const GAP_NONE_FOUND = {
-  lead: 'None found.',
-  text: `Everything the rehearsal looked for was on the phone that day. ${GAP_DESIGNATION}. ${GAP_PLACES}. ${GAP_PROVENANCE}. ${GAP_LIVE_DIRECTION}.`,
-};
-export const GAP_IS_A_COUNT = {
-  lead: 'It is a count.',
-  text: 'A number of things you can act on. Nothing here is a mark and nothing is ranked.',
-};
+/** What a gap is, in one short paragraph behind About gaps on a rehearsal card. */
+export const GAP_ABOUT =
+  'A gap is something the rehearsal looked for and could not rely on that day. It is a count of things to act on. Nothing is marked or ranked.';
+/** The four checks by short name, under a rehearsal that found no gap. */
+export const GAPS_CHECKED = 'Area answer · Saved places · Sources · Live direction';
 
 // The one action for each. None of them says the capability has come back.
 export const ACTION_BUILD_AGAIN_DESIGNATION = 'Build this pack again online to store the official area designation.';
@@ -1179,7 +1172,6 @@ export const ACTION_BUILD_AGAIN_PLACES = 'Build this pack again online to store 
 export const ACTION_BUILD_AGAIN_PROVENANCE = 'Build this pack again online so every item has its publisher and date.';
 /** Says what to do instead, and does not pretend the phone will find the way. */
 export const ACTION_WRITE_THE_WAY_DOWN = 'Write down the way from your door to each saved place. Keep it with your kit.';
-
 export const ACTION_LABEL = 'What to do';
 
 /** A rehearsal that found nothing to act on. It says what was checked and what

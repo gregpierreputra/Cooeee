@@ -22,7 +22,7 @@ import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } 
 import { getCompletePackContent, listDrills, listRehearsalsForPack } from '../data/db';
 import AreaMap from './components/AreaMap';
 import Glyph, { type GlyphKind } from './components/Glyph';
-import InfoGlyph from './components/InfoGlyph';
+import Hint from './components/Hint';
 import KeyTerms from './components/KeyTerms';
 import ProvenanceLine from './components/ProvenanceLine';
 import Section from './components/Section';
@@ -30,7 +30,6 @@ import WellbeingLines from './components/WellbeingLines';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
 import { useMinuteClock } from './components/useMinuteClock';
-import { useRevealedPanel } from './components/useRevealedPanel';
 import { PlaceFacts } from './PackNew/Destinations';
 import { PackNotes } from './PackNotes';
 
@@ -428,11 +427,16 @@ export default function PackDetail({
           ) : (
             <ul className="list history-list">
               {history.map((row) => (
-                <li key={row.id} className="card history-row">
-                  <p className="history-date">{row.date}</p>
-                  <p className="muted">{row.condition}</p>
-                  <p>{row.ending}</p>
-                  <HistoryGaps id={row.id} gaps={row.gaps} found={row.found} />
+                // Set as the other cards on this page: the condition as the
+                // small teal label with the date beside it, the ending in bold,
+                // then what the rehearsal found.
+                <li key={row.id} className="card history-row rehearsal-card">
+                  <div className="rehearsal-card-head">
+                    <p className="place-kind">{row.condition}</p>
+                    <p className="muted figure rehearsal-date">{row.date}</p>
+                  </div>
+                  <p className="rehearsal-ending">{row.ending}</p>
+                  <RehearsalGaps gaps={row.gaps} found={row.found} />
                 </li>
               ))}
             </ul>
@@ -498,57 +502,34 @@ export default function PackDetail({
   );
 }
 
-/** One rehearsal's gaps line, with the ring that names each gap it found.
- *  Every row carries its own ring and its own panel, so both are named from the
- *  rehearsal's id; the panel opens in flow beneath the pair, covering no other
- *  rehearsal. Never on hover, as the other two information rings. */
-function HistoryGaps({ id, gaps, found }: { id: string; gaps: string; found: HistoryRow['found'] }) {
-  const [open, setOpen] = useState(false);
-  const panel = useRevealedPanel<HTMLDivElement>(open);
-  const panelId = `history-gaps-${id}`;
-
+/** What one rehearsal found. With nothing found, the four checks by short
+ *  name; with gaps, each one named, why it was found and what to do, on the
+ *  card where it can be acted on. What a gap is sits behind About gaps. */
+function RehearsalGaps({ gaps, found }: { gaps: string; found: HistoryRow['found'] }) {
   return (
-    <div className="history-gaps">
-      <p className="figure">{gaps}</p>
-      <button
-        type="button"
-        className="info-ring"
-        aria-label={copy.ABOUT_GAPS}
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <InfoGlyph />
-      </button>
-      {open ? (
-        <div id={panelId} ref={panel} tabIndex={-1} className="card info-panel">
-          <span className="kicker">{copy.ABOUT_GAPS}</span>
-          <ul className="info-lines">
-            <li>
-              <b>{copy.GAP_WHAT_IS.lead}</b> {copy.GAP_WHAT_IS.text}
+    <div className="rehearsal-gaps">
+      <p className="with-glyph rehearsal-gaps-line">
+        <Glyph kind={found.length === 0 ? 'check' : 'caution'} line />
+        {gaps}
+      </p>
+      {found.length === 0 ? (
+        <p className="muted place-note">{copy.GAPS_CHECKED}</p>
+      ) : (
+        <ul className="gap-list">
+          {found.map((gap, index) => (
+            <li key={index}>
+              <p className="gap-title">{gap.title}</p>
+              <p className="muted">{gap.reason}</p>
+              <p className="muted">
+                <b>{copy.ACTION_LABEL}.</b> {gap.action}
+              </p>
             </li>
-            {found.length === 0 ? (
-              <li>
-                <b>{copy.GAP_NONE_FOUND.lead}</b> {copy.GAP_NONE_FOUND.text}
-              </li>
-            ) : (
-              found.map((gap, index) => (
-                <li key={index} className="gap-line">
-                  <p>
-                    <b>{gap.title}.</b> {gap.reason}
-                  </p>
-                  <p>
-                    <b>{copy.ACTION_LABEL}.</b> {gap.action}
-                  </p>
-                </li>
-              ))
-            )}
-            <li>
-              <b>{copy.GAP_IS_A_COUNT.lead}</b> {copy.GAP_IS_A_COUNT.text}
-            </li>
-          </ul>
-        </div>
-      ) : null}
+          ))}
+        </ul>
+      )}
+      <Hint label={copy.ABOUT_GAPS} asText titled={false}>
+        <p>{copy.GAP_ABOUT}</p>
+      </Hint>
     </div>
   );
 }
