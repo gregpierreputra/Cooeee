@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import * as copy from '../core/copy';
+import Glyph, { type GlyphKind } from './components/Glyph';
 import InfoGlyph from './components/InfoGlyph';
 import Mark from './components/Mark';
 
@@ -17,36 +18,29 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
   // box the user is looking at.
   const [accepted, setAccepted] = useState(false);
 
-  // One statement per row. The icon is a picture of the sentence beside it and
-  // carries nothing the sentence does not already say, so it is hidden from
-  // assistive technology; the four statements remain the on-screen text the
-  // criterion asks for, unchanged and unabbreviated.
-  const statements = [
-    { heading: copy.DISCLOSURE_DOES_HEADING, body: copy.DISCLOSURE_DOES, icon: <SavesIcon /> },
-    {
-      heading: copy.DISCLOSURE_DOES_NOT_HEADING,
-      body: copy.DISCLOSURE_DOES_NOT,
-      icon: <DoesNotIcon />,
-    },
-    {
-      heading: copy.DISCLOSURE_ADDRESS_HEADING,
-      body: copy.DISCLOSURE_ADDRESS,
-      icon: <AddressIcon />,
-    },
-    {
-      heading: copy.DISCLOSURE_POSITION_HEADING,
-      body: copy.DISCLOSURE_POSITION,
-      icon: <PositionIcon />,
-    },
+  // One statement per row. The drawing is a picture of the sentence beside it
+  // and carries nothing the sentence does not already say, so it is hidden
+  // from assistive technology; the four statements remain the on-screen text
+  // the criterion asks for, unchanged and unabbreviated. The drawings are the
+  // tour's own for the same ideas, and never a lock: the address is kept on
+  // the phone, not locked.
+  const statements: { heading: string; body: string; glyph: GlyphKind }[] = [
+    { heading: copy.DISCLOSURE_DOES_HEADING, body: copy.DISCLOSURE_DOES, glyph: 'does' },
+    { heading: copy.DISCLOSURE_DOES_NOT_HEADING, body: copy.DISCLOSURE_DOES_NOT, glyph: 'not' },
+    { heading: copy.DISCLOSURE_ADDRESS_HEADING, body: copy.DISCLOSURE_ADDRESS, glyph: 'stays' },
+    { heading: copy.DISCLOSURE_POSITION_HEADING, body: copy.DISCLOSURE_POSITION, glyph: 'locate' },
   ];
 
   return (
     <main className="page first-open">
       <header className="hero first-open-hero">
-        {/* Decorative: the wordmark beside it carries the name in text. */}
-        <Mark className="mark" size={44} />
+        {/* Decorative: the wordmark beside it carries the name in text. In its
+            ring, as on the welcome before it. */}
+        <span className="first-open-mark">
+          <Mark className="mark" size={40} />
+        </span>
         <h1>{copy.APP_NAME}</h1>
-        <p className="muted">{copy.FIRST_OPEN_PURPOSE}</p>
+        <p className="muted welcome-tagline">{copy.FIRST_OPEN_PURPOSE}</p>
       </header>
 
       {/* ONE card, four rows, a hairline between them: the four statements are
@@ -54,9 +48,9 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
           phone. The card is the product's standard card — only the container
           changed, never a word inside it. */}
       <ul className="list disclosure-list card">
-        {statements.map(({ heading, body, icon }) => (
+        {statements.map(({ heading, body, glyph }) => (
           <li key={heading} className="disclosure-row">
-            <span className="disclosure-icon">{icon}</span>
+            <Glyph kind={glyph} />
             <h2>{heading}</h2>
             <p className="muted">{body}</p>
           </li>
@@ -101,68 +95,3 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
     </main>
   );
 }
-
-/* The row icons. Same convention as the mark: inline, no request, a 24-unit
-   box drawn in the current text colour, hidden from assistive technology. */
-
-function Glyph({ children }: { children: ReactNode }) {
-  return (
-    <svg
-      width={20}
-      height={20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {children}
-    </svg>
-  );
-}
-
-/** A page: the preparation pack this saves. */
-function SavesIcon() {
-  return (
-    <Glyph>
-      <path d="M13.5 2.5H7a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-      <path d="M13.5 2.5V8H19" />
-      <path d="M8.5 13h7M8.5 17h5" />
-    </Glyph>
-  );
-}
-
-/** The struck-through circle: what this does not do. */
-function DoesNotIcon() {
-  return (
-    <Glyph>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M6 6l12 12" />
-    </Glyph>
-  );
-}
-
-/** A padlock: where the address stays once it is saved. */
-function AddressIcon() {
-  return (
-    <Glyph>
-      <rect x="4.5" y="10.5" width="15" height="10.5" rx="2" />
-      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
-      <circle cx="12" cy="15.75" r="1.25" fill="currentColor" stroke="none" />
-    </Glyph>
-  );
-}
-
-/** A pin: the device position, asked for only where it is used. */
-function PositionIcon() {
-  return (
-    <Glyph>
-      <path d="M12 21.5s6.5-6 6.5-10.5a6.5 6.5 0 0 0-13 0C5.5 15.5 12 21.5 12 21.5Z" />
-      <circle cx="12" cy="11" r="2.25" />
-    </Glyph>
-  );
-}
-
