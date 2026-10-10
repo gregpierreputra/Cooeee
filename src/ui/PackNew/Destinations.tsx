@@ -8,6 +8,7 @@ import {
   placeName,
   savableCount,
 } from '../../core/destination';
+import { siteNameBlock } from '../../core/blacksky-dial';
 import { formatIsoDateShort } from '../../core/nsp';
 import type { Destination } from '../../core/types';
 import ProvenanceLine from '../components/ProvenanceLine';
@@ -72,38 +73,60 @@ function PlaceSource({ place, now }: { place: Destination; now: number }) {
 function DestinationRow({ place, selection }: { place: Destination; selection?: RowSelection }) {
   const distance =
     typeof place.distanceM === 'number' ? formatDistanceM(place.distanceM) : undefined;
-  const name = placeName(place);
+  // The official name set as on a Nearby card: the site in bold, and the town
+  // with any bracketed detail on the line beneath.
+  const { site, line } = siteNameBlock(placeName(place));
   const inputId = `choose-${place.id}`;
-
-  // UAT: the council, list date and publisher were the same on every card, so
-  // a card shows only what tells the places apart. The list's source is said
-  // once, under the list.
-  const where = [place.addressText, place.council ? copy.NSP_COUNCIL_LABEL(place.council) : null]
-    .filter(Boolean)
-    .join(' · ');
+  const nameId = `${inputId}-name`;
   const greyed = selection?.full && !selection.chosen;
+  const className = [
+    'card destination-item',
+    selection ? 'destination-item-pickable' : '',
+    selection?.chosen ? 'destination-item-chosen' : '',
+    greyed ? 'destination-item-greyed' : '',
+  ].filter(Boolean).join(' ');
 
+  // UAT: the list date and publisher were the same on every card, so a card
+  // shows only what tells the places apart, set as a card on Nearby and the
+  // pack page: the kind as a small teal label, the site in bold with its
+  // distance beside it, where it is beneath, and the council as its footer.
+  // The list's source is said once, under the list.
   return (
-    <li className={greyed ? 'card destination-item destination-item-greyed' : 'card destination-item'}>
+    <li className={className}>
       <div className="destination-item-head">
+        <p className="place-kind">{copy.FACILITY_TYPE_NAME.NSP}</p>
         {selection ? (
           <input
             type="checkbox"
             id={inputId}
             checked={selection.chosen}
+            aria-labelledby={nameId}
             aria-disabled={greyed || undefined}
             onChange={selection.onToggle}
           />
         ) : null}
-        <h2>{selection ? <label htmlFor={inputId}>{name}</label> : name}</h2>
       </div>
-      {distance ? (
-        <p className="figure with-glyph place-distance">
-          <Glyph kind="go" line />
-          {distance}
-        </p>
+      <div>
+        <div className="nearby-place">
+          <h2 id={nameId} className="nearby-place-name">{site}</h2>
+          {distance ? (
+            <p className="figure nearby-distance with-glyph">
+              <Glyph kind="go" line />
+              {distance}
+            </p>
+          ) : null}
+        </div>
+        {line ? <p className="muted">{line}</p> : null}
+        {place.addressText ? <p className="muted">{place.addressText}</p> : null}
+      </div>
+      {place.council ? <p className="muted destination-foot">{copy.NSP_COUNCIL_LABEL(place.council)}</p> : null}
+      {/* The whole card picks the place: a label stretched over it, holding
+          only the site's name, unseen, so the box is named by the site alone. */}
+      {selection ? (
+        <label htmlFor={inputId} className="destination-hit" aria-hidden="true">
+          <span className="visually-hidden">{site}</span>
+        </label>
       ) : null}
-      {where ? <p className="muted place-meta">{where}</p> : null}
     </li>
   );
 }
