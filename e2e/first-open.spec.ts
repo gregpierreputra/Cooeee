@@ -67,6 +67,8 @@ test('a device with nothing stored opens on the disclosure screen, continue inac
   }
   await expect(page.locator('details')).toHaveCount(0);
   await expect(page.getByText(OFFICIAL_CHANNELS_LINE)).toBeVisible();
+  // The number to call stands out in bold within the red line.
+  await expect(page.locator('.official-channels strong')).toHaveText('Triple Zero (000)');
 
   await expect(checkbox(page)).not.toBeChecked();
   await expect(continueButton(page)).toBeDisabled();

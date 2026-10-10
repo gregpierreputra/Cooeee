@@ -3614,6 +3614,12 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-0);
 }
 
+/* The number to call, in bold within the line and in its own colour. */
+.emergency-term {
+  font-weight: var(--w-heavy);
+  color: var(--ink);
+}
+
 /* The mark beside the line takes the same red, so the pair reads as one. */
 .emergency-line > svg {
   color: var(--offline);
