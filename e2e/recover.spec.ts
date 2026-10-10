@@ -136,6 +136,22 @@ test('a kept program comes first and is offered as a row of its own', async ({ p
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('[]');
 });
 
+// Saving a program leaves the list in place while it is read: the saved one
+// comes first only when the list is opened again.
+test('saving a program in All programs does not move it until the list is opened again', async ({ page }) => {
+  await page.goto(RECOVER_URL);
+  await page.getByRole('button', { name: copy.ALL_PROGRAMS }).click();
+  const titles = page.locator('.card h2');
+  const before = await titles.allTextContents();
+  await page.locator('.card').nth(1).getByRole('button', { name: copy.KEEP }).click();
+  await expect(page.locator('.card').nth(1).getByRole('button', { name: copy.KEPT })).toHaveAttribute('aria-pressed', 'true');
+  await expect(titles).toHaveText(before);
+  // Opened again, the saved program leads.
+  await page.reload();
+  await page.getByRole('button', { name: copy.ALL_PROGRAMS }).click();
+  await expect(titles.first()).toHaveText(before[1]);
+});
+
 // UR-US33: Clear all on the kept list asks once, and keeps the cards on screen.
 test('Clear all asks first, then releases every kept program', async ({ page }) => {
   await page.goto(RECOVER_URL);

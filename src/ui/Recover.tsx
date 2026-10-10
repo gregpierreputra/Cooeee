@@ -44,11 +44,13 @@ export default function Recover({
   const [params, setParams] = useSearchParams();
   const choice = parseChoice(params.get('need'));
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
-  // UAT: releasing a program on the Saved list made its card vanish mid-read.
-  // The list holds the programs kept when it was opened until the person leaves;
-  // each card still shows its live Save or Saved state.
+  // UAT: releasing a program on the Saved list made its card vanish mid-read,
+  // and saving one on any list moved it to the top under the finger. Every list
+  // holds the programs kept when it was opened, for what it shows and its
+  // order, until the person leaves or reloads; each card still shows its live
+  // Save or Saved state.
   const [keptOnEntry, setKeptOnEntry] = useState<string[] | null>(null);
-  const keptListed = choice === 'kept' ? (keptOnEntry ?? kept) : kept;
+  const keptListed = keptOnEntry ?? kept;
   // A share note belongs to the category it was made on, so it shows only while
   // that category is open. Moving to another category hides it on the very first
   // frame, and a result that arrives after the reader has moved on stays with the
@@ -94,7 +96,7 @@ export default function Recover({
   useEffect(() => {
     setShared(null);
     setConfirmClear(false);
-    setKeptOnEntry(choice === 'kept' ? kept : null);
+    setKeptOnEntry(kept);
     focusMain();
   }, [choice]);
 
