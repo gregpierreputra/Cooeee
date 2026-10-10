@@ -5555,15 +5555,6 @@ body.drill-open .banner {
   text-transform: uppercase;
   color: var(--kind);
 }
-/* The picture beside the label on the first line, not the middle of a list
-   that wraps: a box one line tall, at the top. Named with p to outrank the
-   shared .with-glyph centring. */
-p.drill-row {
-  align-items: flex-start;
-}
-p.drill-row .glyph {
-  height: 1.5em;
-}
 .debrief-sprite {
   display: block;
   background-image: url('/drill/sprites.png');
@@ -5726,7 +5717,14 @@ p.drill-row .glyph {
 p.with-glyph {
   display: flex;
   justify-content: flex-start;
+  /* The picture leads the first line, not the middle of a paragraph that
+     wraps: its box is one line of this paragraph tall, at the top, so a line
+     that never wraps looks just as it did. */
+  align-items: flex-start;
   margin: 0;
+}
+p.with-glyph > .glyph.line-glyph {
+  height: 1lh;
 }
 /* State is told by the word and the glyph together, the colour only adds. */
 .tone-amber {
