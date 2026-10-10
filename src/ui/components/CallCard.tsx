@@ -10,8 +10,8 @@ let clearShownCard: (() => void) | null = null;
 /** Red for an emergency, amber for caution: the colours the app already uses. */
 const TONE_CLASS = { emergency: 'emergency-line', caution: 'caution-line' } as const;
 
-/** One number to call: who answers, the number large enough to read out, then
- *  Call and Copy side by side. Copy is for a number to text to someone or dial
+/** One number to call: who answers with Copy beside the name, then Call across
+ *  the card, carrying the number in large figures so it can be read out. Copy is for a number to text to someone or dial
  *  from another phone. The button says what happened for a few seconds and
  *  then reads Copy again: it reports a moment, not what the clipboard holds
  *  later. The emergency card (000) carries the red rule and the screen's one filled
@@ -57,31 +57,25 @@ export default function CallCard({
 
   return (
     <li className={tone ? `card call-card ${TONE_CLASS[tone]}` : 'card call-card'}>
-      <div className="card-head">
-        <Glyph kind="calls" />
-        <div>
-          <h3>{name}</h3>
-          {detail ? <p className="muted">{detail}</p> : null}
-        </div>
-      </div>
-      <p className="call-number figure">{number}</p>
-      {/* The name is read with each button, so a screen reader's list of
-          controls says whose number it is, not Call, Call, Call. */}
-      <div className="program-actions">
-        <a
-          className={tone === 'emergency' ? 'action main-action with-glyph' : 'action call-button with-glyph'}
-          href={`tel:${number.replaceAll(' ', '')}`}
-        >
-          <Glyph kind="calls" line />
-          {copy.CALL}
-          <span className="visually-hidden"> {name}</span>
-        </a>
-        <button type="button" className="action with-glyph" onClick={() => void copyNumber()}>
-          <Glyph kind={copied === 'copied' ? 'check' : 'copy'} line />
-          {copyLabel}
-          <span className="visually-hidden"> {name}</span>
-        </button>
-      </div>
+      {/* In the order they are seen: the name and Copy on one row, what the
+          line is for, then Call. The name is read with each button, so a
+          screen reader's list of controls says whose number it is. */}
+      <h3>{name}</h3>
+      <button type="button" className="action with-glyph call-copy" onClick={() => void copyNumber()}>
+        <Glyph kind={copied === 'copied' ? 'check' : 'copy'} line />
+        {copyLabel}
+        <span className="visually-hidden"> {name}</span>
+      </button>
+      {detail ? <p className="muted">{detail}</p> : null}
+      <a
+        className={tone === 'emergency' ? 'action main-action with-glyph call-link' : 'action call-button with-glyph call-link'}
+        href={`tel:${number.replaceAll(' ', '')}`}
+      >
+        <Glyph kind="calls" line />
+        {copy.CALL}
+        <span className="visually-hidden"> {name}</span>
+        <span className="call-number figure">{number}</span>
+      </a>
       <p className="visually-hidden" role="status">
         {copied === 'copied' ? copy.NUMBER_COPIED(name) : ''}
       </p>
