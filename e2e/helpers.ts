@@ -247,7 +247,7 @@ export async function storedRehearsals(page: Page): Promise<Record<string, unkno
  *  count falls to zero. */
 export async function openSources(page: Page) {
   const closed = page
-    .getByRole('button', { name: /^(About the source|Source)$/, expanded: false })
+    .getByRole('button', { name: 'Source', exact: true, expanded: false })
     .locator('visible=true');
   while ((await closed.count()) > 0) await closed.first().click();
 }

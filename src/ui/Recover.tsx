@@ -331,7 +331,7 @@ export default function Recover({
               ) : null}
               {/* Source as words, like Not for you? on Home. Its links are the
                   card's own buttons below, so none sit beside it. */}
-              <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} links={null} />
+              <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} />
               {/* Save and the web page side by side at equal size, the call
                   beneath at full width. */}
               <div className="program-actions">

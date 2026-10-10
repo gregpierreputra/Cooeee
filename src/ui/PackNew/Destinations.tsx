@@ -59,7 +59,8 @@ export function PlaceFacts({ place, now, links }: { place: Destination; now: num
   );
 }
 
-/** The official list the places come from, and its age, said once. */
+/** The official list the places come from, and its age, said once, as Source
+ *  in words like Not for you? on Home. */
 function PlaceSource({ place, now }: { place: Destination; now: number }) {
   return (
     <div className="destination-source">
