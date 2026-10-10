@@ -356,8 +356,8 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
             <p className="drill-guide-start">{copy.GUIDE_START(keys)}</p>
           </div>
           <div className="drill-guide-tips">
-            <p className="drill-guide-tip move">{copy.GUIDE_MOVE(keys)}</p>
-            <p className="drill-guide-tip grab">{copy.GUIDE_GRAB(keys)}</p>
+            <p className="drill-guide-tip move">{copy.GUIDE_MOVE(keys).map((part) => <span key={part}>{part} </span>)}</p>
+            <p className="drill-guide-tip grab">{copy.GUIDE_GRAB(keys).map((part) => <span key={part}>{part} </span>)}</p>
           </div>
         </div>
       ) : null}

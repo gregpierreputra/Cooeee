@@ -4945,7 +4945,7 @@ body.drill-open .banner {
 /* Each line a speech bubble, its pointer down at the middle of its control. */
 .drill-guide-tip {
   position: absolute;
-  max-width: min(13rem, 42vw);
+  max-width: min(19rem, 42vw);
   margin: 0;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--blacksky-fill);
@@ -4955,6 +4955,13 @@ body.drill-open .banner {
   font-weight: var(--w-bold);
   line-height: 1.3;
   text-wrap: balance;
+}
+/* With room, each part on its own line; on a phone the parts flow on and
+   wrap evenly, as the bubbles are narrow there. */
+@media (min-width: 600px) {
+  .drill-guide-tip span {
+    display: block;
+  }
 }
 .drill-guide-tip::after {
   content: '';
