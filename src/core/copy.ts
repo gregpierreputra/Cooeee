@@ -1385,8 +1385,8 @@ export const HEAD_TO_DOOR = 'Head to the front door.';
  *  a touch screen, mouse and keys wording where there is a fine pointer. */
 export const GUIDE_GOAL = 'Pack ten things, then be at the front door when the time ends.';
 export const GUIDE_MOVE = (keys: boolean) => (keys ? 'Drag here or use the arrow keys to walk, or click the floor.' : 'Drag here to walk, or tap the floor.');
-export const GUIDE_GRAB = (keys: boolean) => (keys ? 'Lights up next to a thing. Click it or press Enter to grab.' : 'Lights up next to a thing. Tap it to grab.');
-export const GUIDE_START = (keys: boolean) => (keys ? 'Click or press Enter to start' : 'Tap anywhere to start');
+export const GUIDE_GRAB = (keys: boolean) => (keys ? 'Lights up next to an item. Click it or press Space to grab.' : 'Lights up next to an item. Tap it to grab.');
+export const GUIDE_START = (keys: boolean) => (keys ? 'Click anywhere or press Space to start' : 'Tap anywhere to start');
 export const SOUND = 'Sound';
 export const SOUND_ON = 'Sound on';
 export const SOUND_OFF = 'Sound off';
