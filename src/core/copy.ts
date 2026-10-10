@@ -1402,8 +1402,6 @@ export const GO_ON_TO_REHEARSAL = 'Go on to the rehearsal';
 export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures, so the rehearsal opens instead.';
 export const DRILLS = 'Drills';
 export const NOT_YET_DRILLED = 'Not yet drilled.';
-export const DRILL_ROW_DOOR = (score: number) => `At the door, ${score} out of 100`;
+export const DRILL_ROW_DOOR = 'At the door';
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';
-export const DRILL_ROW_PACKED = (count: number) =>
-  count === 1 ? '1 thing packed' : `${count} things packed`;
 export const DRILL_ROW_ESSENTIALS = (packed: number, total: number) => `${packed} of ${total} essentials packed`;
