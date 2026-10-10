@@ -8,7 +8,7 @@
 export type Source = {
   publisher: string;      // 'Department of Transport and Planning'
   url: string;            // the exact request or document URL
-  licence: string;        // 'CC BY 4.0' | 'ODbL' | 'CFA website list — permission to be confirmed'
+  licence: string;        // 'CC BY 4.0' | 'ODbL' | 'Free to use, confirmed by the CFA'
   retrievedAt: number;    // epoch ms
 };
 
