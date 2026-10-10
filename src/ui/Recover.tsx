@@ -276,7 +276,9 @@ export default function Recover({
       <header className="hero">
         <span className="kicker">{copy.NAV_RECOVER}</span>
         <h1>{heading}</h1>
-        <p className="caveat">{copy.RECOVER_MAY_MATCH}</p>
+        {/* A footnote to the heading, in the same small grey as the other
+            notes that qualify a list, not a line to read first. */}
+        <p className="muted place-note">{copy.RECOVER_MAY_MATCH}</p>
         {stale ? (
           <p className="with-glyph tone-amber">
             <Glyph kind="caution" line />
