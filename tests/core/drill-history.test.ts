@@ -15,6 +15,16 @@ describe('E9 the drill record', () => {
     expect(rows[1].packed).toBe('1 thing packed');
   });
 
+  it('names the essentials packed and left behind, and what cost points, from the bag alone', () => {
+    const [row] = drillRows([drill({ packed: ['water', 'medicines', 'television', 'kettle'] })]);
+    expect(row.essentials).toBe('2 of 10 essentials packed');
+    expect(row.leftBehind).toHaveLength(8);
+    expect(row.leftBehind).not.toContain('drinking water');
+    expect(row.leftBehind).toContain('first aid kit');
+    expect(row.costYou).toEqual(['television']);
+    expect(row.items).toEqual(['drinking water', 'medicines', 'television', 'kettle']);
+  });
+
   it('finds the highest score among drills that reached the door', () => {
     expect(highestScore([])).toBeNull();
     expect(highestScore([drill({ reachedDoor: false, score: 0 })])).toBeNull();
