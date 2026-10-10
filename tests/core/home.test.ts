@@ -162,12 +162,21 @@ describe('the home view', () => {
     expect(homeView(NOW, [saved]).packs).toEqual([{ pack: saved, ageLine: 'Saved 3 days ago' }]);
   });
 
-  it('lists several packs newest first, whatever order the store returns them in', () => {
-    const older = pack({ id: 'older', verifiedAt: daysAgo(10) });
-    const newer = pack({ id: 'newer', verifiedAt: daysAgo(1) });
+  it('lists several packs newest place first, whatever order the store returns them in', () => {
+    const older = pack({ id: 'older', createdAt: daysAgo(10), verifiedAt: daysAgo(10) });
+    const newer = pack({ id: 'newer', createdAt: daysAgo(1), verifiedAt: daysAgo(1) });
     expect(homeView(NOW, [older, newer]).packs.map((row) => row.pack.id)).toEqual([
       'newer',
       'older',
+    ]);
+  });
+
+  it('keeps a refreshed pack where its place was first listed', () => {
+    const refreshed = pack({ id: 'refreshed', createdAt: daysAgo(10), verifiedAt: daysAgo(0) });
+    const newer = pack({ id: 'newer', createdAt: daysAgo(1), verifiedAt: daysAgo(1) });
+    expect(homeView(NOW, [refreshed, newer]).packs.map((row) => row.pack.id)).toEqual([
+      'newer',
+      'refreshed',
     ]);
   });
 

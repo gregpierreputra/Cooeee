@@ -112,7 +112,7 @@ test.describe('the returning-user home screen', () => {
 
   // Several saved packs: every one is a card, newest first, under one Build
   // control; deleting one leaves the other and its rows untouched.
-  test('lists every saved pack newest first, and deletes one without touching the other', async ({
+  test('lists every saved pack newest place first, and deletes one without touching the other', async ({
     page,
   }) => {
     await page.goto(home('?days=3&packs=2'));

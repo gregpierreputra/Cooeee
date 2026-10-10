@@ -394,7 +394,7 @@ if (window.location.pathname === '/home') {
   if (homeMode !== 'none') {
     await db.packs.put({ ...savedPack, verifiedAt: homeNow - homeDays * 86_400_000 });
   }
-  // A second, one-day-fresher pack, so the list has an order to assert.
+  // A second pack, its place saved a day later, so the list has an order to assert.
   if (homePacks > 1) {
     await db.packs.put({
       ...savedPack,
@@ -403,6 +403,7 @@ if (window.location.pathname === '/home') {
       address: testCandidate.address,
       lat: testCandidate.lat,
       lon: testCandidate.lon,
+      createdAt: savedPack.createdAt + 86_400_000,
       verifiedAt: homeNow - (homeDays - 1) * 86_400_000,
     });
   }
@@ -436,6 +437,8 @@ if (window.location.pathname === '/blacksky') {
       address: testCandidate.address,
       lat: testCandidate.lat,
       lon: testCandidate.lon,
+      // Saved after Ferny Creek, so Home's order lists it first.
+      createdAt: Date.UTC(2026, 7, 25),
     },
   ]);
   document.documentElement.dataset.mode = 'blacksky';
@@ -848,7 +851,7 @@ if (window.location.pathname === '/rehearse-choose') {
   await db.packs.bulkPut(
     [
       savedPack,
-      { ...savedPack, id: 'second-pack', name: 'Kalorama', address: testCandidate.address, verifiedAt: savedPack.verifiedAt + 1 },
+      { ...savedPack, id: 'second-pack', name: 'Kalorama', address: testCandidate.address, createdAt: savedPack.createdAt + 1, verifiedAt: savedPack.verifiedAt + 1 },
     ].slice(0, count),
   );
   chooseFlow = (

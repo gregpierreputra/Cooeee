@@ -205,7 +205,7 @@ export function Search({
   useEffect(() => {
     listSavedPackNames().then(setSavedNames, () => {});
   }, []);
-  const [supersedesId, setSupersedesId] = useState<string | undefined>(undefined);
+  const [supersedes, setSupersedes] = useState<Pack | undefined>(undefined);
   const [offerState, setOfferState] = useState<OfferState | null>(null);
   const [placesState, setPlacesState] = useState<PlacesState | null>(null);
   // The places the user chose, held while the note step is on screen, and the
@@ -428,7 +428,10 @@ export function Search({
       // The programs saved in Recover go into the pack, or none if nothing is
       // saved. A store that cannot be read gives none, never a failed pack.
       const programs = await loadPrograms().catch(() => []);
-      const seed = buildPackSeed(packId, now(), place, result.lgaName, result.source, supersedesId);
+      // A replacement keeps the date its place was first saved, so refreshing a
+      // pack never moves it on Home.
+      const createdAt = supersedes?.createdAt ?? now();
+      const seed = buildPackSeed(packId, createdAt, place, result.lgaName, result.source, supersedes?.id);
       const content: TextPackContent = {
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
@@ -486,7 +489,7 @@ export function Search({
     setAreaState(null);
     setConflictState(null);
     setCandidate(null);
-    setSupersedesId(undefined);
+    setSupersedes(undefined);
     setOfferState(null);
     setPlacesState(null);
     setChosenPlaces(null);
@@ -513,7 +516,7 @@ export function Search({
     else if (at === 'area') {
       setAreaState(null);
       setConflictState(null);
-      setSupersedesId(undefined);
+      setSupersedes(undefined);
     } else if (at === 'places') setPlacesState(null);
     else if (at === 'note') setChosenPlaces(null);
     else if (at === 'size') setOfferState(null);
@@ -585,7 +588,7 @@ export function Search({
           resetToSearch();
         }}
         onReplace={() => {
-          setSupersedesId(conflictState.savedPack.id);
+          setSupersedes(conflictState.savedPack);
           setConflictState(null);
           void runAreaCheck(pendingPlace);
         }}

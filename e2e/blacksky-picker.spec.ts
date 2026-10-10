@@ -21,6 +21,8 @@ test('the picker loads only the chosen pack and remembers it', async ({ page }) 
   const markFerny = page.getByRole('button', { name: MARK_FERNY });
   const markKalorama = page.getByRole('button', { name: MARK_KALORAMA });
   await expect(choices).toHaveCount(2);
+  // Home's order: the place saved most recently first.
+  await expect(choices).toHaveText([/Kalorama/, /Ferny Creek/]);
   await expect(page.locator('.blacksky-pack[aria-pressed="true"]')).toHaveCount(0);
   await expect(markFerny).toHaveCount(0);
   await expect(markKalorama).toHaveCount(0);

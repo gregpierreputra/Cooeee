@@ -61,7 +61,7 @@ import {
 } from '../core/constants';
 import * as copy from '../core/copy';
 import { cardinalPoint, distanceM, magneticDeclinationDeg } from '../core/geo';
-import { shownPackName, titleCase } from '../core/home';
+import { newestPlaceFirst, shownPackName, titleCase } from '../core/home';
 import { packIcon } from '../core/pack';
 import { isPanned, NO_PAN, panOffset, panShouldReturn, type PanOffset } from '../core/pan';
 import { steadyReadout, type ShownReadout } from '../core/readout';
@@ -460,6 +460,8 @@ export default function BlackSky({
   // The position the dial is drawn from, so the picker can say which packs'
   // areas contain it.
   const from = estimate ?? positionFrom(fix, permission);
+  // Listed in Home's order, so the packs read the same on both screens.
+  const choices = [...packs].sort((a, b) => newestPlaceFirst(a.pack, b.pack));
 
   // BS_Enhancement-AC1 and AC2. deriveState says what can be pointed at; the
   // dial rules pick the one main place and say how far to trust the position.
@@ -610,7 +612,7 @@ export default function BlackSky({
           <span className="kicker">{copy.CHOOSE_PACK}</span>
           <p className="muted">{copy.CHOOSE_PACK_HINT}</p>
           <ul className="list">
-            {packs.map(({ pack }) => (
+            {choices.map(({ pack }) => (
               <li key={pack.id}>
                 <button
                   type="button"
