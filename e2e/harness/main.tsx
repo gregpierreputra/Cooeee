@@ -246,7 +246,7 @@ const detailLayer: ExposureLayer = {
 const cfaSource = {
   publisher: 'Country Fire Authority',
   url: 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places',
-  licence: 'CFA website list — permission to be confirmed',
+  licence: 'Free to use, confirmed by the CFA',
   retrievedAt: detailSavedAt,
 };
 const detailDestination: Destination = detailMode === 'absence'

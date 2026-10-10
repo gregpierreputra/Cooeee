@@ -96,7 +96,9 @@ const snapshot = {
   source: {
     publisher: 'Country Fire Authority',
     url: SOURCE_URL,
-    licence: 'CFA public map layer — licence to be confirmed',
+    // The CFA confirmed, on the team's request, that its Neighbourhood Safer
+    // Places lists are open to the public and free to use.
+    licence: 'Free to use, confirmed by the CFA',
     retrievedAt,
   },
   sites,
