@@ -6,6 +6,8 @@ import {
   HOURS_AGO,
   MAY_BE_OUTDATED,
   MINUTES_AGO,
+  COPIED_LINE,
+  SHARED_PLACE_FROM,
   STATE_CACHED,
   TOO_OLD_TO_SHOW,
 } from '../src/core/copy';
@@ -134,4 +136,20 @@ test('AC6 offline and never synced, the first-run state is stated rather than a 
   await expect(page.getByRole('heading', { name: FIRST_RUN_TITLE })).toBeVisible();
   await expect(page.getByText(FIRST_RUN_LINE)).toBeVisible();
   await expect(page.getByLabel('Type a postcode')).toHaveCount(0);
+});
+
+// One place can be sent to someone, say to meet there. With no share sheet it
+// goes to the clipboard: the place and how current it is, never the distance.
+test('Share on a place copies it to send, without the distance', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: ORIGIN });
+  await page.goto(`${ORIGIN}/nearby?mode=fresh`);
+  await page.getByRole('heading', { name: 'Nearest official places' }).waitFor();
+  await findPostcode(page);
+  const card = page.locator('.card', { hasText: 'Kalorama Memorial Reserve' });
+  await card.getByRole('button', { name: 'Share Kalorama Memorial Reserve' }).click();
+  await expect(card.getByRole('status')).toHaveText(COPIED_LINE);
+  const text = await page.evaluate(() => navigator.clipboard.readText());
+  expect(text.startsWith('Neighbourhood Safer Place\nKalorama Memorial Reserve\nRidge Road, Kalorama')).toBe(true);
+  expect(text.endsWith(SHARED_PLACE_FROM)).toBe(true);
+  expect(text).not.toMatch(/\d+ ?(m|km)\b/);
 });

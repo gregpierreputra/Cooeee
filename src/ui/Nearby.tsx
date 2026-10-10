@@ -13,6 +13,7 @@ import {
   hasNearbyData,
   nearbyView,
   parsePostcode,
+  placeShareText,
   postcodeOrigin,
   type NearbyCache,
   type NearbyGroup,
@@ -24,6 +25,7 @@ import { readNearbyCache, syncNearby } from '../data/nearby';
 import Glyph, { type GlyphKind } from './components/Glyph';
 import Hint from './components/Hint';
 import KeyTerms from './components/KeyTerms';
+import { shareOrCopy } from './components/shareOrCopy';
 import StateCard from './components/StateCard';
 
 type Origin = LatLon & { label: ReactNode };
@@ -307,6 +309,11 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
 /** One facility type. Each row carries its own state word and timestamp, so a
  *  live static place and a cached relief centre can never read as equals. */
 function PlaceRow({ row }: { row: NearbyRow }) {
+  const [shared, setShared] = useState<'copied' | 'unavailable' | null>(null);
+  const share = async () => {
+    const result = await shareOrCopy(placeShareText(row));
+    if (result === 'copied' || result === 'unavailable') setShared(result);
+  };
   // The official name set as BlackSky sets it: the site in bold, and the town
   // with any bracketed detail on the line beneath. Nothing is dropped but the
   // closing words the card's label already says.
@@ -347,6 +354,19 @@ function PlaceRow({ row }: { row: NearbyRow }) {
         </p>
       ) : null}
       {row.note ? <p className="nearby-note">{row.note}</p> : null}
+      {/* One place to send, say to meet there: never the sender's position. */}
+      {row.place ? (
+        <>
+          <button type="button" className="action with-glyph nearby-share" onClick={() => void share()}>
+            <Glyph kind="share" line />
+            {copy.SHARE_PLACE}
+            <span className="visually-hidden"> {row.place.name}</span>
+          </button>
+          <p className="muted place-note" role="status" aria-live="polite">
+            {shared === 'copied' ? copy.COPIED_LINE : shared === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
+          </p>
+        </>
+      ) : null}
     </li>
   );
 }

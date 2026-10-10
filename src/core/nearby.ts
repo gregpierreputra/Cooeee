@@ -255,6 +255,24 @@ function healthLines(now: number, cache: NearbyCache, kind: NearbyGroup['kind'])
   }));
 }
 
+/** One place as text to send, say to family to meet there: what it is, its
+ *  name and address, how current it is and any warning on its card. The
+ *  distance is left out, as it is measured from the sender. */
+export function placeShareText(row: NearbyRow): string {
+  if (!row.place) return '';
+  const { name, address, about } = row.place;
+  return [
+    row.title,
+    name,
+    address,
+    about ? [about.kind, about.note].filter(Boolean).join(' · ') : null,
+    row.timestamp,
+    row.note,
+    '',
+    copy.SHARED_PLACE_FROM,
+  ].filter((line) => line !== null).join('\n');
+}
+
 /** Every facility type, always, each labelled on its own (spec §7.5). */
 export function nearbyView(
   now: number,

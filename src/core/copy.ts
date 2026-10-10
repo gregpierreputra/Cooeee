@@ -593,6 +593,9 @@ export const SHARE_LIST = 'Share this list';
 export const COPIED_LINE = 'Copied. Paste it into a message.';
 export const SHARE_UNAVAILABLE = 'Sharing is not available in this browser.';
 export const SHARED_FROM = 'Shared from Cooeee. Programs change, and the organisation decides.';
+/** Nearby: one place, sent to someone to meet there. */
+export const SHARE_PLACE = 'Share';
+export const SHARED_PLACE_FROM = 'Shared from Cooeee. Check VicEmergency for the latest.';
 export const RECOVER_STALE_LINE = 'Over three months old. Programs change, so check with the organisation.';
 export const CALL_LINE = (number: string) => `Call ${number}`;
 export const RECOVER_NO_MATCH_TITLE = 'This pack holds nothing for that need.';
