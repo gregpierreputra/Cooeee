@@ -277,6 +277,7 @@ export default function PackDetail({
                   src={mapSrc}
                   box={mapBox}
                   places={places}
+                  address={content.pack.address}
                   scale={mapBox ? copy.AREA_MAP_ACROSS(mapAcrossKm(mapBox)) : undefined}
                 />
                 {/* The key is the map's own footer, inside its frame, and stays in

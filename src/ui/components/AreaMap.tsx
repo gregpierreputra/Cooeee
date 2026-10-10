@@ -1,6 +1,8 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { MAP_HOME, MAP_MAX_SCALE, clampView, mapPoint, zoomAbout, type MapBox, type MapView } from '../../core/area-map-view';
+import { siteNameBlock } from '../../core/blacksky-dial';
 import * as copy from '../../core/copy';
+import { formatDistanceM, placeName } from '../../core/destination';
 import type { Destination } from '../../core/types';
 import Glyph from './Glyph';
 
@@ -10,6 +12,10 @@ const WHEEL_STEP = 0.01; // zoom per pixel of wheel travel, with Ctrl held or a 
 const WHEEL_MAX = 50; // one wheel notch zooms about as much as a button press
 const KEY_PAN = 48; // pixels an arrow key moves the map
 const BUTTON_ZOOM = 1.6;
+// css pixels a marker's label needs above it, and to each side of its middle,
+// before it would run past the map's edge
+const LABEL_ROOM_Y = 90;
+const LABEL_ROOM_X = 110;
 
 /** The stored map of the pack's area, to explore with a finger or a mouse: one
  *  finger drags it, two pinch to zoom, a wheel zooms at the pointer, and round
@@ -22,15 +28,20 @@ export default function AreaMap({
   src,
   box,
   places,
+  address,
   scale,
 }: {
   src: string;
   box: MapBox | null;
   places: Destination[];
+  /** The saved place's address, said on its marker's label. */
+  address: string;
   /** How far the map reaches, shown in its corner as a map's scale is. */
   scale?: string;
 }) {
   const howId = useId();
+  // The marker whose label is open: 'here' for the saved place, or a place id.
+  const [labelled, setLabelled] = useState<string | null>(null);
   const frame = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, Point>());
   const [view, setView] = useState<MapView>(MAP_HOME);
@@ -60,6 +71,7 @@ export default function AreaMap({
   }, []);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    setLabelled(null); // a press on the map itself closes an open label
     if (event.pointerType === 'mouse' && event.button !== 0) return; // only the main button drags
     event.currentTarget.setPointerCapture(event.pointerId);
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -133,19 +145,32 @@ export default function AreaMap({
       >
         <div className="area-map-layer" style={layer}>
           <img src={src} alt={copy.AREA_MAP_ALT} draggable={false} />
-          <span className="area-map-pin" aria-hidden="true" />
+          <Marker
+            id="here"
+            className="area-map-pin"
+            title={copy.AREA_MAP_KEY.place}
+            line={address}
+            labelled={labelled}
+            onLabel={setLabelled}
+          />
           {places.map((place) => {
             const at = !box || place.lat === undefined || place.lon === undefined ? null : mapPoint(box, { lat: place.lat, lon: place.lon });
-            return at ? (
-              <span
+            if (!at) return null;
+            const { site, line } = siteNameBlock(placeName(place));
+            return (
+              <Marker
                 key={place.id}
+                id={place.id}
                 className="area-map-mark"
-                style={{ left: `${at.x * 100}%`, top: `${at.y * 100}%` }}
-                aria-hidden="true"
+                at={at}
+                title={typeof place.distanceM === 'number' ? `${site} · ${formatDistanceM(place.distanceM)}` : site}
+                line={line}
+                labelled={labelled}
+                onLabel={setLabelled}
               >
                 <Glyph kind="place" size={16} />
-              </span>
-            ) : null;
+              </Marker>
+            );
           })}
         </div>
         {/* On the map, top left, outside the turning layer. A press here
@@ -164,5 +189,66 @@ export default function AreaMap({
           out with the buttons rather than shown. */}
       <p id={howId} className="visually-hidden">{copy.MAP_HOW}</p>
     </>
+  );
+}
+
+/** One marker on the map, a button named after its place. A tap opens a small
+ *  label above it, never a hover; a second tap, or a press on the map,
+ *  closes it. The label sits inside the marker, so it keeps the marker's size at any
+ *  zoom and moves with the map. A press here never starts a drag. */
+function Marker({
+  id,
+  className,
+  at,
+  title,
+  line,
+  labelled,
+  onLabel,
+  children,
+}: {
+  id: string;
+  className: string;
+  /** Where it sits, as fractions of the picture; the saved place is the middle. */
+  at?: { x: number; y: number };
+  title: string;
+  line: string | null;
+  labelled: string | null;
+  onLabel: (id: string | null) => void;
+  children?: ReactNode;
+}) {
+  const open = labelled === id;
+  // Where the label opens, chosen as it opens so it stays inside the map:
+  // below a marker near the top edge, and held to a side near either edge.
+  const [place, setPlace] = useState('');
+  const choosePlace = (marker: HTMLElement) => {
+    const frame = marker.closest('.area-map-frame')?.getBoundingClientRect();
+    const at = marker.getBoundingClientRect();
+    if (!frame) return;
+    const below = at.top - frame.top < LABEL_ROOM_Y ? ' below' : '';
+    const side = at.left - frame.left < LABEL_ROOM_X ? ' start' : frame.right - at.right < LABEL_ROOM_X ? ' end' : '';
+    setPlace(below + side);
+  };
+  return (
+    <button
+      type="button"
+      className={`area-map-marker ${className}`}
+      style={at ? { left: `${at.x * 100}%`, top: `${at.y * 100}%` } : undefined}
+      aria-label={line ? `${title}, ${line}` : title}
+      aria-expanded={open}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (!open) choosePlace(event.currentTarget);
+        onLabel(open ? null : id);
+      }}
+    >
+      {children}
+      {open ? (
+        <span className={`area-map-label${place}`} aria-hidden="true">
+          <b>{title}</b>
+          {line ? <span>{line}</span> : null}
+        </span>
+      ) : null}
+    </button>
   );
 }
