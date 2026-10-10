@@ -30,7 +30,7 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   );
   await page.getByRole('button', { name: 'Continue' }).click();
   await chooseLastResortPlaces(page);
-  await expect(page.getByRole('heading')).toHaveText('Ready to download');
+  await expect(page.getByRole('heading')).toHaveText('Ready to save');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -64,7 +64,7 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
   await page.getByRole('button', { name: 'Keep this note' }).click();
 
-  await expect(page.getByRole('heading')).toHaveText('Ready to download');
+  await expect(page.getByRole('heading')).toHaveText('Ready to save');
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByRole('link', { name: 'Choose programs in Recover' })).toHaveCount(0);
@@ -84,7 +84,10 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   });
 
   await searchConfirmAndReachOffer(page);
-  await expect(page.locator('.pack-size')).toContainText('This pack is');
+  // One summary of what the steps chose, with the size worked out before the save.
+  await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
+  await expect(page.locator('.pack-summary .source-rows dd').first()).toContainText('Bushfire Prone Area');
+  await expect(page.locator('.pack-summary .source-rows dd').last()).toHaveText(/\d+ KB/);
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
@@ -329,7 +332,7 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
   await page.getByLabel('Note for this place').fill('Meet at the oval gate.');
   await page.getByRole('button', { name: 'Keep this note' }).click();
-  await expect(page.getByRole('heading')).toHaveText('Ready to download');
+  await expect(page.getByRole('heading')).toHaveText('Ready to save');
 
   // The Back bar: the size, then the note as written.
   await back.click();

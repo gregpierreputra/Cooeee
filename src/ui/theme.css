@@ -1228,7 +1228,7 @@ main:focus {
   letter-spacing: -0.01em;
 }
 
-/* ── Pack size and download ────────────────────────────────────────────────── */
+/* ── Pack summary and save ─────────────────────────────────────────────────── */
 
 .size-content {
   display: grid;
@@ -1239,10 +1239,38 @@ main:focus {
   margin: 0;
 }
 
-.pack-size {
-  color: var(--ink);
+.pack-summary {
+  gap: 1rem;
+}
+.pack-summary-place {
+  display: grid;
+  gap: 0.125rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.pack-summary-name {
   font-size: var(--step-1);
-  font-weight: var(--w-med);
+  font-weight: var(--w-bold);
+  letter-spacing: -0.01em;
+}
+.pack-summary-address {
+  color: var(--ink-2);
+}
+.pack-summary-list {
+  margin: 0;
+  padding-left: 1.125rem;
+}
+.size-status:empty {
+  display: none;
+}
+.size-status {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--ink-2);
+}
+.size-status .save-stopped {
+  color: var(--ink);
+  font-weight: var(--w-bold);
 }
 
 /* ── Pack detail and provenance ────────────────────────────────────────────── */

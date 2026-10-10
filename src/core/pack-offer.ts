@@ -1,4 +1,3 @@
-import * as copy from './copy';
 import type { Pack, PackOffer, TextPackContent } from './types';
 
 /** The one order every hashed or canonical form sorts by. Pinned to 'en', not the
@@ -43,9 +42,8 @@ export function formatPackBytes(bytes: number): string {
   return `${(bytes / 1_048_576).toFixed(1)} MB`;
 }
 
-export function packOfferSizeLine(offer: PackOffer): string {
-  return copy.PACK_SIZE_LINE(formatPackBytes(offer.textBytes + offer.fileBytes));
-}
+/** The pack's whole size, as the summary states it before the save. */
+export const packOfferSize = (offer: PackOffer): string => formatPackBytes(offer.textBytes + offer.fileBytes);
 
 /** The stated size and the stored size must be the same number. A stored pack
  * claiming tile bytes cannot match an offer, because nothing in this iteration

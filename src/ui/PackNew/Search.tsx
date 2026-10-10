@@ -8,7 +8,7 @@ import {
   type AddressCandidateResolution,
   type SettledSearch,
 } from '../../core/address-search';
-import { bpaExposureLayer } from '../../core/area-check';
+import { areaCheckView, bpaExposureLayer } from '../../core/area-check';
 import {
   ADDRESS_QUERY_DEBOUNCE_MS,
   ADDRESS_QUERY_MAX_CHARS,
@@ -20,7 +20,7 @@ import {
   PLACES_OFFERED,
 } from '../../core/constants';
 import * as copy from '../../core/copy';
-import { chosenDestinations, formatDistanceM, orderByDistance } from '../../core/destination';
+import { chosenDestinations, formatDistanceM, orderByDistance, placeName } from '../../core/destination';
 import { titleCase } from '../../core/home';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
 import { readKept } from '../../core/kept';
@@ -62,7 +62,7 @@ import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
 import FlowSteps, { FlowStepBack } from './FlowSteps';
 import { Note } from './Note';
-import { Size } from './Size';
+import { Size, type PackSummary } from './Size';
 
 /** Module scope, so the default has one stable identity for the life of the
  * module. A default created inside the component would be a new function on
@@ -652,16 +652,6 @@ export function Search({
   }
 
   if (pendingPlace && offerState) {
-    if (offerState.kind === 'building') {
-      return wrap(
-        <StatusPage
-          page="size-page"
-          kicker={<FlowSteps at={4} />}
-          card={<p>{copy.PREPARING_PACK_OFFER}</p>}
-        />
-      );
-    }
-
     if (offerState.kind === 'failed') {
       return wrap(
         <StatusPage
@@ -692,21 +682,30 @@ export function Search({
       );
     }
 
+    const ready = offerState.kind === 'ready' ? offerState : null;
+    const summary: PackSummary = {
+      name: pendingPlace.name,
+      address: pendingPlace.address,
+      area: areaState?.kind === 'result' ? areaCheckView(areaState.result).resultLine : copy.SUMMARY_NONE,
+      places: (chosenPlaces ?? []).map((place) => placeName(place)),
+      note: copy.SUMMARY_NOTE_VALUE(Boolean(note), supersedes ? oldNotes.length : 0, keepNotes),
+    };
     return wrap(
       <Size
-        offer={offerState.offer}
-        address={offerState.content.pack.address}
-        download={async () => {
+        summary={summary}
+        offer={ready?.offer ?? null}
+        save={async () => {
+          if (!ready) return;
           setSaveStage('saving');
           try {
-            await savePack(offerState.content, offerState.offer, now(), offerState.files, note, keepNotes);
+            await savePack(ready.content, ready.offer, now(), ready.files, note, keepNotes);
             setSaveStage('saved');
           } catch (error) {
             setSaveStage('idle');
             throw error;
           }
         }}
-        onContinue={() => openSavedPack(offerState.content.pack.id)}
+        onContinue={() => ready && openSavedPack(ready.content.pack.id)}
       />
     );
   }

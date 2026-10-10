@@ -227,9 +227,15 @@ if (window.location.pathname === '/size') {
   };
   sizeFlow = (
     <Size
-      offer={offer}
-      address={sizeContent.pack.address}
-      download={download}
+      summary={{
+        name: sizeContent.pack.name,
+        address: sizeContent.pack.address,
+        area: 'This address is in a Bushfire Prone Area.',
+        places: ['Kalorama Oval'],
+        note: 'None',
+      }}
+      offer={sizeMode === 'preparing' ? null : offer}
+      save={download}
       onContinue={() => { window.__continueCount += 1; }}
     />
   );
