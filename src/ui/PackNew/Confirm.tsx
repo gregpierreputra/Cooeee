@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type KeyboardEvent } from 'react';
 
 import { PACK_NAME_MAX_CHARS } from '../../core/constants';
 import * as copy from '../../core/copy';
@@ -30,6 +30,18 @@ export function Confirm({ candidate, initialName, initialIcon, takenName, onConf
   // soon as the person types a different name.
   const taken = takenName !== undefined && samePackName(name, takenName);
 
+  // Enter in the name moves on to the drawing, as the next thing on the step,
+  // rather than saving the place before a drawing could be chosen. On a phone
+  // the keyboard closes and the drawings come into view; Enter on a drawing,
+  // or Save this place, then goes on.
+  function nameKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    const chosen = event.currentTarget.form?.querySelector<HTMLInputElement>('input[name="place-icon"]:checked');
+    chosen?.focus();
+    chosen?.closest('fieldset')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     
@@ -57,6 +69,8 @@ export function Confirm({ candidate, initialName, initialIcon, takenName, onConf
             type="text"
             value={name}
             maxLength={PACK_NAME_MAX_CHARS}
+            enterKeyHint="next"
+            onKeyDown={nameKeyDown}
             aria-invalid={taken || undefined}
             aria-describedby={taken ? 'place-name-taken' : undefined}
             onChange={(event) => setName(event.currentTarget.value)}
