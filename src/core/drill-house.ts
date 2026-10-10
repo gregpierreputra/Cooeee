@@ -3,7 +3,6 @@
 // Positions are in tiles: x across, y down, fractions allowed.
 
 import { ATLAS } from './drill-atlas';
-import type { DrillRoom } from './drill-items';
 import { FURNITURE, GRID, MAT, ROOM_OF, START, TILE } from './drill-layout';
 
 export const ROWS = GRID.length;
@@ -105,8 +104,6 @@ export function pathTo(fromX: number, fromY: number, toX: number, toY: number): 
   }
   return path;
 }
-
-export const roomAt = (x: number, y: number): DrillRoom | null => ROOM_OF[cellAt(x, y)] ?? null;
 
 /** The middle of the first cell holding this mark. */
 function centreOf(mark: string): { x: number; y: number } {
