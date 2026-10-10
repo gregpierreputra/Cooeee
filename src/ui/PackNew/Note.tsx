@@ -34,7 +34,9 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
           <FlowSteps at={3} />
           <h1>{copy.NOTE_STEP_TITLE}</h1>
           <p className="muted with-glyph">
-            <Glyph kind="lock" line />
+            {/* The downloaded sign, as on a pack card: kept on this phone. Not a
+                lock, which would promise a protection the note does not have. */}
+            <Glyph kind="saved" line />
             {copy.NOTE_DISCLOSURE}
           </p>
         </header>
@@ -71,7 +73,11 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
             </button>
           </section>
         ) : null}
-        <label htmlFor="pack-note">{replacing ? copy.NOTE_ADD_ANOTHER : copy.NOTE_LABEL}</label>
+        {/* On a replace, set as the saved notes' heading above it, so the step
+            reads as two parts: what is saved, and what is added. */}
+        <label htmlFor="pack-note" className={replacing ? 'kicker' : undefined}>
+          {replacing ? copy.NOTE_ADD_ANOTHER : copy.NOTE_LABEL}
+        </label>
         <textarea
           id="pack-note"
           value={text}
