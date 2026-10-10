@@ -248,7 +248,13 @@ function Welcome() {
         <KeyTerms text={copy.WELCOME_DOES} terms={copy.WELCOME_TERMS} className="welcome-term" />
       </p>
       <details className="welcome-more" onToggle={revealOpened}>
-        <summary>{copy.ABOUT_COOEEE}</summary>
+        <summary>
+          {copy.ABOUT_COOEEE}
+          {/* Points right while closed and down while open, as every toggle's does. */}
+          <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+            <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </summary>
         <ul className="info-lines">
           {copy.COOEEE_INFO_LINES.map((line) => (
             <li key={line.glyph}>
@@ -278,7 +284,13 @@ function Stop({ index }: { index: number }) {
           beside the hold on Home before the hold moved to the tab bar. */}
       {'more' in step ? (
         <details className="welcome-more" onToggle={revealOpened}>
-          <summary>{copy.ABOUT_BLACKSKY}</summary>
+          <summary>
+            {copy.ABOUT_BLACKSKY}
+            {/* Points right while closed and down while open, as every toggle's does. */}
+            <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+              <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </summary>
           <ul className="info-lines glyph-lines">
             {copy.BLACKSKY_INFO_LINES.map((line) => (
               <li key={line.glyph}>

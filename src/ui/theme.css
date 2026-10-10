@@ -2756,13 +2756,27 @@ main:focus {
 .tour-body .welcome-does {
   margin-top: 0.5rem;
 }
+/* Set as every other toggle is: underlined teal words with a chevron, so it is
+   never read as one of the welcome's bold teal key words, which do not open. */
 .welcome-more summary {
   cursor: pointer;
   min-height: 44px;
   display: flex;
   align-items: center;
-  font-weight: var(--w-bold);
+  gap: 0.25rem;
+  width: fit-content;
+  list-style: none;
   color: var(--accent);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.welcome-more summary::-webkit-details-marker {
+  display: none;
+}
+.welcome-more[open] summary .hint-chevron {
+  transform: rotate(90deg);
 }
 .welcome-more .info-lines {
   margin: 0.25rem 0 0;

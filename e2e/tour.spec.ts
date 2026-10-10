@@ -49,8 +49,14 @@ test('opens on a welcome, steps across screens with the controls held still, and
   await expect(dialog).toContainText(WELCOME_SAY);
   await expect(page.locator('.tour-spot')).toHaveCount(0);
   await expect(dialog.getByText(COOEEE_INFO_LINES[0].text)).toBeHidden();
+  // Set as every other toggle: underlined words and a chevron that turns down when open.
+  const more = dialog.locator('summary', { hasText: ABOUT_COOEEE });
+  await expect(more).toHaveCSS('text-decoration-line', 'underline');
+  const chevron = more.locator('.hint-chevron');
+  await expect(chevron).toHaveCSS('transform', 'none');
   await dialog.getByText(ABOUT_COOEEE).click();
   await expect(dialog.getByText(COOEEE_INFO_LINES[0].text)).toBeVisible();
+  await expect(chevron).not.toHaveCSS('transform', 'none');
   // Back has nothing to do yet, but keeps its room.
   await expect(dialog.getByRole('button', { name: TOUR_BACK })).toBeHidden();
 
