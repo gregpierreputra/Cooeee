@@ -3442,12 +3442,16 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 /* The motes behind every screen but BlackSky: full screen, under the text,
    and inert to every tap. */
+/* As tall as the screen at its tallest, with the address bar hidden, so it
+   still covers the page while the bar or the keyboard shows (Particles.tsx). */
 .particles {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   z-index: -1;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100lvh;
   pointer-events: none;
 }
 
