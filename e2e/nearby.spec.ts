@@ -146,12 +146,19 @@ test('Share on a place copies it to send, without the distance', async ({ page, 
   await page.getByRole('heading', { name: 'Nearest official places' }).waitFor();
   await findPostcode(page);
   const card = page.locator('.card', { hasText: 'Kalorama Memorial Reserve' });
-  await card.getByRole('button', { name: 'Share Kalorama Memorial Reserve' }).click();
+  const share = card.getByRole('button', { name: 'Share Kalorama Memorial Reserve' });
+  await share.click();
+  // Said on the link itself for a moment, as Copy does on a call card, and to
+  // a screen reader in full.
+  await expect(card.getByRole('button', { name: 'Copied Kalorama Memorial Reserve' })).toBeVisible();
   await expect(card.getByRole('status')).toHaveText(COPIED_LINE);
   const text = await page.evaluate(() => navigator.clipboard.readText());
   expect(text.startsWith('Neighbourhood Safer Place\nKalorama Memorial Reserve\nRidge Road, Kalorama')).toBe(true);
   expect(text.endsWith(SHARED_PLACE_FROM)).toBe(true);
   expect(text).not.toMatch(/\d+ ?(m|km)\b/);
+  // Then it reads Share again, and nothing is left on the card.
+  await expect(share).toBeVisible({ timeout: 5000 });
+  await expect(card.getByRole('status')).toHaveText('');
 });
 
 // The nearest places of last resort on a map, folded until asked for, drawn on

@@ -32,6 +32,7 @@ import Hint from './components/Hint';
 import NearbyMap, { type MapLoaders } from './components/NearbyMap';
 import KeyTerms from './components/KeyTerms';
 import { shareOrCopy } from './components/shareOrCopy';
+import { useCopied } from './components/useCopied';
 import StateCard from './components/StateCard';
 
 /** Where distances are measured from: the line above the tabs, and its name
@@ -338,7 +339,8 @@ export default function Nearby({
                   ) : null}
                   <ul className="list">
                     {group.rows.map((row) => (
-                      <PlaceRow key={row.type} row={row} />
+                      // Keyed by the place as well, so a new postcode starts a card afresh.
+                      <PlaceRow key={`${row.type}:${row.place?.name ?? ''}`} row={row} />
                     ))}
                   </ul>
                   {/* This tab's own sources. */}
@@ -356,10 +358,13 @@ export default function Nearby({
 /** One facility type. Each row carries its own state word and timestamp, so a
  *  live static place and a cached relief centre can never read as equals. */
 function PlaceRow({ row }: { row: NearbyRow }) {
-  const [shared, setShared] = useState<'copied' | 'unavailable' | null>(null);
+  // With no share sheet the place is copied, and Share says so for a moment,
+  // as Copy does on a call card.
+  const [copied, showCopied] = useCopied();
   const share = async () => {
     const result = await shareOrCopy(placeShareText(row));
-    if (result === 'copied' || result === 'unavailable') setShared(result);
+    if (result === 'copied') showCopied('copied');
+    if (result === 'unavailable') showCopied('failed');
   };
   // The official name set as BlackSky sets it: the site in bold, and the town
   // with any bracketed detail on the line beneath. Nothing is dropped but the
@@ -407,13 +412,13 @@ function PlaceRow({ row }: { row: NearbyRow }) {
               </p>
             ) : null}
             <button type="button" className="nearby-share with-glyph" onClick={() => void share()}>
-              <Glyph kind="share" line />
-              {copy.SHARE_PLACE}
+              <Glyph kind={copied === 'copied' ? 'check' : 'share'} line />
+              {copied === 'copied' ? copy.COPIED : copied === 'failed' ? copy.NOT_COPIED : copy.SHARE_PLACE}
               <span className="visually-hidden"> {row.place.name}</span>
             </button>
           </div>
-          <p className="muted place-note" role="status" aria-live="polite">
-            {shared === 'copied' ? copy.COPIED_LINE : shared === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
+          <p className="visually-hidden" role="status">
+            {copied === 'copied' ? copy.COPIED_LINE : copied === 'failed' ? copy.SHARE_UNAVAILABLE : ''}
           </p>
         </>
       ) : null}

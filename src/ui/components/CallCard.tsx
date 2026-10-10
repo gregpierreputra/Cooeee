@@ -1,11 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { COPY_CONFIRM_MS } from '../../core/constants';
 import * as copy from '../../core/copy';
 import Glyph from './Glyph';
-
-/** Clears the one card now saying Copied or Not copied, so a copy on another
- *  card never leaves two cards claiming the clipboard. */
-let clearShownCard: (() => void) | null = null;
+import { useCopied } from './useCopied';
 
 /** Red for an emergency, amber for caution: the colours the app already uses. */
 const TONE_CLASS = { emergency: 'emergency-line', caution: 'caution-line' } as const;
@@ -28,29 +23,16 @@ export default function CallCard({
   number: string;
   tone?: 'emergency' | 'caution';
 }) {
-  const [copied, setCopied] = useState<'copied' | 'failed' | null>(null);
-  const timer = useRef<number | undefined>(undefined);
-
-  // Leaving the page stops the timer with the card.
-  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const [copied, showCopied] = useCopied();
 
   async function copyNumber() {
-    let result: 'copied' | 'failed';
     try {
       await navigator.clipboard.writeText(number);
-      result = 'copied';
+      showCopied('copied');
     } catch {
       // No clipboard here (an old browser, or a page that is not secure).
-      result = 'failed';
+      showCopied('failed');
     }
-    const clear = () => {
-      window.clearTimeout(timer.current);
-      setCopied(null);
-    };
-    clearShownCard?.();
-    clearShownCard = clear;
-    setCopied(result);
-    timer.current = window.setTimeout(clear, COPY_CONFIRM_MS);
   }
 
   const copyLabel = copied === 'copied' ? copy.COPIED : copied === 'failed' ? copy.NOT_COPIED : copy.COPY;
