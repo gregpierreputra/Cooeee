@@ -100,3 +100,33 @@ test('unsaved words come back after a reload until they are saved or cancelled',
   await page.reload();
   await expect(page.getByLabel(NOTE_LABEL)).toHaveCount(0);
 });
+
+// Enter on a bullet starts the next one, and the box follows it down: a long
+// list never leaves the line being typed below the box's edge.
+test('Enter on a bullet keeps the new line in view as the list grows', async ({ page }) => {
+  await page.goto(`${HARNESS}/detail`);
+  await openNotes(page);
+  const notes = page.locator('.pack-notes');
+  await notes.getByRole('button', { name: ADD_NOTE }).click();
+  const box = notes.getByLabel(NOTE_LABEL);
+  await box.fill('');
+  await page.keyboard.type('- item 1');
+  for (let i = 2; i <= 15; i++) {
+    await page.keyboard.press('Enter');
+    await page.keyboard.type(`item ${i}`);
+  }
+  await expect(box).toHaveValue(Array.from({ length: 15 }, (_, i) => `• item ${i + 1}`).join('\n'));
+  // Straight after Enter, before a letter is typed (typing scrolls on its own),
+  // the new empty bullet at the end is in view: the box has scrolled down to it,
+  // all but its bottom padding.
+  await page.keyboard.press('Enter');
+  await expect(box).toHaveValue(/\n• $/);
+  const view = await box.evaluate((el) => ({
+    top: el.scrollTop,
+    seen: el.scrollTop + el.clientHeight,
+    all: el.scrollHeight,
+    padding: parseFloat(getComputedStyle(el).paddingBottom),
+  }));
+  expect(view.top).toBeGreaterThan(0);
+  expect(view.seen).toBeGreaterThanOrEqual(view.all - view.padding - 2);
+});
