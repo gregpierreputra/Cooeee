@@ -70,17 +70,22 @@ export const NAV_ITEMS: readonly NavItem[] = [
 ];
 
 /** Everything the home screen renders, decided in one place: every saved pack,
- *  newest first, each with the pack card's own age wording, and the day's
+ *  newest place first, each with the pack card's own age wording, and the day's
  *  preparation line. Building is offered in every state, so the list can grow. */
 export type HomeView = {
   packs: { pack: Pack; ageLine: string }[];
   preparation: PreparationLine;
 };
 
+/** The one order packs are listed in, on Home and in BlackSky alike: by when
+ *  the place was first saved, newest first. A replace keeps that date, so a
+ *  refreshed pack stays where the reader left it. */
+export const newestPlaceFirst = (a: Pack, b: Pack): number => b.createdAt - a.createdAt;
+
 export function homeView(now: number, packs: Pack[]): HomeView {
   return {
     packs: [...packs]
-      .sort((a, b) => b.verifiedAt - a.verifiedAt)
+      .sort(newestPlaceFirst)
       // The pack card's own wording: 'Saved N days ago'.
       .map((pack) => ({ pack, ageLine: packAgeLabel(now, pack.verifiedAt) })),
     preparation: preparationLine(now),
