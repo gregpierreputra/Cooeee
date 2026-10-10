@@ -160,6 +160,9 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await openSources(page);
   await expect(savedPlaces.locator('.source-rows dt', { hasText: 'Council' })).toHaveCount(2);
   await expect(savedPlaces.locator('.source-rows dt', { hasText: 'List date' })).toHaveCount(2);
+  // The kind is said once under the heading, not on each card.
+  await expect(page.locator('#pack-panel-places')).toContainText('Both are Neighbourhood Safer Places.');
+  await expect(savedPlaces.locator('.place-kind')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 

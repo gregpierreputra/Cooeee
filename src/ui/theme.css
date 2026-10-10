@@ -237,22 +237,37 @@ a {
   font-size: var(--step-0);
 }
 
-/* A place to choose, set as a card on Nearby: the kind over the site, the box
-   to tick in the top corner, and the council as a footer under a thin line. */
+/* A place to choose, set as a card on Nearby: the box first, then the site
+   with its distance, where it is, and the council as a footer under a thin
+   line, all in one column beside the box. */
 .destination-item {
   position: relative;
 }
-.destination-item-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
+/* .card sets a column of flex; this card is a grid of box and body. */
+.card.destination-item-pickable {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+  align-items: start;
 }
-.destination-item-head input[type='checkbox'] {
+.destination-item-pickable > :not(input, .destination-hit) {
+  grid-column: 2;
+}
+.destination-item-pickable > .destination-body {
+  grid-row: 1;
+}
+/* The box sits centred on the name's first line, which the larger distance
+   beside it pushes down to share its baseline. */
+.destination-item-pickable > input[type='checkbox'] {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0.6875rem 0 0;
+}
+.destination-item > input[type='checkbox'] {
   inline-size: 1.375rem;
   block-size: 1.375rem;
   min-height: 0;
-  margin: 0;
   padding: 0;
   flex: none;
   accent-color: var(--accent);
@@ -270,9 +285,13 @@ a {
   border-radius: inherit;
   cursor: pointer;
 }
-.destination-item-head input[type='checkbox'] {
+.destination-item > input[type='checkbox'] {
   position: relative;
   z-index: 1;
+}
+/* The kind, said once over the list, sits close to the cards it names. */
+.destination-kind {
+  margin: 0.5rem 0 -0.25rem;
 }
 /* A chosen place wears the teal ring and tint a kept card wears. */
 .destination-item-chosen {
