@@ -66,7 +66,7 @@
     "officialUrl": "https://www.emergency.vic.gov.au/relief/",
     "telephone": "1800 226 226",
     "publisher": "Emergency Management Victoria",
-    "licence": "Facts and link only, licence to be confirmed"
+    "licence": "Facts and link only"
   },
   {
     "id": "vicses-recovery",
@@ -78,7 +78,7 @@
     ],
     "officialUrl": "https://www.ses.vic.gov.au/plan-and-stay-safe/recovery",
     "publisher": "Victoria State Emergency Service",
-    "licence": "Facts and link only, licence to be confirmed",
+    "licence": "Facts and link only, all rights reserved",
     "pageContains": "SES"
   },
   {
@@ -91,7 +91,7 @@
     ],
     "officialUrl": "https://www.cfa.vic.gov.au/plan-prepare/fires-in-the-home/after-the-fire",
     "publisher": "Country Fire Authority",
-    "licence": "Facts and link only, licence to be confirmed",
+    "licence": "Facts and link only, all rights reserved",
     "pageContains": "CFA"
   },
   {
