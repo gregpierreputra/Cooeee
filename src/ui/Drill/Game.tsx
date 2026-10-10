@@ -27,7 +27,7 @@ const DOOR_OPENS_SECONDS = 0.9;
 /** Everything the loop reads and writes, outside React so a frame never
  *  waits on a render. */
 type World = {
-  phase: 'opening' | 'play' | 'leaving';
+  phase: 'opening' | 'ready' | 'play' | 'leaving';
   clock: number; // seconds this screen has been drawing
   opening: number; // seconds into the opening film
   elapsed: number; // seconds of the two minutes used
@@ -80,20 +80,28 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const knobRef = useRef<HTMLSpanElement>(null);
+  const guideRef = useRef<HTMLDivElement>(null);
   const world = useRef<World>(freshWorld(opening));
   const [calm] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // Mouse and keys, or touch: which wording the guide uses.
+  const [keys] = useState(() => window.matchMedia('(pointer: fine)').matches);
   const [hud, setHud] = useState({
-    playing: !opening, beat: 0, seconds, packed: 0, near: null as DrillItem | null,
+    playing: !opening, ready: false, beat: 0, seconds, packed: 0, near: null as DrillItem | null,
   });
 
+  // After the film the game waits behind the guide, clock stopped, until the
+  // person starts it. Play again has no film and no guide.
   const skipOpening = () => {
-    world.current.phase = 'play';
+    world.current.phase = 'ready';
   };
   const nextBeat = () => {
     const w = world.current;
     const beat = beatAt(w.opening) + 1;
-    if (beat >= BEATS) w.phase = 'play';
+    if (beat >= BEATS) w.phase = 'ready';
     else w.opening = beatStart(beat);
+  };
+  const start = () => {
+    if (world.current.phase === 'ready') world.current.phase = 'play';
   };
 
   const pack = () => {
@@ -148,7 +156,10 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
     });
     const onKey = (event: KeyboardEvent) => {
       const onButton = (event.target as HTMLElement).tagName === 'BUTTON';
-      if ((event.key === 'Enter' || event.key === ' ') && !onButton) pack();
+      if ((event.key === 'Enter' || event.key === ' ') && !onButton) {
+        if (w.phase === 'ready') start();
+        else pack();
+      }
     };
     // A hidden tab hears no key or thumb come up, and should make no sound.
     const onVisibility = () => {
@@ -173,7 +184,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
       if (w.phase === 'opening') {
         const before = w.opening;
         w.opening += dt;
-        if (w.opening >= CUTSCENE_SECONDS) w.phase = 'play';
+        if (w.opening >= CUTSCENE_SECONDS) w.phase = 'ready';
         if (before < POWER_OFF_AT && w.opening >= POWER_OFF_AT) audio.powerDown();
         audio.fire(w.opening < OUTSIDE_SECONDS ? 0.2 + (0.8 * w.opening) / OUTSIDE_SECONDS : 0.45);
         // Under reduced motion each line holds one still picture, not a film.
@@ -222,7 +233,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
           w.near = nearestItem(w.x, w.y, w.packed);
           const ready = leavingEarly(seconds - w.elapsed, onDoorMat(w.x, w.y));
           w.onMat = ready ? w.onMat + dt : 0;
-        } else {
+        } else if (w.phase === 'leaving') {
           w.leaving += dt;
         }
         const left = seconds - w.elapsed;
@@ -233,14 +244,15 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
           figure: { x: w.x, y: w.y, facing: w.facing, pose: picking ? 'pick' : w.moving ? 'walk' : 'idle', poseTime: picking ? w.clock - w.packedAt : w.clock },
           packed: w.packed, packedAt: w.packedAt, near: w.phase === 'play' ? w.near : null,
           powered: false, glow: 1, smoke, dark, door: Math.min(1, w.leaving / 0.6),
-          late: left <= LATE_SECONDS, doorArrow: left <= DOOR_ARROW_SECONDS, showBag: true, outlines: w.phase === 'play', calm,
+          late: left <= LATE_SECONDS, doorArrow: left <= DOOR_ARROW_SECONDS, showBag: true, outlines: w.phase !== 'leaving', calm,
           // The ring stays full while the door opens, so it is seen to complete.
-          matHold: w.phase === 'play' ? w.onMat / EARLY_EXIT_HOLD : 1,
+          matHold: w.phase === 'leaving' ? 1 : w.onMat / EARLY_EXIT_HOLD,
         });
       }
 
       const next = {
         playing: w.phase !== 'opening',
+        ready: w.phase === 'ready',
         beat: beatAt(w.opening),
         seconds: Math.max(0, Math.ceil(seconds - w.elapsed)),
         packed: w.packed.length,
@@ -297,6 +309,12 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
     // The loop owns its own state; it starts once with the canvas.
   }, []);
 
+  // The guide takes focus as it opens, so a screen reader reads it first.
+  useEffect(() => {
+    if (hud.ready) guideRef.current?.focus();
+    else stageRef.current?.focus();
+  }, [hud.ready]);
+
   // The stick: the thumb's offset from where it landed, held inside a circle.
   const stickOrigin = useRef<[number, number] | null>(null);
   const moveStick = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -314,13 +332,13 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
   const clockState = hud.seconds <= LATE_SECONDS ? ' late' : hud.seconds <= WARN_SECONDS ? ' warn' : '';
   // The one rule that decides the score, under the clock: said at the start,
   // and again once the door arrow shows.
-  const goal = hud.seconds <= DOOR_ARROW_SECONDS ? copy.HEAD_TO_DOOR : hud.seconds > seconds - RULE_SECONDS ? copy.DRILL_HINT : null;
+  const goal = hud.ready ? null : hud.seconds <= DOOR_ARROW_SECONDS ? copy.HEAD_TO_DOOR : hud.seconds > seconds - RULE_SECONDS ? copy.DRILL_HINT : null;
   const clock = `${Math.floor(hud.seconds / 60)}:${String(hud.seconds % 60).padStart(2, '0')}`;
   const full = hud.packed >= BAG_LIMIT;
   const line = LINES[hud.beat];
 
   return (
-    <div ref={stageRef} className="drill-stage" tabIndex={-1} aria-label={copy.DRILL_LABEL}>
+    <div ref={stageRef} className={hud.ready ? 'drill-stage ready' : 'drill-stage'} tabIndex={-1} aria-label={copy.DRILL_LABEL}>
       {/* A tap on the floor walks the figure there, round walls and furniture. */}
       <canvas
         ref={canvasRef}
@@ -328,6 +346,21 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         aria-label={hud.playing ? copy.DRILL_SCENE_LABEL : copy.CUTSCENE_LABEL}
         onPointerDown={walkTo}
       />
+      {/* Over the paused game: the goal in the middle and a line beside each
+          control, which are ringed above it. A tap or click anywhere, or
+          Enter, starts the clock; the controls ignore taps until then. */}
+      {hud.ready ? (
+        <div ref={guideRef} className="drill-guide" role="dialog" aria-labelledby="drill-guide-goal" tabIndex={-1} onClick={start}>
+          <div className="drill-guide-middle">
+            <p id="drill-guide-goal" className="drill-guide-goal">{copy.GUIDE_GOAL}</p>
+            <p className="drill-guide-start">{copy.GUIDE_START(keys)}</p>
+          </div>
+          <div className="drill-guide-tips">
+            <p className="drill-guide-tip move">{copy.GUIDE_MOVE(keys)}</p>
+            <p className="drill-guide-tip grab">{copy.GUIDE_GRAB(keys)}</p>
+          </div>
+        </div>
+      ) : null}
       <div className={`drill-top${clockState}`}>
         {hud.playing ? <p className="drill-timer figure">{clock}</p> : null}
         {hud.playing && goal ? <p className="drill-goal">{goal}</p> : null}

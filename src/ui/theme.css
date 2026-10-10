@@ -4887,6 +4887,84 @@ body.drill-open .banner {
     animation: none;
   }
 }
+/* The guide over the paused game, before the clock starts. It dims the
+   scene; the controls above it are ringed, and ignore taps until it goes, so
+   a tap anywhere starts. Sound and close stay usable. */
+.drill-guide {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 5, 9, 0.62);
+  cursor: pointer;
+  outline: none;
+}
+.drill-guide-middle {
+  position: absolute;
+  top: 50%;
+  left: calc(env(safe-area-inset-left) + 1.5rem);
+  right: calc(env(safe-area-inset-right) + 1.5rem);
+  max-width: 24rem;
+  margin-inline: auto;
+  transform: translateY(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+.drill-guide-goal {
+  margin: 0;
+  font-size: var(--step-2);
+  font-weight: var(--w-heavy);
+  line-height: 1.2;
+  text-wrap: balance;
+}
+.drill-guide-start {
+  margin: 0;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-pill);
+  color: var(--accent);
+  font-weight: var(--w-bold);
+}
+/* Laid over the two controls exactly as .drill-controls lays them out. */
+.drill-guide-tips {
+  position: absolute;
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.75rem);
+  max-width: 40rem;
+  height: 7.5rem;
+  margin-inline: auto;
+}
+.drill-guide-tip {
+  position: absolute;
+  max-width: min(13rem, 42vw);
+  margin: 0;
+  color: var(--accent);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.drill-guide-tip.move {
+  left: 0;
+  bottom: calc(100% + 0.75rem);
+}
+.drill-guide-tip.grab {
+  right: 0;
+  bottom: calc(5.5rem + 0.75rem);
+}
+.drill-stage.ready .drill-controls > *,
+.drill-stage.ready .drill-bag {
+  pointer-events: none;
+}
+.drill-stage.ready .drill-stick,
+.drill-stage.ready .drill-grab-ring,
+.drill-stage.ready .drill-timer,
+.drill-stage.ready .drill-bag {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
 /* The bag count, just above the ten slots it counts. */
 .drill-bag {
   position: absolute;

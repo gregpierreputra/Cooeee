@@ -28,6 +28,12 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await expect(page.getByRole('img', { name: /bushfire arrives/ })).toBeVisible();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await expect(page.locator('main')).toContainText('Bag 0 of 10');
+    // The guide holds the clock until a tap anywhere starts it.
+    const guide = page.getByRole('dialog', { name: 'Pack ten things, then be at the front door when the time ends.' });
+    await expect(guide).toBeVisible();
+    await page.waitForTimeout(1200);
+    await expect(page.locator('.drill-timer')).toHaveText('0:02');
+    await guide.click();
     // The end of the clock goes straight to the report.
     await expect(page.getByRole('heading', { name: 'Time ran out away from the door' })).toBeVisible();
     await expect(page.locator('main')).not.toContainText('out of 100');
@@ -36,12 +42,16 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await expect(page.locator('.debrief-why')).toContainText('Smoke makes midday dark.');
     await page.getByRole('button', { name: 'Try again' }).click();
     await expect(page.locator('main')).toContainText('Bag 0 of 10');
+    // Playing again goes straight to the clock, with no guide.
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
   test('the grab button names the thing in reach, and is dim with nothing near', async ({ page }) => {
     await page.goto(`${HARNESS}/drill?seconds=60`);
     await page.getByRole('button', { name: 'Start the drill' }).click();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeFocused();
+    await page.keyboard.press('Enter');
     // The figure starts beside the floor lamp.
     await expect(page.getByRole('button', { name: 'Grab the floor lamp' })).toBeEnabled();
     await page.keyboard.down('ArrowLeft');
@@ -57,12 +67,14 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await page.goto(`${HARNESS}/drill?seconds=60`);
     await page.getByRole('button', { name: 'Start the drill' }).click();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    await page.getByRole('dialog').click();
     const top = page.locator('.drill-top');
     await expect(page.locator('.drill-goal')).toHaveText('Be at the front door when the time ends.');
     await expect(top).not.toHaveClass(/warn|late/);
     await page.goto(`${HARNESS}/drill?seconds=15`);
     await page.getByRole('button', { name: 'Start the drill' }).click();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    await page.getByRole('dialog').click();
     await expect(top).toHaveClass(/warn/);
     await expect(page.locator('.drill-goal')).toHaveText('Head to the front door.');
     await expect(top).toHaveClass(/late/, { timeout: 8000 });
