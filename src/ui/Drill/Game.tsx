@@ -350,10 +350,13 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
           control, which are ringed above it. A tap or click anywhere, or
           Enter, starts the clock; the controls ignore taps until then. */}
       {hud.ready ? (
-        <div ref={guideRef} className="drill-guide" role="dialog" aria-labelledby="drill-guide-goal" tabIndex={-1} onClick={start}>
+        <div ref={guideRef} className="drill-guide" role="dialog" aria-labelledby="drill-guide-goal" tabIndex={-1}>
+          {/* The whole screen is one button behind the words, so a tap
+              anywhere starts. Its name is the start line, shown once below. */}
+          <button type="button" className="drill-guide-start-area" aria-label={copy.GUIDE_START(keys)} onClick={start} />
           <div className="drill-guide-middle">
             <p id="drill-guide-goal" className="drill-guide-goal">{copy.GUIDE_GOAL}</p>
-            <p className="drill-guide-start">{copy.GUIDE_START(keys)}</p>
+            <p className="drill-guide-start" aria-hidden="true">{copy.GUIDE_START(keys)}</p>
           </div>
           <div className="drill-guide-tips">
             <p className="drill-guide-tip move">{copy.GUIDE_MOVE(keys).map((part) => <span key={part}>{part} </span>)}</p>
