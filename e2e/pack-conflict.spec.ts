@@ -1,12 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   KEEP_SAVED_PACK,
+  NOTE_LABEL,
+  NOTE_STEP_TITLE,
+  NOTES_DROPPED,
+  NOTES_KEPT,
   NOTHING_CHANGED,
   PLACE_ALREADY_SAVED,
   REPLACE_SAVED_PACK,
   SAVED_PLACE_CHECK_FAILED,
 } from '../src/core/copy';
-import { HARNESS, readPacks as packs } from './helpers';
+import { HARNESS, readPacks as packs, storageCounts } from './helpers';
 
 const CONFLICT_URL = `${HARNESS}/conflict`;
 // The harness saves a pack at the one candidate address: confirming that same
@@ -92,4 +96,42 @@ test('AC8 store failure stops before network and states that nothing changed', a
   await expect(page.getByRole('heading')).toHaveText(SAVED_PLACE_CHECK_FAILED);
   await expect(page.getByRole('status')).toContainText(NOTHING_CHANGED);
   expect(await page.evaluate(() => window.__areaCheckCount)).toBe(0);
+});
+
+// Replacing a pack keeps the notes already written for the place, and its note
+// step starts empty so no second example is added. The person can choose to
+// start without them, and nothing is removed until the new pack is saved.
+async function replaceToNoteStep(page: Page) {
+  await reachConflict(page, '?mode=notes');
+  await page.getByRole('button', { name: REPLACE_SAVED_PACK }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  const boxes = page.getByRole('checkbox');
+  await boxes.nth(0).check();
+  await boxes.nth(1).check();
+  await page.getByRole('button', { name: 'Save last-resort places' }).click();
+  await expect(page.getByRole('heading', { name: NOTE_STEP_TITLE })).toBeVisible();
+}
+
+test('a replace keeps the notes already written, and adds no example beside them', async ({ page }) => {
+  await replaceToNoteStep(page);
+  await expect(page.getByLabel(NOTE_LABEL)).toHaveValue('');
+  await expect(page.getByRole('status').filter({ hasText: NOTES_KEPT(2) })).toBeVisible();
+  await page.getByRole('button', { name: 'Not now' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
+  expect(await storageCounts(page)).toMatchObject({ packs: 1, notes: 2 });
+});
+
+test('a replace can start without the notes, removed only once the new pack is saved', async ({ page }) => {
+  await replaceToNoteStep(page);
+  await page.getByRole('button', { name: 'Start without them' }).click();
+  await expect(page.getByRole('status').filter({ hasText: NOTES_DROPPED(2) })).toBeVisible();
+  // Changing their mind puts it back, and choosing again holds until the save.
+  await page.getByRole('button', { name: 'Keep them' }).click();
+  await page.getByRole('button', { name: 'Start without them' }).click();
+  await page.getByRole('button', { name: 'Not now' }).click();
+  expect(await storageCounts(page)).toMatchObject({ notes: 2 });
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
+  expect(await storageCounts(page)).toMatchObject({ packs: 1, notes: 0 });
 });

@@ -12,12 +12,15 @@ type NoteProps = {
   initial?: string;
   /** The note to keep, or undefined to go on without one. */
   onContinue: (text?: string) => void;
+  /** Replacing a pack that holds notes: how many, whether they are kept, and
+   *  the choice to start without them. */
+  replacing?: { count: number; keep: boolean; onKeep: (keep: boolean) => void };
 };
 
 /** The personal-note step: one box, pre-filled with an example written for
  *  this place, and a plain way past it. Nothing is written here; the parent
  *  carries the text into the pack save. */
-export function Note({ example, initial, onContinue }: NoteProps) {
+export function Note({ example, initial, onContinue, replacing }: NoteProps) {
   const [text, setText] = useState(initial ?? example);
 
   return (
@@ -39,6 +42,17 @@ export function Note({ example, initial, onContinue }: NoteProps) {
           onChange={(event) => setText(typeBullets(event))}
           onKeyDown={(event) => continueBullets(event, setText)}
         />
+        {/* A replace says what happens to the notes already written, and lets
+            the person start without them. Nothing is removed until the new
+            pack is saved. */}
+        {replacing ? (
+          <p className={replacing.keep ? 'muted place-note note-kept' : 'tone-amber place-note note-kept'} role="status">
+            {replacing.keep ? copy.NOTES_KEPT(replacing.count) : copy.NOTES_DROPPED(replacing.count)}{' '}
+            <button type="button" className="note-kept-toggle" onClick={() => replacing.onKeep(!replacing.keep)}>
+              {replacing.keep ? copy.START_WITHOUT_NOTES(replacing.count) : copy.KEEP_OLD_NOTES(replacing.count)}
+            </button>
+          </p>
+        ) : null}
       </div>
       <div className="actions confirm-actions">
         <button className="main-action" type="button" onClick={() => onContinue(text.trim() || undefined)}>

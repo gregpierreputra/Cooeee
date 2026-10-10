@@ -943,6 +943,22 @@ textarea {
   resize: vertical;
 }
 
+/* On a replace, what happens to the notes already written: a line under the
+   box, its choice as a small teal link like Source. */
+.note-kept-toggle {
+  min-height: 32px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: var(--w-med);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* The note step's box shows the whole pre-filled example without scrolling. */
 .note-page textarea {
   min-height: 22rem;

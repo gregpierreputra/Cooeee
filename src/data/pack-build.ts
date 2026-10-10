@@ -1,4 +1,4 @@
-import { moveNoteDraft } from '../core/note-draft';
+import { clearNoteDraft, moveNoteDraft } from '../core/note-draft';
 import { canonicalJson, canonicalOrder, exactTextBytes, offerMatchesStoredSize } from '../core/pack-offer';
 import { hasCompleteSource, prepareProvenancedContent, type OmittedItem } from '../core/provenance';
 import type {
@@ -132,6 +132,7 @@ export async function verifyAndFinalizeTextOnlyPack(
   content: TextPackContent,
   offer: PackOffer,
   verifiedAt: number,
+  keepNotes = true,
 ): Promise<void> {
   const staged = await db.packs.get(content.pack.id);
   if (staged?.status !== 'building') throw new Error('building pack is missing');
@@ -173,15 +174,16 @@ export async function verifyAndFinalizeTextOnlyPack(
       //
       // Inside this transaction, with everything else: a rebuild that half
       // moved a reader's history would be worse than one that dropped it.
-      await carryHistoryToNewPack(oldId, current.id);
+      await carryHistoryToNewPack(oldId, current.id, keepNotes);
       await deleteOwnedRows([oldId]);
       await db.packs.delete(oldId);
     }
     await db.packs.update(current.id, { status: 'complete', verifiedAt });
     return oldId;
   });
-  // The unsaved words of a note move with the notes, once the move is committed.
-  if (oldId) moveNoteDraft(localFlagStore(), oldId, staged.id);
+  // The unsaved words of a note go where the notes went, once that is committed.
+  if (oldId && keepNotes) moveNoteDraft(localFlagStore(), oldId, staged.id);
+  else if (oldId) clearNoteDraft(localFlagStore(), oldId);
 }
 
 export async function saveTextOnlyPack(
@@ -190,6 +192,9 @@ export async function saveTextOnlyPack(
   verifiedAt: number,
   files: PackFile[] = [],
   noteText?: string,
+  /** On a replace, whether the old pack's notes come with it. Chosen on the
+   *  note step, and acted on only once the new pack is whole. */
+  keepNotes = true,
 ): Promise<void> {
   // The first note is written with the pack itself, so it is exactly as
   // atomic — and as invisible until the pack is complete — as the rest.
@@ -201,7 +206,7 @@ export async function saveTextOnlyPack(
   };
   try {
     await stageTextOnlyPack(content, offer, files, note);
-    await verifyAndFinalizeTextOnlyPack(content, offer, verifiedAt);
+    await verifyAndFinalizeTextOnlyPack(content, offer, verifiedAt, keepNotes);
   } catch (error) {
     await discardBuildingPack(content.pack.id);
     throw error;
