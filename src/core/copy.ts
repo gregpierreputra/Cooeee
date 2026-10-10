@@ -967,8 +967,10 @@ export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
 
 /** UAT: "Live" was read as the centre being open. The label is about the
  *  information, so it says when it was updated. */
-export const STATE_LIVE = 'Updated just now';
-export const STATE_CACHED = (age: string) => `Cached · ${age}`;
+export const STATE_LIVE = 'Just updated';
+/** Between a state and its age. A card sets the age on its own line beneath. */
+export const STATE_AGE_JOIN = ' · ';
+export const STATE_CACHED = (age: string) => `Cached${STATE_AGE_JOIN}${age}`;
 export const STATE_UNAVAILABLE = 'Unavailable';
 export const JUST_NOW = 'just now';
 /** One age wording everywhere, through ageLabel: "1 minute ago", "3 hours ago". */
