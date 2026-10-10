@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import {
@@ -586,12 +586,13 @@ export function Search({
 
   // Each step replaces the page under the same path, so focus is moved to it
   // and the page starts at its top here; the route change that would
-  // otherwise do both never happens.
+  // otherwise do both never happens. Before the step is painted, so a long
+  // step is never drawn once at the last step's scroll and then jumps.
   const step = [
     !!candidate, !!pendingPlace, conflictState?.kind, areaState?.kind,
     placesState?.kind, !!chosenPlaces, offerState?.kind,
   ].join();
-  useEffect(() => {
+  useLayoutEffect(() => {
     window.scrollTo(0, 0);
     focusMain();
   }, [step]);

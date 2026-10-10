@@ -1522,6 +1522,11 @@ main:focus {
   margin: 0 auto;
 }
 
+/* The room Back takes, kept while Back is held in the pack builder. */
+.back-bar-held {
+  min-height: 44px;
+}
+
 /* A running rehearsal's bar sits inside the back bar, above the control, flush
    with the top edge so the two read as one strip. */
 .back-bar .rehearsal-bar {
