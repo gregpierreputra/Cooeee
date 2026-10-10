@@ -6,7 +6,7 @@ import {
   exactTextBytes,
   formatPackBytes,
   offerMatchesStoredSize,
-  packOfferSizeLine,
+  packOfferSize,
 } from '../../src/core/pack-offer';
 import type { PackOffer, PackSeed, TextPackContent } from '../../src/core/types';
 import { destination, pack, packProgram } from '../fixtures';
@@ -90,7 +90,7 @@ describe('E1-US1-AC9 size display and verification', () => {
   // second figure to contrast it with and no word left over from the one there
   // was.
   it('states the pack size as one figure', () => {
-    expect(packOfferSizeLine(offer)).toBe('This pack is 412 KB');
+    expect(packOfferSize(offer)).toBe('412 KB');
   });
 
   it('requires the stored text bytes to be exactly the stated size', () => {
@@ -105,7 +105,7 @@ describe('E1-US1-AC9 size display and verification', () => {
 
   it('counts the stored PDF copies in the one stated size', () => {
     const withFile = { ...offer, fileBytes: 100 };
-    expect(packOfferSizeLine(withFile)).toBe('This pack is 413 KB');
+    expect(packOfferSize(withFile)).toBe('413 KB');
     expect(offerMatchesStoredSize(withFile, { text: 421_888, files: 100, tiles: 0 })).toBe(true);
     expect(offerMatchesStoredSize(withFile, { text: 421_888, tiles: 0 })).toBe(false);
   });

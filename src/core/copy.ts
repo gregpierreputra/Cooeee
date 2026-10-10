@@ -169,12 +169,29 @@ export const REPLACE_SAVED_PACK = 'Replace with new';
 export const SAVED_PLACE_CHECK_FAILED = 'This phone could not be checked.';
 export const NOTHING_CHANGED = 'Nothing changed.';
 
-// E1-US1-AC9 pack offer and download
-export const READY_TO_DOWNLOAD = 'Ready to download';
-export const PACK_SIZE_LINE = (size: string) => `This pack is ${size}`;
+// E1-US1-AC9 the pack's summary and its save. "Save" throughout: it is what
+// the person does with a pack. "Download" is kept for what comes from the
+// internet, such as the places list.
+export const READY_TO_SAVE = 'Ready to save';
 export const SAVE_PACK = 'Save this pack';
 export const SAVING_PACK = 'Saving…';
-export const DOWNLOAD_STOPPED = 'Download stopped.';
+export const SAVE_STOPPED = 'Saving stopped before it finished.';
+/** The summary's rows: what the pack holds, said before it is saved. */
+export const SUMMARY_AREA = 'Bushfire area';
+export const SUMMARY_PLACES = 'Places of last resort';
+export const SUMMARY_NOTE = 'Note';
+export const SUMMARY_PROGRAMS = 'Saved programs';
+export const SUMMARY_SIZE = 'Size';
+export const SUMMARY_NONE = 'None';
+export const SUMMARY_PENDING = 'Working this out…';
+export const SUMMARY_PROGRAMS_VALUE = (count: number): string =>
+  count === 0 ? SUMMARY_NONE : count === 1 ? 'One program' : `${count} programs`;
+/** The note row: a new note, and on a replace, the notes already saved. */
+export const SUMMARY_NOTE_VALUE = (newNote: boolean, saved: number, keepSaved: boolean): string => {
+  const old = saved === 0 ? null : `${saved === 1 ? 'Your saved note' : `Your ${saved} saved notes`} ${keepSaved ? 'kept' : 'removed'}`;
+  if (old && newNote) return `${old}, and a new one`;
+  return old ?? (newNote ? 'One note' : SUMMARY_NONE);
+};
 export const PREVIOUS_PACK_UNTOUCHED = 'Nothing changed. Your previous pack is untouched.';
 /** The phone ran out of room while saving. Trying again cannot help until some is freed. */
 export const NOT_ENOUGH_SPACE = 'There is not enough space on this phone for this pack. Free some space, then try again.';

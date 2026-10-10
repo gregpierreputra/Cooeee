@@ -149,7 +149,7 @@ test('the steps bar goes back to a step already done, keeping its answers', asyn
   await boxes.nth(2).check();
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
   await page.getByRole('button', { name: 'Not now' }).click();
-  await expect(page.getByRole('heading')).toHaveText('Ready to download');
+  await expect(page.getByRole('heading')).toHaveText('Ready to save');
 
   const bar = page.getByRole('navigation', { name: 'Steps to build a pack' });
   await expect(bar.getByRole('listitem')).toHaveText(['Address', 'Area', 'Places', 'Note', 'Save']);
