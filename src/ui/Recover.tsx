@@ -211,7 +211,8 @@ export default function Recover({
         <header className="hero">
           <span className="kicker">{copy.NAV_RECOVER}</span>
           <h1>{copy.WHO_TO_CALL}</h1>
-          <p className="muted with-glyph">
+          {/* Footnotes in the small grey, as on the pack page. */}
+          <p className="muted place-note with-glyph">
             <Glyph kind="calls" line />
             {copy.CALLS_LINE}
           </p>
@@ -236,7 +237,7 @@ export default function Recover({
         </section>
         <section className="call-group">
           <h2 className="kicker">{copy.TALK_TO_SOMEONE}</h2>
-          <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
+          <p className="muted place-note">{copy.TALK_TO_SOMEONE_LINE}</p>
           <WellbeingLines />
         </section>
       </main>
