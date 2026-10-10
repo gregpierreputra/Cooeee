@@ -33,12 +33,9 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
         <header className="hero">
           <FlowSteps at={3} />
           <h1>{copy.NOTE_STEP_TITLE}</h1>
-          <p className="muted with-glyph">
-            {/* The downloaded sign, as on a pack card: kept on this phone. Not a
-                lock, which would promise a protection the note does not have. */}
-            <Glyph kind="saved" line />
-            {copy.NOTE_DISCLOSURE}
-          </p>
+          {/* Where the note is kept, in words alone: the saved sign means
+              already saved, and nothing is saved until the pack is. */}
+          <p className="muted">{copy.NOTE_DISCLOSURE}</p>
         </header>
         {/* A replace shows the notes already written for the place before the
             box, as they are, and what happens to them. Nothing is removed until
