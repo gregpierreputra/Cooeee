@@ -13,6 +13,7 @@ import CallCard from './components/CallCard';
 import { focusMain } from './components/focusMain';
 import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
+import { shareOrCopy } from './components/shareOrCopy';
 import StateCard from './components/StateCard';
 import WellbeingLines from './components/WellbeingLines';
 import Roadmap from './Roadmap';
@@ -100,27 +101,11 @@ export default function Recover({
   const choose = (next: Choice) => setParams({ need: next });
 
 
-  // The phone's own share sheet where there is one (a text message needs no
-  // data), otherwise the clipboard. A share the person cancels reports nothing;
-  // a share sheet that refuses falls back to the clipboard.
+  // The note shows only on the list it was shared from.
   async function share(text: string) {
     const on = choice;
-    try {
-      await navigator.share({ text });
-      return;
-    } catch (error) {
-      // Cancelled by the person, or a second tap while the share sheet is still
-      // open (InvalidStateError). Neither is a share that failed, so neither
-      // earns the clipboard note while the real sheet is on screen.
-      const name = error instanceof DOMException ? error.name : '';
-      if (name === 'AbortError' || name === 'InvalidStateError') return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setShared({ on, state: 'copied' });
-    } catch {
-      setShared({ on, state: 'unavailable' });
-    }
+    const result = await shareOrCopy(text);
+    if (result === 'copied' || result === 'unavailable') setShared({ on, state: result });
   }
 
   // The page itself, empty, while the store answers, so focus has somewhere to land.

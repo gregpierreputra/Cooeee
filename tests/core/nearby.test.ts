@@ -6,8 +6,10 @@ import {
   nearbyView,
   nearestOfType,
   parsePostcode,
+  placeShareText,
   postcodeOrigin,
   type NearbyCache,
+  type NearbyRow,
   type NearbyView,
 } from '../../src/core/nearby';
 import type { BundleFacility, SnapshotActivation } from '../../src/core/types';
@@ -222,5 +224,29 @@ describe('nearbyView', () => {
     expect(copy.HEALTH_TEXT('not yet read', null)).toBe('Not yet read');
     const never = nearbyView(NOW, KALORAMA, cache({ meta: { static_synced_at: ago(0), data_health: JSON.stringify({ vicemergency_feed: { status: 'unknown', last_success_at: null } }) } }), OFFLINE);
     expect(sources('relief', never)).toContainEqual({ lead: 'VicEmergency feed', status: 'unknown', text: copy.HEALTH_TEXT('not yet read', null) });
+  });
+});
+
+describe('placeShareText', () => {
+  const row: NearbyRow = {
+    type: 'NSP',
+    title: 'Neighbourhood Safer Place',
+    place: { name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', distance: '580 m', about: { kind: 'Open space', note: 'No staff or services' } },
+    state: 'cached',
+    stateLabel: 'Cached · 2 hours ago',
+    timestamp: 'Verified 31 August 2026',
+    note: null,
+  };
+
+  it('sends the place, how current it is and where to check, never the distance', () => {
+    expect(placeShareText(row)).toBe(
+      'Neighbourhood Safer Place\nKalorama Memorial Reserve\nRidge Road, Kalorama\nOpen space · No staff or services\nVerified 31 August 2026\n\nShared from Cooeee. Check VicEmergency for the latest.',
+    );
+    expect(placeShareText(row)).not.toContain('580 m');
+  });
+
+  it('carries the warning on its card, and is empty with no place', () => {
+    expect(placeShareText({ ...row, note: 'May be outdated.' })).toContain('May be outdated.');
+    expect(placeShareText({ ...row, place: null })).toBe('');
   });
 });

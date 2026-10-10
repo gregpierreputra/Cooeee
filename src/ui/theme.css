@@ -3527,6 +3527,13 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-s);
 }
 /* The postcode in the origin line, picked out in the accent. */
+/* Share on a Nearby place: a small pill at the foot of its card. */
+.nearby-share {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0.5rem 0.875rem;
+  font-size: var(--step-s);
+}
 .nearby-origin-code {
   color: var(--accent);
   font-weight: var(--w-bold);
