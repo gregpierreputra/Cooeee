@@ -358,6 +358,8 @@ export default function Nearby({
 /** One facility type. Each row carries its own state word and timestamp, so a
  *  live static place and a cached relief centre can never read as equals. */
 function PlaceRow({ row }: { row: NearbyRow }) {
+  // The state on one line and its age, if any, beneath it, in the corner.
+  const [state, age] = row.stateLabel.split(copy.STATE_AGE_JOIN);
   // With no share sheet the place is copied, and Share says so for a moment,
   // as Copy does on a call card.
   const [copied, showCopied] = useCopied();
@@ -375,8 +377,17 @@ function PlaceRow({ row }: { row: NearbyRow }) {
       <div className="nearby-row-head">
         <h3>{row.title}</h3>
         <span className={`state-pill state-${row.state}`}>
-          <span className="state-dot" aria-hidden="true" />
-          {row.stateLabel}
+          <span className="state-word">
+            <span className="state-dot" aria-hidden="true" />
+            {state}
+          </span>
+          {/* The join is read out, not shown, so the label reads as one line. */}
+          {age ? (
+            <span className="state-age">
+              <span className="visually-hidden">{copy.STATE_AGE_JOIN}</span>
+              {age}
+            </span>
+          ) : null}
         </span>
       </div>
       {/* How current the card is: the date sits under the status, on every
