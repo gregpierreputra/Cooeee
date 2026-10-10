@@ -10,13 +10,13 @@ test('AC1 renders the confirmation order and immutable address', async ({ page }
   const address = page.getByTestId('returned-address');
   const name = page.getByLabel('Place name');
   const save = page.getByRole('button', { name: 'Save this place' });
-  const searchAgain = page.getByRole('button', { name: 'Search again' });
+  const notThisPlace = page.getByRole('button', { name: 'Not this place' });
 
   await expect(heading).toBeVisible();
   await expect(address).toHaveText('6 RIDGE ROAD KALORAMA 3766');
   await expect(name).toHaveValue('KALORAMA');
 
-  const order = await Promise.all([heading, address, name, save, searchAgain].map(async (locator) =>
+  const order = await Promise.all([heading, address, name, save, notThisPlace].map(async (locator) =>
     locator.evaluate((element) => {
       const all = [...document.querySelectorAll('h1, p, input, button')];
       return all.indexOf(element);
@@ -56,7 +56,7 @@ test('AC1 search again retains nothing and makes no request', async ({ page }) =
   let requests = 0;
   page.on('request', () => requests += 1);
 
-  await page.getByRole('button', { name: 'Search again' }).click();
+  await page.getByRole('button', { name: 'Not this place' }).click();
 
   expect(await page.evaluate(() => window.__searchAgainCount)).toBe(1);
   expect(await page.evaluate(() => window.__confirmedPlace)).toBeUndefined();
@@ -92,7 +92,7 @@ test('AC1 keyboard order, focus and targets are accessible', async ({ page }) =>
     page.getByLabel('Place name'),
     page.getByRole('radio', { name: 'Place' }),
     page.getByRole('button', { name: 'Save this place' }),
-    page.getByRole('button', { name: 'Search again' }),
+    page.getByRole('button', { name: 'Not this place' }),
   ]) {
     await page.keyboard.press('Tab');
     await expect(target).toBeFocused();
@@ -101,7 +101,7 @@ test('AC1 keyboard order, focus and targets are accessible', async ({ page }) =>
 
   for (const button of [
     page.getByRole('button', { name: 'Save this place' }),
-    page.getByRole('button', { name: 'Search again' }),
+    page.getByRole('button', { name: 'Not this place' }),
   ]) {
     const box = await button.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);

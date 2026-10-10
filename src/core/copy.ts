@@ -99,6 +99,8 @@ export const CONFIRM_ADDRESS_QUESTION = 'Is this the place?';
 export const PLACE_NAME_LABEL = 'Place name';
 export const SAVE_THIS_PLACE = 'Save this place';
 export const SEARCH_AGAIN = 'Search again';
+/** The no to Is this the place?: back to the search, what was typed kept. */
+export const NOT_THIS_PLACE = 'Not this place';
 
 // E1-US1-AC2–AC4 address search
 export const BUILD_A_PACK = 'New offline pack';
