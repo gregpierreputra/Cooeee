@@ -57,3 +57,13 @@ test('the password reaches the welcome page and stores one flag', async ({ page 
     ),
   ).toEqual({ [GATE_KEY]: GATE_VALUE });
 });
+
+// The mark sits in its ring centred over the name, on the gate as on the
+// welcome and the disclosure that follow it.
+test('the mark is centred over the name on the gate', async ({ page }) => {
+  await page.goto('/');
+  const ring = (await page.locator('.gate .first-open-mark').boundingBox())!;
+  const name = (await page.locator('.gate h1').boundingBox())!;
+  const middle = (box: { x: number; width: number }) => box.x + box.width / 2;
+  expect(Math.abs(middle(ring) - middle(name))).toBeLessThan(2);
+});
