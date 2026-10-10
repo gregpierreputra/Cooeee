@@ -963,10 +963,15 @@ textarea {
 .notes-dropped .note-card {
   opacity: 0.45;
 }
+/* The choice about the saved notes: across the column as the note cards and
+   the box are, its words kept smaller than the step's main button, and a wider
+   gap after it closing the saved notes off from the new one. */
 .notes-choice {
-  justify-self: start;
-  min-height: 44px;
-  padding: 0.5rem 0.875rem;
+  justify-self: stretch;
+  justify-content: center;
+  min-height: 48px;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.625rem 1rem;
   font-size: var(--step-s);
 }
 
