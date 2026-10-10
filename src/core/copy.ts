@@ -326,14 +326,13 @@ export const NOTE_EXAMPLE = (placeName: string, chosen?: Destination) =>
   ].filter(Boolean).map((point) => `• ${point}`).join('\n');
 export const KEEP_NOTE = 'Keep this note';
 export const SKIP_NOTE = 'Not now';
-/** Replacing a pack: the notes already written for the place come with the new
- *  pack unless the person chooses to start without them. */
-export const NOTES_KEPT = (count: number) =>
-  count === 1 ? 'Your note for this place is kept.' : `Your ${count} notes for this place are kept.`;
+/** Replacing a pack: the notes already written for the place, shown above the
+ *  box, come with the new pack unless the person chooses to start without them. */
+export const NOTES_SAVED_HEADING = 'Already saved for this place';
+export const NOTE_ADD_ANOTHER = 'Add another note';
+export const NOTES_KEPT = (count: number) => (count === 1 ? 'It stays with the new pack.' : 'These stay with the new pack.');
 export const NOTES_DROPPED = (count: number) =>
-  count === 1
-    ? 'Your note for this place will be removed when the new pack is saved.'
-    : `Your ${count} notes for this place will be removed when the new pack is saved.`;
+  count === 1 ? 'It will be removed when the new pack is saved.' : 'These will be removed when the new pack is saved.';
 export const START_WITHOUT_NOTES = (count: number) => (count === 1 ? 'Start without it' : 'Start without them');
 export const KEEP_OLD_NOTES = (count: number) => (count === 1 ? 'Keep it' : 'Keep them');
 

@@ -2,7 +2,9 @@ import { useState } from 'react';
 
 import { NOTE_MAX_CHARS } from '../../core/constants';
 import * as copy from '../../core/copy';
+import type { PackNote } from '../../core/types';
 import Glyph from '../components/Glyph';
+import NoteText from '../components/NoteText';
 import { continueBullets, typeBullets } from '../components/bulletTyping';
 import FlowSteps from './FlowSteps';
 
@@ -12,9 +14,9 @@ type NoteProps = {
   initial?: string;
   /** The note to keep, or undefined to go on without one. */
   onContinue: (text?: string) => void;
-  /** Replacing a pack that holds notes: how many, whether they are kept, and
+  /** Replacing a pack that holds notes: the notes, whether they are kept, and
    *  the choice to start without them. */
-  replacing?: { count: number; keep: boolean; onKeep: (keep: boolean) => void };
+  replacing?: { notes: PackNote[]; keep: boolean; onKeep: (keep: boolean) => void };
 };
 
 /** The personal-note step: one box, pre-filled with an example written for
@@ -24,7 +26,9 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
   const [text, setText] = useState(initial ?? example);
 
   return (
-    <main className="page note-page">
+    // A replace starts empty under the notes already saved, so its box is the
+    // usual size, not tall enough for the whole example.
+    <main className={replacing ? 'page note-page replacing' : 'page note-page'}>
       <div className="confirm-content">
         <header className="hero">
           <FlowSteps at={3} />
@@ -34,7 +38,30 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
             {copy.NOTE_DISCLOSURE}
           </p>
         </header>
-        <label htmlFor="pack-note">{copy.NOTE_LABEL}</label>
+        {/* A replace shows the notes already written for the place before the
+            box, as they are, and what happens to them. Nothing is removed until
+            the new pack is saved. */}
+        {replacing ? (
+          <section className={replacing.keep ? 'notes-saved' : 'notes-saved notes-dropped'} aria-labelledby="notes-saved-heading">
+            <h2 id="notes-saved-heading" className="kicker">{copy.NOTES_SAVED_HEADING}</h2>
+            <ul className="list">
+              {replacing.notes.map((note) => (
+                <li key={note.id} className="card note-card">
+                  <div className="note-text">
+                    <NoteText text={note.text} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className={replacing.keep ? 'muted place-note' : 'tone-amber place-note'} role="status">
+              {replacing.keep ? copy.NOTES_KEPT(replacing.notes.length) : copy.NOTES_DROPPED(replacing.notes.length)}{' '}
+              <button type="button" className="note-kept-toggle" onClick={() => replacing.onKeep(!replacing.keep)}>
+                {replacing.keep ? copy.START_WITHOUT_NOTES(replacing.notes.length) : copy.KEEP_OLD_NOTES(replacing.notes.length)}
+              </button>
+            </p>
+          </section>
+        ) : null}
+        <label htmlFor="pack-note">{replacing ? copy.NOTE_ADD_ANOTHER : copy.NOTE_LABEL}</label>
         <textarea
           id="pack-note"
           value={text}
@@ -42,17 +69,6 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
           onChange={(event) => setText(typeBullets(event))}
           onKeyDown={(event) => continueBullets(event, setText)}
         />
-        {/* A replace says what happens to the notes already written, and lets
-            the person start without them. Nothing is removed until the new
-            pack is saved. */}
-        {replacing ? (
-          <p className={replacing.keep ? 'muted place-note note-kept' : 'tone-amber place-note note-kept'} role="status">
-            {replacing.keep ? copy.NOTES_KEPT(replacing.count) : copy.NOTES_DROPPED(replacing.count)}{' '}
-            <button type="button" className="note-kept-toggle" onClick={() => replacing.onKeep(!replacing.keep)}>
-              {replacing.keep ? copy.START_WITHOUT_NOTES(replacing.count) : copy.KEEP_OLD_NOTES(replacing.count)}
-            </button>
-          </p>
-        ) : null}
       </div>
       <div className="actions confirm-actions">
         <button className="main-action" type="button" onClick={() => onContinue(text.trim() || undefined)}>

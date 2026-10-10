@@ -943,8 +943,26 @@ textarea {
   resize: vertical;
 }
 
-/* On a replace, what happens to the notes already written: a line under the
-   box, its choice as a small teal link like Source. */
+/* On a replace, the notes already written for the place, above the box: small
+   read-only cards, long ones cut to three lines, then what happens to them with
+   its choice as a small teal link like Source. Chosen to go, they fade. */
+.notes-saved {
+  display: grid;
+  gap: 0.5rem;
+}
+.notes-saved .note-card {
+  padding: 0.75rem 1rem;
+  font-size: var(--step-s);
+}
+.notes-saved .note-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.notes-dropped .note-card {
+  opacity: 0.45;
+}
 .note-kept-toggle {
   min-height: 32px;
   min-width: 0;
@@ -962,6 +980,9 @@ textarea {
 /* The note step's box shows the whole pre-filled example without scrolling. */
 .note-page textarea {
   min-height: 22rem;
+}
+.note-page.replacing textarea {
+  min-height: 9rem;
 }
 
 /* The default control is a ghost pill, as the mockups' .btn.g. Screens whose

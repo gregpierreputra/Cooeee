@@ -34,12 +34,13 @@ import type {
   NspSnapshot,
   Pack,
   PackFile,
+  PackNote,
   PackOffer,
   PendingPlace,
   RecoveryProgram,
   TextPackContent,
 } from '../../core/types';
-import { countNotes, listCompletePacks, listPrograms, listSavedPackNames } from '../../data/db';
+import { listCompletePacks, listNotes, listPrograms, listSavedPackNames } from '../../data/db';
 import { localFlagStore } from '../../data/acknowledgement';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
@@ -127,8 +128,8 @@ type SearchProps = {
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
   savePack?: typeof saveTextOnlyPack;
-  /** How many notes the pack being replaced holds. */
-  loadNoteCount?: (packId: string) => Promise<number>;
+  /** The notes the pack being replaced holds. */
+  loadNotes?: (packId: string) => Promise<PackNote[]>;
   makePackId?: () => string;
   now?: () => number;
   onPackSaved?: (packId: string) => void;
@@ -160,7 +161,7 @@ export function Search({
   onKeepSavedPlace,
   buildOffer = createPackOffer,
   savePack = saveTextOnlyPack,
-  loadNoteCount = countNotes,
+  loadNotes = listNotes,
   makePackId = () => crypto.randomUUID(),
   now = Date.now,
   onPackSaved,
@@ -210,7 +211,7 @@ export function Search({
   }, []);
   const [supersedes, setSupersedes] = useState<Pack | undefined>(undefined);
   // On a replace, the old pack's notes: how many, and whether they come along.
-  const [oldNotes, setOldNotes] = useState(0);
+  const [oldNotes, setOldNotes] = useState<PackNote[]>([]);
   const [keepNotes, setKeepNotes] = useState(true);
   const [offerState, setOfferState] = useState<OfferState | null>(null);
   const [placesState, setPlacesState] = useState<PlacesState | null>(null);
@@ -496,7 +497,7 @@ export function Search({
     setConflictState(null);
     setCandidate(null);
     setSupersedes(undefined);
-    setOldNotes(0);
+    setOldNotes([]);
     setKeepNotes(true);
     setOfferState(null);
     setPlacesState(null);
@@ -525,7 +526,7 @@ export function Search({
       setAreaState(null);
       setConflictState(null);
       setSupersedes(undefined);
-      setOldNotes(0);
+      setOldNotes([]);
       setKeepNotes(true);
     } else if (at === 'places') setPlacesState(null);
     else if (at === 'note') setChosenPlaces(null);
@@ -600,8 +601,8 @@ export function Search({
         onReplace={() => {
           setSupersedes(conflictState.savedPack);
           setKeepNotes(true);
-          setOldNotes(0);
-          loadNoteCount(conflictState.savedPack.id).then(setOldNotes, () => setOldNotes(0));
+          setOldNotes([]);
+          loadNotes(conflictState.savedPack.id).then(setOldNotes, () => setOldNotes([]));
           setConflictState(null);
           void runAreaCheck(pendingPlace);
         }}
@@ -694,14 +695,14 @@ export function Search({
   // nearest chosen place, so the note is about this pack from the first word.
   if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
     const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
-    const replacingNotes = supersedes !== undefined && oldNotes > 0;
+    const replacingNotes = supersedes !== undefined && oldNotes.length > 0;
     return (
       <Note
         example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
         // A replace with notes already written starts empty, so going on adds
         // no second example beside them.
         initial={note ?? (replacingNotes ? '' : undefined)}
-        replacing={replacingNotes ? { count: oldNotes, keep: keepNotes, onKeep: setKeepNotes } : undefined}
+        replacing={replacingNotes ? { notes: oldNotes, keep: keepNotes, onKeep: setKeepNotes } : undefined}
         onContinue={(text) => {
           setNote(text);
           void buildPackOfferForResult(pendingPlace, areaState.result, chosenPlaces);
