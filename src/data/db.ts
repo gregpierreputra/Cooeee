@@ -201,16 +201,18 @@ async function carryCompletions(oldId: string, newId: string): Promise<void> {
  *  action the reader had marked done against it — and the action a rehearsal
  *  most often asks for is to build the pack again, so doing what the product
  *  asked would destroy the record of having done it. */
-export async function carryHistoryToNewPack(oldId: string, newId: string): Promise<void> {
+export async function carryHistoryToNewPack(oldId: string, newId: string, keepNotes = true): Promise<void> {
   await carryRehearsals(oldId, newId);
   await carryCompletions(oldId, newId);
   // A drill's key is its own id too, so only the field changes.
   await db.drills.where('packId').equals(oldId).modify({ packId: newId });
   // The reader's own notes are theirs, about the place, and nothing can write
-  // them again. They move with the history instead of going with the old rows.
-  // A note's key is its own id, so only the field changes. The caller's
-  // transaction already holds the notes table, which ownedTables() lists.
-  await db.notes.where('packId').equals(oldId).modify({ packId: newId });
+  // them again. They move with the history instead of going with the old rows,
+  // unless the reader chose to start without them: then they stay behind and go
+  // with the old pack's rows. A note's key is its own id, so only the field
+  // changes. The caller's transaction already holds the notes table, which
+  // ownedTables() lists.
+  if (keepNotes) await db.notes.where('packId').equals(oldId).modify({ packId: newId });
 }
 
 /** Remove every row the given packs own. Callers run this inside their own
@@ -393,6 +395,9 @@ export async function listSavedProgramIds(): Promise<string[]> {
   const rows = await db.packPrograms.where('packId').anyOf(packIds).toArray();
   return [...new Set(rows.map((row) => row.programId))];
 }
+
+/** How many notes a pack holds: what a replace says it keeps. */
+export const countNotes = (packId: string): Promise<number> => db.notes.where('packId').equals(packId).count();
 
 /** A pack's notes, oldest first. Only the complete-pack reads below call this. */
 const listNotes = (packId: string): Promise<PackNote[]> =>

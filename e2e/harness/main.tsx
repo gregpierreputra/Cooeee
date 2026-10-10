@@ -145,6 +145,13 @@ const savedPack: Pack = {
 // address is what reaches the keep-or-replace step.
 if (window.location.pathname === '/conflict' && await db.packs.count() === 0) {
   await db.packs.put({ ...savedPack, address: testCandidate.address });
+  // ?mode=notes: the saved pack already holds two notes.
+  if (new URLSearchParams(window.location.search).get('mode') === 'notes') {
+    await db.notes.bulkPut([
+      { id: 'old-note-1', packId: savedPack.id, text: 'Spare key under the blue pot.', updatedAt: 1 },
+      { id: 'old-note-2', packId: savedPack.id, text: 'Gate code 4471.', updatedAt: 2 },
+    ]);
+  }
 }
 
 const conflictMode = new URLSearchParams(window.location.search).get('mode');
