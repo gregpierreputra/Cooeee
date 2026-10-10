@@ -3690,7 +3690,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   content: '';
   position: absolute;
   top: -7px;
-  left: 14px;
+  left: var(--pointer-at, 14px);
   width: 12px;
   height: 12px;
   background: var(--bubble-bg, var(--surface-2));
@@ -4957,8 +4957,9 @@ body.drill-open .banner {
 }
 
 /* The report: read by shape and colour first, words second. The four kinds
-   of thing each keep one colour everywhere on it. */
-.drill-page {
+   of thing each keep one colour everywhere: on the debrief and on a drill's
+   card on the pack page. */
+:root {
   --kind-essential: #5be38a;
   --kind-listed: #3fc8d8;
   --kind-neutral: #8a94a6;
@@ -5091,6 +5092,56 @@ body.drill-open .banner {
 .kind-listed { --kind: var(--kind-listed); }
 .kind-neutral { --kind: var(--kind-neutral); }
 .kind-bulky { --kind: var(--kind-bulky); }
+/* On a drill's card on the pack page: the debrief's ring and tiles, smaller. */
+.drill-outcome {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.drill-outcome .debrief-ring {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+.drill-outcome .debrief-over-mark {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+.drill-outcome .debrief-over-mark svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.drill-card-tiles {
+  gap: 0.375rem;
+}
+/* A reason sits snug under the bag; the rows under it start with a picture. */
+.drill-why {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  gap: 0.25rem;
+  font-size: var(--step-s);
+}
+/* The tapped thing's name, and its kind in its own colour at the right. */
+.drill-why-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+.drill-why-name {
+  font-weight: var(--w-bold);
+  color: var(--ink);
+}
+.drill-why-kind {
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--kind);
+}
+.drill-row {
+  align-items: flex-start;
+}
 .debrief-sprite {
   display: block;
   background-image: url('/drill/sprites.png');

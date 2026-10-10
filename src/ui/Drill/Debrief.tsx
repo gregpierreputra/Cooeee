@@ -3,41 +3,8 @@ import * as copy from '../../core/copy';
 import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
 import { debriefRows, kindOf, leftBehind, scoreBreakdown, scoreDrill } from '../../core/drill-score';
 import Glyph from '../components/Glyph';
-import { ATLAS, SHEET } from '../../core/drill-atlas';
+import { ScoreRing, Sprite } from './DrillArt';
 import type { DrillOutcome } from './Game';
-
-const TILE_SIZE = 40; // css pixels a thing's picture fits inside
-
-/** One thing's own picture from the game, drawn from the sprite sheet. */
-function Sprite({ id }: { id: string }) {
-  const [x, y, w, h] = ATLAS[id];
-  const scale = Math.min(TILE_SIZE / w, TILE_SIZE / h, 3);
-  return (
-    <span
-      className="debrief-sprite"
-      aria-hidden="true"
-      style={{
-        width: w * scale,
-        height: h * scale,
-        backgroundSize: `${SHEET[0] * scale}px ${SHEET[1] * scale}px`,
-        backgroundPosition: `${-x * scale}px ${-y * scale}px`,
-      }}
-    />
-  );
-}
-
-/** The score as a ring filled to the score, green, amber or red. */
-function ScoreRing({ score }: { score: number }) {
-  const band = score >= 80 ? 'good' : score >= 50 ? 'fair' : 'poor';
-  const length = 2 * Math.PI * 52;
-  return (
-    <svg className={`debrief-ring ${band}`} viewBox="0 0 120 120" role="img" aria-label={copy.DEBRIEF_SCORE(score)}>
-      <circle className="track" cx="60" cy="60" r="52" />
-      {score > 0 ? <circle className="fill" cx="60" cy="60" r="52" strokeDasharray={`${(length * score) / 100} ${length}`} /> : null}
-      <text x="60" y="68" textAnchor="middle">{score}</text>
-    </svg>
-  );
-}
 
 type Props = {
   outcome: DrillOutcome;
