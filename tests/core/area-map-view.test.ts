@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampView, mapAcrossKm, mapBoxAround, mapBoxOf, mapPoint, MAP_HOME, zoomAbout } from '../../src/core/area-map-view';
+import { areaMapHalfKm, clampView, mapAcrossKm, mapBoxAround, mapBoxOf, mapMaxScale, mapPoint, MAP_HOME, MAP_MAX_SCALE, zoomAbout } from '../../src/core/area-map-view';
 
 const centre = { lat: -37.8, lon: 145.3 };
 const box = mapBoxAround(centre, 40);
@@ -45,5 +45,41 @@ describe('clampView', () => {
     expect(still.scale).toBe(1);
     // At twice the size it moves at most half the frame, to the picture's edge.
     expect(clampView({ x: 900, y: -900, scale: 2 }, 200)).toEqual({ x: 200, y: -200, scale: 2 });
+  });
+});
+
+// A pack's map takes in the places chosen for it: the usual 40 km, wider to
+// reach the farthest with room to spare, and no wider than 120 km.
+describe('areaMapHalfKm', () => {
+  const kmEast = (km: number) => ({ lat: centre.lat, lon: centre.lon + km / (111 * Math.cos((centre.lat * Math.PI) / 180)) });
+  const kmNorth = (km: number) => ({ lat: centre.lat + km / 111, lon: centre.lon });
+
+  it('keeps the usual 20 km each way when every place is on it', () => {
+    expect(areaMapHalfKm(centre, [])).toBe(20);
+    expect(areaMapHalfKm(centre, [kmEast(5), kmNorth(-12)])).toBe(20);
+  });
+
+  it('widens to the farthest place east, west, north or south, with room past it', () => {
+    expect(areaMapHalfKm(centre, [kmEast(5), kmEast(-30.2)])).toBe(34);
+    expect(areaMapHalfKm(centre, [kmNorth(41)])).toBe(44);
+  });
+
+  it('puts every place it widens for on the map', () => {
+    const places = [kmEast(-30.2), kmNorth(41)];
+    const wide = mapBoxAround(centre, areaMapHalfKm(centre, places));
+    for (const place of places) expect(mapPoint(wide, place)).not.toBeNull();
+  });
+
+  it('reaches no further than 60 km each way', () => {
+    expect(areaMapHalfKm(centre, [kmEast(95)])).toBe(60);
+  });
+});
+
+describe('mapMaxScale', () => {
+  it('zooms a wider map further in, so home reads as closely as on 40 km', () => {
+    expect(mapMaxScale(mapBoxAround(centre, 20))).toBe(MAP_MAX_SCALE);
+    expect(mapMaxScale(mapBoxAround(centre, 60))).toBe(MAP_MAX_SCALE * 3);
+    expect(mapMaxScale(null)).toBe(MAP_MAX_SCALE);
+    expect(clampView({ x: 0, y: 0, scale: 50 }, 100, mapMaxScale(mapBoxAround(centre, 60))).scale).toBe(24);
   });
 });

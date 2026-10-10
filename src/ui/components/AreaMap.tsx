@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
-import { MAP_HOME, MAP_MAX_SCALE, clampView, mapPoint, zoomAbout, type MapBox, type MapView } from '../../core/area-map-view';
+import { MAP_HOME, clampView, mapMaxScale, mapPoint, zoomAbout, type MapBox, type MapView } from '../../core/area-map-view';
 import { siteNameBlock } from '../../core/blacksky-dial';
 import * as copy from '../../core/copy';
 import { formatDistanceM, placeName } from '../../core/destination';
@@ -55,6 +55,11 @@ export default function AreaMap({
   const frame = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, Point>());
   const [view, setView] = useState<MapView>(MAP_HOME);
+  // A wider map zooms in further, so home's streets read as closely as on the
+  // usual 40 km. Held in a ref for the wheel handler attached once below.
+  const maxScale = mapMaxScale(box);
+  const maxRef = useRef(maxScale);
+  maxRef.current = maxScale;
 
   // A point relative to the frame's middle, and half the frame's width.
   const measure = (clientX: number, clientY: number) => {
@@ -74,7 +79,7 @@ export default function AreaMap({
       event.preventDefault();
       const at = measure(event.clientX, event.clientY);
       const travel = Math.max(-WHEEL_MAX, Math.min(WHEEL_MAX, event.deltaY));
-      setView((v) => zoomAbout(v, at.x, at.y, Math.exp(-travel * WHEEL_STEP), at.half));
+      setView((v) => zoomAbout(v, at.x, at.y, Math.exp(-travel * WHEEL_STEP), at.half, maxRef.current));
     };
     element.addEventListener('wheel', onWheel, { passive: false });
     return () => element.removeEventListener('wheel', onWheel);
@@ -101,7 +106,7 @@ export default function AreaMap({
     const { half } = measure(now.x, now.y);
     if (others.length === 0) {
       // One finger, or the mouse: drag.
-      setView((v) => clampView({ ...v, x: v.x + now.x - before.x, y: v.y + now.y - before.y }, half));
+      setView((v) => clampView({ ...v, x: v.x + now.x - before.x, y: v.y + now.y - before.y }, half, maxScale));
       return;
     }
     // Two fingers. Each move event moves one finger, so the map zooms about the
@@ -109,7 +114,7 @@ export default function AreaMap({
     const other = others[0];
     const factor = Math.hypot(now.x - other.x, now.y - other.y) / Math.max(1, Math.hypot(before.x - other.x, before.y - other.y));
     const pivot = measure(other.x, other.y);
-    setView((v) => zoomAbout(v, pivot.x, pivot.y, factor, half));
+    setView((v) => zoomAbout(v, pivot.x, pivot.y, factor, half, maxScale));
   };
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => pointers.current.delete(event.pointerId);
@@ -117,7 +122,7 @@ export default function AreaMap({
   // The buttons act about the middle of the frame.
   const fromButton = (factor: number) => {
     const half = frame.current!.getBoundingClientRect().width / 2;
-    setView((v) => zoomAbout(v, 0, 0, factor, half));
+    setView((v) => zoomAbout(v, 0, 0, factor, half, maxScale));
   };
 
   // From the keyboard, with any map button focused: the arrows move the map,
@@ -127,13 +132,13 @@ export default function AreaMap({
     if (move) {
       event.preventDefault();
       const half = frame.current!.getBoundingClientRect().width / 2;
-      setView((v) => clampView({ ...v, x: v.x + move[0], y: v.y + move[1] }, half));
+      setView((v) => clampView({ ...v, x: v.x + move[0], y: v.y + move[1] }, half, maxScale));
     } else if (event.key === '+' || event.key === '=') fromButton(BUTTON_ZOOM);
     else if (event.key === '-') fromButton(1 / BUTTON_ZOOM);
   };
   // At a limit the button stays focusable and simply does nothing, so a
   // keyboard user is never dropped out of the controls.
-  const atMax = view.scale >= MAP_MAX_SCALE;
+  const atMax = view.scale >= maxScale;
   const atMin = view.scale <= 1;
 
   const layer = {

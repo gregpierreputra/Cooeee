@@ -11,7 +11,7 @@ import { sha256Hex } from './integrity';
 // The picture of a pack's own area, drawn by the Department of Transport and
 // Planning's Web Map Service: the Designated Bushfire Prone Area under roads,
 // creeks, rail, and place and peak names, AREA_MAP_HALF_KM each way from the
-// saved place (forest and built-up fills are left out: they paint over it). It
+// saved place, or wider to take in its chosen places (areaMapHalfKm) (forest and built-up fills are left out: they paint over it). It
 // is fetched once, while the pack is built, and stored with the pack's other
 // files so it opens with no signal; nothing fetches it after that.
 
@@ -37,9 +37,9 @@ const MAP_SIZES = [
   [4096, 180],
 ] as const;
 
-/** The GetMap request for a square AREA_MAP_HALF_KM each way from the centre. */
-export function areaMapUrl(centre: LatLon, px: number, dpi: number): string {
-  const { west, south, east, north } = mapBoxAround(centre, AREA_MAP_HALF_KM);
+/** The GetMap request for a square halfKm each way from the centre. */
+export function areaMapUrl(centre: LatLon, px: number, dpi: number, halfKm = AREA_MAP_HALF_KM): string {
+  const { west, south, east, north } = mapBoxAround(centre, halfKm);
   const params = new URLSearchParams({
     service: 'WMS',
     version: '1.1.1',
@@ -62,9 +62,14 @@ export function areaMapUrl(centre: LatLon, px: number, dpi: number): string {
  *  budget, or too slow to arrive on this connection, falls back to the next
  *  size. A service that answers with an error ends the attempt at once.
  *  Nothing is written to the device here. */
-export async function loadAreaMap(packId: string, centre: LatLon, maxBytes: number): Promise<PackFile> {
+export async function loadAreaMap(
+  packId: string,
+  centre: LatLon,
+  maxBytes: number,
+  halfKm = AREA_MAP_HALF_KM,
+): Promise<PackFile> {
   for (const [px, dpi] of MAP_SIZES) {
-    const url = areaMapUrl(centre, px, dpi);
+    const url = areaMapUrl(centre, px, dpi, halfKm);
     let response: Response;
     let bytes: ArrayBuffer;
     try {

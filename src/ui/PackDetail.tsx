@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
-import { mapAcrossKm, mapBoxOf } from '../core/area-map-view';
+import { mapAcrossKm, mapBoxOf, mapPoint } from '../core/area-map-view';
 import { areaResultLine } from '../core/area-check';
 import { siteNameBlock } from '../core/blacksky-dial';
 import { AREA_MAP_NAME, DTP_DATASET_URL, DTP_LICENCE, DTP_PUBLISHER } from '../core/constants';
@@ -57,6 +57,13 @@ type PackDetailProps = {
 /** A network-blind pack view. Every value comes from the complete-pack store;
  * every source tap is intercepted before browser navigation and requires a
  * second explicit choice before leaving Cooeee. */
+/** A place named in a sentence: the site, then the town it is in, as the
+ *  site alone, such as Showgrounds Recreation Reserve, does not say where. */
+const offMapName = (name: string): string => {
+  const { site, line } = siteNameBlock(name);
+  return line ? `${site}, ${line}` : site;
+};
+
 export default function PackDetail({
   packId,
   loadContent = getCompletePackContent,
@@ -294,6 +301,15 @@ export default function PackDetail({
                 </figcaption>
               </figure>
             ) : null}
+            {/* A chosen place past even the widest map is said in words, so it
+                is never simply missing. */}
+            {mapSrc && mapBox ? places.map((place) =>
+              place.lat !== undefined && place.lon !== undefined && typeof place.distanceM === 'number'
+                && !mapPoint(mapBox, { lat: place.lat, lon: place.lon }) ? (
+                  <p key={place.id} className="muted place-note">
+                    {copy.PLACE_OFF_MAP(offMapName(placeName(place)), formatDistanceM(place.distanceM))}
+                  </p>
+                ) : null) : null}
             {/* One row: Source, set as Not for you? is on Home, then the saved
                 copy and the web page as small links beside it. */}
             {areaSource ? (
