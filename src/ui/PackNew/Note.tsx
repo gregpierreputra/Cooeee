@@ -54,11 +54,20 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
               ))}
             </ul>
             <p className={replacing.keep ? 'muted place-note' : 'tone-amber place-note'} role="status">
-              {replacing.keep ? copy.NOTES_KEPT(replacing.notes.length) : copy.NOTES_DROPPED(replacing.notes.length)}{' '}
-              <button type="button" className="note-kept-toggle" onClick={() => replacing.onKeep(!replacing.keep)}>
-                {replacing.keep ? copy.START_WITHOUT_NOTES(replacing.notes.length) : copy.KEEP_OLD_NOTES(replacing.notes.length)}
-              </button>
+              {replacing.keep ? copy.NOTES_KEPT(replacing.notes.length) : copy.NOTES_DROPPED(replacing.notes.length)}
             </p>
+            {/* A choice about the person's own words, so a button: red where it
+                removes them, teal where it keeps them, as on every question
+                that removes something. It only takes effect when the new pack
+                is saved, so it can be switched back until then. */}
+            <button
+              type="button"
+              className={replacing.keep ? 'notes-choice card-confirm-yes with-glyph' : 'notes-choice card-confirm-no with-glyph'}
+              onClick={() => replacing.onKeep(!replacing.keep)}
+            >
+              <Glyph kind={replacing.keep ? 'trash' : 'check'} line />
+              {replacing.keep ? copy.START_WITHOUT_NOTES(replacing.notes.length) : copy.KEEP_OLD_NOTES(replacing.notes.length)}
+            </button>
           </section>
         ) : null}
         <label htmlFor="pack-note">{replacing ? copy.NOTE_ADD_ANOTHER : copy.NOTE_LABEL}</label>

@@ -944,8 +944,8 @@ textarea {
 }
 
 /* On a replace, the notes already written for the place, above the box: small
-   read-only cards, long ones cut to three lines, then what happens to them with
-   its choice as a small teal link like Source. Chosen to go, they fade. */
+   read-only cards, long ones cut to three lines, then what happens to them and
+   a small outlined button to choose. Chosen to go, they fade. */
 .notes-saved {
   display: grid;
   gap: 0.5rem;
@@ -963,18 +963,11 @@ textarea {
 .notes-dropped .note-card {
   opacity: 0.45;
 }
-.note-kept-toggle {
-  min-height: 32px;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
-  font: inherit;
-  font-weight: var(--w-med);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
+.notes-choice {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0.5rem 0.875rem;
+  font-size: var(--step-s);
 }
 
 /* The note step's box shows the whole pre-filled example without scrolling. */
