@@ -1406,3 +1406,4 @@ export const DRILL_ROW_DOOR = (score: number) => `At the door, ${score} out of 1
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';
 export const DRILL_ROW_PACKED = (count: number) =>
   count === 1 ? '1 thing packed' : `${count} things packed`;
+export const DRILL_ROW_ESSENTIALS = (packed: number, total: number) => `${packed} of ${total} essentials packed`;

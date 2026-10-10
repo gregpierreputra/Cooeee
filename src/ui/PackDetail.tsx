@@ -430,12 +430,12 @@ export default function PackDetail({
                 // Set as the other cards on this page: the condition as the
                 // small teal label with the date beside it, the ending in bold,
                 // then what the rehearsal found.
-                <li key={row.id} className="card history-row rehearsal-card">
-                  <div className="rehearsal-card-head">
+                <li key={row.id} className="card history-row practice-card">
+                  <div className="practice-card-head">
                     <p className="place-kind">{row.condition}</p>
-                    <p className="muted figure rehearsal-date">{row.date}</p>
+                    <p className="muted figure practice-date">{row.date}</p>
                   </div>
-                  <p className="rehearsal-ending">{row.ending}</p>
+                  <p className="practice-outcome">{row.ending}</p>
                   <RehearsalGaps gaps={row.gaps} found={row.found} />
                 </li>
               ))}
@@ -450,10 +450,15 @@ export default function PackDetail({
           ) : (
             <ul className="list history-list">
               {drills.map((row) => (
-                <li key={row.id} className="card history-row">
-                  <p className="history-date">{row.date}</p>
-                  <p>{row.outcome}</p>
-                  <p className="figure">{row.packed}</p>
+                // Set as a rehearsal is: the drill's name as the teal label
+                // with the date, the outcome in bold, then the bag.
+                <li key={row.id} className="card history-row practice-card">
+                  <div className="practice-card-head">
+                    <p className="place-kind">{copy.DRILL_INTRO_HEADING}</p>
+                    <p className="muted figure practice-date">{row.date}</p>
+                  </div>
+                  <p className="practice-outcome">{row.outcome}</p>
+                  <DrillBag row={row} />
                 </li>
               ))}
             </ul>
@@ -502,13 +507,45 @@ export default function PackDetail({
   );
 }
 
+/** What one drill's bag held: the essentials packed, the essentials left in
+ *  the house and the things that cost points, by name, as the debrief names
+ *  them, then every thing packed, in packing order, behind a toggle. */
+function DrillBag({ row }: { row: DrillRow }) {
+  return (
+    <div className="practice-found">
+      <p className="with-glyph practice-found-line">
+        <Glyph kind="bag" line />
+        {row.essentials}
+      </p>
+      {row.leftBehind.length > 0 ? (
+        <p className="muted place-note">
+          {copy.LEFT_BEHIND}: {row.leftBehind.join(', ')}
+        </p>
+      ) : null}
+      {row.costYou.length > 0 ? (
+        <p className="with-glyph place-note">
+          <Glyph kind="caution" line />
+          {copy.KIND_LABELS.bulky}: {row.costYou.join(', ')}
+        </p>
+      ) : null}
+      {row.items.length > 0 ? (
+        <Hint label={row.packed} asText titled={false}>
+          <p>{row.items.join(', ')}</p>
+        </Hint>
+      ) : (
+        <p className="muted place-note">{row.packed}</p>
+      )}
+    </div>
+  );
+}
+
 /** What one rehearsal found. With nothing found, the four checks by short
  *  name; with gaps, each one named, why it was found and what to do, on the
  *  card where it can be acted on. What a gap is sits behind About gaps. */
 function RehearsalGaps({ gaps, found }: { gaps: string; found: HistoryRow['found'] }) {
   return (
-    <div className="rehearsal-gaps">
-      <p className="with-glyph rehearsal-gaps-line">
+    <div className="practice-found">
+      <p className="with-glyph practice-found-line">
         <Glyph kind={found.length === 0 ? 'check' : 'caution'} line />
         {gaps}
       </p>
