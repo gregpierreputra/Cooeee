@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import {
@@ -60,7 +60,7 @@ import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
 import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
-import FlowSteps from './FlowSteps';
+import FlowSteps, { FlowStepBack } from './FlowSteps';
 import { Note } from './Note';
 import { Size } from './Size';
 
@@ -533,6 +533,22 @@ export function Search({
     else if (at === 'size') setOfferState(null);
   }
 
+  /** Back to a step already done, by its place in the bar: the same as Back
+   *  pressed until that step is on screen, so every answer is kept. */
+  function backTo(index: number) {
+    flowRef.current += 1;
+    if (index <= 3) setOfferState(null);
+    if (index <= 2) setChosenPlaces(null);
+    if (index <= 1) setPlacesState(null);
+    if (index <= 0) {
+      setAreaState(null);
+      setConflictState(null);
+      setSupersedes(undefined);
+      setOldNotes([]);
+      setKeepNotes(true);
+    }
+  }
+
   // Back, from the bar or the phone, steps back one step at a time. The steps
   // past the address search share one history entry marked ?step=<name>. Going
   // back pops it, the builder steps back, and the entry is put back on top while
@@ -579,9 +595,13 @@ export function Search({
     window.scrollTo(0, 0);
     focusMain();
   }, [step]);
+  // A step already done in any screen's bar is a way back to it, except while
+  // a check or the save runs, or once the pack is saved.
+  const goBackTo = busy || saveStage === 'saved' ? null : backTo;
+  const wrap = (screen: ReactNode) => <FlowStepBack.Provider value={goBackTo}>{screen}</FlowStepBack.Provider>;
 
   if (pendingPlace && conflictState?.kind === 'checking') {
-    return (
+    return wrap(
       <StatusPage
         page="conflict-page"
         kicker={<FlowSteps at={0} />}
@@ -591,7 +611,7 @@ export function Search({
   }
 
   if (pendingPlace && conflictState?.kind === 'conflict') {
-    return (
+    return wrap(
       <Conflict
         savedAddress={conflictState.savedPack.address}
         onKeep={() => {
@@ -611,7 +631,7 @@ export function Search({
   }
 
   if (conflictState?.kind === 'unavailable') {
-    return (
+    return wrap(
       <StatusPage
         page="conflict-page"
         kicker={<FlowSteps at={0} />}
@@ -633,7 +653,7 @@ export function Search({
 
   if (pendingPlace && offerState) {
     if (offerState.kind === 'building') {
-      return (
+      return wrap(
         <StatusPage
           page="size-page"
           kicker={<FlowSteps at={4} />}
@@ -643,7 +663,7 @@ export function Search({
     }
 
     if (offerState.kind === 'failed') {
-      return (
+      return wrap(
         <StatusPage
           page="size-page"
           kicker={<FlowSteps at={4} />}
@@ -672,7 +692,7 @@ export function Search({
       );
     }
 
-    return (
+    return wrap(
       <Size
         offer={offerState.offer}
         address={offerState.content.pack.address}
@@ -696,7 +716,7 @@ export function Search({
   if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
     const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
     const replacingNotes = supersedes !== undefined && oldNotes.length > 0;
-    return (
+    return wrap(
       <Note
         example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
         // A replace with notes already written starts empty, so going on adds
@@ -714,7 +734,7 @@ export function Search({
   if (pendingPlace && areaState?.kind === 'result' && placesState) {
     const { result } = areaState;
     if (placesState.kind === 'loading') {
-      return (
+      return wrap(
         <StatusPage
           page="places-page"
           kicker={<FlowSteps at={2} />}
@@ -724,7 +744,7 @@ export function Search({
     }
 
     if (placesState.kind === 'unavailable') {
-      return (
+      return wrap(
         <StatusPage
           page="places-page"
           kicker={<FlowSteps at={2} />}
@@ -754,7 +774,7 @@ export function Search({
     const area = titleCase(result.lgaName);
     const continueWith = async (chosen: Destination[]) =>
       setChosenPlaces(destinationsForPack(chosen, packId, snapshot, area, PACK_HAZARD));
-    return (
+    return wrap(
       <Destinations
         ordered={ordered}
         unlocated={unlocated}
@@ -771,7 +791,7 @@ export function Search({
   }
 
   if (pendingPlace && areaState) {
-    return (
+    return wrap(
       <AreaCheck
         place={pendingPlace}
         state={areaState}
@@ -785,7 +805,7 @@ export function Search({
   }
 
   if (candidate) {
-    return (
+    return wrap(
       <Confirm
         candidate={candidate}
         // The default is offered in normal case, not the official list's
@@ -799,7 +819,7 @@ export function Search({
     );
   }
 
-  return (
+  return wrap(
     <main className="page search-page">
       <form className="search-form" onSubmit={handleSubmit}>
         <div className="search-content">

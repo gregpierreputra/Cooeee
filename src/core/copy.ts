@@ -373,7 +373,9 @@ export const FLOW_STEPS = [
   { glyph: 'note', label: 'Note' },
   { glyph: 'bag', label: 'Save' },
 ] as const;
-export const FLOW_STEP_OF = (step: number, total: number, label: string) => `Step ${step} of ${total}, ${label}`;
+export const FLOW_STEPS_LABEL = 'Steps to build a pack';
+/** A step already done is a way back to it, every answer kept. */
+export const BACK_TO_STEP = (label: string) => `Back to ${label}`;
 
 // E3-US1-AC1 BlackSky prepared direction
 export const BLACKSKY_TITLE = 'BlackSky';

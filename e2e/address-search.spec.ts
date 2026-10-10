@@ -59,7 +59,7 @@ test('AC2 keeps a single result as an unselected one-item list', async ({ page }
   } }));
 
   await search(page);
-  await expect(page.getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('listitem')).toHaveCount(1);
   await expect(page.getByRole('heading', { name: 'Is this the place?' })).toHaveCount(0);
 });
 
@@ -557,7 +557,7 @@ test('Use my location lists the nearest register addresses, and typing takes the
 
   // Nearest first, whatever order the register answered in.
   await expect(page.getByRole('status')).toContainText('Addresses nearest you');
-  await expect(page.getByRole('listitem').first()).toContainText('1774-1776 DANDENONG ROAD');
+  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('listitem').first()).toContainText('1774-1776 DANDENONG ROAD');
   expect(requests).toEqual([
     // The smallest radius first, and it found addresses, so nothing wider is asked.
     "property_status = 'A' AND DWITHIN(geom, POINT(-37.916205 145.129435), 25, meters)",
@@ -580,7 +580,7 @@ test('Use my location says how rough a vague position is, refuses one too rough,
   await context.setGeolocation({ latitude: -37.916205, longitude: 145.129435, accuracy: 400 });
   await locate.click();
   await expect(status).toContainText('Your position is only known to within 400 m.');
-  await expect(page.getByRole('listitem').first()).toContainText('1778 DANDENONG ROAD');
+  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('listitem').first()).toContainText('1778 DANDENONG ROAD');
 
   await context.setGeolocation({ latitude: -37.916205, longitude: 145.129435, accuracy: 5_000 });
   await locate.click();
