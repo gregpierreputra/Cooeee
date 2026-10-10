@@ -84,7 +84,11 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
           maxLength={NOTE_MAX_CHARS}
           onChange={(event) => setText(typeBullets(event))}
           onKeyDown={(event) => continueBullets(event, setText)}
+          aria-describedby="note-more-later"
         />
+        {/* One note here; the pack's Notes tab takes more, so nothing has to be
+            squeezed into this one box. */}
+        <p id="note-more-later" className="muted place-note">{copy.NOTE_MORE_LATER}</p>
       </div>
       <div className="actions confirm-actions">
         <button className="main-action" type="button" onClick={() => onContinue(text.trim() || undefined)}>

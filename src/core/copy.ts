@@ -345,6 +345,8 @@ export const NOTE_EXAMPLE = (placeName: string, chosen?: Destination) =>
     'Take the medication box, water, phone chargers and the dog lead.',
     'Turn the gas off at the meter before leaving.',
   ].filter(Boolean).map((point) => `• ${point}`).join('\n');
+/** Under the box: one note is all this step takes, and more can follow. */
+export const NOTE_MORE_LATER = "Add more notes any time from your pack's Notes tab.";
 export const KEEP_NOTE = 'Keep this note';
 export const SKIP_NOTE = 'Not now';
 /** Replacing a pack: the notes already written for the place, shown above the
