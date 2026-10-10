@@ -35,15 +35,6 @@ export function SourceText({ rows, links = null }: { rows: SourceRow[]; links?: 
   );
 }
 
-/** The small Source ring and the facts it opens. */
-export function SourceRing({ rows }: { rows: SourceRow[] }) {
-  return (
-    <Hint label={copy.ABOUT_SOURCE} head={<span className="muted">{copy.SOURCE_LABEL}</span>} panelClass="source-panel" titled={false}>
-      <SourceRows rows={rows} />
-    </Hint>
-  );
-}
-
 type ProvenanceLineProps = {
   source: Source;
   now: number;
@@ -51,14 +42,13 @@ type ProvenanceLineProps = {
   extra?: SourceRow[];
   /** Shows the facts open, for a screen whose whole job is the source. */
   open?: boolean;
-  /** Given, even as null, the facts open from a Source text toggle with these
-   *  links beside it on one row, as on the pack page. */
+  /** Links beside Source on its row, as on the pack page; none by default. */
   links?: ReactNode;
 };
 
 /** Who published an item and when it was saved. UAT: these lines crowded every
- *  card, so they sit behind a small Source ring. */
-export default function ProvenanceLine({ source, now, extra = [], open = false, links }: ProvenanceLineProps) {
+ *  card, so they sit behind Source, in words as Not for you? is on Home. */
+export default function ProvenanceLine({ source, now, extra = [], open = false, links = null }: ProvenanceLineProps) {
   const view = provenanceView(now, source);
   const rows: SourceRow[] = [
     { label: copy.SOURCE_PUBLISHED_BY, value: view.publisher },
@@ -67,13 +57,7 @@ export default function ProvenanceLine({ source, now, extra = [], open = false, 
   ];
   return (
     <div className="provenance">
-      {open ? (
-        <SourceRows rows={rows} />
-      ) : links !== undefined ? (
-        <SourceText rows={rows} links={links} />
-      ) : (
-        <SourceRing rows={rows} />
-      )}
+      {open ? <SourceRows rows={rows} /> : <SourceText rows={rows} links={links} />}
     </div>
   );
 }

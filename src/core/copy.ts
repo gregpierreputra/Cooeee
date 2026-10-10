@@ -183,7 +183,6 @@ export const PLACE_SAVED = 'Place saved';
 // E1-US2-AC1–AC5 pack provenance and offline source access
 /** The small ring every source sits behind (UAT: publisher lines crowded each card). */
 export const SOURCE_LABEL = 'Source';
-export const ABOUT_SOURCE = 'About the source';
 // The labelled rows inside the Source ring.
 export const SOURCE_PUBLISHED_BY = 'Published by';
 export const SOURCE_SAVED = 'Saved';
