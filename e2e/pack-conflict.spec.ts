@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   KEEP_SAVED_PACK,
-  NOTE_LABEL,
+  NOTE_ADD_ANOTHER,
   NOTE_STEP_TITLE,
   NOTES_DROPPED,
   NOTES_KEPT,
@@ -114,7 +114,9 @@ async function replaceToNoteStep(page: Page) {
 
 test('a replace keeps the notes already written, and adds no example beside them', async ({ page }) => {
   await replaceToNoteStep(page);
-  await expect(page.getByLabel(NOTE_LABEL)).toHaveValue('');
+  // The notes already saved show above the box, as written.
+  await expect(page.locator('.notes-saved .note-card')).toHaveText(['Spare key under the blue pot.', 'Gate code 4471.']);
+  await expect(page.getByLabel(NOTE_ADD_ANOTHER)).toHaveValue('');
   await expect(page.getByRole('status').filter({ hasText: NOTES_KEPT(2) })).toBeVisible();
   await page.getByRole('button', { name: 'Not now' }).click();
   await page.getByRole('button', { name: 'Save this pack' }).click();

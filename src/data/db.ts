@@ -396,11 +396,9 @@ export async function listSavedProgramIds(): Promise<string[]> {
   return [...new Set(rows.map((row) => row.programId))];
 }
 
-/** How many notes a pack holds: what a replace says it keeps. */
-export const countNotes = (packId: string): Promise<number> => db.notes.where('packId').equals(packId).count();
-
-/** A pack's notes, oldest first. Only the complete-pack reads below call this. */
-const listNotes = (packId: string): Promise<PackNote[]> =>
+/** A pack's notes, oldest first: for the complete-pack reads below, and to
+ *  show what a replace keeps. */
+export const listNotes = (packId: string): Promise<PackNote[]> =>
   db.notes.where('packId').equals(packId).sortBy('updatedAt');
 
 /** The one rule for note text, applied wherever a note is written: trimmed,
