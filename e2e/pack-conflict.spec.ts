@@ -117,6 +117,9 @@ test('a replace keeps the notes already written, and adds no example beside them
   // The notes already saved show above the box, as written.
   await expect(page.locator('.notes-saved .note-card')).toHaveText(['Spare key under the blue pot.', 'Gate code 4471.']);
   await expect(page.getByLabel(NOTE_ADD_ANOTHER)).toHaveValue('');
+  await expect(page.getByLabel(NOTE_ADD_ANOTHER)).toHaveAccessibleDescription(
+    "Add more notes any time from your pack's Notes tab.",
+  );
   await expect(page.getByRole('status').filter({ hasText: NOTES_KEPT(2) })).toBeVisible();
   await page.getByRole('button', { name: 'Not now' }).click();
   await page.getByRole('button', { name: 'Save this pack' }).click();
