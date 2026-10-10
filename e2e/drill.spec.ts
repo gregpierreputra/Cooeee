@@ -53,6 +53,21 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await expect(page.getByRole('button', { name: 'Nothing in reach' })).toBeDisabled();
   });
 
+  test('the clock says the rule, turns red near the end and sends the player to the door', async ({ page }) => {
+    await page.goto(`${HARNESS}/drill?seconds=60`);
+    await page.getByRole('button', { name: 'Start the drill' }).click();
+    await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    const top = page.locator('.drill-top');
+    await expect(page.locator('.drill-goal')).toHaveText('Be at the front door when the time ends.');
+    await expect(top).not.toHaveClass(/warn|late/);
+    await page.goto(`${HARNESS}/drill?seconds=15`);
+    await page.getByRole('button', { name: 'Start the drill' }).click();
+    await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    await expect(top).toHaveClass(/warn/);
+    await expect(page.locator('.drill-goal')).toHaveText('Head to the front door.');
+    await expect(top).toHaveClass(/late/, { timeout: 8000 });
+  });
+
   test('the sound control says its state and the pack page lists no drill yet', async ({ page }) => {
     await page.goto(`${HARNESS}/drill`);
     const sound = page.getByRole('button', { name: 'Sound', exact: true });

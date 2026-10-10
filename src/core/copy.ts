@@ -1380,7 +1380,7 @@ export const GRAB_ITEM = (name: string) => `Grab the ${name}`;
 export const NOTHING_IN_REACH = 'Nothing in reach';
 export const BAG_FULL = 'Bag full';
 export const SECONDS_LEFT = (seconds: number) => `${seconds} seconds left`;
-export const IN_ROOM = (room: string) => `In the ${room}`;
+export const HEAD_TO_DOOR = 'Head to the front door.';
 export const SOUND = 'Sound';
 export const SOUND_ON = 'Sound on';
 export const SOUND_OFF = 'Sound off';

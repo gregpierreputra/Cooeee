@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { COLS, MAT_CENTRE, REACH, ROWS, SPAWN, blocked, onDoorMat, pathTo, restingOrder, roomAt } from '../../src/core/drill-house';
+import { COLS, MAT_CENTRE, REACH, ROWS, SPAWN, blocked, onDoorMat, pathTo, restingOrder } from '../../src/core/drill-house';
 import { DRILL_ITEMS } from '../../src/core/drill-items';
 import { FURNITURE, GRID, ROOM_OF } from '../../src/core/drill-layout';
+
+// The room a point is in, read straight from the house plan.
+const roomAt = (x: number, y: number) => ROOM_OF[GRID[Math.floor(y)]?.[Math.floor(x)] ?? ''] ?? null;
 
 // Every cell centre a person can walk to from the start, by flood fill.
 function walkable(): Set<string> {

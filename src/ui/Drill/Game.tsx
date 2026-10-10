@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import * as copy from '../../core/copy';
-import { SPAWN, onDoorMat, pathTo, roomAt } from '../../core/drill-house';
+import { SPAWN, onDoorMat, pathTo } from '../../core/drill-house';
 import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
 import { DOWN, EARLY_EXIT_HOLD, facing, haze, leavingEarly, nearestItem, speedFor, step } from '../../core/drill-play';
 import Glyph from '../components/Glyph';
@@ -16,7 +16,11 @@ export type DrillOutcome = { reachedDoor: boolean; packed: string[] };
 
 const STICK_RADIUS = 48; // css pixels
 const PICK_SECONDS = 0.4; // the figure bends down: packing costs a moment
+// The clock turns red with half a minute left, and pulses for the last ten.
+const WARN_SECONDS = 30;
 const LATE_SECONDS = 10;
+// How long the rule stays under the clock once the drill starts.
+const RULE_SECONDS = 5;
 const DOOR_ARROW_SECONDS = 20;
 const DOOR_OPENS_SECONDS = 0.9;
 
@@ -79,7 +83,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
   const world = useRef<World>(freshWorld(opening));
   const [calm] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const [hud, setHud] = useState({
-    playing: !opening, beat: 0, seconds, packed: 0, near: null as DrillItem | null, room: roomAt(SPAWN.x, SPAWN.y),
+    playing: !opening, beat: 0, seconds, packed: 0, near: null as DrillItem | null,
   });
 
   const skipOpening = () => {
@@ -241,7 +245,6 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         seconds: Math.max(0, Math.ceil(seconds - w.elapsed)),
         packed: w.packed.length,
         near: w.near,
-        room: roomAt(w.x, w.y),
       };
       if (Object.keys(next).some((key) => next[key as keyof typeof next] !== shown[key as keyof typeof next])) {
         shown = next;
@@ -308,7 +311,10 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
     releaseStick();
   };
 
-  const late = hud.seconds <= LATE_SECONDS;
+  const clockState = hud.seconds <= LATE_SECONDS ? ' late' : hud.seconds <= WARN_SECONDS ? ' warn' : '';
+  // The one rule that decides the score, under the clock: said at the start,
+  // and again once the door arrow shows.
+  const goal = hud.seconds <= DOOR_ARROW_SECONDS ? copy.HEAD_TO_DOOR : hud.seconds > seconds - RULE_SECONDS ? copy.DRILL_HINT : null;
   const clock = `${Math.floor(hud.seconds / 60)}:${String(hud.seconds % 60).padStart(2, '0')}`;
   const full = hud.packed >= BAG_LIMIT;
   const line = LINES[hud.beat];
@@ -322,15 +328,9 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         aria-label={hud.playing ? copy.DRILL_SCENE_LABEL : copy.CUTSCENE_LABEL}
         onPointerDown={walkTo}
       />
-      <div className="drill-top">
-        {hud.playing ? (
-          <div className="drill-counts">
-            <p className={late ? 'drill-timer figure late' : 'drill-timer figure'}>{clock}</p>
-            <p className="drill-bag figure">{copy.BAG_COUNT(hud.packed, BAG_LIMIT)}</p>
-          </div>
-        ) : (
-          <span />
-        )}
+      <div className={`drill-top${clockState}`}>
+        {hud.playing ? <p className="drill-timer figure">{clock}</p> : null}
+        {hud.playing && goal ? <p className="drill-goal">{goal}</p> : null}
         <div className="drill-top-actions">
           <SoundButton />
           {hud.playing ? null : (
@@ -346,7 +346,12 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
 
       {hud.playing ? (
         <>
-          <p className="drill-room">{hud.room ? copy.IN_ROOM(hud.room) : copy.DRILL_HINT}</p>
+          {/* Beside the ten slots it counts. */}
+          <p className="drill-bag">
+            <Glyph kind="bag" size={16} line />
+            <span aria-hidden="true">{`${hud.packed}/${BAG_LIMIT}`}</span>
+            <span className="visually-hidden">{copy.BAG_COUNT(hud.packed, BAG_LIMIT)}</span>
+          </p>
           {/* Spoken twice in the two minutes, at 30 and at 10 seconds, so a reader who
               cannot see the clock still hears it coming. */}
           <p className="visually-hidden" role="status" aria-live="polite">

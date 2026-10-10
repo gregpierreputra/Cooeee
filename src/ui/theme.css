@@ -4821,49 +4821,93 @@ body.drill-open .banner {
   top: calc(env(safe-area-inset-top) + 0.75rem);
   left: calc(env(safe-area-inset-left) + 1rem);
   right: calc(env(safe-area-inset-right) + 1rem);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  /* The clock in the middle, the sound and close buttons at the right. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
   gap: 0.75rem;
 }
-.drill-counts,
+.drill-timer,
+.drill-goal,
 .drill-chip,
-.drill-room {
+.drill-bag {
   background: rgba(8, 10, 18, 0.62);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
-.drill-counts {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
-  margin: 0;
-  padding: 0.5rem 1.1rem 0.6rem;
-  border-radius: var(--r-pill);
-}
-.drill-counts p {
-  margin: 0;
-}
 .drill-timer {
+  grid-column: 2;
+  margin: 0;
+  padding: 0.4rem 1.1rem 0.5rem;
+  border-radius: var(--r-pill);
   /* Big enough to read at a glance, mid game, on a small phone. */
   font-size: clamp(2.1rem, 9vw, 2.75rem);
   font-weight: var(--w-heavy);
   letter-spacing: var(--track-tight);
   line-height: 1;
 }
-/* The last ten seconds borrow BlackSky's amber: the one colour this product
-   already uses for "now". The clock still reads without it. */
-.drill-timer.late {
-  color: var(--blacksky-accent);
-}
-.drill-bag {
+/* The one rule that decides the score, briefly under the clock. Placed out
+   of the row, so a long line never pushes the clock off the middle. */
+.drill-goal {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--r-pill);
   font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  text-align: center;
+  text-wrap: balance;
+}
+/* Red from half a minute left, never the controls' amber, so it stands
+   out. The digits still read without the colour. */
+.drill-top.warn .drill-timer,
+.drill-top.late .drill-timer,
+.drill-top.warn .drill-goal,
+.drill-top.late .drill-goal {
+  border-color: var(--kind-bulky);
+  color: var(--kind-bulky);
+}
+/* The last ten seconds: a slow pulse, about once a second, never a flash. */
+.drill-top.late .drill-timer {
+  animation: drill-clock-pulse 1s ease-in-out infinite;
+}
+@keyframes drill-clock-pulse {
+  50% {
+    transform: scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-top.late .drill-timer {
+    animation: none;
+  }
+}
+/* The bag count, just above the ten slots it counts. */
+.drill-bag {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.125rem);
+  width: fit-content;
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--r-pill);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
   white-space: nowrap;
-  opacity: 0.85;
+  pointer-events: none;
 }
 .drill-top-actions {
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   gap: 0.5rem;
 }
@@ -4890,18 +4934,6 @@ body.drill-open .banner {
   border-radius: 50%;
   font-size: 1.4rem;
   line-height: 1;
-}
-.drill-room {
-  position: absolute;
-  top: calc(env(safe-area-inset-top) + 6.1rem);
-  left: calc(env(safe-area-inset-left) + 1rem);
-  margin: 0;
-  padding: 0.2rem 0.75rem;
-  border-radius: var(--r-pill);
-  font-size: var(--step-s);
-}
-.drill-room::first-letter {
-  text-transform: uppercase;
 }
 
 /* The film's words: one line at a time, low on the picture, on a dark fade
