@@ -731,9 +731,9 @@ export const PRINT_LIST = 'Print this list';
 export const RECOVER_NONE_LINE = 'Build a pack online. It carries the programs, so they open with no signal.';
 
 /** Home's heading, a greeting by the hour on this phone. Late at night it is
- *  a plain "Hi", since good morning at 2am reads oddly. */
+ *  a plain "Hello", since good morning at 2am reads oddly. */
 export const GREETING = (hour: number): string =>
-  hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 18 ? 'Good afternoon' : hour >= 18 ? 'Good evening' : 'Hi';
+  hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 18 ? 'Good afternoon' : hour >= 18 ? 'Good evening' : 'Hello';
 
 /** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
  *  is written here in sentence case and read out as words, not as letters. */
