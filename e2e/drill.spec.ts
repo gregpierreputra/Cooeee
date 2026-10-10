@@ -63,6 +63,18 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await expect(page.getByRole('button', { name: 'Nothing in reach' })).toBeDisabled();
   });
 
+  test('Space starts the drill from the guide, then grabs the thing in reach', async ({ page }) => {
+    await page.goto(`${HARNESS}/drill?seconds=60`);
+    await page.getByRole('button', { name: 'Start the drill' }).click();
+    await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeFocused();
+    await page.keyboard.press(' ');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Grab the floor lamp' })).toBeEnabled();
+    await page.keyboard.press(' ');
+    await expect(page.locator('main')).toContainText('Bag 1 of 10');
+  });
+
   test('the clock says the rule, turns red near the end and sends the player to the door', async ({ page }) => {
     await page.goto(`${HARNESS}/drill?seconds=60`);
     await page.getByRole('button', { name: 'Start the drill' }).click();
