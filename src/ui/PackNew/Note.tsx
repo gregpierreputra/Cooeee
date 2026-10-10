@@ -44,6 +44,10 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
         {replacing ? (
           <section className={replacing.keep ? 'notes-saved' : 'notes-saved notes-dropped'} aria-labelledby="notes-saved-heading">
             <h2 id="notes-saved-heading" className="kicker">{copy.NOTES_SAVED_HEADING}</h2>
+            {/* What happens to them, said before they are listed. */}
+            <p className={replacing.keep ? 'muted place-note' : 'tone-amber place-note'} role="status">
+              {replacing.keep ? copy.NOTES_KEPT(replacing.notes.length) : copy.NOTES_DROPPED(replacing.notes.length)}
+            </p>
             <ul className="list">
               {replacing.notes.map((note) => (
                 <li key={note.id} className="card note-card">
@@ -53,9 +57,6 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
                 </li>
               ))}
             </ul>
-            <p className={replacing.keep ? 'muted place-note' : 'tone-amber place-note'} role="status">
-              {replacing.keep ? copy.NOTES_KEPT(replacing.notes.length) : copy.NOTES_DROPPED(replacing.notes.length)}
-            </p>
             {/* A choice about the person's own words, so a button: red where it
                 removes them, teal where it keeps them, as on every question
                 that removes something. It only takes effect when the new pack
