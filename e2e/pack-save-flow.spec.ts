@@ -492,3 +492,33 @@ test('US2 the pack reopens unchanged after returning to the pack list', async ({
   await page.reload();
   expect(await page.locator('.pack-detail').innerText()).toBe(before);
 });
+// A pack's map takes in the places chosen for it. Far from the nearest places,
+// as at Bimbourie in the Mallee, the map widens past its usual 40 km, up to
+// 120 km across; a chosen place past even that is said under the map.
+test('the pack map widens to its chosen places, and names one too far for it', async ({ page }) => {
+  const FAR_ADDRESS = '1 MAIN STREET BIMBOURIE 3533';
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(FAR_ADDRESS, 'BIMBOURIE', 142.75978, -35.34034)],
+    lgaName: 'MILDURA',
+    bpaHits: [bpaHitFeature('MILDURA')],
+  });
+  await page.goto('/packs/new');
+  await page.getByLabel('Street address').fill('MAIN');
+  await page.getByLabel('Street address').press('Enter');
+  await page.getByRole('button', { name: FAR_ADDRESS }).click();
+  await page.getByLabel('Place name').fill('Bimbourie');
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  const boxes = page.getByRole('checkbox');
+  await boxes.nth(0).check();
+  await boxes.nth(1).check();
+  await page.getByRole('button', { name: 'Save last-resort places' }).click();
+  await page.getByRole('button', { name: 'Not now' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
+
+  // The nearest, about 40 km off, is on the map; the next, about 69 km, is not.
+  await expect(page.locator('.area-map')).toContainText('120 km across');
+  await expect(page.locator('.area-map-mark')).toHaveCount(1);
+  await expect(page.locator('#pack-panel-area .place-note')).toHaveText([/^Showgrounds Recreation Reserve, Swan Hill is \d+(\.\d)? km away, off this map\.$/]);
+});

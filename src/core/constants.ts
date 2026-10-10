@@ -115,6 +115,12 @@ export const AREA_MAP_NAME = 'bushfire-prone-area-map.png';
  *  page to read roads, creeks and place names. A picture size only; the pack's
  *  6 km area rule is PACK_RADIUS_KM. */
 export const AREA_MAP_HALF_KM = 20;
+/** A pack's map widens past AREA_MAP_HALF_KM to take in the places of last
+ *  resort chosen for it, with this much room past the farthest, up to the
+ *  most it reaches each way: 120 km across, which holds both chosen places for
+ *  nearly every Victorian locality while staying sharp enough to read. */
+export const AREA_MAP_MARGIN_KM = 3;
+export const AREA_MAP_MAX_HALF_KM = 60;
 /** Nearby's map of the nearest bushfire places: the same 40 km square as a
  *  pack's map, at most this many Neighbourhood Safer Places on it, and the
  *  picture's half width in its own pixels, about half a phone's width. */

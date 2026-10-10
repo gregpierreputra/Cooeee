@@ -236,6 +236,8 @@ export const AREA_MAP_KEY = {
 } as const;
 /** Read from the stored map itself, so an older, smaller map says its own size. */
 export const AREA_MAP_ACROSS = (km: number) => `${km} km across`;
+/** A chosen place too far for even the widest map, said under it. */
+export const PLACE_OFF_MAP = (name: string, distance: string) => `${name} is ${distance} away, off this map.`;
 /** Nearby's map, folded under the bushfire tab until asked for. */
 export const NEARBY_MAP_SHOW = 'Show on a map';
 export const NEARBY_MAP_ALT = 'Map of the main roads and towns round where distances are measured from, with the nearest Neighbourhood Safer Places and Community Fire Refuges marked';
