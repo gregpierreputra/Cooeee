@@ -327,13 +327,13 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await boxes.nth(0).check();
   await boxes.nth(1).check();
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
-  await page.getByLabel('Your note').fill('Meet at the oval gate.');
+  await page.getByLabel('Note for this place').fill('Meet at the oval gate.');
   await page.getByRole('button', { name: 'Keep this note' }).click();
   await expect(page.getByRole('heading')).toHaveText('Ready to download');
 
   // The Back bar: the size, then the note as written.
   await back.click();
-  await expect(page.getByLabel('Your note')).toHaveValue('Meet at the oval gate.');
+  await expect(page.getByLabel('Note for this place')).toHaveValue('Meet at the oval gate.');
   // The phone's Back button: the places, with the same two ticked.
   await page.goBack();
   await expect(boxes.nth(0)).toBeChecked();

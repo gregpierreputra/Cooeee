@@ -73,10 +73,10 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
             </button>
           </section>
         ) : null}
-        {/* On a replace, set as the saved notes' heading above it, so the step
-            reads as two parts: what is saved, and what is added. */}
-        <label htmlFor="pack-note" className={replacing ? 'kicker' : undefined}>
-          {replacing ? copy.NOTE_ADD_ANOTHER : copy.NOTE_LABEL}
+        {/* A heading like the step's others, saying what goes in the box: on a
+            replace, under the notes already saved, another to add. */}
+        <label htmlFor="pack-note" className="kicker">
+          {replacing ? copy.NOTE_ADD_ANOTHER : copy.NOTE_FOR_THIS_PLACE}
         </label>
         <textarea
           id="pack-note"
