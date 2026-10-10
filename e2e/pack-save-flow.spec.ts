@@ -104,6 +104,16 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   // Both chosen places are marked on it, and the buttons zoom it. North stays
   // up, and fully zoomed out the map does not move: it already fills the frame.
   await expect(page.locator('.area-map-mark')).toHaveCount(2);
+  // Each marker is named for its place, and a tap opens a label above it that
+  // a press on the map closes again.
+  await expect(page.getByRole('button', { name: `Your place, ${ADDRESS}` })).toBeVisible();
+  const placeMark = page.locator('.area-map-mark').first();
+  await placeMark.click();
+  await expect(placeMark).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.area-map-label')).toHaveCount(1);
+  const frameBox = (await page.locator('.area-map-frame').boundingBox())!;
+  await page.mouse.click(frameBox.x + 30, frameBox.y + frameBox.height - 30);
+  await expect(page.locator('.area-map-label')).toHaveCount(0);
   // The bushfire area's Source, opened above with the others: publisher, saved and licence.
   const areaSection = page.locator('.pack-section', { hasText: 'Bushfire area' });
   await expect(areaSection.locator('.source-rows dt')).toHaveText(['Published by', 'Saved', 'Licence']);
@@ -130,8 +140,10 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await touch('touchEnd', []);
   expect(await transform()).toMatch(/^translate\([-\d.]+px, [-\d.]+px\) scale\((?!1\))[\d.]+\)$/);
   // A long drag stops at the picture's edge: no blank ground comes into view.
-  await touch('touchStart', [[cx, cy]]);
-  await touch('touchMove', [[cx + 2000, cy + 2000]]);
+  // Started beside the saved place's marker: a press on a marker opens its
+  // label rather than dragging.
+  await touch('touchStart', [[cx + 60, cy + 60]]);
+  await touch('touchMove', [[cx + 2060, cy + 2060]]);
   await touch('touchEnd', []);
   const [shiftX, shiftY, scale] = (await transform()).match(/[-\d.]+/g)!.map(Number);
   expect(shiftX).toBeCloseTo((box.width / 2) * (scale - 1), 0);
