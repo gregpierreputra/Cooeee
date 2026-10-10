@@ -4992,6 +4992,9 @@ body.drill-open .banner {
   left: calc(env(safe-area-inset-left) + 1rem);
   right: calc(env(safe-area-inset-right) + 1rem);
   bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.75rem);
+  /* On a wide screen the two controls flank the bag, not the window's corners. */
+  max-width: 40rem;
+  margin-inline: auto;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -5037,10 +5040,7 @@ body.drill-open .banner {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 .drill-grab {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
+  display: grid;
   min-height: 0;
   padding: 0;
   border: 0;
@@ -5069,14 +5069,23 @@ body.drill-open .banner {
   width: 2.5rem;
   height: 2.5rem;
 }
+/* Centred over both controls, where it has the whole width: one line for
+   most names, and even lines for the longest on a small phone. */
 .drill-grab-name {
-  max-width: min(11rem, 44vw);
-  padding: 0.375rem 0.75rem;
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 0.375rem 0.875rem;
   border-radius: var(--r-pill);
   background: rgba(8, 10, 18, 0.62);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  text-align: right;
+  text-align: center;
+  text-wrap: balance;
   animation: drill-grab-in 0.18s ease-out both;
 }
 @keyframes drill-grab-in {
