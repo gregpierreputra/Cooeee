@@ -3,7 +3,8 @@ import { DTP_PUBLISHER } from '../../core/constants';
 import * as copy from '../../core/copy';
 import type { BushfireAreaResult, PendingPlace } from '../../core/types';
 import Glyph from '../components/Glyph';
-import { SourceRing } from '../components/ProvenanceLine';
+import KeyTerms from '../components/KeyTerms';
+import { SourceText } from '../components/ProvenanceLine';
 import StatusPage from '../components/StatusPage';
 import FlowSteps from './FlowSteps';
 
@@ -62,8 +63,6 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
 
   const view = areaCheckView(state.result);
   const inside = state.result.status === 'present';
-  // Inside, only the words that say so are in amber.
-  const [before, after] = view.resultLine.split(copy.INSIDE_BPA_TERM);
   return (
     <StatusPage
       page="area-page"
@@ -71,38 +70,30 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
       cardClass="area-result"
       card={
         <>
-          {/* Amber, the flame and the coloured words, only inside a designated
-              area. Every other answer is plain, with the calm layer drawing.
-              The words carry the meaning either way. */}
-          <div className="card-head">
-            {inside ? (
-              <span className="tone-amber"><Glyph kind="drill" /></span>
-            ) : (
-              <Glyph kind="layer" />
-            )}
-            <h1>
-              {inside ? (
-                <>
-                  {before}
-                  <strong className="key-term">{copy.INSIDE_BPA_TERM}</strong>
-                  {after}
-                </>
-              ) : (
-                view.resultLine
-              )}
-            </h1>
+          {/* Laid out as the pack page's Bushfire area: the map's drawing and
+              the section's name, then the answer at full width. A planning
+              area is not a fire, so no flame. As on the pack page, only the
+              words that say inside are amber, and outside, that fire can
+              still reach the person. */}
+          <div className="pack-section-head">
+            <Glyph kind="map" />
+            <span className="kicker">{copy.BUSHFIRE_AREA}</span>
           </div>
-          {view.cautionLine && <p className="muted">{view.cautionLine}</p>}
-          <SourceRing
+          <h1>{inside ? <KeyTerms text={view.resultLine} /> : view.resultLine}</h1>
+          {view.cautionLine && (
+            <p className="muted">
+              <KeyTerms text={view.cautionLine} />
+            </p>
+          )}
+          {/* The pack's own reminder, the card's footer: no phone, as there is
+              nothing here to call. */}
+          <p className="area-priority">{view.priorityLine}</p>
+          <SourceText
             rows={[
               { label: copy.SOURCE_PUBLISHED_BY, value: DTP_PUBLISHER },
               { label: copy.SOURCE_SAVED, value: view.savedOn },
             ]}
           />
-          <p className="with-glyph">
-            <Glyph kind="calls" line />
-            {view.priorityLine}
-          </p>
         </>
       }
       actions={

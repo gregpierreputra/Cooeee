@@ -25,6 +25,16 @@ function SourceRows({ rows }: { rows: SourceRow[] }) {
   );
 }
 
+/** Source as words that open the facts, as Not for you? does on Home, with
+ *  any links beside it on one row. */
+export function SourceText({ rows, links = null }: { rows: SourceRow[]; links?: ReactNode }) {
+  return (
+    <Hint className="hint source-row" label={copy.SOURCE_LABEL} asText titled={false} panelClass="source-panel" head={links}>
+      <SourceRows rows={rows} />
+    </Hint>
+  );
+}
+
 /** The small Source ring and the facts it opens. */
 export function SourceRing({ rows }: { rows: SourceRow[] }) {
   return (
@@ -60,9 +70,7 @@ export default function ProvenanceLine({ source, now, extra = [], open = false, 
       {open ? (
         <SourceRows rows={rows} />
       ) : links !== undefined ? (
-        <Hint className="hint source-row" label={copy.SOURCE_LABEL} asText titled={false} panelClass="source-panel" head={links}>
-          <SourceRows rows={rows} />
-        </Hint>
+        <SourceText rows={rows} links={links} />
       ) : (
         <SourceRing rows={rows} />
       )}
