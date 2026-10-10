@@ -5436,8 +5436,14 @@ body.drill-open .banner {
   text-transform: uppercase;
   color: var(--kind);
 }
-.drill-row {
+/* The picture beside the label on the first line, not the middle of a list
+   that wraps: a box one line tall, at the top. Named with p to outrank the
+   shared .with-glyph centring. */
+p.drill-row {
   align-items: flex-start;
+}
+p.drill-row .glyph {
+  height: 1.5em;
 }
 .debrief-sprite {
   display: block;
