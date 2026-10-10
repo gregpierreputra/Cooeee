@@ -365,8 +365,10 @@ export default function PackDetail({
           {content.recovery.length === 0 ? (
             <p className="muted">{copy.NO_SAVED_PROGRAMS}</p>
           ) : (
-            <ul className="list saved-programs">
-              {content.recovery.map((program) => (
+            <ShortList
+              items={content.recovery}
+              className="list saved-programs"
+              render={(program) => (
                 <li key={program.id} className="card provenance-item">
                   <div className="card-head">
                     <span className="monogram" aria-hidden="true">{monogram(program.org)}</span>
@@ -389,8 +391,8 @@ export default function PackDetail({
                     links={sourceLinks({ id: program.id, name: program.title, source: program.source, pageUrl: program.officialUrl })}
                   />
                 </li>
-              ))}
-            </ul>
+              )}
+            />
           )}
           {/* Drawn as New offline pack is: the plus, then the words. */}
           <Link className="action with-glyph" to="/recover?need=all">
@@ -427,8 +429,10 @@ export default function PackDetail({
           {history.length === 0 ? (
             <p>{copy.NOT_YET_REHEARSED}</p>
           ) : (
-            <ul className="list history-list">
-              {history.map((row) => (
+            <ShortList
+              items={history}
+              className="list history-list"
+              render={(row) => (
                 // Set as the other cards on this page: the condition as the
                 // small teal label with the date beside it, the ending in bold,
                 // then what the rehearsal found.
@@ -440,8 +444,8 @@ export default function PackDetail({
                   <p className="practice-outcome">{row.ending}</p>
                   <RehearsalGaps gaps={row.gaps} found={row.found} />
                 </li>
-              ))}
-            </ul>
+              )}
+            />
           )}
         </Section>
 
@@ -450,8 +454,10 @@ export default function PackDetail({
           {drills.length === 0 ? (
             <p>{copy.NOT_YET_DRILLED}</p>
           ) : (
-            <ul className="list history-list">
-              {drills.map((row) => (
+            <ShortList
+              items={drills}
+              className="list history-list"
+              render={(row) => (
                 // Set as a rehearsal is: the drill's name as the teal label
                 // with the date, the outcome in bold, then the bag.
                 <li key={row.id} className="card history-row practice-card">
@@ -476,8 +482,8 @@ export default function PackDetail({
                   </div>
                   <DrillBag row={row} />
                 </li>
-              ))}
-            </ul>
+              )}
+            />
           )}
         </Section>
       </TabPanel>
@@ -520,6 +526,31 @@ export default function PackDetail({
         </div>
       ) : null}
     </main>
+  );
+}
+
+/** How many of a growing list show before the rest wait behind a toggle. */
+const SHORT_LIST = 3;
+
+/** A list that shows its first SHORT_LIST items, newest first as given, then
+ *  one text toggle, set as About gaps is, for the rest. The first items are
+ *  always in view, so a section never looks empty. */
+function ShortList<T>({ items, className, render }: { items: T[]; className: string; render: (item: T) => ReactNode }) {
+  const [all, setAll] = useState(false);
+  const more = items.length - SHORT_LIST;
+  return (
+    <>
+      <ul className={className}>{(all ? items : items.slice(0, SHORT_LIST)).map(render)}</ul>
+      {more > 0 ? (
+        <button type="button" className="hint-text" aria-expanded={all} onClick={() => setAll(!all)}>
+          {all ? copy.SHOW_FEWER : copy.SHOW_MORE(more)}
+          {/* Points right while closed and down while open (see .hint-text). */}
+          <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+            <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : null}
+    </>
   );
 }
 

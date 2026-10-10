@@ -608,6 +608,9 @@ export const PACK_TAB_PLACES = 'Places';
 export const PACK_TAB_SUPPORT = 'Support';
 export const PACK_TAB_NOTES = 'Notes';
 export const PACK_TAB_PRACTICE = 'Practice';
+/** Under a long list on the pack page: the rest of it, then back to three. */
+export const SHOW_MORE = (count: number) => `Show ${count} more`;
+export const SHOW_FEWER = 'Show fewer';
 export const NO_SAVED_PROGRAMS = 'None saved yet.';
 /** Every pack carries the programs saved in Recover, so the pack says so. */
 export const SAVED_PROGRAMS_SHARED = 'The same in every pack. Choose them in Recover.';
