@@ -404,7 +404,7 @@ export default function PackDetail({
 
         {/* R3: the wellbeing lines travel with every pack. */}
         <Section kind="calls" title={copy.TALK_TO_SOMEONE}>
-          <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
+          <p className="muted place-note">{copy.TALK_TO_SOMEONE_LINE}</p>
           <WellbeingLines />
         </Section>
       </TabPanel>
