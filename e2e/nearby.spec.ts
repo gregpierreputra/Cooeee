@@ -163,7 +163,7 @@ test('Share on a place copies it to send, without the distance', async ({ page, 
 
 // The nearest places of last resort on a map, folded until asked for, drawn on
 // the phone from files it already holds, so it opens with no signal.
-test('Show on a map opens a map of the nearest places, with no signal', async ({ page, context }) => {
+test('Show on a map opens a map of the nearest places and refuges, with no signal', async ({ page, context }) => {
   await openOffline(page, context, 'cached');
   await findPostcode(page);
   const toggle = page.getByRole('button', { name: 'Show on a map' });
@@ -174,6 +174,11 @@ test('Show on a map opens a map of the nearest places, with no signal', async ({
   await expect(page.getByRole('img', { name: /Map of the main roads and towns/ })).toBeVisible();
   await expect(page.locator('.nearby-map .blacksky-road').first()).toBeAttached();
   await expect(page.locator('.nearby-map .area-map-mark').first()).toBeVisible();
+  // Both kinds of bushfire place, each said for what it is, and a key.
+  const map = page.locator('.nearby-map');
+  await expect(map.getByRole('button', { name: 'Kalorama Memorial Reserve · 580 m, Neighbourhood Safer Place' })).toBeVisible();
+  await expect(map.getByRole('button', { name: /^Ferny Creek Community Fire Refuge · .*, Community Fire Refuge$/ })).toBeVisible();
+  await expect(map.locator('.map-key li')).toHaveText(['Measured from here', 'Neighbourhood Safer Place', 'Community Fire Refuge']);
   // The middle is where distances are measured from, named as such. A place
   // 580 m away sits over it at this size, so it is opened from the keyboard.
   await page.locator('.nearby-map .area-map-pin').focus();

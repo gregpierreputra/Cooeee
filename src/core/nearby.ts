@@ -100,16 +100,17 @@ export function nearestOfType<T extends LatLon & { type: FacilityType }>(
   return nearest;
 }
 
-/** The nearest few Neighbourhood Safer Places within reachM of the origin,
- *  nearest first, for Nearby's map. */
-export function nspsNear(
+/** The nearest few places of one type within reachM of the origin, nearest
+ *  first, for Nearby's map. */
+export function placesNear(
   facilities: BundleFacility[],
   origin: LatLon,
+  type: BundleFacility['type'],
   count: number,
   reachM: number,
 ): { row: BundleFacility; distanceM: number }[] {
   return facilities
-    .filter((row) => row.type === 'NSP')
+    .filter((row) => row.type === type)
     .map((row) => ({ row, distanceM: distanceM(origin, row) }))
     .filter((near) => near.distanceM <= reachM)
     .sort((a, b) => a.distanceM - b.distanceM)

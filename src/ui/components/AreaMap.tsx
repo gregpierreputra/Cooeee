@@ -4,9 +4,13 @@ import { siteNameBlock } from '../../core/blacksky-dial';
 import * as copy from '../../core/copy';
 import { formatDistanceM, placeName } from '../../core/destination';
 import type { Destination } from '../../core/types';
-import Glyph from './Glyph';
+import Glyph, { type GlyphKind } from './Glyph';
 
 type Point = { x: number; y: number };
+
+/** One place on the map. Nearby marks two kinds, so a place can carry its own
+ *  drawing and the kind its label names; a pack's places use the defaults. */
+export type MapPlace = Pick<Destination, 'id' | 'name' | 'lat' | 'lon' | 'distanceM'> & { glyph?: GlyphKind; kind?: string };
 
 const WHEEL_STEP = 0.01; // zoom per pixel of wheel travel, with Ctrl held or a trackpad pinch
 const WHEEL_MAX = 50; // one wheel notch zooms about as much as a button press
@@ -37,7 +41,7 @@ export default function AreaMap({
   src?: string;
   picture?: ReactNode;
   box: MapBox | null;
-  places: Pick<Destination, 'id' | 'name' | 'lat' | 'lon' | 'distanceM'>[];
+  places: MapPlace[];
   /** The centre marker's line and name: the saved place's address, or where
    *  Nearby measures from. */
   address: string;
@@ -170,11 +174,11 @@ export default function AreaMap({
                 className="area-map-mark"
                 at={at}
                 title={typeof place.distanceM === 'number' ? `${site} · ${formatDistanceM(place.distanceM)}` : site}
-                line={line}
+                line={place.kind ?? line}
                 labelled={labelled}
                 onLabel={setLabelled}
               >
-                <Glyph kind="place" size={16} />
+                <Glyph kind={place.glyph ?? 'place'} size={16} />
               </Marker>
             );
           })}
