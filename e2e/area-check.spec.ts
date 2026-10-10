@@ -35,6 +35,9 @@ test('AC5 shows designation, publisher/date and instruction priority in order', 
   );
   await expect(state.locator('.area-priority .glyph')).toHaveCount(0);
   await expect(state).not.toContainText(/safe|protected|low risk|no risk|high risk|danger level/i);
+  // A step like the others: Continue alone, with Back and the tab bar as the
+  // ways out.
+  await expect(page.getByRole('link', { name: 'Back to Home' })).toHaveCount(0);
 });
 
 test('AC6 shows the published-but-nothing-mapped state exactly', async ({ page }) => {
