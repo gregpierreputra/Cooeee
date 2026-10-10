@@ -392,23 +392,26 @@ function PlaceRow({ row }: { row: NearbyRow }) {
           {row.place.address ? <p className="muted">{row.place.address}</p> : null}
         </div>
       ) : null}
-      {/* An NSP's footer, set apart from the address: what the place is, and
-          that no one will be there. */}
-      {row.place?.about ? (
-        <p className="nearby-about">
-          {row.place.about.kind ? <span>{row.place.about.kind}</span> : null}
-          <span className="muted">{row.place.about.note}</span>
-        </p>
-      ) : null}
       {row.note ? <p className="nearby-note">{row.note}</p> : null}
-      {/* One place to send, say to meet there: never the sender's position. */}
+      {/* The card's footer, set apart from the address, as a pack card ends in
+          one row: for an NSP what the place is and that no one will be there,
+          then Share as a small link, to send the place, never the sender's
+          position. */}
       {row.place ? (
         <>
-          <button type="button" className="action with-glyph nearby-share" onClick={() => void share()}>
-            <Glyph kind="share" line />
-            {copy.SHARE_PLACE}
-            <span className="visually-hidden"> {row.place.name}</span>
-          </button>
+          <div className="nearby-foot">
+            {row.place.about ? (
+              <p className="nearby-about">
+                {row.place.about.kind ? <span>{row.place.about.kind}</span> : null}
+                <span className="muted">{row.place.about.note}</span>
+              </p>
+            ) : null}
+            <button type="button" className="nearby-share with-glyph" onClick={() => void share()}>
+              <Glyph kind="share" line />
+              {copy.SHARE_PLACE}
+              <span className="visually-hidden"> {row.place.name}</span>
+            </button>
+          </div>
           <p className="muted place-note" role="status" aria-live="polite">
             {shared === 'copied' ? copy.COPIED_LINE : shared === 'unavailable' ? copy.SHARE_UNAVAILABLE : ''}
           </p>

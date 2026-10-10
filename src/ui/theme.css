@@ -3530,12 +3530,21 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-s);
 }
 /* The postcode in the origin line, picked out in the accent. */
-/* Share on a Nearby place: a small pill at the foot of its card. */
+/* Share: a small teal link like Saved PDF and Web page on a pack card, held
+   to the right of the footer. */
 .nearby-share {
-  align-self: flex-start;
-  min-height: 44px;
-  padding: 0.5rem 0.875rem;
+  gap: 0.25rem;
+  min-height: 32px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
   font-size: var(--step-s);
+  font-weight: var(--w-med);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 /* Nearby's map: a text toggle like Source, then the map beneath it. */
 .nearby-map-toggle {
@@ -3753,13 +3762,21 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 /* An NSP's footer: below a hairline so it never reads as part of the
    address, as small as the date so the place still leads the card. */
-.nearby-about {
+/* A Nearby card's last row, set apart from the address: what the place is
+   on the left, Share on the right, as a pack card ends in Source and links. */
+.nearby-foot {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
   padding-top: 0.625rem;
   border-top: 1px solid var(--line);
   font-size: var(--step-s);
+}
+.nearby-about {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
 }
 
 .nearby-place {
