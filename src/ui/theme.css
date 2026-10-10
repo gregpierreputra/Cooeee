@@ -78,6 +78,16 @@
   --blacksky-accent: #ffb020;
   --blacksky-fill: #3a2808;
   --blacksky-ink-2: #b87a12;
+  /* BlackSky's true black, kept by the compass, its hint and its info panel
+     outside the mode, so they read as the dark screen whatever the page. */
+  --blacksky-bg: #000000;
+
+  /* The pack map's own colours. They sit on the light map picture, so they
+     never rebind with the page around it. */
+  --area-map-paper: #ffffff;
+  --area-map-glass: rgb(255 255 255 / 0.72);
+  --area-map-ink: #1a1f24;
+  --area-map-inside: #f2d64b;
 
   /* Connection notice. Fixed green/red by requirement, in every mode: the
      state colour IS the information, so it never rebinds per mode. */
@@ -646,7 +656,7 @@ input[aria-invalid='true'] {
      under the sticky Back bar and header with the image, never over them. */
   isolation: isolate;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--area-map-paper);
   touch-action: none;
   cursor: grab;
 }
@@ -766,8 +776,8 @@ input[aria-invalid='true'] {
   height: 1rem;
   border: 3px solid var(--accent);
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.6);
-  box-shadow: 0 0 0 2px #fff;
+  background: color-mix(in srgb, var(--area-map-paper) 60%, transparent);
+  box-shadow: 0 0 0 2px var(--area-map-paper);
 }
 
 /* An official place of last resort: the places glyph in a dark disc, so it
@@ -778,7 +788,7 @@ input[aria-invalid='true'] {
   height: 28px;
   background: var(--bg);
   color: var(--accent);
-  box-shadow: 0 0 0 2px #fff;
+  box-shadow: 0 0 0 2px var(--area-map-paper);
 }
 
 .area-map-mark-key .glyph {
@@ -797,7 +807,7 @@ input[aria-invalid='true'] {
   z-index: 1;
   display: grid;
   border-radius: var(--r-pill);
-  background: rgb(255 255 255 / 0.72);
+  background: var(--area-map-glass);
   backdrop-filter: blur(8px);
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
   cursor: default;
@@ -811,9 +821,9 @@ input[aria-invalid='true'] {
   z-index: 1;
   padding: 0.125rem 0.5rem;
   border-radius: var(--r-pill);
-  background: rgb(255 255 255 / 0.72);
+  background: var(--area-map-glass);
   backdrop-filter: blur(8px);
-  color: #1a1a1a;
+  color: var(--area-map-ink);
   font-size: var(--step-xs);
   pointer-events: none;
 }
@@ -828,12 +838,12 @@ input[aria-invalid='true'] {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #1a1f24;
+  color: var(--area-map-ink);
   font-size: var(--step-1);
   line-height: 1;
 }
 .map-button[aria-disabled='true'] {
-  color: rgb(26 31 36 / 0.35);
+  color: color-mix(in srgb, var(--area-map-ink) 35%, transparent);
   cursor: default;
 }
 
@@ -2653,14 +2663,14 @@ body.touring .page {
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a
    glimpse of the mode rather than one more card on the screen. */
 .blacksky-info-panel {
-  --bubble-bg: #000000;
+  --bubble-bg: var(--blacksky-bg);
   --bubble-line: var(--blacksky-fill);
   display: grid;
   gap: 0.75rem;
   padding: 1.125rem 1.25rem;
   border: 1px solid var(--blacksky-fill);
   border-radius: var(--r-card);
-  background: #000000;
+  background: var(--blacksky-bg);
 }
 /* Named through the list so the amber outranks the shared accent lead colour
    in .info-lines b below, whatever order the two rules sit in. */
@@ -3123,7 +3133,7 @@ body.touring .page {
   place-items: center;
   border: 2px solid var(--blacksky-accent);
   border-radius: 50%;
-  background: #000;
+  background: var(--blacksky-bg);
   background-image: none;
   color: var(--blacksky-accent);
   box-shadow: 0 4px 14px rgb(0 0 0 / 45%);
@@ -3161,7 +3171,7 @@ body.touring .page {
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--blacksky-accent);
   border-radius: var(--r-pill);
-  background: #000;
+  background: var(--blacksky-bg);
   color: var(--blacksky-accent);
   font-size: var(--step-xs);
 }
@@ -3426,7 +3436,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
    black. The red rule alone marks the line, and on a screen that is otherwise
    all amber it is the one thing in another colour. */
 :root[data-mode='blacksky'] .emergency-line {
-  background: #000000;
+  background: var(--bg);
 }
 
 .official-channels svg {
@@ -5107,7 +5117,7 @@ body.drill-open .banner {
   width: 5.5rem;
   height: 5.5rem;
   border-radius: 50%;
-  background: rgba(255, 90, 79, 0.16);
+  background: color-mix(in srgb, var(--kind-bulky) 16%, transparent);
   border: 2px solid var(--kind-bulky);
   color: var(--kind-bulky);
 }
@@ -5511,15 +5521,15 @@ p.with-glyph {
   border: 1px solid var(--line);
 }
 .swatch-inside {
-  background: #f2d64b;
+  background: var(--area-map-inside);
 }
 .swatch-outside {
-  background: #ffffff;
+  background: var(--area-map-paper);
 }
 .swatch-place {
   border: 3px solid var(--accent);
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.6);
+  background: color-mix(in srgb, var(--area-map-paper) 60%, transparent);
 }
 /* Source and an item's links on one row that wraps link by link, never into
    a narrow column; the panel Source opens takes the full width beneath. */
