@@ -2,6 +2,7 @@ import { useState } from 'react';
 import * as copy from '../core/copy';
 import Glyph, { type GlyphKind } from './components/Glyph';
 import InfoGlyph from './components/InfoGlyph';
+import KeyTerms from './components/KeyTerms';
 import Mark from './components/Mark';
 
 /** E1-US1-AC0. The first screen anyone sees, and the only one that stands
@@ -59,7 +60,11 @@ export default function FirstOpen({ onAcknowledge }: { onAcknowledge: () => void
 
       <p className="official-channels emergency-line">
         <InfoGlyph size={22} />
-        <span>{copy.OFFICIAL_CHANNELS_LINE}</span>
+        {/* The number to call stands out in bold within the red line, in the
+            line's own colour: amber is for caution, not an emergency. */}
+        <span>
+          <KeyTerms text={copy.OFFICIAL_CHANNELS_LINE} terms={[copy.TRIPLE_ZERO_LABEL]} className="emergency-term" />
+        </span>
       </p>
 
       <div className="actions">
