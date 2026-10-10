@@ -51,6 +51,25 @@ test('AC1 keeps a name as typed in memory only, and a blank name cannot be saved
   });
 });
 
+test('Enter in the name moves on to the drawing, and does not save the place', async ({ page }) => {
+  await page.goto(HARNESS_URL);
+  const name = page.getByLabel('Place name');
+  // A phone's Enter key reads Next, as a drawing is still to come.
+  await expect(name).toHaveAttribute('enterkeyhint', 'next');
+  await name.fill('Home base');
+  await name.press('Enter');
+  // Nothing is confirmed: focus is on the drawing chosen, the keyboard gone.
+  await expect(page.getByRole('radio', { name: 'Place' })).toBeFocused();
+  expect(await page.evaluate(() => window.__confirmedPlace)).toBeUndefined();
+  // A drawing chosen, Enter there saves the place with it.
+  await page.keyboard.press('ArrowRight');
+  const chosen = page.locator('input[name="place-icon"]:checked');
+  const icon = await chosen.inputValue();
+  expect(icon).not.toBe('place');
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => window.__confirmedPlace?.icon)).toBe(icon);
+});
+
 test('AC1 search again retains nothing and makes no request', async ({ page }) => {
   await page.goto(HARNESS_URL);
   let requests = 0;
