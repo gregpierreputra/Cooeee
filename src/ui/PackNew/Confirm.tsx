@@ -73,8 +73,9 @@ export function Confirm({ candidate, initialName, initialIcon, takenName, onConf
           <button className="main-action" type="submit" disabled={name.trim() === ''}>
             {copy.SAVE_THIS_PLACE}
           </button>
+          {/* The no to the screen's question, beside the yes. */}
           <button type="button" onClick={onSearchAgain}>
-            {copy.SEARCH_AGAIN}
+            {copy.NOT_THIS_PLACE}
           </button>
         </div>
       </form>
