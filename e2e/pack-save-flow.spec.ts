@@ -407,6 +407,9 @@ test('once the pack is saved, Back to Home is the one way out', async ({ page })
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+  // Back is held, but its room is kept, so the screen does not lift as it saves.
+  await expect(page.locator('.back-bar-held')).toHaveCount(1);
+  expect((await page.locator('.back-bar').boundingBox())!.height).toBeGreaterThan(44);
   await page.getByRole('link', { name: 'Back to Home' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('.pack-card')).toHaveCount(1);

@@ -39,6 +39,17 @@ export default function BackBar() {
   // Only on the running rehearsal's own screens: another pack's rehearsal
   // page is not a screen of this run, and must not wear its bar.
   const runBar = run && pathname.startsWith(`/rehearse/${run.packId}`) ? <RehearsalBar run={run} /> : null;
+  // In the pack builder, Back is held while a check or the save runs and once
+  // the pack is saved, but its room is kept: taking the bar away would lift
+  // every step by its height, and drop it back a moment later.
+  const held = !target && builder === 'hidden' && pathname === '/packs/new' && new URLSearchParams(search).has('step');
+  if (held) {
+    return (
+      <nav className="back-bar" aria-hidden="true">
+        <div className="back-bar-inner back-bar-held" />
+      </nav>
+    );
+  }
   if (!target && !runBar) return null;
 
   return (
