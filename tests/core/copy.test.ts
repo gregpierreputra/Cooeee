@@ -257,7 +257,7 @@ describe('the returning-user home', () => {
   });
 
   it('greets by the hour, and labels the preparation line as a daily reminder', () => {
-    expect(copy.GREETING(4)).toBe('Hi');
+    expect(copy.GREETING(4)).toBe('Hello');
     expect(copy.GREETING(5)).toBe('Good morning');
     expect(copy.GREETING(12)).toBe('Good afternoon');
     expect(copy.GREETING(18)).toBe('Good evening');
