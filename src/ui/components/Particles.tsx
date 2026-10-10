@@ -33,13 +33,31 @@ export default function Particles() {
     let motes: Mote[] = [];
     let frame = 0;
     let last = 0;
+    // The size the canvas is drawn at, in CSS pixels.
+    let w = 0;
+    let h = 0;
 
+    // On a phone the height changes as the address bar hides and shows, and as
+    // the keyboard opens: each a resize. The canvas is as tall as the screen
+    // at its tallest (100lvh in the stylesheet) and never shrinks, and the
+    // motes are kept, so scrolling neither scatters them nor uncovers the page.
+    // Only a new width, such as turning the phone, starts them afresh.
     const size = () => {
+      const width = document.documentElement.clientWidth || innerWidth;
+      const newWidth = width !== w;
+      // A new width measures the screen afresh; otherwise the canvas keeps its
+      // height in pixels, as a desktop window's 100lvh shrinks with the window.
+      if (newWidth) canvas.style.height = '';
+      const height = Math.max(newWidth ? canvas.clientHeight : h, innerHeight);
+      if (!newWidth && height === h) return;
+      w = width;
+      h = height;
+      canvas.style.height = `${h}px`;
       const scale = devicePixelRatio || 1;
-      canvas.width = innerWidth * scale;
-      canvas.height = innerHeight * scale;
+      canvas.width = w * scale;
+      canvas.height = h * scale;
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      motes = Array.from({ length: COUNT }, () => mote(innerWidth, innerHeight));
+      if (newWidth) motes = Array.from({ length: COUNT }, () => mote(w, h));
       // Resizing clears the canvas, and a still frame has no next frame to redraw it.
       if (still) draw(performance.now());
     };
@@ -51,8 +69,6 @@ export default function Particles() {
       }
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
-      const w = innerWidth;
-      const h = innerHeight;
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = `rgba(${ACCENT}, 0.35)`;
       for (const m of motes) {
