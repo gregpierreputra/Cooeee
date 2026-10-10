@@ -1381,6 +1381,12 @@ export const NOTHING_IN_REACH = 'Nothing in reach';
 export const BAG_FULL = 'Bag full';
 export const SECONDS_LEFT = (seconds: number) => `${seconds} seconds left`;
 export const HEAD_TO_DOOR = 'Head to the front door.';
+/** The guide over the paused game, before the clock starts. Touch wording on
+ *  a touch screen, mouse and keys wording where there is a fine pointer. */
+export const GUIDE_GOAL = 'Pack ten things, then be at the front door when the time ends.';
+export const GUIDE_MOVE = (keys: boolean) => (keys ? 'Drag here or use the arrow keys to walk, or click the floor.' : 'Drag here to walk, or tap the floor.');
+export const GUIDE_GRAB = (keys: boolean) => (keys ? 'Lights up next to a thing. Click it or press Enter to grab.' : 'Lights up next to a thing. Tap it to grab.');
+export const GUIDE_START = (keys: boolean) => (keys ? 'Click or press Enter to start' : 'Tap anywhere to start');
 export const SOUND = 'Sound';
 export const SOUND_ON = 'Sound on';
 export const SOUND_OFF = 'Sound off';
