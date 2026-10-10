@@ -5850,6 +5850,32 @@ button.flow-step {
 .flow-steps .now .flow-step-label {
   color: var(--ink);
 }
+/* A step already done is a way back: under a mouse or trackpad its drawing
+   lights a stronger teal and its name underlines, as a link does. The steps
+   that cannot be tapped do neither. */
+button.flow-step .glyph,
+button.flow-step .flow-step-label {
+  transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+button.flow-step .flow-step-label {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+}
+@media (hover: hover) {
+  .flow-steps .done button.flow-step:hover .glyph {
+    background: color-mix(in srgb, var(--accent) 34%, transparent);
+  }
+  .flow-steps .done button.flow-step:hover .flow-step-label {
+    text-decoration-color: currentColor;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button.flow-step .glyph,
+  button.flow-step .flow-step-label {
+    transition: none;
+  }
+}
 .tone-amber .glyph {
   background: color-mix(in srgb, var(--stale) 16%, transparent);
   color: var(--stale);
