@@ -149,16 +149,11 @@ export function packDetailAbsence(content: CompletePackContent): string | null {
 /** What a designated layer row can state about itself without a network: the
  * gazetted plan the check matched. Only a BPA hit stores one, and only when both
  * halves of it were saved — a half-citation would name a plan without dating it. */
-function layerCitation(row: ExposureLayer, lgaName: string): string | undefined {
+function layerPlan(row: ExposureLayer, lgaName: string): PackDetailItem['plan'] {
   if (row.code !== 'BPA' || row.status !== 'present') return undefined;
   const [feature] = row.features;
   if (!feature?.planNumber || !feature.gazettalDate) return undefined;
-  return copy.BPA_PLAN_CITATION(
-    feature.planNumber,
-    formatGazettalDate(feature.gazettalDate),
-    lgaName,
-    row.source.publisher,
-  );
+  return { number: feature.planNumber, gazetted: formatGazettalDate(feature.gazettalDate), council: lgaName };
 }
 
 /** The user's chosen places of last resort, in the order they were listed (by
@@ -173,12 +168,14 @@ export function packDetailPlaces(content: CompletePackContent): Destination[] {
 export function packDetailItems(content: CompletePackContent): PackDetailItem[] {
   const items: PackDetailItem[] = [
     ...content.layers.map((row) => {
-      const citation = layerCitation(row, content.pack.lgaName);
+      const plan = layerPlan(row, content.pack.lgaName);
       return {
         id: row.id,
         name: layerItemName(row),
         source: row.source,
-        ...(citation ? { citation } : {}),
+        ...(plan
+          ? { plan, citation: copy.BPA_PLAN_CITATION(plan.number, plan.gazetted, plan.council, row.source.publisher) }
+          : {}),
       };
     }),
   ];

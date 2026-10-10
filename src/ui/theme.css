@@ -636,9 +636,6 @@ input[aria-invalid='true'] {
   margin: 0;
   font-size: var(--step-1);
 }
-.area-plan {
-  font-size: var(--step-s);
-}
 
 /* The map and its key as one card: the key is the map's footer strip. */
 .area-map {
