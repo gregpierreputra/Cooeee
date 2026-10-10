@@ -330,7 +330,7 @@ export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
 // changed any time from the pack screen; read back in BlackSky.
 
 export const NOTE_STEP_TITLE = 'Your note';
-export const NOTE_DISCLOSURE = 'Saved on this phone. Opens with no signal, in your pack and in BlackSky.';
+export const NOTE_DISCLOSURE = 'Kept on this phone. Opens in BlackSky with no signal.';
 /** UAT: the risk was lost at the end of the disclosure, so it stands alone as a caution. */
 export const NOTE_LABEL = 'Your note';
 /** The box is never blank: an example written for this place and, when one

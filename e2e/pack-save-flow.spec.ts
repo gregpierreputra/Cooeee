@@ -336,6 +336,9 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await boxes.nth(0).check();
   await boxes.nth(1).check();
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
+  // Where the note is kept, in words alone, with no saved sign: nothing is saved yet.
+  await expect(page.locator('.note-page .hero p')).toHaveText('Kept on this phone. Opens in BlackSky with no signal.');
+  await expect(page.locator('.note-page .hero p .glyph')).toHaveCount(0);
   // One note here, and a footnote under the box saying more can follow.
   await expect(page.getByLabel('Note for this place')).toHaveAccessibleDescription(
     "Add more notes any time from your pack's Notes tab.",
