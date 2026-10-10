@@ -113,6 +113,16 @@ test('ticking the box enables continue, which records the acknowledgement and mo
   expect(await storedFlag(page)).toBe(ACKNOWLEDGEMENT_VALUE);
 });
 
+test('a tap anywhere in the Before you continue frame ticks the box', async ({ page }) => {
+  await openDisclosure(page);
+  await page.locator('.acknowledge').scrollIntoViewIfNeeded();
+  const frame = (await page.locator('.acknowledge').boundingBox())!;
+  // The frame's bottom right corner, away from the box and its words.
+  await page.mouse.click(frame.x + frame.width - 8, frame.y + frame.height - 8);
+  await expect(checkbox(page)).toBeChecked();
+  await expect(continueButton(page)).toBeEnabled();
+});
+
 test('unticking the box makes continue inactive again — the button follows the box', async ({
   page,
 }) => {

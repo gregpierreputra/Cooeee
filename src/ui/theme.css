@@ -3387,39 +3387,65 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   justify-self: center;
 }
 
-/* One card per moment: the drawing, the moment's name, one line. */
+/* One card of three moments in order: each a drawing, its name, one line,
+   the drawings joined by a line down the card as the builder's steps are
+   joined across. */
+.welcome-steps {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 1.25rem;
+  list-style: none;
+}
 .welcome-step {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: auto auto;
   column-gap: 1rem;
   align-items: center;
 }
+.welcome-step + .welcome-step {
+  margin-top: 1.25rem;
+}
 .welcome-step .glyph {
+  position: relative;
+  z-index: 1;
   grid-row: 1 / 3;
+  align-self: start;
+  /* Solid, so the line behind it stops at its edge. */
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
 }
 .welcome-step p {
   margin: 0;
   font-weight: var(--w-med);
 }
+/* The line from each drawing's middle to the next one's, behind both, however
+   many lines the words between them take. */
+.welcome-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 21px;
+  top: 22px;
+  bottom: calc(-1.25rem - 22px);
+  width: 2px;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
 
-/* Two facts, smaller drawings, no card: the quiet line under the promise. */
+/* Two facts as footnotes: small line drawings and grey words, side by side
+   where they fit, centred under the card. */
 .welcome-facts {
-  gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .welcome-fact {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
   color: var(--ink-2);
-}
-.welcome-fact .glyph {
-  width: 32px;
-  height: 32px;
-}
-.welcome-fact .glyph svg {
-  width: 18px;
-  height: 18px;
+  font-size: var(--step-s);
 }
 
 /* ── Development gate (feature 1) ──────────────────────────────────────────── */
@@ -3481,11 +3507,19 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   gap: 0.375rem;
 }
 
-/* The mark and the name are the hero title of this screen, so they are stacked
-   and centred rather than set as a header lockup on the left margin. Only these
-   two are centred; the line under them reads as body text and stays ranged
-   left. */
-.first-open-hero .mark,
+/* The mark, the name and the line under them are the hero title of these
+   screens, so they are stacked and centred, the mark in a ring as on the
+   tour's welcome. */
+.first-open-mark {
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 0.25rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
 .first-open-hero h1 {
   justify-self: center;
   text-align: center;
@@ -3510,14 +3544,15 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   padding: 0.25rem 1.25rem;
 }
 
-/* Icon, heading, statement: a fixed 20 px leading column with the text beside
-   it, the statement running under the heading in the same column. */
+/* Drawing and heading on one line, the drawing in its ring as on the tour's
+   lines; the statement under them takes the card's whole width, so it runs
+   to as few lines as it can. */
 .disclosure-row {
   display: grid;
-  grid-template-columns: 20px 1fr;
-  align-items: start;
+  grid-template-columns: 32px 1fr;
+  align-items: center;
   column-gap: 0.75rem;
-  row-gap: 0.25rem;
+  row-gap: 0.5rem;
   padding: 0.875rem 0;
   border-top: 1px solid var(--line);
 }
@@ -3528,12 +3563,13 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   border-top: 0;
 }
 
-.disclosure-icon {
-  display: flex;
-  align-items: center;
-  /* Optically centred on the heading's first line rather than its box. */
-  min-height: 1.5rem;
-  color: var(--accent);
+.disclosure-row .glyph {
+  width: 32px;
+  height: 32px;
+}
+.disclosure-row .glyph svg {
+  width: 17px;
+  height: 17px;
 }
 
 /* Heading and statement share a size — body text on this screen never goes
@@ -3547,7 +3583,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 .disclosure-row p {
-  grid-column: 2;
+  grid-column: 1 / -1;
 }
 
 /* The note under the statements: its own small card, so the line that points
@@ -3595,8 +3631,12 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 /* A row, not a stack: the label is the statement, and it is the label element
-   itself so a screen reader reads the whole sentence with the box. */
+   itself so a screen reader reads the whole sentence with the box. The label
+   is stretched over the whole frame, so a tap anywhere in it ticks the box,
+   as anywhere on a place card does. */
 .acknowledge {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
@@ -3618,6 +3658,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 .acknowledge input[type='checkbox'] {
+  position: relative;
+  z-index: 1;
   min-height: 28px;
   width: 28px;
   height: 28px;
@@ -3634,6 +3676,12 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-weight: var(--w-med);
   font-size: var(--step-0);
   cursor: pointer;
+}
+.acknowledge label::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
 }
 
 /* Under the inactive button: what makes it active, in the accent so it reads
