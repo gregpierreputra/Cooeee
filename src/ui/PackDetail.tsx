@@ -543,9 +543,10 @@ function ShortList<T>({ items, className, render }: { items: T[]; className: str
     <>
       <ul className={className}>{(all ? items : items.slice(0, SHORT_LIST)).map(render)}</ul>
       {more > 0 ? (
-        <button type="button" className="hint-text" aria-expanded={all} onClick={() => setAll(!all)}>
+        <button type="button" className="hint-text more-toggle" aria-expanded={all} onClick={() => setAll(!all)}>
           {all ? copy.SHOW_FEWER : copy.SHOW_MORE(more)}
-          {/* Points right while closed and down while open (see .hint-text). */}
+          {/* Points down to the cards still to come, and up once they fold back
+              up (see .more-toggle). */}
           <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
             <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
