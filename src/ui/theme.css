@@ -3818,6 +3818,14 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .hint-text[aria-expanded='true'] .hint-chevron {
   transform: rotate(90deg);
 }
+/* Show more and Show fewer: the list grows down and folds back up, so the
+   chevron points down to more, and up to fold away. */
+.more-toggle .hint-chevron {
+  transform: rotate(90deg);
+}
+.more-toggle[aria-expanded='true'] .hint-chevron {
+  transform: rotate(-90deg);
+}
 /* A long word beside the ring wraps at large text rather than pushing past
    the screen edge. */
 .hint > * {
