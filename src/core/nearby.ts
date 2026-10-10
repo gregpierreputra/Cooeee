@@ -100,6 +100,22 @@ export function nearestOfType<T extends LatLon & { type: FacilityType }>(
   return nearest;
 }
 
+/** The nearest few Neighbourhood Safer Places within reachM of the origin,
+ *  nearest first, for Nearby's map. */
+export function nspsNear(
+  facilities: BundleFacility[],
+  origin: LatLon,
+  count: number,
+  reachM: number,
+): { row: BundleFacility; distanceM: number }[] {
+  return facilities
+    .filter((row) => row.type === 'NSP')
+    .map((row) => ({ row, distanceM: distanceM(origin, row) }))
+    .filter((near) => near.distanceM <= reachM)
+    .sort((a, b) => a.distanceM - b.distanceM)
+    .slice(0, count);
+}
+
 /** The one age rule, shared with the pack card, the header and the Source ring. */
 export { ageLabel };
 

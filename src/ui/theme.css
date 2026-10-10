@@ -671,7 +671,8 @@ input[aria-invalid='true'] {
   transform-origin: center;
 }
 
-.area-map-layer img {
+.area-map-layer img,
+.nearby-map-picture {
   display: block;
   width: 100%;
   aspect-ratio: 1;
@@ -1953,7 +1954,9 @@ main:focus {
    build and flagged for the accessibility check on the card. Road names
    #333333 on their white halo 12.6 to 1; the arrow and the drop #111111 on
    the disc 16.5 to 1, their amber edge #FBBF24 12.6 to 1 on the black. */
-.blacksky-dial {
+/* Nearby's map draws its roads with the same colours. */
+.blacksky-dial,
+.nearby-map {
   --map-disc: #f2efe9;
   --map-freeway-casing: #d98b21;
   --map-freeway-fill: #f2a33a;
@@ -3533,6 +3536,28 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   min-height: 44px;
   padding: 0.5rem 0.875rem;
   font-size: var(--step-s);
+}
+/* Nearby's map: a text toggle like Source, then the map beneath it. */
+.nearby-map-toggle {
+  display: grid;
+  gap: 0.625rem;
+}
+.nearby-map {
+  display: grid;
+  gap: 0.375rem;
+}
+.nearby-map-ground {
+  fill: var(--map-disc);
+}
+.nearby-map-town {
+  font-weight: var(--w-med);
+  fill: var(--map-locality);
+  stroke: var(--map-locality-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  text-anchor: middle;
+  dominant-baseline: middle;
 }
 .nearby-origin-code {
   color: var(--accent);

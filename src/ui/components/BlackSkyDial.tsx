@@ -246,7 +246,7 @@ function ScaleBar({ metresPerPx, pxPerUnit }: { metresPerPx: number; pxPerUnit: 
 }
 
 /** The class names the stylesheet weighs each road by. */
-const ROAD_KIND: Record<number, string> = { 0: 'freeway', 1: 'highway', 2: 'arterial', 3: 'collector' };
+export const ROAD_KIND: Record<number, string> = { 0: 'freeway', 1: 'highway', 2: 'arterial', 3: 'collector' };
 
 /** The roads and their names. Worked out in screen pixels, so a line of 2 px
  *  is 2 px however large the dial is; the inner group scales them back into

@@ -26,16 +26,22 @@ const LABEL_ROOM_X = 110;
  *  bytes already on the phone, so it works the same with no signal. */
 export default function AreaMap({
   src,
+  picture,
   box,
   places,
   address,
+  hereTitle = copy.AREA_MAP_KEY.place,
   scale,
 }: {
-  src: string;
+  /** The stored picture, or, in its place, a picture drawn on the phone. */
+  src?: string;
+  picture?: ReactNode;
   box: MapBox | null;
-  places: Destination[];
-  /** The saved place's address, said on its marker's label. */
+  places: Pick<Destination, 'id' | 'name' | 'lat' | 'lon' | 'distanceM'>[];
+  /** The centre marker's line and name: the saved place's address, or where
+   *  Nearby measures from. */
   address: string;
+  hereTitle?: string;
   /** How far the map reaches, shown in its corner as a map's scale is. */
   scale?: string;
 }) {
@@ -144,12 +150,12 @@ export default function AreaMap({
         onLostPointerCapture={onPointerUp}
       >
         <div className="area-map-layer" style={layer}>
-          <img src={src} alt={copy.AREA_MAP_ALT} draggable={false} />
+          {picture ?? <img src={src} alt={copy.AREA_MAP_ALT} draggable={false} />}
           <Marker
             id="here"
             className="area-map-pin"
-            title={copy.AREA_MAP_KEY.place}
-            line={address}
+            title={hereTitle}
+            line={address || null}
             labelled={labelled}
             onLabel={setLabelled}
           />
