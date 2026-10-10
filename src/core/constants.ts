@@ -115,6 +115,11 @@ export const AREA_MAP_NAME = 'bushfire-prone-area-map.png';
  *  page to read roads, creeks and place names. A picture size only; the pack's
  *  6 km area rule is PACK_RADIUS_KM. */
 export const AREA_MAP_HALF_KM = 20;
+/** Nearby's map of the nearest Neighbourhood Safer Places: the same 40 km
+ *  square as a pack's map, at most this many places on it, and the picture's
+ *  half width in its own pixels, about half a phone's width. */
+export const NEARBY_MAP_PLACES = 5;
+export const NEARBY_MAP_HALF_PX = 170;
 /** The most a whole pack may take on the phone, map included. */
 export const PACK_MAX_BYTES = 15 * 1_048_576;
 

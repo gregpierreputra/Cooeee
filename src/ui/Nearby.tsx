@@ -1,9 +1,11 @@
 import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AREA_MAP_HALF_KM,
   NEARBY_CLOCK_MS,
   NEARBY_FIX_MAX_AGE_MS,
   SEARCH_SHOW_MS,
   NEARBY_FIX_TIMEOUT_MS,
+  NEARBY_MAP_PLACES,
   NEARBY_RESYNC_MS,
 } from '../core/constants';
 import { siteNameBlock } from '../core/blacksky-dial';
@@ -12,6 +14,7 @@ import DataSources from './components/DataSources';
 import {
   hasNearbyData,
   nearbyView,
+  nspsNear,
   parsePostcode,
   placeShareText,
   postcodeOrigin,
@@ -21,14 +24,21 @@ import {
   type NearbySession,
 } from '../core/nearby';
 import type { LatLon } from '../core/types';
+import { readLocalitiesFile } from '../data/localities';
 import { readNearbyCache, syncNearby } from '../data/nearby';
+import { readRoadsFile } from '../data/roads';
 import Glyph, { type GlyphKind } from './components/Glyph';
 import Hint from './components/Hint';
+import NearbyMap, { type MapLoaders } from './components/NearbyMap';
 import KeyTerms from './components/KeyTerms';
 import { shareOrCopy } from './components/shareOrCopy';
 import StateCard from './components/StateCard';
 
-type Origin = LatLon & { label: ReactNode };
+/** Where distances are measured from: the line above the tabs, and its name
+ *  in plain words for the middle of the map. */
+type Origin = LatLon & { label: ReactNode; name: string };
+/** The map's files, read from the phone's own cache only. */
+const PRECACHED_FILES: MapLoaders = { loadRoads: readRoadsFile, loadLocalities: readLocalitiesFile };
 type GroupKind = NearbyGroup['kind'];
 const TABS: { kind: GroupKind; glyph: GlyphKind; label: string }[] = [
   { kind: 'bushfire', glyph: 'place', label: copy.TAB_BUSHFIRE },
@@ -42,7 +52,15 @@ const NOTHING_SYNCED: NearbySession = { staticSyncedNow: false, dynamicSyncedNow
  *  The screen renders what is on the device first and refreshes in place when a
  *  sync succeeds — it never waits on the network. Nothing typed or measured
  *  here leaves the device: the only requests are the two parameterless syncs. */
-export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeof fetch }) {
+export default function Nearby({
+  now,
+  fetcher,
+  mapFiles = PRECACHED_FILES,
+}: {
+  now?: number;
+  fetcher?: typeof fetch;
+  mapFiles?: MapLoaders;
+}) {
   const [cache, setCache] = useState<NearbyCache | null>(null);
   const [session, setSession] = useState(NOTHING_SYNCED);
   const [syncing, setSyncing] = useState(false);
@@ -52,6 +70,8 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [tab, setTab] = useState<GroupKind>('bushfire');
+  // The map starts folded, so the list stays the first thing on the screen.
+  const [mapOpen, setMapOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!navigator.onLine) return;
@@ -140,6 +160,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
             lat: position.coords.latitude,
             lon: position.coords.longitude,
             label: copy.FROM_POSITION(copy.ACCURACY_READOUT(Math.round(position.coords.accuracy))),
+            name: copy.NEARBY_MAP_POSITION,
           });
         });
       },
@@ -180,6 +201,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       setNotice(null);
       setOrigin({
         ...point,
+        name: copy.NEARBY_MAP_POSTCODE(code),
         label: (
           <>
             {copy.FROM_POSTCODE} <span className="nearby-origin-code">{code}</span>
@@ -289,6 +311,31 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
                   <Hint label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>} titled={false}>
                     <p>{group.note}</p>
                   </Hint>
+                  {/* The bushfire tab's nearest few places on a map, folded until asked for. */}
+                  {tab === 'bushfire' && cache ? (
+                    <div className="nearby-map-toggle">
+                      <button type="button" className="hint-text" aria-expanded={mapOpen} onClick={() => setMapOpen((open) => !open)}>
+                        {copy.NEARBY_MAP_SHOW}
+                        <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                          <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      {mapOpen ? (
+                        <NearbyMap
+                          origin={origin}
+                          originName={origin.name}
+                          loaders={mapFiles}
+                          places={nspsNear(cache.facilities, origin, NEARBY_MAP_PLACES, AREA_MAP_HALF_KM * 1000).map(({ row, distanceM }) => ({
+                            id: `nsp-${row.facility_id}`,
+                            name: row.name,
+                            lat: row.lat,
+                            lon: row.lon,
+                            distanceM,
+                          }))}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
                   <ul className="list">
                     {group.rows.map((row) => (
                       <PlaceRow key={row.type} row={row} />

@@ -5,6 +5,7 @@ import {
   hasNearbyData,
   nearbyView,
   nearestOfType,
+  nspsNear,
   parsePostcode,
   placeShareText,
   postcodeOrigin,
@@ -248,5 +249,21 @@ describe('placeShareText', () => {
   it('carries the warning on its card, and is empty with no place', () => {
     expect(placeShareText({ ...row, note: 'May be outdated.' })).toContain('May be outdated.');
     expect(placeShareText({ ...row, place: null })).toBe('');
+  });
+});
+
+describe('nspsNear', () => {
+  it('lists the nearest places of last resort within reach, nearest first, at most the count', () => {
+    const at = (id: number, lat: number) => facility({ facility_id: id, name: `Place ${id}`, lat, lon: KALORAMA.lon });
+    const facilities = [
+      at(1, KALORAMA.lat - 0.05),
+      at(2, KALORAMA.lat - 0.01),
+      at(3, KALORAMA.lat - 0.02),
+      at(4, KALORAMA.lat - 0.5), // about 55 km away
+      facility({ facility_id: 5, type: 'CFR', lat: KALORAMA.lat, lon: KALORAMA.lon }),
+    ];
+    const near = nspsNear(facilities, KALORAMA, 2, 20_000);
+    expect(near.map(({ row }) => row.facility_id)).toEqual([2, 3]);
+    expect(nspsNear(facilities, KALORAMA, 5, 20_000).map(({ row }) => row.facility_id)).toEqual([2, 3, 1]);
   });
 });

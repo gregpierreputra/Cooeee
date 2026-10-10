@@ -215,6 +215,13 @@ export const AREA_MAP_KEY = {
 } as const;
 /** Read from the stored map itself, so an older, smaller map says its own size. */
 export const AREA_MAP_ACROSS = (km: number) => `${km} km across`;
+/** Nearby's map, folded under the bushfire tab until asked for. */
+export const NEARBY_MAP_SHOW = 'Show on a map';
+export const NEARBY_MAP_ALT = 'Map of the main roads and towns round where distances are measured from, with the nearest Neighbourhood Safer Places marked';
+export const NEARBY_MAP_POSTCODE = (code: string) => `Centre of postcode ${code}`;
+export const NEARBY_MAP_POSITION = 'Your position';
+export const NEARBY_MAP_NO_ROADS = 'The roads are not on this phone yet. They download with the app when there is a connection.';
+export const NEARBY_MAP_NONE = 'No Neighbourhood Safer Place within 20 km.';
 /** The viewer's buttons. A finger pinches and moves; these zoom. */
 export const MAP_ZOOM_IN = 'Zoom in';
 export const MAP_ZOOM_OUT = 'Zoom out';

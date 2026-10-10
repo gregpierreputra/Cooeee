@@ -29,7 +29,7 @@ import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
 import { Size } from '../../src/ui/PackNew/Size';
 import nspFixture from './nsp-fixture.json';
-import { roadsFixture } from './roads-fixture';
+import { LOCALITIES_FIXTURE, roadsFixture } from './roads-fixture';
 import '../../src/ui/theme.css';
 
 declare global {
@@ -425,6 +425,7 @@ if (window.location.pathname === '/home') {
 // The BlackSky pack picker: two complete packs, in the mode's own colours.
 // Headless Chromium denies geolocation, so the chosen pack shows as reference
 // text with its mark control.
+const nearbyMapFiles = { loadRoads: async () => roadsFixture(), loadLocalities: async () => LOCALITIES_FIXTURE };
 let blackSkyFlow = confirmation;
 if (window.location.pathname === '/blacksky') {
   await Promise.all(db.tables.map((table) => table.clear()));
@@ -619,7 +620,14 @@ if (window.location.pathname === '/nearby') {
       { key: 'dynamic_source_last_success_at', value: ago(feedAge) },
     ]);
   }
-  nearbyFlow = <Nearby now={nearbyNow} fetcher={async () => { throw new Error('no network'); }} />;
+  // The map's roads and towns as BlackSky's tests have them, as the harness has no precache.
+  nearbyFlow = (
+    <Nearby
+      now={nearbyNow}
+      fetcher={async () => { throw new Error('no network'); }}
+      mapFiles={nearbyMapFiles}
+    />
+  );
 }
 
 // E5-US1-AC4. The rehearsal entry gate, at a fixed instant, over a pack seeded

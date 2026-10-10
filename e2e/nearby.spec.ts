@@ -153,3 +153,23 @@ test('Share on a place copies it to send, without the distance', async ({ page, 
   expect(text.endsWith(SHARED_PLACE_FROM)).toBe(true);
   expect(text).not.toMatch(/\d+ ?(m|km)\b/);
 });
+
+// The nearest places of last resort on a map, folded until asked for, drawn on
+// the phone from files it already holds, so it opens with no signal.
+test('Show on a map opens a map of the nearest places, with no signal', async ({ page, context }) => {
+  await openOffline(page, context, 'cached');
+  await findPostcode(page);
+  const toggle = page.getByRole('button', { name: 'Show on a map' });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.nearby-map')).toHaveCount(0);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('img', { name: /Map of the main roads and towns/ })).toBeVisible();
+  await expect(page.locator('.nearby-map .blacksky-road').first()).toBeAttached();
+  await expect(page.locator('.nearby-map .area-map-mark').first()).toBeVisible();
+  // The middle is where distances are measured from, named as such. A place
+  // 580 m away sits over it at this size, so it is opened from the keyboard.
+  await page.locator('.nearby-map .area-map-pin').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.nearby-map .area-map-label')).toHaveText('Centre of postcode 3766');
+});
