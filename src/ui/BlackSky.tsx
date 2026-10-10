@@ -1247,7 +1247,8 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
       </button>
       <dialog ref={sheet} className="blacksky-sheet" aria-labelledby={titleId}>
         <h2 id={titleId}>{copy.OTHER_PLACES_TITLE}</h2>
-        <p className="muted place-note">{copy.SORTED_BY_DISTANCE}</p>
+        {/* Quieter by colour alone: BlackSky keeps every line at 16 px or more. */}
+        <p className="muted">{copy.SORTED_BY_DISTANCE}</p>
         <ul className="list">
           {places.map((place) => {
             const { site, line } = siteNameBlock(place.name);
