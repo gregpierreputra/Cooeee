@@ -994,6 +994,11 @@ export const TAB_RELIEF = 'Relief centres';
 export const NEARBY_TABS_LABEL = 'Kind of place';
 export const GROUP_RELIEF_NOTE = 'Opened for one incident, and listed by VicEmergency only while it runs.';
 
+/** Over a list where every place is the one kind, said once in place of on each card. */
+export const NSP_PLURAL = 'Neighbourhood Safer Places';
+/** The same, under the pack page's own heading, as a quiet line. */
+export const SAVED_PLACES_KIND = (count: number) =>
+  count === 1 ? 'A Neighbourhood Safer Place.' : `${count === 2 ? 'Both are' : 'All are'} Neighbourhood Safer Places.`;
 export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
   NSP: 'Neighbourhood Safer Place',
   CFR: 'Community Fire Refuge',

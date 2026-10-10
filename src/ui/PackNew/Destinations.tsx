@@ -86,27 +86,23 @@ function DestinationRow({ place, selection }: { place: Destination; selection?: 
     greyed ? 'destination-item-greyed' : '',
   ].filter(Boolean).join(' ');
 
-  // UAT: the list date and publisher were the same on every card, so a card
-  // shows only what tells the places apart, set as a card on Nearby and the
-  // pack page: the kind as a small teal label, the site in bold with its
-  // distance beside it, where it is beneath, and the council as its footer.
-  // The list's source is said once, under the list.
+  // UAT: what is the same on every card is said once, over or under the list,
+  // so a card shows only what tells the places apart, set as a card on Nearby
+  // and the pack page: the box first, the site in bold with its distance
+  // beside it, where it is beneath, and the council as its footer.
   return (
     <li className={className}>
-      <div className="destination-item-head">
-        <p className="place-kind">{copy.FACILITY_TYPE_NAME.NSP}</p>
-        {selection ? (
-          <input
-            type="checkbox"
-            id={inputId}
-            checked={selection.chosen}
-            aria-labelledby={nameId}
-            aria-disabled={greyed || undefined}
-            onChange={selection.onToggle}
-          />
-        ) : null}
-      </div>
-      <div>
+      {selection ? (
+        <input
+          type="checkbox"
+          id={inputId}
+          checked={selection.chosen}
+          aria-labelledby={nameId}
+          aria-disabled={greyed || undefined}
+          onChange={selection.onToggle}
+        />
+      ) : null}
+      <div className="destination-body">
         <div className="nearby-place">
           <h2 id={nameId} className="nearby-place-name">{site}</h2>
           {distance ? (
@@ -236,6 +232,8 @@ export function Destinations({
                   </p>
                 </div>
               </div>
+              {/* Every place here is the one kind: said once, over the list. */}
+              <p className="kicker destination-kind">{copy.NSP_PLURAL}</p>
               <ul className="list destination-list" data-testid="ordered-destinations">
                 {ordered.map((place) => (
                   <DestinationRow

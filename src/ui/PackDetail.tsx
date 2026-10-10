@@ -330,9 +330,14 @@ export default function PackDetail({
             ranking. No count: a pack always holds the two it was saved with. */}
         {places.length > 0 ? (
           <Section kind="place" title={copy.DESTINATIONS_STEP_TITLE}>
-            {places.some((place) => typeof place.distanceM === 'number') ? (
-              <p className="muted place-note"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
-            ) : null}
+            {/* Every saved place is the one kind: said once, not on each card,
+                in the one footnote with how its distance is measured. */}
+            <p className="muted place-note">
+              {copy.SAVED_PLACES_KIND(places.length)}
+              {places.some((place) => typeof place.distanceM === 'number') ? (
+                <> <KeyTerms text={copy.DISTANCES_NOTE} /></>
+              ) : null}
+            </p>
             <ul className="list saved-destinations">
               {places.map((place) => {
                 const item = {
@@ -341,12 +346,11 @@ export default function PackDetail({
                   source: place.source,
                   pageUrl: place.source.url,
                 };
-                // Set as a card on Nearby: the kind as a small teal label, the
-                // site in bold with its distance beside it, then where it is.
+                // Set as a card on Nearby: the site in bold with its distance
+                // beside it, then where it is. The kind is said once, over the list.
                 const { site, line } = siteNameBlock(item.name);
                 return (
                   <li key={place.id} className="card provenance-item">
-                    <p className="place-kind">{copy.FACILITY_TYPE_NAME.NSP}</p>
                     <div className="nearby-place">
                       <h2 className="nearby-place-name">{site}</h2>
                       {typeof place.distanceM === 'number' ? (

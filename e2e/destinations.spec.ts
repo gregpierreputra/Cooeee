@@ -155,8 +155,11 @@ test('US2-AC1 nothing is pre-selected and Save waits for exactly two', async ({ 
 test('a place is chosen by a tap anywhere on its card, which then wears the teal ring', async ({ page }) => {
   await page.goto(SELECT_URL);
   const cards = page.locator('[data-testid=ordered-destinations] .destination-item');
-  // Set as a Nearby card: the kind over the site, the distance beside it, the council as its footer.
-  await expect(cards.first().locator('.place-kind')).toHaveText('Neighbourhood Safer Place');
+  // The kind is said once, over the list, not on every card.
+  await expect(page.locator('.destination-kind')).toHaveText('Neighbourhood Safer Places');
+  await expect(page.locator('main')).not.toContainText(/Neighbourhood Safer Place(?!s)/);
+  // Set as a Nearby card: the site with the distance beside it, the council as its footer.
+  await expect(cards.first().locator('.nearby-distance')).toHaveText(DISTANCE);
   await expect(cards.first().locator('.destination-foot')).toHaveText('Yarra Ranges Shire council');
   // The box is named by the site alone.
   const box = page.getByRole('checkbox', { name: BY_DISTANCE[0], exact: true });
