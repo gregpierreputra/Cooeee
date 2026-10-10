@@ -970,6 +970,15 @@ textarea {
   font-size: var(--step-s);
 }
 
+/* The area step's reminder: the card's footer, under a thin line, at full
+   strength as the one thing to do. */
+.area-priority {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-size: var(--step-s);
+}
+
 /* The note step's box shows the whole pre-filled example without scrolling. */
 .note-page textarea {
   min-height: 22rem;

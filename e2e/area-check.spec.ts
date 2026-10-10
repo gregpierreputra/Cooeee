@@ -20,16 +20,20 @@ test('AC5 shows designation, publisher/date and instruction priority in order', 
   await expect(state.locator('h1')).toHaveText(
     'This address is inside a Bushfire Prone Area.',
   );
-  // Inside, only the words that say so are in amber, beside the amber flame.
-  await expect(state.locator('.key-term')).toHaveText(['inside a Bushfire Prone Area']);
+  // Inside, as on the pack page, the area's name is in amber, under the map's
+  // drawing and the section's name: no flame, as a planning area is not a fire.
+  await expect(state.locator('.key-term')).toHaveText(['Bushfire Prone Area']);
+  await expect(state.locator('.pack-section-head')).toHaveText('Bushfire area');
   await openSources(page);
   await expect(state.locator('.source-rows dd')).toHaveText([
     'Department of Transport and Planning',
     '28 August 2026',
   ]);
-  await expect(state.locator('p').nth(0)).toHaveText(
+  // The pack's reminder is the card's footer, with no phone beside it.
+  await expect(state.locator('.area-priority')).toHaveText(
     'Follow Country Fire Authority and emergency service instructions first.',
   );
+  await expect(state.locator('.area-priority .glyph')).toHaveCount(0);
   await expect(state).not.toContainText(/safe|protected|low risk|no risk|high risk|danger level/i);
 });
 
@@ -41,8 +45,9 @@ test('AC6 shows the published-but-nothing-mapped state exactly', async ({ page }
   );
   await openSources(page);
   await expect(state.locator('p').nth(0)).toHaveText(AREA_MAP_IS_NOT_FIRE_REACH);
-  // Outside, nothing is in amber: no coloured words and no flame.
-  await expect(state.locator('.key-term, .tone-amber')).toHaveCount(0);
+  // Outside, the one amber line is that fire can still reach the person, as
+  // on the pack page.
+  await expect(state.locator('.key-term')).toHaveText(['Fire can still reach you']);
   await expect(state.locator('.source-rows')).toContainText('Department of Transport and Planning');
   await expect(state).not.toContainText(/not designated|none found|no results|all clear|safe|no risk|low risk/i);
 });
