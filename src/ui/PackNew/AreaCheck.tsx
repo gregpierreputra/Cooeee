@@ -67,6 +67,9 @@ export function AreaCheck({ place, state, onRetry, onSearchAgain, onContinue }: 
     <StatusPage
       page="area-page"
       kicker={<FlowSteps at={1} />}
+      // A step like the others: Back and the tab bar are the ways out, so
+      // nothing sits beside Continue. Back to Home stays where a check failed.
+      backHome={false}
       cardClass="area-result"
       card={
         <>
