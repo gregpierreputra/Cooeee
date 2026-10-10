@@ -315,6 +315,35 @@ test('the pack menu opens the pack\'s print page', async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
 });
 
+// Each place's box sits above its card's tap area, but never above the Back
+// bar: scrolled beneath it, the box goes under it as the rest of the page does.
+test("a place's tick box scrolls under the Back bar, not over it", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await page.goto('/');
+  await page.getByRole('link', { name: 'New offline pack' }).first().click();
+  await page.getByLabel('Street address').fill('RIDGE');
+  await page.getByLabel('Street address').press('Enter');
+  await page.getByRole('button', { name: ADDRESS }).click();
+  await page.getByLabel('Place name').fill('Our house');
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  const bar = await page.locator('.back-bar').boundingBox();
+  const box = page.getByRole('checkbox').first();
+  const at = await box.boundingBox();
+  await page.mouse.wheel(0, at!.y - bar!.y - bar!.height / 2);
+  await expect.poll(async () => (await box.boundingBox())!.y).toBeLessThan(bar!.y + bar!.height);
+  const onTop = await box.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === el;
+  });
+  expect(onTop).toBe(false);
+});
+
 // UR-US36: Back steps back through the builder one step at a time, keeping
 // every answer, and the phone's Back button does the same.
 test('Back steps back through the pack builder and keeps every answer', async ({ page }) => {
