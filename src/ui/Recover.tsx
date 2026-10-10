@@ -331,15 +331,17 @@ export default function Recover({
                 ))}
               </ul>
               <p className="muted">{program.covers}</p>
-              {/* Source as words, like Not for you? on Home. Its links are the
-                  card's own buttons below, so none sit beside it. */}
-              <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} links={null} />
+              {/* A fact about the program, with its summary, before the
+                  Source footnote that ends the card's words. */}
               {saved.includes(program.id) ? (
                 <p className="figure in-packs with-glyph">
                   <Glyph kind="saved" line />
                   {copy.IN_YOUR_PACKS}
                 </p>
               ) : null}
+              {/* Source as words, like Not for you? on Home. Its links are the
+                  card's own buttons below, so none sit beside it. */}
+              <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} links={null} />
               {/* Save and the web page side by side at equal size, the call
                   beneath at full width. */}
               <div className="program-actions">
