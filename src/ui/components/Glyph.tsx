@@ -11,7 +11,7 @@ export type GlyphKind =
   | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate'
   | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag'
   | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline' | 'saved'
-  | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close'
+  | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close' | 'grab'
   | Exclude<PackIcon, 'place'>;
 
 const GLYPH_PATHS: Record<GlyphKind, string> = {
@@ -74,6 +74,8 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   // A wheat ear, in open strokes: a barn read as a second house at this size.
   farm: 'M12 22V3M12 7.5 8 4M12 7.5l4-3.5M12 12.5 6.5 8.5M12 12.5l5.5-4M12 17.5 5.5 13M12 17.5l6.5-4.5',
   close: 'M6 6l12 12M18 6 6 18',
+  // A hand closing round something: the drill's grab button.
+  grab: 'M7 11V8.5a1.5 1.5 0 0 1 3 0V11M10 10V7.5a1.5 1.5 0 0 1 3 0V11M13 10.5V8.5a1.5 1.5 0 0 1 3 0V12M16 11a1.5 1.5 0 0 1 3 0v3a7 7 0 0 1-7 7h-1a6 6 0 0 1-5.2-3L4 15a1.5 1.5 0 0 1 2.6-1.5L7 14',
 };
 
 /** `line` drops the tinted circle, for a glyph inside a button or a line of text. */

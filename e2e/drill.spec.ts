@@ -38,6 +38,21 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await expect(page.locator('main')).toContainText('Bag 0 of 10');
   });
 
+  test('the grab button names the thing in reach, and is dim with nothing near', async ({ page }) => {
+    await page.goto(`${HARNESS}/drill?seconds=60`);
+    await page.getByRole('button', { name: 'Start the drill' }).click();
+    await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    // The figure starts beside the floor lamp.
+    await expect(page.getByRole('button', { name: 'Grab the floor lamp' })).toBeEnabled();
+    await page.keyboard.down('ArrowLeft');
+    await page.waitForTimeout(700);
+    await page.keyboard.up('ArrowLeft');
+    await page.keyboard.down('ArrowDown');
+    await page.waitForTimeout(500);
+    await page.keyboard.up('ArrowDown');
+    await expect(page.getByRole('button', { name: 'Nothing in reach' })).toBeDisabled();
+  });
+
   test('the sound control says its state and the pack page lists no drill yet', async ({ page }) => {
     await page.goto(`${HARNESS}/drill`);
     const sound = page.getByRole('button', { name: 'Sound', exact: true });

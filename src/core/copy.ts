@@ -1376,7 +1376,8 @@ export const CUTSCENE_LABEL = 'A home among gum trees as a bushfire arrives and 
 export const DRILL_SCENE_LABEL = 'A house seen from above, with the person you are steering.';
 export const DRILL_HINT = 'Be at the front door when the time ends.';
 export const BAG_COUNT = (count: number, limit: number) => `Bag ${count} of ${limit}`;
-export const PACK_ITEM = (name: string) => `Pack the ${name}`;
+export const GRAB_ITEM = (name: string) => `Grab the ${name}`;
+export const NOTHING_IN_REACH = 'Nothing in reach';
 export const BAG_FULL = 'Bag full';
 export const SECONDS_LEFT = (seconds: number) => `${seconds} seconds left`;
 export const IN_ROOM = (room: string) => `In the ${room}`;

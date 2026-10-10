@@ -4789,6 +4789,10 @@ body.drill-open .banner {
    control floats over it like a phone game. touch-action none so no thumb on
    the stage scrolls or zooms the page. */
 .drill-stage {
+  /* Inside the game every control wears BlackSky's amber, the colour of the
+     fire scene, in place of the app's teal. */
+  --accent: var(--blacksky-accent);
+  --ink-on-accent: var(--blacksky-fill);
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -4876,6 +4880,8 @@ body.drill-open .banner {
   cursor: pointer;
 }
 .drill-close {
+  border-color: var(--accent);
+  color: var(--accent);
   width: 44px;
   height: 44px;
   min-width: 44px;
@@ -5003,12 +5009,21 @@ body.drill-open .banner {
   height: 7.5rem;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
   background: rgba(8, 10, 18, 0.38);
+  color: var(--accent);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   touch-action: none;
   cursor: pointer;
+}
+.drill-stick-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  opacity: 0.8;
 }
 .drill-knob {
   position: absolute;
@@ -5021,39 +5036,67 @@ body.drill-open .banner {
   background: var(--accent);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
-.drill-pack {
-  width: min(11rem, 44vw);
-  min-height: 5.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 1.5rem;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: var(--ink-on-accent);
+.drill-grab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
   font: inherit;
   font-weight: var(--w-bold);
   line-height: 1.2;
   touch-action: none;
   cursor: pointer;
 }
-.drill-pack {
-  animation: drill-pack-in 0.18s ease-out both;
+/* The same size as the stick's ring, so each thumb has one round control. */
+.drill-grab-ring {
+  display: grid;
+  place-items: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
-@keyframes drill-pack-in {
+/* Named past the shared line glyph size, so the hand fills the ring. */
+.drill-grab-ring .glyph.line-glyph svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+.drill-grab-name {
+  max-width: min(11rem, 44vw);
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--r-pill);
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-align: right;
+  animation: drill-grab-in 0.18s ease-out both;
+}
+@keyframes drill-grab-in {
   from {
     opacity: 0;
     transform: scale(0.85);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .drill-pack {
+  .drill-grab-name {
     animation: none;
   }
 }
-.drill-pack:disabled {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(8, 10, 18, 0.55);
-  color: rgba(244, 241, 234, 0.72);
+.drill-grab:disabled {
   cursor: default;
+}
+.drill-grab:disabled .drill-grab-ring {
+  background: rgba(8, 10, 18, 0.55);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 /* The report: read by shape and colour first, words second. The four kinds

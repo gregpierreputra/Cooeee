@@ -3,6 +3,7 @@ import * as copy from '../../core/copy';
 import { SPAWN, onDoorMat, pathTo, roomAt } from '../../core/drill-house';
 import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
 import { DOWN, EARLY_EXIT_HOLD, facing, haze, leavingEarly, nearestItem, speedFor, step } from '../../core/drill-play';
+import Glyph from '../components/Glyph';
 import * as audio from './audio';
 import { BEATS, CUTSCENE_SECONDS, LINES, OUTSIDE_SECONDS, POWER_OFF_AT, beatAt, beatStart, drawOutside, insideScene, stillAt } from './cutscene';
 import { attachKeys, stickVector } from './input';
@@ -365,28 +366,39 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
               onPointerCancel={dropStick}
               onLostPointerCapture={dropStick}
             >
+              {/* Four arrows say the ring is for moving. The figure still walks
+                  any way the thumb points, diagonals included. */}
+              <svg className="drill-stick-arrows" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+                <path d="M60 9l7 10H53zM60 111l7-10H53zM9 60l10-7v14zM111 60l-10-7v14z" />
+              </svg>
               <span ref={knobRef} className="drill-knob" aria-hidden="true" />
             </button>
             {/* Packs on the press, not the release: a second thumb landing while
                 the first holds the stick often gets no click on a phone. The
                 click only serves the keyboard, where detail is 0. */}
-            {/* Only there when something is in reach, named after it, so the
-                button itself says there is something to pack here. Enter
-                packs from a keyboard at any time. */}
-            {hud.near ? (
-              <button
-                key={hud.near.id}
-                type="button"
-                className="drill-pack"
-                disabled={full}
-                onPointerDown={pack}
-                onClick={(event) => {
-                  if (event.detail === 0) pack();
-                }}
-              >
-                {full ? copy.BAG_FULL : copy.PACK_ITEM(hud.near.name)}
-              </button>
-            ) : null}
+            {/* Always in the same place, so the thumb finds it. It lights up
+                and names the thing once one is in reach, and is dim with
+                nothing near. Enter packs from a keyboard at any time. */}
+            <button
+              type="button"
+              className="drill-grab"
+              disabled={!hud.near || full}
+              onPointerDown={pack}
+              onClick={(event) => {
+                if (event.detail === 0) pack();
+              }}
+            >
+              {hud.near ? (
+                <span key={hud.near.id} className="drill-grab-name">
+                  {full ? copy.BAG_FULL : copy.GRAB_ITEM(hud.near.name)}
+                </span>
+              ) : (
+                <span className="visually-hidden">{copy.NOTHING_IN_REACH}</span>
+              )}
+              <span className="drill-grab-ring">
+                <Glyph kind="grab" size={34} line />
+              </span>
+            </button>
           </div>
         </>
       ) : (
