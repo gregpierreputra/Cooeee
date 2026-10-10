@@ -6,6 +6,7 @@ import {
   SEARCH_SHOW_MS,
   NEARBY_FIX_TIMEOUT_MS,
   NEARBY_MAP_PLACES,
+  NEARBY_MAP_REFUGES,
   NEARBY_RESYNC_MS,
 } from '../core/constants';
 import { siteNameBlock } from '../core/blacksky-dial';
@@ -14,7 +15,7 @@ import DataSources from './components/DataSources';
 import {
   hasNearbyData,
   nearbyView,
-  nspsNear,
+  placesNear,
   parsePostcode,
   placeShareText,
   postcodeOrigin,
@@ -326,13 +327,17 @@ export default function Nearby({
                           origin={origin}
                           originName={origin.name}
                           loaders={mapFiles}
-                          places={nspsNear(cache.facilities, origin, NEARBY_MAP_PLACES, AREA_MAP_HALF_KM * 1000).map(({ row, distanceM }) => ({
-                            id: `nsp-${row.facility_id}`,
-                            name: row.name,
-                            lat: row.lat,
-                            lon: row.lon,
-                            distanceM,
-                          }))}
+                          places={([['NSP', NEARBY_MAP_PLACES, 'place'], ['CFR', NEARBY_MAP_REFUGES, 'home']] as const).flatMap(([type, count, glyph]) =>
+                            placesNear(cache.facilities, origin, type, count, AREA_MAP_HALF_KM * 1000).map(({ row, distanceM }) => ({
+                              id: `${type}-${row.facility_id}`,
+                              name: row.name,
+                              lat: row.lat,
+                              lon: row.lon,
+                              distanceM,
+                              glyph,
+                              kind: copy.FACILITY_TYPE_NAME[type],
+                            })),
+                          )}
                         />
                       ) : null}
                     </div>

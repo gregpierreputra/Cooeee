@@ -5,9 +5,10 @@ import * as copy from '../../core/copy';
 import { decodeLocalities, type Locality } from '../../core/localities';
 import { drawNearbyMap, type NearbyMapDrawing } from '../../core/nearby-map';
 import { decodeRoads, type RoadMap } from '../../core/roads';
-import type { Destination, LatLon } from '../../core/types';
-import AreaMap from './AreaMap';
+import type { LatLon } from '../../core/types';
+import AreaMap, { type MapPlace } from './AreaMap';
 import { ROAD_KIND } from './BlackSkyDial';
+import Glyph from './Glyph';
 
 export type MapLoaders = {
   loadRoads: () => Promise<ArrayBuffer | undefined>;
@@ -37,7 +38,8 @@ function hold<L extends object, T>(cache: WeakMap<L, Promise<T>>, loader: L, rea
 
 /** Nearby's map: the main roads and town names round where distances are
  *  measured from, drawn on the phone from files it already holds, with the
- *  nearest Neighbourhood Safer Places marked. Explored like a pack's map. */
+ *  nearest Neighbourhood Safer Places and Community Fire Refuges marked, each
+ *  kind with its own drawing and named in the key. Explored like a pack's map. */
 export default function NearbyMap({
   origin,
   originName,
@@ -46,7 +48,7 @@ export default function NearbyMap({
 }: {
   origin: LatLon;
   originName: string;
-  places: Pick<Destination, 'id' | 'name' | 'lat' | 'lon' | 'distanceM'>[];
+  places: MapPlace[];
   loaders: MapLoaders;
 }) {
   const [drawing, setDrawing] = useState<{ at: LatLon; map: NearbyMapDrawing; hasRoads: boolean } | null>(null);
@@ -99,6 +101,15 @@ export default function NearbyMap({
           hereTitle={originName}
           scale={copy.AREA_MAP_ACROSS(mapAcrossKm(box))}
         />
+        {/* The key, as a pack's map has: the two kinds of place are told apart
+            by their drawings. */}
+        <figcaption>
+          <ul className="map-key">
+            <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-place" /></span>{copy.NEARBY_MAP_KEY_HERE}</li>
+            <li><span className="map-key-icon area-map-mark-key" aria-hidden="true"><Glyph kind="place" size={14} /></span>{copy.FACILITY_TYPE_NAME.NSP}</li>
+            <li><span className="map-key-icon area-map-mark-key" aria-hidden="true"><Glyph kind="home" size={14} /></span>{copy.FACILITY_TYPE_NAME.CFR}</li>
+          </ul>
+        </figcaption>
       </figure>
       {places.length === 0 ? <p className="muted place-note">{copy.NEARBY_MAP_NONE}</p> : null}
       {shown && !shown.hasRoads ? <p className="muted place-note">{copy.NEARBY_MAP_NO_ROADS}</p> : null}
