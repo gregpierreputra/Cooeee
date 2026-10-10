@@ -10,9 +10,9 @@ import { MAT_CENTRE, restingOrder } from '../../core/drill-house';
 import { FURNITURE, GRID, MAT, TILE, wallLift } from '../../core/drill-layout';
 import { ATLAS } from '../../core/drill-atlas';
 
-/** The two baked pictures, and a copy of the sprite sheet with every pixel
- *  turned yellow: the outline drawn round each thing that can be packed. */
-export type Art = { house: HTMLImageElement; sprites: HTMLImageElement; outline: HTMLCanvasElement };
+/** The two baked pictures, and the yellow outline of each thing that can be
+ *  packed, keyed by its id. */
+export type Art = { house: HTMLImageElement; sprites: HTMLImageElement; outlines: Record<string, HTMLCanvasElement> };
 /** A canvas ready to draw on: its size in source pixels and the scale up. */
 export type View = { ctx: CanvasRenderingContext2D; width: number; height: number; scale: number; ratio: number };
 
@@ -79,21 +79,31 @@ const loadImage = (name: string): Promise<HTMLImageElement> =>
 
 export const loadArt = async (): Promise<Art> => {
   const [house, sprites] = await Promise.all([loadImage('house'), loadImage('sprites')]);
-  // The outline sheet: every sprite's shape grown by one pixel each way, less
-  // the shape itself, in yellow. What is left is a one pixel rim.
+  const outlines = Object.fromEntries(DRILL_ITEMS.map((item) => [item.id, outlineOf(sprites, item.id)]));
+  return { house, sprites, outlines };
+};
+
+/** One thing's outline on its own canvas, a pixel larger on every side so no
+ *  part of the rim is cut off: its first frame grown by one pixel in all eight
+ *  directions, in yellow, less the thing itself. What is left is a closed rim
+ *  one pixel wide, with its corners filled. */
+function outlineOf(sprites: HTMLImageElement, key: string): HTMLCanvasElement {
+  const [sx, sy, w, h] = ATLAS[key];
   const outline = document.createElement('canvas');
-  outline.width = sprites.width;
-  outline.height = sprites.height;
+  outline.width = w + 2;
+  outline.height = h + 2;
   const ctx = outline.getContext('2d');
   if (!ctx) throw new Error('no 2d canvas');
-  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(sprites, dx, dy);
+  for (let dy = 0; dy <= 2; dy++) {
+    for (let dx = 0; dx <= 2; dx++) ctx.drawImage(sprites, sx, sy, w, h, dx, dy, w, h);
+  }
   ctx.globalCompositeOperation = 'source-in';
   ctx.fillStyle = '#ffd34d';
   ctx.fillRect(0, 0, outline.width, outline.height);
   ctx.globalCompositeOperation = 'destination-out';
-  ctx.drawImage(sprites, 0, 0);
-  return { house, sprites, outline };
-};
+  ctx.drawImage(sprites, sx, sy, w, h, 1, 1, w, h);
+  return outline;
+}
 
 /** Size the canvas to its box on screen, at most three device pixels to one
  *  and never past 2048 a side, and pick the whole number scale. */
@@ -114,19 +124,21 @@ export function fitCanvas(canvas: HTMLCanvasElement): View | null {
 }
 
 /** Draw one sprite with the middle of its bottom edge at (x, y). */
-export function drawSprite(view: View, art: Art, key: string, x: number, y: number, frame = 0, fit = 0, sheet: CanvasImageSource = art.sprites): void {
+export function drawSprite(view: View, art: Art, key: string, x: number, y: number, frame = 0, fit = 0): void {
   const [sx, sy, w, h] = ATLAS[key];
   const shrink = fit ? Math.min(1, fit / w, fit / h) : 1;
   view.ctx.drawImage(
-    sheet, sx + frame * w, sy, w, h,
+    art.sprites, sx + frame * w, sy, w, h,
     Math.round(x - (w * shrink) / 2), Math.round(y - h * shrink), w * shrink, h * shrink,
   );
 }
 
-/** A one pixel yellow line round a thing that can be packed. */
+/** A one pixel yellow line round a thing that can be packed, placed as
+ *  drawSprite places the thing, with its extra pixel on every side. */
 function drawOutline(view: View, art: Art, key: string, x: number, y: number, strength: number): void {
+  const outline = art.outlines[key];
   view.ctx.globalAlpha = strength;
-  drawSprite(view, art, key, x, y, 0, 0, art.outline);
+  view.ctx.drawImage(outline, Math.round(x - (outline.width - 2) / 2) - 1, Math.round(y - outline.height + 2) - 1);
   view.ctx.globalAlpha = 1;
 }
 
