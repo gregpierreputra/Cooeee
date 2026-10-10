@@ -317,6 +317,8 @@ export type PackDetailItem = {
   // The stored citation for this item, when it has one — present only where the
   // saved row itself names what was matched.
   citation?: string;
+  // The same plan in its parts, for the labelled rows of the item's Source.
+  plan?: { number: string; gazetted: string; council: string };
   // The readable page to continue to, when it is not the DTP dataset page.
   pageUrl?: string;
 };

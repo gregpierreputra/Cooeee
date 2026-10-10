@@ -208,6 +208,9 @@ export const SOURCE_LIST_DATE = 'List date';
 /** An official place's council and its own designation date, in its Source. */
 export const SOURCE_COUNCIL = 'Council';
 export const SOURCE_DESIGNATED = 'Designated';
+/** The gazetted Bushfire Prone Area plan an address matched, in its Source. */
+export const SOURCE_PLAN = 'Bushfire Prone Area plan';
+export const SOURCE_GAZETTED = 'Gazetted';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
 export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;

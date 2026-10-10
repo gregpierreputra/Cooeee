@@ -229,6 +229,10 @@ describe('E1-US2 pack item projection', () => {
       'Bushfire Prone Area plan LEGL./25-138 · gazetted 10 July 2025 · YARRA RANGES'
       + ' · Department of Transport and Planning',
     ]);
+    // The same plan in its parts, for the rows of the Area tab's Source.
+    expect(packDetailItems(content)[0].plan).toEqual({
+      number: 'LEGL./25-138', gazetted: '10 July 2025', council: 'YARRA RANGES',
+    });
   });
 
   it.each([

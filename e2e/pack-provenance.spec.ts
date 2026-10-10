@@ -44,6 +44,22 @@ test('US2 AC1 lists every available stored item with grouped publisher and full 
   });
 });
 
+test('the gazetted plan an address matched is stated in the Area tab Source, not under the answer', async ({ page }) => {
+  await page.goto(DETAIL_URL);
+  const area = page.locator('#pack-panel-area');
+  await expect(area.locator('.area-answer')).toBeVisible();
+  // The answer leads straight to the map: the plan is a fact about the source.
+  await expect(area.locator('.area-answer')).not.toContainText('LEGL./25-138');
+  await openSources(page);
+  await expect(area.locator('.source-rows dt')).toHaveText([
+    'Published by', 'Saved', 'Bushfire Prone Area plan', 'Gazetted', 'Council', 'Licence',
+  ]);
+  const row = (label: string) => area.locator('.source-rows > div').filter({ has: page.locator('dt', { hasText: label }) }).locator('dd');
+  await expect(row('Bushfire Prone Area plan')).toHaveText('LEGL./25-138');
+  await expect(row('Gazetted')).toHaveText('10 July 2025');
+  await expect(row('Council')).toHaveText('Yarra Ranges');
+});
+
 test('US2 AC1 provenance remains readable at 200 percent text size', async ({ page }) => {
   await page.goto(DETAIL_URL);
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });

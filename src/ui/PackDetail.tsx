@@ -6,7 +6,7 @@ import { areaResultLine } from '../core/area-check';
 import { siteNameBlock } from '../core/blacksky-dial';
 import { AREA_MAP_NAME, DTP_DATASET_URL, DTP_LICENCE, DTP_PUBLISHER } from '../core/constants';
 import * as copy from '../core/copy';
-import { shownPackName } from '../core/home';
+import { shownPackName, titleCase } from '../core/home';
 import { packIcon } from '../core/pack';
 import { formatDistanceM, placeName } from '../core/destination';
 import {
@@ -192,6 +192,8 @@ export default function PackDetail({
   // as the area check stated it. Any other item keeps its own name.
   const bpa = content.layers.find((row) => row.code === 'BPA');
   const answerOf = (item: PackDetailItem) => (item.id === bpa?.id ? areaResultLine(bpa.status) : item.name);
+  // The gazetted plan an address inside the area matched, stated in Source.
+  const areaPlan = items.find((item) => item.plan)?.plan;
   // The answer and the map are both the Department's: one Source row for them.
   const areaSource =
     items[0]?.source ??
@@ -248,8 +250,8 @@ export default function PackDetail({
       <TabPanel tab="area" open={tab}>
         {!content.contentVerified ? <StateCard heading={copy.PACK_ITEMS_UNVERIFIED} /> : null}
         {/* The bushfire area: the answer the area check gave, in its own words,
-            with the plan it matched, then the map that shades the same area, then
-            one Source row for both. The map is absent on packs built before it
+            then the map that shades the same area, then one Source row for both,
+            holding the gazetted plan the answer matched. The map is absent on packs built before it
             was stored; it zooms and moves, north up. */}
         {items.length > 0 || mapSrc ? (
           <Section kind="map" title={copy.BUSHFIRE_AREA}>
@@ -267,7 +269,6 @@ export default function PackDetail({
                       <KeyTerms text={copy.AREA_MAP_IS_NOT_FIRE_REACH} />
                     </p>
                   ) : null}
-                  {item.citation ? <p className="muted area-plan">{item.citation}</p> : null}
                 </div>
               );
             })}
@@ -299,7 +300,16 @@ export default function PackDetail({
               <ProvenanceLine
                 source={areaSource}
                 now={now}
-                extra={[{ label: copy.SOURCE_LICENCE, value: areaSource.licence }]}
+                extra={[
+                  ...(areaPlan
+                    ? [
+                        { label: copy.SOURCE_PLAN, value: areaPlan.number },
+                        { label: copy.SOURCE_GAZETTED, value: areaPlan.gazetted },
+                        { label: copy.SOURCE_COUNCIL, value: titleCase(areaPlan.council) },
+                      ]
+                    : []),
+                  { label: copy.SOURCE_LICENCE, value: areaSource.licence },
+                ]}
                 links={items[0] ? sourceLinks(items[0]) : null}
               />
             ) : null}

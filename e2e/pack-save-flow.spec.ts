@@ -117,9 +117,12 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   const frameBox = (await page.locator('.area-map-frame').boundingBox())!;
   await page.mouse.click(frameBox.x + 30, frameBox.y + frameBox.height - 30);
   await expect(page.locator('.area-map-label')).toHaveCount(0);
-  // The bushfire area's Source, opened above with the others: publisher, saved and licence.
+  // The bushfire area's Source, opened above with the others: publisher, saved,
+  // the gazetted plan the address matched, and licence.
   const areaSection = page.locator('.pack-section', { hasText: 'Bushfire area' });
-  await expect(areaSection.locator('.source-rows dt')).toHaveText(['Published by', 'Saved', 'Licence']);
+  await expect(areaSection.locator('.source-rows dt')).toHaveText([
+    'Published by', 'Saved', 'Bushfire Prone Area plan', 'Gazetted', 'Council', 'Licence',
+  ]);
   await areaSection.getByRole('button', { name: 'Source' }).click();
   const layer = page.locator('.area-map-layer');
   const transform = () => layer.evaluate((el) => (el as HTMLElement).style.transform);
