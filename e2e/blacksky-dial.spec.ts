@@ -134,6 +134,28 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
 
   // The sheet is a list of places, so the mandated phrase heads it.
   await expect(sheet(page).getByText(SORTED_BY_DISTANCE, { exact: true })).toBeVisible();
+  // Only the places scroll: the title, the note and Close hold still.
+  const fixed = async () => [
+    await sheet(page).locator('h2').boundingBox(),
+    await sheet(page).getByRole('button', { name: 'Close' }).boundingBox(),
+  ];
+  const before = await fixed();
+  await sheet(page).locator('.list').evaluate((list) => list.scrollTo(0, list.scrollHeight));
+  expect(await sheet(page).locator('.list').evaluate((list) => list.scrollTop)).toBeGreaterThan(0);
+  expect(await fixed()).toEqual(before);
+  await sheet(page).locator('.list').evaluate((list) => list.scrollTo(0, 0));
+  // The page behind holds still under the wheel: over the list past its end,
+  // and over the title, which does not scroll.
+  const pageAt = await page.evaluate(() => window.scrollY);
+  const listBox = (await sheet(page).locator('.list').boundingBox())!;
+  await page.mouse.move(listBox.x + listBox.width / 2, listBox.y + listBox.height / 2);
+  for (let i = 0; i < 6; i += 1) await page.mouse.wheel(0, 400);
+  const titleBox = (await sheet(page).locator('h2').boundingBox())!;
+  await page.mouse.move(titleBox.x + 10, titleBox.y + titleBox.height / 2);
+  for (let i = 0; i < 3; i += 1) await page.mouse.wheel(0, 400);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.scrollY)).toBe(pageAt);
+  await sheet(page).locator('.list').evaluate((list) => list.scrollTo(0, 0));
   const rows = sheet(page).getByRole('listitem');
   await expect(rows).toHaveCount(4);
   // Nearest first, chosen and state-wide together, with no rank number.
@@ -156,6 +178,8 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
   // due south, and the notes are still on screen.
   await rows.nth(1).getByRole('button', { name: /^Community Hall/ }).click();
   await expect(sheet(page)).toBeHidden();
+  // Closed, the page scrolls again.
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).not.toBe('hidden');
   await expect(label(page)).toHaveText('YOUR CHOSEN PLACE');
   await expect(name(page)).toHaveText('Community Hall');
   await expect(page.locator('.blacksky-dial-head p')).toHaveText('Belgrave South');

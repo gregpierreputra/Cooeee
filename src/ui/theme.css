@@ -2518,16 +2518,27 @@ main:focus {
   border-radius: var(--r-card) var(--r-card) 0 0;
   background: var(--bg);
   color: var(--ink);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
+/* The title and note at the top and Close at the foot hold still; the list
+   between them takes the room left and scrolls on its own. */
 .blacksky-sheet[open] {
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 0.75rem;
 }
 
 .blacksky-sheet::backdrop {
   background: rgb(0 0 0 / 0.8);
+}
+
+/* While the sheet is open the page behind holds still: the wheel over the
+   title or Close, or past either end of the list, never moves it. The page's
+   scroll bar keeps its room, so nothing shifts sideways as it opens. */
+html:has(.blacksky-sheet[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
 }
 
 .blacksky-sheet p {
@@ -2539,12 +2550,32 @@ main:focus {
   font-weight: var(--w-heavy);
 }
 
+/* The note's two lines close together, one unit; the first starts with a
+   capital, as a sentence does. */
+.blacksky-sheet-note {
+  display: grid;
+  gap: 0.125rem;
+}
+.blacksky-sheet-note span:first-child::first-letter {
+  text-transform: uppercase;
+}
+
 /* Each other place a card, as on the pack page and Nearby, the whole card the
    one target: the site in bold with its distance beside it, the suburb under
-   it, then the direction and Show at its foot. */
+   it, then the direction and Show at its foot. The list scrolls inside the
+   sheet with a thin bar in the mode's dim amber, kept clear of the cards, and
+   a little room top and bottom so a card's focus ring is never cut. */
 .blacksky-sheet .list {
   display: grid;
+  align-content: start;
   gap: 0.75rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 3px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-2) transparent;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain; /* the list's own end is the end of the scroll */
 }
 .blacksky-other {
   width: 100%;

@@ -1322,11 +1322,16 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
       </button>
       <dialog ref={sheet} className="blacksky-sheet" aria-labelledby={titleId}>
         <h2 id={titleId}>{copy.OTHER_PLACES_TITLE}</h2>
-        {/* Quieter by colour alone: BlackSky keeps every line at 16 px or more.
-            Distances here are straight lines too, said as Nearby says it. */}
-        <p className="muted">{copy.SORTED_BY_DISTANCE}</p>
-        <p className="muted">{copy.DISTANCES_NOTE}</p>
-        <ul className="list">
+        {/* One note in two lines: the mandated phrase over any list of places,
+            then what its distances are, said as Nearby says it. Quieter by
+            colour alone: BlackSky keeps every line at 16 px or more. */}
+        <p className="muted blacksky-sheet-note">
+          <span>{copy.SORTED_BY_DISTANCE}</span>
+          <span>{copy.DISTANCES_NOTE}</span>
+        </p>
+        {/* Only the places scroll: the title and the note stay at the top and
+            Close at the foot, whatever the number of places. */}
+        <ul className="list blacksky-sheet-list">
           {places.map((place) => {
             const { site, line } = siteNameBlock(place.name);
             // Each place a card, as on the pack page and Nearby: the site in
