@@ -52,7 +52,6 @@ import {
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
   HOLD_LEAVE_VIBRATE_MS,
-  HOTLINE_NUMBER,
   ROADS_LABEL_PX,
   ROADS_PAN_RETURN_MS,
   ROADS_PAN_TAP_PX,
@@ -662,8 +661,8 @@ export default function BlackSky({
       )}
       {/* Under the dial, never above it: the dial is the one thing first. */}
       {chosen && !chosen.placesVerified ? <StateCard heading={copy.PLACES_UNVERIFIED} /> : null}
-      {/* Who to call closes every state of the screen, so the numbers are
-          always one scroll away, whatever the position or the pack. */}
+      {/* Triple Zero closes every state of the screen, so the call is always
+          one scroll away, whatever the position or the pack. */}
       <WhoToCall reminder={chosen?.pack.reminder || copy.OFFICIAL_INSTRUCTIONS_FIRST} />
     </main>
   );
@@ -819,22 +818,25 @@ function ScreenBody({
   }
 }
 
-/** Who to call, as on Recover: 000 with the red rule and the one filled Call,
- *  then the hotline with the amber rule. The lines around them say the call
- *  may not go through and where official word comes from, and the loaded
- *  pack's reminder closes it, in bold, once on the screen. */
+/** Triple Zero alone, as on Recover with the red rule and the filled Call. A
+ *  phone with no service of its own can still often reach 000 through another
+ *  network, so it is the one call worth a place here, and its card says so;
+ *  the hotline and Copy stay on Recover. One card needs no heading over it.
+ *  The loaded pack's reminder closes the screen, in bold, once. */
 function WhoToCall({ reminder }: { reminder: string }) {
   return (
-    <section className="call-group">
-      <h2 className="kicker">{copy.WHO_TO_CALL}</h2>
-      <p className="muted">{copy.PHONE_MAY_WORK}</p>
+    <div className="call-group">
       <ul className="list">
-        <CallCard name={copy.TRIPLE_ZERO_LABEL} detail={copy.TRIPLE_ZERO_DETAIL} number={TRIPLE_ZERO} tone="emergency" />
-        <CallCard name={copy.HOTLINE_LABEL} detail={copy.HOTLINE_DETAIL} number={HOTLINE_NUMBER} tone="caution" />
+        <CallCard
+          name={copy.TRIPLE_ZERO_LABEL}
+          detail={`${copy.TRIPLE_ZERO_DETAIL} ${copy.TRIPLE_ZERO_ANY_NETWORK}`}
+          number={TRIPLE_ZERO}
+          tone="emergency"
+          canCopy={false}
+        />
       </ul>
-      <p className="muted">{copy.EMERGENCY_BROADCASTER}</p>
       <p className="blacksky-reminder">{reminder}</p>
-    </section>
+    </div>
   );
 }
 
@@ -1368,8 +1370,8 @@ function ConfidenceLines({ confidence }: { confidence: Confidence }) {
 /** The reference screen for US1-AC2: saved information as text, no bearing
  *  figures. The state card above it says why. The places are set as on the
  *  pack page: one card each, the site in bold, then the suburb and the
- *  address. Their kind and publisher are said once, over the list. A place
- *  that could not be saved says why in a state card. */
+ *  address. Under the heading and nothing else, as the dial carries no source
+ *  line. A place that could not be saved says why in a state card. */
 function ReferenceBody({ places }: { places: Destination[] }) {
   const sites = places.filter((place) => place.kind === 'nsp-bushfire');
   return (
@@ -1377,9 +1379,6 @@ function ReferenceBody({ places }: { places: Destination[] }) {
       {sites.length > 0 ? (
         <section className="blacksky-saved-places">
           <h2 className="kicker">{copy.DESTINATIONS_STEP_TITLE}</h2>
-          <p className="muted">
-            {copy.SAVED_PLACES_KIND(sites.length)} {copy.SOURCE_PUBLISHED_BY} {sites[0].source.publisher}.
-          </p>
           <ul className="list saved-destinations">
             {sites.map((place) => {
               const { site, line } = siteNameBlock(place.name ?? '');

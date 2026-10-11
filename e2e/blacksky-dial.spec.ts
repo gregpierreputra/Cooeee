@@ -9,6 +9,7 @@ import {
   NO_PLACE_TO_POINT_AT,
   OUTSIDE_AREAS,
   SORTED_BY_DISTANCE,
+  TRIPLE_ZERO_ANY_NETWORK,
 } from '../src/core/copy';
 import { titleCase } from '../src/core/home';
 import {
@@ -25,13 +26,16 @@ import {
 // chosen places, 2.60 km north and 3.50 km south; the state-wide fixture's
 // nearest site, Belgrave Recreation Reserve, is NEARER than both at 2.13 km.
 
-/** Who to call, as on Recover: 000 first with the red rule, then the hotline. */
+/** Triple Zero alone with the red rule, Call and no Copy. */
 async function expectWhoToCall(page: Page) {
   const links = page.locator('.call-card .call-link');
-  await expect(links).toHaveCount(2);
-  await expect(links.first()).toHaveAttribute('href', 'tel:000');
-  await expect(links.nth(1)).toHaveAttribute('href', 'tel:1800226226');
+  await expect(links).toHaveCount(1);
+  await expect(links).toHaveAttribute('href', 'tel:000');
   await expect(page.locator('.call-card.emergency-line')).toHaveCount(1);
+  await expect(page.locator('.call-card .call-copy')).toHaveCount(0);
+  // The card says the call may go through another network; no heading over it.
+  await expect(page.locator('.call-card')).toContainText(TRIPLE_ZERO_ANY_NETWORK);
+  await expect(page.locator('.call-group h2')).toHaveCount(0);
 }
 
 const label = (page: Page) => page.locator('.blacksky-dial-head .kicker');
@@ -73,7 +77,7 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
 
   // Every other place is one line: how many, and the range they lie in.
   await expect(othersLine(page)).toHaveText('4 other places · 2.13 km – 5.07 km');
-  // Who to call closes every state of the screen.
+  // Triple Zero closes every state of the screen.
   await expectWhoToCall(page);
   // No list of places is on screen yet, so the mandated phrase is not either.
   await expect(page.getByText(SORTED_BY_DISTANCE)).toBeHidden();
@@ -507,7 +511,7 @@ test('Normal, outside the pack area: the dial points at the nearest site, and wh
   await pushPosition(page, AT_MELBOURNE);
 
   // E3-US2-AC1's rules are unchanged: the pack is named with the distance to
-  // its area, never pointed at, and the two numbers are kept as call cards.
+  // its area, never pointed at, and Triple Zero is kept as a call card.
   await expect(page.getByText(OUTSIDE_AREAS)).toBeVisible();
   await expect(page.getByText(/km to its area$/)).toBeVisible();
   await expectWhoToCall(page);

@@ -4342,12 +4342,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   border-inline-start: 3px solid var(--stale);
   background: color-mix(in srgb, var(--stale) 10%, var(--surface));
 }
-/* In BlackSky the hotline's rule is the mode's own amber on true black, and
-   every line on the card keeps the screen's 16 px floor. */
-:root[data-mode='blacksky'] .caution-line {
-  border-inline-start-color: var(--accent);
-  background: var(--bg);
-}
+/* In BlackSky every line on the card keeps the screen's 16 px floor. */
 :root[data-mode='blacksky'] .call-card > p,
 :root[data-mode='blacksky'] .call-card .action {
   font-size: var(--step-0);

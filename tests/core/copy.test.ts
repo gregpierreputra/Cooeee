@@ -33,10 +33,8 @@ describe('mandated literals', () => {
   });
 
 
-  it('the app states what it cannot detect', () => {
-    expect(copy.PHONE_MAY_WORK).toBe(
-      'Calls may work if your phone shows signal. This app cannot detect it.',
-    );
+  it('Triple Zero is offered as a chance, never a promise', () => {
+    expect(copy.TRIPLE_ZERO_ANY_NETWORK).toBe('Your phone may reach 000 through another network.');
   });
 });
 
@@ -210,14 +208,9 @@ describe('deliberate activation', () => {
     expect(copy.HOLD_TO_LEAVE).toBe('Hold to leave. Two seconds.');
   });
 
-  it('a back press and a return both name the one way out', () => {
-    expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky. Use Hold to leave at the top.');
-    expect(copy.BLACKSKY_RESUMED).toBe(
-      'Reopened where you left off. To exit, use Hold to leave at the top.',
-    );
-    // Both name the control by the label it actually carries.
-    for (const notice of [copy.BACK_PRESSED, copy.BLACKSKY_RESUMED]) expect(notice).toContain(copy.LEAVE_BLACKSKY);
-    expect(copy.BACK_PRESSED).not.toContain('Leave BlackSky');
+  it('a back press and a return are each said in one short line, the bar above naming the way out', () => {
+    expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky.');
+    expect(copy.BLACKSKY_RESUMED).toBe('Reopened where you left off.');
   });
 });
 

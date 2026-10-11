@@ -538,9 +538,9 @@ export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area
 // General official guidance, stored in the app itself so it is readable with
 // zero network. The numbers are safety copy: exact-match tested, never retyped.
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
-export const EMERGENCY_BROADCASTER = 'ABC local radio carries official emergency information.';
-/** States what the app cannot detect — never a promise about the network. */
-export const PHONE_MAY_WORK = 'Calls may work if your phone shows signal. This app cannot detect it.';
+/** Under Triple Zero in BlackSky: a phone with no service of its own may
+ *  still be carried by another network. "May", never a promise. */
+export const TRIPLE_ZERO_ANY_NETWORK = 'Your phone may reach 000 through another network.';
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
@@ -574,10 +574,10 @@ export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
 export const LEAVE_BLACKSKY = 'Hold to leave';
 /** Said under BlackSky's top bar, never over anything else: the phone's back
  *  button was pressed, or the app opened here again because BlackSky was the
- *  last screen open. Both end with the one way out. */
+ *  last screen open. The bar above them already says how to leave. */
 export const BLACKSKY_BLOCKED = 'Not opened. Hold its button two seconds to enter.';
-export const BACK_PRESSED = `Back does not leave BlackSky. Use ${LEAVE_BLACKSKY} at the top.`;
-export const BLACKSKY_RESUMED = `Reopened where you left off. To exit, use ${LEAVE_BLACKSKY} at the top.`;
+export const BACK_PRESSED = 'Back does not leave BlackSky.';
+export const BLACKSKY_RESUMED = 'Reopened where you left off.';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 
