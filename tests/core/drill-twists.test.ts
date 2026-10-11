@@ -151,8 +151,9 @@ describe('which twist is on', () => {
 describe('the twist on screen', () => {
   it('reads exactly as the classic drill did for the classic drill', () => {
     expect(copy.DRILL_INTRO_HEADING_FOR(120)).toBe(copy.DRILL_INTRO_HEADING);
-    expect(copy.DRILL_INTRO_FACTS(120, 10).map((fact) => fact.figure)).toEqual(['2', '10', 'Door']);
-    expect(copy.DRILL_INTRO_FACTS(90, 6)[0]).toEqual({ figure: '90', label: 'seconds to leave' });
+    expect(copy.DRILL_CLOCK(120)).toBe('2:00');
+    expect(copy.DRILL_CLOCK(90)).toBe('1:30');
+    expect(copy.DRILL_CLOCK(5)).toBe('0:05');
     expect(copy.DRILL_TOUR_LINES_FOR(120, 10, false)).toEqual(copy.DRILL_TOUR_LINES);
     expect(copy.DRILL_TILE_DETAIL_FOR(120, 10)).toBe(copy.DRILL_TILE_DETAIL);
   });

@@ -1411,16 +1411,15 @@ export const WAY_NOTE_LABEL = 'Your note about the way';
 // Every number here is about the bag, never about the person.
 export const DRILL_LABEL = 'Drill';
 export const DRILL_INTRO_HEADING = 'Two minutes to leave';
-/** The three things to know before the drill, as on Ready the Block, for
- *  this twist's time and bag. Whole minutes read in minutes, else seconds. */
-export const DRILL_INTRO_FACTS = (seconds: number, bag: number) => [
-  seconds % 60 === 0
-    ? { figure: String(seconds / 60), label: seconds === 60 ? 'minute to leave' : 'minutes to leave' }
-    : { figure: String(seconds), label: 'seconds to leave' },
-  { figure: String(bag), label: 'things to pack' },
-  { figure: 'Door', label: 'be there when time ends' },
-];
-export const DRILL_STEER = 'Steer with the stick, or tap where to walk.';
+/** The drill's clock, as the game and its first screen both show it: 2:00. */
+export const DRILL_CLOCK = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+/** Under the three tiles on the drill's first screen, each drawn as the game
+ *  draws it: the clock, the bag count, and the door. */
+export const DRILL_INTRO_TIME = 'to leave';
+export const DRILL_INTRO_BAG = 'things to pack';
+export const DRILL_INTRO_DOOR = 'be there when time ends';
+/** Read before the door's words, as the drawing says it on screen. */
+export const DRILL_INTRO_DOOR_HIDDEN = 'Front door,';
 export const START_DRILL = 'Start the drill';
 export const SKIP_DRILL = 'Skip the drill';
 export const SKIP_CUTSCENE = 'Skip';

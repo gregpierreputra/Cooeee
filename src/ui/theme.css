@@ -6945,7 +6945,8 @@ button.flow-step .flow-step-label {
 /* ── Ready the Block's opening facts ───────────────────────────────────── */
 .game-facts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Three equal columns, whatever their figures hold. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.6rem;
   margin: 0 0 0.85rem;
   padding: 0;
@@ -7033,6 +7034,36 @@ button.flow-step .flow-step-label {
   font-weight: var(--w-heavy);
   line-height: 1;
   color: var(--block-accent);
+}
+/* The drill's tiles, drawn as the game draws them: its clock, its bag count
+   and the door, each in the game's dark pill of one height, so the three
+   labels under them start on one line. */
+.drill-page .game-fact-figure {
+  display: flex;
+  justify-content: center;
+}
+.drill-fact-clock,
+.drill-fact-bag,
+.drill-fact-door {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 2.25rem;
+  max-width: 100%;
+  padding: 0 0.6rem;
+  font-size: clamp(0.95rem, 4.5vw, 1.15rem);
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 10, 18, 0.62);
+  color: #fff;
+  letter-spacing: var(--track-tight);
+}
+.drill-page .game-facts li {
+  padding-inline: 0.5rem;
+}
+.game-fact-figure .glyph.line-glyph {
+  justify-self: center;
+  color: var(--fact-accent);
 }
 /* The one muted line under a game's facts. */
 .game-facts-note {

@@ -337,7 +337,7 @@ export default function Game({ opening, seconds, rules, onEnd, onUnavailable, on
   // The one rule that decides the score, under the clock: said at the start,
   // and again once the door arrow shows.
   const goal = hud.ready ? null : hud.seconds <= DOOR_ARROW_SECONDS ? copy.HEAD_TO_DOOR : hud.seconds > seconds - RULE_SECONDS ? copy.DRILL_HINT : null;
-  const clock = `${Math.floor(hud.seconds / 60)}:${String(hud.seconds % 60).padStart(2, '0')}`;
+  const clock = copy.DRILL_CLOCK(hud.seconds);
   const full = hud.packed >= rules.bagLimit;
   const line = linesFor(rules)[hud.beat];
 
