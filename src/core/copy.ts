@@ -614,6 +614,8 @@ export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
+/** The label over the game cards on Rehearse. */
+export const GAMES = 'Games';
 /** What Rehearse is for, on its tour stop and when no pack is saved yet. */
 export const REHEARSE_LINE = 'Practise the way to a saved place on a calm day.';
 
@@ -1083,10 +1085,12 @@ export const REHEARSALS = 'Rehearsals';
 export const NOT_YET_REHEARSED = 'Not yet rehearsed.';
 export const HISTORY_GAPS = (count: number) =>
   count === 0 ? 'No gaps found' : count === 1 ? '1 gap found' : `${count} gaps found`;
-/** E5-US3-AC2 — asked when the bar's Rehearse is tapped and several packs are
- *  saved. Same question form as CHOOSE_CONDITION_HEADING. */
-export const CHOOSE_PACK_TO_REHEARSE = 'Which pack are we rehearsing?';
-export const CHOOSE_PACK_TO_REHEARSE_DETAIL = 'One rehearsal, one pack.';
+/** E5-US3-AC2 — under Your packs when the bar's Rehearse is tapped and several
+ *  packs are saved. */
+export const CHOOSE_PACK_LINE = 'Choose a place to practise leaving from.';
+/** A pack card on Rehearse: when this pack was last rehearsed, from ageLabel. */
+export const REHEARSED_AGO = (age: string) => `Rehearsed ${age}`;
+export const NOT_REHEARSED_CARD = 'Not yet rehearsed';
 /** The way back to the pack the user came from, offered only where there is a
  *  readable pack to go back to. */
 export const BACK_TO_THIS_PACK = 'Back to this pack';
@@ -1519,8 +1523,8 @@ export const DRILL_TOUR_LINES_FOR = (seconds: number, bag: number, powered: bool
 export const DRILL_TWIST_LABEL = 'This drill’s twist';
 export const DRILL_TWIST_LINE = (name: string, rule: string) => `${name}. ${rule}`;
 /** The twist on the drill card, and how long it stays. */
-export const DRILL_TILE_TWIST = (name: string, daysLeft: number) =>
-  `${name} twist. ${daysLeft <= 1 ? 'Changes tomorrow.' : `Changes in ${NUMBER_WORD(daysLeft)} days.`}`;
+export const DRILL_TILE_CHANGES = (daysLeft: number) =>
+  daysLeft <= 1 ? 'Changes tomorrow' : `Changes in ${NUMBER_WORD(daysLeft)} days`;
 export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this twist is ${score} out of 100.`;
 /** Under the score when the twist's bag is not ten, or some things are out of reach. */
 export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this twist’s bag could hold.';
@@ -1530,12 +1534,16 @@ export const DRILL_ROW_TWIST = (name: string) => `${name} twist`;
 export const WORD_TILE_TITLE = 'Cooee Word';
 export const WORD_TILE_COUNTS = (streak: number, played: number) =>
   `${streak === 0 ? 'No streak yet' : `${streak} day streak`} · ${played} ${played === 1 ? 'day' : 'days'} played`;
+export const WORD_TILE_DETAIL = 'Guess today’s word in six tries.';
+export const WORD_TILE_STREAK = (streak: number) => `${streak} day streak`;
 export const WORD_TILE_TODAY = {
-  solved: 'Solved today. A new word at midnight.',
-  'not-yet': 'Today’s word is ready.',
-  'in-progress': (used: number) => `Under way, ${used} of 6 guesses used.`,
-  'not-solved': 'Not solved today. A new word at midnight.',
+  solved: 'Solved today',
+  'not-yet': 'Ready today',
+  'in-progress': (used: number) => `${used} of 6 guesses`,
+  'not-solved': 'Not solved today',
 };
+/** The week of dots on the Word card, read as one picture. */
+export const WORD_WEEK_LABEL = (solved: number) => `Solved ${solved} of the last 7 days`;
 export const WORD_LABEL = 'Cooee Word';
 export const WORD_NUMBER = (n: number) => `Word ${n}`;
 export const WORD_HINT_LABEL = 'Hint';
@@ -1580,8 +1588,9 @@ export const BACK_TO_REHEARSE = 'Back to Rehearse';
 // Ready the Block
 export const BLOCK_TILE_TITLE = 'Ready the Block';
 export const BLOCK_TILE_DETAIL = 'Find eight fire risks round a home in three minutes.';
-export const BLOCK_TILE_STATUS = (today: number | null, highest: number | null) =>
-  `${today === null ? 'Not played yet today' : `Played today, ${today} out of 100`}${highest === null ? '' : ` · Highest ${highest}`}`;
+export const BLOCK_TILE_TODAY = (today: number | null) => (today === null ? 'Not played today' : `Today ${today}`);
+/** The best score out of 100, on the drill and Block cards. */
+export const GAME_HIGHEST = (score: number) => `Highest ${score}`;
 export const BLOCK_LABEL = 'Ready the Block';
 export const BLOCK_INTRO_HEADING = 'Find the fire risks';
 /** The three things to know, each a big figure over a few words. */

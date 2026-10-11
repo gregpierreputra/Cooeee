@@ -158,8 +158,9 @@ describe('the score', () => {
   });
 
   it('says it in words on the card and the report', () => {
-    expect(copy.BLOCK_TILE_STATUS(null, null)).toBe('Not played yet today');
-    expect(copy.BLOCK_TILE_STATUS(76, 88)).toBe('Played today, 76 out of 100 · Highest 88');
+    expect(copy.BLOCK_TILE_TODAY(null)).toBe('Not played today');
+    expect(copy.BLOCK_TILE_TODAY(76)).toBe('Today 76');
+    expect(copy.GAME_HIGHEST(88)).toBe('Highest 88');
     expect(copy.BLOCK_PENALTIES(1, 2)).toBe('1 wrong tap, 2 hints');
     expect(copy.BLOCK_VERDICT(90)).toBe('Sharp eyes');
     expect(copy.BLOCK_VERDICT(60)).toBe('Good spotting');

@@ -117,7 +117,7 @@ describe('Cooee Word words on screen', () => {
     expect(copy.WORD_TILE_COUNTS(0, 0)).toBe('No streak yet · 0 days played');
     expect(copy.WORD_TILE_COUNTS(1, 1)).toBe('1 day streak · 1 day played');
     expect(copy.WORD_TILE_COUNTS(4, 23)).toBe('4 day streak · 23 days played');
-    expect(copy.WORD_TILE_TODAY['in-progress'](2)).toBe('Under way, 2 of 6 guesses used.');
+    expect(copy.WORD_TILE_TODAY['in-progress'](2)).toBe('2 of 6 guesses');
   });
 
   it('names letters and counts in words', () => {

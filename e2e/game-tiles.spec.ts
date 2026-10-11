@@ -9,21 +9,23 @@ test.describe('the game cards on the Rehearse screen', () => {
     await expect(cards).toHaveCount(3);
     await expect(cards.nth(0)).toContainText('Play the drill');
     await expect(cards.nth(1)).toContainText('Cooee Word');
-    await expect(cards.nth(1)).toContainText('No streak yet · 0 days played');
-    await expect(cards.nth(1)).toContainText('Today’s word is ready.');
+    await expect(cards.nth(1)).toContainText('Guess today’s word in six tries.');
+    await expect(cards.nth(1)).toContainText('Ready today');
+    await expect(cards.nth(1).getByRole('img', { name: 'Solved 0 of the last 7 days' })).toBeVisible();
     await expect(cards.nth(2)).toContainText('Ready the Block');
-    await expect(cards.nth(2)).toContainText('Not played yet today');
+    await expect(cards.nth(2)).toContainText('Not played today');
   });
 
-  test('carry the streak and the days played', async ({ page }) => {
+  test('carry the streak and the week of dots', async ({ page }) => {
     await page.goto(`${HARNESS}/games?history=lost,won,won`);
-    await expect(page.locator('.word-tile')).toContainText('2 day streak · 3 days played');
+    await expect(page.locator('.word-tile')).toContainText('2 day streak');
+    await expect(page.locator('.word-week .solved')).toHaveCount(2);
   });
 
   test('show the drill’s twist when one is on', async ({ page }) => {
     await page.goto(`${HARNESS}/games?twist=small-bag`);
     await expect(page.locator('.drill-tile')).toContainText('Two minutes to pack seven things and reach the front door.');
-    await expect(page.locator('.drill-tile')).toContainText(/Small bag twist\. Changes (tomorrow|in \w+ days)\./);
+    await expect(page.locator('.drill-tile')).toContainText(/Small bag twist\s*Changes (tomorrow|in \w+ days)/);
   });
 
   test('open their games, and each is large enough to tap', async ({ page }) => {

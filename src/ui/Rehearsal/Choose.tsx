@@ -1,38 +1,48 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router';
+import { Link, Navigate, useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 import { homeView, shownPackName, titleCase } from '../../core/home';
 import { packIcon } from '../../core/pack';
+import { ageLabel } from '../../core/provenance';
 import Glyph from '../components/Glyph';
 import { useMinuteClock } from '../components/useMinuteClock';
 import Head from './Head';
 import GameTiles from '../Games/GameTiles';
 import { replayDrill } from '../Drill/drill-state';
 import type { Pack } from '../../core/types';
-import { listCompletePacks } from '../../data/db';
+import { listCompletePacks, listRehearsalsForPack } from '../../data/db';
 import RehearsalEntry from './Entry';
 import { useRehearsalRun } from './run-state';
 
 /** E5-US3-AC2 — the bar's Rehearse, before a pack is known.
  *
  *  One saved pack needs no question and goes straight to its gate. Several are
- *  asked about in the same tappable rows as the choice of condition, and
- *  nothing is chosen for the user. The rows are the home screen's own list,
- *  newest first with each pack's age in its own words, so the packs read here
- *  exactly as they read there. None is the gate's own
+ *  listed under Your packs as the home screen's own cards, newest first with
+ *  each pack's age in its own words, so the packs read here exactly as they
+ *  read there, and nothing is chosen for the user. Each card adds when that
+ *  pack was last rehearsed. None is the gate's own
  *  "no pack" screen, so that state has one set of words, not two. A rehearsal
  *  already running is where Rehearse goes, before any question. */
+/** When a pack was last rehearsed, or null. A store that cannot be read
+ *  reads as never rehearsed. */
+const lastRehearsed = (packId: string): Promise<number | null> =>
+  listRehearsalsForPack(packId).then((rows) => rows.at(-1)?.finishedAt ?? null, () => null);
+
 export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: () => Promise<Pack[]> }) {
   const navigate = useNavigate();
   const run = useRehearsalRun();
   const [packs, setPacks] = useState<Pack[] | null>(null);
+  const [rehearsed, setRehearsed] = useState<Map<string, number | null>>(new Map());
   const clock = useMinuteClock();
 
   useEffect(() => {
     let live = true;
     loadPacks().then(
-      (rows) => {
-        if (live) setPacks(rows);
+      async (rows) => {
+        const times = await Promise.all(rows.map((pack) => lastRehearsed(pack.id)));
+        if (!live) return;
+        setRehearsed(new Map(rows.map((pack, i) => [pack.id, times[i]])));
+        setPacks(rows);
       },
       () => {
         if (live) setPacks([]);
@@ -59,34 +69,41 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
     <main className="page rehearsal-condition">
       <Head />
       <GameTiles onDrill={playDrill} />
-      <h2>{copy.CHOOSE_PACK_TO_REHEARSE}</h2>
-      <p>{copy.CHOOSE_PACK_TO_REHEARSE_DETAIL}</p>
+      <span className="kicker packs-title">
+        {copy.YOUR_PACKS}
+        <span className="packs-count">{rows.length}</span>
+      </span>
+      <p className="muted">{copy.CHOOSE_PACK_LINE}</p>
 
-      <ul className="list condition-list pack-choice-list">
-        {rows.map(({ pack, ageLine }) => (
-          <li key={pack.id}>
-            <button
-              type="button"
-              className="candidate-action condition-action pack-choice"
-              onClick={() => navigate(`/rehearse/${pack.id}`)}
-            >
-              <Glyph kind={packIcon(pack)} />
-              <span className="pack-choice-text">
-                <span className="condition-label pack-name">{shownPackName(pack.name)}</span>
-                <span className="condition-detail">{titleCase(pack.address)}</span>
-                {/* The same downloaded sign as the pack card on Home. */}
-                <span className="condition-detail pack-choice-age with-glyph">
+      {/* Home's own pack card, its name a link stretched over the card. */}
+      <ul className="list pack-choice-list">
+        {rows.map(({ pack, ageLine }) => {
+          const at = rehearsed.get(pack.id) ?? null;
+          return (
+            <li key={pack.id}>
+              <section className="card pack-card saved-place">
+                <div className="saved-place-title">
+                  <Glyph kind={packIcon(pack)} />
+                  <h2 className="pack-name">
+                    <Link to={`/rehearse/${pack.id}`}>{shownPackName(pack.name)}</Link>
+                  </h2>
+                </div>
+                <p className="muted">{titleCase(pack.address)}</p>
+                <p className="muted with-glyph">
+                  <Glyph kind="rehearse" line />
+                  {at === null ? copy.NOT_REHEARSED_CARD : copy.REHEARSED_AGO(ageLabel(clock - at))}
+                </p>
+                <p className="muted figure saved-place-footer with-glyph">
                   <Glyph kind="saved" line />
                   {ageLine}
-                </span>
-              </span>
-              {/* The card opens, said by a chevron centred at its right. */}
-              <svg className="card-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </li>
-        ))}
+                  <svg className="card-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                    <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </p>
+              </section>
+            </li>
+          );
+        })}
       </ul>
     </main>
   );

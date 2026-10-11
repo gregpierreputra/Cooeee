@@ -112,6 +112,12 @@ export function wordStreak(rows: WordDay[], today: number): number {
 /** Every day with a finished game, solved or not. */
 export const daysPlayed = (rows: WordDay[]): number => rows.filter((row) => row.status !== 'playing').length;
 
+/** The last seven days, oldest first and ending today: true where solved. */
+export function solvedWeek(rows: WordDay[], today: number): boolean[] {
+  const solved = new Set(rows.filter((row) => row.status === 'won').map((row) => row.day));
+  return Array.from({ length: 7 }, (_, i) => solved.has(today - 6 + i));
+}
+
 /** What the game's card on the Rehearse screen says. */
 export type WordTileView = {
   streak: number;

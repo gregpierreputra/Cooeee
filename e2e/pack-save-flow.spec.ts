@@ -265,11 +265,11 @@ test('a second address becomes a second pack beside the first, with no question 
 
   // With two packs, Back from a pack's rehearsal goes up to the chooser.
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Rehearse', exact: true }).click();
-  await page.locator('.condition-list button').first().click();
+  await page.locator('.pack-choice-list .pack-name a').first().click();
   await expect(page).toHaveURL(/\/rehearse\/.+/);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(/\/rehearse$/);
-  await expect(page.locator('.condition-list button')).toHaveCount(2);
+  await expect(page.locator('.pack-choice-list .pack-card')).toHaveCount(2);
 });
 
 // An age in words moves on while the screen stays open: a pack saved just now
