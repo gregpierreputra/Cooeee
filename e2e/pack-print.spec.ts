@@ -38,8 +38,10 @@ test('the print page gives the area answer in full, inside and outside', async (
 // and when it was printed and whose instructions come first sit at the top.
 test('the print page puts who to call before the places and notes', async ({ page }) => {
   await page.goto(`${HARNESS}/detail-print`);
-  const headings = await page.locator('.print-section > .kicker').allTextContents();
-  expect(headings.slice(0, 3)).toEqual([copy.PRINT_AREA_TITLE, copy.WHO_TO_CALL, copy.DESTINATIONS_STEP_TITLE]);
+  // Waits for the page, where reading the headings at once would not.
+  await expect(page.locator('.print-section > .kicker').nth(2)).toHaveText(copy.DESTINATIONS_STEP_TITLE);
+  await expect(page.locator('.print-section > .kicker').nth(0)).toHaveText(copy.PRINT_AREA_TITLE);
+  await expect(page.locator('.print-section > .kicker').nth(1)).toHaveText(copy.WHO_TO_CALL);
   await expect(page.locator('.hero .print-first')).toHaveText(copy.OFFICIAL_INSTRUCTIONS_FIRST);
 });
 
