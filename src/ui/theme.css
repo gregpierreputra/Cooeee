@@ -7208,27 +7208,32 @@ button.flow-step .flow-step-label {
     animation: none;
   }
 }
-/* What costs points, in a card: each cost led by its drawing. */
+/* What costs points: two equal tiles side by side under their label, each the
+   points off in the Block's colour led by its drawing, its words under it. */
 .block-costs {
+  display: grid;
   gap: 0.5rem;
   margin: 0 0 1rem;
 }
 .block-cost-list {
   display: grid;
-  gap: 0.375rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .block-cost {
-  justify-content: flex-start;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-size: var(--step-s);
   color: var(--ink-2);
 }
-.block-cost .glyph {
-  color: var(--block-accent);
-}
 .block-cost strong {
-  min-width: 2.25rem;
+  gap: 0.35rem;
+  font-size: var(--step-1);
   font-weight: var(--w-heavy);
   color: var(--block-accent);
 }

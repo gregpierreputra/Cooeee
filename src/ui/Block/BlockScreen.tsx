@@ -163,14 +163,19 @@ export default function BlockScreen({ now, seconds = BLOCK_SECONDS, loadPlays = 
               },
             ]}
           />
-          {/* What costs points, each led by its drawing. */}
-          <section className="card block-costs" aria-labelledby="block-costs-label">
+          {/* What costs points: two tiles side by side under their label,
+              each the points off led by its drawing, and what for under it,
+              as the facts above set a figure over its words. */}
+          <section className="block-costs" aria-labelledby="block-costs-label">
             <span id="block-costs-label" className="kicker section-label">{copy.BLOCK_COSTS_LABEL}</span>
             <ul className="block-cost-list">
               {copy.BLOCK_COSTS.map(({ figure, label }, index) => (
-                <li key={label} className="block-cost with-glyph">
-                  <Glyph kind={index === 0 ? 'close' : 'locate'} line />
-                  <strong className="figure">{figure}</strong> {label}
+                <li key={label} className="card block-cost">
+                  <strong className="figure with-glyph">
+                    <Glyph kind={index === 0 ? 'close' : 'locate'} line />
+                    {figure}
+                  </strong>
+                  <span>{label}</span>
                 </li>
               ))}
             </ul>
