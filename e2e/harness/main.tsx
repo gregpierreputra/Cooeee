@@ -20,7 +20,7 @@ import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import { startRun } from '../../src/ui/Rehearsal/run-state';
 import Drill from '../../src/ui/Drill/Drill';
-import { markDrilled, pinTwist } from '../../src/ui/Drill/drill-state';
+import { pinTwist } from '../../src/ui/Drill/drill-state';
 import BlockScreen from '../../src/ui/Block/BlockScreen';
 import GameTiles from '../../src/ui/Games/GameTiles';
 import WordScreen from '../../src/ui/Word/WordScreen';
@@ -778,12 +778,6 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
   rehearseFlow = <RehearsalHarness />;
 }
 if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
-// E9. The drill stands in front of every rehearsal. The rehearsal's own specs
-// step past it here, as a person who skipped it would; ?drill=1 keeps it.
-if (new URLSearchParams(window.location.search).get('drill') !== '1') {
-  markDrilled('rehearse-pack');
-  markDrilled('saved-pack');
-}
 
 
 // The remount control is HARNESS FURNITURE, not product UI. It is rendered

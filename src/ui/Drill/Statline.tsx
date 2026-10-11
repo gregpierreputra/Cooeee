@@ -5,10 +5,11 @@ import FactTiles from '../Games/FactTiles';
 
 /** E9-US1-AC1 — one quiet screen before the film: what the drill asks in
  *  three tiles drawn as the game draws them (its clock, its bag count and the
- *  door), this drill's twist, and the two ways on. How to steer and grab is
+ *  door), this drill's twist, and Start. Back at the top is the way out, as on
+ *  the other games. How to steer and grab is
  *  taught by the guide over the real controls, so it is not said here. The
  *  tap on Start is also what lets the phone play sound. */
-export default function Statline({ rules = CLASSIC, onStart, onSkip }: { rules?: DrillRules; onStart: () => void; onSkip: () => void }) {
+export default function Statline({ rules = CLASSIC, onStart }: { rules?: DrillRules; onStart: () => void }) {
   const classic = rules === CLASSIC;
   return (
     <>
@@ -50,9 +51,6 @@ export default function Statline({ rules = CLASSIC, onStart, onSkip }: { rules?:
       <div className="actions">
         <button type="button" className="action main-action" onClick={onStart}>
           {copy.START_DRILL}
-        </button>
-        <button type="button" className="action" onClick={onSkip}>
-          {copy.SKIP_DRILL}
         </button>
       </div>
     </>

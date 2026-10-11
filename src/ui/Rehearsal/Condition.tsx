@@ -2,7 +2,6 @@ import { Link } from 'react-router';
 import * as copy from '../../core/copy';
 import Glyph from '../components/Glyph';
 import Head from './Head';
-import GameTiles from '../Games/GameTiles';
 import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
 
 /** E5-US1-AC1 — the user says what the rehearsal is run without.
@@ -22,18 +21,17 @@ import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-con
  *  that could. */
 export default function Condition({
   packId,
+  packName,
   onChoose,
-  onDrill,
 }: {
   packId: string;
+  /** Shown as the title, so the screen says which place is rehearsed. */
+  packName: string;
   onChoose: (condition: RehearsalCondition) => void;
-  /** Play the drill again, before choosing. */
-  onDrill: () => void;
 }) {
   return (
     <main className="page rehearsal-condition">
-      <Head title={copy.REHEARSE_TITLE} />
-      <GameTiles onDrill={onDrill} />
+      <Head title={packName} />
       <h2 className="kicker section-label">{copy.CHOOSE_CONDITION_HEADING}</h2>
 
       <ul className="list condition-list">

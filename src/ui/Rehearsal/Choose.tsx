@@ -8,21 +8,18 @@ import Glyph from '../components/Glyph';
 import { useMinuteClock } from '../components/useMinuteClock';
 import Head from './Head';
 import GameTiles from '../Games/GameTiles';
-import { replayDrill } from '../Drill/drill-state';
 import type { Pack } from '../../core/types';
 import { listCompletePacks, listRehearsalsForPack } from '../../data/db';
-import RehearsalEntry from './Entry';
 import { useRehearsalRun } from './run-state';
 
-/** E5-US3-AC2 — the bar's Rehearse, before a pack is known.
+/** E5-US3-AC2 — the bar's Rehearse: the same screen whatever is saved.
  *
- *  One saved pack needs no question and goes straight to its gate. Several are
- *  listed under Your packs as the home screen's own cards, newest first with
- *  each pack's age in its own words, so the packs read here exactly as they
- *  read there, and nothing is chosen for the user. Each card adds when that
- *  pack was last rehearsed. None is the gate's own
- *  "no pack" screen, so that state has one set of words, not two. A rehearsal
- *  already running is where Rehearse goes, before any question. */
+ *  Your packs first, as rehearsing a place is what the tab is for, listed as
+ *  the home screen's own cards, newest first, each with when it was last
+ *  rehearsed. Nothing is chosen for the user. The quick games follow. With no
+ *  pack, the dashed space the packs will fill comes first, as on Home, and the
+ *  games that need no pack follow it. A rehearsal already
+ *  running is where Rehearse goes, before anything else. */
 /** When a pack was last rehearsed, or null. A store that cannot be read
  *  reads as never rehearsed. */
 const lastRehearsed = (packId: string): Promise<number | null> =>
@@ -55,24 +52,31 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
 
   if (run) return <Navigate to={`/rehearse/${run.packId}`} replace />;
   if (packs === null) return null;
-  if (packs.length === 0) return <RehearsalEntry packId="" />;
-  if (packs.length === 1) return <Navigate to={`/rehearse/${packs[0].id}`} replace />;
-
   const rows = homeView(clock, packs).packs;
-  // The drill is played in the newest pack's home, the one most likely lived in.
-  const playDrill = () => {
-    replayDrill(rows[0].pack.id);
-    navigate(`/rehearse/${rows[0].pack.id}`);
-  };
 
   return (
     <main className="page rehearsal-condition">
       <Head title={copy.REHEARSE_TITLE} />
-      <GameTiles onDrill={playDrill} />
       <h2 className="kicker section-label packs-title">
         {copy.YOUR_PACKS}
-        <span className="packs-count">{rows.length}</span>
+        {rows.length > 0 ? <span className="packs-count">{rows.length}</span> : null}
       </h2>
+
+      {/* No pack: the dashed space the packs will fill, as on Home, and the
+          way to build one. The games that need no pack still follow. */}
+      {rows.length === 0 ? (
+        <>
+          <section className="empty-state" role="status">
+            <Glyph kind="rehearse" />
+            <h3>{copy.NO_PACK_TO_REHEARSE}</h3>
+            <p className="muted">{copy.NO_PACK_TO_REHEARSE_DETAIL}</p>
+          </section>
+          <Link className="action main-action with-glyph" to="/packs/new">
+            <Glyph kind="plus" line />
+            {copy.BUILD_A_PACK}
+          </Link>
+        </>
+      ) : null}
 
       {/* Home's own pack card, its name a link stretched over the card. */}
       <ul className="list pack-choice-list">
@@ -110,6 +114,8 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
           );
         })}
       </ul>
+
+      <GameTiles onDrill={rows.length > 0 ? () => navigate('/rehearse/drill') : undefined} />
     </main>
   );
 }

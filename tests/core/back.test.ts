@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { backTarget, ONE_STEP } from '../../src/core/back';
 
-const NONE = { packCount: null, runPackId: null, builder: 'step' } as const;
+const NONE = { runPackId: null, builder: 'step' } as const;
 
 describe('backTarget, the screen above each screen', () => {
   it.each(['/', '/nearby', '/rehearse', '/recover'])('hides Back on the tab %s', (path) => {
@@ -22,21 +22,17 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget(path, '', NONE)).toBe('/');
   });
 
-  it('goes from a rehearsal up to the chooser only when several packs are saved', () => {
-    expect(backTarget('/rehearse/a', '', { ...NONE, packCount: 2 })).toBe('/rehearse');
-    expect(backTarget('/rehearse/a', '', { ...NONE, packCount: 1 })).toBeNull();
-    expect(backTarget('/rehearse/a', '', { ...NONE, packCount: 0 })).toBeNull();
-    expect(backTarget('/rehearse/a', '', NONE)).toBeNull();
+  it('goes from a pack\'s rehearsal up to Rehearse, which always lists the packs', () => {
+    expect(backTarget('/rehearse/a', '', NONE)).toBe('/rehearse');
   });
 
-  it.each(['/rehearse/word', '/rehearse/block'])('goes from the game %s up to Rehearse, whatever is saved', (path) => {
+  it.each(['/rehearse/drill', '/rehearse/word', '/rehearse/block'])('goes from the game %s up to Rehearse, whatever is running', (path) => {
     expect(backTarget(path, '', NONE)).toBe('/rehearse');
-    expect(backTarget(path, '', { ...NONE, packCount: 1 })).toBe('/rehearse');
-    expect(backTarget(path, '', { ...NONE, packCount: 3, runPackId: 'a' })).toBe('/rehearse');
+    expect(backTarget(path, '', { ...NONE, runPackId: 'a' })).toBe('/rehearse');
   });
 
   it('hides Back on a rehearsal while one is running, as Rehearse opens it again', () => {
-    expect(backTarget('/rehearse/a', '', { ...NONE, packCount: 3, runPackId: 'a' })).toBeNull();
+    expect(backTarget('/rehearse/a', '', { ...NONE, runPackId: 'a' })).toBeNull();
   });
 
   it('steps back one step inside the pack builder, and hides while busy or once saved', () => {

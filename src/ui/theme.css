@@ -6334,10 +6334,12 @@ p.with-glyph > .glyph.line-glyph {
   border-radius: var(--r-card);
   background: color-mix(in srgb, var(--surface) 55%, transparent);
 }
-.empty-state h2 {
+.empty-state h2,
+.empty-state h3 {
   font-size: var(--step-0);
   font-weight: var(--w-med);
   color: var(--ink-2);
+  margin: 0;
 }
 .empty-state p {
   margin: 0;

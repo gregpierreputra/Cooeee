@@ -87,7 +87,7 @@ export default function Drill({ packId, onDone, seconds: secondsOverride, twist 
             matters: on this first screen and over the game, not the report. */}
         {stage === 'statline' ? <SoundButton /> : null}
       </div>
-      {stage === 'statline' ? <Statline rules={rules} onStart={() => start('game')} onSkip={onDone} /> : null}
+      {stage === 'statline' ? <Statline rules={rules} onStart={() => start('game')} /> : null}
       {stage === 'game' || stage === 'again' ? (
         <Game key={stage} opening={stage === 'game'} seconds={seconds} rules={rules} onEnd={finish} onUnavailable={unavailable} onLeave={onDone} />
       ) : null}

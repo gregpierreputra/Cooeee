@@ -13,7 +13,9 @@ import { useMinuteClock } from '../components/useMinuteClock';
 import GameTile from './GameTile';
 
 type Props = {
-  onDrill: () => void;
+  /** Opens the drill. Absent with no pack saved, as a drill is kept with a
+   *  pack, and the drill's card is then left out. */
+  onDrill?: () => void;
   /** Injectable for tests: where the cards read the games' records. */
   loadWord?: () => Promise<WordDay[]>;
   loadBlock?: () => Promise<BlockPlay[]>;
@@ -73,7 +75,7 @@ export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock 
   return (
     <section className="game-tiles" aria-labelledby="games-title">
       <h2 id="games-title" className="kicker section-label">{copy.GAMES}</h2>
-      <DrillTile onPlay={onDrill} twist={twist} highest={drillHighest} />
+      {onDrill ? <DrillTile onPlay={onDrill} twist={twist} highest={drillHighest} /> : null}
       <GameTile
         variant="word"
         glyph="word"

@@ -463,7 +463,7 @@ test('US2 the global Back bar works offline and the stored pack survives it', as
   await context.setOffline(false);
 });
 
-test('Back from a pack goes Home with another tab behind it, and a lone pack\'s rehearsal has no Back', async ({ page }) => {
+test('Back from a pack goes Home with another tab behind it, and a lone pack\'s rehearsal goes back to Rehearse', async ({ page }) => {
   await saveAPackAndOpenIt(page);
   const nav = page.getByRole('navigation', { name: 'Main' });
   await nav.getByRole('link', { name: 'Nearby', exact: true }).click();
@@ -474,10 +474,13 @@ test('Back from a pack goes Home with another tab behind it, and a lone pack\'s 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('.pack-card')).toBeVisible();
 
-  // One pack: Rehearse opens its rehearsal straight away, so Back there would loop.
+  // One pack: Rehearse still lists it, and its rehearsal goes back there.
   await nav.getByRole('link', { name: 'Rehearse', exact: true }).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
+  await page.locator('.pack-choice-list .pack-name a').click();
   await expect(page).toHaveURL(/\/rehearse\/.+/);
-  await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
 });
 
 test('US2 the pack reopens unchanged after returning to the pack list', async ({ page }) => {

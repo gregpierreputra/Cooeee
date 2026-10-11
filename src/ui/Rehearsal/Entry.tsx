@@ -16,8 +16,6 @@ import { currentRun, endRun, useRehearsalRun } from './run-state';
 import Glyph from '../components/Glyph';
 import StatusPage from '../components/StatusPage';
 import { focusMain } from '../components/focusMain';
-import Drill from '../Drill/Drill';
-import { markDrilled, replayDrill, useDrilled } from '../Drill/drill-state';
 import TabLabel from '../components/TabLabel';
 
 type EntryProps = {
@@ -88,9 +86,6 @@ export default function RehearsalEntry({
   // Date.now() on every render, so watching it would read the pack, set the
   // gate, render, and read the pack again, for as long as the screen is open.
   const [openedAt] = useState(now);
-  // E9 — whether this pack has had its drill this session. Read as a hook so
-  // the debrief's way on re-renders this screen into the choice of condition.
-  const drilled = useDrilled(packId);
 
   useEffect(() => {
     let live = true;
@@ -116,7 +111,7 @@ export default function RehearsalEntry({
   // keep the focus they place themselves.
   const screen = [
     gate?.state, isRunFor(run, packId), run?.ending !== undefined,
-    unfinished === undefined, unfinished?.id, drilled, chosen,
+    unfinished === undefined, unfinished?.id, chosen,
   ].join();
   useEffect(focusMain, [screen]);
 
@@ -150,14 +145,10 @@ export default function RehearsalEntry({
     if (unfinished !== null && unfinished.packId === gate.packId) {
       return <Unfinished rehearsal={unfinished} />;
     }
-    // E9 — the drill comes before the choice of condition, once per pack per
-    // session, whichever way in was taken. Skipping it and finishing it both
-    // mark it done.
-    if (!drilled) return <Drill packId={gate.packId} onDone={() => markDrilled(gate.packId)} />;
     return chosen !== null ? (
       <JourneyBefore packId={gate.packId} condition={chosen} onGone={() => setChosen(null)} />
     ) : (
-      <Condition packId={gate.packId} onChoose={setChosen} onDrill={() => replayDrill(gate.packId)} />
+      <Condition packId={gate.packId} packName={shownPackName(gate.packName)} onChoose={setChosen} />
     );
   }
 

@@ -892,7 +892,7 @@ export const TOUR_STEPS = [
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
   { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
   { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
-  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list:not(.pack-choice-list), .pack-choice-list > li:first-child', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: REHEARSE_LINE },
+  { path: '/rehearse', target: '.rehearsal-entry .card, .rehearsal-condition .empty-state, .condition-list:not(.pack-choice-list), .pack-choice-list > li:first-child', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: REHEARSE_LINE },
   { path: '/recover', target: '.recover .hero', tab: '.bottom-nav-item[href="/recover"]', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
 
@@ -1421,7 +1421,6 @@ export const DRILL_INTRO_DOOR = 'be there when time ends';
 /** Read before the door's words, as the drawing says it on screen. */
 export const DRILL_INTRO_DOOR_HIDDEN = 'Front door,';
 export const START_DRILL = 'Start the drill';
-export const SKIP_DRILL = 'Skip the drill';
 export const SKIP_CUTSCENE = 'Skip';
 export const NEXT_STAGE = 'Next';
 export const LEAVE_DRILL = 'Leave the drill';

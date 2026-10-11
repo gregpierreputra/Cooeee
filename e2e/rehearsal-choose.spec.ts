@@ -20,10 +20,17 @@ test.describe('AC2 which pack to rehearse', () => {
     await expect(page.getByTestId('location')).toHaveText('/rehearse/saved-pack');
   });
 
-  test('one pack goes straight to its gate', async ({ page }) => {
+  test('one pack is listed too, so Rehearse looks the same whatever is saved', async ({ page }) => {
     await page.goto(`${HARNESS}/rehearse-choose?packs=1`);
-    await expect(page.getByTestId('location')).toHaveText('/rehearse/saved-pack');
-    await expect(page.getByRole('heading', { name: /Your packs/ })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Your packs/ })).toBeVisible();
+    await expect(page.locator('.pack-choice-list .pack-card')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: /Play the drill/ })).toBeVisible();
+  });
+
+  test('the drill opens on its own page, like the other games', async ({ page }) => {
+    await page.goto(`${HARNESS}/rehearse-choose?packs=2`);
+    await page.getByRole('button', { name: /Play the drill/ }).click();
+    await expect(page.getByTestId('location')).toHaveText('/rehearse/drill');
   });
 
   test('no pack shows the gate\'s own words', async ({ page }) => {
