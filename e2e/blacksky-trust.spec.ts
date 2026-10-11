@@ -177,9 +177,14 @@ test('a position from a mark shows the bar measuring from your saved place, and 
   await expect(centre(page)).toHaveAttribute('data-centre', 'outline');
   await expect(page.locator(".blacksky-dial-arrow[data-stale='true']")).toHaveCount(1);
   expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 });
-  await expect(page.getByText('about', { exact: true })).toBeVisible();
-  // E3-US1-AC4's own words stay: always ESTIMATE, the uncertainty growing.
-  await expect(page.getByText(/^ESTIMATE from your mark, ± \d+ m and growing$/)).toBeVisible();
+  // E3-US1-AC4's rule stays: always ESTIMATE, over the distance where about
+  // stands for a fix, with the figure beside it growing; the figure opens what
+  // that means.
+  await expect(page.locator('.blacksky-dial-about')).toHaveText('ESTIMATE');
+  const readout = page.getByRole('button', { name: /^ESTIMATE ± \d+ m$/ });
+  await expect(readout).toBeVisible();
+  await readout.click();
+  await expect(page.getByText(/^Measured from the place you marked, not GPS\./)).toBeVisible();
 
   // A real fix always beats the mark: the bar and the glyph go.
   await pushPosition(page, AT_FERNY_CREEK);

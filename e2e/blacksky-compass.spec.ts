@@ -55,7 +55,7 @@ test('the dial turns with the phone and stays drawn from a vague fix', async ({ 
   const dialBox = await dial.boundingBox();
   await expect(page.locator('.blacksky-readout-panel')).toBeVisible();
   expect(await dial.boundingBox()).toEqual(dialBox);
-  await expect(page.getByText(/places you within 350 m/)).toBeVisible();
+  await expect(page.getByText(/puts you within 350 m/)).toBeVisible();
   await expect(page.getByText('North up', { exact: true })).toBeVisible();
 
   const pin = page.locator('.blacksky-dial-pin');

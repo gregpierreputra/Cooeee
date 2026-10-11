@@ -32,7 +32,7 @@ describe('mandated literals', () => {
 
   it("being outside the loaded pack's area is stated plainly, as one sentence", () => {
     expect(copy.OUTSIDE_PACK_AREA('19.4 km', 'Ferny Creek')).toBe(
-      "You're 19.4 km outside the Ferny Creek pack's area.",
+      "You're 19.4 km outside your Ferny Creek pack's area.",
     );
   });
 
@@ -162,7 +162,11 @@ describe('BlackSky compass sectors', () => {
 // E3-US1-AC4: a marked position must never read like a fix.
 describe('marked-position estimate copy', () => {
   it('is labelled ESTIMATE with the uncertainty stated as growing', () => {
-    expect(copy.ESTIMATE_READOUT(53)).toBe('ESTIMATE from your mark, ± 53 m and growing');
+    expect(copy.ESTIMATE).toBe('ESTIMATE');
+    // The figure grows; the bubble says why.
+    expect(copy.ESTIMATE_DETAIL(53)).toBe('Measured from the place you marked, not GPS. Now within about 53 m, and less exact over time.');
+    expect(copy.DISTANCE_STRAIGHT_LINE('2.60 km')).toBe('2.60 km in a straight line, not by road.');
+    expect(copy.ACCURACY_DETAIL(10)).toBe('Your phone puts you within 10 m, so it can be off by that much.');
   });
 });
 

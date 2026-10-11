@@ -1987,13 +1987,13 @@ main:focus {
   margin: 0;
 }
 
-/* A marked position's readout is a sentence: full width, under the figures. */
-.blacksky-dial-beside:has([data-long='true']) {
-  display: contents;
-}
-
-.blacksky-dial-readout[data-long='true'] {
-  grid-column: 1 / -1;
+/* Outside the pack's area: an amber notice under the dial, at reading size,
+   led by the pack's own drawing. */
+.blacksky-outside {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  justify-content: flex-start;
 }
 
 /* The distance is the largest text on the screen, 44 px, the height of its

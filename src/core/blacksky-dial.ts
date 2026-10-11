@@ -191,7 +191,7 @@ export const positionTrust = (confidence: Confidence, estimating: boolean): Posi
  *  arrow is drawn from:
  *  - 'arrow'   a fresh position: drawn solid.
  *  - 'outline' an old position, or a mark the person made: drawn hollow. The
- *    bar above already says which ("from your saved place" for a mark). */
+ *    bar above already says which ("Measuring from your saved place" for a mark). */
 export type DialCentre = 'arrow' | 'outline';
 
 export const dialCentre = (trust: PositionTrust): DialCentre =>

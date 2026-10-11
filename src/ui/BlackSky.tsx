@@ -81,7 +81,6 @@ import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import Glyph from './components/Glyph';
 import NoteText from './components/NoteText';
 import StateCard from './components/StateCard';
-import KeyTerms from './components/KeyTerms';
 import { readRoadsFile } from '../data/roads';
 import BlackSkyDial, {
   DIAL_UNITS,
@@ -496,15 +495,10 @@ export default function BlackSky({
       <DialBody
         model={model}
         trust={trust}
-        // The error of the position, stated beside the figure it qualifies. A
-        // marked position keeps E3-US1-AC4's own words: always ESTIMATE, and
-        // the uncertainty growing. Outside the pack's area the same: that is
-        // said in its own card under the dial.
-        readout={
-          estimate ? copy.ESTIMATE_READOUT(estimate.accuracyM) : copy.ACCURACY_READOUT(confidence!.accuracyM)
-        }
-        // The plain accuracy figure opens what it means, from where it stands.
-        explainAccuracy={!estimate}
+        // The error of the position, stated beside the figure it qualifies:
+        // from a mark, E3-US1-AC4's ESTIMATE over the distance, its figure
+        // growing.
+        estimated={estimate !== null}
         accuracyM={estimate ? estimate.accuracyM : confidence!.accuracyM}
         compass={compass}
         // BS_Enhancement-AC3: the speaker button, at the right-hand end of the
@@ -802,14 +796,18 @@ function ScreenBody({
       return (
         <>
           {/* E3-US2-AC1: the loaded pack named with the distance to its area's
-              edge, one plain sentence in a card under the dial, as every other
-              state is. Never a direction to the area. */}
+              edge, one plain sentence under the dial. Never a direction to the
+              area. */}
           {dial}
           {screen.packs.map(({ pack, distanceKm }) => (
-            <StateCard
-              key={pack.id}
-              heading={copy.OUTSIDE_PACK_AREA(copy.distanceLabel(distanceKm * 1000), shownPackName(pack.name))}
-            />
+            // A fact about where the person stands, not something missing, so
+            // an amber notice, not a state card: the amber edge the app gives
+            // what needs attention without being an emergency, and the pack's
+            // own drawing.
+            <p key={pack.id} className="caution-line blacksky-outside with-glyph">
+              <Glyph kind={packIcon(pack)} line />
+              {copy.OUTSIDE_PACK_AREA(copy.distanceLabel(distanceKm * 1000), shownPackName(pack.name))}
+            </p>
           ))}
           {notes}
           <ConfidenceLines confidence={screen.confidence} />
@@ -843,8 +841,7 @@ const DIAL_LABELS: Record<DialLabel, string> = {
 function DialBody({
   model,
   trust,
-  readout,
-  explainAccuracy = false,
+  estimated,
   accuracyM,
   compass,
   rowEnd,
@@ -853,10 +850,9 @@ function DialBody({
 }: {
   model: DialModel;
   trust: PositionTrust;
-  readout: ReactNode;
-  /** The readout is the plain "± 10 m": it is the toggle that opens what the
-   *  figure means, in a bubble over the top of the dial. */
-  explainAccuracy?: boolean;
+  /** The position is a mark the person made, not a fix: ESTIMATE stands over
+   *  the distance, and the figure's bubble says what that means. */
+  estimated: boolean;
   /** How far the position may be out, metres: the readout holds still within it. */
   accuracyM: number;
   compass: {
@@ -896,6 +892,7 @@ function DialBody({
   // The distance and the compass point hold still while the position only
   // wobbles within its error (core/readout.ts); the arrow and the pin follow
   // every fix, and the voice keeps its own rule.
+  const readout = copy.ACCURACY_READOUT(accuracyM);
   const [explained, setExplained] = useState(false);
   const explainId = useId();
   const explainPanel = useRevealedPanel<HTMLElement>(explained);
@@ -926,7 +923,8 @@ function DialBody({
           is dimmed and says "about", so it never looks more certain than it is. */}
       <div className="blacksky-dial-figures" data-about={trust.about ? 'true' : 'false'}>
         <span className="blacksky-dial-distance">
-          {trust.about ? <span className="blacksky-dial-about">{copy.ABOUT}</span> : null}
+          {/* From a mark, ESTIMATE (E3-US1-AC4) stands where about does. */}
+          {trust.about ? <span className="blacksky-dial-about">{estimated ? copy.ESTIMATE : copy.ABOUT}</span> : null}
           {/* The number at full size, its unit at half: the number is what is
               read at arm's length, and on a 360 px phone a full-size "km" took
               the room the accuracy and the speaker button need on this row. */}
@@ -936,38 +934,31 @@ function DialBody({
         </span>
         <span className="blacksky-dial-beside">
           <span className="blacksky-figure-point">{point}</span>
-          {/* The short "± 10 m" sits under the point; a marked position's
-              longer sentence takes the full width below. */}
-          {explainAccuracy ? (
-            // UAT: the bare figure was not understood. It is named for a screen
-            // reader and opens its meaning beside the figure it qualifies, as
-            // every Source in the app opens from its own words. A margin no one
-            // sees gives it the 44 px tap area without a taller row.
-            <button
-              ref={toggle}
-              type="button"
-              className="blacksky-dial-readout blacksky-readout-toggle figure"
-              aria-label={`${copy.ACCURACY_LABEL} ${copy.ACCURACY_READOUT(accuracyM)}`}
-              aria-expanded={explained}
-              aria-controls={explainId}
-              onClick={() => setExplained((open) => !open)}
-            >
-              {readout}
-              <svg className="hint-chevron" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">
-                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          ) : (
-            <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark'}>
-              {readout}
-            </span>
-          )}
+          {/* The short "± 10 m" under the point, from a fix or a mark. UAT: the bare figure was not understood. It is named for a
+              screen reader and opens its meaning beside the figure it
+              qualifies, as every Source in the app opens from its own words. A
+              margin no one sees gives it the 44 px tap area without a taller
+              row. */}
+          <button
+            ref={toggle}
+            type="button"
+            className="blacksky-dial-readout blacksky-readout-toggle figure"
+            aria-label={`${estimated ? copy.ESTIMATE : copy.ACCURACY_LABEL} ${readout}`}
+            aria-expanded={explained}
+            aria-controls={explainId}
+            onClick={() => setExplained((open) => !open)}
+          >
+            {readout}
+            <svg className="hint-chevron" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">
+              <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </span>
         {rowEnd ? <span className="blacksky-dial-row-end">{rowEnd}</span> : null}
         {/* What the figure means: a bubble over the top of the dial, its
             pointer under the figure, until the figure is tapped again. Over
             the dial, not a row of its own, so opening it never moves the dial. */}
-        {explainAccuracy && explained ? (
+        {explained ? (
           <section
             id={explainId}
             ref={explainPanel}
@@ -975,10 +966,9 @@ function DialBody({
             className="hint-panel info-panel blacksky-info-panel blacksky-readout-panel"
             style={{ '--pointer-at': `${(toggle.current?.offsetLeft ?? 0) + 8}px` } as CSSProperties}
           >
-            <p>{copy.ACCURACY_DETAIL(accuracyM)}</p>
-            <p>
-              <KeyTerms text={copy.DISTANCES_NOTE} />
-            </p>
+            {/* What the distance is first, then how sure it is. */}
+            <p>{copy.DISTANCE_STRAIGHT_LINE(distance)}</p>
+            <p>{estimated ? copy.ESTIMATE_DETAIL(accuracyM) : copy.ACCURACY_DETAIL(accuracyM)}</p>
           </section>
         ) : null}
       </div>
@@ -1332,8 +1322,10 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
       </button>
       <dialog ref={sheet} className="blacksky-sheet" aria-labelledby={titleId}>
         <h2 id={titleId}>{copy.OTHER_PLACES_TITLE}</h2>
-        {/* Quieter by colour alone: BlackSky keeps every line at 16 px or more. */}
+        {/* Quieter by colour alone: BlackSky keeps every line at 16 px or more.
+            Distances here are straight lines too, said as Nearby says it. */}
         <p className="muted">{copy.SORTED_BY_DISTANCE}</p>
+        <p className="muted">{copy.DISTANCES_NOTE}</p>
         <ul className="list">
           {places.map((place) => {
             const { site, line } = siteNameBlock(place.name);

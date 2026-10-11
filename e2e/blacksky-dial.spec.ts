@@ -496,9 +496,9 @@ test('Normal, outside the pack area: the dial points at the nearest site, and th
   await pushPosition(page, AT_MELBOURNE);
 
   // E3-US2-AC1's rules are unchanged: the pack is named with the distance to
-  // its area, never pointed at, in one sentence in a card under the dial; the
-  // reminder closes the screen.
-  const outside = page.getByRole('heading', { name: /^You're [\d.]+ km outside the .+ pack's area\.$/ });
+  // its area, never pointed at, in one sentence under the dial; the reminder
+  // closes the screen.
+  const outside = page.getByText(/^You're [\d.]+ km outside your .+ pack's area\.$/);
   await expect(outside).toBeVisible();
   expect((await outside.boundingBox())!.y).toBeGreaterThan((await page.locator('.blacksky-dial').boundingBox())!.y);
   await expectNoCalls(page);

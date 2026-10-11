@@ -411,8 +411,9 @@ export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
 /** UAT: the bare ± figure under the arrows was not understood, so it is named,
  *  and the detail opens from these words. */
 export const ACCURACY_LABEL = 'Your position';
-export const ACCURACY_DETAIL = (m: number) =>
-  `Your phone places you within ${m} m of where you stand. The arrows and distances can be off by about that much.`;
+/** The ± figure's bubble: first what the distance is, then how sure. */
+export const DISTANCE_STRAIGHT_LINE = (distance: string) => `${distance} in a straight line, not by road.`;
+export const ACCURACY_DETAIL = (m: number) => `Your phone puts you within ${m} m, so it can be off by that much.`;
 
 // The compass. iOS only hands the orientation sensor over after a tap.
 export const TURN_ON_COMPASS = 'Turn on the compass';
@@ -534,14 +535,19 @@ export const MARK_AT_SAVED_PLACE = (address: string) => `${MARK_STANDING_AT} ${a
 
 /** Always the word ESTIMATE, and the uncertainty stated as growing — a marked
  *  position must never read like a fix. */
-export const ESTIMATE_READOUT = (m: number) => `ESTIMATE from your mark, ± ${m} m and growing`;
+/** Over the distance from a mark, where "about" stands for a vague fix:
+ *  always ESTIMATE, its ± figure beside the distance growing as time passes.
+ *  The figure's bubble says what that means. */
+export const ESTIMATE = 'ESTIMATE';
+export const ESTIMATE_DETAIL = (m: number) =>
+  `Measured from the place you marked, not GPS. Now within about ${m} m, and less exact over time.`;
 
 // E3-US2-AC1 outside the loaded pack's area
 /** Said of the pack that is loaded, never of every pack: another saved pack
  *  may well cover this place, and the picker says so beside it. The distance
  *  is to the area's EDGE, and never presented as a direction. */
 export const OUTSIDE_PACK_AREA = (distance: string, pack: string) =>
-  `You're ${distance} outside the ${pack} pack's area.`;
+  `You're ${distance} outside your ${pack} pack's area.`;
 
 // General official guidance, stored in the app itself so it is readable with
 // zero network. The numbers are safety copy: exact-match tested, never retyped.
