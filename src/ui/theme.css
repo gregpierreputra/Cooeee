@@ -6532,16 +6532,43 @@ button.flow-step .flow-step-label {
   touch-action: none;
   cursor: pointer;
 }
+/* The count and what a tap found, under the clock as the drill's rule is.
+   Placed out of the row, so a long line never pushes the clock off the middle. */
+.block-status {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  pointer-events: none;
+}
+.block-found,
 .block-message {
-  right: calc(env(safe-area-inset-right) + 1rem);
-  max-width: 34rem;
-  padding: 0.35rem 0.85rem;
+  width: fit-content;
+  max-width: min(100%, 34rem);
+  margin: 0;
+  border-radius: var(--r-pill);
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  text-align: center;
+  text-wrap: balance;
+}
+.block-found {
+  padding: 0.1rem 0.6rem;
+  white-space: nowrap;
+}
+.block-message {
+  padding: 0.2rem 0.75rem;
 }
 .block-message:empty {
   display: none;
-}
-.block-message::first-letter {
-  text-transform: none;
 }
 .block-controls {
   position: absolute;

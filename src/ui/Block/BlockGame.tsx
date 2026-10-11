@@ -27,6 +27,10 @@ const TAP_PAD_CSS = 10;
 const TAP_SLOP_CSS = 10;
 /** How far one arrow key press moves the picture, in css pixels. */
 const KEY_PAN_CSS = 48;
+/** The clock turns red at half a minute and pulses for the last ten seconds,
+ *  as the drill's does. */
+const WARN_SECONDS = 30;
+const LATE_SECONDS = 10;
 
 const nameOf = (id: string): string =>
   BLOCK_HAZARDS.find((hazard) => hazard.id === id)?.name ?? BLOCK_DECOYS.find((decoy) => decoy.id === id)?.name ?? '';
@@ -265,6 +269,7 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
 
   const clock = `${Math.floor(hud.seconds / 60)}:${String(hud.seconds % 60).padStart(2, '0')}`;
   const hintsLeft = HINT_LIMIT - hud.hints;
+  const clockState = hud.seconds <= LATE_SECONDS ? ' late' : hud.seconds <= WARN_SECONDS ? ' warn' : '';
 
   return (
     <div ref={stageRef} className="drill-stage block-stage" tabIndex={-1} aria-label={copy.BLOCK_LABEL}>
@@ -278,10 +283,15 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
         onPointerCancel={up}
         onWheel={wheel}
       />
-      <div className="drill-top">
-        <div className="drill-counts">
-          <p className={hud.seconds <= 10 ? 'drill-timer figure late' : 'drill-timer figure'}>{clock}</p>
-          <p className="drill-bag figure">{copy.BLOCK_FOUND_COUNT(hud.found)}</p>
+      {/* Laid out as the drill's: the clock in the middle, the sound and close
+          buttons at the right, and the count and what a tap found under the clock. */}
+      <div className={`drill-top${clockState}`}>
+        <p className="drill-timer figure">{clock}</p>
+        <div className="block-status">
+          <p className="block-found figure">{copy.BLOCK_FOUND_COUNT(hud.found)}</p>
+          <p className="block-message" role="status" aria-live="polite">
+            {message || (hud.seconds === 30 || hud.seconds === 10 ? copy.SECONDS_LEFT(hud.seconds) : '')}
+          </p>
         </div>
         <div className="drill-top-actions">
           <SoundButton />
@@ -290,9 +300,6 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
           </button>
         </div>
       </div>
-      <p className="drill-room block-message" role="status" aria-live="polite">
-        {message || (hud.seconds === 30 || hud.seconds === 10 ? copy.SECONDS_LEFT(hud.seconds) : '')}
-      </p>
       <div className="block-controls">
         <div className="block-zoom">
           <button type="button" className="drill-chip block-zoom-button" aria-label={copy.ZOOM_OUT} onClick={() => zoomStep(-1)}>

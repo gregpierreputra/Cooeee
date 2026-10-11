@@ -29,7 +29,9 @@ test.describe('Ready the Block', () => {
     await expect(page.getByRole('heading', { name: 'Find the fire risks' })).toBeVisible();
     await page.getByRole('button', { name: 'Start looking' }).click();
     await expect(page.getByRole('img', { name: /yard seen from above/ })).toBeVisible();
-    await expect(page.locator('.drill-bag')).toHaveText('Found 0 of 8');
+    await expect(page.locator('.block-found')).toHaveText('Found 0 of 8');
+    // On screen in full, not only in the page.
+    await expect(page.locator('.block-found')).toBeInViewport({ ratio: 1 });
     await expect(page.locator('.drill-timer')).toHaveText(/^[23]:\d\d$/);
   });
 
@@ -40,7 +42,7 @@ test.describe('Ready the Block', () => {
     const [first] = hazards;
     const at = await onScreen(page, first.sprite, first.x, first.y);
     await page.mouse.click(at.x, at.y);
-    await expect(page.locator('.drill-bag')).toHaveText('Found 1 of 8');
+    await expect(page.locator('.block-found')).toHaveText('Found 1 of 8');
     await expect(page.locator('.block-message')).toHaveText(`Found ${first.name}.`);
 
     const decoy = BLOCK_DECOYS.find((candidate) => candidate.id === 'car')!;
@@ -52,8 +54,11 @@ test.describe('Ready the Block', () => {
   test('a hint is spent and named, up to three', async ({ page }) => {
     await page.goto(`${HARNESS}/block`);
     await page.getByRole('button', { name: 'Start looking' }).click();
+    // A hint moves the camera, so it waits for the yard to be drawn.
+    await expect(page.locator('.block-stage canvas')).toHaveAttribute('data-camera', /\d/);
     await page.getByRole('button', { name: 'Hint, 3 left' }).click();
     await expect(page.locator('.block-message')).toHaveText('Look inside the ring.');
+    await expect(page.locator('.block-message')).toBeInViewport({ ratio: 1 });
     await page.getByRole('button', { name: 'Hint, 2 left' }).click();
     await page.getByRole('button', { name: 'Hint, 1 left' }).click();
     await expect(page.getByRole('button', { name: 'Hint, 0 left' })).toBeDisabled();
