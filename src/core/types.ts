@@ -544,5 +544,34 @@ export type Drill = {
   finishedAt: number;  // epoch ms
   reachedDoor: boolean;
   score: number;       // 0 to 100, whole
-  packed: string[];    // drill item ids, at most BAG_LIMIT
+  packed: string[];    // drill item ids, at most the twist's bag limit
+  /** The twist the drill was played under (drill-twists.ts). Absent on a
+   *  drill from before twists, which played as the classic drill. */
+  twist?: string;
+};
+
+/** Cooee Word — one Melbourne calendar day's game. Written after every guess,
+ *  so a reload carries on where it was, and never changed once finished. The
+ *  answer is kept with it, so the day reads the same whatever the list holds
+ *  later. */
+export type WordDay = {
+  day: number;         // Melbourne calendar days since 1970 (core/day.ts)
+  answer: string;
+  guesses: string[];
+  status: 'playing' | 'won' | 'lost';
+  updatedAt: number;   // epoch ms
+  finishedAt?: number; // epoch ms, once won or lost
+};
+
+/** Ready the Block — one finished play. Every play is kept; the first of the
+ *  day marks the day as played, and any play can raise the highest score. */
+export type BlockPlay = {
+  id: string;
+  day: number;         // Melbourne calendar days since 1970
+  finishedAt: number;  // epoch ms
+  score: number;       // 0 to 100, whole
+  hazards: string[];   // the day's hazards, by id
+  found: string[];     // the ones found, a subset of hazards
+  wrongTaps: number;
+  hints: number;
 };

@@ -1466,3 +1466,142 @@ export const NOT_YET_DRILLED = 'Not yet drilled.';
 export const DRILL_ROW_DOOR = 'At the door';
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';
 export const DRILL_ROW_ESSENTIALS = (packed: number, total: number) => `${packed} of ${total} essentials packed`;
+
+// ── Games on the Rehearse screen: the drill's twists, Cooee Word, Ready the Block
+// Three games with a number in them, like the drill. Every number is about
+// the bag, the word or the yard, never about the person. Counts and times
+// are spelt out in words up to twelve, as the drill always has.
+
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+/** A count in words up to twelve, in figures past it. */
+export const NUMBER_WORD = (n: number): string => NUMBER_WORDS[n] ?? String(n);
+const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+/** A length of time as the drill says it: whole and half minutes in words,
+ *  anything else in seconds. */
+export const TIME_WORDS = (seconds: number): string => {
+  const minutes = seconds / 60;
+  if (seconds === 60) return 'one minute';
+  if (Number.isInteger(minutes)) return `${NUMBER_WORD(minutes)} minutes`;
+  if (Number.isInteger(minutes * 2) && minutes > 2) return `${NUMBER_WORD(Math.floor(minutes))} and a half minutes`;
+  return `${seconds} seconds`;
+};
+
+/** The drill's opening screen, for this twist's time and bag. The classic
+ *  drill reads exactly as DRILL_INTRO_HEADING and DRILL_STAT_DETAIL. */
+export const DRILL_INTRO_HEADING_FOR = (seconds: number) => `${capital(TIME_WORDS(seconds))} to leave`;
+export const DRILL_STAT_DETAIL_FOR = (seconds: number, bag: number) =>
+  `This drill gives you ${TIME_WORDS(seconds)} in a house. Pack ${NUMBER_WORD(bag)} things and be at the front door when the time ends. Steer with the stick, or tap where to walk. Then it says how ready your bag was.`;
+/** The film's instructions for this twist. The classic drill's read exactly
+ *  as DRILL_TOUR_LINES. */
+export const DRILL_TOUR_LINES_FOR = (seconds: number, bag: number, powered: boolean) => [
+  powered
+    ? { text: `The lights are still on. You have ${TIME_WORDS(seconds)}.`, key: [TIME_WORDS(seconds)] }
+    : { text: `The power is out. You have ${TIME_WORDS(seconds)}.`, key: [TIME_WORDS(seconds)] },
+  { text: `Find and pack ${NUMBER_WORD(bag)} things. Each one is outlined in yellow.`, key: [`${NUMBER_WORD(bag)} things`, 'yellow'] },
+  { text: 'Then get out the front door before the time is up.', key: ['front door'] },
+];
+export const DRILL_TWIST_LABEL = 'This drill’s twist';
+export const DRILL_TWIST_LINE = (name: string, rule: string) => `${name}. ${rule}`;
+/** The twist on the drill card, and how long it stays. */
+export const DRILL_TILE_TWIST = (name: string, daysLeft: number) =>
+  `${name} twist. ${daysLeft <= 1 ? 'Changes tomorrow.' : `Changes in ${NUMBER_WORD(daysLeft)} days.`}`;
+export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this twist is ${score} out of 100.`;
+/** Under the score when the twist's bag is not ten, or some things are out of reach. */
+export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this twist’s bag could hold.';
+export const DRILL_ROW_TWIST = (name: string) => `${name} twist`;
+
+// Cooee Word
+export const WORD_TILE_TITLE = 'Cooee Word';
+export const WORD_TILE_COUNTS = (streak: number, played: number) =>
+  `${streak === 0 ? 'No streak yet' : `${streak} day streak`} · ${played} ${played === 1 ? 'day' : 'days'} played`;
+export const WORD_TILE_TODAY = {
+  solved: 'Solved today. A new word at midnight.',
+  'not-yet': 'Today’s word is ready.',
+  'in-progress': (used: number) => `Under way, ${used} of 6 guesses used.`,
+  'not-solved': 'Not solved today. A new word at midnight.',
+};
+export const WORD_LABEL = 'Cooee Word';
+export const WORD_NUMBER = (n: number) => `Word ${n}`;
+export const WORD_HINT_LABEL = 'Hint';
+/** The answer's theme, as the hint names it. */
+export const WORD_THEMES = {
+  fire: 'Fire',
+  weather: 'Weather',
+  land: 'The land',
+  animals: 'Animals',
+  home: 'Home and garden',
+  kit: 'Emergency kit',
+  health: 'Health',
+  community: 'Community',
+};
+export const WORD_INTRO = (length: number) =>
+  `Guess today’s ${NUMBER_WORD(length)} letter word in six tries. Each guess must be a real word.`;
+export const WORD_KEY_RIGHT = 'Right place';
+export const WORD_KEY_PRESENT = 'In the word';
+export const WORD_KEY_ABSENT = 'Not in the word';
+export const WORD_GRID_LABEL = 'Your guesses';
+export const WORD_ROW_LABEL = (row: number) => `Guess ${row}`;
+export const WORD_EMPTY = 'empty';
+export const LETTER_MARK = { right: 'right place', present: 'in the word, another place', absent: 'not in the word' };
+export const LETTER_LABEL = (letter: string, mark: string) => `${letter.toUpperCase()}, ${mark}`;
+export const WORD_KEYBOARD_LABEL = 'Letters';
+export const WORD_ENTER = 'Enter';
+export const WORD_DELETE = 'Delete';
+export const WORD_TOO_SHORT = (length: number) => `Type all ${NUMBER_WORD(length)} letters first.`;
+export const WORD_NOT_IN_LIST = 'That is not in the word list. Try another word.';
+export const WORD_ALREADY_TRIED = 'You have tried that word already.';
+export const WORD_GUESSES_LEFT = (left: number) => `${capital(NUMBER_WORD(left))} ${left === 1 ? 'guess' : 'guesses'} left`;
+export const WORD_LIST_UNAVAILABLE = 'The word list could not be loaded, so any letters count as a guess today.';
+export const WORD_SOLVED = (guesses: number) => `Solved in ${NUMBER_WORD(guesses)} ${guesses === 1 ? 'guess' : 'guesses'}`;
+export const WORD_NOT_SOLVED = 'Not this time';
+export const WORD_ANSWER_WAS = (answer: string) => `The word was ${answer.toUpperCase()}.`;
+export const WORD_FACT_LABEL = 'Why it matters';
+export const WORD_FACT_SOURCE = (source: string) => `From the ${source}`;
+export const WORD_COME_BACK = 'A new word arrives at midnight.';
+export const WORD_UNAVAILABLE = 'Cooee Word could not load on this browser.';
+export const BACK_TO_REHEARSE = 'Back to Rehearse';
+
+// Ready the Block
+export const BLOCK_TILE_TITLE = 'Ready the Block';
+export const BLOCK_TILE_DETAIL = 'Find eight fire risks round a home in three minutes.';
+export const BLOCK_TILE_STATUS = (today: number | null, highest: number | null) =>
+  `${today === null ? 'Not played yet today' : `Played today, ${today} out of 100`}${highest === null ? '' : ` · Highest ${highest}`}`;
+export const BLOCK_LABEL = 'Ready the Block';
+export const BLOCK_INTRO_HEADING = 'Find the fire risks';
+/** The three things to know, each a big figure over a few words. */
+export const BLOCK_INTRO_FACTS = [
+  { figure: '8', label: 'fire risks round a home' },
+  { figure: '3', label: 'minutes to find them' },
+  { figure: 'Tap', label: 'each one you spot' },
+];
+export const BLOCK_INTRO_COSTS = 'A wrong tap costs 4 points. A hint costs 10.';
+export const BLOCK_TODAY_ALREADY = (score: number) => `Your highest today is ${score} out of 100. A new yard arrives at midnight.`;
+export const START_BLOCK = 'Start looking';
+export const BLOCK_SCENE_LABEL = 'A home and its yard seen from above, with eight fire risks to find.';
+export const BLOCK_FOUND_COUNT = (found: number) => `Found ${found} of 8`;
+export const BLOCK_FOUND = (name: string) => `Found ${name}.`;
+export const BLOCK_AGAIN = 'You found that one already.';
+export const BLOCK_CLEARED = 'That one has already been dealt with. A wrong tap costs 4 points.';
+export const BLOCK_DECOY = (name: string) => `${name}. Nothing to fix there. A wrong tap costs 4 points.`;
+export const BLOCK_NOTHING = 'Nothing there. Look for anything that could catch an ember.';
+export const BLOCK_HINT = (left: number) => `Hint, ${left} left`;
+export const BLOCK_HINT_DETAIL = 'A hint costs 10 points.';
+export const BLOCK_HINT_SHOWN = 'Look inside the ring.';
+export const ZOOM_IN = 'Zoom in';
+export const ZOOM_OUT = 'Zoom out';
+export const LEAVE_BLOCK = 'Leave Ready the Block';
+export const BLOCK_TIME_UP = 'Time is up';
+export const BLOCK_ALL_FOUND = 'You found all eight';
+export const BLOCK_VERDICT = (score: number) => (score >= 80 ? 'Sharp eyes' : score >= 50 ? 'Good spotting' : 'Plenty still to spot');
+export const BLOCK_FOUND_BADGE = 'Found';
+export const BLOCK_MISSED_BADGE = 'Missed';
+export const BLOCK_PENALTIES = (wrong: number, hints: number) =>
+  `${wrong} wrong ${wrong === 1 ? 'tap' : 'taps'}, ${hints} ${hints === 1 ? 'hint' : 'hints'}`;
+export const BLOCK_OUTCOME_LINE = (ending: string, penalties: string) => `${ending} \u00b7 ${penalties}`;
+export const BLOCK_LIST_HEADING = 'Today’s eight risks';
+export const BLOCK_CHECK_HOME = 'Is one of these at your place? Fix one this week.';
+export const BLOCK_SOURCE_LINE = 'The risks follow the Country Fire Authority’s guide to preparing your property.';
+export const BLOCK_UNAVAILABLE = 'This browser could not load the pictures for Ready the Block.';
+/** The drill card's line for this twist's time and bag. */
+export const DRILL_TILE_DETAIL_FOR = (seconds: number, bag: number) =>
+  `${capital(TIME_WORDS(seconds))} to pack ${NUMBER_WORD(bag)} things and reach the front door.`;

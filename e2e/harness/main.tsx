@@ -20,7 +20,10 @@ import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import { startRun } from '../../src/ui/Rehearsal/run-state';
 import Drill from '../../src/ui/Drill/Drill';
-import { markDrilled } from '../../src/ui/Drill/drill-state';
+import { markDrilled, pinTwist } from '../../src/ui/Drill/drill-state';
+import BlockScreen from '../../src/ui/Block/BlockScreen';
+import GameTiles from '../../src/ui/Games/GameTiles';
+import WordScreen from '../../src/ui/Word/WordScreen';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BackBar from '../../src/ui/components/BackBar';
 import BottomNav from '../../src/ui/components/BottomNav';
@@ -887,6 +890,46 @@ if (window.location.pathname === '/rehearse-choose') {
   );
 }
 
+// The drill's twist changes every three days, so every spec plays the classic
+// drill unless it asks for a twist by name: ?twist=night.
+pinTwist(new URLSearchParams(window.location.search).get('twist') ?? 'classic');
+
+// The games on the Rehearse screen. They are played on a fixed day, so a spec
+// knows the word and the yard: 10 October 2026, word number 1, in Melbourne.
+// ?day=N moves it on N days. ?history=won,won,lost seeds the days before
+// today for Cooee Word's streak, the last entry being yesterday.
+const gameParams = new URLSearchParams(window.location.search);
+const GAME_DAY = 20_736 + Number(gameParams.get('day') ?? '0');
+const gameNow = GAME_DAY * 86_400_000 + 2 * 3_600_000; // noon in Melbourne
+let gamesFlow = confirmation;
+if (['/word', '/block', '/games'].includes(window.location.pathname)) {
+  // Seeded once per tab, so a reload finds the game as it was left.
+  if (sessionStorage.getItem('harness.games') === null) {
+  sessionStorage.setItem('harness.games', 'seeded');
+  await Promise.all([db.wordDays.clear(), db.blockPlays.clear()]);
+  const history = (gameParams.get('history') ?? '').split(',').filter(Boolean);
+  await db.wordDays.bulkPut(
+    history.map((status, i) => {
+      const day = GAME_DAY - history.length + i;
+      const guesses = status === 'won' ? ['ember'] : Array(6).fill('smoke');
+      return { day, answer: 'ember', guesses, status: status as 'won' | 'lost', updatedAt: gameNow, finishedAt: gameNow };
+    }),
+  );
+  }
+  const blockSeconds = Number(gameParams.get('seconds')) || undefined;
+  gamesFlow =
+    window.location.pathname === '/word' ? <WordScreen now={gameNow} />
+    : window.location.pathname === '/block' ? <BlockScreen now={gameNow} seconds={blockSeconds} />
+    : (
+      <main className="page rehearsal-condition">
+        <GameTiles now={gameNow} onDrill={() => { document.title = 'drill chosen'; }} />
+        <div style={harnessStyle} data-harness="true">
+          <LocationProbe />
+        </div>
+      </main>
+    );
+}
+
 // E9. The drill on its own, with a clock as short as the spec asks for.
 // ?seconds=3 ends it almost at once; the app never passes this.
 const drillSeconds = Number(new URLSearchParams(window.location.search).get('seconds')) || undefined;
@@ -931,6 +974,7 @@ createRoot(root).render(
         : window.location.pathname === '/rehearse' ? rehearseFlow
         : window.location.pathname === '/rehearse-choose' ? chooseFlow
         : window.location.pathname === '/drill' ? drillFlow
+        : ['/word', '/block', '/games'].includes(window.location.pathname) ? gamesFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/detail-print'

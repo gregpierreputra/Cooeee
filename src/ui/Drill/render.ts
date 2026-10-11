@@ -5,7 +5,8 @@
 // whole number so every pixel of the art stays square.
 
 import { EXIT_LABEL } from '../../core/copy';
-import { BAG_LIMIT, DRILL_ITEMS, itemById, type DrillItem } from '../../core/drill-items';
+import { ALL_DRILL_ITEMS, type DrillItem } from '../../core/drill-items';
+import type { Light } from '../../core/drill-twists';
 import { MAT_CENTRE, restingOrder } from '../../core/drill-house';
 import { FURNITURE, GRID, MAT, TILE, wallLift } from '../../core/drill-layout';
 import { ATLAS } from '../../core/drill-atlas';
@@ -48,6 +49,14 @@ export type Scene = {
   calm: boolean;
   /** Where a tapped walk ends, marked with a small ring. */
   target?: { x: number; y: number } | null;
+  /** The things in the house under this drill's twist, where it leaves them. */
+  items: DrillItem[];
+  /** How many slots the bag strip has. */
+  bagLimit: number;
+  /** How far sight reaches in the dark, without and with the torch. */
+  light: Light;
+  /** Doorway cells the twist has boarded shut, in tiles. */
+  barriers: { x: number; y: number }[];
 };
 
 /** At least this many tiles fit across and down the picture, whatever the
@@ -79,7 +88,8 @@ const loadImage = (name: string): Promise<HTMLImageElement> =>
 
 export const loadArt = async (): Promise<Art> => {
   const [house, sprites] = await Promise.all([loadImage('house'), loadImage('sprites')]);
-  const outlines = Object.fromEntries(DRILL_ITEMS.map((item) => [item.id, outlineOf(sprites, item.id)]));
+  // Every thing any twist can put in the house, so each has its outline.
+  const outlines = Object.fromEntries(ALL_DRILL_ITEMS.map((item) => [item.id, outlineOf(sprites, item.id)]));
   return { house, sprites, outlines };
 };
 
@@ -185,9 +195,13 @@ function drawStanding(view: View, art: Art, scene: Scene): void {
       draw: () => drawSprite(view, art, piece.sprite, (piece.x + piece.w / 2) * TILE + (piece.nudge ?? 0), (piece.y + piece.h) * TILE - (piece.wall ? wallLift(ATLAS[piece.sprite][3]) : 0), frame),
     });
   }
-  for (const item of DRILL_ITEMS) {
+  for (const item of scene.items) {
     if (scene.packed.includes(item.id)) continue;
     things.push({ order: restingOrder(item.x, item.y), draw: () => drawItem(view, art, item, scene) });
+  }
+  // Boards across a shut doorway, drawn as standing in its cell.
+  for (const cell of scene.barriers) {
+    things.push({ order: cell.y + 1, draw: () => drawSprite(view, art, 'barrier', (cell.x + 0.5) * TILE, (cell.y + 1) * TILE) });
   }
   const figure = scene.figure;
   if (figure) things.push({ order: figure.y, draw: () => drawFigure(view, art, figure) });
@@ -278,8 +292,9 @@ function drawHaze(view: View, scene: Scene, figureX: number, figureY: number): v
   if (scene.dark > 0) {
     const torch = scene.packed.includes('torch');
     const flicker = scene.calm ? 1 : 1 + 0.04 * Math.sin(scene.time * 11);
-    const inner = (torch ? 34 : 16) * flicker;
-    const outer = (torch ? 100 : 58) * flicker;
+    const [innerSight, outerSight] = torch ? scene.light.torch : scene.light.sight;
+    const inner = innerSight * flicker;
+    const outer = outerSight * flicker;
     const dark = `rgba(4, 5, 14, ${scene.dark})`;
     // With the lights on the room dims evenly; once they fail, sight shrinks
     // to a pool round the person.
@@ -328,28 +343,30 @@ function drawLate(view: View, scene: Scene): void {
   ctx.fillRect(0, 0, width, height);
 }
 
-/** Ten slots along the bottom holding what is packed. The newest thing flies
- *  in from where it was picked up. */
+/** A slot along the bottom for each thing the bag holds (ten, unless the
+ *  twist says otherwise), narrower when that many would not fit across.
+ *  The newest thing flies in from where it was picked up. */
 function drawBag(view: View, art: Art, scene: Scene, left: number, top: number): void {
   const { ctx, width, height } = view;
-  const startX = Math.round((width - BAG_LIMIT * SLOT) / 2);
+  const slotSize = Math.min(SLOT, Math.floor((width - 8) / scene.bagLimit));
+  const startX = Math.round((width - scene.bagLimit * slotSize) / 2);
   const y = height - SLOT - 4;
-  for (let slot = 0; slot < BAG_LIMIT; slot++) {
-    const x = startX + slot * SLOT;
+  for (let slot = 0; slot < scene.bagLimit; slot++) {
+    const x = startX + slot * slotSize;
     ctx.fillStyle = 'rgba(16, 18, 30, 0.72)';
-    ctx.fillRect(x, y, SLOT - 1, SLOT - 1);
+    ctx.fillRect(x, y, slotSize - 1, SLOT - 1);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
     ctx.lineWidth = 1 / view.scale;
-    ctx.strokeRect(x, y, SLOT - 1, SLOT - 1);
-    const item = itemById(scene.packed[slot] ?? '');
+    ctx.strokeRect(x, y, slotSize - 1, SLOT - 1);
+    const item = scene.items.find((candidate) => candidate.id === scene.packed[slot]);
     if (!item) continue;
     const newest = slot === scene.packed.length - 1;
     const flight = newest && !scene.calm ? clamp((scene.time - scene.packedAt) / 0.25, 0, 1) : 1;
     const fromX = item.x * TILE - left;
     const fromY = item.y * TILE - top;
-    const toX = x + (SLOT - 1) / 2;
+    const toX = x + (slotSize - 1) / 2;
     const toY = y + SLOT - 3;
-    drawSprite(view, art, item.id, fromX + (toX - fromX) * flight, fromY + (toY - fromY) * flight, 0, flight === 1 ? 13 : 0);
+    drawSprite(view, art, item.id, fromX + (toX - fromX) * flight, fromY + (toY - fromY) * flight, 0, flight === 1 ? slotSize - 3 : 0);
   }
 }
 
@@ -446,7 +463,7 @@ export function drawScene(view: View, art: Art, scene: Scene): { left: number; t
     view.ctx.stroke();
   }
   if (scene.outlines) {
-    for (const item of DRILL_ITEMS) {
+    for (const item of scene.items) {
       if (scene.packed.includes(item.id)) continue;
       const inReach = scene.near?.id === item.id;
       const strength = inReach ? (scene.calm ? 1 : 0.8 + 0.2 * Math.sin(scene.time * 8)) : 0.75;

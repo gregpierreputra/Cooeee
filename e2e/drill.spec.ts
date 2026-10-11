@@ -110,4 +110,14 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await page.getByRole('button', { name: /Play the drill/ }).click();
     await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toBeVisible();
   });
+
+  test('plays under a twist: its bag, its rule, and its own highest score', async ({ page }) => {
+    await page.goto(`${HARNESS}/drill?seconds=2&twist=small-bag`);
+    await expect(page.locator('.drill-twist')).toContainText('Small bag');
+    await expect(page.locator('.drill-twist')).toContainText('Only seven things fit in the bag.');
+    await page.getByRole('button', { name: 'Start the drill' }).click();
+    await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    await expect(page.locator('main')).toContainText('Bag 0 of 7');
+  });
 });
+

@@ -58,15 +58,23 @@ export function restingOrder(x: number, y: number): number {
   return row + 1.01;
 }
 
-const isWall = (x: number, y: number): boolean => !(cellAt(x, y) in ROOM_OF);
+/** Cells a twist has shut (a jammed or locked doorway), as "x,y" keys. They
+ *  stop the figure exactly as a wall does. */
+export type Closed = ReadonlySet<string>;
+const NONE_CLOSED: Closed = new Set();
+export const cellKey = (x: number, y: number): string => `${Math.floor(x)},${Math.floor(y)}`;
 
-/** Whether the figure's feet at (x, y) would overlap a wall or furniture. */
-export function blocked(x: number, y: number): boolean {
+const isWall = (x: number, y: number, closed: Closed): boolean =>
+  !(cellAt(x, y) in ROOM_OF) || (closed.size > 0 && closed.has(cellKey(x, y)));
+
+/** Whether the figure's feet at (x, y) would overlap a wall or furniture, or
+ *  a doorway the twist has shut. */
+export function blocked(x: number, y: number, closed: Closed = NONE_CLOSED): boolean {
   const x0 = x - FEET.side;
   const x1 = x + FEET.side;
   const y0 = y - FEET.back;
   const y1 = y + FEET.front;
-  if (isWall(x0, y0) || isWall(x1, y0) || isWall(x0, y1) || isWall(x1, y1)) return true;
+  if (isWall(x0, y0, closed) || isWall(x1, y0, closed) || isWall(x0, y1, closed) || isWall(x1, y1, closed)) return true;
   return BLOCKS.some((box) => x0 < box.x1 && x1 > box.x0 && y0 < box.y1 && y1 > box.y0);
 }
 
@@ -80,8 +88,8 @@ type Point = { x: number; y: number };
  *  the reachable cell nearest to it. Empty when the figure is already there.
  *  A breadth first search over the grid's cells, four ways, so no corner of a
  *  wall or a piece of furniture is cut. */
-export function pathTo(fromX: number, fromY: number, toX: number, toY: number): Point[] {
-  const open = (x: number, y: number) => !blocked(x + 0.5, y + 0.5);
+export function pathTo(fromX: number, fromY: number, toX: number, toY: number, closed: Closed = NONE_CLOSED): Point[] {
+  const open = (x: number, y: number) => !blocked(x + 0.5, y + 0.5, closed);
   const start = [Math.floor(fromX), Math.floor(fromY)];
   const came = new Map<string, string | null>([[`${start[0]},${start[1]}`, null]]);
   const queue = [start];
@@ -114,3 +122,33 @@ function centreOf(mark: string): { x: number; y: number } {
 export const SPAWN = centreOf(START);
 /** Where the door arrow points: the middle cell of the mat. */
 export const MAT_CENTRE = { x: centreOf(MAT).x + 1, y: centreOf(MAT).y };
+
+/** Every cell the figure can walk to from where it starts, as "x,y" keys,
+ *  with the twist's shut doorways shut: what decides which things a twist
+ *  leaves within reach. */
+export function reachableCells(closed: Closed = NONE_CLOSED): Set<string> {
+  const open = (x: number, y: number) => !blocked(x + 0.5, y + 0.5, closed);
+  const start: [number, number] = [Math.floor(SPAWN.x), Math.floor(SPAWN.y)];
+  const seen = new Set([`${start[0]},${start[1]}`]);
+  const queue = [start];
+  for (let i = 0; i < queue.length; i++) {
+    const [x, y] = queue[i];
+    for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]] as [number, number][]) {
+      const key = `${nx},${ny}`;
+      if (seen.has(key) || !open(nx, ny)) continue;
+      seen.add(key);
+      queue.push([nx, ny]);
+    }
+  }
+  return seen;
+}
+
+/** Whether a thing standing at (x, y) is within an arm's reach of a cell the
+ *  figure can walk to. */
+export function withinReach(x: number, y: number, cells: ReadonlySet<string>): boolean {
+  for (const key of cells) {
+    const [cx, cy] = key.split(',').map(Number);
+    if (Math.hypot(cx + 0.5 - x, cy + 0.5 - y) <= REACH) return true;
+  }
+  return false;
+}

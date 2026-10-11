@@ -78,6 +78,7 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
   expect(await deviceStorage(page)).toEqual({
     recordCounts: {
       actionCompletions: 0,
+      blockPlays: 0,
       destinations: 0,
       drills: 0,
       dynamicSnapshot: 0,
@@ -93,6 +94,7 @@ test('AC7 keeps the address in memory, writes nothing and retries without retypi
       staticFacilities: 0,
       syncMeta: 0,
       tiles: 0,
+      wordDays: 0,
     },
     localStorageLength: 0,
     sessionStorageLength: 0,

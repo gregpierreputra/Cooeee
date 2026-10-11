@@ -6,7 +6,7 @@ import { packIcon } from '../../core/pack';
 import Glyph from '../components/Glyph';
 import { useMinuteClock } from '../components/useMinuteClock';
 import Head from './Head';
-import DrillTile from '../Drill/DrillTile';
+import GameTiles from '../Games/GameTiles';
 import { replayDrill } from '../Drill/drill-state';
 import type { Pack } from '../../core/types';
 import { listCompletePacks } from '../../data/db';
@@ -58,7 +58,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
   return (
     <main className="page rehearsal-condition">
       <Head />
-      <DrillTile onPlay={playDrill} />
+      <GameTiles onDrill={playDrill} />
       <h2>{copy.CHOOSE_PACK_TO_REHEARSE}</h2>
       <p>{copy.CHOOSE_PACK_TO_REHEARSE_DETAIL}</p>
 

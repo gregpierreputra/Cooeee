@@ -317,3 +317,7 @@ if (process.argv[2]) {
   writeFileSync(`${process.argv[2]}/preview.png`, bytesOf(baked.preview));
   console.log(`${process.argv[2]}/preview.png`);
 }
+
+// The twists' own things are drawn by hand, not taken from the pack. Add them
+// back below the pack's frames, so a full rebuild never loses them.
+await import('./drill-twist-art.mjs');

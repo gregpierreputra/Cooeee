@@ -12,6 +12,9 @@ export type BackContext = {
   builder: 'step' | 'hidden';
 };
 
+/** The games played from the Rehearse screen, each a screen of its own. */
+export const GAME_PATHS = ['/rehearse/word', '/rehearse/block'];
+
 /** One entry back in history: the pack builder's step before this one. */
 export const ONE_STEP = -1;
 
@@ -31,6 +34,8 @@ export function backTarget(
   if (pathname === '/packs/new' && new URLSearchParams(search).has('step')) {
     return builder === 'hidden' ? null : ONE_STEP;
   }
+  // The games on the Rehearse screen go back to it, whatever is saved.
+  if (GAME_PATHS.includes(pathname)) return '/rehearse';
   if (pathname.startsWith('/rehearse/')) {
     if (runPackId !== null || packCount === null || packCount < 2) return null;
     return '/rehearse';

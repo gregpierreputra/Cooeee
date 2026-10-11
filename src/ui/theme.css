@@ -92,6 +92,36 @@
   --area-map-ink: #1a1f24;
   --area-map-inside: #f2d64b;
 
+  /* The games on the Rehearse screens, each in its own warm colour: the
+     drill keeps BlackSky's amber, Cooee Word a eucalyptus green, Ready the
+     Block an ember red. Each has its accent (border, glyph circle, chevron),
+     the ink drawn on that accent, and two washes for the card's gradient. */
+  --drill-wash-1: rgb(255 150 40 / 22%);
+  --drill-wash-2: rgb(255 90 30 / 8%);
+  --drill-wash-hover-1: rgb(255 150 40 / 30%);
+  --drill-wash-hover-2: rgb(255 90 30 / 12%);
+  --drill-ink-on: #1a0d04;
+  --word-accent: #8fd3a0;
+  --word-wash-1: rgb(110 200 140 / 20%);
+  --word-wash-2: rgb(40 140 100 / 8%);
+  --word-wash-hover-1: rgb(110 200 140 / 28%);
+  --word-wash-hover-2: rgb(40 140 100 / 12%);
+  --word-ink-on: #08200f;
+  --block-accent: #ff7a5c;
+  --block-wash-1: rgb(255 110 80 / 20%);
+  --block-wash-2: rgb(200 50 30 / 8%);
+  --block-wash-hover-1: rgb(255 110 80 / 28%);
+  --block-wash-hover-2: rgb(200 50 30 / 12%);
+  --block-ink-on: #2a0904;
+  /* Cooee Word's three marks. Each also wears a shape (a tick, a dot, a
+     dashed edge), so a mark never rests on colour alone. */
+  --word-right: #2f8a4c;
+  --word-right-ink: #ffffff;
+  --word-present: #d8a531;
+  --word-present-ink: #1a1204;
+  --word-absent: #26303c;
+  --word-absent-ink: #a9b8c9;
+
   /* Connection notice. Fixed green/red by requirement, in every mode: the
      state colour IS the information, so it never rebinds per mode. */
   --online: #2dd4bf;
@@ -1086,7 +1116,7 @@ button,
 @media (hover: hover) {
   /* Controls whose border colour carries meaning (red ends something, amber
      is BlackSky, a debrief tile's kind) keep it under the pointer. */
-  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold, .card-confirm-yes, .note-delete):hover,
+  button:not(:disabled, .leave-action, .game-tile, .debrief-tile, .blacksky-hold, .card-confirm-yes, .note-delete):hover,
   .action:not(.leave-action):hover {
     border-color: var(--accent);
   }
@@ -5882,58 +5912,91 @@ body.drill-open .banner {
   font-size: var(--step-s);
 }
 
-/* The way into the drill from the Rehearse screens: amber and warm where
-   every other row there is neutral, with a flame and a way on, so it reads as
-   a different thing to do, not one more choice. */
-.drill-tile {
+/* The ways into the games from the Rehearse screens: warm and coloured where
+   every other row there is neutral, with a glyph and a way on, so each reads
+   as a different thing to do, not one more choice. One shape for all three;
+   each game sets its own colour below. */
+.game-tiles {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.25rem 0 1.25rem;
+}
+.game-tile {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   width: 100%;
   min-height: 72px;
-  margin: 0.25rem 0 1.25rem;
   padding: 0.9rem 1rem;
-  border: 2px solid var(--blacksky-accent);
+  border: 2px solid var(--tile-accent);
   border-radius: var(--r-card);
-  background: linear-gradient(135deg, rgba(255, 150, 40, 0.22), rgba(255, 90, 30, 0.08));
+  background: linear-gradient(135deg, var(--tile-wash-1), var(--tile-wash-2));
   color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.drill-tile:hover {
-  background: linear-gradient(135deg, rgba(255, 150, 40, 0.3), rgba(255, 90, 30, 0.12));
+.game-tile:hover {
+  background: linear-gradient(135deg, var(--tile-wash-hover-1), var(--tile-wash-hover-2));
 }
-.drill-tile .glyph {
+.game-tile .glyph {
   display: grid;
   place-items: center;
   flex: none;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--blacksky-accent);
-  color: #1a0d04;
+  background: var(--tile-accent);
+  color: var(--tile-ink-on);
 }
-.drill-tile-text {
+.game-tile-text {
   display: grid;
   gap: 0.15rem;
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.drill-tile-title {
+.game-tile-title {
   font-weight: var(--w-heavy);
   font-size: var(--step-1);
 }
-.drill-tile-detail {
+.game-tile-detail,
+.game-tile-status {
   font-size: var(--step-s);
   color: var(--ink-2);
 }
-.drill-tile-go {
+.game-tile-status {
+  color: var(--ink);
+}
+.game-tile-go {
   flex: none;
   font-size: 1.75rem;
   line-height: 1;
-  color: var(--blacksky-accent);
+  color: var(--tile-accent);
+}
+.drill-tile {
+  --tile-accent: var(--blacksky-accent);
+  --tile-ink-on: var(--drill-ink-on);
+  --tile-wash-1: var(--drill-wash-1);
+  --tile-wash-2: var(--drill-wash-2);
+  --tile-wash-hover-1: var(--drill-wash-hover-1);
+  --tile-wash-hover-2: var(--drill-wash-hover-2);
+}
+.word-tile {
+  --tile-accent: var(--word-accent);
+  --tile-ink-on: var(--word-ink-on);
+  --tile-wash-1: var(--word-wash-1);
+  --tile-wash-2: var(--word-wash-2);
+  --tile-wash-hover-1: var(--word-wash-hover-1);
+  --tile-wash-hover-2: var(--word-wash-hover-2);
+}
+.block-tile {
+  --tile-accent: var(--block-accent);
+  --tile-ink-on: var(--block-ink-on);
+  --tile-wash-1: var(--block-wash-1);
+  --tile-wash-2: var(--block-wash-2);
+  --tile-wash-hover-1: var(--block-wash-hover-1);
+  --tile-wash-hover-2: var(--block-wash-hover-2);
 }
 
 /* Read by a screen reader, drawn nowhere. */
@@ -6212,4 +6275,399 @@ button.flow-step .flow-step-label {
   font-weight: var(--w-med);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* ── The drill's twist, on its first screen and its report ───────────────── */
+.drill-twist {
+  border: 2px solid var(--blacksky-accent);
+  background: linear-gradient(135deg, var(--drill-wash-1), var(--drill-wash-2));
+}
+.drill-twist .kicker {
+  color: var(--blacksky-accent);
+}
+.drill-twist-name {
+  margin: 0.15rem 0 0.35rem;
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+}
+.drill-twist p {
+  margin: 0;
+}
+.debrief-twist {
+  gap: 0.35rem;
+  margin: 0 0 1.5rem;
+}
+
+/* ── Cooee Word ─────────────────────────────────────────────────────────── */
+.word-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.1rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.word-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.word-legend .word-cell {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 6px;
+}
+/* In the key the box is empty, so its mark sits in the very middle. The
+   tick's optical centre is a little above its box once turned. */
+.word-legend .word-cell.mark-right::after {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -70%) rotate(-45deg);
+}
+.word-legend .word-cell.mark-present::after {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+}
+.word-hero h1 {
+  word-spacing: 0.25em;
+}
+.word-hint {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--word-accent);
+  border-radius: var(--r-input);
+  background: var(--surface);
+}
+.word-hint-theme {
+  justify-self: start;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--r-pill);
+  background: var(--word-accent);
+  color: var(--word-ink-on);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+}
+.word-hint-clue {
+  margin: 0;
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+}
+.word-grid {
+  display: grid;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+.word-row {
+  display: grid;
+  grid-template-columns: repeat(var(--word-length, 5), min(3.4rem, calc((100vw - 3rem) / var(--word-length, 5) - 0.4rem)));
+  gap: 0.4rem;
+}
+.word-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: clamp(1.25rem, 6vw, 1.75rem);
+  font-weight: var(--w-heavy);
+  line-height: 1;
+}
+.word-row.current .word-cell {
+  border-color: var(--ink-3);
+}
+.word-cell.typed {
+  border-color: var(--word-accent);
+}
+.word-cell.mark-right,
+.word-key.mark-right {
+  border-color: var(--word-right);
+  background: var(--word-right);
+  color: var(--word-right-ink);
+}
+.word-cell.mark-present,
+.word-key.mark-present {
+  border-color: var(--word-present);
+  background: var(--word-present);
+  color: var(--word-present-ink);
+}
+.word-cell.mark-absent,
+.word-key.mark-absent {
+  border: 2px dashed var(--ink-3);
+  background: var(--word-absent);
+  color: var(--word-absent-ink);
+}
+/* The shapes: a tick in the corner for the right place, a dot for elsewhere
+   in the word. */
+.word-cell.mark-right::after,
+.word-key.mark-right::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 0.45rem;
+  height: 0.25rem;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+.word-cell.mark-present::after,
+.word-key.mark-present::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .word-row:not(.current) .word-cell[class*='mark-'] {
+    animation: word-turn 0.35s ease-out both;
+  }
+}
+@keyframes word-turn {
+  from {
+    transform: rotateX(90deg);
+  }
+  to {
+    transform: none;
+  }
+}
+.word-message {
+  min-height: 1.5rem;
+  margin: 0.5rem 0 0.75rem;
+  text-align: center;
+  font-weight: var(--w-bold);
+}
+.word-keyboard {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0 0 1.5rem;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.word-keys {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+}
+.word-key {
+  position: relative;
+  flex: 1 1 0;
+  max-width: 3rem;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.word-key.wide {
+  flex: 1.6 1 0;
+  max-width: 5rem;
+  font-size: var(--step-s);
+}
+.word-key.wide span {
+  font-size: var(--step-1);
+}
+.word-result {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0.5rem 0 1.5rem;
+}
+.word-result-card {
+  gap: 0.35rem;
+  border: 2px solid var(--word-accent);
+}
+.word-result-card h2,
+.word-result-card p {
+  margin: 0;
+}
+.word-answer {
+  font-size: var(--step-0);
+  font-weight: var(--w-bold);
+  color: var(--ink-2);
+}
+.word-fact {
+  margin: 0.85rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-input);
+  background: var(--surface-2);
+}
+.word-fact .kicker {
+  color: var(--word-accent);
+}
+.word-counts {
+  font-weight: var(--w-bold);
+}
+
+/* ── Ready the Block ────────────────────────────────────────────────────── */
+.block-stage {
+  background: #2b4a2a;
+}
+.block-stage canvas {
+  touch-action: none;
+  cursor: pointer;
+}
+.block-message {
+  right: calc(env(safe-area-inset-right) + 1rem);
+  max-width: 34rem;
+  padding: 0.35rem 0.85rem;
+}
+.block-message:empty {
+  display: none;
+}
+.block-message::first-letter {
+  text-transform: none;
+}
+.block-controls {
+  position: absolute;
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  pointer-events: none;
+}
+.block-controls > * {
+  pointer-events: auto;
+}
+.block-zoom {
+  display: flex;
+  gap: 0.5rem;
+}
+.block-zoom-button {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.block-hint {
+  min-height: 56px;
+  padding: 0 1.25rem;
+  border-color: var(--block-accent);
+}
+.block-hint:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.block-list {
+  display: grid;
+  gap: 0.6rem;
+}
+.block-list .block-row {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  align-items: start;
+  gap: 0.9rem;
+  margin: 0;
+}
+.block-row.spotted {
+  border-left: 3px solid var(--word-right);
+}
+.block-row.missed {
+  border-left: 3px solid var(--block-accent);
+}
+.block-sprite {
+  display: block;
+  justify-self: center;
+  margin-top: 0.25rem;
+  background-image: url('/block/sprites.png');
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.block-row-text p {
+  margin: 0 0 0.25rem;
+}
+.block-row-head {
+  display: grid;
+  justify-items: start;
+  gap: 0.3rem;
+}
+.block-row-name {
+  font-weight: var(--w-bold);
+}
+.block-row-name::first-letter {
+  text-transform: uppercase;
+}
+.block-badge {
+  padding: 0.05rem 0.55rem;
+  border-radius: var(--r-pill);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  text-transform: uppercase;
+  letter-spacing: var(--track-wide);
+}
+.block-row.spotted .block-badge {
+  background: var(--word-right);
+  color: var(--word-right-ink);
+}
+.block-row.missed .block-badge {
+  border: 1px dashed var(--block-accent);
+  color: var(--block-accent);
+}
+
+
+
+/* ── Ready the Block's opening facts ───────────────────────────────────── */
+.block-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  list-style: none;
+}
+.block-facts li {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  padding: 0.9rem 0.75rem;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--block-accent);
+  border-radius: var(--r-input);
+  background: var(--surface);
+  text-align: center;
+}
+.block-fact-figure {
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
+  line-height: 1;
+  color: var(--block-accent);
+}
+.block-fact-label {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.block-costs {
+  margin: 0 0 1.5rem;
+  font-size: var(--step-s);
+  text-align: center;
 }

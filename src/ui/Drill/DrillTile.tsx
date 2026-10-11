@@ -1,18 +1,17 @@
 import * as copy from '../../core/copy';
-import Glyph from '../components/Glyph';
+import GameTile from '../Games/GameTile';
 
-/** E9-US4 — the way back into the drill from the Rehearse screens, at any
- *  time. Drawn unlike every other row there (amber, a flame, its own line), so
- *  it reads as a different thing to do rather than one more choice. */
-export default function DrillTile({ onPlay }: { onPlay: () => void }) {
+/** The way into the drill from the Rehearse screens. With a twist on, it says
+ *  which, and how long it stays. */
+export default function DrillTile({ onPlay, twist }: { onPlay: () => void; twist?: { name: string; daysLeft: number; seconds: number; bag: number } | null }) {
   return (
-    <button type="button" className="drill-tile" onClick={onPlay}>
-      <Glyph kind="drill" />
-      <span className="drill-tile-text">
-        <span className="drill-tile-title">{copy.DRILL_TILE_TITLE}</span>
-        <span className="drill-tile-detail">{copy.DRILL_TILE_DETAIL}</span>
-      </span>
-      <span className="drill-tile-go" aria-hidden="true">›</span>
-    </button>
+    <GameTile
+      variant="drill"
+      glyph="drill"
+      title={copy.DRILL_TILE_TITLE}
+      detail={twist ? copy.DRILL_TILE_DETAIL_FOR(twist.seconds, twist.bag) : copy.DRILL_TILE_DETAIL}
+      status={twist ? copy.DRILL_TILE_TWIST(twist.name, twist.daysLeft) : undefined}
+      onPlay={onPlay}
+    />
   );
 }

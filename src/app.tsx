@@ -38,6 +38,8 @@ import PackPrint from './ui/PackPrint';
 import Recover from './ui/Recover';
 import Choose from './ui/Rehearsal/Choose';
 import RehearsalEntry from './ui/Rehearsal/Entry';
+import BlockScreen from './ui/Block/BlockScreen';
+import WordScreen from './ui/Word/WordScreen';
 import { Search } from './ui/PackNew/Search';
 
 /** main.tsx dispatches this when the service worker has a new version waiting.
@@ -306,6 +308,9 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           <Route path="/packs/:packId/print" element={<PackPrintRoute />} />
           <Route path="/packs/new" element={<Search />} />
           <Route path="/rehearse" element={<Choose />} />
+          {/* The games: static paths, so they rank above a pack id. */}
+          <Route path="/rehearse/word" element={<WordScreen />} />
+          <Route path="/rehearse/block" element={<BlockScreen />} />
           <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
           <Route path="/nearby" element={<Nearby />} />
           <Route path="/recover" element={<Recover />} />

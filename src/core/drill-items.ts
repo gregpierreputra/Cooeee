@@ -68,7 +68,27 @@ export const DRILL_ITEMS: DrillItem[] = [
   { id: 'football', name: 'ball', room: 'second bedroom', weight: 0, why: 'A ball is harmless and useless here.', x: 23.6, y: 20.6 },
 ];
 
+/** Things only some twists put in the house (drill-twists.ts). They never
+ *  appear in the classic drill, so its ten heaviest still add up to 100. Each
+ *  stands where its twist leaves it until a twist moves it. */
+export const EXTRA_ITEMS: DrillItem[] = [
+  { id: 'boots', name: 'leather boots', room: 'main bedroom', weight: 10, why: 'The CFA says to wear sturdy leather boots. Light shoes give no cover from embers or hot ground.', x: 6.2, y: 19.8 },
+  { id: 'gloves', name: 'leather gloves', room: 'garage', weight: 8, why: 'Leather gloves are on the CFA list of what to wear, to shield your hands from heat.', x: 4.4, y: 6.6 },
+  { id: 'goggles', name: 'goggles', room: 'laundry', weight: 8, why: 'Goggles keep smoke and embers out of your eyes. The CFA lists them with what to wear.', x: 8.4, y: 6.4 },
+  { id: 'golfbag', name: 'golf bag', room: 'hall', weight: -10, why: 'A golf bag fills the boot and helps no one get out.', x: 8.5, y: 13.6 },
+  { id: 'microwave', name: 'microwave', room: 'kitchen', weight: -10, why: 'A microwave is heavy, needs power and is easy to replace.', x: 17.6, y: 6.6 },
+  { id: 'stereo', name: 'stereo', room: 'living room', weight: -10, why: 'A stereo is bulky, slow to carry and replaceable.', x: 19.5, y: 10.6 },
+  { id: 'vase', name: 'vase', room: 'hall', weight: 0, why: 'A vase does nothing either way.', x: 20.5, y: 13.6 },
+  { id: 'trophy', name: 'trophy', room: 'second bedroom', weight: 0, why: 'A trophy means a lot, and does nothing for the drive out.', x: 25.0, y: 20.2 },
+];
+
 export const DRILL_ITEM_IDS = new Set(DRILL_ITEMS.map((item) => item.id));
+/** Every thing any drill can hold, the twists' extras included: what a saved
+ *  drill's bag may name. */
+export const ALL_DRILL_ITEMS: DrillItem[] = [...DRILL_ITEMS, ...EXTRA_ITEMS];
+export const ALL_DRILL_ITEM_IDS = new Set(ALL_DRILL_ITEMS.map((item) => item.id));
+/** The most any twist's bag holds. */
+export const MAX_BAG = 12;
 
 export const itemById = (id: string): DrillItem | undefined =>
-  DRILL_ITEMS.find((item) => item.id === id);
+  ALL_DRILL_ITEMS.find((item) => item.id === id);

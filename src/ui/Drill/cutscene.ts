@@ -6,9 +6,10 @@
 // Everything is worked out from the time alone (no stored particles), so any
 // moment can also be drawn as a still picture when the phone asks for less motion.
 
-import { DRILL_FACTS, DRILL_INSIDE_LINE, DRILL_READY, DRILL_TOUR_LINES } from '../../core/copy';
+import { DRILL_FACTS, DRILL_INSIDE_LINE, DRILL_READY, DRILL_TOUR_LINES, DRILL_TOUR_LINES_FOR } from '../../core/copy';
 import { SPAWN } from '../../core/drill-house';
 import { UP } from '../../core/drill-play';
+import { CLASSIC, type DrillRules } from '../../core/drill-twists';
 import { drawSprite, type Art, type Scene, type View } from './render';
 
 export const OUTSIDE_SECONDS = 30;
@@ -19,13 +20,19 @@ export const CUTSCENE_SECONDS = READY_AT + 2;
 const FACT_SECONDS = OUTSIDE_SECONDS / DRILL_FACTS.length;
 const TOUR_LINE_SECONDS = TOUR_SECONDS / DRILL_TOUR_LINES.length;
 
-/** Every line of the film in order, with the second it appears. */
-export const LINES = [
+/** Every line of the film in order, with the second it appears. The
+ *  instructions follow the twist's time and bag; the timing never changes. */
+export const linesFor = (rules: DrillRules) => [
   ...DRILL_FACTS.map((fact, i) => ({ ...fact, at: i * FACT_SECONDS })),
   { ...DRILL_INSIDE_LINE, source: '', at: OUTSIDE_SECONDS },
-  ...DRILL_TOUR_LINES.map((line, i) => ({ ...line, source: '', at: POWER_OFF_AT + i * TOUR_LINE_SECONDS })),
+  ...(rules === CLASSIC ? DRILL_TOUR_LINES : DRILL_TOUR_LINES_FOR(rules.seconds, rules.bagLimit, rules.light.powered)).map((line, i) => ({
+    ...line,
+    source: '',
+    at: POWER_OFF_AT + i * TOUR_LINE_SECONDS,
+  })),
   { text: DRILL_READY, key: [] as string[], source: '', at: READY_AT },
 ];
+export const LINES = linesFor(CLASSIC);
 export const BEATS = LINES.length;
 
 /** Which line is on screen at second `t`. */
@@ -411,12 +418,15 @@ function tourAt(progress: number): [number, number] {
 /** The inside of the house at second `t`: the news on and the window light
  *  turning, then the power failing and the camera touring every room while
  *  the instructions appear, then settling on the person, ready. */
-export function insideScene(t: number, calm: boolean): Scene {
-  const powered = t < POWER_OFF_AT;
-  const [camX, camY] = powered ? TOUR[0] : tourAt((t - POWER_OFF_AT) / TOUR_SECONDS);
+export function insideScene(t: number, calm: boolean, rules: DrillRules = CLASSIC): Scene {
+  // The tour starts at the same moment either way; under the lights-on twist
+  // the power simply never goes.
+  const touring = t >= POWER_OFF_AT;
+  const powered = !touring || rules.light.powered;
+  const [camX, camY] = touring ? tourAt((t - POWER_OFF_AT) / TOUR_SECONDS) : TOUR[0];
   // A little dim with the lights on, so the orange at the window shows; darker
   // once they go; and at the end as dark as the two minutes start.
-  const dark = powered ? 0.3 : t < READY_AT ? 0.45 : 0.45 + 0.17 * clamp01((t - READY_AT) / 1.5);
+  const dark = !touring ? 0.3 : rules.light.powered ? rules.light.dark[0] : t < READY_AT ? 0.45 : 0.45 + 0.17 * clamp01((t - READY_AT) / 1.5);
   return {
     time: t,
     camX,
@@ -427,14 +437,18 @@ export function insideScene(t: number, calm: boolean): Scene {
     near: null,
     powered,
     glow: clamp01(0.4 + (t - OUTSIDE_SECONDS) / 4),
-    smoke: powered ? 0.08 : 0.14,
+    smoke: touring ? 0.14 : 0.08,
     dark,
     door: 0,
     late: false,
     doorArrow: false,
     showBag: false,
-    outlines: !powered,
+    outlines: touring,
     matHold: 0,
     calm,
+    items: rules.items,
+    bagLimit: rules.bagLimit,
+    light: rules.light,
+    barriers: rules.barriers,
   };
 }

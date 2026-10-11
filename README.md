@@ -50,7 +50,25 @@ rehearsal. It reads the Modern Interiors art pack by LimeZu from a `game-assets`
 repository root and writes `public/drill` and `src/core/drill-atlas.ts`. The pack is bought from
 limezu.itch.io and its licence forbids passing it on, so `game-assets` is ignored by git and only
 the baked pictures of the frames the game uses are committed. Run the script again after any change to `src/core/drill-layout.ts` or to the list of
-things in `src/core/drill-items.ts`.
+things in `src/core/drill-items.ts`. It then runs `npm run build:drill:twist-art`, which adds the
+drill twists' own things, drawn by hand in `scripts/drill-twist-sprites.mjs`, below the pack's
+frames. That script needs no art pack, so it can be run on its own after a change to those
+drawings.
+
+The Rehearse screens also offer two daily games beside the drill. Neither needs a pack.
+
+* **Cooee Word** is a word a day, the same on every phone. `src/core/word-answers.ts` holds the
+  thousand answers and their facts; only the game screen loads it. `npm run build:word:list`
+  writes `public/word/words-4.json` to `words-7.json`, the real words a guess may be, from the
+  public domain ENABLE list and every answer. Run it again after any change to the answers.
+* **Ready the Block** is eight fire risks round a home, a new eight each day. Its pictures are
+  drawn by hand in `scripts/block-art/` in the LimeZu manner, so no art pack is needed.
+  `npm run build:block:art` writes `public/block` and `src/core/block-atlas.ts`. Run it again
+  after any change to the drawings, `src/core/block-layout.ts` or `src/core/block-hazards.ts`.
+  Add a folder to the command to also get previews of the whole yard.
+
+The drill's twist changes every three Melbourne days (`src/core/drill-twists.ts`). Twist ids are
+stored with each drill, so they are never renamed or removed.
 
 ## Rules that are enforced
 
@@ -112,7 +130,8 @@ e2e/         Playwright against the real production bundle
 ```
 
 Screens are `/` for saved packs, `/packs/new` for the search and build flow, `/packs/<id>` for
-one pack, `/nearby` for the nearest official places and `/blacksky` for the offline compass.
+one pack, `/rehearse/word` and `/rehearse/block` for the two daily games, `/nearby` for the
+nearest official places and `/blacksky` for the offline compass.
 
 ## Deploying
 

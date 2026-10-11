@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as copy from '../../core/copy';
-import { DRILL_SECONDS } from '../../core/drill-items';
-import { highestScore } from '../../core/drill-history';
+import { melbourneDay } from '../../core/day';
+import { highestForTwist } from '../../core/drill-history';
 import { scoreDrill } from '../../core/drill-score';
-import { listDrills, saveDrill } from '../../data/db';
+import { rulesFor, twistForDay } from '../../core/drill-twists';
+import { listAllDrills, saveDrill } from '../../data/db';
 import Glyph from '../components/Glyph';
 import { focusMain } from '../components/focusMain';
 import * as audio from './audio';
 import Debrief from './Debrief';
+import { pinnedTwist } from './drill-state';
 import Game, { type DrillOutcome } from './Game';
 import SoundButton from './SoundButton';
 import Statline from './Statline';
@@ -22,14 +24,21 @@ const newId = (): string =>
 type Props = {
   packId: string;
   onDone: () => void;
-  /** The length of the drill, in seconds. Only the test harness passes anything else. */
+  /** The length of the drill, in seconds, when not the twist's own. Only the
+   *  test harness passes it. */
   seconds?: number;
+  /** The twist to play, when not the day's. Only the test harness passes it. */
+  twist?: string;
 };
 
 /** E9 — the drill in front of a rehearsal: one fact, the opening picture,
  *  two minutes in the house, then the debrief. `onDone` hands over to the
  *  rehearsal, whether the drill was played or skipped. */
-export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props) {
+export default function Drill({ packId, onDone, seconds: secondsOverride, twist }: Props) {
+  // The day's twist, settled once as the drill opens, so it cannot change
+  // under a person playing across midnight.
+  const [rules] = useState(() => rulesFor(twist ?? pinnedTwist() ?? twistForDay(melbourneDay(Date.now())).id));
+  const seconds = secondsOverride ?? rules.seconds;
   const [stage, setStage] = useState<Stage>('statline');
   const [outcome, setOutcome] = useState<DrillOutcome | null>(null);
   const [highest, setHighest] = useState<number | null>(null);
@@ -54,10 +63,12 @@ export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props
         packId,
         finishedAt: Date.now(),
         reachedDoor: result.reachedDoor,
-        score: result.reachedDoor ? scoreDrill(result.packed) : 0,
+        score: result.reachedDoor ? scoreDrill(result.packed, rules) : 0,
         packed: result.packed,
+        twist: rules.twist,
       });
-      setHighest(highestScore(await listDrills(packId)));
+      // Every pack's drills under this twist: the scores are out of the same bag.
+      setHighest(highestForTwist(await listAllDrills(), rules.twist));
     } catch {
       setHighest(null);
     }
@@ -79,12 +90,12 @@ export default function Drill({ packId, onDone, seconds = DRILL_SECONDS }: Props
             matters: on this first screen and over the game, not the report. */}
         {stage === 'statline' ? <SoundButton /> : null}
       </div>
-      {stage === 'statline' ? <Statline onStart={() => start('game')} onSkip={onDone} /> : null}
+      {stage === 'statline' ? <Statline rules={rules} onStart={() => start('game')} onSkip={onDone} /> : null}
       {stage === 'game' || stage === 'again' ? (
-        <Game key={stage} opening={stage === 'game'} seconds={seconds} onEnd={finish} onUnavailable={unavailable} onLeave={onDone} />
+        <Game key={stage} opening={stage === 'game'} seconds={seconds} rules={rules} onEnd={finish} onUnavailable={unavailable} onLeave={onDone} />
       ) : null}
       {stage === 'debrief' && outcome ? (
-        <Debrief outcome={outcome} highest={highest} onAgain={() => start('again')} onDone={onDone} />
+        <Debrief outcome={outcome} rules={rules} highest={highest} onAgain={() => start('again')} onDone={onDone} />
       ) : null}
       {stage === 'unavailable' ? (
         <>

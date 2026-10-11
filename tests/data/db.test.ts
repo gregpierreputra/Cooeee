@@ -335,10 +335,11 @@ describe('putNote', () => {
 });
 
 describe('schema', () => {
-  it('is version 10: the pack stores, the Nearby-places stores, the snapshot, files, notes, pack programs, rehearsals, completions and drills', () => {
-    expect(db.verno).toBe(10);
+  it('is version 11: the pack stores, the Nearby-places stores, the snapshot, files, notes, pack programs, rehearsals, completions, drills and the two daily games', () => {
+    expect(db.verno).toBe(11);
     expect(db.tables.map((t) => t.name).sort()).toEqual([
       'actionCompletions',
+      'blockPlays',
       'destinations',
       'drills',
       'dynamicSnapshot',
@@ -354,6 +355,7 @@ describe('schema', () => {
       'staticFacilities',
       'syncMeta',
       'tiles',
+      'wordDays',
     ]);
   });
 

@@ -4,17 +4,30 @@ import { ATLAS, SHEET } from '../../core/drill-atlas';
 /** One thing's own picture from the game, drawn from the sprite sheet to fit a
  *  square `size` css pixels wide. The sheet is cached with the app, so it
  *  draws with no signal. Shared by the drill's debrief and the pack page. */
-export function Sprite({ id, size = 40 }: { id: string; size?: number }) {
-  const [x, y, w, h] = ATLAS[id];
+export function Sprite({
+  id,
+  size = 40,
+  atlas = ATLAS,
+  sheet = SHEET,
+  className = 'debrief-sprite',
+}: {
+  id: string;
+  size?: number;
+  /** Another game's sheet: its atlas, its size, and the class naming its picture. */
+  atlas?: Record<string, readonly (number | undefined)[]>;
+  sheet?: readonly [number, number];
+  className?: string;
+}) {
+  const [x = 0, y = 0, w = 1, h = 1] = atlas[id];
   const scale = Math.min(size / w, size / h, 3);
   return (
     <span
-      className="debrief-sprite"
+      className={className}
       aria-hidden="true"
       style={{
         width: w * scale,
         height: h * scale,
-        backgroundSize: `${SHEET[0] * scale}px ${SHEET[1] * scale}px`,
+        backgroundSize: `${sheet[0] * scale}px ${sheet[1] * scale}px`,
         backgroundPosition: `${-x * scale}px ${-y * scale}px`,
       }}
     />

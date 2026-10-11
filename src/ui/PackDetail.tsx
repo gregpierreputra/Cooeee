@@ -502,6 +502,7 @@ export default function PackDetail({
                     <div>
                       <p className="practice-outcome">{row.score !== null ? copy.DRILL_ROW_DOOR : copy.DRILL_ROW_AWAY}</p>
                       {row.verdict ? <p className="muted">{row.verdict}</p> : null}
+                      {row.twist ? <p className="muted">{copy.DRILL_ROW_TWIST(row.twist)}</p> : null}
                     </div>
                   </div>
                   <DrillBag row={row} />

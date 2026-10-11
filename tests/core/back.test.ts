@@ -29,6 +29,12 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/rehearse/a', '', NONE)).toBeNull();
   });
 
+  it.each(['/rehearse/word', '/rehearse/block'])('goes from the game %s up to Rehearse, whatever is saved', (path) => {
+    expect(backTarget(path, '', NONE)).toBe('/rehearse');
+    expect(backTarget(path, '', { ...NONE, packCount: 1 })).toBe('/rehearse');
+    expect(backTarget(path, '', { ...NONE, packCount: 3, runPackId: 'a' })).toBe('/rehearse');
+  });
+
   it('hides Back on a rehearsal while one is running, as Rehearse opens it again', () => {
     expect(backTarget('/rehearse/a', '', { ...NONE, packCount: 3, runPackId: 'a' })).toBeNull();
   });

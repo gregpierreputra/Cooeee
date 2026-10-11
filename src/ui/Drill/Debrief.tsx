@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import * as copy from '../../core/copy';
-import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
+import type { DrillItem } from '../../core/drill-items';
 import { debriefRows, kindOf, leftBehind, scoreBreakdown, scoreDrill } from '../../core/drill-score';
+import { CLASSIC, type DrillRules } from '../../core/drill-twists';
 import Glyph from '../components/Glyph';
 import { ScoreRing, Sprite } from './DrillArt';
 import type { DrillOutcome } from './Game';
 
 type Props = {
   outcome: DrillOutcome;
-  /** The highest score of this pack's drills that reached the door, this one included. */
+  /** The twist the drill was played under. */
+  rules?: DrillRules;
+  /** The highest score of the drills under this twist that reached the door, this one included. */
   highest: number | null;
   onAgain: () => void;
   onDone: () => void;
@@ -18,15 +21,19 @@ type Props = {
  *  score, the bag as pictures edged by what each did, a bar of how the points
  *  add up, and the essentials left behind. Each reason is one tap away rather
  *  than printed. Away from the door there is no number anywhere. */
-export default function Debrief({ outcome, highest, onAgain, onDone }: Props) {
+export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, onDone }: Props) {
   const [chosen, setChosen] = useState<DrillItem | null>(null);
+  const classic = rules === CLASSIC;
   const scored = outcome.reachedDoor;
-  const score = scoreDrill(outcome.packed);
-  const packed = debriefRows(outcome.packed).map((row) => row.item);
-  const left = leftBehind(outcome.packed);
-  const groups = scoreBreakdown(outcome.packed);
-  const gained = groups.filter((group) => group.points > 0).reduce((sum, group) => sum + group.points, 0);
-  const lost = -groups.filter((group) => group.points < 0).reduce((sum, group) => sum + group.points, 0);
+  const score = scoreDrill(outcome.packed, rules);
+  const packed = debriefRows(outcome.packed, rules).map((row) => row.item);
+  const left = leftBehind(outcome.packed, rules);
+  const groups = scoreBreakdown(outcome.packed, rules);
+  // The bar is drawn against what the twist's best bag adds up to, so it
+  // fills exactly as the score does.
+  const share = (points: number) => Math.min(100, (100 * points) / Math.max(1, rules.maxPoints));
+  const gained = share(groups.filter((group) => group.points > 0).reduce((sum, group) => sum + group.points, 0));
+  const lost = share(-groups.filter((group) => group.points < 0).reduce((sum, group) => sum + group.points, 0));
 
   const tile = (item: DrillItem, faded = false) => {
     const points = copy.SIGNED_POINTS(item.weight);
@@ -61,29 +68,38 @@ export default function Debrief({ outcome, highest, onAgain, onDone }: Props) {
         <div role="status">
           <h1>{scored ? copy.VERDICT(score) : copy.OVER_HEADING}</h1>
           {scored ? (
-            highest !== null ? <p className="muted">{copy.HIGHEST_SO_FAR(highest)}</p> : null
+            highest !== null ? <p className="muted">{classic ? copy.HIGHEST_SO_FAR(highest) : copy.HIGHEST_FOR_TWIST(highest)}</p> : null
           ) : (
             <p className="muted">{copy.OVER_DETAIL}</p>
           )}
         </div>
       </section>
 
+      {classic ? null : (
+        <section className="card drill-twist debrief-twist" aria-labelledby="debrief-twist-label">
+          <p id="debrief-twist-label" className="kicker">{copy.DRILL_TWIST_LABEL}</p>
+          <p className="drill-twist-name">{rules.name}</p>
+          <p>{rules.rule}</p>
+          {scored && rules.maxPoints !== 100 ? <p className="muted">{copy.DRILL_TWIST_SCORE_NOTE}</p> : null}
+        </section>
+      )}
+
       <section className="debrief-block" aria-labelledby="debrief-bag">
         <h2 id="debrief-bag" className="debrief-label">
           <Glyph kind="bag" />
           {copy.IN_YOUR_BAG}
-          <span className="figure">{copy.OF_LIMIT(packed.length, BAG_LIMIT)}</span>
+          <span className="figure">{copy.OF_LIMIT(packed.length, rules.bagLimit)}</span>
         </h2>
         <ul className="debrief-tiles">
           {packed.map((item) => tile(item))}
-          {Array.from({ length: BAG_LIMIT - packed.length }, (_, i) => (
+          {Array.from({ length: Math.max(0, rules.bagLimit - packed.length) }, (_, i) => (
             <li key={`empty-${i}`} className="debrief-empty" aria-hidden="true" />
           ))}
         </ul>
         {scored ? (
           <div className="debrief-bar" aria-hidden="true">
-            <span className="gained" style={{ width: `${Math.min(100, gained)}%` }} />
-            <span className="lost" style={{ width: `${Math.min(100, lost)}%` }} />
+            <span className="gained" style={{ width: `${gained}%` }} />
+            <span className="lost" style={{ width: `${lost}%` }} />
           </div>
         ) : null}
         <ul className="debrief-key" aria-hidden="true">

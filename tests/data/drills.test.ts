@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { carryHistoryToNewPack, db, deleteCompletePack, isDrill, listDrills, ownedTables, saveDrill } from '../../src/data/db';
+import { carryHistoryToNewPack, db, deleteCompletePack, isDrill, listAllDrills, listDrills, ownedTables, saveDrill } from '../../src/data/db';
 import type { Drill } from '../../src/core/types';
 import { pack } from '../fixtures';
 
@@ -35,5 +35,26 @@ describe('E9 the drills store', () => {
     await db.packs.put({ ...pack(), id: 'p3', status: 'complete' });
     await deleteCompletePack('p3');
     expect(await listDrills('p3')).toEqual([]);
+  });
+
+  it('keeps the twist a drill was played under, and holds its bag to that twist', async () => {
+    await saveDrill(drill({ twist: 'night' }));
+    expect((await listDrills('p1'))[0].twist).toBe('night');
+    // A drill from before twists has none, and is still a drill.
+    expect(isDrill(drill())).toBe(true);
+    await expect(saveDrill(drill({ id: 'd2', twist: 'not-a-twist' }))).rejects.toThrow(RangeError);
+    // The day pack holds five; the boot twelve.
+    const six = ['torch', 'radio', 'water', 'masks', 'blanket', 'medicines'];
+    await expect(saveDrill(drill({ id: 'd3', twist: 'day-pack', packed: six }))).rejects.toThrow(RangeError);
+    expect(isDrill(drill({ twist: 'room-in-the-boot', packed: [...six, 'clothes', 'charger', 'firstaid', 'papers', 'photos', 'pet'] }))).toBe(true);
+    // A twist's own extra things may be in its bag.
+    expect(isDrill(drill({ twist: 'boots-and-gloves', packed: ['boots', 'gloves'] }))).toBe(true);
+  });
+
+  it('lists the drills of every pack, for the highest under a twist', async () => {
+    await saveDrill(drill());
+    await saveDrill(drill({ id: 'd2', packId: 'p2', twist: 'night' }));
+    await db.drills.put({ ...drill({ id: 'bad' }), score: 500 });
+    expect((await listAllDrills()).map((row) => row.id).sort()).toEqual(['d1', 'd2']);
   });
 });
