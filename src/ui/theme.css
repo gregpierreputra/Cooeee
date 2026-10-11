@@ -1600,7 +1600,7 @@ main:focus {
   background-image: linear-gradient(var(--accent), var(--accent));
 }
 
-.blacksky-topbar > .blacksky-leave-bar:active {
+.blacksky-topbar > .blacksky-leave-bar.holding {
   background-size: 100% 100%;
   transition: background-size 2s linear; /* HOLD_MS, as on every hold control */
 }
@@ -1648,8 +1648,8 @@ main:focus {
   z-index: 1;
 }
 
-.blacksky-topbar > .blacksky-leave-bar:active .blacksky-leave-label,
-.blacksky-topbar:has(> .blacksky-leave-bar:active) > .blacksky-title {
+.blacksky-topbar > .blacksky-leave-bar.holding .blacksky-leave-label,
+.blacksky-topbar:has(> .blacksky-leave-bar.holding) > .blacksky-title {
   background-size: 100% 100%, 100% 100%;
   transition: background-size 2s linear;
 }
@@ -2540,7 +2540,7 @@ main:focus {
   transition: background-size 0.2s ease;
 }
 
-.blacksky-hold:active {
+.blacksky-hold.holding {
   background-size: 100% 100%;
   transition: background-size 2s linear;
 }
@@ -2991,8 +2991,8 @@ body.touring .page {
   }
   /* The hold's fill is a progress bar, not motion. On iOS, with no vibration,
      it is the only sign of how long is left, so it keeps its two seconds. */
-  .blacksky-hold:active,
-  .nav-blacksky:active .nav-blacksky-sweep circle {
+  .blacksky-hold.holding,
+  .nav-blacksky.holding .nav-blacksky-sweep circle {
     transition-duration: 2s !important;
   }
 }
@@ -3304,7 +3304,7 @@ body.touring .page {
   stroke-dashoffset: 100;
   transition: stroke-dashoffset 0.2s ease;
 }
-.nav-blacksky:active .nav-blacksky-sweep circle {
+.nav-blacksky.holding .nav-blacksky-sweep circle {
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 2s linear;
 }
