@@ -3,15 +3,16 @@ import { NOTE_MAX_CHARS } from '../../core/constants';
 import * as copy from '../../core/copy';
 import { wayNote } from '../../core/rehearsal-note';
 import type { PackNote } from '../../core/types';
-import { putNote } from '../../data/db';
+import { deleteNote, putNote } from '../../data/db';
 import Glyph from '../components/Glyph';
 import Section from '../components/Section';
 import { continueBullets, typeBullets } from '../components/bulletTyping';
 
-type Mark = 'saved' | 'empty' | 'failed';
+type Mark = 'saved' | 'removed' | 'empty' | 'failed';
 
 const MARK_TEXT: Record<Mark, string> = {
-  saved: copy.NOTE_SAVED,
+  saved: copy.WAY_NOTE_KEPT,
+  removed: copy.WAY_NOTE_REMOVED,
   empty: copy.NOTE_EMPTY,
   failed: copy.NOTE_CHANGE_FAILED,
 };
@@ -30,10 +31,12 @@ const MARK_TEXT: Record<Mark, string> = {
 export default function WayNote({
   packId,
   save = putNote,
+  remove = deleteNote,
   now = Date.now,
 }: {
   packId: string;
   save?: (note: PackNote) => Promise<void>;
+  remove?: (id: string) => Promise<void>;
   now?: () => number;
 }) {
   const [id] = useState(() => crypto.randomUUID());
@@ -49,6 +52,18 @@ export default function WayNote({
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [unsaved]);
+
+  /** Takes the saved note back out of the pack. Her words stay in the field,
+   *  unsaved again, so a mistaken tap loses nothing. */
+  async function takeOut() {
+    try {
+      await remove(id);
+      setSavedText('');
+      setMark('removed');
+    } catch {
+      setMark('failed');
+    }
+  }
 
   async function keep() {
     if (text.trim().length === 0) {
@@ -102,6 +117,13 @@ export default function WayNote({
           <button type="button" onClick={() => void keep()}>
             {copy.SAVE_NOTE}
           </button>
+          {/* Once saved, the way to take it back out of the pack. */}
+          {savedText ? (
+            <button type="button" className="note-delete with-glyph" onClick={() => void takeOut()}>
+              <Glyph kind="trash" line />
+              {copy.WAY_NOTE_REMOVE}
+            </button>
+          ) : null}
         </div>
       </div>
     </Section>

@@ -5184,12 +5184,21 @@ p.gap-reason-label {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
+/* The question on returning, put directly over its two answers. */
+.unfinished-ask {
+  margin: 0;
+  font-weight: var(--w-med);
+}
 /* The pack under a rehearsal's title: its drawing and its name in teal, as
    its card on Rehearse names it. */
 .hero-pack {
   margin: 0;
   color: var(--accent);
   font-weight: var(--w-bold);
+}
+.hero-pack-lead {
+  color: var(--ink-2);
+  font-weight: 400;
 }
 /* Before going: the steps in order as rows of one card, each led by its
    drawing in a ring and parted by a hairline. */
@@ -5236,8 +5245,8 @@ p.gap-reason-label {
 .result-summary p {
   margin: 0;
 }
-.result-summary > p:not(.muted) {
-  font-weight: var(--w-med);
+.result-summary b {
+  font-weight: var(--w-bold);
 }
 .result-summary .progress {
   display: grid;
@@ -5250,7 +5259,11 @@ p.gap-reason-label {
    rest of the pack uses. The two endings are identical controls of identical
    weight, told apart by their words alone: neither reads as the expected one,
    and a greyscale screen says which is which exactly as a coloured one does. */
-/* The way note under its ringed head, as the other parts of the result. */
+/* The way note under its ringed head, as the other parts of the result. Save
+   and Remove stack at full width, so neither squeezes the other. */
+.way-note .note-actions {
+  flex-direction: column;
+}
 .way-note > p {
   margin: 0;
 }

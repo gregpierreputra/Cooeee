@@ -185,7 +185,7 @@ describe('every gap is one the reader can act on', () => {
     });
     expect(packContent.meaning).not.toBe(persistent.meaning);
     expect(packContent.meaning).toBe('Missing from your pack.');
-    expect(persistent.meaning).toBe('Not available under this condition. Do this instead.');
+    expect(persistent.meaning).toBe('Not available under this condition.');
     [packContent, persistent].forEach((row) => {
       expect(`${row.meaning} ${row.action}`).not.toMatch(
         /\b(severe|severity|critical|urgent|worst|priority|rank|score|level)\b/i,

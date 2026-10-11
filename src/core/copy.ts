@@ -1210,11 +1210,8 @@ export const GAP_HAZARD_LINE = (hazard: string) => `${hazard} journey`;
 
 // The two kinds, told apart by these words and by nothing else.
 export const GAP_MEANING_PACK_CONTENT = 'Missing from your pack.';
-/** The condition sentence in its two halves. The wording is unchanged and the
- *  joined sentence is byte-identical, so the result reads exactly as it did. */
-export const GAP_MEANING_CONDITION_FACT = 'Not available under this condition.';
-export const GAP_MEANING_CONDITION_NEXT = 'Do this instead.';
-export const GAP_MEANING_CONDITION = `${GAP_MEANING_CONDITION_FACT} ${GAP_MEANING_CONDITION_NEXT}`;
+/** The condition's kind. What to do instead follows in its own panel. */
+export const GAP_MEANING_CONDITION = 'Not available under this condition.';
 
 // What could not be relied on.
 export const GAP_DESIGNATION = 'The official area designation for this address';
@@ -1368,8 +1365,9 @@ export const ENDING_WITHOUT_GOING = 'End without going';
 export const UNFINISHED_HEADING = 'How did this rehearsal end?';
 /** [DRAFT] pending Sharon's copy review. Takes the condition's without-form
  *  (conditionWithout), never its row title. */
-export const UNFINISHED_DETAIL = (without: string, date: string) =>
-  `Started ${date}, without ${without}. Only you can say how it ended.`;
+export const UNFINISHED_STARTED = (without: string, date: string) => `Started ${date}, without ${without}.`;
+/** [DRAFT] pending Sharon's copy review. Asks for the answer, over the two rows. */
+export const UNFINISHED_ASK = 'Only you can say how it ended.';
 /** [DRAFT] pending Sharon's copy review. The two endings, as the criterion names
  *  them. Each says itself in full, so neither carries a second line. */
 export const ENDING_WALKED = 'I went there';
@@ -1418,6 +1416,12 @@ export const WAY_NOTE_HEADING = 'What you learnt about the way';
 export const WAY_NOTE_DETAIL = 'Optional. The turns, what you met, what you would change. BlackSky shows it offline.';
 /** [DRAFT] pending Sharon's copy review. */
 export const WAY_NOTE_LABEL = 'Your note about the way';
+/** Once saved: where it went, and the way to take it back out. */
+export const WAY_NOTE_KEPT = "Saved to this pack's notes.";
+export const WAY_NOTE_REMOVE = 'Remove from this pack';
+export const WAY_NOTE_REMOVED = 'Removed from this pack.';
+/** Before the pack's name under a rehearsal's title. */
+export const REHEARSING_PACK = 'Rehearsing';
 
 // ── E9 the drill ──────────────────────────────────────────────────────────
 // A game played before the rehearsal. It has a clock and a score, which the

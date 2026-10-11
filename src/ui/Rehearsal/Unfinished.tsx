@@ -23,7 +23,10 @@ export default function Unfinished({ rehearsal }: { rehearsal: UnfinishedRehears
 
   return (
     <main className="page rehearsal-condition rehearsal-unfinished">
-      <Head title={view.heading} detail={view.detail} />
+      {/* When it started and how, as a fact under the title, then the
+          question put directly over its two answers. */}
+      <Head title={view.heading} detail={view.started} detailGlyph="clock" />
+      <p className="unfinished-ask">{view.ask}</p>
 
       <ul className="list condition-list">
         {view.rows.map((row) => (

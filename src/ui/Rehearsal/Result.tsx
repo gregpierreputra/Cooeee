@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import * as copy from '../../core/copy';
 import { detectGaps } from '../../core/rehearsal-checks';
 import { endingRecord } from '../../core/rehearsal-ending';
@@ -21,6 +21,20 @@ import Head from './Head';
 import ProgressView from './Progress';
 import { endRun } from './run-state';
 import WayNote from './WayNote';
+
+/** The line with each of its figures in bold: her time, and the distance where
+ *  one was counted. Words only, so the line still has no drawing. */
+function boldFigures(line: string, figures: string[]): ReactNode {
+  let rest = line;
+  const parts: ReactNode[] = [];
+  figures.forEach((figure) => {
+    const at = rest.indexOf(figure);
+    if (at < 0) return;
+    parts.push(rest.slice(0, at), <b key={figure}>{figure}</b>);
+    rest = rest.slice(at + figure.length);
+  });
+  return [...parts, rest];
+}
 
 type ResultProps = {
   run: RehearsalRun;
@@ -159,7 +173,7 @@ export default function Result({
     <Section kind="rehearse" title={copy.RESULT_SUMMARY_LABEL} heading>
       <div className="card result-summary">
         <p>{result.conditionLine}</p>
-        <p>{result.endingLine}</p>
+        <p>{boldFigures(result.endingLine, result.endingFigures)}</p>
         {/* What was checked, after how it ended, when nothing was missing. */}
         {result.state === 'no-gaps' ? <p className="muted place-note">{result.detail}</p> : null}
         {runKept ? null : <p className="muted place-note">{copy.RUN_NOT_KEPT}</p>}

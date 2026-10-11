@@ -49,14 +49,15 @@ export const endingRows = (): EndingRow[] =>
   REHEARSAL_ENDINGS.map((ending) => ({ ending, label: ENDING_LABEL[ending] }));
 
 /** What returning to an unfinished rehearsal asks. */
-export type UnfinishedView = { heading: string; detail: string; rows: EndingRow[] };
+export type UnfinishedView = { heading: string; started: string; ask: string; rows: EndingRow[] };
 
 export const unfinishedView = (unfinished: UnfinishedRehearsal): UnfinishedView => ({
   heading: copy.UNFINISHED_HEADING,
-  detail: copy.UNFINISHED_DETAIL(
+  started: copy.UNFINISHED_STARTED(
     conditionWithout(unfinished.condition),
     formatSavedDate(unfinished.startedAt),
   ),
+  ask: copy.UNFINISHED_ASK,
   rows: endingRows(),
 });
 
@@ -131,6 +132,15 @@ export function endingRecord(
 /** How an ending is stated on the result, beside the condition line. Her time is
  *  stated and never judged: nothing beside it, nothing to measure it against,
  *  and no bearing on any gap. */
+/** The figures inside the ending line, her time and the distance counted, so
+ *  the screen can set them in bold. None for a line without them. */
+export function endingFigures(ending: Ending): string[] {
+  if (ending.state !== 'walked' || ending.elapsedMs === undefined) return [];
+  return ending.distanceM === undefined
+    ? [durationWords(ending.elapsedMs)]
+    : [durationWords(ending.elapsedMs), formatDistanceM(ending.distanceM)];
+}
+
 export function endingLine(ending: Ending): string {
   switch (ending.state) {
     case 'walked':

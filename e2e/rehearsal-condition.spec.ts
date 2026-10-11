@@ -168,7 +168,7 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     // With a note: exactly one note row added, and nothing else.
     await page.getByLabel('Your note about the way').fill('The gate by the oval is locked after dark.');
     await page.getByRole('main').getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByText('Note saved.')).toBeVisible();
+    await expect(page.getByText("Saved to this pack's notes.")).toBeVisible();
     await expect.poll(async () => (await deviceStorage(page)).recordCounts.notes).toBe(before.recordCounts.notes + 1);
     await page.waitForTimeout(500);
     expect(await deviceStorage(page)).toEqual({

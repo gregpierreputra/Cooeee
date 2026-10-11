@@ -16,8 +16,7 @@ const WALKED_LINE = 'You went there. It took you 14 minutes.';
 const DRY_RUN_LINE = 'A dry run. You ended it without going.';
 
 const PACK_CONTENT_MEANING = 'Missing from your pack.';
-const CONDITION_MEANING =
-  'Not available under this condition. Do this instead.';
+const CONDITION_MEANING = 'Not available under this condition.';
 
 // E5-US2-AC1 — one action for each gap.
 
@@ -513,7 +512,7 @@ test.describe('AC5 her note about the way', () => {
 
     await field(page).fill(WORDS);
     await saveControl(page).click();
-    await expect(page.getByText('Note saved.')).toBeVisible();
+    await expect(page.getByText("Saved to this pack's notes.")).toBeVisible();
 
     await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
     const [note] = await storedNotes(page);
@@ -537,6 +536,23 @@ test.describe('AC5 her note about the way', () => {
     await expect.poll(async () => (await storedNotes(page))[0]?.text).toBe(`${WORDS}\nCarry water.`);
     expect(await storedNotes(page)).toHaveLength(1);
     expect((await storedNotes(page))[0].id).toBe(note.id);
+  });
+
+  test('a saved note can be taken back out, keeping her words in the field', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    const remove = page.getByRole('main').getByRole('button', { name: 'Remove from this pack' });
+    await expect(remove).toHaveCount(0);
+    await field(page).fill(WORDS);
+    await saveControl(page).click();
+    await expect(page.getByText("Saved to this pack's notes.")).toBeVisible();
+    await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
+
+    await remove.click();
+    await expect(page.getByText('Removed from this pack.')).toBeVisible();
+    await expect.poll(async () => (await storedNotes(page)).length).toBe(0);
+    await expect(field(page)).toHaveValue(WORDS);
+    await expect(page.getByText('Not saved yet.')).toBeVisible();
+    await expect(remove).toHaveCount(0);
   });
 
   test('an empty note writes nothing, and says so', async ({ page }) => {
