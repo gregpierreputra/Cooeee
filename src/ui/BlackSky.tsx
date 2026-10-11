@@ -955,7 +955,19 @@ function DialBody({
               like it, that takes the pointer and nothing else. It is not a
               button and has no name; the dial's own text equivalent stands. */}
           {map.layer ? <div ref={pan} className="blacksky-dial-pan" data-panned={panned} /> : null}
-          {compass.live ? null : <span className="blacksky-tag">{copy.NORTH_UP}</span>}
+          {/* The north badge, as map apps show it: a ring with N and a pointer
+              at its top, with the words beside it for anyone who does not know
+              the sign. Drawn, so it costs no request. */}
+          {compass.live ? null : (
+            <span className="blacksky-tag">
+              <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <path className="blacksky-north-pointer" d="M12 1 15 5H9z" />
+                <circle cx="12" cy="14" r="8.5" />
+                <path d="M9.5 17.5v-7l5 7v-7" />
+              </svg>
+              {copy.NORTH_UP}
+            </span>
+          )}
           {/* The roads and place names are Vicmap's, under CC BY 4.0, which asks
               for this credit where they are shown: in the box's two bottom
               corners, outside the ring, so it covers no map and never turns. */}

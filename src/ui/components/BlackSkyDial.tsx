@@ -56,6 +56,10 @@ const TICK_R = [MAP_R + (RING_R - MAP_R) / 3, RING_R] as const;
  *  edge (there is no room outside). Its height in the drawing's units, so it
  *  scales with the dial. */
 export const RING_DROP_UNITS = (DIAL_RING_PIN_PX * DIAL_UNITS) / DIAL_PHONE_PX;
+/** The notch: 12 units wide at its top, 3 units above the box, its corners
+ *  rounded where its sides start, its tip on the ring's line. */
+const NOTCH_TOP = -HALF - 3;
+const NOTCH = `M-4.5 ${NOTCH_TOP}H4.5Q6 ${NOTCH_TOP} 5 ${NOTCH_TOP + 1.2}L0 ${-RING_R}L-5 ${NOTCH_TOP + 1.2}Q-6 ${NOTCH_TOP} -4.5 ${NOTCH_TOP}Z`;
 /** The drop's path is drawn 22 units tall (see DROP); this scales it to the
  *  ring pin's height. */
 const RING_DROP_SCALE = RING_DROP_UNITS / 22;
@@ -127,8 +131,11 @@ export default function BlackSkyDial({
     >
       {/* A square drawing, the ring near its edge, so the dial fills the width
           it is given; its centre, 0 0, is where everything turns. The top of
-          the phone: fixed, a notch from the box's edge into the ring. */}
-      <path className="blacksky-dial-notch" d={`M-8 ${-HALF}H8L0 ${-RING_R}Z`} />
+          the phone: fixed, a small triangle with rounded top corners, risen a
+          little out of the box into the gap above it (the svg lets it show)
+          so it reads as a marker, not a sliver cut by the box's edge. Its tip
+          is on the ring's line, where a pin at the top meets it. */}
+      <path className="blacksky-dial-notch" d={NOTCH} />
       <g className={map ? 'blacksky-dial-ring on-map' : 'blacksky-dial-ring'}>
         {/* BS_Enhancement-AC5: the map is the first thing inside the ring's
             group, so it turns with the ring by the same --heading, under the
