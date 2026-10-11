@@ -311,6 +311,10 @@ test('the pack menu opens the pack\'s print page', async ({ page }) => {
   await expect(page).toHaveURL(/\/packs\/[^/]+\/print$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kalorama');
   await expect(page.locator('.print-section').first()).toContainText('Bushfire area');
+  // The stored map, cut down to home and the chosen places, on its own page.
+  await expect(page.locator('.print-map img')).toBeVisible();
+  await expect(page.locator('.print-map-frame .print-map-mark')).toHaveCount(2);
+  await expect(page.locator('.print-map-places li')).toHaveCount(2);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
 });

@@ -4598,6 +4598,47 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   .print-section {
     break-inside: avoid;
   }
+  /* Notes can be long: they run on to the next sheet, between their lines,
+     the heading kept with the first, rather than leaving the sheet before
+     half empty. The page's column layout is set aside on paper, as a printer
+     only breaks plain blocks between lines. */
+  .pack-print {
+    display: block;
+  }
+  .pack-print > * + * {
+    margin-top: 1rem;
+  }
+  .print-notes {
+    display: block;
+    break-inside: auto;
+  }
+  .print-notes .kicker {
+    break-after: avoid;
+    margin-bottom: 0.5rem;
+  }
+  /* The essentials kept to one sheet: a little less room between sections,
+     and the footer never left alone on a page. */
+  /* The map on a page of its own, after the essentials, as large as the
+     page allows. */
+  .print-map {
+    break-before: page;
+    /* A printer leaves out backgrounds unless told: the key's swatches and
+       the marks are backgrounds, so the map keeps its colours on paper. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .print-map-frame {
+    border-color: #000;
+  }
+  .pack-print .print-map-mark {
+    background: #000;
+    color: #fff;
+  }
+  .pack-print .area-map-scale {
+    background: #fff;
+    color: #000;
+    backdrop-filter: none;
+  }
 }
 /* Print this pack, on screen and on paper: sections under eyebrows, one line
    per fact, the numbers written out in full. */
@@ -4630,14 +4671,67 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .print-note {
   white-space: pre-wrap;
 }
-.print-footer {
+/* The printed map: home and the chosen places on the stored map, cut down to
+   them, still and square, with the pack page's marks and key. */
+.print-map figure {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+.print-map-frame {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--area-map-paper);
+}
+.print-map-frame img {
+  position: absolute;
+  max-width: none;
+  aspect-ratio: 1;
+}
+.print-map-mark {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px var(--area-map-paper);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+}
+.print-map-mark-key {
+  position: static;
+  width: 20px;
+  height: 20px;
+  transform: none;
+  font-size: 0.6875rem;
+}
+/* The places named under the map, by the numbers on it. */
+.print-map-places {
   display: grid;
   gap: 0.25rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
-}
-.print-footer p {
   margin: 0;
+  padding-left: 1.5rem;
+  font-size: var(--step-s);
+}
+.print-map .area-map-pin {
+  z-index: 1;
+}
+
+/* Whose instructions come first, under the pack's name: its own line,
+   marked by a rule as the area's reminder is. */
+.print-first {
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 3px solid var(--accent);
+  font-weight: var(--w-med);
 }
 /* E5-US1-AC1 — the two conditions a rehearsal can run under. IDENTICAL rows:
    same treatment, same weight, same target, in a fixed order that is

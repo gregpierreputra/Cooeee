@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 
 import { mapAcrossKm, mapBoxOf, mapPoint } from '../core/area-map-view';
 import { areaResultLine } from '../core/area-check';
-import { siteNameBlock } from '../core/blacksky-dial';
+import { siteInSentence, siteNameBlock } from '../core/blacksky-dial';
 import { AREA_MAP_NAME, DTP_DATASET_URL, DTP_LICENCE, DTP_PUBLISHER } from '../core/constants';
 import * as copy from '../core/copy';
 import { shownPackName, titleCase } from '../core/home';
@@ -57,13 +57,6 @@ type PackDetailProps = {
 /** A network-blind pack view. Every value comes from the complete-pack store;
  * every source tap is intercepted before browser navigation and requires a
  * second explicit choice before leaving Cooeee. */
-/** A place named in a sentence: the site, then the town it is in, as the
- *  site alone, such as Showgrounds Recreation Reserve, does not say where. */
-const offMapName = (name: string): string => {
-  const { site, line } = siteNameBlock(name);
-  return line ? `${site}, ${line}` : site;
-};
-
 export default function PackDetail({
   packId,
   loadContent = getCompletePackContent,
@@ -307,7 +300,7 @@ export default function PackDetail({
               place.lat !== undefined && place.lon !== undefined && typeof place.distanceM === 'number'
                 && !mapPoint(mapBox, { lat: place.lat, lon: place.lon }) ? (
                   <p key={place.id} className="muted place-note">
-                    {copy.PLACE_OFF_MAP(offMapName(placeName(place)), formatDistanceM(place.distanceM))}
+                    {copy.PLACE_OFF_MAP(siteInSentence(placeName(place)), formatDistanceM(place.distanceM))}
                   </p>
                 ) : null) : null}
             {/* One row: Source, set as Not for you? is on Home, then the saved

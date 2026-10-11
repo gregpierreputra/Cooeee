@@ -121,6 +121,9 @@ export const AREA_MAP_HALF_KM = 20;
  *  nearly every Victorian locality while staying sharp enough to read. */
 export const AREA_MAP_MARGIN_KM = 3;
 export const AREA_MAP_MAX_HALF_KM = 60;
+/** The printed map is cut down to home and its chosen places, so its road
+ *  names print large enough to read: at least this far each way. */
+export const PRINT_MAP_MIN_HALF_KM = 5;
 /** Nearby's map of the nearest bushfire places: the same 40 km square as a
  *  pack's map, at most this many Neighbourhood Safer Places on it, and the
  *  picture's half width in its own pixels, about half a phone's width. */

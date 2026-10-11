@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { areaMapHalfKm, clampView, mapAcrossKm, mapBoxAround, mapBoxOf, mapMaxScale, mapPoint, MAP_HOME, MAP_MAX_SCALE, zoomAbout } from '../../src/core/area-map-view';
+import { areaMapHalfKm, printMapHalfKm, clampView, mapAcrossKm, mapBoxAround, mapBoxOf, mapMaxScale, mapPoint, MAP_HOME, MAP_MAX_SCALE, zoomAbout } from '../../src/core/area-map-view';
 
 const centre = { lat: -37.8, lon: 145.3 };
 const box = mapBoxAround(centre, 40);
@@ -81,5 +81,16 @@ describe('mapMaxScale', () => {
     expect(mapMaxScale(mapBoxAround(centre, 60))).toBe(MAP_MAX_SCALE * 3);
     expect(mapMaxScale(null)).toBe(MAP_MAX_SCALE);
     expect(clampView({ x: 0, y: 0, scale: 50 }, 100, mapMaxScale(mapBoxAround(centre, 60))).scale).toBe(24);
+  });
+});
+
+// The printed map is cut to home and its places, so road names print large.
+describe('printMapHalfKm', () => {
+  const kmNorth = (km: number) => ({ lat: centre.lat + km / 111, lon: centre.lon });
+  it('reaches past the farthest place, at least 5 km, never past the stored map', () => {
+    expect(printMapHalfKm(centre, [kmNorth(6)], 20)).toBe(8);
+    expect(printMapHalfKm(centre, [kmNorth(1)], 20)).toBe(5);
+    expect(printMapHalfKm(centre, [], 20)).toBe(5);
+    expect(printMapHalfKm(centre, [kmNorth(19)], 20)).toBe(20);
   });
 });

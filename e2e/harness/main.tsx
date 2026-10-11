@@ -251,8 +251,10 @@ const detailLayer: ExposureLayer = {
   packId: 'detail-pack',
   group: 'designation',
   code: 'BPA',
-  status: 'present',
-  features: [{ planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' }],
+  // ?mode=outside: an address the map does not show inside the area.
+  ...(detailMode === 'outside'
+    ? { status: 'none-mapped-here' as const, features: [] }
+    : { status: 'present' as const, features: [{ planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' }] }),
   checkedAt: detailSavedAt,
   source: { ...packSource, retrievedAt: detailSavedAt },
 };

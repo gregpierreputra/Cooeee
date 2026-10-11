@@ -1,4 +1,4 @@
-import { AREA_MAP_HALF_KM, AREA_MAP_MARGIN_KM, AREA_MAP_MAX_HALF_KM } from './constants';
+import { AREA_MAP_HALF_KM, AREA_MAP_MARGIN_KM, AREA_MAP_MAX_HALF_KM, PRINT_MAP_MIN_HALF_KM } from './constants';
 import type { LatLon } from './types';
 
 // The stored map of a pack's area is one picture drawn in plain longitude and
@@ -24,12 +24,26 @@ export function mapBoxAround({ lat, lon }: LatLon, halfKm: number): MapBox {
  *  little room past it, up to AREA_MAP_MAX_HALF_KM. A place past that is said
  *  in words under the map. */
 export function areaMapHalfKm(centre: LatLon, places: LatLon[]): number {
-  const reach = places.reduce((most, { lat, lon }) => {
+  return Math.min(AREA_MAP_MAX_HALF_KM, Math.max(AREA_MAP_HALF_KM, Math.ceil(farthestKm(centre, places) + AREA_MAP_MARGIN_KM)));
+}
+
+/** How far the farthest place lies east, west, north or south of the centre,
+ *  in kilometres: what decides whether a square around the centre holds it. */
+export function farthestKm(centre: LatLon, places: LatLon[]): number {
+  return places.reduce((most, { lat, lon }) => {
     const northSouth = Math.abs(lat - centre.lat) * KM_PER_DEGREE_LAT;
     const eastWest = Math.abs(lon - centre.lon) * KM_PER_DEGREE_LAT * Math.cos((centre.lat * Math.PI) / 180);
     return Math.max(most, northSouth, eastWest);
   }, 0);
-  return Math.min(AREA_MAP_MAX_HALF_KM, Math.max(AREA_MAP_HALF_KM, Math.ceil(reach + AREA_MAP_MARGIN_KM)));
+}
+
+/** The printed map's reach each way, in whole kilometres: home and the chosen
+ *  places with a little room, at least PRINT_MAP_MIN_HALF_KM and never past
+ *  the stored map. Cut down this way its road names print large enough to
+ *  read, where the whole stored map would print them too small. */
+export function printMapHalfKm(centre: LatLon, places: LatLon[], mapHalfKm: number): number {
+  const wanted = Math.ceil(farthestKm(centre, places) * 1.15 + 1);
+  return Math.min(mapHalfKm, Math.max(PRINT_MAP_MIN_HALF_KM, wanted));
 }
 
 /** The box a stored map was drawn for, read back from its own request, so a

@@ -72,8 +72,9 @@ export const PACK_NAME_NOT_SAVED = 'The name was not saved. Try again.';
 export const PACK_ICON_LABEL = 'Icon';
 /** Print this pack: one page of the pack on paper, from the menu. */
 export const PRINT_PACK = 'Print this pack';
-export const PRINT_SAVED_ON = (date: string) => `Saved ${date}`;
 export const PRINT_AREA_TITLE = 'Bushfire area';
+/** The printed map's heading, over home and the chosen places. */
+export const PRINT_MAP_TITLE = 'Map of your places';
 export const PRINTED_FROM = (printed: string, saved: string) =>
   `Printed ${printed} from information saved ${saved}. Check VicEmergency for current warnings.`;
 export const CHANGE_ICON = 'Change icon';

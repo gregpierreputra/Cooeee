@@ -78,6 +78,13 @@ export function splitSiteName(name: string): { site: string; suburb: string | nu
   return whole; // the first bracket never closes
 }
 
+/** A place named in a sentence: the site, then the town it is in, as the
+ *  site alone, such as Showgrounds Recreation Reserve, does not say where. */
+export function siteInSentence(name: string): string {
+  const { site, line } = siteNameBlock(name);
+  return line ? `${site}, ${line}` : site;
+}
+
 /**
  * The name block as the dial shows it: the site on one line, where it is on the
  * next. splitSiteName does the first cut. This makes the second: many official

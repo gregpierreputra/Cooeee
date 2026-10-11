@@ -19,6 +19,30 @@ test('the print page shows the pack, its area, its places and who to call, with 
   expect(requests).toBe(0);
 });
 
+// The area answer as the Area tab gives it: the sentence, the plan it matched,
+// and outside the area, that fire can still reach the place.
+test('the print page gives the area answer in full, inside and outside', async ({ page }) => {
+  await page.goto(`${HARNESS}/detail-print`);
+  const area = page.locator('.print-area');
+  await expect(area.locator('.print-area-answer')).toHaveText(copy.INSIDE_BUSHFIRE_AREA);
+  await expect(area.locator('.print-source')).toContainText('LEGL./25-138');
+  await expect(area).not.toContainText(copy.AREA_MAP_IS_NOT_FIRE_REACH);
+
+  await page.goto(`${HARNESS}/detail-print?mode=outside`);
+  await expect(area.locator('.print-area-answer')).toHaveText(copy.NOTHING_MAPPED_AT_ADDRESS);
+  await expect(area).toContainText(copy.AREA_MAP_IS_NOT_FIRE_REACH);
+  await expect(area.locator('.print-source')).toHaveCount(0);
+});
+
+// Who to call comes straight after the area, so it is always on the first sheet,
+// and when it was printed and whose instructions come first sit at the top.
+test('the print page puts who to call before the places and notes', async ({ page }) => {
+  await page.goto(`${HARNESS}/detail-print`);
+  const headings = await page.locator('.print-section > .kicker').allTextContents();
+  expect(headings.slice(0, 3)).toEqual([copy.PRINT_AREA_TITLE, copy.WHO_TO_CALL, copy.DESTINATIONS_STEP_TITLE]);
+  await expect(page.locator('.hero .print-first')).toHaveText(copy.OFFICIAL_INSTRUCTIONS_FIRST);
+});
+
 test('Print opens the print dialog only when tapped, and the button stays off paper', async ({ page }) => {
   await page.goto(`${HARNESS}/detail-print`);
   await page.evaluate(() => {
