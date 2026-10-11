@@ -19,9 +19,6 @@ export const NO_GPS = 'No GPS signal. Showing your saved places.';
 export const GPS_APPROXIMATE = (m: number) => `GPS ± ${m} m here. Direction is approximate.`;
 export const FIX_AGE = (s: number) => `GPS fix ${s} s old. Direction may have changed.`;
 
-/** Said of the pack that is loaded, never of every pack: another saved pack
- *  may well cover this place, and the picker says so beside it. */
-export const OUTSIDE_AREAS = "You're outside this pack's area";
 
 // Shared vocabulary
 /** The eight compass points by name, index 0 = north, one every 45 degrees.
@@ -540,8 +537,11 @@ export const MARK_AT_SAVED_PLACE = (address: string) => `${MARK_STANDING_AT} ${a
 export const ESTIMATE_READOUT = (m: number) => `ESTIMATE from your mark, ± ${m} m and growing`;
 
 // E3-US2-AC1 outside the loaded pack's area
-/** Distance to a pack area's EDGE — never presented as a direction. */
-export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area`;
+/** Said of the pack that is loaded, never of every pack: another saved pack
+ *  may well cover this place, and the picker says so beside it. The distance
+ *  is to the area's EDGE, and never presented as a direction. */
+export const OUTSIDE_PACK_AREA = (distance: string, pack: string) =>
+  `You're ${distance} outside the ${pack} pack's area.`;
 
 // General official guidance, stored in the app itself so it is readable with
 // zero network. The numbers are safety copy: exact-match tested, never retyped.

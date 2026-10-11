@@ -498,27 +498,13 @@ export default function BlackSky({
         trust={trust}
         // The error of the position, stated beside the figure it qualifies. A
         // marked position keeps E3-US1-AC4's own words: always ESTIMATE, and
-        // the uncertainty growing.
-        // Outside the pack's area, E3-US2-AC1's line (the pack, and how far to
-        // its area) takes this place instead, under the figures, so it costs
-        // the dial no height: above the dial it shrank the dial on a 360 px
-        // phone. The accuracy is still stated in the lines below the dial; a
-        // marked position's ESTIMATE sentence is never dropped.
+        // the uncertainty growing. Outside the pack's area the same: that is
+        // said in its own card under the dial.
         readout={
-          screen.kind === 'OUT_OF_AREA' ? (
-            <>
-              {estimate ? <span>{copy.ESTIMATE_READOUT(estimate.accuracyM)}</span> : null}
-              <OutsideArea packs={screen.packs} />
-            </>
-          ) : estimate ? (
-            copy.ESTIMATE_READOUT(estimate.accuracyM)
-          ) : (
-            copy.ACCURACY_READOUT(confidence!.accuracyM)
-          )
+          estimate ? copy.ESTIMATE_READOUT(estimate.accuracyM) : copy.ACCURACY_READOUT(confidence!.accuracyM)
         }
-        readoutLong={screen.kind === 'OUT_OF_AREA'}
         // The plain accuracy figure opens what it means, from where it stands.
-        explainAccuracy={!estimate && screen.kind !== 'OUT_OF_AREA'}
+        explainAccuracy={!estimate}
         accuracyM={estimate ? estimate.accuracyM : confidence!.accuracyM}
         compass={compass}
         // BS_Enhancement-AC3: the speaker button, at the right-hand end of the
@@ -815,9 +801,16 @@ function ScreenBody({
     case 'OUT_OF_AREA':
       return (
         <>
-          {/* The pack and its distance are stated in the dial's own distance
-              row (see OutsideArea), not here above it. */}
+          {/* E3-US2-AC1: the loaded pack named with the distance to its area's
+              edge, one plain sentence in a card under the dial, as every other
+              state is. Never a direction to the area. */}
           {dial}
+          {screen.packs.map(({ pack, distanceKm }) => (
+            <StateCard
+              key={pack.id}
+              heading={copy.OUTSIDE_PACK_AREA(copy.distanceLabel(distanceKm * 1000), shownPackName(pack.name))}
+            />
+          ))}
           {notes}
           <ConfidenceLines confidence={screen.confidence} />
         </>
@@ -851,7 +844,6 @@ function DialBody({
   model,
   trust,
   readout,
-  readoutLong = false,
   explainAccuracy = false,
   accuracyM,
   compass,
@@ -862,9 +854,6 @@ function DialBody({
   model: DialModel;
   trust: PositionTrust;
   readout: ReactNode;
-  /** The readout is a sentence or two, not "± 10 m": it takes the full width
-   *  under the figures. */
-  readoutLong?: boolean;
   /** The readout is the plain "± 10 m": it is the toggle that opens what the
    *  figure means, in a bubble over the top of the dial. */
   explainAccuracy?: boolean;
@@ -969,7 +958,7 @@ function DialBody({
               </svg>
             </button>
           ) : (
-            <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark' || readoutLong}>
+            <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark'}>
               {readout}
             </span>
           )}
@@ -1067,22 +1056,6 @@ function TurnOnCompass({
     <button type="button" onClick={() => void compass.enable()}>
       {copy.TURN_ON_COMPASS}
     </button>
-  );
-}
-
-/** E3-US2-AC1, outside the loaded pack's area: the pack named with the
- *  distance to its area's edge, an informational line, never a bearing to it.
- *  Set in the dial's readout place under the figures. */
-function OutsideArea({ packs }: { packs: { pack: Pack; distanceKm: number }[] }) {
-  return (
-    <>
-      <span className="blacksky-outside">{copy.OUTSIDE_AREAS}</span>
-      {packs.map(({ pack, distanceKm }) => (
-        <span key={pack.id} className="blacksky-outside-pack">
-          <b className="pack-name">{shownPackName(pack.name)}</b> · {copy.AREA_DISTANCE_LINE(copy.distanceLabel(distanceKm * 1000))}
-        </span>
-      ))}
-    </>
   );
 }
 

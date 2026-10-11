@@ -1996,13 +1996,6 @@ main:focus {
   grid-column: 1 / -1;
 }
 
-/* Outside the pack's area, the readout is E3-US2-AC1's line, one fact a line. */
-.blacksky-outside,
-.blacksky-outside-pack {
-  display: block;
-  line-height: 1.2;
-}
-
 /* The distance is the largest text on the screen, 44 px, the height of its
    48 px row: it gave up size so the dial could fill the width. */
 .blacksky-figure-main {

@@ -30,8 +30,10 @@ describe('mandated literals', () => {
     expect(copy.FIX_AGE(45)).toBe('GPS fix 45 s old. Direction may have changed.');
   });
 
-  it("being outside the loaded pack's area is stated plainly", () => {
-    expect(copy.OUTSIDE_AREAS).toBe("You're outside this pack's area");
+  it("being outside the loaded pack's area is stated plainly, as one sentence", () => {
+    expect(copy.OUTSIDE_PACK_AREA('19.4 km', 'Ferny Creek')).toBe(
+      "You're 19.4 km outside the Ferny Creek pack's area.",
+    );
   });
 
 
@@ -174,7 +176,8 @@ describe('general official guidance', () => {
   });
 
   it('states the area distance without implying a direction', () => {
-    expect(copy.AREA_DISTANCE_LINE('9.2 km')).toBe('9.2 km to its area');
+    const line = copy.OUTSIDE_PACK_AREA('9.2 km', 'Home');
+    for (const word of ['north', 'south', 'east', 'west', 'towards', 'head']) expect(line.toLowerCase()).not.toContain(word);
   });
 });
 

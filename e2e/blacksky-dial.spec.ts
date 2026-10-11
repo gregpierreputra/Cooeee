@@ -8,7 +8,6 @@ import {
   NO_GPS,
   NO_PACK_HERE,
   NO_PLACE_TO_POINT_AT,
-  OUTSIDE_AREAS,
   SORTED_BY_DISTANCE,
 } from '../src/core/copy';
 import { titleCase } from '../src/core/home';
@@ -497,9 +496,11 @@ test('Normal, outside the pack area: the dial points at the nearest site, and th
   await pushPosition(page, AT_MELBOURNE);
 
   // E3-US2-AC1's rules are unchanged: the pack is named with the distance to
-  // its area, never pointed at, and the reminder closes the screen.
-  await expect(page.getByText(OUTSIDE_AREAS)).toBeVisible();
-  await expect(page.getByText(/km to its area$/)).toBeVisible();
+  // its area, never pointed at, in one sentence in a card under the dial; the
+  // reminder closes the screen.
+  const outside = page.getByRole('heading', { name: /^You're [\d.]+ km outside the .+ pack's area\.$/ });
+  await expect(outside).toBeVisible();
+  expect((await outside.boundingBox())!.y).toBeGreaterThan((await page.locator('.blacksky-dial').boundingBox())!.y);
   await expectNoCalls(page);
 
   // The chosen places are out of reach here, so the label is the state-wide one.
