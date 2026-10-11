@@ -1720,9 +1720,15 @@ main:focus {
   border-bottom: 0;
 }
 
-.blacksky-place h2 {
+/* The saved places on the no GPS screen, set as on the pack page: the
+   heading and the line about them, then one card each. */
+.blacksky-saved-places {
+  display: grid;
+  gap: 0.75rem;
+}
+/* Read at arm's length: the site a size up from the pack page's. */
+.blacksky-saved-places .nearby-place-name {
   font-size: var(--step-1);
-  font-weight: var(--w-bold);
 }
 
 /* ── The dial (BS_Enhancement-AC1) ─────────────────────────────────────────

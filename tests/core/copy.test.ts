@@ -199,14 +199,6 @@ describe('no pack stored', () => {
   });
 });
 
-// E3-US2-AC3: every saved place is described by the official term, with its
-// source — and by nothing that promises anything about it.
-describe('place descriptor', () => {
-  it('names the place kind and its publisher, nothing more', () => {
-    expect(copy.PLACE_DESCRIPTOR('CFA')).toBe('Official place of last resort · CFA');
-  });
-});
-
 // E3-US3-AC1: deliberate activation — the stray-tap hint and the one exit.
 describe('deliberate activation', () => {
   it('a stray tap earns only the hold hint', () => {

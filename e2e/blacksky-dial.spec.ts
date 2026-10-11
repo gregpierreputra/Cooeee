@@ -532,11 +532,13 @@ test('Empty: a position but nothing to point at keeps the notes and Leave', asyn
   await expect(page.getByRole('button', { name: LEAVE_BLACKSKY })).toBeVisible();
 });
 
-test('Unavailable: with no position the no-fix reference screen shows, unchanged', async ({ page }) => {
+test('Unavailable: with no position the no-fix reference screen shows the saved places', async ({ page }) => {
   await openDial(page, 'pack');
 
   await expect(page.getByText(NO_GPS)).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Sassafras (Village Green (car park))' })).toBeVisible();
+  // Each place as on the pack page: the site as its heading, then the suburb.
+  await expect(page.getByRole('heading', { name: 'Village Green' })).toBeVisible();
+  await expect(page.getByText('Sassafras · car park')).toBeVisible();
   await expect(
     page.getByRole('button', { name: MARK_AT_SAVED_PLACE(titleCase('10 OLD ROAD FERNY CREEK 3786')) }),
   ).toBeVisible();

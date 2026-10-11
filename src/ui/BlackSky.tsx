@@ -1359,22 +1359,37 @@ function ConfidenceLines({ confidence }: { confidence: Confidence }) {
 }
 
 /** The reference screen for US1-AC2: saved information as text, no bearing
- *  figures. The state card above it says why. */
+ *  figures. The state card above it says why. The places are set as on the
+ *  pack page: one card each, the site in bold, then the suburb and the
+ *  address. Their kind and publisher are said once, over the list. A place
+ *  that could not be saved says why in a state card. */
 function ReferenceBody({ places, pack }: { places: Destination[]; pack: Pack }) {
+  const sites = places.filter((place) => place.kind === 'nsp-bushfire');
   return (
     <>
-      <ul className="list">
-        {places.map((place) => (
-          <li key={place.id} className="blacksky-place">
-            {place.name ? <h2>{place.name}</h2> : null}
-            {place.addressText ? <p className="muted">{place.addressText}</p> : null}
-            {place.kind === 'nsp-bushfire' ? (
-              <p className="muted">{copy.PLACE_DESCRIPTOR(place.source.publisher)}</p>
-            ) : null}
-            {place.reason ? <p className="muted">{place.reason}</p> : null}
-          </li>
-        ))}
-      </ul>
+      {sites.length > 0 ? (
+        <section className="blacksky-saved-places">
+          <h2 className="kicker">{copy.DESTINATIONS_STEP_TITLE}</h2>
+          <p className="muted">
+            {copy.SAVED_PLACES_KIND(sites.length)} {copy.SOURCE_PUBLISHED_BY} {sites[0].source.publisher}.
+          </p>
+          <ul className="list saved-destinations">
+            {sites.map((place) => {
+              const { site, line } = siteNameBlock(place.name ?? '');
+              return (
+                <li key={place.id} className="card">
+                  {site ? <h3 className="nearby-place-name">{site}</h3> : null}
+                  {line ? <p className="muted">{line}</p> : null}
+                  {place.addressText ? <p className="muted">{place.addressText}</p> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+      {places.map((place) =>
+        place.reason ? <StateCard key={place.id} heading={place.reason} /> : null,
+      )}
       {pack.reminder ? <p className="blacksky-reminder">{pack.reminder}</p> : null}
     </>
   );

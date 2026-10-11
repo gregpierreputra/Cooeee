@@ -565,10 +565,6 @@ export const PREP_KIT_LINE =
 export const PREP_PLAN_LINE = 'Decide where you would go and how, before you need to.';
 
 // E3-US2-AC3 BlackSky never says safe
-/** How every saved place is described, with its source. The term is the CFA's
- *  own — a place of LAST resort — and the wording promises nothing about it. */
-export const PLACE_DESCRIPTOR = (publisher: string) =>
-  `Official place of last resort · ${publisher}`;
 
 // E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
