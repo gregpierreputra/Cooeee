@@ -5269,8 +5269,15 @@ p.gap-reason-label {
   font-size: var(--step-s);
   font-weight: var(--w-bold);
 }
-.way-note-status:empty {
+.way-note-status:empty,
+.way-note-status.way-note-saved {
   margin-top: -0.5rem;
+}
+/* Save, once the words are kept: the teal outline and a tick, done. */
+.way-note .way-note-kept {
+  color: var(--accent);
+  border-color: var(--accent);
+  cursor: default;
 }
 .way-note-caution {
   color: var(--stale);

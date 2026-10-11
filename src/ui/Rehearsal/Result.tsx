@@ -239,7 +239,7 @@ export default function Result({
                   className="action gap-mark with-glyph"
                   onClick={() => toggle(row.actionId, row.doneOn !== null)}
                 >
-                  {row.doneOn ? null : <Glyph kind="check" line />}
+                  <Glyph kind={row.doneOn ? 'close' : 'check'} line />
                   {row.doneOn ? copy.UNDO_ACTION_DONE : copy.MARK_ACTION_DONE}
                 </button>
                 {notKept === row.actionId ? (
