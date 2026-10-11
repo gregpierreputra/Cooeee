@@ -175,6 +175,7 @@ describe('the pack can be rehearsed', () => {
       state: 'ready',
       packId: 'pack-1',
       packName: 'Kalorama',
+      packAddress: content().pack.address,
       hazards: ['bushfire'],
     });
   });

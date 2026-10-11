@@ -9,7 +9,7 @@ test.describe('E9 the drill', () => {
     await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toBeVisible();
     await expect(page.locator('main .actions button')).toHaveText(['Start the drill']);
     await page.goto(`${HARNESS}/rehearse?mode=rehearsable`);
-    await expect(page.getByRole('heading', { name: 'Rehearse without…' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toHaveCount(0);
   });
 

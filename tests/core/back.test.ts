@@ -26,6 +26,15 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/rehearse/a', '', NONE)).toBe('/rehearse');
   });
 
+  it('goes from a pack\'s rehearsal back to the pack when the pack page opened it', () => {
+    expect(backTarget('/rehearse/a', '?from=pack', NONE)).toBe('/packs/a');
+  });
+
+  it('goes from a chosen condition back to the choice, keeping where it was opened from', () => {
+    expect(backTarget('/rehearse/a', '?condition=no-data', NONE)).toBe('/rehearse/a');
+    expect(backTarget('/rehearse/a', '?from=pack&condition=no-data', NONE)).toBe('/rehearse/a?from=pack');
+  });
+
   it.each(['/rehearse/drill', '/rehearse/word', '/rehearse/block'])('goes from the game %s up to Rehearse, whatever is running', (path) => {
     expect(backTarget(path, '', NONE)).toBe('/rehearse');
     expect(backTarget(path, '', { ...NONE, runPackId: 'a' })).toBe('/rehearse');

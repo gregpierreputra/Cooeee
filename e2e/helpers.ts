@@ -151,7 +151,7 @@ export async function acknowledgeFirstOpen(page: Page) {
  *  already on screen. */
 export async function startJourney(page: Page, condition: string, url?: string) {
   if (url) await page.goto(url);
-  await expect(page.getByRole('heading', { name: 'Rehearse without…' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(condition) }).click();
   await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
   await expect(page.locator('.rehearsal-bar')).toBeVisible();

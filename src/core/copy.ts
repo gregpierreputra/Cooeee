@@ -1162,7 +1162,8 @@ export const NO_PACK_OTHERS_DETAIL = (count: number) =>
  *  address from the list."), which is likely why a list under a question reads
  *  less like something to choose from; and the "we", which is the only place in
  *  the product where the app speaks of itself in the first person. */
-export const CHOOSE_CONDITION_HEADING = 'Rehearse without…';
+/** Read into the rows under it as one sentence: Rehearse with no mobile data. */
+export const CHOOSE_CONDITION_HEADING = 'Rehearse with…';
 export const CONDITION_NO_DATA = 'No mobile data';
 export const CONDITION_NO_DATA_DETAIL = 'Only what is saved on the phone works.';
 export const CONDITION_NO_FIX = 'No location fix';

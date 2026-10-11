@@ -5026,6 +5026,28 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   overflow-wrap: anywhere;
 }
 
+/* A choice on a pack's rehearsal, set as Recover's need rows: its drawing in
+   a ring, its two lines, and an arrow saying it opens. */
+.condition-action.condition-choice {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.875rem;
+  padding-left: 0.75rem;
+}
+.condition-choice-text {
+  display: grid;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+}
+.condition-choice .condition-label {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+}
+.condition-choice .card-chevron {
+  flex: none;
+  color: var(--ink-3);
+}
 /* NOT .muted. Muted is this product's convention for passive explanatory prose,
    and a control whose second line is muted reads as a card of text rather than
    as something to tap. Every line of an address candidate row is full-strength

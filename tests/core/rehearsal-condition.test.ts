@@ -108,7 +108,7 @@ describe('the chosen condition', () => {
 
 describe('the wording of this screen', () => {
   it('names what the rehearsal runs without, pending the copy review', () => {
-    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse without…');
+    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse with…');
   });
 
   it('names no hazard: a condition is a way the phone fails, not a way a hazard behaves', () => {

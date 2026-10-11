@@ -9,7 +9,7 @@ const WITH_GAP = `${ORIGIN}/rehearse?mode=gap`;
 
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
-const CHOOSE_HEADING = 'Rehearse without…';
+const CHOOSE_HEADING = 'Rehearse with…';
 
 /** E5-US1-AC5: how the rehearsal ended, beside the condition line. */
 const WALKED_LINE = 'You went there. It took you 14 minutes.';

@@ -501,7 +501,7 @@ describe('the rehearsal entry gate', () => {
 // what is missing, then what that means when it is, and neither is ranked.
 describe('the choice of condition', () => {
   it('names what the rehearsal is run without', () => {
-    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse without…');
+    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse with…');
   });
 
   it('states each condition in plain words rather than as a technical state', () => {

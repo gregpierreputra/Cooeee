@@ -236,7 +236,7 @@ test('AC4 nothing to rehearse fills no action, because none of them fixes it', a
 // than a heading and paragraphs), so it is measured on its own terms rather
 // than folded into the loops above.
 const CONDITION = `${ORIGIN}/rehearse?mode=rehearsable`;
-const CHOOSE_HEADING = 'Rehearse without…';
+const CHOOSE_HEADING = 'Rehearse with…';
 
 test('AC1 the choice survives 200% text with no clipping or overlap', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
@@ -292,13 +292,14 @@ test('AC1 the choice survives 200% text with no clipping or overlap', async ({ p
   expect(report.rows).toBe(2);
 });
 
-test('AC1 every row and the action meet the minimum target size', async ({ page }) => {
+test('AC1 every row meets the minimum target size', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await page.goto(CONDITION);
   await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
 
-  const targets = await page.locator('.condition-action, .actions a').all();
-  expect(targets).toHaveLength(3);
+  // Back at the top is the way out, so the two rows are the only targets.
+  const targets = await page.locator('.condition-action').all();
+  expect(targets).toHaveLength(2);
   for (const target of targets) {
     const box = await target.boundingBox();
     expect(box).not.toBeNull();
@@ -312,18 +313,18 @@ test('AC1 the choice meets the contrast minimum on every element', async ({ page
   await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
 
   const rows = await contrastRows(page);
-  // Kicker, heading, both condition rows and the action.
+  // Kicker, title, address, heading and both condition rows.
   expect(rows.length).toBeGreaterThanOrEqual(5);
   const failing = rows.filter((row) => row.ratio < row.required);
   expect(failing, JSON.stringify(failing)).toEqual([]);
 });
 
-test('AC1 kicker, heading, rows and action are in reading order', async ({ page }) => {
+test('AC1 kicker, heading and rows are in reading order', async ({ page }) => {
   await page.goto(CONDITION);
   await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
 
   const order = await page.evaluate(() =>
-    [...document.querySelectorAll('.kicker, h2, .condition-action, .actions a')].map((el) => ({
+    [...document.querySelectorAll('.kicker, h2, .condition-action')].map((el) => ({
       tag: el.tagName,
       className: el.className,
       text: el.textContent ?? '',
@@ -333,12 +334,10 @@ test('AC1 kicker, heading, rows and action are in reading order', async ({ page 
   const kicker = order.findIndex((entry) => entry.className.includes('kicker'));
   const head = order.findIndex((entry) => entry.tag === 'H2');
   const firstRow = order.findIndex((entry) => entry.className.includes('condition-action'));
-  const action = order.findIndex((entry) => entry.tag === 'A');
 
   expect(kicker).toBeGreaterThanOrEqual(0);
   expect(head).toBeGreaterThan(kicker);
   expect(firstRow).toBeGreaterThan(head);
-  expect(action).toBeGreaterThan(firstRow);
 });
 
 // E5-US1-AC1 — the two conditions must read as equals, so they are shown as

@@ -35,8 +35,18 @@ export function backTarget(
   }
   // The games on the Rehearse screen go back to it, whatever is saved.
   if (GAME_PATHS.includes(pathname)) return '/rehearse';
+  // A chosen condition steps back to the choice. The choice goes back where it
+  // was opened from: the pack page when its own Rehearse this pack opened it,
+  // else the Rehearse tab.
   if (pathname.startsWith('/rehearse/')) {
-    return runPackId === null ? '/rehearse' : null;
+    if (runPackId !== null) return null;
+    const params = new URLSearchParams(search);
+    if (params.has('condition')) {
+      params.delete('condition');
+      const rest = params.toString();
+      return rest ? `${pathname}?${rest}` : pathname;
+    }
+    return params.get('from') === 'pack' ? `/packs/${pathname.split('/')[2]}` : '/rehearse';
   }
   // A pack, the address search, or an address the app does not know.
   return '/';

@@ -5,7 +5,7 @@ const ORIGIN = 'http://127.0.0.1:4174';
 const REHEARSABLE = `${ORIGIN}/rehearse?mode=rehearsable`;
 const EMPTY = `${ORIGIN}/rehearse?mode=empty`;
 
-const HEADING = 'Rehearse without…';
+const HEADING = 'Rehearse with…';
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
 /** Each condition as it reads after "without". */

@@ -91,7 +91,7 @@ test('every offline feature works in airplane mode, and the online ones say they
   // Rehearse: the pack's rehearsal, then the drill with its pictures.
   await page.goto('/rehearse');
   await page.locator('.pack-choice-list .pack-name a').first().click();
-  await expect(page.getByRole('heading', { name: 'Rehearse without…' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
   await page.goto('/rehearse');
   await page.getByRole('button', { name: /Play the drill/ }).click();
   await page.getByRole('button', { name: 'Start the drill' }).click();

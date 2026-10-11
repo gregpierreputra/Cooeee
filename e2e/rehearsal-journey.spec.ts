@@ -29,7 +29,7 @@ const CONDITIONS = [NO_DATA, NO_FIX] as const;
 const WITHOUT: Record<string, string> = { [NO_DATA]: 'mobile data', [NO_FIX]: 'a location fix' };
 const CONDITION_VALUE: Record<string, string> = { [NO_DATA]: 'no-data', [NO_FIX]: 'no-location-fix' };
 
-const CHOOSE_HEADING = 'Rehearse without…';
+const CHOOSE_HEADING = 'Rehearse with…';
 const BEFORE_HEADING = 'Rehearse the way there';
 const RUNNING_HEADING = 'Practising the way';
 const GO = "I'm going now";

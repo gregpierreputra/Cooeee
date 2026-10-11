@@ -443,7 +443,8 @@ export default function PackDetail({
             Rehearse). It always leads to the gate, never straight into a
             rehearsal: whether one can start at all is decided there, from what
             this pack actually holds. */}
-        <Link className="action main-action with-glyph" to={`/rehearse/${content.pack.id}`}>
+        {/* Marked as from this pack, so Back on the rehearsal comes back here. */}
+        <Link className="action main-action with-glyph" to={`/rehearse/${content.pack.id}?from=pack`}>
           <Glyph kind="rehearse" line />
           {copy.REHEARSE_THIS_PACK}
         </Link>

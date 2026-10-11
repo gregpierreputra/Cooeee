@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import * as copy from '../../core/copy';
 import { shownPackName } from '../../core/home';
 import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../core/rehearsal-entry';
-import type { RehearsalCondition } from '../../core/rehearsal-condition';
+import { isRehearsalCondition, type RehearsalCondition } from '../../core/rehearsal-condition';
 import { isRunFor } from '../../core/rehearsal-run';
 import type { UnfinishedRehearsal } from '../../core/types';
 import { findUnfinishedRehearsal, readRehearsalSource } from '../../data/db';
@@ -51,9 +51,19 @@ export default function RehearsalEntry({
   // finds none.
   const run = useRehearsalRun();
   // E5-US1-AC5 — the condition she has chosen and not yet gone on. Setup, not
-  // commitment: held by this screen alone, never written and never held beyond
-  // it, so a curious tap leaves nothing behind once she leaves the screen.
-  const [chosen, setChosen] = useState<RehearsalCondition | null>(null);
+  // commitment: held in the address alone, never written to the phone, so a
+  // curious tap leaves nothing behind once she leaves the screen. In the
+  // address, Back steps from it to the choice, not past the choice.
+  const [params, setParams] = useSearchParams();
+  const asked = params.get('condition');
+  const chosen = isRehearsalCondition(asked) ? asked : null;
+  const setChosen = (condition: RehearsalCondition | null) => {
+    const next = new URLSearchParams(params);
+    if (condition === null) next.delete('condition');
+    else next.set('condition', condition);
+    // Choosing is a step to come back from; going on replaces it.
+    setParams(next, { replace: condition === null });
+  };
   // E5-US1-AC5 — a kept rehearsal still waiting for its ending. Read whenever no
   // run is in memory: on opening, and again when a run ends, so leaving a run
   // without an ending comes straight back to the question. undefined = not read
@@ -148,7 +158,7 @@ export default function RehearsalEntry({
     return chosen !== null ? (
       <JourneyBefore packId={gate.packId} condition={chosen} onGone={() => setChosen(null)} />
     ) : (
-      <Condition packId={gate.packId} packName={shownPackName(gate.packName)} onChoose={setChosen} />
+      <Condition packName={shownPackName(gate.packName)} packAddress={gate.packAddress} onChoose={setChosen} />
     );
   }
 

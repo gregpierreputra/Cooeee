@@ -481,6 +481,19 @@ test('Back from a pack goes Home with another tab behind it, and a lone pack\'s 
   await expect(page).toHaveURL(/\/rehearse\/.+/);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(/\/rehearse$/);
+
+  // Opened from the pack page, Back goes back to that pack instead.
+  await page.goto('/');
+  await page.locator('.pack-card .pack-name a').click();
+  await page.getByRole('tab', { name: 'Practice' }).click();
+  await page.getByRole('link', { name: 'Rehearse this pack' }).click();
+  // A chosen condition steps back to the choice first, then to the pack.
+  await page.getByRole('button', { name: /No mobile data/ }).click();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(/\/packs\/.+/);
 });
 
 test('US2 the pack reopens unchanged after returning to the pack list', async ({ page }) => {

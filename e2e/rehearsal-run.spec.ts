@@ -13,7 +13,7 @@ const UNREADABLE = `${ORIGIN}/rehearse?mode=unreadable`;
 
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
-const CHOOSE_HEADING = 'Rehearse without…';
+const CHOOSE_HEADING = 'Rehearse with…';
 
 const bar = (page: Page) => page.locator('.rehearsal-bar');
 

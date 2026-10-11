@@ -1,5 +1,5 @@
-import { Link } from 'react-router';
 import * as copy from '../../core/copy';
+import { titleCase } from '../../core/home';
 import Glyph from '../components/Glyph';
 import Head from './Head';
 import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
@@ -20,18 +20,18 @@ import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-con
  *  likelier, more realistic or more serious, and the row model carries no field
  *  that could. */
 export default function Condition({
-  packId,
   packName,
+  packAddress,
   onChoose,
 }: {
-  packId: string;
-  /** Shown as the title, so the screen says which place is rehearsed. */
+  /** The title and the line under it, so the screen says which place is rehearsed. */
   packName: string;
+  packAddress: string;
   onChoose: (condition: RehearsalCondition) => void;
 }) {
   return (
     <main className="page rehearsal-condition">
-      <Head title={packName} />
+      <Head title={packName} detail={titleCase(packAddress)} />
       <h2 className="kicker section-label">{copy.CHOOSE_CONDITION_HEADING}</h2>
 
       <ul className="list condition-list">
@@ -43,26 +43,22 @@ export default function Condition({
                 .condition-action adds only the second line. */}
             <button
               type="button"
-              className="candidate-action condition-action"
+              className="candidate-action condition-action condition-choice"
               onClick={() => onChoose(row.condition)}
             >
-              <span className="condition-label with-glyph">
-                <Glyph kind={row.condition === 'no-data' ? 'offline' : 'locate'} line />
-                {row.label}
+              <Glyph kind={row.condition === 'no-data' ? 'offline' : 'locate'} />
+              <span className="condition-choice-text">
+                <span className="condition-label">{row.label}</span>
+                <span className="condition-detail">{row.detail}</span>
               </span>
-              <span className="condition-detail">{row.detail}</span>
+              <svg className="card-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           </li>
         ))}
       </ul>
 
-      {/* No filled control on this screen. The filled control means "this is
-          what would fix it", and nothing here fixes anything. */}
-      <div className="actions">
-        <Link className="action" to={`/packs/${packId}`}>
-          {copy.BACK_TO_THIS_PACK}
-        </Link>
-      </div>
     </main>
   );
 }
