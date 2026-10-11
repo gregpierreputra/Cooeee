@@ -381,7 +381,9 @@ test.describe('on a 360 by 660 screen', () => {
   }) => {
     await open(page, 'pack', AT_FERNY_CREEK);
     const heading = page.locator('.blacksky-notes summary');
-    await expect(heading).toHaveText('Notes');
+    // Headed as a pack page section: the name, then how many notes.
+    await expect(heading.locator('.kicker')).toHaveText('Notes');
+    await expect(heading.locator('.section-count')).toHaveText('1');
     await expect(heading).toBeInViewport({ ratio: 1 });
     expect(await page.evaluate(() => window.scrollY)).toBe(0); // on load, not after a scroll
 

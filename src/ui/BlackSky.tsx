@@ -548,10 +548,19 @@ export default function BlackSky({
   const notesBlock =
     notes.length > 0 ? (
       <details className="blacksky-notes" open={model !== null}>
-        <summary>{copy.NOTES}</summary>
+        {/* Headed as a pack page section: the drawing, the name and the count,
+            with the chevron every toggle carries, turning down while open. */}
+        <summary className="pack-section-head">
+          <Glyph kind="note" />
+          <span className="kicker">{copy.NOTES}</span>
+          <span className="section-count">{notes.length}</span>
+          <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+            <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </summary>
         <ul className="list">
           {notes.map((note) => (
-            <li key={note.id} className="blacksky-place blacksky-note">
+            <li key={note.id} className="card blacksky-note">
               <NoteText text={note.text} />
             </li>
           ))}

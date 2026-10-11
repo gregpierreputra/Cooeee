@@ -2454,21 +2454,11 @@ main:focus {
 
 /* The notes fold: a native <details>, so no script and no re-render on the
    tick. Beside the dial it stands open, so the notes are read without a tap;
-   on the no-fix reference screen it starts folded. The summary is a ruled bar
-   at reading size with its own open/closed mark; each note is a ruled row like
-   the places above it. */
+   on the no-fix reference screen it starts folded. The summary is headed as a
+   pack page section, 56 px high (the layout keeps it on the first screen), with
+   the chevron at its end; each note is a card, at reading size. */
 .blacksky-notes summary {
   min-height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  font-size: var(--step-1);
-  font-weight: var(--w-heavy);
-  letter-spacing: var(--track-wide);
-  text-transform: uppercase;
-  color: var(--accent);
   cursor: pointer;
   list-style: none;
 }
@@ -2477,12 +2467,22 @@ main:focus {
   display: none;
 }
 
-.blacksky-notes summary::after {
-  content: '+';
+/* The count keeps BlackSky's 16 px floor. */
+.blacksky-notes .section-count {
+  font-size: var(--step-0);
 }
 
-.blacksky-notes[open] summary::after {
-  content: '−';
+.blacksky-notes .hint-chevron {
+  margin-left: auto;
+}
+
+.blacksky-notes[open] .hint-chevron {
+  transform: rotate(90deg);
+}
+
+.blacksky-notes .list {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .blacksky-note {
