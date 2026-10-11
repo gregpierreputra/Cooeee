@@ -537,7 +537,6 @@ export default function BlackSky({
             </button>
           ) : null
         }
-        caption={voice.caption}
         onShow={setShownId}
         roads={roads && here ? { map: roads, here } : undefined}
       />
@@ -611,6 +610,11 @@ export default function BlackSky({
           <span className="bottom-nav-label" aria-hidden="true">
             {copy.APP_NAME}
           </span>
+          {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
+              for as long as they are being said, floating just above the hold
+              where its hint floats, so they never cover the dial. Not a live
+              region: a screen reader would say them on top of the voice. */}
+          {voice.caption ? <p className="blacksky-caption">{voice.caption}</p> : null}
         </div>
       </div>
       {/* Why BlackSky is still open after Back was pressed. */}
@@ -839,7 +843,6 @@ function DialBody({
   accuracyM,
   compass,
   rowEnd,
-  caption,
   onShow,
   roads,
 }: {
@@ -861,8 +864,6 @@ function DialBody({
    *  where there is one. The row keeps that 48 px free either way, so the
    *  figures sit in the same place with or without it. */
   rowEnd?: ReactNode;
-  /** The words being spoken, shown over the foot of the dial while they last. */
-  caption?: string | null;
   onShow: (id: string) => void;
   /** BS_Enhancement-AC5: the roads and the view, when the phone holds them. */
   roads?: DialRoads;
@@ -977,10 +978,6 @@ function DialBody({
               <span>{copy.MAP_CREDIT_DATA}</span>
             </p>
           ) : null}
-          {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
-              over the foot of the dial, for as long as they are being said. Not
-              a live region: a screen reader would say them on top of the voice. */}
-          {caption ? <p className="blacksky-caption">{caption}</p> : null}
           {/* While the map is dragged away from the person: one tap puts them
               back at the centre. Over the dial's foot, not in a row of its own:
               a row that came and went took its height out of the dial, which

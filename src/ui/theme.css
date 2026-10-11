@@ -2407,14 +2407,19 @@ main:focus {
   stroke-linecap: round;
 }
 
-/* The caption: the words being spoken, over the foot of the dial. A solid
-   ground, so the ring behind it never runs through the letters. */
+/* The caption: the words being spoken, floating just above the leave hold,
+   where its hint floats, so it never covers the dial. A solid ground, so the
+   page behind never runs through the letters. The hint, while it shows after
+   a short tap, takes the place for its few seconds. */
 .blacksky-caption {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  bottom: calc(100% + 36px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(calc(100vw - 2rem), 360px);
   margin: 0;
+  font-size: var(--step-0); /* the slot it sits in sets its labels at 12 px */
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--accent);
   border-radius: 10px;
@@ -2422,6 +2427,9 @@ main:focus {
   color: var(--ink);
   font-weight: var(--w-med);
   text-align: center;
+}
+.blacksky-leave:has(.blacksky-hold-hint) .blacksky-caption {
+  display: none;
 }
 
 /* Every other place, folded into one line that opens the sheet: the count and
