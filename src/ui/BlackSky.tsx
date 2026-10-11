@@ -83,6 +83,7 @@ import CallCard from './components/CallCard';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
 import NoteText from './components/NoteText';
+import StateCard from './components/StateCard';
 import KeyTerms from './components/KeyTerms';
 import { readRoadsFile } from '../data/roads';
 import BlackSkyDial, {
@@ -539,7 +540,7 @@ export default function BlackSky({
       />
     ) : trust ? (
       // Empty: a position, and nothing stored that can be pointed at.
-      <p className="muted">{copy.NO_PLACE_TO_POINT_AT}</p>
+      <StateCard heading={copy.NO_PLACE_TO_POINT_AT} />
     ) : null;
   // The person's own notes, read-only here. Beside the dial they stand open,
   // readable without a tap; on the no-fix reference screen they stay folded
@@ -630,9 +631,6 @@ export default function BlackSky({
       {/* With no dial yet, the compass is offered here, so an iPhone can turn
           it on before the first position and the dial turns once it arrives. */}
       {model && trust ? null : <TurnOnCompass compass={compass} />}
-      {chosen && !chosen.placesVerified ? (
-        <p className="muted">{copy.PLACES_UNVERIFIED}</p>
-      ) : null}
       {screen.kind === 'NO_PACK' && packs.length > 0 ? (
         // Several packs and none chosen yet: only the dial to the nearest
         // official place, from the position, until one is chosen.
@@ -642,7 +640,7 @@ export default function BlackSky({
             {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
           </>
         ) : (
-          <p className="muted">{copy.NO_GPS_YET}</p>
+          <StateCard heading={copy.NO_GPS_YET} />
         )
       ) : (
         <ScreenBody
@@ -653,6 +651,8 @@ export default function BlackSky({
           notes={notesBlock}
         />
       )}
+      {/* Under the dial, never above it: the dial is the one thing first. */}
+      {chosen && !chosen.placesVerified ? <StateCard heading={copy.PLACES_UNVERIFIED} /> : null}
       {/* Who to call closes every state of the screen, so the numbers are
           always one scroll away, whatever the position or the pack. */}
       <WhoToCall />
@@ -745,10 +745,9 @@ function ScreenBody({
     case 'NO_PACK':
       return (
         <>
-          <p className="muted">{copy.NO_PACK_HERE}</p>
           {dial}
           {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
-          <p className="muted">{copy.NO_PACKS_HINT}</p>
+          <StateCard heading={copy.NO_PACK_HERE} detail={copy.NO_PACKS_HINT} />
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
             <p>{copy.PREP_KIT_LINE}</p>
@@ -763,20 +762,22 @@ function ScreenBody({
     case 'ACQUIRING':
       return (
         <>
-          <ReferenceBody line={copy.NO_GPS} places={screen.places} pack={screen.pack} />
-          {/* US1-AC4: the mark control. Offered for every ACQUIRING reason —
-              someone who denied GPS is exactly who needs it. */}
-          <p className="muted">{copy.MARK_HINT}</p>
-          <button
-            type="button"
-            className="with-glyph"
-            onClick={() =>
-              onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
-            }
-          >
-            <Glyph kind="place" line />
-            {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
-          </button>
+          {/* The state and what can be done about it, in one card. US1-AC4:
+              the mark control. Offered for every ACQUIRING reason — someone
+              who denied GPS is exactly who needs it. */}
+          <StateCard heading={copy.NO_GPS} detail={copy.MARK_HINT}>
+            <button
+              type="button"
+              className="with-glyph"
+              onClick={() =>
+                onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
+              }
+            >
+              <Glyph kind="place" line />
+              {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
+            </button>
+          </StateCard>
+          <ReferenceBody places={screen.places} pack={screen.pack} />
           {notes}
         </>
       );
@@ -803,7 +804,7 @@ function ScreenBody({
           {dial}
           {notes}
           {estimating ? null : <ConfidenceLines confidence={screen.confidence} />}
-          {screen.absence?.reason ? <p className="muted">{screen.absence.reason}</p> : null}
+          {screen.absence?.reason ? <StateCard heading={screen.absence.reason} /> : null}
           {screen.pack.reminder ? (
             <p className="blacksky-reminder">{screen.pack.reminder}</p>
           ) : null}
@@ -1358,19 +1359,10 @@ function ConfidenceLines({ confidence }: { confidence: Confidence }) {
 }
 
 /** The reference screen for US1-AC2: saved information as text, no bearing
- *  figures, with one line saying why. */
-function ReferenceBody({
-  line,
-  places,
-  pack,
-}: {
-  line: string;
-  places: Destination[];
-  pack: Pack;
-}) {
+ *  figures. The state card above it says why. */
+function ReferenceBody({ places, pack }: { places: Destination[]; pack: Pack }) {
   return (
     <>
-      <p className="muted">{line}</p>
       <ul className="list">
         {places.map((place) => (
           <li key={place.id} className="blacksky-place">

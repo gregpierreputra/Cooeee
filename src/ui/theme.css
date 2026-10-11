@@ -1753,7 +1753,6 @@ main:focus {
   /* Above the body: the page's top padding, the top bar (the 48 px hold), and
      the gap under it. */
   --bs-above: calc(max(1.5rem, env(safe-area-inset-top) + 1rem) + 48px + var(--bs-gap));
-  --bs-line: 0px; /* a line of text standing between the bar and the body */
   --bs-bar: 0px; /* the GPS signal lost bar */
   /* Below it: the page's bottom padding, or the Notes heading and its gap. */
   --bs-below: max(1.75rem, env(safe-area-inset-bottom));
@@ -1761,10 +1760,6 @@ main:focus {
 
 .blacksky:has(.blacksky-notes) {
   --bs-below: calc(var(--bs-gap) + 56px);
-}
-
-.blacksky:has(> .muted + .blacksky-dial-body) {
-  --bs-line: calc(1.5rem + var(--bs-gap));
 }
 
 .blacksky:has(.blacksky-bar[data-on='true']) {
@@ -1795,8 +1790,8 @@ main:focus {
 @media (max-height: 700px) {
   .blacksky-dial-body {
     grid-template-rows: auto auto minmax(300px, 1fr);
-    height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
-    height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    height: calc(100vh - var(--bs-above) - var(--bs-bar) - var(--bs-below));
+    height: calc(100dvh - var(--bs-above) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
   }
 }
@@ -1809,8 +1804,8 @@ main:focus {
 @media (min-width: 701px) {
   .blacksky-dial-body {
     grid-template-rows: auto auto minmax(300px, 1fr);
-    height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
-    height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    height: calc(100vh - var(--bs-above) - var(--bs-bar) - var(--bs-below));
+    height: calc(100dvh - var(--bs-above) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
   }
 
