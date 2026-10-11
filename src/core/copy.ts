@@ -1634,12 +1634,13 @@ export const BLOCK_TILE_TODAY = (today: number | null) => (today === null ? 'Not
 export const GAME_STAT_HIGHEST = 'Best';
 export const BLOCK_LABEL = 'Ready the Block';
 export const BLOCK_INTRO_HEADING = 'Find the fire risks';
-/** The three things to know, each a big figure over a few words. */
-export const BLOCK_INTRO_FACTS = [
-  { figure: '8', label: 'fire risks round a home' },
-  { figure: '3', label: 'minutes to find them' },
-  { figure: 'Tap', label: 'each one you spot' },
-];
+/** The three things to know, each drawn as the game draws it, over a few
+ *  words: its found count, its clock, and a tap. */
+export const BLOCK_INTRO_RISKS = 'fire risks round the home';
+export const BLOCK_INTRO_RISKS_HIDDEN = '8';
+export const BLOCK_INTRO_TIME = 'to find them';
+export const BLOCK_INTRO_TAP_FIGURE = 'Tap';
+export const BLOCK_INTRO_TAP = 'each one you spot';
 /** The way out at the end of a finished game. */
 export const GAME_DONE = 'Done';
 /** What costs points, as two small chips under a label. */

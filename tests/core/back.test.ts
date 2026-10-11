@@ -40,6 +40,11 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget(path, '', { ...NONE, runPackId: 'a' })).toBe('/rehearse');
   });
 
+  it('goes from a pack\'s print page back to the pack when the pack page opened it, else Home', () => {
+    expect(backTarget('/packs/a/print', '?from=pack', NONE)).toBe('/packs/a');
+    expect(backTarget('/packs/a/print', '', NONE)).toBe('/');
+  });
+
   it('hides Back on a rehearsal while one is running, as Rehearse opens it again', () => {
     expect(backTarget('/rehearse/a', '', { ...NONE, runPackId: 'a' })).toBeNull();
   });

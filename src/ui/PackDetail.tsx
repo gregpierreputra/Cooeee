@@ -220,7 +220,7 @@ export default function PackDetail({
         <p className="muted">{content.pack.address}</p>
         {/* The same page the pack's menu on Home prints, as a small ring at the
             top right, where a pack card on Home keeps its menu. */}
-        <Link className="card-more pack-print" to={`/packs/${content.pack.id}/print`} aria-label={copy.PRINT_PACK}>
+        <Link className="card-more pack-print" to={`/packs/${content.pack.id}/print?from=pack`} aria-label={copy.PRINT_PACK}>
           <Glyph kind="print" line size={18} />
         </Link>
       </header>

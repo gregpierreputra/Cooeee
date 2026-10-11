@@ -210,7 +210,7 @@ function PackDetailRoute() {
   return <PackDetail packId={packId} />;
 }
 
-/** One page of a pack, to print, from the pack's menu on Home. */
+/** One page of a pack, to print, from the pack's menu on Home or its pack page. */
 function PackPrintRoute() {
   const { packId = '' } = useParams();
   return <PackPrint packId={packId} />;

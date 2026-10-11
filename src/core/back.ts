@@ -48,6 +48,10 @@ export function backTarget(
     }
     return params.get('from') === 'pack' ? `/packs/${pathname.split('/')[2]}` : '/rehearse';
   }
+  // A pack's print page goes back to the pack when the pack page opened it,
+  // else to Home, whose pack menu opens it too.
+  const print = /^\/packs\/([^/]+)\/print$/.exec(pathname);
+  if (print) return new URLSearchParams(search).get('from') === 'pack' ? `/packs/${print[1]}` : '/';
   // A pack, the address search, or an address the app does not know.
   return '/';
 }

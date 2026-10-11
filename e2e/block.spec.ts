@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { boxOf, hazardsForDay } from '../src/core/block';
 import { BLOCK_DECOYS } from '../src/core/block-hazards';
+import { BLOCK_SCENERY } from '../src/core/block-layout';
 import { HARNESS } from './helpers';
 
 // Ready the Block, on the harness's fixed day.
@@ -27,6 +28,10 @@ test.describe('Ready the Block', () => {
   test('opens on what it asks, then the yard', async ({ page }) => {
     await page.goto(`${HARNESS}/block`);
     await expect(page.getByRole('heading', { name: 'Find the fire risks' })).toBeVisible();
+    // The yard as a picture, with its harmless things and none of the risks.
+    await expect(page.locator('.block-yard img')).toBeVisible();
+    await expect(page.locator('.block-yard-thing')).toHaveCount(BLOCK_SCENERY.length + BLOCK_DECOYS.length);
+    await expect(page.locator('.game-facts li')).toHaveText([/fire risks round the home/, /3:00\s*to find them/, /Tap\s*each one you spot/]);
     await page.getByRole('button', { name: 'Start looking' }).click();
     await expect(page.getByRole('img', { name: /yard seen from above/ })).toBeVisible();
     await expect(page.locator('.block-found')).toHaveText('Found 0 of 8');
