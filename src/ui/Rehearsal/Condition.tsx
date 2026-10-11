@@ -32,9 +32,9 @@ export default function Condition({
 }) {
   return (
     <main className="page rehearsal-condition">
-      <Head />
+      <Head title={copy.REHEARSE_TITLE} />
       <GameTiles onDrill={onDrill} />
-      <h2>{copy.CHOOSE_CONDITION_HEADING}</h2>
+      <h2 className="kicker section-label">{copy.CHOOSE_CONDITION_HEADING}</h2>
 
       <ul className="list condition-list">
         {conditionRows().map((row) => (

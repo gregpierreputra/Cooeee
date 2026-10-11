@@ -17,6 +17,7 @@ import { shareOrCopy } from './components/shareOrCopy';
 import StateCard from './components/StateCard';
 import WellbeingLines from './components/WellbeingLines';
 import Roadmap from './Roadmap';
+import TabLabel from './components/TabLabel';
 
 type RecoverProps = {
   loadPrograms?: () => Promise<RecoveryProgram[]>;
@@ -142,7 +143,7 @@ export default function Recover({
     return (
       <main className="page recover">
         <header className="hero">
-          <span className="kicker">{copy.NAV_RECOVER}</span>
+          <TabLabel tab="recover" text={copy.NAV_RECOVER} />
           <h1>{copy.RECOVER_QUESTION}</h1>
           <p className="muted with-glyph">
             <Glyph kind="lock" line />
@@ -175,7 +176,7 @@ export default function Recover({
         </div>
         {/* The single needs under their own eyebrow, set apart from the group above. */}
         <section className="recover-needs">
-          <h2 className="kicker">{copy.BY_NEED}</h2>
+          <h2 className="kicker section-label">{copy.BY_NEED}</h2>
           <ul className="list">
             {rows.map((row) => (
               <li key={row.key}>
@@ -196,7 +197,7 @@ export default function Recover({
     return (
       <main className="page recover">
         <header className="hero">
-          <span className="kicker">{copy.NAV_RECOVER}</span>
+          <TabLabel tab="recover" text={copy.NAV_RECOVER} />
           <h1>{copy.WHO_TO_CALL}</h1>
           {/* Footnotes in the small grey, as on the pack page. */}
           <p className="muted place-note with-glyph">
@@ -208,7 +209,7 @@ export default function Recover({
             recovery itself, 000 then the hotline first, then the lines for how a
             person is coping. */}
         <section className="call-group">
-          <h2 className="kicker">{copy.RECOVERY_LINES}</h2>
+          <h2 className="kicker section-label">{copy.RECOVERY_LINES}</h2>
           <ul className="list">
             <CallCard name={copy.TRIPLE_ZERO_LABEL} detail={copy.TRIPLE_ZERO_DETAIL} number={TRIPLE_ZERO} tone="emergency" />
             {callList(programs).map((entry) => (
@@ -223,7 +224,7 @@ export default function Recover({
           </ul>
         </section>
         <section className="call-group">
-          <h2 className="kicker">{copy.TALK_TO_SOMEONE}</h2>
+          <h2 className="kicker section-label">{copy.TALK_TO_SOMEONE}</h2>
           <p className="muted place-note">{copy.TALK_TO_SOMEONE_LINE}</p>
           <WellbeingLines />
         </section>
@@ -262,7 +263,7 @@ export default function Recover({
   return (
     <main className="page recover">
       <header className="hero">
-        <span className="kicker">{copy.NAV_RECOVER}</span>
+        <TabLabel tab="recover" text={copy.NAV_RECOVER} />
         <h1>{heading}</h1>
         {/* A footnote to the heading, in the same small grey as the other
             notes that qualify a list, not a line to read first. */}

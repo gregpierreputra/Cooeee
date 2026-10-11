@@ -161,8 +161,8 @@ describe('the twist on screen', () => {
     expect(copy.TIME_WORDS(90)).toBe('90 seconds');
     expect(copy.TIME_WORDS(150)).toBe('two and a half minutes');
     expect(copy.DRILL_INTRO_HEADING_FOR(90)).toBe('90 seconds to leave');
-    expect(copy.DRILL_TILE_CHANGES(1)).toBe('Changes tomorrow');
-    expect(copy.DRILL_TILE_CHANGES(3)).toBe('Changes in three days');
+    expect(copy.DRILL_TILE_TWIST('Night', 1)).toBe('Night twist, changes tomorrow');
+    expect(copy.DRILL_TILE_TWIST('Night', 3)).toBe('Night twist, changes in three days');
     expect(copy.DRILL_TOUR_LINES_FOR(100, 10, true)[0].text).toContain('lights are still on');
   });
 });

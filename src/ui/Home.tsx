@@ -211,7 +211,7 @@ export default function Home({ now }: { now?: number }) {
       {/* The packs under their own eyebrow, set like Today's reminder, with
           their count and space above. No count when there are none. */}
       {view === null ? null : (
-        <span className="kicker packs-title">
+        <span className="kicker section-label packs-title">
           {copy.YOUR_PACKS}
           {view.packs.length > 0 ? <span className="packs-count">{view.packs.length}</span> : null}
         </span>

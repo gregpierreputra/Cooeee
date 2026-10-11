@@ -3338,6 +3338,47 @@ body.touring .page {
 .rehearsal-condition .packs-title {
   margin-top: 0;
 }
+/* A section's label: the same small capitals as the tab label, in grey and
+   without a drawing, so only the tab's own name is teal. */
+.kicker.section-label {
+  color: var(--ink-2);
+}
+/* The tab's name, led by its bottom bar drawing at the height of the words. */
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.tab-label .bottom-nav-icon {
+  width: 1.5em;
+  height: 1.5em;
+}
+/* When a pack was last rehearsed, on its Rehearse card: a small pill, grey
+   before, teal with a tick once rehearsed. */
+.rehearsed-pill {
+  justify-self: start;
+  align-self: flex-start;
+  width: fit-content;
+  margin: 0.25rem 0 0;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  color: var(--ink-2);
+}
+.rehearsed-pill.done {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink);
+}
+.rehearsed-pill.done.with-glyph {
+  display: inline-flex;
+  gap: 0.375rem;
+}
+.rehearsed-pill .glyph.line-glyph {
+  color: var(--accent);
+}
 .packs-count {
   margin-left: 0.5rem;
   color: var(--ink-3);
@@ -5099,13 +5140,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   margin: 1rem 0 0.5rem;
 }
 
-/* The rehearsal glyphs: one on the kicker of every rehearsal screen, one on
-   the places heading, one on the note heading. The pack page's section-head
-   size, and the same drawing on every screen of a run, so the picture says
-   which part of the rehearsal this is without a word being added. */
-.rehearsal-head {
-  margin: 0;
-}
+/* The rehearsal glyphs: one on the places heading, one on the note heading,
+   the same drawing on every screen of a run. */
 .journey-places > h3,
 .journey-notes > h3,
 .way-note > h3 {
@@ -6101,6 +6137,13 @@ body.drill-open .banner {
   font-size: var(--step-s);
   color: var(--ink-2);
 }
+/* A rule of the game for now, in the game's colour, led by a clock. */
+.game-tile-note.with-glyph {
+  justify-content: flex-start;
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  color: var(--tile-accent);
+}
 /* Where a game stands, in small pills tinted with the game's own colour. */
 .game-tile-pills {
   display: flex;
@@ -6115,6 +6158,11 @@ body.drill-open .banner {
   background: color-mix(in srgb, var(--tile-accent) 16%, transparent);
   font-size: var(--step-s);
   font-weight: var(--w-med);
+  color: var(--ink);
+}
+/* A pill's numbers, bold and in full white, so a score stands out. */
+.game-tile-pill strong {
+  font-weight: var(--w-heavy);
   color: var(--ink);
 }
 /* Cooee Word's last seven days, today last: filled where solved. */

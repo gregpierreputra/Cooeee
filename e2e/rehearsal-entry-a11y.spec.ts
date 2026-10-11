@@ -127,7 +127,7 @@ test('AC4 heading, detail and actions are in reading order', async ({ page }) =>
     return nodes.map((el) => ({ tag: el.tagName, text: el.textContent ?? '' }));
   });
 
-  const kicker = order.findIndex((entry) => entry.text.includes('Rehearsal'));
+  const kicker = order.findIndex((entry) => entry.text.includes('Rehearse'));
   const head = order.findIndex((entry) => entry.tag === 'H2');
   const detail = order.findIndex((entry) => entry.text.includes('has no area designation'));
   const action = order.findIndex((entry) => entry.tag === 'A');

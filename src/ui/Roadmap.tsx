@@ -7,6 +7,7 @@ import { localFlagStore } from '../data/acknowledgement';
 import CountRing from './components/CountRing';
 import Glyph from './components/Glyph';
 import { focusMain } from './components/focusMain';
+import TabLabel from './components/TabLabel';
 
 /** Where a step's link goes, and what it says. */
 function StepLink({ link }: { link: copy.RoadmapLink }) {
@@ -65,7 +66,7 @@ export default function Roadmap() {
   return (
     <main className="page recover roadmap">
       <header className="hero">
-        <span className="kicker">{copy.NAV_RECOVER}</span>
+        <TabLabel tab="recover" text={copy.NAV_RECOVER} />
         <h1>{copy.ROADMAP_TITLE}</h1>
         <p className="muted">{copy.ROADMAP_LINE}</p>
       </header>

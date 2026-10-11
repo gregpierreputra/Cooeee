@@ -8,7 +8,7 @@ test.describe('E9 the drill in front of the rehearsal', () => {
     await page.goto(`${HARNESS}/rehearse?mode=rehearsable&drill=1`);
     await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toBeVisible();
     await page.getByRole('button', { name: 'Skip the drill' }).click();
-    await expect(page.locator('main')).toContainText('Rehearsal');
+    await expect(page.locator('main')).toContainText('Rehearse');
     await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toHaveCount(0);
   });
 

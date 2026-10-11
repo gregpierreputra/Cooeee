@@ -18,6 +18,7 @@ import StatusPage from '../components/StatusPage';
 import { focusMain } from '../components/focusMain';
 import Drill from '../Drill/Drill';
 import { markDrilled, replayDrill, useDrilled } from '../Drill/drill-state';
+import TabLabel from '../components/TabLabel';
 
 type EntryProps = {
   packId: string;
@@ -174,7 +175,7 @@ export default function RehearsalEntry({
   return (
     <StatusPage
       page="rehearsal-entry"
-      kicker={copy.REHEARSAL_LABEL}
+      kicker={<TabLabel tab="rehearse" text={copy.NAV_REHEARSE} />}
       cardClass={empty ? 'empty-state' : undefined}
       card={
         <>

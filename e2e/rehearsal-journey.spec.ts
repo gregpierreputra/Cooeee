@@ -856,7 +856,7 @@ for (const state of ['before', 'running'] as const) {
     const order =
       state === 'before'
         ? [
-            await position(main(page).getByText('Rehearsal', { exact: true })),
+            await position(main(page).getByText('Rehearse', { exact: true })),
             await position(heading(page, BEFORE_HEADING)),
             await openExplainer(page).then(() => position(main(page).getByText(WHAT_IT_IS, { exact: true }))),
             await position(main(page).getByText(WHAT_IT_IS_FOR, { exact: true })),

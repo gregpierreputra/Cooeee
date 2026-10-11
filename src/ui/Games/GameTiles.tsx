@@ -72,7 +72,7 @@ export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock 
 
   return (
     <section className="game-tiles" aria-labelledby="games-title">
-      <span id="games-title" className="kicker">{copy.GAMES}</span>
+      <h2 id="games-title" className="kicker section-label">{copy.GAMES}</h2>
       <DrillTile onPlay={onDrill} twist={twist} highest={drillHighest} />
       <GameTile
         variant="word"

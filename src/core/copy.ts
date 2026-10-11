@@ -615,9 +615,11 @@ export const NAV_HOME = 'Home';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
 /** The label over the game cards on Rehearse. */
-export const GAMES = 'Games';
+export const GAMES = 'Quick games';
 /** What Rehearse is for, on its tour stop and when no pack is saved yet. */
 export const REHEARSE_LINE = 'Practise the way to a saved place on a calm day.';
+/** The large title on the Rehearse tab's first screen. */
+export const REHEARSE_TITLE = 'Practise on a calm day';
 
 // E4 Recover: needs-first support matching, read from the programs on this phone
 export const RECOVER_QUESTION = 'What do you need?';
@@ -1523,8 +1525,9 @@ export const DRILL_TOUR_LINES_FOR = (seconds: number, bag: number, powered: bool
 export const DRILL_TWIST_LABEL = 'This drill’s twist';
 export const DRILL_TWIST_LINE = (name: string, rule: string) => `${name}. ${rule}`;
 /** The twist on the drill card, and how long it stays. */
-export const DRILL_TILE_CHANGES = (daysLeft: number) =>
-  daysLeft <= 1 ? 'Changes tomorrow' : `Changes in ${NUMBER_WORD(daysLeft)} days`;
+/** Today's twist on the drill card: a rule of the game, so a line, not a pill. */
+export const DRILL_TILE_TWIST = (name: string, daysLeft: number) =>
+  `${name} twist, changes ${daysLeft <= 1 ? 'tomorrow' : `in ${NUMBER_WORD(daysLeft)} days`}`;
 export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this twist is ${score} out of 100.`;
 /** Under the score when the twist's bag is not ten, or some things are out of reach. */
 export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this twist’s bag could hold.';

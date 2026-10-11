@@ -23,7 +23,7 @@ export default function Run({ run, children }: { run: RehearsalRun; children?: R
   return (
     <>
       <main className="page rehearsal-run">
-        <Head kind={run.ending ? 'found' : 'go'} />
+        <Head />
         {children}
         <div className="actions rehearsal-leave">
           {/* Not a filled control: leaving a rehearsal is not what fixes

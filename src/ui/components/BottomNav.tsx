@@ -72,7 +72,7 @@ const ICON_PATHS: Record<NavItem['key'], string> = {
 
 /** Drawn inline, so the bar costs no request and renders with the radios off.
  *  Decorative in every case — the label beside it is the accessible one. */
-function NavIcon({ kind }: { kind: NavItem['key'] }) {
+export function NavIcon({ kind }: { kind: NavItem['key'] }) {
   return (
     <svg
       className="bottom-nav-icon"

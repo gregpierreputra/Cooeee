@@ -35,6 +35,7 @@ import KeyTerms from './components/KeyTerms';
 import { shareOrCopy } from './components/shareOrCopy';
 import { useCopied } from './components/useCopied';
 import StateCard from './components/StateCard';
+import TabLabel from './components/TabLabel';
 
 /** Where distances are measured from: the line above the tabs, and its name
  *  in plain words for the middle of the map. */
@@ -228,7 +229,7 @@ export default function Nearby({
   return (
     <main className="page nearby">
       <div className="hero">
-        <span className="kicker">{copy.NEARBY_KICKER}</span>
+        <TabLabel tab="nearby" text={copy.NEARBY_KICKER} />
         <h1>{copy.NEARBY_TITLE}</h1>
       </div>
 

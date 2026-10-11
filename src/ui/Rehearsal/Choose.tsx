@@ -67,12 +67,12 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
 
   return (
     <main className="page rehearsal-condition">
-      <Head />
+      <Head title={copy.REHEARSE_TITLE} />
       <GameTiles onDrill={playDrill} />
-      <span className="kicker packs-title">
+      <h2 className="kicker section-label packs-title">
         {copy.YOUR_PACKS}
         <span className="packs-count">{rows.length}</span>
-      </span>
+      </h2>
       <p className="muted">{copy.CHOOSE_PACK_LINE}</p>
 
       {/* Home's own pack card, its name a link stretched over the card. */}
@@ -89,10 +89,16 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
                   </h2>
                 </div>
                 <p className="muted">{titleCase(pack.address)}</p>
-                <p className="muted with-glyph">
-                  <Glyph kind="rehearse" line />
-                  {at === null ? copy.NOT_REHEARSED_CARD : copy.REHEARSED_AGO(ageLabel(clock - at))}
-                </p>
+                {/* The person's own result, so a pill as on the game cards:
+                    teal with a tick once rehearsed, plain grey before. */}
+                {at === null ? (
+                  <p className="rehearsed-pill">{copy.NOT_REHEARSED_CARD}</p>
+                ) : (
+                  <p className="rehearsed-pill done with-glyph">
+                    <Glyph kind="check" line />
+                    {copy.REHEARSED_AGO(ageLabel(clock - at))}
+                  </p>
+                )}
                 <p className="muted figure saved-place-footer with-glyph">
                   <Glyph kind="saved" line />
                   {ageLine}
