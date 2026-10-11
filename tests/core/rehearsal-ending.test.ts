@@ -151,12 +151,12 @@ describe('what an ending records', () => {
     ];
     const walked = rehearsalResult(finished({ gaps, ...endingRecord(STARTED, 'walked', STARTED + 900_000) }));
     const dryRun = rehearsalResult(finished({ gaps, ...endingRecord(STARTED, 'dry-run', STARTED + 900_000) }));
-    // The figures are the line's own parts, picked out to be set in bold.
-    const line = { endingLine: '', endingFigures: [] };
+    // The bold parts are the line's own words, picked out to be set in bold.
+    const line = { endingLine: '', endingBold: [] };
     expect({ ...walked, ...line }).toEqual({ ...dryRun, ...line });
     expect(walked.endingLine).toBe('You went there. It took you 15 minutes.');
-    expect(walked.endingFigures).toEqual(['15 minutes']);
-    expect(dryRun.endingFigures).toEqual([]);
+    expect(walked.endingBold).toEqual(['You went there.', '15 minutes']);
+    expect(dryRun.endingBold).toEqual(['A dry run.']);
     // Nowhere else, and never the recorded figure, seconds, or a word that rates it.
     expect(JSON.stringify({ ...walked, ...line })).not.toMatch(/minute/i);
     expect(JSON.stringify(walked)).not.toMatch(/900000|elapsed|second|fast|slow/i);

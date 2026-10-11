@@ -5261,6 +5261,26 @@ p.gap-reason-label {
    and a greyscale screen says which is which exactly as a coloured one does. */
 /* The way note under its ringed head, as the other parts of the result. Save
    and Remove stack at full width, so neither squeezes the other. */
+/* Where the note stands, in one line under the field: amber while not kept,
+   teal once kept, grey once taken out. Empty, it takes no room: it stays
+   rendered so the live region speaks, and gives back the card's gap. */
+.way-note-status {
+  margin: 0;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+}
+.way-note-status:empty {
+  margin-top: -0.5rem;
+}
+.way-note-caution {
+  color: var(--stale);
+}
+.way-note-saved {
+  color: var(--accent);
+}
+.way-note-quiet {
+  color: var(--ink-2);
+}
 .way-note .note-actions {
   flex-direction: column;
 }

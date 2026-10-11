@@ -336,6 +336,10 @@ test('AC1 a completion adds no total, count or verdict', async ({ page }) => {
 test.describe('AC5 the result says how the rehearsal ended', () => {
   const position = (locator: Locator) =>
     locator.evaluate((el) => Array.from(document.querySelectorAll('*')).indexOf(el));
+  /** Counted in paragraphs, so a word set in bold inside a line does not move
+   *  the line after it. */
+  const paragraph = (locator: Locator) =>
+    locator.evaluate((el) => Array.from(document.querySelectorAll('p')).indexOf(el as HTMLParagraphElement));
 
   test('walked: that she went and how long it took her, beside the condition and above the gaps', async ({
     page,
@@ -351,9 +355,10 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
     await expect(page.locator('main')).not.toContainText('second');
 
     // Straight after the condition line, and before the progress view and the gaps.
-    const condition = await position(page.getByText('Rehearsed without a location fix.', { exact: true }));
+    const condition = await paragraph(page.getByText('Rehearsed without a location fix.', { exact: true }));
+    expect(condition).toBeGreaterThanOrEqual(0);
+    expect(await paragraph(line)).toBe(condition + 1);
     const ending = await position(line);
-    expect(ending).toBe(condition + 1);
     expect(ending).toBeLessThan(await position(page.locator('.progress')));
     expect(ending).toBeLessThan(await position(page.locator('.gap-row').first()));
     await expect(page.locator('.gap-list')).not.toContainText('walked');
@@ -368,9 +373,10 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
     await expect(page.getByRole('heading', { name: 'Nothing was missing in this rehearsal' })).toBeVisible();
     const line = page.getByText(WALKED_LINE, { exact: true });
     await expect(line).toBeVisible();
-    const condition = await position(page.getByText('Rehearsed without mobile data.', { exact: true }));
+    const condition = await paragraph(page.getByText('Rehearsed without mobile data.', { exact: true }));
+    expect(condition).toBeGreaterThanOrEqual(0);
+    expect(await paragraph(line)).toBe(condition + 1);
     const ending = await position(line);
-    expect(ending).toBe(condition + 1);
     expect(ending).toBeLessThan(await position(page.getByText('Checked on this pack today.')));
   });
 
@@ -404,8 +410,9 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
     expect((await storedRehearsals(page))[0]).not.toHaveProperty('elapsedMs');
     await expect(page.locator('main')).not.toContainText('minute');
 
-    const condition = await position(page.getByText('Rehearsed without a location fix.', { exact: true }));
-    expect(await position(line)).toBe(condition + 1);
+    const condition = await paragraph(page.getByText('Rehearsed without a location fix.', { exact: true }));
+    expect(condition).toBeGreaterThanOrEqual(0);
+    expect(await paragraph(line)).toBe(condition + 1);
   });
 
   // WCAG 1.4.1. With every colour removed only the words are left.
@@ -551,8 +558,13 @@ test.describe('AC5 her note about the way', () => {
     await expect(page.getByText('Removed from this pack.')).toBeVisible();
     await expect.poll(async () => (await storedNotes(page)).length).toBe(0);
     await expect(field(page)).toHaveValue(WORDS);
-    await expect(page.getByText('Not saved yet.')).toBeVisible();
+    // One line says where it stands: removed, until she types again.
+    await expect(page.getByText('Not saved yet.')).toHaveCount(0);
     await expect(remove).toHaveCount(0);
+    await field(page).press('End');
+    await field(page).pressSequentially('!');
+    await expect(page.getByText('Not saved yet.')).toBeVisible();
+    await expect(page.getByText('Removed from this pack.')).toHaveCount(0);
   });
 
   test('an empty note writes nothing, and says so', async ({ page }) => {

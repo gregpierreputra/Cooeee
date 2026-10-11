@@ -132,13 +132,16 @@ export function endingRecord(
 /** How an ending is stated on the result, beside the condition line. Her time is
  *  stated and never judged: nothing beside it, nothing to measure it against,
  *  and no bearing on any gap. */
-/** The figures inside the ending line, her time and the distance counted, so
- *  the screen can set them in bold. None for a line without them. */
-export function endingFigures(ending: Ending): string[] {
-  if (ending.state !== 'walked' || ending.elapsedMs === undefined) return [];
+/** The parts of the ending line set in bold, in order: what kind of ending it
+ *  was, then her time and the distance counted. None for a line not recorded. */
+export function endingBold(ending: Ending): string[] {
+  if (ending.state === 'dry-run') return [copy.RESULT_DRY_RUN_LEAD];
+  if (ending.state !== 'walked') return [];
+  if (ending.elapsedMs === undefined) return [copy.RESULT_WALKED_NO_TIME];
+  const time = durationWords(ending.elapsedMs);
   return ending.distanceM === undefined
-    ? [durationWords(ending.elapsedMs)]
-    : [durationWords(ending.elapsedMs), formatDistanceM(ending.distanceM)];
+    ? [copy.RESULT_WALKED_NO_TIME, time]
+    : [copy.RESULT_WALKED_NO_TIME, time, formatDistanceM(ending.distanceM)];
 }
 
 export function endingLine(ending: Ending): string {

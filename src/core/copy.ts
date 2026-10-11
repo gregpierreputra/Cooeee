@@ -1383,21 +1383,22 @@ export const ENDING_NOT_RECORDED = 'Whether you went there was not recorded.';
 // no fast or slow, no best. A dry run is stated as the kind of rehearsal it is.
 // A rehearsal with no ending recorded is stated by ENDING_NOT_RECORDED above.
 
+/** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
+ *  kept with it. Every walk ended on the journey screen keeps one; this covers a
+ *  stored record that does not. It also leads the other two, in bold. */
+export const RESULT_WALKED_NO_TIME = 'You went there.';
 /** [DRAFT] pending Sharon's copy review. A walked rehearsal, and how long it took her. */
-export const RESULT_WALKED = (duration: string) => `You went there. It took you ${duration}.`;
+export const RESULT_WALKED = (duration: string) => `${RESULT_WALKED_NO_TIME} It took you ${duration}.`;
 /** A walked rehearsal with the distance her phone counted. */
 export const RESULT_WALKED_DISTANCE = (duration: string, distance: string) =>
-  `You went there. It took you ${duration} and covered ${distance}.`;
+  `${RESULT_WALKED_NO_TIME} It took you ${duration} and covered ${distance}.`;
 /** The live line at the top of a running rehearsal. */
 export const TRACK_LINE = (clock: string, distance: string) => `${clock} elapsed · ${distance}`;
 export const TRACK_NO_DISTANCE = 'Distance not counted without location';
-/** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
- *  kept with it. Every walk ended on the journey screen keeps one; this covers a
- *  stored record that does not. */
-export const RESULT_WALKED_NO_TIME = 'You went there.';
 /** [DRAFT] pending Sharon's copy review. A dry run, stated plainly, as a kind of
  *  rehearsal and not a lesser one. */
-export const RESULT_DRY_RUN = 'A dry run. You ended it without going.';
+export const RESULT_DRY_RUN_LEAD = 'A dry run.';
+export const RESULT_DRY_RUN = `${RESULT_DRY_RUN_LEAD} You ended it without going.`;
 /** [DRAFT] pending Sharon's copy review. Her time, in whole minutes. */
 export const DURATION_UNDER_A_MINUTE = 'less than a minute';
 export const DURATION_MINUTES = (minutes: number) => (minutes === 1 ? '1 minute' : `${minutes} minutes`);

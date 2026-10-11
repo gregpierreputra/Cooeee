@@ -93,12 +93,12 @@ describe('a result with gaps', () => {
     const gaps = [packContentGap, persistentGap];
     const withoutEnding = rehearsalResult(rehearsal(gaps));
     [rehearsalResult(rehearsal(gaps, walked)), rehearsalResult(rehearsal(gaps, { ending: 'dry-run' }))].forEach(
-      // The figures are the ending line's own parts, picked out to be set in bold.
+      // The bold parts are the ending line's own words, picked out to be set in bold.
       (result) =>
-        expect({ ...result, endingLine: '', endingFigures: [] }).toEqual({
+        expect({ ...result, endingLine: '', endingBold: [] }).toEqual({
           ...withoutEnding,
           endingLine: '',
-          endingFigures: [],
+          endingBold: [],
         }),
     );
   });

@@ -22,16 +22,17 @@ import ProgressView from './Progress';
 import { endRun } from './run-state';
 import WayNote from './WayNote';
 
-/** The line with each of its figures in bold: her time, and the distance where
- *  one was counted. Words only, so the line still has no drawing. */
-function boldFigures(line: string, figures: string[]): ReactNode {
+/** The line with each of its named parts in bold, in order: the kind of
+ *  ending, her time, and the distance where one was counted. Words only, so
+ *  the line still has no drawing. */
+function boldParts(line: string, bold: string[]): ReactNode {
   let rest = line;
   const parts: ReactNode[] = [];
-  figures.forEach((figure) => {
-    const at = rest.indexOf(figure);
+  bold.forEach((part) => {
+    const at = rest.indexOf(part);
     if (at < 0) return;
-    parts.push(rest.slice(0, at), <b key={figure}>{figure}</b>);
-    rest = rest.slice(at + figure.length);
+    parts.push(rest.slice(0, at), <b key={part}>{part}</b>);
+    rest = rest.slice(at + part.length);
   });
   return [...parts, rest];
 }
@@ -172,8 +173,10 @@ export default function Result({
   const summary = (
     <Section kind="rehearse" title={copy.RESULT_SUMMARY_LABEL} heading>
       <div className="card result-summary">
-        <p>{result.conditionLine}</p>
-        <p>{boldFigures(result.endingLine, result.endingFigures)}</p>
+        {/* The condition's phrase in bold, the ending by its parts. The two
+            paragraphs keep one style: only the words inside them differ. */}
+        <p>{boldParts(result.conditionLine, [result.conditionLine.replace(/\.$/, '')])}</p>
+        <p>{boldParts(result.endingLine, result.endingBold)}</p>
         {/* What was checked, after how it ended, when nothing was missing. */}
         {result.state === 'no-gaps' ? <p className="muted place-note">{result.detail}</p> : null}
         {runKept ? null : <p className="muted place-note">{copy.RUN_NOT_KEPT}</p>}

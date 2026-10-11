@@ -4,18 +4,15 @@ import * as copy from '../../core/copy';
 import { wayNote } from '../../core/rehearsal-note';
 import type { PackNote } from '../../core/types';
 import { deleteNote, putNote } from '../../data/db';
-import Glyph from '../components/Glyph';
+import Glyph, { type GlyphKind } from '../components/Glyph';
 import Section from '../components/Section';
 import { continueBullets, typeBullets } from '../components/bulletTyping';
 
-type Mark = 'saved' | 'removed' | 'empty' | 'failed';
+/** What the last tap answered. Cleared by typing. */
+type Mark = 'removed' | 'empty' | 'failed';
 
-const MARK_TEXT: Record<Mark, string> = {
-  saved: copy.WAY_NOTE_KEPT,
-  removed: copy.WAY_NOTE_REMOVED,
-  empty: copy.NOTE_EMPTY,
-  failed: copy.NOTE_CHANGE_FAILED,
-};
+/** The one line under the field: its tone, its drawing and its words. */
+type Status = { tone: 'saved' | 'caution' | 'quiet'; glyph: GlyphKind; text: string };
 
 /** E5-US1-AC5 — her note about the way, offered after a walked rehearsal.
  *
@@ -25,9 +22,10 @@ const MARK_TEXT: Record<Mark, string> = {
  *  her words alone, with no mark that a rehearsal produced it, and it changes no
  *  gap and enters no comparison.
  *
- *  The card treatment, the Save control and the saved, empty and failed answers
- *  are the pack page's own, so a note written here reads like any other. Saving
- *  again rewrites the same note rather than adding a second. */
+ *  The card treatment, the Save control and the empty and failed answers are
+ *  the pack page's own, so a note written here reads like any other. Saving
+ *  again rewrites the same note rather than adding a second. One line under the
+ *  field says where the note stands, led by its drawing. */
 export default function WayNote({
   packId,
   save = putNote,
@@ -73,11 +71,25 @@ export default function WayNote({
     try {
       await save(wayNote(packId, text, id, now()));
       setSavedText(text);
-      setMark('saved');
+      setMark(null);
     } catch {
       setMark('failed');
     }
   }
+
+  // The last tap's answer first, then whether the words are kept.
+  const status: Status | null =
+    mark === 'removed'
+      ? { tone: 'quiet', glyph: 'trash', text: copy.WAY_NOTE_REMOVED }
+      : mark === 'failed'
+        ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_CHANGE_FAILED }
+        : mark === 'empty'
+          ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_EMPTY }
+          : unsaved
+            ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_UNSAVED }
+            : savedText
+              ? { tone: 'saved', glyph: 'check', text: copy.WAY_NOTE_KEPT }
+              : null;
 
   return (
     <Section kind="note" title={copy.WAY_NOTE_HEADING} heading className="way-note">
@@ -85,7 +97,7 @@ export default function WayNote({
       <div className="card note-card">
         <textarea
           aria-label={copy.WAY_NOTE_LABEL}
-          aria-describedby={unsaved ? 'way-note-unsaved' : undefined}
+          aria-describedby={status ? 'way-note-status' : undefined}
           value={text}
           maxLength={NOTE_MAX_CHARS}
           onChange={(event) => {
@@ -99,19 +111,18 @@ export default function WayNote({
             })
           }
         />
-        {unsaved ? (
-          <p id="way-note-unsaved" className="field-message with-glyph">
-            <Glyph kind="caution" line />
-            {copy.NOTE_UNSAVED}
-          </p>
-        ) : null}
         {/* Always present, so the live region exists before it speaks. */}
         <p
-          className={`note-mark${mark === 'saved' ? ' note-mark-saved' : ''}`}
+          id="way-note-status"
+          className={`way-note-status with-glyph${status ? ` way-note-${status.tone}` : ''}`}
           role="status"
-          onAnimationEnd={() => setMark(null)}
         >
-          {mark ? MARK_TEXT[mark] : ''}
+          {status ? (
+            <>
+              <Glyph kind={status.glyph} line />
+              {status.text}
+            </>
+          ) : null}
         </p>
         <div className="note-actions">
           <button type="button" onClick={() => void keep()}>
