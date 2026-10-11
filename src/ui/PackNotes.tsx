@@ -8,6 +8,7 @@ import { localFlagStore } from '../data/acknowledgement';
 import { deleteNote, putNote } from '../data/db';
 import Glyph from './components/Glyph';
 import NoteText from './components/NoteText';
+import { continueBullets, typeBullets } from './components/bulletTyping';
 
 type PackNotesProps = {
   packId: string;
