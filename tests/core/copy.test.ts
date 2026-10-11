@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOTLINE_NUMBER } from '../../src/core/constants';
+import { HOTLINE_NUMBER, TRIPLE_ZERO } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 
 // Exact match, character for character, em dashes and the ± sign included. These
@@ -171,7 +171,8 @@ describe('marked-position estimate copy', () => {
 // the worst possible typo, so each is pinned character for character.
 describe('general official guidance', () => {
   it('carries the exact emergency numbers', () => {
-    expect(copy.CALL_TRIPLE_ZERO).toBe('Call 000 (Triple Zero) for life-threatening emergencies.');
+    expect(TRIPLE_ZERO).toBe('000');
+    expect(HOTLINE_NUMBER).toBe('1800 226 226');
     expect(copy.VICEMERGENCY_HOTLINE).toBe('VicEmergency hotline 1800 226 226.');
   });
 

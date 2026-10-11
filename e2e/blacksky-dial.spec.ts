@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { relativeBearing } from '../src/core/blacksky-dial';
 import {
-  CALL_TRIPLE_ZERO,
   HOLD_TO_LEAVE,
   LEAVE_BLACKSKY,
   MARK_AT_SAVED_PLACE,
@@ -10,7 +9,6 @@ import {
   NO_PLACE_TO_POINT_AT,
   OUTSIDE_AREAS,
   SORTED_BY_DISTANCE,
-  VICEMERGENCY_HOTLINE,
 } from '../src/core/copy';
 import { titleCase } from '../src/core/home';
 import {
@@ -26,6 +24,15 @@ import {
 // replaces the arrows list on. The harness pack sits at Ferny Creek with two
 // chosen places, 2.60 km north and 3.50 km south; the state-wide fixture's
 // nearest site, Belgrave Recreation Reserve, is NEARER than both at 2.13 km.
+
+/** Who to call, as on Recover: 000 first with the red rule, then the hotline. */
+async function expectWhoToCall(page: Page) {
+  const links = page.locator('.call-card .call-link');
+  await expect(links).toHaveCount(2);
+  await expect(links.first()).toHaveAttribute('href', 'tel:000');
+  await expect(links.nth(1)).toHaveAttribute('href', 'tel:1800226226');
+  await expect(page.locator('.call-card.emergency-line')).toHaveCount(1);
+}
 
 const label = (page: Page) => page.locator('.blacksky-dial-head .kicker');
 const name = (page: Page) => page.locator('.blacksky-dial-head h2');
@@ -66,6 +73,8 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
 
   // Every other place is one line: how many, and the range they lie in.
   await expect(othersLine(page)).toHaveText('4 other places · 2.13 km – 5.07 km');
+  // Who to call closes every state of the screen.
+  await expectWhoToCall(page);
   // No list of places is on screen yet, so the mandated phrase is not either.
   await expect(page.getByText(SORTED_BY_DISTANCE)).toBeHidden();
 
@@ -486,23 +495,20 @@ test('Normal, no pack: the nearest state-wide site is the subject', async ({ pag
   await expect(othersLine(page)).toHaveText('2 other places · 4.09 km – 5.07 km');
   // E3-US2-AC2's rule is unchanged: the screen still says no pack covers this.
   await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
+  await expectWhoToCall(page);
 });
 
-test('Normal, outside the pack area: the dial points at the nearest site, and the phone links stay', async ({
+test('Normal, outside the pack area: the dial points at the nearest site, and who to call stays', async ({
   page,
 }) => {
   await openDial(page, 'pack');
   await pushPosition(page, AT_MELBOURNE);
 
   // E3-US2-AC1's rules are unchanged: the pack is named with the distance to
-  // its area, never pointed at, and the two phone links are kept.
+  // its area, never pointed at, and the two numbers are kept as call cards.
   await expect(page.getByText(OUTSIDE_AREAS)).toBeVisible();
   await expect(page.getByText(/km to its area$/)).toBeVisible();
-  await expect(page.getByRole('link', { name: CALL_TRIPLE_ZERO })).toHaveAttribute('href', 'tel:000');
-  await expect(page.getByRole('link', { name: VICEMERGENCY_HOTLINE })).toHaveAttribute(
-    'href',
-    'tel:1800226226',
-  );
+  await expectWhoToCall(page);
 
   // The chosen places are out of reach here, so the label is the state-wide one.
   await expect(label(page)).toHaveText('NEAREST PLACE OF LAST RESORT');
@@ -539,6 +545,7 @@ test('Unavailable: with no position the no-fix reference screen shows, unchanged
   await expect(page.locator('.blacksky-dial-head')).toHaveCount(0);
   await expect(page.getByText('GPS signal lost')).toBeHidden();
   await expect(page.getByText('Gas is off at the meter.')).toBeHidden();
+  await expectWhoToCall(page);
 });
 
 // A laptop or a tablet (28 Sep review). A laptop's position is usually vague,

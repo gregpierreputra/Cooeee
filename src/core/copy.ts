@@ -538,8 +538,6 @@ export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area
 
 // General official guidance, stored in the app itself so it is readable with
 // zero network. The numbers are safety copy: exact-match tested, never retyped.
-export const GENERAL_GUIDANCE_TITLE = 'General official guidance';
-export const CALL_TRIPLE_ZERO = 'Call 000 (Triple Zero) for life-threatening emergencies.';
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 export const EMERGENCY_BROADCASTER = 'ABC local radio carries official emergency information.';
 /** States what the app cannot detect — never a promise about the network. */

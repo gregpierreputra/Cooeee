@@ -52,10 +52,12 @@ import {
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
   HOLD_LEAVE_VIBRATE_MS,
+  HOTLINE_NUMBER,
   ROADS_LABEL_PX,
   ROADS_PAN_RETURN_MS,
   ROADS_PAN_TAP_PX,
   TICK_MS,
+  TRIPLE_ZERO,
   VOICE_CHECK_MS,
   WATCH_RESTART_MS,
 } from '../core/constants';
@@ -77,6 +79,7 @@ import {
 import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
+import CallCard from './components/CallCard';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
 import NoteText from './components/NoteText';
@@ -676,6 +679,9 @@ export default function BlackSky({
           notes={notesBlock}
         />
       )}
+      {/* Who to call closes every state of the screen, so the numbers are
+          always one scroll away, whatever the position or the pack. */}
+      <WhoToCall />
     </main>
   );
 }
@@ -739,7 +745,7 @@ function ScreenBody({
     // US2-AC1: outside the loaded pack's area. The pack is named with the
     // distance to its area's edge — an informational row, never a bearing to
     // an out-of-area point — then the dial to the nearest official place from
-    // here, the notes, and general official guidance with its two phone links.
+    // here, and the notes.
     case 'OUT_OF_AREA':
       return (
         <>
@@ -748,20 +754,6 @@ function ScreenBody({
           {dial}
           {notes}
           <ConfidenceLines confidence={screen.confidence} />
-          <section className="card blacksky-guidance emergency-line">
-            <h2>{copy.GENERAL_GUIDANCE_TITLE}</h2>
-            <a className="with-glyph call-link" href="tel:000">
-              <Glyph kind="calls" line />
-              {copy.CALL_TRIPLE_ZERO}
-            </a>
-            <a className="with-glyph call-link" href="tel:1800226226">
-              <Glyph kind="calls" line />
-              {copy.VICEMERGENCY_HOTLINE}
-            </a>
-            <p>{copy.EMERGENCY_BROADCASTER}</p>
-            <p className="muted">{copy.PHONE_MAY_WORK}</p>
-            <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
-          </section>
         </>
       );
     // Inside the loaded pack's area: the card's order. The dial and then the
@@ -780,6 +772,24 @@ function ScreenBody({
         </>
       );
   }
+}
+
+/** Who to call, as on Recover: 000 with the red rule and the one filled Call,
+ *  then the hotline with the amber rule. The lines around them say the call
+ *  may not go through and where official word comes from. */
+function WhoToCall() {
+  return (
+    <section className="call-group">
+      <h2 className="kicker">{copy.WHO_TO_CALL}</h2>
+      <p className="muted">{copy.PHONE_MAY_WORK}</p>
+      <ul className="list">
+        <CallCard name={copy.TRIPLE_ZERO_LABEL} detail={copy.TRIPLE_ZERO_DETAIL} number={TRIPLE_ZERO} tone="emergency" />
+        <CallCard name={copy.HOTLINE_LABEL} detail={copy.HOTLINE_DETAIL} number={HOTLINE_NUMBER} tone="caution" />
+      </ul>
+      <p className="muted">{copy.EMERGENCY_BROADCASTER}</p>
+      <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+    </section>
+  );
 }
 
 const DIAL_LABELS: Record<DialLabel, string> = {
