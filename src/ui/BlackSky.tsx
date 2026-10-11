@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -78,7 +79,6 @@ import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
 import Glyph from './components/Glyph';
-import Hint from './components/Hint';
 import NoteText from './components/NoteText';
 import StateCard from './components/StateCard';
 import KeyTerms from './components/KeyTerms';
@@ -96,6 +96,7 @@ import HoldSweep from './components/HoldSweep';
 import Mark from './components/Mark';
 import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
+import { useRevealedPanel } from './components/useRevealedPanel';
 import { useVoice } from './components/useVoice';
 import { useWakeLock } from './components/useWakeLock';
 
@@ -516,6 +517,8 @@ export default function BlackSky({
           )
         }
         readoutLong={screen.kind === 'OUT_OF_AREA'}
+        // The plain accuracy figure opens what it means, from where it stands.
+        explainAccuracy={!estimate && screen.kind !== 'OUT_OF_AREA'}
         accuracyM={estimate ? estimate.accuracyM : confidence!.accuracyM}
         compass={compass}
         // BS_Enhancement-AC3: the speaker button, at the right-hand end of the
@@ -849,6 +852,7 @@ function DialBody({
   trust,
   readout,
   readoutLong = false,
+  explainAccuracy = false,
   accuracyM,
   compass,
   rowEnd,
@@ -861,6 +865,9 @@ function DialBody({
   /** The readout is a sentence or two, not "± 10 m": it takes the full width
    *  under the figures. */
   readoutLong?: boolean;
+  /** The readout is the plain "± 10 m": it is the toggle that opens what the
+   *  figure means, in a bubble over the top of the dial. */
+  explainAccuracy?: boolean;
   /** How far the position may be out, metres: the readout holds still within it. */
   accuracyM: number;
   compass: {
@@ -900,6 +907,10 @@ function DialBody({
   // The distance and the compass point hold still while the position only
   // wobbles within its error (core/readout.ts); the arrow and the pin follow
   // every fix, and the voice keeps its own rule.
+  const [explained, setExplained] = useState(false);
+  const explainId = useId();
+  const explainPanel = useRevealedPanel<HTMLElement>(explained);
+  const toggle = useRef<HTMLButtonElement>(null);
   const shownRef = useRef<ShownReadout | null>(null);
   const shown = steadyReadout(
     shownRef.current,
@@ -938,11 +949,49 @@ function DialBody({
           <span className="blacksky-figure-point">{point}</span>
           {/* The short "± 10 m" sits under the point; a marked position's
               longer sentence takes the full width below. */}
-          <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark' || readoutLong}>
-            {readout}
-          </span>
+          {explainAccuracy ? (
+            // UAT: the bare figure was not understood. It is named for a screen
+            // reader and opens its meaning beside the figure it qualifies, as
+            // every Source in the app opens from its own words. A margin no one
+            // sees gives it the 44 px tap area without a taller row.
+            <button
+              ref={toggle}
+              type="button"
+              className="blacksky-dial-readout blacksky-readout-toggle figure"
+              aria-label={`${copy.ACCURACY_LABEL} ${copy.ACCURACY_READOUT(accuracyM)}`}
+              aria-expanded={explained}
+              aria-controls={explainId}
+              onClick={() => setExplained((open) => !open)}
+            >
+              {readout}
+              <svg className="hint-chevron" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          ) : (
+            <span className="blacksky-dial-readout muted figure" data-long={trust.bar === 'mark' || readoutLong}>
+              {readout}
+            </span>
+          )}
         </span>
         {rowEnd ? <span className="blacksky-dial-row-end">{rowEnd}</span> : null}
+        {/* What the figure means: a bubble over the top of the dial, its
+            pointer under the figure, until the figure is tapped again. Over
+            the dial, not a row of its own, so opening it never moves the dial. */}
+        {explainAccuracy && explained ? (
+          <section
+            id={explainId}
+            ref={explainPanel}
+            tabIndex={-1}
+            className="hint-panel info-panel blacksky-info-panel blacksky-readout-panel"
+            style={{ '--pointer-at': `${(toggle.current?.offsetLeft ?? 0) + 8}px` } as CSSProperties}
+          >
+            <p>{copy.ACCURACY_DETAIL(accuracyM)}</p>
+            <p>
+              <KeyTerms text={copy.DISTANCES_NOTE} />
+            </p>
+          </section>
+        ) : null}
       </div>
       {/* The dial has the full width of the screen to itself, nothing beside
           it: it is the largest thing on the screen, and it is sized for the map
@@ -1357,23 +1406,11 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
 }
 
 /** The plain statement when the fix is vague or old, under the dial and never
- *  instead of it. The bare figure sits beside the distance. UAT: it was not
- *  understood, so here it is named, and its meaning opens from those words. */
+ *  instead of it. The bare figure sits beside the distance, and opens what it
+ *  means from there. */
 function ConfidenceLines({ confidence }: { confidence: Confidence }) {
   return (
     <>
-      {/* Opened from its own words, as every Source in the app is, not from a ring. */}
-      <Hint
-        label={`${copy.ACCURACY_LABEL} ${copy.ACCURACY_READOUT(confidence.accuracyM)}`}
-        panelClass="blacksky-info-panel"
-        titled={false}
-        asText
-      >
-        <p>{copy.ACCURACY_DETAIL(confidence.accuracyM)}</p>
-        <p>
-          <KeyTerms text={copy.DISTANCES_NOTE} />
-        </p>
-      </Hint>
       {confidence.approximate ? (
         <p className="muted">{copy.GPS_APPROXIMATE(confidence.accuracyM)}</p>
       ) : null}

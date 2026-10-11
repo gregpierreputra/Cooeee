@@ -50,6 +50,11 @@ test('the dial turns with the phone and stays drawn from a vague fix', async ({ 
   await expect(position).toHaveAttribute('aria-expanded', 'false');
   await position.click();
   await expect(position).toHaveAttribute('aria-expanded', 'true');
+  // It opens over the top of the dial, so the dial does not move.
+  const dial = page.locator('.blacksky-dial');
+  const dialBox = await dial.boundingBox();
+  await expect(page.locator('.blacksky-readout-panel')).toBeVisible();
+  expect(await dial.boundingBox()).toEqual(dialBox);
   await expect(page.getByText(/places you within 350 m/)).toBeVisible();
   await expect(page.getByText('North up', { exact: true })).toBeVisible();
 

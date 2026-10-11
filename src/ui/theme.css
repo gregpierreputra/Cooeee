@@ -1723,6 +1723,11 @@ main:focus {
   gap: 0.125rem;
   text-align: center;
 }
+/* The first line a quiet label, the address the thing that stands out. */
+.blacksky-mark > .with-glyph {
+  font-weight: 400;
+  color: var(--ink-2);
+}
 .blacksky-pack-address {
   font-size: var(--step-s);
   font-weight: var(--w-med);
@@ -1937,6 +1942,49 @@ main:focus {
 
 .blacksky-dial-readout {
   font-weight: var(--w-med);
+}
+
+/* The plain "± 10 m" opens what it means: underlined words with a small arrow
+   that turns down while open, as every other toggle. A margin no one sees
+   gives it a 44 px tap area, as the information rings have, so the row keeps
+   its height. */
+.blacksky-dial-figures {
+  position: relative;
+}
+.blacksky-readout-toggle {
+  position: relative;
+  justify-self: start;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-2);
+  font-size: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.blacksky-readout-toggle::after {
+  content: '';
+  position: absolute;
+  inset: -12px -8px;
+}
+.blacksky-readout-toggle[aria-expanded='true'] .hint-chevron {
+  transform: rotate(90deg);
+}
+/* The bubble lies over the top of the dial, under the row, until closed.
+   Named with the bubble's own class, which sets it in flow, so this wins. */
+.hint-panel.blacksky-readout-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 6;
+  margin: 0;
 }
 
 /* A marked position's readout is a sentence: full width, under the figures. */
@@ -2610,13 +2658,6 @@ main:focus {
 
 .blacksky-reminder {
   margin: 0;
-}
-
-/* Your position opens its meaning from its own words: at BlackSky's 16 px
-   floor and a full 44 px target. */
-.blacksky .hint-text {
-  min-height: 44px;
-  font-size: var(--step-0);
 }
 
 .blacksky-guidance p {

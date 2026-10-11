@@ -115,8 +115,9 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
         (el) =>
           px(el) < 16 && !el.closest('.kicker, .blacksky-figure-point, .blacksky-dial-head p, .bottom-nav-label, .blacksky-tag'),
       ).length,
-      // An information ring is drawn at 32 px; its invisible ::after keeps the 44 px tap area.
-      smallTargets: [...document.querySelectorAll('main button:not(.info-ring), main summary')]
+      // An information ring is drawn at 32 px, and the accuracy figure at its
+      // text's size; an invisible ::after keeps the 44 px tap area for both.
+      smallTargets: [...document.querySelectorAll('main button:not(.info-ring, .blacksky-readout-toggle), main summary')]
         .map((el) => el.getBoundingClientRect())
         .filter((box) => box.width > 0 && (box.width < 44 || box.height < 44)).length,
     };
@@ -318,8 +319,9 @@ test.describe('at 360 px wide', () => {
     const row = await page.locator('.blacksky-dial-figures').evaluate((el) => {
       const box = (selector: string) => el.querySelector(selector)!.getBoundingClientRect();
       const [figure, beside, readout] = [box('.blacksky-figure-main'), box('.blacksky-dial-beside'), box('.blacksky-dial-readout')];
+      // The readout's words alone: the arrow beside them sits at its own height.
       const words = document.createRange();
-      words.selectNodeContents(el.querySelector('.blacksky-dial-readout')!);
+      words.selectNodeContents(el.querySelector('.blacksky-dial-readout')!.firstChild!);
       return {
         rowRight: el.getBoundingClientRect().right,
         figureRight: figure.right,
