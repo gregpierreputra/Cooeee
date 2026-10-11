@@ -6349,11 +6349,18 @@ body.drill-open .banner {
 /* The title, with the card's one big number at the right of it: large,
    heavy and in the game's colour, its small label before it on the same
    line, so the number adds no height under the title. */
+/* The title and the highest score on one line where they fit. Where they do
+   not, the score drops under the title, so the title never breaks a word. */
 .game-tile-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.25rem 0.75rem;
+}
+.game-tile-head .game-tile-title {
+  min-width: min-content;
+  overflow-wrap: break-word;
 }
 .game-tile-stat {
   display: flex;

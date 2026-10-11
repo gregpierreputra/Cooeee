@@ -1635,8 +1635,9 @@ export const BACK_TO_REHEARSE = 'Back to Rehearse';
 export const BLOCK_TILE_TITLE = 'Ready the Block';
 export const BLOCK_TILE_DETAIL = 'Find eight fire risks round a home in three minutes.';
 export const BLOCK_TILE_TODAY = (today: number | null) => (today === null ? 'Not played today' : `Today ${today}`);
-/** Before the big best score out of 100, on the drill and Block cards. */
-export const GAME_STAT_HIGHEST = 'Best';
+/** Before the big highest score out of 100, on the drill and Block cards.
+ *  Never best: the app does not call anything the best. */
+export const GAME_STAT_HIGHEST = 'Highest';
 export const BLOCK_LABEL = 'Ready the Block';
 export const BLOCK_INTRO_HEADING = 'Find the fire risks';
 /** The three things to know, each drawn as the game draws it, over a few
@@ -1656,8 +1657,8 @@ export const BLOCK_COSTS = [
 ];
 /** After each cost's figure, in small type. */
 export const BLOCK_POINTS = 'points';
-/** Once played today: the day's best as a big figure, and when the next yard comes. */
-export const BLOCK_TODAY_LABEL = 'Best today';
+/** Once played today: the day's highest as a big figure, and when the next yard comes. */
+export const BLOCK_TODAY_LABEL = 'Highest today';
 export const BLOCK_OUT_OF = 'out of 100';
 export const BLOCK_NEW_YARD = 'A new yard arrives at midnight.';
 export const START_BLOCK = 'Start looking';
