@@ -1646,9 +1646,11 @@ export const GAME_DONE = 'Done';
 /** What costs points, as two small chips under a label. */
 export const BLOCK_COSTS_LABEL = 'Points off';
 export const BLOCK_COSTS = [
-  { figure: '−4', label: 'a wrong tap' },
-  { figure: '−10', label: 'a hint' },
+  { figure: '−4', label: 'Wrong tap' },
+  { figure: '−10', label: 'Hint' },
 ];
+/** After each cost's figure, in small type. */
+export const BLOCK_POINTS = 'points';
 /** Once played today: the day's best as a big figure, and when the next yard comes. */
 export const BLOCK_TODAY_LABEL = 'Best today';
 export const BLOCK_OUT_OF = 'out of 100';
