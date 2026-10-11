@@ -1486,7 +1486,8 @@ export const HIGHEST_SO_FAR = (score: number) => `Your highest so far is ${score
 export const PLAY_AGAIN = 'Play again';
 export const GO_ON_TO_REHEARSAL = 'Go on to the rehearsal';
 export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures, so the rehearsal opens instead.';
-export const DRILLS = 'Drills';
+/** Every drill, on every pack page, as the drill is the same game whatever is saved. */
+export const DRILLS = 'Drills · all packs';
 export const NOT_YET_DRILLED = 'Not yet drilled.';
 export const DRILL_ROW_DOOR = 'At the door';
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';

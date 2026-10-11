@@ -928,7 +928,7 @@ if (['/word', '/block', '/games'].includes(window.location.pathname)) {
 // ?seconds=3 ends it almost at once; the app never passes this.
 const drillSeconds = Number(new URLSearchParams(window.location.search).get('seconds')) || undefined;
 const drillFlow = (
-  <Drill packId="saved-pack" seconds={drillSeconds} onDone={() => { document.title = 'drill done'; }} />
+  <Drill seconds={drillSeconds} onDone={() => { document.title = 'drill done'; }} />
 );
 
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';

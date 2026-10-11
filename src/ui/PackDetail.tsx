@@ -20,7 +20,7 @@ import { drillRows, type DrillRow } from '../core/drill-history';
 import { BAG_LIMIT } from '../core/drill-items';
 import { historyRows, type HistoryRow } from '../core/rehearsal-history';
 import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } from '../core/types';
-import { getCompletePackContent, listDrills, listRehearsalsForPack } from '../data/db';
+import { getCompletePackContent, listAllDrills, listRehearsalsForPack } from '../data/db';
 import AreaMap from './components/AreaMap';
 import Glyph, { type GlyphKind } from './components/Glyph';
 import Hint from './components/Hint';
@@ -50,7 +50,7 @@ type PackDetailProps = {
   packId: string;
   loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
   loadRehearsals?: (id: string) => Promise<Rehearsal[]>;
-  loadDrills?: (id: string) => Promise<Drill[]>;
+  loadDrills?: () => Promise<Drill[]>;
   now?: number;
 };
 
@@ -61,7 +61,7 @@ export default function PackDetail({
   packId,
   loadContent = getCompletePackContent,
   loadRehearsals = listRehearsalsForPack,
-  loadDrills = listDrills,
+  loadDrills = listAllDrills,
   now: fixedNow,
 }: PackDetailProps) {
   // Every age on the page moves on with the clock while it stays open.
@@ -137,10 +137,10 @@ export default function PackDetail({
     };
   }, [loadRehearsals, packId]);
 
-  // E9 — the pack's own drills, read the same way.
+  // E9 — every drill on the phone, as a drill belongs to no pack.
   useEffect(() => {
     let live = true;
-    loadDrills(packId).then(
+    loadDrills().then(
       (rows) => {
         if (live) setDrills(drillRows(rows));
       },
@@ -149,7 +149,7 @@ export default function PackDetail({
     return () => {
       live = false;
     };
-  }, [loadDrills, packId]);
+  }, [loadDrills]);
 
   // The sheet takes focus while it is open, Escape closes it, and closing it
   // hands focus back to the link that opened it.
@@ -473,7 +473,7 @@ export default function PackDetail({
           )}
         </Section>
 
-        {/* E9 — every drill of this pack, newest first. */}
+        {/* E9 — every drill, from whichever pack page, newest first. */}
         <Section kind="rehearse" title={copy.DRILLS} count={drills.length}>
           {drills.length === 0 ? (
             <p>{copy.NOT_YET_DRILLED}</p>

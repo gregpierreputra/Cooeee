@@ -22,7 +22,6 @@ const newId = (): string =>
   Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, '0')).join('');
 
 type Props = {
-  packId: string;
   onDone: () => void;
   /** The length of the drill, in seconds, when not the twist's own. Only the
    *  test harness passes it. */
@@ -31,10 +30,10 @@ type Props = {
   twist?: string;
 };
 
-/** E9 — the drill in front of a rehearsal: one fact, the opening picture,
- *  two minutes in the house, then the debrief. `onDone` hands over to the
- *  rehearsal, whether the drill was played or skipped. */
-export default function Drill({ packId, onDone, seconds: secondsOverride, twist }: Props) {
+/** E9 — the drill, one of the quick games on Rehearse: one fact, the opening
+ *  picture, two minutes in the house, then the debrief. The same game whatever
+ *  is saved, so it is kept with no pack. `onDone` goes back to Rehearse. */
+export default function Drill({ onDone, seconds: secondsOverride, twist }: Props) {
   // The day's twist, settled once as the drill opens, so it cannot change
   // under a person playing across midnight.
   const [rules] = useState(() => rulesFor(twist ?? pinnedTwist() ?? twistForDay(melbourneDay(Date.now())).id));
@@ -55,12 +54,11 @@ export default function Drill({ packId, onDone, seconds: secondsOverride, twist 
   const finish = async (result: DrillOutcome) => {
     setOutcome(result);
     setStage('debrief');
-    // The record is for the pack page. A store that refuses costs the debrief
+    // The record is for every pack page. A store that refuses costs the debrief
     // nothing. The score is worked out here from the bag, never read from the screen.
     try {
       await saveDrill({
         id: newId(),
-        packId,
         finishedAt: Date.now(),
         reachedDoor: result.reachedDoor,
         score: result.reachedDoor ? scoreDrill(result.packed, rules) : 0,

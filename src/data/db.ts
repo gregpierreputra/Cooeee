@@ -179,7 +179,7 @@ export const actionCompletionId = (packId: string, actionId: string): string =>
  *  belongs to the place rather than to the row that happened to hold it. So the
  *  replacement path moves these rather than deleting them (see
  *  carryHistoryToNewPack). An outright delete still takes them. */
-export const historyTables = () => [db.rehearsals, db.actionCompletions, db.drills];
+export const historyTables = () => [db.rehearsals, db.actionCompletions];
 
 /** Move one pack's rehearsals to another. The row's key is its own id, which
  *  says nothing about the pack, so only the field changes. */
@@ -218,8 +218,6 @@ async function carryCompletions(oldId: string, newId: string): Promise<void> {
 export async function carryHistoryToNewPack(oldId: string, newId: string, keepNotes = true): Promise<void> {
   await carryRehearsals(oldId, newId);
   await carryCompletions(oldId, newId);
-  // A drill's key is its own id too, so only the field changes.
-  await db.drills.where('packId').equals(oldId).modify({ packId: newId });
   // The reader's own notes are theirs, about the place, and nothing can write
   // them again. They move with the history instead of going with the old rows,
   // unless the reader chose to start without them: then they stay behind and go
@@ -606,7 +604,7 @@ export const isDrill = (row: unknown): row is Drill => {
   const drill = row as Record<string, unknown>;
   return (
     typeof drill.id === 'string' &&
-    typeof drill.packId === 'string' &&
+    (drill.packId === undefined || typeof drill.packId === 'string') &&
     typeof drill.finishedAt === 'number' && Number.isFinite(drill.finishedAt) && drill.finishedAt > 0 &&
     typeof drill.reachedDoor === 'boolean' &&
     Number.isInteger(drill.score) && (drill.score as number) >= 0 && (drill.score as number) <= 100 &&
@@ -623,12 +621,9 @@ export async function saveDrill(drill: Drill): Promise<void> {
   await db.drills.add(drill);
 }
 
-/** Every drill for one pack that passes isDrill, in store order. */
-export const listDrills = async (packId: string): Promise<Drill[]> =>
-  (await db.drills.where('packId').equals(packId).toArray()).filter(isDrill);
-
-/** Every drill on the phone that passes isDrill, whatever its pack: the
- *  highest score under a twist counts every pack's drills. */
+/** Every drill on the phone that passes isDrill. Drills belong to no pack,
+ *  so every pack page lists them all, and the highest under a twist counts
+ *  them all. Deleting or replacing a pack leaves them alone. */
 export const listAllDrills = async (): Promise<Drill[]> => (await db.drills.toArray()).filter(isDrill);
 
 // ── The Rehearse screen's daily games ──────────────────────────────────────

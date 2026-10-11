@@ -18,7 +18,7 @@ import { useRehearsalRun } from './run-state';
  *  the home screen's own cards, newest first, each with when it was last
  *  rehearsed. Nothing is chosen for the user. The quick games follow. With no
  *  pack, the dashed space the packs will fill comes first, as on Home, and the
- *  games that need no pack follow it. A rehearsal already
+ *  games follow it, as none of them needs a pack. A rehearsal already
  *  running is where Rehearse goes, before anything else. */
 /** When a pack was last rehearsed, or null. A store that cannot be read
  *  reads as never rehearsed. */
@@ -63,7 +63,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
       </h2>
 
       {/* No pack: the dashed space the packs will fill, as on Home, and the
-          way to build one. The games that need no pack still follow. */}
+          way to build one. The games still follow. */}
       {rows.length === 0 ? (
         <>
           <section className="empty-state" role="status">
@@ -115,7 +115,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
         })}
       </ul>
 
-      <GameTiles onDrill={rows.length > 0 ? () => navigate('/rehearse/drill') : undefined} />
+      <GameTiles onDrill={() => navigate('/rehearse/drill')} />
     </main>
   );
 }

@@ -540,7 +540,10 @@ export type SourceLine = { lead: string; status: SourceStatus; text: string };
  *  number. */
 export type Drill = {
   id: string;          // crypto.randomUUID()
-  packId: string;
+  /** Absent: the drill is the same game whatever is saved, so it is kept
+   *  apart from every pack. Drills saved before that keep the pack they were
+   *  saved under, which nothing reads. */
+  packId?: string;
   finishedAt: number;  // epoch ms
   reachedDoor: boolean;
   score: number;       // 0 to 100, whole
