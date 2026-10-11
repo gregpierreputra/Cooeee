@@ -607,39 +607,13 @@ export default function BlackSky({
           </p>
         ) : null}
       </header>
-      {/* Several packs: which one to load, asked at the top of the screen and
-          left there so the choice can be changed. Full-width targets for wet
-          hands; the chosen one is filled. */}
       {packs.length > 1 ? (
-        <section className="blacksky-picker">
-          <span className="kicker">{copy.CHOOSE_PACK}</span>
-          <p className="muted">{copy.CHOOSE_PACK_HINT}</p>
-          <ul className="list">
-            {choices.map(({ pack }) => (
-              <li key={pack.id}>
-                <button
-                  type="button"
-                  className="blacksky-pack"
-                  aria-pressed={pack.id === chosen?.pack.id}
-                  onClick={() => choosePack(pack.id)}
-                >
-                  {/* The pack's own drawing, in amber like everything here. */}
-                  <Glyph kind={packIcon(pack)} />
-                  <span className="blacksky-pack-text">
-                    <span className="pack-name">{shownPackName(pack.name)}</span>
-                    <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
-                    {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
-                      <span className="blacksky-pack-here with-glyph">
-                        <Glyph kind="locate" line />
-                        {copy.PACK_COVERS_HERE}
-                      </span>
-                    ) : null}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <PackPicker
+          packs={choices.map(({ pack }) => pack)}
+          chosenId={chosen?.pack.id}
+          from={from}
+          onChoose={choosePack}
+        />
       ) : null}
       {/* BS_Enhancement-AC2: the bar. The status element is always in the
           page, empty while the position is fresh, so a screen reader hears the
@@ -683,6 +657,70 @@ export default function BlackSky({
           always one scroll away, whatever the position or the pack. */}
       <WhoToCall />
     </main>
+  );
+}
+
+/** Several packs: which one to load, asked at the top of the screen. Once one
+ *  is chosen the list folds to that pack in the amber ring, with Change under
+ *  its address, so the dial stays high on the screen. Full-width targets for wet hands.
+ *  Each pack keeps its key whether the list is folded or open, so the button
+ *  just tapped stays in the page and keeps the focus. */
+function PackPicker({
+  packs,
+  chosenId,
+  from,
+  onChoose,
+}: {
+  packs: Pack[];
+  chosenId: string | undefined;
+  from: LatLon | null;
+  onChoose: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const chosen = packs.find((pack) => pack.id === chosenId);
+  const folded = chosen !== undefined && !open;
+  return (
+    <section className="blacksky-picker">
+      <span className="kicker">{folded ? copy.PACK_LOADED : copy.CHOOSE_PACK}</span>
+      {folded ? null : <p className="muted">{copy.CHOOSE_PACK_HINT}</p>}
+      <ul className="list">
+        {(folded ? [chosen] : packs).map((pack) => (
+          <li key={pack.id}>
+            <button
+              type="button"
+              className="blacksky-pack"
+              aria-pressed={folded ? undefined : pack.id === chosenId}
+              aria-expanded={folded ? false : undefined}
+              onClick={() => {
+                if (!folded) onChoose(pack.id);
+                setOpen(folded);
+              }}
+            >
+              {/* The pack's own drawing, in amber like everything here. */}
+              <Glyph kind={packIcon(pack)} />
+              <span className="blacksky-pack-text">
+                <span className="pack-name">{shownPackName(pack.name)}</span>
+                <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
+                {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
+                  <span className="blacksky-pack-here with-glyph">
+                    <Glyph kind="locate" line />
+                    {copy.PACK_COVERS_HERE}
+                  </span>
+                ) : null}
+                {folded ? (
+                  <span className="blacksky-pack-change">
+                    {copy.CHANGE_PACK}
+                    <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                      <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

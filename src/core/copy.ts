@@ -548,6 +548,9 @@ export const NO_PACK_HERE = 'No saved pack covers this place.';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack';
+/** Over the chosen pack once the list has folded to it. */
+export const PACK_LOADED = 'Pack loaded';
+export const CHANGE_PACK = 'Change';
 export const CHOOSE_PACK_HINT = 'Loads its places and notes. The nearest official places show either way.';
 /** Beside a pack whose area contains the position the arrows are drawn from. */
 export const PACK_COVERS_HERE = 'Covers where you are';
