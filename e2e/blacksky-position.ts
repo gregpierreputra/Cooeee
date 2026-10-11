@@ -18,6 +18,7 @@ export type PushedPosition = {
 declare global {
   interface Window {
     __pushPosition: (position: PushedPosition) => void;
+    __refusePosition: () => void;
     __watching: () => boolean;
   }
 }
@@ -33,13 +34,22 @@ export const PHONE = { width: 390, height: 844 };
 export async function stubPositions(page: Page) {
   await page.addInitScript(() => {
     const watchers = new Map<number, PositionCallback>();
+    const refusers = new Map<number, PositionErrorCallback>();
     let nextId = 1;
-    Geolocation.prototype.watchPosition = (onPosition) => {
+    Geolocation.prototype.watchPosition = (onPosition, onError) => {
       watchers.set(nextId, onPosition);
+      if (onError) refusers.set(nextId, onError);
       return nextId++;
     };
     Geolocation.prototype.clearWatch = (id) => {
       watchers.delete(id);
+      refusers.delete(id);
+    };
+    // The browser reporting the permission refused, as some phones do part way
+    // through a watch that was working.
+    window.__refusePosition = () => {
+      const error = { code: 1, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3, message: '' };
+      for (const onError of [...refusers.values()]) onError(error as GeolocationPositionError);
     };
     window.__watching = () => watchers.size > 0;
     window.__pushPosition = ({ latitude, longitude, accuracy = 10, heading = null, speed = null }) => {
@@ -55,6 +65,12 @@ export async function stubPositions(page: Page) {
 export async function pushPosition(page: Page, position: PushedPosition) {
   await page.waitForFunction(() => window.__watching());
   await page.evaluate((p) => window.__pushPosition(p), position);
+}
+
+/** The browser reports the permission refused, to every watch running. */
+export async function refusePosition(page: Page) {
+  await page.waitForFunction(() => window.__watching());
+  await page.evaluate(() => window.__refusePosition());
 }
 
 /** Open the harness BlackSky in one of its dial modes (see e2e/harness). */

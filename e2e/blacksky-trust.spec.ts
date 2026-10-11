@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { relativeBearing } from '../src/core/blacksky-dial';
 import { COMPASS_SILENT_MS, FIX_STALE_MS, TICK_MS } from '../src/core/constants';
-import { MARK_AT_SAVED_PLACE, TURN_ON_COMPASS } from '../src/core/copy';
+import { MARK_AT_SAVED_PLACE, NO_GPS, TURN_ON_COMPASS } from '../src/core/copy';
 import { bearingDeg, magneticDeclinationDeg } from '../src/core/geo';
 import { titleCase } from '../src/core/home';
 import {
@@ -9,6 +9,7 @@ import {
   drawnAngle,
   openDial,
   pushPosition,
+  refusePosition,
   turnPhone,
 } from './blacksky-position';
 
@@ -75,6 +76,41 @@ test('facing the place, the arrow stands straight up and the pin sits under the 
   expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 });
   // The ring has turned the other way by that much, so N is no longer on top.
   expect(await drawnAngle(page, '.blacksky-dial-ring')).toBe(norm(-bearing));
+});
+
+// Phone test, 11 Oct: part way through a walk the dial went and the no-fix
+// screen took its place. Some phones report the permission refused while a
+// watch that was working goes quiet. The position already held is kept: it is
+// shown as it ages, and the bar says the signal is lost, as for any quiet GPS.
+test('a refusal after a position keeps the dial, and as the position ages the bar says the signal is lost', async ({
+  page,
+}) => {
+  await page.clock.install();
+  await openDial(page, 'pack');
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(page.locator('.blacksky-figure-main')).toHaveText('2.60 km');
+
+  await refusePosition(page);
+  await page.clock.fastForward(TICK_MS);
+  await expect(centre(page)).toBeVisible();
+  await expect(page.getByText(NO_GPS)).toHaveCount(0);
+
+  await page.clock.fastForward(FIX_STALE_MS);
+  await expect(bar(page)).toHaveText('GPS signal lost');
+  await expect(centre(page)).toBeVisible();
+
+  // A position arriving again takes the bar away.
+  await pushPosition(page, AT_FERNY_CREEK);
+  await page.clock.fastForward(TICK_MS);
+  await expect(page.getByText('GPS signal lost', { exact: true })).toBeHidden();
+});
+
+// Refused before any position: nothing to point from, so the no-fix screen.
+test('a refusal before any position shows the no-fix screen', async ({ page }) => {
+  await openDial(page, 'pack');
+  await refusePosition(page);
+  await expect(page.getByText(NO_GPS)).toBeVisible();
+  await expect(centre(page)).toHaveCount(0);
 });
 
 test('an old position shows the bar and a dimmed about distance, and a fresh one removes both', async ({

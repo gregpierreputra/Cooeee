@@ -286,8 +286,14 @@ export default function BlackSky({
       // The first fix, and every real move after it, renders immediately.
       setFix((shown) => (!shown || distanceM(shown, next) >= FIX_PUBLISH_M ? next : shown));
     };
+    // A refusal before any position means there is nothing to point from. A
+    // refusal once positions have arrived is taken as the signal going quiet:
+    // some phones report one part way through a watch that was working (phone
+    // test, 11 Oct), and dropping the dial then would throw away a position the
+    // person can still use. That position is kept, ages, and the bar says the
+    // signal is lost; the watchdog below keeps asking, so the dial recovers.
     const onError = (error: GeolocationPositionError) => {
-      if (error.code === error.PERMISSION_DENIED) setPermission('denied');
+      if (error.code === error.PERMISSION_DENIED && latestFix.current === null) setPermission('denied');
     };
 
     // The most accurate continuous watch the device offers: high accuracy on,
