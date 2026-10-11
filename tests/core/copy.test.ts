@@ -426,7 +426,7 @@ describe('E4 Recover mandated copy', () => {
 
   it('states that nothing chosen leaves the phone', () => {
     expect(copy.RECOVER_PRIVACY_LINE).toBe(
-      'Nothing leaves this phone. Only the programs you save and the steps you tick are remembered.',
+      'Nothing leaves this phone. Only what you save and tick is kept here.',
     );
   });
 

@@ -614,10 +614,12 @@ export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
+/** What Rehearse is for, on its tour stop and when no pack is saved yet. */
+export const REHEARSE_LINE = 'Practise the way to a saved place on a calm day.';
 
 // E4 Recover: needs-first support matching, read from the programs on this phone
 export const RECOVER_QUESTION = 'What do you need?';
-export const RECOVER_PRIVACY_LINE = 'Nothing leaves this phone. Only the programs you save and the steps you tick are remembered.';
+export const RECOVER_PRIVACY_LINE = 'Nothing leaves this phone. Only what you save and tick is kept here.';
 export const NEED_PHRASE: Record<NeedKey, string> = {
   stay: 'Somewhere to stay',
   money: 'Money for essentials',
@@ -686,7 +688,7 @@ export const ROADMAP_TITLE = 'Recovery roadmap';
 /** The eyebrow over the single needs on Recover. */
 export const BY_NEED = 'By need';
 export const ROADMAP_LINE =
-  'A step by step guide to the first days, weeks and months after a fire. Work down each stage, tick a step when it is done, and tap its link to find help for it. Your progress is saved on this phone.';
+  'The first days, weeks and months after a fire, step by step. Tick a step when it is done.';
 export const ROADMAP_CLEAR = 'Clear progress';
 export const ROADMAP_CLEAR_QUESTION = 'Untick every step?';
 export const ROADMAP_SOURCE = 'Based on Emergency Recovery Victoria and Australian Red Cross guidance.';
@@ -886,7 +888,7 @@ export const TOUR_STEPS = [
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
   { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
   { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
-  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list:not(.pack-choice-list), .pack-choice-list > li:first-child', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
+  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list:not(.pack-choice-list), .pack-choice-list > li:first-child', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: REHEARSE_LINE },
   { path: '/recover', target: '.recover .hero', tab: '.bottom-nav-item[href="/recover"]', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
 

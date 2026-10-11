@@ -167,15 +167,21 @@ export default function RehearsalEntry({
   const returnPackId =
     gate.state === 'nothing-to-rehearse' || gate.state === 'unreadable' ? gate.packId : null;
 
+  // No pack on the phone at all is an empty space, not a problem, so it is
+  // drawn dashed as on Home, led by what Rehearse is for.
+  const empty = gate.state === 'no-pack' && gate.otherCompletePacks === 0;
+
   return (
     <StatusPage
       page="rehearsal-entry"
       kicker={copy.REHEARSAL_LABEL}
+      cardClass={empty ? 'empty-state' : undefined}
       card={
         <>
+          {empty ? <Glyph kind="rehearse" /> : null}
           <h2>{heading(gate)}</h2>
           {detail(gate).map((line) => (
-            <p key={line}>{line}</p>
+            <p key={line} className={empty ? 'muted' : undefined}>{line}</p>
           ))}
         </>
       }
@@ -263,6 +269,6 @@ function detail(gate: Exclude<RehearsalGate, { state: 'ready' }>): string[] {
     default:
       return gate.otherCompletePacks > 0
         ? [copy.NO_PACK_OTHERS_DETAIL(gate.otherCompletePacks), copy.NO_PACK_TO_REHEARSE_DETAIL]
-        : [copy.NO_PACK_TO_REHEARSE_DETAIL];
+        : [copy.REHEARSE_LINE, copy.NO_PACK_TO_REHEARSE_DETAIL];
   }
 }
