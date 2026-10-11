@@ -538,9 +538,6 @@ export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area
 // General official guidance, stored in the app itself so it is readable with
 // zero network. The numbers are safety copy: exact-match tested, never retyped.
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
-/** Under Triple Zero in BlackSky: a phone with no service of its own may
- *  still be carried by another network. "May", never a promise. */
-export const TRIPLE_ZERO_ANY_NETWORK = 'Your phone may reach 000 through another network.';
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
@@ -569,9 +566,10 @@ export const PREP_PLAN_LINE = 'Decide where you would go and how, before you nee
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter. Two seconds.';
 export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
-/** The label on the full-width Leave bar at the top of BlackSky. It says what
- *  to do, so the bar needs no second line of help. */
-export const LEAVE_BLACKSKY = 'Hold to leave';
+/** The name of BlackSky's round hold, where the compass that opened it sits.
+ *  Cooeee is the word under it, so the name holds it, as Hold for BlackSky
+ *  holds the word under the compass. */
+export const LEAVE_BLACKSKY = 'Hold for Cooeee';
 /** Said under BlackSky's top bar, never over anything else: the phone's back
  *  button was pressed, or the app opened here again because BlackSky was the
  *  last screen open. The bar above them already says how to leave. */

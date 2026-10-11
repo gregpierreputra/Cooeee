@@ -3,6 +3,7 @@ import { NAV_HOLD_HINT_MS } from '../../core/constants';
 import * as copy from '../../core/copy';
 import { NAV_ITEMS, type NavItem } from '../../core/home';
 import HoldButton from './HoldButton';
+import HoldSweep from './HoldSweep';
 
 /** The bottom navigation. Four destinations, all of which always exist; what
  *  they are is decided in core/home.ts NAV_ITEMS, not here. BlackSky sits in
@@ -57,9 +58,7 @@ function Compass() {
         <path d="M24 3v5M45 24h-5M24 45v-5M3 24h5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
         <path d="M24 12 32 33 24 28.5 16 33z" fill="currentColor" />
       </svg>
-      <svg className="nav-blacksky-sweep" viewBox="0 0 74 74" aria-hidden="true" focusable="false">
-        <circle cx="37" cy="37" r="35.5" pathLength="100" />
-      </svg>
+      <HoldSweep />
     </>
   );
 }

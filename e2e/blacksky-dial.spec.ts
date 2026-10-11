@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { relativeBearing } from '../src/core/blacksky-dial';
 import {
+  APP_NAME,
   HOLD_TO_LEAVE,
   LEAVE_BLACKSKY,
   MARK_AT_SAVED_PLACE,
@@ -9,7 +10,6 @@ import {
   NO_PLACE_TO_POINT_AT,
   OUTSIDE_AREAS,
   SORTED_BY_DISTANCE,
-  TRIPLE_ZERO_ANY_NETWORK,
 } from '../src/core/copy';
 import { titleCase } from '../src/core/home';
 import {
@@ -26,16 +26,10 @@ import {
 // chosen places, 2.60 km north and 3.50 km south; the state-wide fixture's
 // nearest site, Belgrave Recreation Reserve, is NEARER than both at 2.13 km.
 
-/** Triple Zero alone with the red rule, Call and no Copy. */
-async function expectWhoToCall(page: Page) {
-  const links = page.locator('.call-card .call-link');
-  await expect(links).toHaveCount(1);
-  await expect(links).toHaveAttribute('href', 'tel:000');
-  await expect(page.locator('.call-card.emergency-line')).toHaveCount(1);
-  await expect(page.locator('.call-card .call-copy')).toHaveCount(0);
-  // The card says the call may go through another network; no heading over it.
-  await expect(page.locator('.call-card')).toContainText(TRIPLE_ZERO_ANY_NETWORK);
-  await expect(page.locator('.call-group h2')).toHaveCount(0);
+/** No number to call in BlackSky: the reminder closes the screen. */
+async function expectNoCalls(page: Page) {
+  await expect(page.locator('.call-card')).toHaveCount(0);
+  await expect(page.locator('.blacksky-reminder')).toHaveCount(1);
 }
 
 const label = (page: Page) => page.locator('.blacksky-dial-head .kicker');
@@ -77,8 +71,8 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
 
   // Every other place is one line: how many, and the range they lie in.
   await expect(othersLine(page)).toHaveText('4 other places · 2.13 km – 5.07 km');
-  // Triple Zero closes every state of the screen.
-  await expectWhoToCall(page);
+  // No number to call: the reminder closes every state of the screen.
+  await expectNoCalls(page);
   // No list of places is on screen yet, so the mandated phrase is not either.
   await expect(page.getByText(SORTED_BY_DISTANCE)).toBeHidden();
 
@@ -90,7 +84,7 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   await expect(page.locator('.blacksky-dial')).toBeInViewport({ ratio: 1 });
   // Order down the screen: name block, distance row, dial, other places, notes.
   const tops = await page.evaluate(() =>
-    ['.blacksky-topbar', '.blacksky-dial-head', '.blacksky-dial-figures', '.blacksky-dial', '.blacksky-others', '.blacksky-notes'].map(
+    ['.blacksky-dial-head', '.blacksky-dial-figures', '.blacksky-dial', '.blacksky-others', '.blacksky-notes'].map(
       (selector) => document.querySelector(selector)!.getBoundingClientRect().top,
     ),
   );
@@ -112,13 +106,13 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
     return {
       distance: px(document.querySelector('.blacksky-figure-main')!),
       largest: Math.max(...withText.map(px)),
-      // Under 16 px on purpose: the small labels (the mode's name over the
-      // Leave bar among them), the compass point, set quiet at 14 px so it
+      // Under 16 px on purpose: the small labels (Cooeee under the leave hold,
+      // as BlackSky is under the compass, among them), the compass point, set quiet at 14 px so it
       // never competes with the figure, and the suburb line, set at 15 px so
       // the dial can fill the width. Anything else under 16 px is a mistake.
       smallNotLabels: withText.filter(
         (el) =>
-          px(el) < 16 && !el.closest('.kicker, .blacksky-figure-point, .blacksky-dial-head p'),
+          px(el) < 16 && !el.closest('.kicker, .blacksky-figure-point, .blacksky-dial-head p, .bottom-nav-label'),
       ).length,
       // An information ring is drawn at 32 px; its invisible ::after keeps the 44 px tap area.
       smallTargets: [...document.querySelectorAll('main button:not(.info-ring), main summary')]
@@ -179,70 +173,52 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
   await expect(label(page)).toHaveText('PLACE OF LAST RESORT');
 });
 
-// The Leave control is a hold across the full width of the top bar (E3-US3-AC1,
-// restored after the phone test of 28 Sep: a finger on the old pill hid it).
-// What guards a pocket press is the two-second hold, which is unchanged
-// (blacksky-offline, blacksky-history and rehearsal-journey hold it to leave;
-// here, its place and its look).
-test('Leave is the full-width bar at the top, clear of the top edge, and its hint never moves it', async ({
+// The one way out is a round hold on the spot of the tab bar's compass, the
+// page fading to black behind it (E3-US3-AC1). What guards a pocket press is
+// the two-second hold, which is unchanged (blacksky-offline, blacksky-history
+// and rehearsal-journey hold it to leave; here, its place and its look).
+test('Leave is a round hold where the compass stands, the page fades behind it, and its hint never moves it', async ({
   page,
 }) => {
   await openDial(page, 'pack');
   await pushPosition(page, AT_FERNY_CREEK);
 
-  const leave = page.getByRole('button', { name: 'Hold to leave', exact: true });
-  await expect(leave).toHaveCount(1); // the one way out, and no second one at the foot
-  await expect(leave).toHaveText(LEAVE_BLACKSKY);
-  await expect(page.locator('.blacksky-leave-pill')).toHaveCount(0);
+  const leave = page.getByRole('button', { name: LEAVE_BLACKSKY, exact: true });
+  await expect(leave).toHaveCount(1); // the one way out
   const before = (await leave.boundingBox())!;
-  // The words of the title, not its box: the box spans the bar, so its sweep
-  // lines up with the fill's.
-  const title = await page.getByRole('heading', { name: 'BlackSky', level: 1 }).evaluate((el) => {
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    const box = range.getBoundingClientRect();
-    return { x: box.x, y: box.y, width: box.width, height: box.height };
-  });
-  const dial = (await page.locator('.blacksky-dial').boundingBox())!;
-  const main = await page.locator('main').evaluate((el) => {
-    const box = el.getBoundingClientRect();
-    const style = getComputedStyle(el);
-    return { left: box.left + parseFloat(style.paddingLeft), right: box.right - parseFloat(style.paddingRight) };
-  });
+  const viewport = page.viewportSize()!;
 
-  // The full content width, 48 px high, above everything else, with a gap
-  // from the top edge of the phone, where the system's pull-down lives.
-  expect(Math.abs(before.x - main.left)).toBeLessThanOrEqual(1);
-  expect(Math.abs(before.x + before.width - main.right)).toBeLessThanOrEqual(1);
-  expect(Math.round(before.height)).toBe(48);
-  expect(before.y).toBeGreaterThanOrEqual(24);
-  expect(before.y + before.height).toBeLessThan(dial.y);
-  // The mode's name sits over the bar's right-hand end, and is not in its way:
-  // a press there is a press on the bar.
-  expect(title.x).toBeGreaterThan(before.x + before.width / 2);
-  expect(title.y).toBeGreaterThanOrEqual(before.y);
-  expect(title.y + title.height).toBeLessThanOrEqual(before.y + before.height);
-  expect(
-    await page.getByRole('heading', { name: 'BlackSky', level: 1 }).evaluate((el) => getComputedStyle(el).pointerEvents),
-  ).toBe('none');
-  // One line, 16 px, on the bar.
-  expect(
-    await page.locator('.blacksky-leave-label').evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
-  ).toBe(16);
+  // A 60 px circle, centred across the screen, risen 32 px out of the tab
+  // bar's 56 px slot at the foot, with Cooeee under it.
+  expect(Math.round(before.width)).toBe(60);
+  expect(Math.round(before.height)).toBe(60);
+  expect(Math.abs(before.x + before.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(1);
+  expect(Math.round(before.y)).toBe(viewport.height - 56 - 32);
+  await expect(page.locator('.blacksky-leave .bottom-nav-label')).toHaveText(APP_NAME);
+  // No bar: the foot is clear at its top and black under the button.
+  const fade = await page.locator('.blacksky-leave').evaluate((el) => getComputedStyle(el).backgroundImage);
+  expect(fade).toContain('linear-gradient');
+  expect(fade).toContain('rgba(0, 0, 0, 0)');
 
-  // A tap is not a hold: it earns the hint, under the bar, and the button has
-  // not moved by a pixel, so a finger that then holds is still on it.
+  // The page scrolls behind the fade: its last line comes clear above the
+  // button's sweep, and the hold stays where it is.
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const last = (await page.locator('.blacksky-reminder').boundingBox())!;
+  expect(last.y + last.height).toBeLessThanOrEqual(before.y - 7);
+  expect(await leave.boundingBox()).toEqual(before);
+
+  // A tap is not a hold: it earns the hint, above the button, and the button
+  // has not moved by a pixel, so a finger that then holds is still on it.
   await leave.click();
   const hint = page.getByText(HOLD_TO_LEAVE);
   await expect(hint).toBeVisible();
   expect(await leave.boundingBox()).toEqual(before);
-  expect((await hint.boundingBox())!.y).toBeGreaterThanOrEqual(before.y + before.height);
+  const hintBox = (await hint.boundingBox())!;
+  expect(hintBox.y + hintBox.height).toBeLessThanOrEqual(before.y);
   expect(await hint.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
 });
 
-test('while held, the fill sweeps the whole bar at 3 to 1 or more, and the phone buzzes 40 ms on leaving', async ({
-  page,
-}) => {
+test('while held, the sweep goes round in teal, and the phone buzzes 40 ms on leaving', async ({ page }) => {
   await page.addInitScript(() => {
     (window as unknown as { __buzz: number[] }).__buzz = [];
     Object.defineProperty(Navigator.prototype, 'vibrate', {
@@ -255,36 +231,18 @@ test('while held, the fill sweeps the whole bar at 3 to 1 or more, and the phone
   });
   await openDial(page, 'pack');
   await pushPosition(page, AT_FERNY_CREEK);
-  const leave = page.getByRole('button', { name: 'Hold to leave', exact: true });
+  const leave = page.getByRole('button', { name: LEAVE_BLACKSKY, exact: true });
   const box = (await leave.boundingBox())!;
+  const sweep = page.locator('.blacksky-leave .hold-sweep circle');
+  // At rest the sweep is empty. It is the app's teal, the way back to it.
+  expect(await sweep.evaluate((el) => parseFloat(getComputedStyle(el).strokeDashoffset))).toBe(100);
+  expect(await sweep.evaluate((el) => getComputedStyle(el).stroke)).toBe('rgb(45, 212, 191)');
 
-  // The fill: the full height of the bar, from its left end, in the mode's
-  // amber against the bar's black.
-  const look = await leave.evaluate((el) => {
-    const style = getComputedStyle(el);
-    const rgb = (text: string) => text.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
-    const luminance = ([r, g, b]: number[]) => {
-      const lin = (c: number) => (c / 255 <= 0.03928 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
-      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-    };
-    const fill = luminance(rgb(style.backgroundImage));
-    const bar = luminance(rgb(style.backgroundColor));
-    return {
-      contrast: (Math.max(fill, bar) + 0.05) / (Math.min(fill, bar) + 0.05),
-      size: style.backgroundSize,
-      position: style.backgroundPosition,
-    };
-  });
-  expect(look.contrast).toBeGreaterThanOrEqual(3);
-  expect(look.size).toBe('0% 100%');
-  expect(look.position).toBe('0% 50%');
-
-  // Half way through the hold the fill is part of the way across, both ends of
-  // the bar in view beside the finger.
-  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height / 2);
+  // Half way through the hold the sweep is part of the way round.
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.waitForTimeout(1_000);
-  const part = await leave.evaluate((el) => parseFloat(getComputedStyle(el).backgroundSize));
+  const part = await sweep.evaluate((el) => parseFloat(getComputedStyle(el).strokeDashoffset));
   expect(part).toBeGreaterThan(20);
   expect(part).toBeLessThan(80);
   // Held on to the end: the hold completes with one short buzz, and BlackSky
@@ -380,7 +338,7 @@ test.describe('on a 360 by 660 screen', () => {
     await expect(page.locator('.blacksky-dial')).toBeVisible();
   };
 
-  test('the Notes heading is on the first screen, and the dial is the full width, square', async ({
+  test('the Notes heading is on the first screen, its words clear of the leave hold, and the dial is square at its floor or more', async ({
     page,
   }) => {
     await open(page, 'pack', AT_FERNY_CREEK);
@@ -391,10 +349,17 @@ test.describe('on a 360 by 660 screen', () => {
     await expect(heading).toBeInViewport({ ratio: 1 });
     expect(await page.evaluate(() => window.scrollY)).toBe(0); // on load, not after a scroll
 
-    // The dial is the screen less 16 px each side, and still leaves the heading
-    // on the first screen: nothing had to give.
+    // The leave hold stands where the tab bar's compass does, so the foot it
+    // takes is fixed, and on this shortest phone the dial gives the room: it
+    // is at its 300 px floor, where roads and names stay readable, not the
+    // full width. The heading still clears the hold's sweep.
     const dial = (await page.locator('.blacksky-dial').boundingBox())!;
-    expect(Math.round(dial.width)).toBe(360 - 32);
+    expect(Math.round(dial.width)).toBeGreaterThanOrEqual(300);
+    // Its words clear the top of the fade; the row's own padding may reach into
+    // the fade's clear top edge.
+    const foot = (await page.locator('.blacksky-leave').boundingBox())!;
+    const words = (await heading.locator('.kicker').boundingBox())!;
+    expect(words.y + words.height).toBeLessThanOrEqual(foot.y);
     expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
     // Nothing sits on anything: name block, row, dial, other places, heading.
     const edges = await page.evaluate(() =>
@@ -425,27 +390,25 @@ test.describe('on a 360 by 660 screen', () => {
 
   test('with no notes the dial takes the freed room, down to the foot of the screen', async ({ page }) => {
     // No pack, so no notes and no heading to keep in view: nothing is held back
-    // for one, and the dial's block runs to the page's own bottom padding.
+    // for one, and the dial's block runs down to the leave band, a gap above it.
     await open(page, 'no-pack', AT_FERNY_CREEK);
     await expect(page.locator('.blacksky-notes')).toHaveCount(0);
-    const foot = await page.evaluate(() => {
-      const main = document.querySelector('main')!;
-      return {
-        others: document.querySelector('.blacksky-others')!.getBoundingClientRect().bottom,
-        room: window.innerHeight - parseFloat(getComputedStyle(main).paddingBottom),
-      };
-    });
+    const foot = await page.evaluate(() => ({
+      others: document.querySelector('.blacksky-others')!.getBoundingClientRect().bottom,
+      room: document.querySelector('.blacksky-leave')!.getBoundingClientRect().top - 6,
+    }));
     expect(Math.abs(foot.others - foot.room)).toBeLessThanOrEqual(1);
     const dial = (await page.locator('.blacksky-dial').boundingBox())!;
     expect(dial.width).toBeGreaterThanOrEqual(300);
     expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
   });
 
-  test('the Leave bar is a full-width 48 px target', async ({ page }) => {
+  test('the leave hold is a 60 px target in the middle', async ({ page }) => {
     await open(page, 'pack', AT_FERNY_CREEK);
     const target = (await page.getByRole('button', { name: LEAVE_BLACKSKY, exact: true }).boundingBox())!;
-    expect(Math.round(target.height)).toBe(48);
-    expect(Math.round(target.width)).toBe(360 - 32);
+    expect(Math.round(target.height)).toBe(60);
+    expect(Math.round(target.width)).toBe(60);
+    expect(Math.abs(target.x + 30 - 180)).toBeLessThanOrEqual(1);
   });
 
   test('the compass point is a full word that overlaps nothing beside 12.3 km', async ({ page }) => {
@@ -501,20 +464,20 @@ test('Normal, no pack: the nearest state-wide site is the subject', async ({ pag
   await expect(othersLine(page)).toHaveText('2 other places · 4.09 km – 5.07 km');
   // E3-US2-AC2's rule is unchanged: the screen still says no pack covers this.
   await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
-  await expectWhoToCall(page);
+  await expectNoCalls(page);
 });
 
-test('Normal, outside the pack area: the dial points at the nearest site, and who to call stays', async ({
+test('Normal, outside the pack area: the dial points at the nearest site, and the reminder closes it', async ({
   page,
 }) => {
   await openDial(page, 'pack');
   await pushPosition(page, AT_MELBOURNE);
 
   // E3-US2-AC1's rules are unchanged: the pack is named with the distance to
-  // its area, never pointed at, and Triple Zero is kept as a call card.
+  // its area, never pointed at, and the reminder closes the screen.
   await expect(page.getByText(OUTSIDE_AREAS)).toBeVisible();
   await expect(page.getByText(/km to its area$/)).toBeVisible();
-  await expectWhoToCall(page);
+  await expectNoCalls(page);
 
   // The chosen places are out of reach here, so the label is the state-wide one.
   await expect(label(page)).toHaveText('NEAREST PLACE OF LAST RESORT');
@@ -553,7 +516,7 @@ test('Unavailable: with no position the no-fix reference screen shows the saved 
   await expect(page.locator('.blacksky-dial-head')).toHaveCount(0);
   await expect(page.getByText('GPS signal lost')).toBeHidden();
   await expect(page.getByText('Gas is off at the meter.')).toBeHidden();
-  await expectWhoToCall(page);
+  await expectNoCalls(page);
 });
 
 // A laptop or a tablet (28 Sep review). A laptop's position is usually vague,
@@ -586,8 +549,9 @@ for (const size of [
       page.locator('.blacksky-dial-head').boundingBox(),
     ]);
     expect(about!.y).toBeGreaterThanOrEqual(head!.y + head!.height - 0.5);
+    // Larger than a phone's dial, which stops at 360 px.
     const dial = (await page.locator('.blacksky-dial').boundingBox())!;
-    expect(dial.width).toBeGreaterThan(400);
+    expect(dial.width).toBeGreaterThan(360);
     expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
     await expect(page.locator('.blacksky-notes summary')).toBeInViewport({ ratio: 1 });
   });

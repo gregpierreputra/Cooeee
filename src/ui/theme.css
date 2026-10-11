@@ -81,6 +81,9 @@
   /* BlackSky's true black, kept by the compass, its hint and its info panel
      outside the mode, so they read as the dark screen whatever the page. */
   --blacksky-bg: #000000;
+  /* The app's own teal, kept by BlackSky's leave hold while it is held, so it
+     reads as the way back to the app. */
+  --cooeee-teal: #2dd4bf;
 
   /* The pack map's own colours. They sit on the light map picture, so they
      never rebind with the page around it. */
@@ -1563,95 +1566,68 @@ main:focus {
 /* The bearing figure is the biggest thing on screen — readable at arm's length,
    while walking. Everything else recedes into dim amber. */
 
-/* The top bar: the one way out, a hold across the full content width, 48 px
-   high, with the mode's name set over its right-hand end (E3-US3-AC1, restored
-   after the phone test of 28 Sep: a finger on the old pill hid it, so nobody
-   could see the hold going). A grid, so that the hold's hint and the "still
-   open" notice, which the markup places after the button, fall into
-   full-width rows UNDER the bar. They push the page down when they appear; the
-   bar above them never moves, so it cannot slide out from under the finger
-   that is holding it. */
-.blacksky-topbar {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.25rem;
-}
-
-.blacksky-topbar > .blacksky-hold-hint {
-  text-align: left;
-  font-size: var(--step-0); /* nothing on this screen but the two small labels is under 16 px */
-}
-
-/* The bar and its fill. The fill is the mode's full amber, sweeping left to
-   right across the whole bar for the 2 s of the hold (HOLD_MS), so both ends
-   of it show beside a thumb: amber on the black bar is 11.5 to 1. The words
-   turn dark as the fill passes under them, so they read on both. */
-.blacksky-topbar > .blacksky-leave-bar {
-  min-height: 0;
-  height: 48px;
-  padding: 0;
-  border: 1px solid var(--accent);
-  border-radius: var(--r-pill);
-  flex-direction: row;
-  justify-content: flex-start;
-  white-space: nowrap;
-  background-color: var(--bg);
-  background-image: linear-gradient(var(--accent), var(--accent));
-}
-
-.blacksky-topbar > .blacksky-leave-bar.holding {
-  background-size: 100% 100%;
-  transition: background-size 2s linear; /* HOLD_MS, as on every hold control */
-}
-
-/* The words, and the mode's name over the other end, painted by the same sweep
-   as the fill: dark where the fill has reached, amber where it has not. Each
-   spans the whole bar, so its sweep and the bar's are the same. */
-.blacksky-leave-label,
-.blacksky-topbar > .blacksky-title {
-  box-sizing: border-box;
-  width: 100%;
-  background-image: linear-gradient(var(--ink-on-accent), var(--ink-on-accent)), linear-gradient(var(--accent), var(--accent));
-  background-repeat: no-repeat;
-  background-position: left;
-  background-size: 0% 100%, 100% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  transition: background-size 0.2s ease;
-}
-
-.blacksky-leave-label {
-  padding: 0 1.25rem;
-  text-align: left;
-  font-size: var(--step-0);
-  font-weight: var(--w-bold);
-  line-height: 46px;
-}
-
-/* The name: over the bar's right-hand end, never touched: the pointer goes
-   through it to the bar. Inset by the bar's 1 px border, so its sweep lines up
-   with the fill's. */
-.blacksky-topbar > .blacksky-title {
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: auto;
-  right: 1px;
-  height: 46px;
+/* The one way out: a round hold on exactly the spot of the tab bar's compass,
+   the same 56 px slot with the button risen 32 px out of it, and Cooeee under
+   it where BlackSky sits. No bar: the page fades to black behind it, so text
+   dims out rather than showing through, and only the button takes a tap.
+   Black with the mode's dim amber at rest, so it recedes; the sweep and the
+   mark turn teal while held, the colour of the app it goes back to. */
+.blacksky-leave {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 1.25rem;
+  justify-content: center;
+  padding-top: var(--bs-fade);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Clear to black, solid from where the sweep's top edge is. */
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0), var(--bg) calc(var(--bs-fade) - 39px));
   pointer-events: none;
-  z-index: 1;
 }
-
-.blacksky-topbar > .blacksky-leave-bar.holding .blacksky-leave-label,
-.blacksky-topbar:has(> .blacksky-leave-bar.holding) > .blacksky-title {
-  background-size: 100% 100%, 100% 100%;
-  transition: background-size 2s linear;
+.blacksky-leave .nav-blacksky-slot {
+  flex: none;
+  width: 72px;
+  color: var(--ink-2);
+}
+.blacksky-leave .blacksky-leave-button {
+  position: absolute;
+  left: 50%;
+  top: -32px;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  min-height: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink-2);
+  border-radius: 50%;
+  background: var(--bg);
+  background-image: none; /* the sweep shows the hold, not the shared fill */
+  color: var(--ink-2);
+  pointer-events: auto;
+}
+.blacksky-leave .blacksky-leave-button.holding {
+  border-color: var(--cooeee-teal);
+  color: var(--cooeee-teal);
+}
+@media (hover: hover) {
+  .blacksky-leave .blacksky-leave-button:hover {
+    border-color: var(--cooeee-teal);
+    color: var(--cooeee-teal);
+  }
+}
+.blacksky-leave .hold-sweep circle {
+  stroke: var(--cooeee-teal);
+}
+/* The hint after a tap floats above the button, as over the compass, at
+   BlackSky's 16 px. */
+.blacksky-leave .nav-blacksky-slot .blacksky-hold-hint {
+  border-color: var(--ink-2);
+  background: var(--bg);
+  color: var(--accent);
+  font-size: var(--step-0);
 }
 
 /* Which pack to load, when several are saved: asked under the title and left
@@ -1756,16 +1732,28 @@ main:focus {
    off and the dial takes the room. */
 .blacksky {
   --bs-gap: 6px;
-  /* Above the body: the page's top padding, the top bar (the 48 px hold), and
-     the gap under it. */
-  --bs-above: calc(max(1.5rem, env(safe-area-inset-top) + 1rem) + 48px + var(--bs-gap));
+  /* The foot the leave hold takes: the fade over it, then the tab bar's own
+     56 px slot and the phone's bottom edge. The fade is clear at its top and
+     solid from the sweep's top edge, 39 px above the slot. */
+  --bs-fade: 64px;
+  --bs-leave: calc(var(--bs-fade) + 56px + env(safe-area-inset-bottom));
+  /* Above the body: the page's top padding. */
+  --bs-above: max(1rem, calc(env(safe-area-inset-top) + 0.5rem));
+  --bs-line: 0px; /* the line saying why BlackSky is still open */
   --bs-bar: 0px; /* the GPS signal lost bar */
-  /* Below it: the page's bottom padding, or the Notes heading and its gap. */
-  --bs-below: max(1.75rem, env(safe-area-inset-bottom));
+  /* Below it: the leave hold, and over it the Notes heading and its gap. */
+  --bs-below: calc(var(--bs-leave) + var(--bs-gap));
+  /* The page's foot keeps the leave hold's room, so the last line scrolls
+     clear of it. */
+  padding-bottom: calc(var(--bs-leave) + 1.5rem);
 }
 
 .blacksky:has(.blacksky-notes) {
-  --bs-below: calc(var(--bs-gap) + 56px);
+  --bs-below: calc(var(--bs-leave) + var(--bs-gap) + 56px);
+}
+
+.blacksky:has(> .blacksky-notice) {
+  --bs-line: calc(1.5rem + var(--bs-gap));
 }
 
 .blacksky:has(.blacksky-bar[data-on='true']) {
@@ -1796,8 +1784,8 @@ main:focus {
 @media (max-height: 700px) {
   .blacksky-dial-body {
     grid-template-rows: auto auto minmax(300px, 1fr);
-    height: calc(100vh - var(--bs-above) - var(--bs-bar) - var(--bs-below));
-    height: calc(100dvh - var(--bs-above) - var(--bs-bar) - var(--bs-below));
+    height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
   }
 }
@@ -1810,8 +1798,8 @@ main:focus {
 @media (min-width: 701px) {
   .blacksky-dial-body {
     grid-template-rows: auto auto minmax(300px, 1fr);
-    height: calc(100vh - var(--bs-above) - var(--bs-bar) - var(--bs-below));
-    height: calc(100dvh - var(--bs-above) - var(--bs-bar) - var(--bs-below));
+    height: calc(100vh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
+    height: calc(100dvh - var(--bs-above) - var(--bs-line) - var(--bs-bar) - var(--bs-below));
     min-height: min-content;
   }
 
@@ -2509,10 +2497,6 @@ main:focus {
   margin: 0;
 }
 
-/* Who to call closes the screen as its own part, set apart from the lines above. */
-.blacksky > .call-group {
-  margin-top: 1rem;
-}
 
 
 .blacksky-hold {
@@ -3003,7 +2987,7 @@ body.touring .page {
   /* The hold's fill is a progress bar, not motion. On iOS, with no vibration,
      it is the only sign of how long is left, so it keeps its two seconds. */
   .blacksky-hold.holding,
-  .nav-blacksky.holding .nav-blacksky-sweep circle {
+  .holding .hold-sweep circle {
     transition-duration: 2s !important;
   }
 }
@@ -3252,11 +3236,15 @@ body.touring .page {
   pointer-events: none;
 }
 
-/* The same centred column as every page. */
+/* The same centred column as every page. Two equal columns either side of
+   the compass, so it stands at the exact middle, over its notch, whatever the
+   width of the names beside it, and BlackSky's leave hold can stand on the
+   same spot. A name a little wider than its column runs into the gap. */
 .bottom-nav-inner {
   width: min(100% - 3.5rem, 560px);
   margin: 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
@@ -3299,7 +3287,7 @@ body.touring .page {
 /* The sweep is a circle's stroke drawn round from the top: a stroke offset
    animates in every browser, where a gradient's angle does not repaint in
    Safari. */
-.nav-blacksky-sweep {
+.hold-sweep {
   position: absolute;
   inset: -7px;
   width: calc(100% + 14px);
@@ -3307,7 +3295,7 @@ body.touring .page {
   transform: rotate(-90deg);
   pointer-events: none;
 }
-.nav-blacksky-sweep circle {
+.hold-sweep circle {
   fill: none;
   stroke: var(--blacksky-accent);
   stroke-width: 3;
@@ -3315,7 +3303,7 @@ body.touring .page {
   stroke-dashoffset: 100;
   transition: stroke-dashoffset 0.2s ease;
 }
-.nav-blacksky.holding .nav-blacksky-sweep circle {
+.holding .hold-sweep circle {
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 2s linear;
 }
@@ -3372,20 +3360,18 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   min-height: calc(100dvh - 5.25rem - 1px);
 }
 
-/* Two screens have no bar: BlackSky, whose only way out is its own Leave
-   control, and the first-open disclosure, which stands before the router. Both
-   keep the plain bottom padding. */
-.blacksky,
+/* The first-open disclosure and the password page stand before the router,
+   with no bar, so they keep the plain bottom padding. BlackSky keeps room for
+   its own leave band (see .blacksky). */
 .first-open,
 .gate {
   padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
 }
 
-/* BlackSky's Leave control sits in the top bar, so the bar is kept clear of the
-   phone's top edge: the system's pull-down starts there, and a finger reaching
-   for one must not land on the other. */
+/* BlackSky's top holds no control, so it needs only to clear the phone's
+   own top edge. */
 .blacksky {
-  padding-top: max(1.5rem, calc(env(safe-area-inset-top) + 1rem));
+  padding-top: max(1rem, calc(env(safe-area-inset-top) + 0.5rem));
 }
 
 /* ── Welcome, before the disclosure ───────────────────────────────────────── */
@@ -4341,11 +4327,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .caution-line {
   border-inline-start: 3px solid var(--stale);
   background: color-mix(in srgb, var(--stale) 10%, var(--surface));
-}
-/* In BlackSky every line on the card keeps the screen's 16 px floor. */
-:root[data-mode='blacksky'] .call-card > p,
-:root[data-mode='blacksky'] .call-card .action {
-  font-size: var(--step-0);
 }
 
 /* The source at a glance: its initials in a ring at the head of the card. */

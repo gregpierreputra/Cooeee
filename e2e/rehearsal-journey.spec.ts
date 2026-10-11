@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { HOLD_MS } from '../src/core/constants';
+import { LEAVE_BLACKSKY } from '../src/core/copy';
 import { storedRehearsals } from './helpers';
 
 // E5-US1-AC5 — the journey screen: one screen, two states.
@@ -389,7 +390,7 @@ test.describe('AC5 the real two-second hold into BlackSky', () => {
   // to Home. The harness mounts the real BlackSky with a run already started.
   test('leaving BlackSky returns to the running rehearsal', async ({ page }) => {
     await page.goto(`${ORIGIN}/blacksky?run=1`);
-    const leave = page.getByRole('button', { name: 'Hold to leave' });
+    const leave = page.getByRole('button', { name: LEAVE_BLACKSKY });
     await leave.scrollIntoViewIfNeeded();
     const box = (await leave.boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

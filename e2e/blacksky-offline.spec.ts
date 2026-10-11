@@ -60,8 +60,11 @@ test('entry demands the hold: a tap earns only the hint, a full hold enters', as
   await expect(page).toHaveURL('/blacksky', { timeout: 5_000 });
   await page.mouse.up();
 
-  // Leaving demands the same hold: a stray tap earns only the hint.
+  // The way out stands exactly where the way in was.
   const leave = page.getByRole('button', { name: LEAVE_BLACKSKY });
+  expect(await leave.boundingBox()).toEqual(box);
+
+  // Leaving demands the same hold: a stray tap earns only the hint.
   await leave.click();
   await expect(page.getByText(HOLD_TO_LEAVE)).toBeVisible();
   await expect(page).toHaveURL('/blacksky');

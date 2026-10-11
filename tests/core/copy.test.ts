@@ -33,9 +33,6 @@ describe('mandated literals', () => {
   });
 
 
-  it('Triple Zero is offered as a chance, never a promise', () => {
-    expect(copy.TRIPLE_ZERO_ANY_NETWORK).toBe('Your phone may reach 000 through another network.');
-  });
 });
 
 describe('composed lines', () => {
@@ -204,7 +201,7 @@ describe('deliberate activation', () => {
   });
 
   it('leaving the mode is one plainly named action, and its label says to hold', () => {
-    expect(copy.LEAVE_BLACKSKY).toBe('Hold to leave');
+    expect(copy.LEAVE_BLACKSKY).toBe('Hold for Cooeee');
     expect(copy.HOLD_TO_LEAVE).toBe('Hold to leave. Two seconds.');
   });
 

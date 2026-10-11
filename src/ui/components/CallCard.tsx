@@ -11,20 +11,17 @@ const TONE_CLASS = { emergency: 'emergency-line', caution: 'caution-line' } as c
  *  then reads Copy again: it reports a moment, not what the clipboard holds
  *  later. The emergency card (000) carries the red rule and the screen's one filled
  *  button. A caution card (the hotline) carries the amber rule: important,
- *  but not the number to call in an emergency. BlackSky leaves Copy off: with
- *  no signal there is nowhere to send a copied number, so Call is the one action. */
+ *  but not the number to call in an emergency. */
 export default function CallCard({
   name,
   detail,
   number,
   tone,
-  canCopy = true,
 }: {
   name: string;
   detail?: string;
   number: string;
   tone?: 'emergency' | 'caution';
-  canCopy?: boolean;
 }) {
   const [copied, showCopied] = useCopied();
 
@@ -46,13 +43,11 @@ export default function CallCard({
           line is for, then Call. The name is read with each button, so a
           screen reader's list of controls says whose number it is. */}
       <h3>{name}</h3>
-      {canCopy ? (
-        <button type="button" className="action with-glyph call-copy" onClick={() => void copyNumber()}>
-          <Glyph kind={copied === 'copied' ? 'check' : 'copy'} line />
-          {copyLabel}
-          <span className="visually-hidden"> {name}</span>
-        </button>
-      ) : null}
+      <button type="button" className="action with-glyph call-copy" onClick={() => void copyNumber()}>
+        <Glyph kind={copied === 'copied' ? 'check' : 'copy'} line />
+        {copyLabel}
+        <span className="visually-hidden"> {name}</span>
+      </button>
       {detail ? <p className="muted">{detail}</p> : null}
       <a
         className={tone === 'emergency' ? 'action main-action with-glyph call-link' : 'action call-button with-glyph call-link'}
@@ -63,11 +58,9 @@ export default function CallCard({
         <span className="visually-hidden"> {name}</span>
         <span className="call-number figure">{number}</span>
       </a>
-      {canCopy ? (
-        <p className="visually-hidden" role="status">
-          {copied === 'copied' ? copy.NUMBER_COPIED(name) : ''}
-        </p>
-      ) : null}
+      <p className="visually-hidden" role="status">
+        {copied === 'copied' ? copy.NUMBER_COPIED(name) : ''}
+      </p>
     </li>
   );
 }

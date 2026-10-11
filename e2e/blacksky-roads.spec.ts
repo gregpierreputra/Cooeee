@@ -262,15 +262,15 @@ test('a drag moves the map and the arrow with it; Back to me puts the person bac
 });
 
 // On a 360 by 660 phone the button once took a row out of the dial's slot, and
-// the dial shrank from 328 to 302 px as a drag began. Never again: before, during
-// and after, the dial's box is the same.
+// the dial shrank as a drag began. Never again: before, during and after, the
+// dial's box is the same, at its 300 px floor on this shortest phone.
 test('on a 360 by 660 phone the dial keeps its size through a drag and Back to me', async ({ page }) => {
   await openRoads(page, 'fixture');
   await page.setViewportSize({ width: 360, height: 660 });
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(roads(page).first()).toBeAttached();
   const before = await dialBox(page);
-  expect(before[2]).toBe(328);
+  expect(before[2]).toBe(300);
   const disc = (await page.locator('.blacksky-dial-pan').boundingBox())!;
   const x = disc.x + disc.width / 2;
   const y = disc.y + disc.height / 2;

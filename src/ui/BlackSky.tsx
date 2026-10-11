@@ -52,11 +52,11 @@ import {
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
   HOLD_LEAVE_VIBRATE_MS,
+  NAV_HOLD_HINT_MS,
   ROADS_LABEL_PX,
   ROADS_PAN_RETURN_MS,
   ROADS_PAN_TAP_PX,
   TICK_MS,
-  TRIPLE_ZERO,
   VOICE_CHECK_MS,
   WATCH_RESTART_MS,
 } from '../core/constants';
@@ -78,7 +78,6 @@ import {
 import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
-import CallCard from './components/CallCard';
 import Glyph from './components/Glyph';
 import Hint from './components/Hint';
 import NoteText from './components/NoteText';
@@ -94,6 +93,8 @@ import BlackSkyDial, {
   type DialMapLayer,
 } from './components/BlackSkyDial';
 import HoldButton from './components/HoldButton';
+import HoldSweep from './components/HoldSweep';
+import Mark from './components/Mark';
 import { currentRun } from './Rehearsal/run-state';
 import { useCompass } from './components/useCompass';
 import { useVoice } from './components/useVoice';
@@ -569,53 +570,52 @@ export default function BlackSky({
 
   return (
     <main className="page blacksky">
-      {/* The top bar: the one way out, a full-width hold, with the mode's name
-          over its right-hand end. US3-AC1: leaving demands the same deliberate
-          2s hold as entering, so a pocket press cannot silently drop the
-          emergency screen. The control was a full-width bar at the foot of the
-          screen, then a small pill at the top right to leave the foot to the
-          places and notes; on a phone a finger on the pill hid it, so nobody
-          could see whether the hold was working (phone test, 28 Sep). It is a
-          full-width bar again, at the top, where the pill's row was, and the
-          fill sweeping past both sides of the thumb shows the hold going. The
-          same HoldButton, the same 2s, the same drift margin, the same hint.
-          The bar stands clear of the top edge of the phone (see .blacksky in
-          the stylesheet), where the system's own pull-down lives.
-          The hint, and the notice that says why BlackSky is still open, are
-          laid out UNDER the bar by the stylesheet. Appearing there they push
-          the page down, never the button: a hint that moved the button would
-          slide it out from under the finger that is holding it.
+      {/* The mode's name, for a screen reader: on screen the dark page says it. */}
+      <h1 className="visually-hidden">{copy.BLACKSKY_TITLE}</h1>
+      {/* The one way out: a round hold with the Cooeee mark, on exactly the spot
+          of the tab bar's compass that opened BlackSky, with Cooeee under it
+          where BlackSky sits under the compass. US3-AC1: leaving takes the same
+          deliberate two second hold as entering, so a pocket press cannot drop
+          the emergency screen. The sweep goes round outside the button, so a
+          thumb covers the button and never the sweep (the phone test of 28 Sep
+          found a finger hid the old pill's progress). The page fades to black
+          behind it, so text dims out rather than showing through, and the hint
+          after a tap floats above it, so nothing moves under the finger. Teal
+          while held: the colour of the app it goes back to. First in the page,
+          so it is read and reached first, as the top bar was.
           E5-US3-AC3: a rehearsal that is running is where she came from, so
           leaving goes back to it, not to Home.
           ponytail: a cold start inside BlackSky loses the in-memory run and
           leaves to Home; the kept rehearsal is asked about on the pack's next
           visit. Upgrade path: look the unfinished row up on leave. */}
-      <header className="blacksky-topbar">
-        {/* The mode's name sits over the bar's right-hand end: seen, never
-            touched (the whole bar is the hold), and not part of the button's
-            name. */}
-        <h1 className="kicker blacksky-title">{copy.BLACKSKY_TITLE}</h1>
-        <HoldButton
-          onHold={() => {
-            unlatchBlackSky(localFlagStore());
-            const run = currentRun();
-            navigate(run ? `/rehearse/${run.packId}` : '/', { replace: true });
-          }}
-          hint={copy.HOLD_TO_LEAVE}
-          className="blacksky-leave-bar"
-          vibrateMs={HOLD_LEAVE_VIBRATE_MS}
-        >
-          {/* E3-US3-AC1, restored after the phone test: the full width of the
-              screen is the hold, so a thumb on it covers only a part and the
-              fill can be seen sweeping past both sides of it. */}
-          <span className="blacksky-leave-label">{copy.LEAVE_BLACKSKY}</span>
-        </HoldButton>
-        {notice ? (
-          <p className="muted blacksky-hold-hint" role="status">
-            {notice}
-          </p>
-        ) : null}
-      </header>
+      <div className="blacksky-leave">
+        <div className="nav-blacksky-slot">
+          <HoldButton
+            onHold={() => {
+              unlatchBlackSky(localFlagStore());
+              const run = currentRun();
+              navigate(run ? `/rehearse/${run.packId}` : '/', { replace: true });
+            }}
+            hint={copy.HOLD_TO_LEAVE}
+            hintMs={NAV_HOLD_HINT_MS}
+            label={copy.LEAVE_BLACKSKY}
+            className="blacksky-leave-button"
+            vibrateMs={HOLD_LEAVE_VIBRATE_MS}
+          >
+            <Mark size={30} />
+            <HoldSweep />
+          </HoldButton>
+          <span className="bottom-nav-label" aria-hidden="true">
+            {copy.APP_NAME}
+          </span>
+        </div>
+      </div>
+      {/* Why BlackSky is still open, when it is: reopened, or Back pressed. */}
+      {notice ? (
+        <p className="muted blacksky-notice" role="status">
+          {notice}
+        </p>
+      ) : null}
       {packs.length > 1 ? (
         <PackPicker
           packs={choices.map(({ pack }) => pack)}
@@ -661,9 +661,8 @@ export default function BlackSky({
       )}
       {/* Under the dial, never above it: the dial is the one thing first. */}
       {chosen && !chosen.placesVerified ? <StateCard heading={copy.PLACES_UNVERIFIED} /> : null}
-      {/* Triple Zero closes every state of the screen, so the call is always
-          one scroll away, whatever the position or the pack. */}
-      <WhoToCall reminder={chosen?.pack.reminder || copy.OFFICIAL_INSTRUCTIONS_FIRST} />
+      {/* The loaded pack's reminder closes every state of the screen, once. */}
+      <p className="blacksky-reminder">{chosen?.pack.reminder || copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
     </main>
   );
 }
@@ -816,28 +815,6 @@ function ScreenBody({
         </>
       );
   }
-}
-
-/** Triple Zero alone, as on Recover with the red rule and the filled Call. A
- *  phone with no service of its own can still often reach 000 through another
- *  network, so it is the one call worth a place here, and its card says so;
- *  the hotline and Copy stay on Recover. One card needs no heading over it.
- *  The loaded pack's reminder closes the screen, in bold, once. */
-function WhoToCall({ reminder }: { reminder: string }) {
-  return (
-    <div className="call-group">
-      <ul className="list">
-        <CallCard
-          name={copy.TRIPLE_ZERO_LABEL}
-          detail={`${copy.TRIPLE_ZERO_DETAIL} ${copy.TRIPLE_ZERO_ANY_NETWORK}`}
-          number={TRIPLE_ZERO}
-          tone="emergency"
-          canCopy={false}
-        />
-      </ul>
-      <p className="blacksky-reminder">{reminder}</p>
-    </div>
-  );
 }
 
 const DIAL_LABELS: Record<DialLabel, string> = {
