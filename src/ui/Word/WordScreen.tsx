@@ -42,6 +42,8 @@ type Ready = {
   /** The day's hint: the answer's theme and its clue. */
   hint: { theme: string; clue: string } | null;
   fact: { text: string; source: string } | null;
+  /** Why an earlier day's word matters, for the past words. */
+  factFor: (word: string) => { text: string; source: string } | null;
   /** The real words of this length, or null when they could not be loaded. */
   list: string | null;
 };
@@ -68,6 +70,9 @@ export default function WordScreen({
   const [typed, setTyped] = useState('');
   const [message, setMessage] = useState('');
   const [history, setHistory] = useState<WordDay[]>([]);
+  // Past words wait behind their toggle, and one at a time shows why it matters.
+  const [pastOpen, setPastOpen] = useState(false);
+  const [openPast, setOpenPast] = useState<number | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -86,6 +91,10 @@ export default function WordScreen({
         list,
         hint: entry ? { theme: copy.WORD_THEMES[entry.theme], clue: entry.clue } : null,
         fact: entry ? { text: entry.fact, source: WORD_SOURCES[entry.source] } : null,
+        factFor: (word) => {
+          const past = WORD_ANSWERS.find((candidate) => candidate.word === word);
+          return past ? { text: past.fact, source: WORD_SOURCES[past.source] } : null;
+        },
       });
     })().catch(() => {
       if (live) setFailed(true);
@@ -225,41 +234,81 @@ export default function WordScreen({
                   {copy.WORD_COME_BACK}
                 </p>
               </section>
-              {/* The words of the days before, newest first and at most seven:
-                  each its number and how it went, then the word in small
-                  tiles, green where it was solved. */}
+              {/* The words of the days before, newest first and at most seven,
+                  behind a toggle that says how many, so Done stays close to
+                  the result. Each opens why it matters, one at a time. */}
               {past.length > 0 ? (
-                <section className="word-past" aria-labelledby="word-past-label">
-                  <h2 id="word-past-label" className="kicker section-label">{copy.WORD_PAST_LABEL}</h2>
-                  <p className="muted place-note">{copy.WORD_PAST_NOTE}</p>
-                  <ul className="card word-past-list">
-                    {past.map((word) => (
-                      <li key={word.number} className="word-past-row">
-                        <p className="word-past-head">
-                          <span className="figure">{copy.WORD_NUMBER(word.number)}</span>
-                          <span className={`word-past-outcome ${word.status}`}>
-                            {word.status === 'won'
-                              ? copy.WORD_PAST_SOLVED(word.guesses)
-                              : word.status === 'lost'
-                                ? copy.WORD_PAST_NOT_SOLVED
-                                : copy.WORD_PAST_UNFINISHED}
-                          </span>
-                        </p>
-                        <p className="word-past-tiles">
-                          {[...word.word].map((letter, i) => (
-                            <span
-                              key={i}
-                              className={word.status === 'won' ? 'word-cell mark-right' : 'word-cell'}
-                              aria-hidden="true"
-                            >
-                              {letter.toUpperCase()}
-                            </span>
-                          ))}
-                          <span className="visually-hidden">{word.word.toUpperCase()}</span>
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
+                <section className="word-past" aria-labelledby="word-past-toggle">
+                  {/* The words underlined as every text toggle, then how many in
+                      grey beside them, as Home counts its packs. */}
+                  <button
+                    id="word-past-toggle"
+                    type="button"
+                    className="hint-text word-past-toggle"
+                    aria-expanded={pastOpen}
+                    aria-controls="word-past-list"
+                    onClick={() => setPastOpen((open) => !open)}
+                  >
+                    <span className="word-past-label">{copy.WORD_PAST_LABEL}</span>
+                    <span className="packs-count word-past-count">{past.length}</span>
+                    <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                      <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {pastOpen ? (
+                    <div id="word-past-list" className="word-past-body">
+                      <p className="muted place-note">{copy.WORD_PAST_NOTE}</p>
+                      <ul className="card word-past-list">
+                        {past.map((word) => {
+                          const open = openPast === word.number;
+                          const fact = open ? ready.factFor(word.word) : null;
+                          return (
+                            <li key={word.number} className="word-past-row">
+                              <button
+                                type="button"
+                                className="word-past-button"
+                                aria-expanded={open}
+                                onClick={() => setOpenPast(open ? null : word.number)}
+                              >
+                                <span className="word-past-head">
+                                  <span className="figure">{copy.WORD_NUMBER(word.number)}</span>
+                                  <span className={`word-past-outcome ${word.status}`}>
+                                    {word.status === 'won'
+                                      ? copy.WORD_PAST_SOLVED(word.guesses)
+                                      : word.status === 'lost'
+                                        ? copy.WORD_PAST_NOT_SOLVED
+                                        : copy.WORD_PAST_UNFINISHED}
+                                  </span>
+                                </span>
+                                <span className="word-past-tiles">
+                                  {[...word.word].map((letter, i) => (
+                                    <span
+                                      key={i}
+                                      className={word.status === 'won' ? 'word-cell mark-right' : 'word-cell'}
+                                      aria-hidden="true"
+                                    >
+                                      {letter.toUpperCase()}
+                                    </span>
+                                  ))}
+                                  <span className="visually-hidden">{word.word.toUpperCase()}</span>
+                                  <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                    <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                </span>
+                              </button>
+                              {fact ? (
+                                <div className="word-fact">
+                                  <p className="kicker">{copy.WORD_FACT_LABEL}</p>
+                                  <p>{fact.text}</p>
+                                  <p className="muted">{copy.WORD_FACT_SOURCE(fact.source)}</p>
+                                </div>
+                              ) : null}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ) : null}
                 </section>
               ) : null}
               <div className="actions">

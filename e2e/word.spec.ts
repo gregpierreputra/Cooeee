@@ -71,18 +71,35 @@ test.describe('Cooee Word', () => {
     await page.goto(`${HARNESS}/word?day=10&history=lost,won`);
     await expect(page.getByRole('heading', { name: 'Word 11' })).toBeVisible();
     await type(page, later.word);
-    const past = page.getByRole('region', { name: 'Past words' });
+    // Closed at first, saying how many, so Done stays near the result.
+    const toggle = page.getByRole('button', { name: 'Past words 2' });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.word-past-list')).toHaveCount(0);
+    await toggle.click();
+    const past = page.getByRole('region', { name: 'Past words 2' });
     await expect(past.getByRole('listitem')).toHaveText([
       /^Word 10\s*Solved in 1\s*EMBER/,
       /^Word 9\s*Not solved\s*EMBER/,
     ]);
+    // Each opens why it matters, one at a time.
+    const ember = WORD_ANSWERS.find((entry) => entry.word === 'ember')!;
+    const [newest, older] = await past.getByRole('listitem').getByRole('button').all();
+    await newest.click();
+    await expect(newest).toHaveAttribute('aria-expanded', 'true');
+    await expect(past.locator('.word-fact')).toHaveCount(1);
+    await expect(past.locator('.word-fact')).toContainText(ember.fact);
+    await older.click();
+    await expect(newest).toHaveAttribute('aria-expanded', 'false');
+    await expect(past.locator('.word-fact')).toHaveCount(1);
+    await older.click();
+    await expect(past.locator('.word-fact')).toHaveCount(0);
   });
 
   test('a first day has no past words', async ({ page }) => {
     await open(page);
     await type(page, answer.word);
     await expect(page.getByRole('heading', { name: 'Solved in one guess' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Past words' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Past words/ })).toHaveCount(0);
   });
 
   test('six misses end the day and give the word', async ({ page }) => {
