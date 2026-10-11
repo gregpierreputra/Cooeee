@@ -6969,24 +6969,9 @@ button.flow-step .flow-step-label {
   gap: 0.5rem;
   margin-top: 1rem;
 }
-/* The toggle: only its words underlined, its count in grey beside them. */
-.hint-text.word-past-toggle {
-  text-decoration: none;
-}
-.word-past-label {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.word-past-count {
-  margin-left: 0.25rem;
-  font-variant-numeric: tabular-nums;
-}
 .word-past-body {
   display: grid;
   gap: 0.5rem;
-}
-.word-past-body > p {
-  margin: 0;
 }
 .word-past-list {
   list-style: none;

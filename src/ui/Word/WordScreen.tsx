@@ -9,6 +9,7 @@ import {
   checkGuess,
   inWordList,
   keyboardMarks,
+  PAST_WORDS_SHOWN,
   pastWords,
   puzzleNumber,
   statusAfter,
@@ -23,6 +24,7 @@ import { fetchWordList } from './word-list';
 import Glyph from '../components/Glyph';
 import TabLabel from '../components/TabLabel';
 import FactTiles from '../Games/FactTiles';
+import ShortList from '../components/ShortList';
 
 type Answers = { WORD_ANSWERS: readonly WordAnswer[]; WORD_SOURCES: Record<WordSource, string> };
 
@@ -234,32 +236,32 @@ export default function WordScreen({
                   {copy.WORD_COME_BACK}
                 </p>
               </section>
-              {/* The words of the days before, newest first and at most seven,
-                  behind a toggle that says how many, so Done stays close to
-                  the result. Each opens why it matters, one at a time. */}
+              {/* The words of the days before, newest first, behind a toggle so
+                  Done stays close to the result. Seven show, then Show more
+                  for the rest, as the pack page's lists do. Each opens why it
+                  matters, one at a time. */}
               {past.length > 0 ? (
                 <section className="word-past" aria-labelledby="word-past-toggle">
-                  {/* The words underlined as every text toggle, then how many in
-                      grey beside them, as Home counts its packs. */}
                   <button
                     id="word-past-toggle"
                     type="button"
-                    className="hint-text word-past-toggle"
+                    className="hint-text"
                     aria-expanded={pastOpen}
                     aria-controls="word-past-list"
                     onClick={() => setPastOpen((open) => !open)}
                   >
-                    <span className="word-past-label">{copy.WORD_PAST_LABEL}</span>
-                    <span className="packs-count word-past-count">{past.length}</span>
+                    {copy.WORD_PAST_LABEL}
                     <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
                       <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                   {pastOpen ? (
                     <div id="word-past-list" className="word-past-body">
-                      <p className="muted place-note">{copy.WORD_PAST_NOTE}</p>
-                      <ul className="card word-past-list">
-                        {past.map((word) => {
+                      <ShortList
+                        items={past}
+                        limit={PAST_WORDS_SHOWN}
+                        className="card word-past-list"
+                        render={(word) => {
                           const open = openPast === word.number;
                           const fact = open ? ready.factFor(word.word) : null;
                           return (
@@ -305,8 +307,8 @@ export default function WordScreen({
                               ) : null}
                             </li>
                           );
-                        })}
-                      </ul>
+                        }}
+                      />
                     </div>
                   ) : null}
                 </section>

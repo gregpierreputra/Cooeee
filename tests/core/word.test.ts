@@ -9,7 +9,7 @@ import {
   inWordList,
   keyboardMarks,
   markGuess,
-  PAST_WORDS_LIMIT,
+  PAST_WORDS_SHOWN,
   pastWords,
   puzzleNumber,
   statusAfter,
@@ -93,12 +93,12 @@ describe('Cooee Word past words', () => {
     ]);
   });
 
-  it('keeps to the last seven, and lists none before any earlier day is played', () => {
+  it('lists every earlier day, seven of them shown first, and none before any is played', () => {
     const rows = Array.from({ length: 12 }, (_, i) => row(today - 1 - i, 'won'));
     const listed = pastWords(rows, today);
-    expect(PAST_WORDS_LIMIT).toBe(7);
-    expect(listed).toHaveLength(7);
-    expect(listed.map((past) => past.number)).toEqual([20, 19, 18, 17, 16, 15, 14]);
+    expect(PAST_WORDS_SHOWN).toBe(7);
+    expect(listed).toHaveLength(12);
+    expect(listed.map((past) => past.number)).toEqual([20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9]);
     expect(pastWords([row(today, 'won')], today)).toEqual([]);
   });
 });

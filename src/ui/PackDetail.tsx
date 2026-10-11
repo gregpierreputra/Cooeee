@@ -27,6 +27,7 @@ import Hint from './components/Hint';
 import KeyTerms from './components/KeyTerms';
 import ProvenanceLine from './components/ProvenanceLine';
 import Section from './components/Section';
+import ShortList from './components/ShortList';
 import WellbeingLines from './components/WellbeingLines';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
@@ -552,32 +553,6 @@ export default function PackDetail({
         </div>
       ) : null}
     </main>
-  );
-}
-
-/** How many of a growing list show before the rest wait behind a toggle. */
-const SHORT_LIST = 3;
-
-/** A list that shows its first SHORT_LIST items, newest first as given, then
- *  one text toggle, set as About gaps is, for the rest. The first items are
- *  always in view, so a section never looks empty. */
-function ShortList<T>({ items, className, render }: { items: T[]; className: string; render: (item: T) => ReactNode }) {
-  const [all, setAll] = useState(false);
-  const more = items.length - SHORT_LIST;
-  return (
-    <>
-      <ul className={className}>{(all ? items : items.slice(0, SHORT_LIST)).map(render)}</ul>
-      {more > 0 ? (
-        <button type="button" className="hint-text more-toggle" aria-expanded={all} onClick={() => setAll(!all)}>
-          {all ? copy.SHOW_FEWER : copy.SHOW_MORE(more)}
-          {/* Points down to the cards still to come, and up once they fold back
-              up (see .more-toggle). */}
-          <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-            <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      ) : null}
-    </>
   );
 }
 

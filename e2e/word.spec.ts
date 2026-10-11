@@ -71,12 +71,12 @@ test.describe('Cooee Word', () => {
     await page.goto(`${HARNESS}/word?day=10&history=lost,won`);
     await expect(page.getByRole('heading', { name: 'Word 11' })).toBeVisible();
     await type(page, later.word);
-    // Closed at first, saying how many, so Done stays near the result.
-    const toggle = page.getByRole('button', { name: 'Past words 2' });
+    // Closed at first, so Done stays near the result.
+    const toggle = page.getByRole('button', { name: 'Past words', exact: true });
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect(page.locator('.word-past-list')).toHaveCount(0);
     await toggle.click();
-    const past = page.getByRole('region', { name: 'Past words 2' });
+    const past = page.getByRole('region', { name: 'Past words' });
     await expect(past.getByRole('listitem')).toHaveText([
       /^Word 10\s*Solved in 1\s*EMBER/,
       /^Word 9\s*Not solved\s*EMBER/,
@@ -93,6 +93,21 @@ test.describe('Cooee Word', () => {
     await expect(past.locator('.word-fact')).toHaveCount(1);
     await older.click();
     await expect(past.locator('.word-fact')).toHaveCount(0);
+  });
+
+  test('seven past words show first, and Show more brings the rest', async ({ page }) => {
+    const later = WORD_ANSWERS[answerIndexFor(DAY + 20, WORD_ANSWERS.length)];
+    await page.goto(`${HARNESS}/word?day=20&history=${Array(9).fill('won').join(',')}`);
+    await expect(page.getByRole('heading', { name: 'Word 21' })).toBeVisible();
+    await type(page, later.word);
+    await page.getByRole('button', { name: 'Past words', exact: true }).click();
+    const past = page.getByRole('region', { name: 'Past words' });
+    await expect(past.locator('.word-past-row')).toHaveCount(7);
+    await past.getByRole('button', { name: 'Show 2 more' }).click();
+    await expect(past.locator('.word-past-row')).toHaveCount(9);
+    await expect(past.locator('.word-past-row').last()).toContainText('Word 12');
+    await past.getByRole('button', { name: 'Show fewer' }).click();
+    await expect(past.locator('.word-past-row')).toHaveCount(7);
   });
 
   test('a first day has no past words', async ({ page }) => {
