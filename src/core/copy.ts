@@ -1541,8 +1541,12 @@ export const DRILL_ROW_TWIST = (name: string) => `${name} twist`;
 
 // Cooee Word
 export const WORD_TILE_TITLE = 'Cooee Word';
-export const WORD_TILE_COUNTS = (streak: number, played: number) =>
-  `${streak === 0 ? 'No streak yet' : `${streak} day streak`} · ${played} ${played === 1 ? 'day' : 'days'} played`;
+/** The three figures on the Word result, as the facts on its first screen. */
+export const WORD_RESULT_STATS = (streak: number, played: number, guesses: number) => [
+  { figure: String(streak), label: 'day streak' },
+  { figure: String(played), label: played === 1 ? 'day played' : 'days played' },
+  { figure: `${guesses}/6`, label: 'guesses' },
+];
 export const WORD_TILE_DETAIL = 'Guess today’s word in six tries.';
 /** Before the Word card's big streak figure. */
 export const WORD_STAT_STREAK = 'Streak';

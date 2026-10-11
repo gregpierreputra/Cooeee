@@ -19,6 +19,7 @@ import { focusMain } from '../components/focusMain';
 import WordGrid from './WordGrid';
 import WordKeyboard from './WordKeyboard';
 import { fetchWordList } from './word-list';
+import Glyph from '../components/Glyph';
 import TabLabel from '../components/TabLabel';
 import FactTiles from '../Games/FactTiles';
 
@@ -195,9 +196,21 @@ export default function WordScreen({
           </p>
           {done ? (
             <div className="word-result">
+              {/* In parts: the outcome, the word in its own tiles, the three
+                  figures, why it matters, and when the next word comes. */}
               <section className="card word-result-card" aria-labelledby="word-result-heading">
-                <h2 id="word-result-heading">{status === 'won' ? copy.WORD_SOLVED(guesses.length) : copy.WORD_NOT_SOLVED}</h2>
-                <p className="word-answer">{copy.WORD_ANSWER_WAS(ready.answer)}</p>
+                <div className={status === 'won' ? 'word-result-head won' : 'word-result-head'}>
+                  <Glyph kind={status === 'won' ? 'check' : 'word'} />
+                  <h2 id="word-result-heading">{status === 'won' ? copy.WORD_SOLVED(guesses.length) : copy.WORD_NOT_SOLVED}</h2>
+                </div>
+                <p className="word-answer-tiles" role="img" aria-label={copy.WORD_ANSWER_WAS(ready.answer)}>
+                  {[...ready.answer].map((letter, i) => (
+                    <span key={i} className={status === 'won' ? 'word-cell mark-right' : 'word-cell'}>
+                      {letter.toUpperCase()}
+                    </span>
+                  ))}
+                </p>
+                <FactTiles facts={copy.WORD_RESULT_STATS(view.streak, view.played, guesses.length)} />
                 {ready.fact ? (
                   <div className="word-fact">
                     <p className="kicker">{copy.WORD_FACT_LABEL}</p>
@@ -205,8 +218,10 @@ export default function WordScreen({
                     <p className="muted">{copy.WORD_FACT_SOURCE(ready.fact.source)}</p>
                   </div>
                 ) : null}
-                <p className="word-counts">{copy.WORD_TILE_COUNTS(view.streak, view.played)}</p>
-                <p className="muted">{copy.WORD_COME_BACK}</p>
+                <p className="muted with-glyph word-come-back">
+                  <Glyph kind="clock" line />
+                  {copy.WORD_COME_BACK}
+                </p>
               </section>
               <div className="actions">
                 <button type="button" className="action main-action" onClick={() => navigate('/rehearse')}>

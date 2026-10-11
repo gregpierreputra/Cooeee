@@ -6749,29 +6749,58 @@ button.flow-step .flow-step-label {
   margin: 0.5rem 0 1.5rem;
 }
 .word-result-card {
-  gap: 0.35rem;
+  gap: 1rem;
   border: 2px solid var(--word-accent);
 }
 .word-result-card h2,
 .word-result-card p {
   margin: 0;
 }
-.word-answer {
-  font-size: var(--step-0);
-  font-weight: var(--w-bold);
+/* The outcome: a ring with a tick in Word green once solved, a quiet ring
+   with the game's drawing when not. */
+.word-result-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.word-result-head .glyph {
+  background: var(--surface-2);
   color: var(--ink-2);
 }
+.word-result-head.won .glyph {
+  background: var(--word-accent);
+  color: var(--word-ink-on);
+}
+/* The word in the game's own tiles, green once solved, plain when not. */
+.word-answer-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.word-answer-tiles .word-cell {
+  width: 2.5rem;
+  font-size: var(--step-1);
+}
+.word-answer-tiles .word-cell::after {
+  display: none;
+}
+.word-result-card .game-facts {
+  margin: 0;
+}
+/* Why it matters, edged in Word green as the hint is. */
 .word-fact {
-  margin: 0.85rem 0;
+  display: grid;
+  gap: 0.35rem;
   padding: 0.85rem 1rem;
+  border-left: 4px solid var(--word-accent);
   border-radius: var(--r-input);
   background: var(--surface-2);
 }
 .word-fact .kicker {
   color: var(--word-accent);
 }
-.word-counts {
-  font-weight: var(--w-bold);
+.word-come-back {
+  font-size: var(--step-s);
 }
 
 /* ── Ready the Block ────────────────────────────────────────────────────── */

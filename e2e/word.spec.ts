@@ -50,7 +50,7 @@ test.describe('Cooee Word', () => {
     await page.getByRole('button', { name: 'Enter' }).click();
     await expect(page.getByRole('heading', { name: 'Solved in two guesses' })).toBeVisible();
     await expect(page.locator('.word-fact')).toContainText(answer.fact);
-    await expect(page.locator('.word-counts')).toHaveText('1 day streak · 1 day played');
+    await expect(page.locator('.word-result .game-facts')).toContainText('1 day streak');
 
     // A finished day reads the same when opened again, and takes no more guesses.
     await page.reload();
@@ -62,7 +62,8 @@ test.describe('Cooee Word', () => {
     await open(page, '?history=lost,won,won');
     await type(page, answer.word);
     await expect(page.getByRole('heading', { name: 'Solved in one guess' })).toBeVisible();
-    await expect(page.locator('.word-counts')).toHaveText('3 day streak · 4 days played');
+    await expect(page.locator('.word-result .game-facts li').first()).toHaveText('3 day streak');
+    await expect(page.locator('.word-result .game-facts li').nth(1)).toHaveText('4 days played');
   });
 
   test('six misses end the day and give the word', async ({ page }) => {
@@ -70,7 +71,7 @@ test.describe('Cooee Word', () => {
     const others = WORD_ANSWERS.filter((entry) => entry.word.length === answer.word.length && entry.word !== answer.word).slice(0, 6);
     for (const other of others) await type(page, other.word);
     await expect(page.getByRole('heading', { name: 'Not this time' })).toBeVisible();
-    await expect(page.locator('.word-answer')).toHaveText(`The word was ${answer.word.toUpperCase()}.`);
+    await expect(page.getByRole('img', { name: `The word was ${answer.word.toUpperCase()}.` })).toHaveText(answer.word.toUpperCase());
   });
 
   test('keys are large enough to hit', async ({ page }) => {

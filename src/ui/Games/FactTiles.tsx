@@ -5,7 +5,7 @@ export default function FactTiles({ facts }: { facts: { figure: string; label: s
     <ul className="game-facts">
       {facts.map(({ figure, label }) => (
         <li key={label}>
-          <span className="game-fact-figure figure">{figure}</span>
+          <span className="game-fact-figure figure">{figure}</span>{' '}
           <span className="game-fact-label">{label}</span>
         </li>
       ))}

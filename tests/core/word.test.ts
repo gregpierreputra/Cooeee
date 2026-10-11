@@ -113,10 +113,9 @@ describe('Cooee Word days', () => {
 });
 
 describe('Cooee Word words on screen', () => {
-  it('says the streak and the days played in plain words', () => {
-    expect(copy.WORD_TILE_COUNTS(0, 0)).toBe('No streak yet · 0 days played');
-    expect(copy.WORD_TILE_COUNTS(1, 1)).toBe('1 day streak · 1 day played');
-    expect(copy.WORD_TILE_COUNTS(4, 23)).toBe('4 day streak · 23 days played');
+  it('says the streak, the days played and the guesses as figures', () => {
+    expect(copy.WORD_RESULT_STATS(1, 1, 2).map((stat) => `${stat.figure} ${stat.label}`)).toEqual(['1 day streak', '1 day played', '2/6 guesses']);
+    expect(copy.WORD_RESULT_STATS(4, 23, 6)[1].label).toBe('days played');
     expect(copy.WORD_TILE_TODAY['in-progress'](2)).toBe('2 of 6 guesses');
   });
 
