@@ -122,7 +122,7 @@ describe('Cooee Word words on screen', () => {
 
   it('names letters and counts in words', () => {
     expect(copy.LETTER_LABEL('e', copy.LETTER_MARK.right)).toBe('E, right place');
-    expect(copy.WORD_INTRO(5)).toContain('five letter word');
+    expect(copy.WORD_FACTS(5)[0]).toEqual({ figure: '5', label: 'letters' });
     expect(copy.WORD_TOO_SHORT(7)).toBe('Type all seven letters first.');
     expect(copy.WORD_GUESSES_LEFT(1)).toBe('One guess left');
     expect(copy.WORD_SOLVED(3)).toBe('Solved in three guesses');

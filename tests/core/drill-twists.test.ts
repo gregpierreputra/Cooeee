@@ -151,7 +151,8 @@ describe('which twist is on', () => {
 describe('the twist on screen', () => {
   it('reads exactly as the classic drill did for the classic drill', () => {
     expect(copy.DRILL_INTRO_HEADING_FOR(120)).toBe(copy.DRILL_INTRO_HEADING);
-    expect(copy.DRILL_STAT_DETAIL_FOR(120, 10)).toBe(copy.DRILL_STAT_DETAIL);
+    expect(copy.DRILL_INTRO_FACTS(120, 10).map((fact) => fact.figure)).toEqual(['2', '10', 'Door']);
+    expect(copy.DRILL_INTRO_FACTS(90, 6)[0]).toEqual({ figure: '90', label: 'seconds to leave' });
     expect(copy.DRILL_TOUR_LINES_FOR(120, 10, false)).toEqual(copy.DRILL_TOUR_LINES);
     expect(copy.DRILL_TILE_DETAIL_FOR(120, 10)).toBe(copy.DRILL_TILE_DETAIL);
   });
@@ -161,8 +162,8 @@ describe('the twist on screen', () => {
     expect(copy.TIME_WORDS(90)).toBe('90 seconds');
     expect(copy.TIME_WORDS(150)).toBe('two and a half minutes');
     expect(copy.DRILL_INTRO_HEADING_FOR(90)).toBe('90 seconds to leave');
-    expect(copy.DRILL_TILE_TWIST('Night', 1)).toBe('Night twist, changes tomorrow');
-    expect(copy.DRILL_TILE_TWIST('Night', 3)).toBe('Night twist, changes in three days');
+    expect(copy.DRILL_TILE_CHANGES(1)).toBe('Changes tomorrow');
+    expect(copy.DRILL_TILE_CHANGES(3)).toBe('Changes in three days');
     expect(copy.DRILL_TOUR_LINES_FOR(100, 10, true)[0].text).toContain('lights are still on');
   });
 });

@@ -1087,9 +1087,6 @@ export const REHEARSALS = 'Rehearsals';
 export const NOT_YET_REHEARSED = 'Not yet rehearsed.';
 export const HISTORY_GAPS = (count: number) =>
   count === 0 ? 'No gaps found' : count === 1 ? '1 gap found' : `${count} gaps found`;
-/** E5-US3-AC2 — under Your packs when the bar's Rehearse is tapped and several
- *  packs are saved. */
-export const CHOOSE_PACK_LINE = 'Choose a place to practise leaving from.';
 /** A pack card on Rehearse: when this pack was last rehearsed, from ageLabel. */
 export const REHEARSED_AGO = (age: string) => `Rehearsed ${age}`;
 export const NOT_REHEARSED_CARD = 'Not yet rehearsed';
@@ -1414,8 +1411,16 @@ export const WAY_NOTE_LABEL = 'Your note about the way';
 // Every number here is about the bag, never about the person.
 export const DRILL_LABEL = 'Drill';
 export const DRILL_INTRO_HEADING = 'Two minutes to leave';
-export const DRILL_STAT_DETAIL =
-  'This drill gives you two minutes in a house. Pack ten things and be at the front door when the time ends. Steer with the stick, or tap where to walk. Then it says how ready your bag was.';
+/** The three things to know before the drill, as on Ready the Block, for
+ *  this twist's time and bag. Whole minutes read in minutes, else seconds. */
+export const DRILL_INTRO_FACTS = (seconds: number, bag: number) => [
+  seconds % 60 === 0
+    ? { figure: String(seconds / 60), label: seconds === 60 ? 'minute to leave' : 'minutes to leave' }
+    : { figure: String(seconds), label: 'seconds to leave' },
+  { figure: String(bag), label: 'things to pack' },
+  { figure: 'Door', label: 'be there when time ends' },
+];
+export const DRILL_STEER = 'Steer with the stick, or tap where to walk.';
 export const START_DRILL = 'Start the drill';
 export const SKIP_DRILL = 'Skip the drill';
 export const SKIP_CUTSCENE = 'Skip';
@@ -1508,11 +1513,9 @@ export const TIME_WORDS = (seconds: number): string => {
   return `${seconds} seconds`;
 };
 
-/** The drill's opening screen, for this twist's time and bag. The classic
- *  drill reads exactly as DRILL_INTRO_HEADING and DRILL_STAT_DETAIL. */
+/** The drill's opening heading, for this twist's time. The classic drill
+ *  reads exactly as DRILL_INTRO_HEADING. */
 export const DRILL_INTRO_HEADING_FOR = (seconds: number) => `${capital(TIME_WORDS(seconds))} to leave`;
-export const DRILL_STAT_DETAIL_FOR = (seconds: number, bag: number) =>
-  `This drill gives you ${TIME_WORDS(seconds)} in a house. Pack ${NUMBER_WORD(bag)} things and be at the front door when the time ends. Steer with the stick, or tap where to walk. Then it says how ready your bag was.`;
 /** The film's instructions for this twist. The classic drill's read exactly
  *  as DRILL_TOUR_LINES. */
 export const DRILL_TOUR_LINES_FOR = (seconds: number, bag: number, powered: boolean) => [
@@ -1525,9 +1528,12 @@ export const DRILL_TOUR_LINES_FOR = (seconds: number, bag: number, powered: bool
 export const DRILL_TWIST_LABEL = 'This drill’s twist';
 export const DRILL_TWIST_LINE = (name: string, rule: string) => `${name}. ${rule}`;
 /** The twist on the drill card, and how long it stays. */
-/** Today's twist on the drill card: a rule of the game, so a line, not a pill. */
-export const DRILL_TILE_TWIST = (name: string, daysLeft: number) =>
-  `${name} twist, changes ${daysLeft <= 1 ? 'tomorrow' : `in ${NUMBER_WORD(daysLeft)} days`}`;
+/** Beside today's twist tag on the drill card. The tag is a rule of the
+ *  game, so it is filled, unlike the outlined pills of the person's results. */
+export const DRILL_TILE_CHANGES = (daysLeft: number) =>
+  daysLeft <= 1 ? 'Changes tomorrow' : `Changes in ${NUMBER_WORD(daysLeft)} days`;
+/** Read before the tag's name, so it is heard as a twist. */
+export const DRILL_TWIST_HIDDEN = 'Twist';
 export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this twist is ${score} out of 100.`;
 /** Under the score when the twist's bag is not ten, or some things are out of reach. */
 export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this twist’s bag could hold.';
@@ -1562,8 +1568,12 @@ export const WORD_THEMES = {
   health: 'Health',
   community: 'Community',
 };
-export const WORD_INTRO = (length: number) =>
-  `Guess today’s ${NUMBER_WORD(length)} letter word in six tries. Each guess must be a real word.`;
+/** The three things to know before Cooee Word, as on Ready the Block. */
+export const WORD_FACTS = (length: number) => [
+  { figure: String(length), label: 'letters' },
+  { figure: '6', label: 'tries' },
+  { figure: '1', label: 'new word a day' },
+];
 export const WORD_KEY_RIGHT = 'Right place';
 export const WORD_KEY_PRESENT = 'In the word';
 export const WORD_KEY_ABSENT = 'Not in the word';
@@ -1603,6 +1613,8 @@ export const BLOCK_INTRO_FACTS = [
   { figure: '3', label: 'minutes to find them' },
   { figure: 'Tap', label: 'each one you spot' },
 ];
+/** The way out at the end of a finished game. */
+export const GAME_DONE = 'Done';
 export const BLOCK_INTRO_COSTS = 'A wrong tap costs 4 points. A hint costs 10.';
 export const BLOCK_TODAY_ALREADY = (score: number) => `Your highest today is ${score} out of 100. A new yard arrives at midnight.`;
 export const START_BLOCK = 'Start looking';

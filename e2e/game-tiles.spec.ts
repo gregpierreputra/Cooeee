@@ -25,7 +25,8 @@ test.describe('the game cards on the Rehearse screen', () => {
   test('show the drill’s twist when one is on', async ({ page }) => {
     await page.goto(`${HARNESS}/games?twist=small-bag`);
     await expect(page.locator('.drill-tile')).toContainText('Two minutes to pack seven things and reach the front door.');
-    await expect(page.locator('.drill-tile')).toContainText(/Small bag twist, changes (tomorrow|in \w+ days)/);
+    await expect(page.locator('.drill-tile .game-tile-tag')).toHaveText('Twist Small bag');
+    await expect(page.locator('.drill-tile .game-tile-tag-detail')).toHaveText(/Changes (tomorrow|in \w+ days)/);
   });
 
   test('open their games, and each is large enough to tap', async ({ page }) => {

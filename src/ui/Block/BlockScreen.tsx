@@ -11,6 +11,7 @@ import SoundButton from '../Drill/SoundButton';
 import BlockDebrief from './BlockDebrief';
 import BlockGame, { type BlockOutcome } from './BlockGame';
 import TabLabel from '../components/TabLabel';
+import FactTiles from '../Games/FactTiles';
 
 type Stage = 'intro' | 'game' | 'debrief' | 'unavailable';
 
@@ -96,15 +97,8 @@ export default function BlockScreen({ now, seconds = BLOCK_SECONDS, loadPlays = 
           <div className="hero">
             <h1>{copy.BLOCK_INTRO_HEADING}</h1>
           </div>
-          <ul className="block-facts">
-            {copy.BLOCK_INTRO_FACTS.map(({ figure, label }) => (
-              <li key={label}>
-                <span className="block-fact-figure figure">{figure}</span>
-                <span className="block-fact-label">{label}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="block-costs muted">{copy.BLOCK_INTRO_COSTS}</p>
+          <FactTiles facts={copy.BLOCK_INTRO_FACTS} />
+          <p className="game-facts-note muted">{copy.BLOCK_INTRO_COSTS}</p>
           {today !== null ? <p className="muted">{copy.BLOCK_TODAY_ALREADY(today)}</p> : null}
           <div className="actions">
             {/* Start alone: the Back bar at the top is the way out before a

@@ -6137,17 +6137,26 @@ body.drill-open .banner {
   font-size: var(--step-s);
   color: var(--ink-2);
 }
-/* A rule of the game for now, in the game's colour, led by a clock. */
-.game-tile-note.with-glyph {
-  justify-content: flex-start;
-  /* The clock leads the first line, not the middle of a line that wraps. */
-  align-items: flex-start;
-  font-size: var(--step-s);
-  font-weight: var(--w-med);
-  color: var(--tile-accent);
+/* A rule of the game for now: a tag filled with the game's colour, unlike
+   the outlined result pills, with when it changes beside it in grey. */
+.game-tile-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.375rem;
 }
-.game-tile-note .glyph.line-glyph {
-  height: 1lh;
+.game-tile-tag {
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  background: var(--tile-accent);
+  color: var(--tile-ink-on);
+  font-size: var(--step-s);
+  font-weight: var(--w-heavy);
+}
+.game-tile-tag-detail {
+  font-size: var(--step-s);
+  color: var(--ink-2);
 }
 /* Where a game stands, in small pills tinted with the game's own colour. */
 .game-tile-pills {
@@ -6905,7 +6914,7 @@ button.flow-step .flow-step-label {
 
 
 /* ── Ready the Block's opening facts ───────────────────────────────────── */
-.block-facts {
+.game-facts {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.6rem;
@@ -6913,28 +6922,40 @@ button.flow-step .flow-step-label {
   padding: 0;
   list-style: none;
 }
-.block-facts li {
+.game-facts li {
   display: grid;
   align-content: start;
   gap: 0.3rem;
   padding: 0.9rem 0.75rem;
   border: 1px solid var(--line);
-  border-top: 3px solid var(--block-accent);
+  border-top: 3px solid var(--fact-accent);
   border-radius: var(--r-input);
   background: var(--surface);
   text-align: center;
 }
-.block-fact-figure {
+.game-fact-figure {
   font-size: var(--step-3);
   font-weight: var(--w-heavy);
   line-height: 1;
-  color: var(--block-accent);
+  color: var(--fact-accent);
 }
-.block-fact-label {
+.game-fact-label {
   font-size: var(--step-s);
   color: var(--ink-2);
 }
-.block-costs {
+/* Each game's facts wear its own colour. Ready the Block is also a
+   .drill-page, so its rule comes after. */
+.drill-page {
+  --fact-accent: var(--blacksky-accent);
+}
+.word-page {
+  --fact-accent: var(--word-accent);
+}
+.block-page {
+  --fact-accent: var(--block-accent);
+}
+/* The one muted line under a game's facts. */
+.game-facts-note {
   margin: 0 0 1.5rem;
   font-size: var(--step-s);
   text-align: center;

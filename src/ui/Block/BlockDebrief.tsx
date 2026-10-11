@@ -60,7 +60,7 @@ export default function BlockDebrief({ hazards, outcome, highest, onAgain, onDon
 
       <div className="actions">
         <button type="button" className="action main-action" onClick={onDone}>
-          {copy.BACK_TO_REHEARSE}
+          {copy.GAME_DONE}
         </button>
         <button type="button" className="action" onClick={onAgain}>
           {copy.PLAY_AGAIN}

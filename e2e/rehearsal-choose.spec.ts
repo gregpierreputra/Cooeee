@@ -7,7 +7,7 @@ import { HARNESS } from './helpers';
 test.describe('AC2 which pack to rehearse', () => {
   test('several packs are offered, newest first, and a tap goes to that pack', async ({ page }) => {
     await page.goto(`${HARNESS}/rehearse-choose?packs=2`);
-    await expect(page.getByText('Choose a place to practise leaving from.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Your packs/ })).toBeVisible();
     const rows = page.locator('.pack-choice-list .pack-card');
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toContainText('Kalorama');
@@ -23,7 +23,7 @@ test.describe('AC2 which pack to rehearse', () => {
   test('one pack goes straight to its gate', async ({ page }) => {
     await page.goto(`${HARNESS}/rehearse-choose?packs=1`);
     await expect(page.getByTestId('location')).toHaveText('/rehearse/saved-pack');
-    await expect(page.getByText('Choose a place to practise leaving from.')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Your packs/ })).toHaveCount(0);
   });
 
   test('no pack shows the gate\'s own words', async ({ page }) => {

@@ -20,6 +20,7 @@ import WordGrid from './WordGrid';
 import WordKeyboard from './WordKeyboard';
 import { fetchWordList } from './word-list';
 import TabLabel from '../components/TabLabel';
+import FactTiles from '../Games/FactTiles';
 
 type Answers = { WORD_ANSWERS: readonly WordAnswer[]; WORD_SOURCES: Record<WordSource, string> };
 
@@ -174,9 +175,9 @@ export default function WordScreen({
         <>
           <div className="hero word-hero">
             <h1>{copy.WORD_NUMBER(puzzleNumber(day))}</h1>
-            <p>{copy.WORD_INTRO(ready.answer.length)}</p>
             {ready.list === null ? <p className="muted">{copy.WORD_LIST_UNAVAILABLE}</p> : null}
           </div>
+          <FactTiles facts={copy.WORD_FACTS(ready.answer.length)} />
           {ready.hint ? (
             <aside className="word-hint" aria-label={copy.WORD_HINT_LABEL}>
               <span className="word-hint-theme">{ready.hint.theme}</span>
@@ -209,7 +210,7 @@ export default function WordScreen({
               </section>
               <div className="actions">
                 <button type="button" className="action main-action" onClick={() => navigate('/rehearse')}>
-                  {copy.BACK_TO_REHEARSE}
+                  {copy.GAME_DONE}
                 </button>
               </div>
             </div>

@@ -73,7 +73,6 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
         {copy.YOUR_PACKS}
         <span className="packs-count">{rows.length}</span>
       </h2>
-      <p className="muted">{copy.CHOOSE_PACK_LINE}</p>
 
       {/* Home's own pack card, its name a link stretched over the card. */}
       <ul className="list pack-choice-list">

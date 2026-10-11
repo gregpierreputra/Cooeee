@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Glyph, { type GlyphKind } from '../components/Glyph';
+import * as copy from '../../core/copy';
 
 type Props = {
   /** Which game: each wears its own colour, set in theme.css. */
@@ -7,9 +8,10 @@ type Props = {
   glyph: GlyphKind;
   title: string;
   detail: string;
-  /** A rule of the game for now, such as the drill's twist: a line in the
-   *  game's colour, kept apart from the pills, which are the person's own. */
-  note?: string;
+  /** A rule of the game for now, such as the drill's twist: a filled tag in
+   *  the game's colour, unlike the outlined pills, which are the person's own,
+   *  with when it changes beside it. */
+  tag?: { label: string; detail: string };
   /** Where the game stands, each in a small pill of the game's colour. Words
    *  only, never colour alone. */
   pills: string[];
@@ -24,7 +26,7 @@ type Props = {
 /** A way into one of the games from the Rehearse screens: warm and coloured
  *  where every other row there is neutral, with its own glyph and a way on,
  *  so it reads as a different thing to do, not one more choice. */
-export default function GameTile({ variant, glyph, title, detail, note, pills, stat, children, onPlay }: Props) {
+export default function GameTile({ variant, glyph, title, detail, tag, pills, stat, children, onPlay }: Props) {
   return (
     <button type="button" className={`game-tile ${variant}-tile`} onClick={onPlay}>
       <Glyph kind={glyph} />
@@ -41,10 +43,13 @@ export default function GameTile({ variant, glyph, title, detail, note, pills, s
           ) : null}
         </span>
         <span className="game-tile-detail">{detail}</span>
-        {note ? (
-          <span className="game-tile-note with-glyph">
-            <Glyph kind="clock" line />
-            {note}
+        {tag ? (
+          <span className="game-tile-tag-row">
+            <span className="game-tile-tag">
+              <span className="visually-hidden">{copy.DRILL_TWIST_HIDDEN} </span>
+              {tag.label}
+            </span>{' '}
+            <span className="game-tile-tag-detail">{tag.detail}</span>
           </span>
         ) : null}
         {pills.length > 0 ? (
