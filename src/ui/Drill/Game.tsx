@@ -336,9 +336,18 @@ export default function Game({ opening, seconds, rules, onEnd, onUnavailable, on
   const clockState = hud.seconds <= LATE_SECONDS ? ' late' : hud.seconds <= WARN_SECONDS ? ' warn' : '';
   // The one rule that decides the score, under the clock: said at the start,
   // and again once the door arrow shows.
-  const goal = hud.ready ? null : hud.seconds <= DOOR_ARROW_SECONDS ? copy.HEAD_TO_DOOR : hud.seconds > seconds - RULE_SECONDS ? copy.DRILL_HINT : null;
-  const clock = copy.DRILL_CLOCK(hud.seconds);
+  // A full bag says so there too, until the door arrow takes over.
   const full = hud.packed >= rules.bagLimit;
+  const goal = hud.ready
+    ? null
+    : hud.seconds <= DOOR_ARROW_SECONDS
+      ? copy.HEAD_TO_DOOR
+      : full
+        ? copy.BAG_FULL_GOAL
+        : hud.seconds > seconds - RULE_SECONDS
+          ? copy.DRILL_HINT
+          : null;
+  const clock = copy.DRILL_CLOCK(hud.seconds);
   const line = linesFor(rules)[hud.beat];
 
   return (
@@ -386,9 +395,9 @@ export default function Game({ opening, seconds, rules, onEnd, onUnavailable, on
 
       {hud.playing ? (
         <>
-          {/* Beside the slots it counts. */}
-          <p className="drill-bag">
-            <Glyph kind="bag" size={16} line />
+          {/* Beside the slots it counts. Full, it takes the game's accent and a tick. */}
+          <p className={full ? 'drill-bag full' : 'drill-bag'}>
+            <Glyph kind={full ? 'check' : 'bag'} size={16} line />
             <span aria-hidden="true">{`${hud.packed}/${rules.bagLimit}`}</span>
             <span className="visually-hidden">{copy.BAG_COUNT(hud.packed, rules.bagLimit)}</span>
           </p>
@@ -396,6 +405,10 @@ export default function Game({ opening, seconds, rules, onEnd, onUnavailable, on
               cannot see the clock still hears it coming. */}
           <p className="visually-hidden" role="status" aria-live="polite">
             {hud.seconds === 30 || hud.seconds === 10 ? copy.SECONDS_LEFT(hud.seconds) : ''}
+          </p>
+          {/* Said once, the moment the bag fills. */}
+          <p className="visually-hidden" role="status" aria-live="polite">
+            {full ? copy.BAG_FULL_GOAL : ''}
           </p>
           <div className="drill-controls">
             <button

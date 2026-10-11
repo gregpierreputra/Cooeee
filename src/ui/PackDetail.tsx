@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
 import { mapAcrossKm, mapBoxOf, mapPoint } from '../core/area-map-view';
@@ -31,7 +31,7 @@ import WellbeingLines from './components/WellbeingLines';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
 import { useMinuteClock } from './components/useMinuteClock';
-import { ScoreRing, Sprite } from './Drill/DrillArt';
+import { DrillWhy, ScoreRing, Sprite } from './Drill/DrillArt';
 import { PlaceFacts } from './PackNew/Destinations';
 import { PackNotes } from './PackNotes';
 
@@ -581,11 +581,6 @@ function ShortList<T>({ items, className, render }: { items: T[]; className: str
   );
 }
 
-/** Where a reason bubble's pointer sits: under the middle of the tapped
- *  picture's column, of the five the bag is laid out in. */
-const pointerAt = (index: number) =>
-  ({ '--pointer-at': `calc(${(index % 5) * 20 + 10}% - 6px)` }) as CSSProperties;
-
 /** What one drill's bag held: the essentials packed, the bag as the game's
  *  own pictures edged by what each did, with a slot for each unused space,
  *  then the essentials left in the house and the things that cost points by
@@ -621,21 +616,7 @@ function DrillBag({ row }: { row: DrillRow }) {
           column; until a tap, only the small hint. */}
       <div aria-live="polite">
         {chosen ? (
-          <div
-            key={chosen.id}
-            className={`card hint-panel info-panel drill-why kind-${chosen.kind}`}
-            style={pointerAt(row.bag.indexOf(chosen))}
-          >
-            {/* The name, then its kind in words and its colour, then why. */}
-            <div className="drill-why-head">
-              <p className="drill-why-name">{chosen.name.charAt(0).toUpperCase() + chosen.name.slice(1)}</p>
-              <p className="drill-why-kind figure">
-                {copy.KIND_LABELS[chosen.kind]}
-                {chosen.points ? ` ${chosen.points}` : null}
-              </p>
-            </div>
-            <p className="muted">{chosen.why}</p>
-          </div>
+          <DrillWhy key={chosen.id} {...chosen} index={row.bag.indexOf(chosen)} />
         ) : row.bag.length > 0 ? (
           <p className="muted place-note">{copy.TAP_FOR_WHY}</p>
         ) : null}

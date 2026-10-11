@@ -345,18 +345,20 @@ function drawLate(view: View, scene: Scene): void {
 
 /** A slot along the bottom for each thing the bag holds (ten, unless the
  *  twist says otherwise), narrower when that many would not fit across.
- *  The newest thing flies in from where it was picked up. */
+ *  The newest thing flies in from where it was picked up. Once every slot
+ *  is filled, the slots are edged in the game's amber, as its count is. */
 function drawBag(view: View, art: Art, scene: Scene, left: number, top: number): void {
   const { ctx, width, height } = view;
   const slotSize = Math.min(SLOT, Math.floor((width - 8) / scene.bagLimit));
   const startX = Math.round((width - scene.bagLimit * slotSize) / 2);
   const y = height - SLOT - 4;
+  const full = scene.packed.length >= scene.bagLimit;
   for (let slot = 0; slot < scene.bagLimit; slot++) {
     const x = startX + slot * slotSize;
     ctx.fillStyle = 'rgba(16, 18, 30, 0.72)';
     ctx.fillRect(x, y, slotSize - 1, SLOT - 1);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
-    ctx.lineWidth = 1 / view.scale;
+    ctx.strokeStyle = full ? 'rgba(255, 176, 32, 0.95)' : 'rgba(255, 255, 255, 0.28)';
+    ctx.lineWidth = (full ? 2 : 1) / view.scale;
     ctx.strokeRect(x, y, slotSize - 1, SLOT - 1);
     const item = scene.items.find((candidate) => candidate.id === scene.packed[slot]);
     if (!item) continue;

@@ -1477,6 +1477,8 @@ export const BAG_COUNT = (count: number, limit: number) => `Bag ${count} of ${li
 export const GRAB_ITEM = (name: string) => `Grab the ${name}`;
 export const NOTHING_IN_REACH = 'Nothing in reach';
 export const BAG_FULL = 'Bag full';
+/** Said under the clock, and aloud, once the bag holds all it can. */
+export const BAG_FULL_GOAL = 'Bag full. Head to the front door.';
 export const SECONDS_LEFT = (seconds: number) => `${seconds} seconds left`;
 export const HEAD_TO_DOOR = 'Head to the front door.';
 /** The guide over the paused game, before the clock starts. Touch wording on
@@ -1507,8 +1509,7 @@ export const SIGNED_POINTS = (points: number) => (points > 0 ? `+${points}` : po
 export const TILE_LABEL = (name: string, points: string) => `${name}, ${points}`;
 export const HIGHEST_SO_FAR = (score: number) => `Your highest so far is ${score} out of 100.`;
 export const PLAY_AGAIN = 'Play again';
-export const GO_ON_TO_REHEARSAL = 'Go on to the rehearsal';
-export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures, so the rehearsal opens instead.';
+export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures. Try the drill on another browser.';
 /** Every drill, on every pack page, as the drill is the same game whatever is saved. */
 export const DRILLS = 'Drills · all packs';
 export const NOT_YET_DRILLED = 'Not yet drilled.';

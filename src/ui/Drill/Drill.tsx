@@ -99,7 +99,7 @@ export default function Drill({ onDone, seconds: secondsOverride, twist }: Props
           </div>
           <div className="actions">
             <button type="button" className="action main-action" onClick={onDone}>
-              {copy.GO_ON_TO_REHEARSAL}
+              {copy.GAME_DONE}
             </button>
           </div>
         </>

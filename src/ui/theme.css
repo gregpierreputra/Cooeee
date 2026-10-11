@@ -5739,6 +5739,12 @@ body.drill-open .banner {
   white-space: nowrap;
   pointer-events: none;
 }
+/* The bag full: the count in the game's accent with a tick. */
+.drill-bag.full {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, rgba(8, 10, 18, 0.62));
+}
 .drill-top-actions {
   grid-column: 3;
   justify-self: end;
@@ -6050,6 +6056,38 @@ body.drill-open .banner {
 
 .debrief-block {
   margin-bottom: 1.25rem;
+}
+/* The bag and what was left behind, each in a card as on the pack page. */
+.debrief-card {
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+}
+.debrief-card p,
+.debrief-card .debrief-label {
+  margin: 0;
+}
+.debrief-card .debrief-bar {
+  margin: 0.375rem 0 0;
+}
+/* Its head as a pack page section opens: a ringed drawing, the name in teal
+   capitals, and the count in grey at the right. */
+.debrief-card > .debrief-label {
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  color: var(--accent);
+}
+.debrief-card > .debrief-label .glyph {
+  width: 36px;
+  height: 36px;
+}
+.debrief-card > .debrief-label .glyph svg {
+  width: 18px;
+  height: 18px;
+}
+.debrief-card > .debrief-label .figure {
+  font-size: var(--step-s);
+  color: var(--ink-2);
 }
 .debrief-label {
   display: flex;

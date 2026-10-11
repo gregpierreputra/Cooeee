@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react';
 import * as copy from '../../core/copy';
+import type { ScoreGroup } from '../../core/drill-score';
 import { ATLAS, SHEET } from '../../core/drill-atlas';
 
 /** One thing's own picture from the game, drawn from the sprite sheet to fit a
@@ -45,5 +47,37 @@ export function ScoreRing({ score }: { score: number }) {
       {/* Centred on the ring by the digits' own height, at any size. */}
       <text x="60" y="60" dy="0.35em" textAnchor="middle">{score}</text>
     </svg>
+  );
+}
+
+/** The tapped thing's reason as a speech bubble pointing up at its column of
+ *  the five: its name, its kind in words and its colour, its points where it
+ *  scored, then why. Shared by the debrief and the pack page. */
+export function DrillWhy({
+  name,
+  kind,
+  points,
+  why,
+  index,
+}: {
+  name: string;
+  kind: ScoreGroup['kind'];
+  points: string | null;
+  why: string;
+  /** Where the thing sits in its list, so the bubble points at it. */
+  index: number;
+}) {
+  const pointer = { '--pointer-at': `calc(${(index % 5) * 20 + 10}% - 6px)` } as CSSProperties;
+  return (
+    <div className={`card hint-panel info-panel drill-why kind-${kind}`} style={pointer}>
+      <div className="drill-why-head">
+        <p className="drill-why-name">{name.charAt(0).toUpperCase() + name.slice(1)}</p>
+        <p className="drill-why-kind figure">
+          {copy.KIND_LABELS[kind]}
+          {points ? ` ${points}` : null}
+        </p>
+      </div>
+      <p className="muted">{why}</p>
+    </div>
   );
 }

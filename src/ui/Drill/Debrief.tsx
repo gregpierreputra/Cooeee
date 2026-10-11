@@ -4,8 +4,11 @@ import type { DrillItem } from '../../core/drill-items';
 import { debriefRows, kindOf, leftBehind, scoreBreakdown, scoreDrill } from '../../core/drill-score';
 import { CLASSIC, type DrillRules } from '../../core/drill-twists';
 import Glyph from '../components/Glyph';
-import { ScoreRing, Sprite } from './DrillArt';
+import { DrillWhy, ScoreRing, Sprite } from './DrillArt';
 import type { DrillOutcome } from './Game';
+
+/** A list of names as a line: its first letter a capital. */
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 type Props = {
   outcome: DrillOutcome;
@@ -18,9 +21,9 @@ type Props = {
 };
 
 /** E9-US3 — the report after the two minutes, read at a glance: a ring for the
- *  score, the bag as pictures edged by what each did, a bar of how the points
- *  add up, and the essentials left behind. Each reason is one tap away rather
- *  than printed. Away from the door there is no number anywhere. */
+ *  score, then the bag and what was left behind in cards as a drill's card on
+ *  the pack page sets them. Each reason is one tap away, in a bubble pointing
+ *  at the thing tapped. Away from the door there is no number anywhere. */
 export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, onDone }: Props) {
   const [chosen, setChosen] = useState<DrillItem | null>(null);
   const classic = rules === CLASSIC;
@@ -50,6 +53,25 @@ export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, on
           {scored && !faded ? <span className="debrief-points figure">{points}</span> : null}
         </button>
       </li>
+    );
+  };
+  /** The reason under the list that holds the tapped thing, pointing at it.
+   *  Its points only where they counted. */
+  const why = (list: DrillItem[], faded: boolean) => {
+    const index = chosen ? list.findIndex((item) => item.id === chosen.id) : -1;
+    return (
+      <div aria-live="polite">
+        {chosen && index >= 0 ? (
+          <DrillWhy
+            key={chosen.id}
+            name={chosen.name}
+            kind={kindOf(chosen.weight)}
+            points={scored && !faded ? copy.SIGNED_POINTS(chosen.weight) : null}
+            why={chosen.why}
+            index={index}
+          />
+        ) : null}
+      </div>
     );
   };
 
@@ -84,7 +106,9 @@ export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, on
         </section>
       )}
 
-      <section className="debrief-block" aria-labelledby="debrief-bag">
+      {/* The bag in its card: the pictures, the reason for the one tapped,
+          the bar of how the points add up, and what each colour means. */}
+      <section className="card debrief-card" aria-labelledby="debrief-bag">
         <h2 id="debrief-bag" className="debrief-label">
           <Glyph kind="bag" />
           {copy.IN_YOUR_BAG}
@@ -96,6 +120,8 @@ export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, on
             <li key={`empty-${i}`} className="debrief-empty" aria-hidden="true" />
           ))}
         </ul>
+        {why(packed, false)}
+        {chosen ? null : <p className="muted place-note">{copy.TAP_FOR_WHY}</p>}
         {scored ? (
           <div className="debrief-bar" aria-hidden="true">
             <span className="gained" style={{ width: `${gained}%` }} />
@@ -111,31 +137,26 @@ export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, on
         </ul>
       </section>
 
+      {/* The essentials left in the house, as pictures and by name, as the
+          pack page's drill card names them. */}
       {left.length > 0 ? (
-        <section className="debrief-block" aria-labelledby="debrief-left">
+        <section className="card debrief-card" aria-labelledby="debrief-left">
           <h2 id="debrief-left" className="debrief-label">
             <Glyph kind="stay" />
             {copy.LEFT_BEHIND}
           </h2>
           <ul className="debrief-tiles">{left.map((item) => tile(item, true))}</ul>
+          {why(left, true)}
+          <p className="muted place-note">{sentence(left.map((item) => item.name).join(', '))}</p>
         </section>
       ) : null}
 
-      {/* The one reason in view: the thing last tapped, or the hint to tap. */}
-      <p className="debrief-why" aria-live="polite">
-        {chosen ? (
-          <>
-            <b>{chosen.name}</b> {chosen.why}
-          </>
-        ) : (
-          copy.TAP_FOR_WHY
-        )}
-      </p>
-      <p className="muted debrief-source">{copy.DRILL_SOURCE}</p>
+      <p className="muted place-note debrief-source">{copy.DRILL_SOURCE}</p>
 
+      {/* Done, as every game ends, back to Rehearse; then another go. */}
       <div className="actions">
         <button type="button" className="action main-action" onClick={onDone}>
-          {copy.GO_ON_TO_REHEARSAL}
+          {copy.GAME_DONE}
         </button>
         <button type="button" className="action" onClick={onAgain}>
           {scored ? copy.PLAY_AGAIN : copy.TRY_AGAIN}
