@@ -597,6 +597,26 @@ test.describe('AC5 her note about the way', () => {
     expect((await storedNotes(page))[0].text).toBe(WORDS);
   });
 
+  test('the buttons stay put while the line under the box changes', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    const save = page.getByRole('main').getByRole('button', { name: /^Save/ });
+    // Measured inside the card, so scrolling the page does not count.
+    const top = () =>
+      save.evaluate((el) =>
+        Math.round(el.getBoundingClientRect().top - el.closest('.note-card')!.getBoundingClientRect().top),
+      );
+    const empty = await top();
+    await field(page).fill(WORDS);
+    await expect(page.getByText('Not saved yet.')).toBeVisible();
+    expect(await top()).toBe(empty);
+    await saveControl(page).click();
+    await expect(keptControl(page)).toBeVisible();
+    expect(await top()).toBe(empty);
+    await page.getByRole('main').getByRole('button', { name: 'Remove from this pack' }).click();
+    await expect(page.getByText('Removed from this pack.')).toBeVisible();
+    expect(await top()).toBe(empty);
+  });
+
   test('an empty note writes nothing, and says so', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
     await field(page).fill('   ');
