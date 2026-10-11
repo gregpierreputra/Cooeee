@@ -6140,9 +6140,14 @@ body.drill-open .banner {
 /* A rule of the game for now, in the game's colour, led by a clock. */
 .game-tile-note.with-glyph {
   justify-content: flex-start;
+  /* The clock leads the first line, not the middle of a line that wraps. */
+  align-items: flex-start;
   font-size: var(--step-s);
   font-weight: var(--w-med);
   color: var(--tile-accent);
+}
+.game-tile-note .glyph.line-glyph {
+  height: 1lh;
 }
 /* Where a game stands, in small pills tinted with the game's own colour. */
 .game-tile-pills {
@@ -6166,29 +6171,28 @@ body.drill-open .banner {
   color: var(--ink);
 }
 /* The title, with the card's one big number at the right of it: large,
-   heavy and in the game's colour, its small label under it. */
+   heavy and in the game's colour, its small label before it on the same
+   line, so the number adds no height under the title. */
 .game-tile-head {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
 }
 .game-tile-stat {
   display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
+  align-items: baseline;
+  gap: 0.375rem;
   flex: none;
-  min-width: 3.5rem;
 }
 .game-tile-stat-figure {
-  font-size: var(--step-3);
+  font-size: var(--step-2);
   font-weight: var(--w-heavy);
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--tile-accent);
 }
 .game-tile-stat-label {
-  margin-top: 0.25rem;
   font-size: var(--step-xs);
   font-weight: var(--w-heavy);
   letter-spacing: var(--track-wide);

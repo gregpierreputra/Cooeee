@@ -15,11 +15,11 @@ import {
 } from '../../core/word';
 import type { WordAnswer, WordSource } from '../../core/word-answers';
 import { getWordDay, listWordDays, saveWordDay } from '../../data/db';
-import Glyph from '../components/Glyph';
 import { focusMain } from '../components/focusMain';
 import WordGrid from './WordGrid';
 import WordKeyboard from './WordKeyboard';
 import { fetchWordList } from './word-list';
+import TabLabel from '../components/TabLabel';
 
 type Answers = { WORD_ANSWERS: readonly WordAnswer[]; WORD_SOURCES: Record<WordSource, string> };
 
@@ -158,10 +158,7 @@ export default function WordScreen({
 
   return (
     <main className="page word-page">
-      <p className="pack-section-head rehearsal-head">
-        <Glyph kind="word" />
-        <span className="kicker">{copy.WORD_LABEL}</span>
-      </p>
+      <TabLabel tab="rehearse" text={copy.WORD_LABEL} />
       {failed ? (
         <>
           <div className="card" role="status">

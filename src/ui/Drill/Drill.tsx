@@ -5,7 +5,6 @@ import { highestForTwist } from '../../core/drill-history';
 import { scoreDrill } from '../../core/drill-score';
 import { rulesFor, twistForDay } from '../../core/drill-twists';
 import { listAllDrills, saveDrill } from '../../data/db';
-import Glyph from '../components/Glyph';
 import { focusMain } from '../components/focusMain';
 import * as audio from './audio';
 import Debrief from './Debrief';
@@ -13,6 +12,7 @@ import { pinnedTwist } from './drill-state';
 import Game, { type DrillOutcome } from './Game';
 import SoundButton from './SoundButton';
 import Statline from './Statline';
+import TabLabel from '../components/TabLabel';
 
 type Stage = 'statline' | 'game' | 'again' | 'debrief' | 'unavailable';
 
@@ -82,10 +82,7 @@ export default function Drill({ packId, onDone, seconds: secondsOverride, twist 
   return (
     <main className="page drill-page">
       <div className="drill-head">
-        <p className="pack-section-head rehearsal-head">
-          <Glyph kind="rehearse" />
-          <span className="kicker">{copy.DRILL_LABEL}</span>
-        </p>
+        <TabLabel tab="rehearse" text={copy.DRILL_LABEL} />
         {/* Sound plays only from the film on, so the control sits where it
             matters: on this first screen and over the game, not the report. */}
         {stage === 'statline' ? <SoundButton /> : null}

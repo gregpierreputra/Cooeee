@@ -1538,7 +1538,7 @@ export const WORD_TILE_TITLE = 'Cooee Word';
 export const WORD_TILE_COUNTS = (streak: number, played: number) =>
   `${streak === 0 ? 'No streak yet' : `${streak} day streak`} · ${played} ${played === 1 ? 'day' : 'days'} played`;
 export const WORD_TILE_DETAIL = 'Guess today’s word in six tries.';
-/** Under the Word card's big streak figure. */
+/** Before the Word card's big streak figure. */
 export const WORD_STAT_STREAK = 'Streak';
 export const WORD_TILE_TODAY = {
   solved: 'Solved today',
@@ -1593,8 +1593,8 @@ export const BACK_TO_REHEARSE = 'Back to Rehearse';
 export const BLOCK_TILE_TITLE = 'Ready the Block';
 export const BLOCK_TILE_DETAIL = 'Find eight fire risks round a home in three minutes.';
 export const BLOCK_TILE_TODAY = (today: number | null) => (today === null ? 'Not played today' : `Today ${today}`);
-/** Under the big best score out of 100, on the drill and Block cards. */
-export const GAME_STAT_HIGHEST = 'Highest';
+/** Before the big best score out of 100, on the drill and Block cards. */
+export const GAME_STAT_HIGHEST = 'Best';
 export const BLOCK_LABEL = 'Ready the Block';
 export const BLOCK_INTRO_HEADING = 'Find the fire risks';
 /** The three things to know, each a big figure over a few words. */

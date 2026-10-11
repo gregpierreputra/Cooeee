@@ -5,12 +5,12 @@ import { BLOCK_SECONDS, blockTileView, hazardsForDay, highestBlock, scoreBlock }
 import { melbourneDay } from '../../core/day';
 import type { BlockPlay } from '../../core/types';
 import { listBlockPlays, saveBlockPlay } from '../../data/db';
-import Glyph from '../components/Glyph';
 import { focusMain } from '../components/focusMain';
 import * as audio from '../Drill/audio';
 import SoundButton from '../Drill/SoundButton';
 import BlockDebrief from './BlockDebrief';
 import BlockGame, { type BlockOutcome } from './BlockGame';
+import TabLabel from '../components/TabLabel';
 
 type Stage = 'intro' | 'game' | 'debrief' | 'unavailable';
 
@@ -88,10 +88,7 @@ export default function BlockScreen({ now, seconds = BLOCK_SECONDS, loadPlays = 
   return (
     <main className="page drill-page block-page">
       <div className="drill-head">
-        <p className="pack-section-head rehearsal-head">
-          <Glyph kind="block" />
-          <span className="kicker">{copy.BLOCK_LABEL}</span>
-        </p>
+        <TabLabel tab="rehearse" text={copy.BLOCK_LABEL} />
         {stage === 'intro' ? <SoundButton /> : null}
       </div>
       {stage === 'intro' ? (
@@ -110,11 +107,10 @@ export default function BlockScreen({ now, seconds = BLOCK_SECONDS, loadPlays = 
           <p className="block-costs muted">{copy.BLOCK_INTRO_COSTS}</p>
           {today !== null ? <p className="muted">{copy.BLOCK_TODAY_ALREADY(today)}</p> : null}
           <div className="actions">
+            {/* Start alone: the Back bar at the top is the way out before a
+                round, so a second way back here would only repeat it. */}
             <button type="button" className="action main-action" onClick={start}>
               {copy.START_BLOCK}
-            </button>
-            <button type="button" className="action" onClick={back}>
-              {copy.BACK_TO_REHEARSE}
             </button>
           </div>
         </>
