@@ -5226,20 +5226,14 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .journey-place-list {
   gap: 0.75rem;
 }
-/* A place: its pin in a ring beside its name, where it is, and its date. */
+/* A place, set as on the pack page: the site, the town, where it is, its date. */
 .journey-place {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 0.875rem;
+  gap: 0.2rem;
 }
-.journey-place-text p {
+.journey-place p {
   margin: 0;
 }
 
-.journey-place-name {
-  font-weight: var(--w-bold);
-  margin: 0;
-}
 
 .journey-go,
 .journey-endings .action {

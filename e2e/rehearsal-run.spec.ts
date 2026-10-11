@@ -96,7 +96,7 @@ test.describe('AC2 the bar marks the run', () => {
 
     // Chosen and not yet gone on: setup, not a run (E5-US1-AC5), so still no bar.
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
-    await expect(page.getByRole('heading', { name: 'Rehearse the way there' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: NO_DATA, exact: true })).toBeVisible();
     await expect(bar(page)).toHaveCount(0);
   });
 
@@ -195,7 +195,7 @@ test.describe('AC3 a cold start', () => {
 
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
     // Chosen, not gone: nothing is kept yet (E5-US1-AC5).
-    await expect(page.getByRole('heading', { name: 'Rehearse the way there' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: NO_DATA, exact: true })).toBeVisible();
     expect((await deviceStorage(page)).recordCounts.rehearsals).toBe(0);
     await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
     await expect(bar(page)).toBeVisible();

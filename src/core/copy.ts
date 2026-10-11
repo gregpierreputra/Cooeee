@@ -1311,10 +1311,6 @@ export const PACK_CHANGE_UNKNOWN = 'Whether the pack changed between them was no
 // OFFICIAL_INSTRUCTIONS_FIRST. All new strings below are [DRAFT] pending
 // Sharon's copy review.
 
-/** [DRAFT] Before she goes. */
-export const JOURNEY_BEFORE_HEADING = 'Rehearse the way there';
-/** [DRAFT] Takes the condition's without-form (conditionWithout). */
-export const JOURNEY_CONDITION_LINE = (without: string) => `This rehearsal is without ${without}.`;
 // E5-US6 — make the condition real on the phone. One instruction per
 // condition, in the phone's own words, and a plain statement of what the
 // browser reports while she is out. Reported state only: the app cannot see
@@ -1350,8 +1346,6 @@ export const JOURNEY_WHAT_IT_IS_FOR = 'Practice at knowing the way, how long it 
 export const I_AM_GOING_NOW = "I'm going now";
 /** [DRAFT] While she is out. */
 export const JOURNEY_RUNNING_HEADING = 'Practising the way';
-/** [DRAFT] What to do while she is out. */
-export const JOURNEY_RUNNING_DETAIL = 'Go with BlackSky open. Come back here to say how it ended.';
 /** [DRAFT] The two endings on the journey screen, as the criterion names them. */
 export const JOURNEY_ENDINGS_LABEL = 'When you are done';
 export const ENDING_ARRIVED = 'I have arrived';

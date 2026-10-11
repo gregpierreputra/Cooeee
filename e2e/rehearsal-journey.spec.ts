@@ -26,11 +26,11 @@ const KEEP_REHEARSABLE = `${REHEARSABLE}&keep=1`;
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
 const CONDITIONS = [NO_DATA, NO_FIX] as const;
-const WITHOUT: Record<string, string> = { [NO_DATA]: 'mobile data', [NO_FIX]: 'a location fix' };
 const CONDITION_VALUE: Record<string, string> = { [NO_DATA]: 'no-data', [NO_FIX]: 'no-location-fix' };
 
 const CHOOSE_HEADING = 'Rehearse with…';
-const BEFORE_HEADING = 'Rehearse the way there';
+/** Before going, the title is the option chosen. */
+const BEFORE_HEADING = /^(No mobile data|No location fix)$/;
 const RUNNING_HEADING = 'Practising the way';
 const GO = "I'm going now";
 const ARRIVED = 'I have arrived';
@@ -40,14 +40,11 @@ const RESULT_HEADING = 'What this rehearsal found';
 const NO_GAPS_HEADING = 'Nothing was missing in this rehearsal';
 const HOLD_HINT = 'Hold to enter. Two seconds.';
 
-const CONDITION_LINE = (condition: string) => `This rehearsal is without ${WITHOUT[condition]}.`;
 const WHAT_IT_IS =
   'A calm-day trip to a saved official place, with BlackSky open.';
 const WHAT_IT_IS_FOR =
   'Practice at knowing the way, how long it takes and which turns you take.';
 const INSTRUCTIONS_FIRST = 'Follow Country Fire Authority and emergency service instructions first.';
-const RUNNING_DETAIL =
-  'Go with BlackSky open. Come back here to say how it ended.';
 const PLACES_HEADING = 'Official places in this pack';
 const NO_PLACE_SAVED = 'Missing from your pack.';
 const PLACE = 'Kalorama Reserve';
@@ -61,9 +58,10 @@ const bar = (page: Page) => page.locator('.rehearsal-bar');
 const main = (page: Page) => page.getByRole('main');
 /** The action controls, leaving out the information ring. */
 const actions = (page: Page) => main(page).locator('button:not(.info-ring)');
-/** What a rehearsal is waits behind the ring beside the heading. */
+/** What a rehearsal is waits behind a text toggle on the choice screen. */
 const openExplainer = (page: Page) => main(page).getByRole('button', { name: 'What a rehearsal is' }).click();
-const heading = (page: Page, name: string) => main(page).getByRole('heading', { level: 1, name, exact: true });
+const heading = (page: Page, name: string | RegExp) =>
+  main(page).getByRole('heading', { level: 1, name, exact: typeof name === 'string' });
 const goControl = (page: Page) => main(page).getByRole('button', { name: GO, exact: true });
 const holdControl = (page: Page) => main(page).getByRole('button', { name: /Hold for BlackSky/ });
 const endingControl = (page: Page, label: string) => main(page).getByRole('button', { name: label, exact: true });
@@ -191,13 +189,17 @@ const keptRows = async (page: Page) => rehearsalRows(JSON.parse(await deviceByte
 
 test.describe('AC5 before she goes', () => {
   test('names the official places, says what a rehearsal is, and offers one control', async ({ page }) => {
-    await choose(page, NO_DATA);
-
-    await expect(main(page).getByText(CONDITION_LINE(NO_DATA), { exact: true })).toBeVisible();
+    // What a rehearsal is, read on the choice, once for both options.
+    await page.goto(REHEARSABLE);
     await openExplainer(page);
-    for (const line of [WHAT_IT_IS, WHAT_IT_IS_FOR, INSTRUCTIONS_FIRST]) {
+    for (const line of [WHAT_IT_IS, WHAT_IT_IS_FOR]) {
       await expect(main(page).getByText(line, { exact: true })).toBeVisible();
     }
+    await choose(page, NO_DATA);
+
+    await expect(heading(page, NO_DATA)).toBeVisible();
+    await expect(main(page).getByText(WHAT_IT_IS, { exact: true })).toHaveCount(0);
+    await expect(main(page).getByText(INSTRUCTIONS_FIRST, { exact: true })).toBeVisible();
     await expect(main(page).getByRole('heading', { level: 2, name: PLACES_HEADING })).toBeVisible();
     await expect(places(page)).toHaveCount(1);
     await expect(places(page).first()).toContainText(PLACE);
@@ -297,7 +299,6 @@ test.describe('AC5 going is the commitment', () => {
       await expect(bar(page)).not.toContainText(other);
 
       // What to do, the places, the real hold, and the two endings beside it.
-      await expect(main(page).getByText(RUNNING_DETAIL, { exact: true })).toBeVisible();
       await expect(places(page).first()).toContainText(PLACE);
       await expect(holdControl(page)).toBeVisible();
       await expect(endingControl(page, ARRIVED)).toBeVisible();
@@ -861,9 +862,6 @@ for (const state of ['before', 'running'] as const) {
         ? [
             await position(main(page).getByText('Rehearse', { exact: true })),
             await position(heading(page, BEFORE_HEADING)),
-            await openExplainer(page).then(() => position(main(page).getByText(WHAT_IT_IS, { exact: true }))),
-            await position(main(page).getByText(WHAT_IT_IS_FOR, { exact: true })),
-            await position(main(page).getByText(CONDITION_LINE(NO_FIX), { exact: true })),
             await position(main(page).getByText(INSTRUCTIONS_FIRST, { exact: true })),
             await position(main(page).getByRole('heading', { level: 2, name: PLACES_HEADING })),
             await position(places(page).first()),
@@ -872,7 +870,6 @@ for (const state of ['before', 'running'] as const) {
         : [
             await position(bar(page)),
             await position(heading(page, RUNNING_HEADING)),
-            await position(main(page).getByText(RUNNING_DETAIL, { exact: true })),
             await position(holdControl(page)),
             await position(main(page).getByRole('heading', { level: 2, name: PLACES_HEADING })),
             await position(places(page).first()),
@@ -889,7 +886,7 @@ for (const state of ['before', 'running'] as const) {
       .evaluateAll((els) => els.map((el) => `${el.tagName} ${el.textContent}`));
     expect(headings).toEqual(
       state === 'before'
-        ? [`H1 ${BEFORE_HEADING}`, 'H2 Before you go', `H2 ${PLACES_HEADING}`]
+        ? [`H1 ${NO_FIX}`, 'H2 Before you go', `H2 ${PLACES_HEADING}`]
         : [`H1 ${RUNNING_HEADING}`, `H2 ${PLACES_HEADING}`, 'H2 Notes'],
     );
   });

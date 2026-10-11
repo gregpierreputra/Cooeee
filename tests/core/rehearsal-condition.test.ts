@@ -154,7 +154,6 @@ describe('a condition after the word without', () => {
       [
         copy.RESULT_CONDITION_LINE(without),
         copy.NO_GAPS_DETAIL(without),
-        copy.JOURNEY_CONDITION_LINE(without),
       ].forEach((sentence) => expect(sentence).not.toMatch(/\bwithout no\b/i));
     });
   });

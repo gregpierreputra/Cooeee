@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router';
 import { TICK_MS } from '../../core/constants';
 import * as copy from '../../core/copy';
 import { formatDistanceM } from '../../core/destination';
+import { siteNameBlock } from '../../core/blacksky-dial';
+import { shownPackName } from '../../core/home';
 import {
-  conditionWithout,
+  conditionLabel,
   connectionLine,
   howToLine,
   type RehearsalCondition,
@@ -15,7 +17,6 @@ import { elapsedClock, type RehearsalRun } from '../../core/rehearsal-run';
 import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types';
 import { getCompletePackWithoutFiles, saveStartedRehearsal } from '../../data/db';
 import Glyph from '../components/Glyph';
-import Hint from '../components/Hint';
 import NoteText from '../components/NoteText';
 import HoldButton from '../components/HoldButton';
 import FactTiles from '../Games/FactTiles';
@@ -39,7 +40,7 @@ type LoadContent = (id: string) => Promise<CompletePackContent | undefined>;
 
 /** The official places the pack holds, read from the pack. null until read, and
  *  nothing is drawn for that wait. */
-type Journey = { places: JourneyPlace[]; notes: { id: string; text: string }[] };
+type Journey = { packName: string; places: JourneyPlace[]; notes: { id: string; text: string }[] };
 
 function useJourney(packId: string, loadContent: LoadContent): Journey | null {
   const [journey, setJourney] = useState<Journey | null>(null);
@@ -48,13 +49,15 @@ function useJourney(packId: string, loadContent: LoadContent): Journey | null {
     loadContent(packId).then((content) => {
       if (live) {
         setJourney(
-          content ? { places: journeyPlaces(content), notes: journeyNotes(content) } : { places: [], notes: [] },
+          content
+            ? { packName: shownPackName(content.pack.name), places: journeyPlaces(content), notes: journeyNotes(content) }
+            : { packName: '', places: [], notes: [] },
         );
       }
     }, () => {
       // A pack that cannot be read lists no places, as a pack with none does, so
       // the running rehearsal can still be given its ending.
-      if (live) setJourney({ places: [], notes: [] });
+      if (live) setJourney({ packName: '', places: [], notes: [] });
     });
     return () => {
       live = false;
@@ -63,26 +66,31 @@ function useJourney(packId: string, loadContent: LoadContent): Journey | null {
   return journey;
 }
 
-/** The places, under a section label, each a card with its pin in a ring,
- *  its name, where it is and the shared provenance line. A pack with none says
- *  so in the result's own sentence. */
+/** The places, under a section label, each set as on the pack page and
+ *  Nearby: the site in bold, the town under it, where it is and the shared
+ *  provenance line. The kind is said once, over the list. A pack with none
+ *  says so in the result's own sentence. */
 function Places({ places }: { places: JourneyPlace[] }) {
   return (
     <section className="journey-section journey-places">
       <h2 className="kicker section-label">{copy.JOURNEY_PLACES_LABEL}</h2>
       {places.length > 0 ? (
-        <ul className="list journey-place-list">
-          {places.map((place) => (
-            <li key={place.id} className="card journey-place">
-              <Glyph kind="place" />
-              <div className="journey-place-text">
-                <p className="journey-place-name">{place.name}</p>
-                {place.where ? <p className="muted">{place.where}</p> : null}
-                <p className="muted figure">{place.savedLine}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="muted place-note">{copy.SAVED_PLACES_KIND(places.length)}</p>
+          <ul className="list journey-place-list">
+            {places.map((place) => {
+              const { site, line } = siteNameBlock(place.name);
+              return (
+                <li key={place.id} className="card journey-place">
+                  <p className="nearby-place-name">{site}</p>
+                  {line ? <p className="muted">{line}</p> : null}
+                  {place.where ? <p className="muted">{place.where}</p> : null}
+                  <p className="muted figure">{place.savedLine}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       ) : (
         <p className="muted">{copy.GAP_MEANING_PACK_CONTENT}</p>
       )}
@@ -119,16 +127,9 @@ export function JourneyBefore({
 
   return (
     <main className="page rehearsal-journey">
-      <Head />
-      <div className="hero">
-        <Hint label={copy.ABOUT_REHEARSAL} head={<h1>{copy.JOURNEY_BEFORE_HEADING}</h1>}>
-          <ul className="info-lines glyph-lines">
-            <li><Glyph kind="go" line />{copy.JOURNEY_WHAT_IT_IS}</li>
-            <li><Glyph kind="clock" line />{copy.JOURNEY_WHAT_IT_IS_FOR}</li>
-          </ul>
-        </Hint>
-        <p className="muted">{copy.JOURNEY_CONDITION_LINE(conditionWithout(condition))}</p>
-      </div>
+      {/* The option chosen is the title, as on the choice and the bar, with
+          the pack under it. */}
+      <Head title={conditionLabel(condition)} detail={journey.packName} />
       {/* The official instruction, in the red line it wears everywhere. */}
       <p className="official-channels emergency-line">
         <Glyph kind="calls" line />
@@ -222,7 +223,7 @@ export function JourneyRunning({
 
   return (
     <>
-      <Head title={copy.JOURNEY_RUNNING_HEADING} detail={copy.JOURNEY_RUNNING_DETAIL} />
+      <Head title={copy.JOURNEY_RUNNING_HEADING} />
       <TrackTiles startedAt={run.startedAt} />
       {/* E5-US6 — what the browser reports: amber while the phone is still
           online, a calm line once it is offline as on the day. */}

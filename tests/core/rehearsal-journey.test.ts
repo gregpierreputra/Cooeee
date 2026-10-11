@@ -79,15 +79,13 @@ describe('the places the journey screen names', () => {
 
 describe("the journey screen's words", () => {
   const before = [
-    copy.JOURNEY_BEFORE_HEADING,
-    copy.JOURNEY_CONDITION_LINE('mobile data'),
     copy.JOURNEY_WHAT_IT_IS,
     copy.JOURNEY_WHAT_IT_IS_FOR,
+    copy.STEP_GO_WITH_BLACKSKY_DETAIL,
     copy.I_AM_GOING_NOW,
   ];
   const running = [
     copy.JOURNEY_RUNNING_HEADING,
-    copy.JOURNEY_RUNNING_DETAIL,
     copy.ENDING_ARRIVED,
     copy.ENDING_WITHOUT_GOING,
   ];
@@ -95,28 +93,25 @@ describe("the journey screen's words", () => {
 
   it('are exactly the draft wording, pending the copy review', () => {
     expect(before).toEqual([
-      'Rehearse the way there',
-      'This rehearsal is without mobile data.',
       'A calm-day trip to a saved official place, with BlackSky open.',
       'Practice at knowing the way, how long it takes and which turns you take.',
+      'Hold for BlackSky once you set off, as you would on the day.',
       "I'm going now",
     ]);
     expect(running).toEqual([
       'Practising the way',
-      'Go with BlackSky open. Come back here to say how it ended.',
       'I have arrived',
       'End without going',
     ]);
   });
 
-  it('ask for a calm-day trip before, and BlackSky open before and during, however she gets there', () => {
-    [copy.JOURNEY_BEFORE_HEADING, copy.JOURNEY_WHAT_IT_IS, copy.JOURNEY_RUNNING_DETAIL].forEach((line) => {
+  it('ask for a calm-day trip, and BlackSky held once she sets off, however she gets there', () => {
+    [copy.JOURNEY_WHAT_IT_IS, copy.STEP_GO_WITH_BLACKSKY_DETAIL].forEach((line) => {
       expect(line).not.toMatch(/foot|walk/i);
     });
     expect(copy.JOURNEY_WHAT_IT_IS).toContain('calm-day trip');
-    [copy.JOURNEY_WHAT_IT_IS, copy.JOURNEY_RUNNING_DETAIL].forEach((line) => {
-      expect(line).toContain('with BlackSky open');
-    });
+    expect(copy.JOURNEY_WHAT_IT_IS).toContain('with BlackSky open');
+    expect(copy.STEP_GO_WITH_BLACKSKY_DETAIL).toContain('Hold for BlackSky');
   });
 
   it('say it is practice at knowing the way', () => {

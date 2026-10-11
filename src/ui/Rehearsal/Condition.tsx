@@ -1,6 +1,7 @@
 import * as copy from '../../core/copy';
 import { titleCase } from '../../core/home';
 import Glyph from '../components/Glyph';
+import Hint from '../components/Hint';
 import Head from './Head';
 import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
 
@@ -32,6 +33,13 @@ export default function Condition({
   return (
     <main className="page rehearsal-condition">
       <Head title={packName} detail={titleCase(packAddress)} />
+      {/* What a rehearsal is, read here while choosing, once for both options. */}
+      <Hint label={copy.ABOUT_REHEARSAL} asText titled={false}>
+        <ul className="info-lines glyph-lines">
+          <li><Glyph kind="go" line />{copy.JOURNEY_WHAT_IT_IS}</li>
+          <li><Glyph kind="clock" line />{copy.JOURNEY_WHAT_IT_IS_FOR}</li>
+        </ul>
+      </Hint>
       <h2 className="kicker section-label">{copy.CHOOSE_CONDITION_HEADING}</h2>
 
       <ul className="list condition-list">
