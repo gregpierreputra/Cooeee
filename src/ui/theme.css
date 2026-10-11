@@ -6165,6 +6165,36 @@ body.drill-open .banner {
   font-weight: var(--w-heavy);
   color: var(--ink);
 }
+/* The title, with the card's one big number at the right of it: large,
+   heavy and in the game's colour, its small label under it. */
+.game-tile-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.game-tile-stat {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  flex: none;
+  min-width: 3.5rem;
+}
+.game-tile-stat-figure {
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--tile-accent);
+}
+.game-tile-stat-label {
+  margin-top: 0.25rem;
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
 /* Cooee Word's last seven days, today last: filled where solved. */
 .word-week {
   display: flex;

@@ -19,7 +19,8 @@ export default function DrillTile({
       title={copy.DRILL_TILE_TITLE}
       detail={twist ? copy.DRILL_TILE_DETAIL_FOR(twist.seconds, twist.bag) : copy.DRILL_TILE_DETAIL}
       note={twist ? copy.DRILL_TILE_TWIST(twist.name, twist.daysLeft) : undefined}
-      pills={highest === null ? [] : [copy.GAME_HIGHEST(highest)]}
+      pills={[]}
+      stat={highest === null ? undefined : { figure: highest, label: copy.GAME_STAT_HIGHEST }}
       onPlay={onPlay}
     />
   );

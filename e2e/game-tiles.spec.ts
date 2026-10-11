@@ -18,7 +18,7 @@ test.describe('the game cards on the Rehearse screen', () => {
 
   test('carry the streak and the week of dots', async ({ page }) => {
     await page.goto(`${HARNESS}/games?history=lost,won,won`);
-    await expect(page.locator('.word-tile')).toContainText('2 day streak');
+    await expect(page.locator('.word-tile .game-tile-stat')).toHaveText('Streak 2');
     await expect(page.locator('.word-week .solved')).toHaveCount(2);
   });
 

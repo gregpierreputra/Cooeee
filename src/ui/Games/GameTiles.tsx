@@ -79,7 +79,8 @@ export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock 
         glyph="word"
         title={copy.WORD_TILE_TITLE}
         detail={copy.WORD_TILE_DETAIL}
-        pills={[...(word.streak > 0 ? [copy.WORD_TILE_STREAK(word.streak)] : []), wordToday]}
+        pills={[wordToday]}
+        stat={word.streak > 0 ? { figure: word.streak, label: copy.WORD_STAT_STREAK } : undefined}
         onPlay={() => navigate('/rehearse/word')}
       >
         <span className="word-week" role="img" aria-label={copy.WORD_WEEK_LABEL(week.filter(Boolean).length)}>
@@ -93,7 +94,8 @@ export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock 
         glyph="block"
         title={copy.BLOCK_TILE_TITLE}
         detail={copy.BLOCK_TILE_DETAIL}
-        pills={[copy.BLOCK_TILE_TODAY(block.today), ...(block.highest === null ? [] : [copy.GAME_HIGHEST(block.highest)])]}
+        pills={[copy.BLOCK_TILE_TODAY(block.today)]}
+        stat={block.highest === null ? undefined : { figure: block.highest, label: copy.GAME_STAT_HIGHEST }}
         onPlay={() => navigate('/rehearse/block')}
       />
     </section>
