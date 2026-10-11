@@ -2108,15 +2108,19 @@ main:focus {
   left: 0;
   /* A quiet label, not a pill: no outline, so it never reads as a third
      button beside the speaker. */
-  padding: 0.125rem 0.375rem 0.125rem 0;
+  padding: 0 0.125rem 0 0;
   /* The ring reaches nearly to the box's corners, so a tag sits over its line
      there: a solid ground keeps the line from running through the words. */
   background: var(--bg);
+  /* A label's size, as the compass point beside the distance: the corner the
+     ring leaves is small, and at 16 px the words ran over its line. */
+  font-size: var(--step-s);
+  line-height: 1.25;
   font-weight: var(--w-med);
   color: var(--ink-2);
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 3px;
 }
 /* The north badge beside the words: the ring and N drawn in line, the pointer
    at its top filled, as the notch at the top of the dial is. */

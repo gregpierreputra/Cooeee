@@ -960,7 +960,7 @@ function DialBody({
               the sign. Drawn, so it costs no request. */}
           {compass.live ? null : (
             <span className="blacksky-tag">
-              <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
                 <path className="blacksky-north-pointer" d="M12 1 15 5H9z" />
                 <circle cx="12" cy="14" r="8.5" />
                 <path d="M9.5 17.5v-7l5 7v-7" />

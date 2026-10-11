@@ -107,12 +107,13 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
       distance: px(document.querySelector('.blacksky-figure-main')!),
       largest: Math.max(...withText.map(px)),
       // Under 16 px on purpose: the small labels (Cooeee under the leave hold,
-      // as BlackSky is under the compass, among them), the compass point, set quiet at 14 px so it
+      // as BlackSky is under the compass, and North up in the dial's corner,
+      // among them), the compass point, set quiet at 14 px so it
       // never competes with the figure, and the suburb line, set at 15 px so
       // the dial can fill the width. Anything else under 16 px is a mistake.
       smallNotLabels: withText.filter(
         (el) =>
-          px(el) < 16 && !el.closest('.kicker, .blacksky-figure-point, .blacksky-dial-head p, .bottom-nav-label'),
+          px(el) < 16 && !el.closest('.kicker, .blacksky-figure-point, .blacksky-dial-head p, .bottom-nav-label, .blacksky-tag'),
       ).length,
       // An information ring is drawn at 32 px; its invisible ::after keeps the 44 px tap area.
       smallTargets: [...document.querySelectorAll('main button:not(.info-ring), main summary')]
@@ -296,11 +297,15 @@ test.describe('at 360 px wide', () => {
     expect(dial.width).toBeGreaterThanOrEqual(300);
     expect(dial.width).toBeCloseTo(content, 0);
     expect(Math.abs(dial.width - dial.height)).toBeLessThanOrEqual(1);
-    // The North up tag stays inside the dial's own corner.
+    // The North up tag stays inside the dial's own corner, every part of it
+    // outside the ring, so the ring's line never runs under it.
     const tag = (await page.getByText('North up', { exact: true }).boundingBox())!;
     expect(tag.x).toBeGreaterThanOrEqual(dial.x - 1);
     expect(tag.y).toBeGreaterThanOrEqual(dial.y - 1);
-    expect(tag.y + tag.height).toBeLessThan(dial.y + dial.height / 2);
+    const centre = { x: dial.x + dial.width / 2, y: dial.y + dial.height / 2 };
+    const ringOuter = (dial.width / 2) * 0.97;
+    const nearest = Math.hypot(tag.x + tag.width - centre.x, tag.y + tag.height - centre.y);
+    expect(nearest).toBeGreaterThan(ringOuter);
   });
 
   test('the distance row keeps 48 px free at its end, and nothing on it overlaps or wraps', async ({ page }) => {
@@ -337,6 +342,16 @@ test.describe('on a 360 by 660 screen', () => {
     await pushPosition(page, position);
     await expect(page.locator('.blacksky-dial')).toBeVisible();
   };
+
+  // The smallest dial: North up still stands wholly outside the ring.
+  test('North up stays clear of the ring', async ({ page }) => {
+    await open(page, 'pack', AT_FERNY_CREEK);
+    const dial = (await page.locator('.blacksky-dial').boundingBox())!;
+    const tag = (await page.getByText('North up', { exact: true }).boundingBox())!;
+    const centre = { x: dial.x + dial.width / 2, y: dial.y + dial.height / 2 };
+    const nearest = Math.hypot(tag.x + tag.width - centre.x, tag.y + tag.height - centre.y);
+    expect(nearest).toBeGreaterThan((dial.width / 2) * 0.97);
+  });
 
   test('the Notes heading is on the first screen, its words clear of the leave hold, and the dial is square at its floor or more', async ({
     page,
