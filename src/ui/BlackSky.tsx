@@ -677,7 +677,7 @@ export default function BlackSky({
 
 /** Several packs: which one to load, asked at the top of the screen. Once one
  *  is chosen the list folds to that pack in the amber ring, with an arrow
- *  beside its name to open the list again, so the dial stays high on the screen. Full-width targets for wet hands.
+ *  at its edge to open the list again, so the dial stays high on the screen. Full-width targets for wet hands.
  *  Each pack keeps its key whether the list is folded or open, so the button
  *  just tapped stays in the page and keeps the focus. */
 function PackPicker({
@@ -714,22 +714,7 @@ function PackPicker({
               {/* The pack's own drawing, in amber like everything here. */}
               <Glyph kind={packIcon(pack)} />
               <span className="blacksky-pack-text">
-                {/* The name's line. Folded, an arrow at its right end says the
-                    card opens, as on Home's pack cards and the Notes heading,
-                    and Change is said to a screen reader with the card's
-                    collapsed state. On the name's line, not a column of its
-                    own, so the address and the covers line keep the width. */}
-                <span className="blacksky-pack-name-row">
-                  <span className="pack-name">{shownPackName(pack.name)}</span>
-                  {folded ? (
-                    <span className="blacksky-pack-change">
-                      <span className="visually-hidden">{copy.CHANGE_PACK}</span>
-                      <svg className="hint-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-                        <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  ) : null}
-                </span>
+                <span className="pack-name">{shownPackName(pack.name)}</span>
                 <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
                 {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
                   <span className="blacksky-pack-here with-glyph">
@@ -738,6 +723,17 @@ function PackPicker({
                   </span>
                 ) : null}
               </span>
+              {/* Folded: an arrow centred at the card's right edge says it
+                  opens, as on Home's pack cards and the Notes heading. Change
+                  is said to a screen reader, with the card's collapsed state. */}
+              {folded ? (
+                <span className="blacksky-pack-change">
+                  <span className="visually-hidden">{copy.CHANGE_PACK}</span>
+                  <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                    <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              ) : null}
             </button>
           </li>
         ))}
@@ -790,7 +786,7 @@ function ScreenBody({
           <StateCard heading={copy.NO_GPS} detail={copy.MARK_HINT}>
             <button
               type="button"
-              className="with-glyph"
+              className="with-glyph blacksky-mark"
               onClick={() =>
                 onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
               }

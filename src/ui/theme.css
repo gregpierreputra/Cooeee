@@ -1664,7 +1664,7 @@ main:focus {
 /* Which pack to load, when several are saved: asked under the title and left
    there. Full-width choices for wet hands. The chosen one wears the amber ring
    a chosen place wears elsewhere in the app, never a fill, and once chosen the
-   list folds to it with an arrow at the end of its name. */
+   list folds to it with an arrow at its right edge. */
 .blacksky-picker {
   display: grid;
   gap: 0.75rem;
@@ -1684,9 +1684,9 @@ main:focus {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 0.875rem;
+  gap: 0.5rem;
   text-align: left;
-  padding: 0.875rem 1.25rem;
+  padding: 0.875rem 0.75rem 0.875rem 1rem;
   border-radius: var(--r-card); /* three lines of text: the card's corner, not the pill's */
 }
 .blacksky-pack[aria-pressed='true'],
@@ -1700,16 +1700,25 @@ main:focus {
   min-width: 0;
 }
 /* Change, set as every other toggle is: underlined words with a chevron. */
-/* The name, and on the folded card its arrow at the right end of that line. */
-.blacksky-pack-name-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+/* The folded card's arrow, centred in its own narrow column at the right
+   edge. The card is set compact (a 36 px drawing, less padding and gap) so the
+   text keeps the width it had without the arrow. */
+.blacksky-pack[aria-expanded] {
+  grid-template-columns: auto 1fr auto;
+}
+.blacksky-pack .glyph {
+  width: 36px;
+  height: 36px;
 }
 .blacksky-pack-change {
-  flex: none;
   display: grid;
+}
+/* I'm standing at your address: its words from the left beside the pin, as a
+   line of text reads, not centred. */
+.blacksky-mark.with-glyph {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
 }
 .blacksky-pack-address {
   font-size: var(--step-s);

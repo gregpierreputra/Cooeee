@@ -33,10 +33,14 @@ test('the picker loads only the chosen pack and remembers it', async ({ page }) 
   await expect(page.getByText(PACK_LOADED)).toBeVisible();
   await expect(choices).toHaveCount(1);
   await expect(ferny).toHaveAttribute('aria-expanded', 'false');
-  // Change is said after the pack's name, with the card's collapsed state; on
-  // screen, an arrow at the end of the name's line.
-  await expect(ferny).toHaveAccessibleName(new RegExp(`^Ferny Creek ${CHANGE_PACK} `));
+  // Change is said with the card's collapsed state; on screen, an arrow.
+  await expect(ferny).toHaveAccessibleName(new RegExp(`${CHANGE_PACK}$`));
   await expect(ferny.locator('.blacksky-pack-change .hint-chevron')).toBeVisible();
+  // The arrow is centred on the card's height, at its right edge.
+  const card = (await ferny.boundingBox())!;
+  const arrow = (await ferny.locator('.blacksky-pack-change .hint-chevron').boundingBox())!;
+  expect(Math.abs(arrow.y + arrow.height / 2 - (card.y + card.height / 2))).toBeLessThanOrEqual(1);
+  expect(card.x + card.width - (arrow.x + arrow.width)).toBeLessThan(24);
   await expect(ferny).toBeFocused();
   await expect(markFerny).toBeVisible();
   await expect(markKalorama).toHaveCount(0);
