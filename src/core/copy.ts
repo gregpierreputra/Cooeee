@@ -444,14 +444,19 @@ export const OTHER_PLACES_COUNT = (count: number) =>
 export const OTHER_PLACES = (distances: string[]) => {
   const nearest = distances[0];
   const furthest = distances[distances.length - 1];
-  const range = nearest === furthest ? nearest : `${nearest} – ${furthest}`;
+  // Two figures in the same unit share it, "2.13–5.07 km", so the line fits
+  // beside its drawing and arrow on a narrow phone; mixed units stay whole.
+  const [figure, unit] = nearest.split(' ');
+  const range =
+    nearest === furthest
+      ? nearest
+      : furthest.endsWith(` ${unit}`)
+        ? `${figure}–${furthest}`
+        : `${nearest} – ${furthest}`;
   return `${OTHER_PLACES_COUNT(distances.length)}${PLACES_SEPARATOR}${range}`;
 };
 export const OTHER_PLACES_TITLE = 'Other places';
 export const SHOW_PLACE = 'Show';
-/** The Show button's name for a screen reader, so five buttons are not all
- *  called Show. It starts with the visible word (WCAG 2.5.3). */
-export const SHOW_PLACE_NAMED = (site: string) => `Show ${site}`;
 export const CLOSE_OTHER_PLACES = 'Close';
 /** A position, and nothing stored on the phone that can be pointed at. */
 export const NO_PLACE_TO_POINT_AT =

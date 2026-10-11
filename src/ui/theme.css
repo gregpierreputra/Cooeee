@@ -1660,26 +1660,26 @@ main:focus {
     color: var(--cooeee-teal);
   }
 }
-/* The hint after a tap floats above the button, as over the compass, at
-   BlackSky's 16 px. */
-.blacksky-leave .nav-blacksky-slot .blacksky-hold-hint {
-  border-color: var(--ink-2);
-  background: var(--bg);
-  color: var(--accent);
-  font-size: var(--step-0);
-}
 
 /* Which pack to load, when several are saved: asked under the title and left
    there. Full-width choices for wet hands. The chosen one wears the amber ring
    a chosen place wears elsewhere in the app, never a fill, and once chosen the
-   list folds to it with Change under its address. */
+   list folds to it with an arrow at the end of its name. */
 .blacksky-picker {
   display: grid;
   gap: 0.75rem;
   padding-bottom: 1.125rem;
   border-bottom: 1px solid var(--line);
 }
+/* Every pack card the height of the tallest, so the one that says Covers where
+   you are does not stand a line taller than the rest. */
+.blacksky-picker .list {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 0.75rem;
+}
 .blacksky-pack {
+  height: 100%;
   width: 100%;
   display: grid;
   grid-template-columns: auto 1fr;
@@ -1700,14 +1700,16 @@ main:focus {
   min-width: 0;
 }
 /* Change, set as every other toggle is: underlined words with a chevron. */
-.blacksky-pack-change {
-  margin-top: 0.25rem;
-  display: inline-flex;
+/* The name, and on the folded card its arrow at the right end of that line. */
+.blacksky-pack-name-row {
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
-  font-weight: var(--w-med);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.blacksky-pack-change {
+  flex: none;
+  display: grid;
 }
 .blacksky-pack-address {
   font-size: var(--step-s);
@@ -1716,23 +1718,14 @@ main:focus {
 }
 .blacksky-pack-here {
   margin-top: 0.25rem;
-  font-size: var(--step-xs);
-  font-weight: var(--w-heavy);
-  letter-spacing: var(--track-wide);
-  text-transform: uppercase;
+  /* A short amber line in sentence case, on one line beside its drawing: as a
+     spaced capital label it wrapped, and the drawing sat between its lines. */
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
 }
-
-.blacksky-place {
-  padding: 1.125rem 0;
-  display: grid;
-  gap: 0.375rem;
-  border-bottom: 1px solid var(--line);
-}
-
-/* The hairline separates rows; a trailing one under the last row would read
-   as a divider to nothing. */
-.blacksky-place:last-child {
-  border-bottom: 0;
+/* In line with the address, not centred in the column as .with-glyph would. */
+.blacksky-pack-here.with-glyph {
+  justify-content: flex-start;
 }
 
 /* The saved places on the no GPS screen, set as on the pack page: the
@@ -2439,9 +2432,18 @@ main:focus {
   width: 100%;
   min-height: 48px;
   padding-inline: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   text-align: left;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+/* The words take the room between the pin drawing and the arrow, which sits
+   at the far end. */
+.blacksky-others-text {
+  flex: 1;
+  min-width: 0;
 }
 
 /* The sheet: a native dialog pinned to the foot of the screen, at thumb reach,
@@ -2479,17 +2481,40 @@ main:focus {
   font-weight: var(--w-heavy);
 }
 
+/* Each other place a card, as on the pack page and Nearby, the whole card the
+   one target: the site in bold with its distance beside it, the suburb under
+   it, then the direction and Show at its foot. */
+.blacksky-sheet .list {
+  display: grid;
+  gap: 0.75rem;
+}
 .blacksky-other {
-  grid-template-columns: 1fr auto;
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  justify-items: stretch;
+  gap: 0.25rem;
+  padding: 0.875rem 1.125rem;
+  border-radius: var(--r-card);
+  text-align: left;
+  font-weight: 400;
+  white-space: normal;
+}
+.blacksky-other .nearby-place-name {
+  font-size: var(--step-1);
+}
+.blacksky-other-foot {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
 }
-
-.blacksky-other h3 {
-  margin: 0;
-  font-size: var(--step-1);
+.blacksky-other-show {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--accent);
   font-weight: var(--w-bold);
-  overflow-wrap: anywhere;
 }
 
 /* ── The bar (BS_Enhancement-AC2) ──────────────────────────────────────────
@@ -3398,7 +3423,9 @@ body.touring .page {
   border-radius: var(--r-pill);
   background: var(--blacksky-bg);
   color: var(--blacksky-accent);
-  font-size: var(--step-xs);
+  /* 16 px, the same pill entering and leaving: one instruction, said alike on
+     both sides of the door. */
+  font-size: var(--step-0);
 }
 
 .bottom-nav-item {

@@ -70,7 +70,7 @@ test('Normal, inside the pack area: the nearest chosen place is the one subject,
   await expect(page.getByText(/Official place of last resort ·/)).toHaveCount(0);
 
   // Every other place is one line: how many, and the range they lie in.
-  await expect(othersLine(page)).toHaveText('4 other places · 2.13 km – 5.07 km');
+  await expect(othersLine(page)).toHaveText('4 other places · 2.13–5.07 km');
   // No number to call: the reminder closes every state of the screen.
   await expectNoCalls(page);
   // No list of places is on screen yet, so the mandated phrase is not either.
@@ -137,21 +137,24 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
   const rows = sheet(page).getByRole('listitem');
   await expect(rows).toHaveCount(4);
   // Nearest first, chosen and state-wide together, with no rank number.
-  await expect(rows.locator('h3')).toHaveText([
+  await expect(rows.locator('.nearby-place-name')).toHaveText([
     'Belgrave Recreation Reserve',
     'Community Hall',
     'Olinda Recreation Reserve',
     'Mount Dandenong Reserve',
   ]);
-  for (const show of await sheet(page).getByRole('button', { name: /^Show / }).all()) {
-    await expect(show).toHaveText('Show');
-    const box = (await show.boundingBox())!;
+  // Each place is one card, the whole card the target, read with its distance
+  // and direction and ending in Show.
+  for (const card of await rows.getByRole('button').all()) {
+    await expect(card).toContainText(/\d km/);
+    await expect(card).toContainText(/Show$/);
+    const box = (await card.boundingBox())!;
     expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
   }
 
   // Show on the second chosen place: it becomes the subject, the pin moves to
   // due south, and the notes are still on screen.
-  await rows.nth(1).getByRole('button', { name: 'Show Community Hall' }).click();
+  await rows.nth(1).getByRole('button', { name: /^Community Hall/ }).click();
   await expect(sheet(page)).toBeHidden();
   await expect(label(page)).toHaveText('YOUR CHOSEN PLACE');
   await expect(name(page)).toHaveText('Community Hall');
@@ -169,7 +172,7 @@ test('Normal: Show makes another place the subject, and it stays so', async ({ p
 
   // A state-wide site that is not the nearest one is not called nearest.
   await othersLine(page).click();
-  await sheet(page).getByRole('button', { name: 'Show Olinda Recreation Reserve' }).click();
+  await sheet(page).getByRole('button', { name: /^Olinda Recreation Reserve/ }).click();
   await expect(name(page)).toHaveText('Olinda Recreation Reserve');
   await expect(label(page)).toHaveText('PLACE OF LAST RESORT');
 });
@@ -270,16 +273,19 @@ test.describe('at 360 px wide', () => {
 
   test('the other-places summary is one line and not clipped', async ({ page }) => {
     const line = othersLine(page);
-    await expect(line).toHaveText(/^2 other places · \d+\.\d km – \d+\.\d km$/);
+    await expect(line).toHaveText(/^2 other places · \d+\.\d–\d+\.\d km$/);
+    // The words, between the pin drawing and the arrow, on one line and whole.
     const fit = await line.evaluate((button) => {
+      const words = button.querySelector('.blacksky-others-text')!;
       const range = document.createRange();
-      range.selectNodeContents(button);
+      range.selectNodeContents(words);
+      const arrow = button.querySelector('.hint-chevron')!.getBoundingClientRect();
       const style = getComputedStyle(button);
       return {
         clipped: button.scrollWidth > button.clientWidth,
         ellipsis: style.textOverflow === 'ellipsis',
         lines: new Set([...range.getClientRects()].map((box) => Math.round(box.top))).size,
-        textInside: range.getBoundingClientRect().right <= button.getBoundingClientRect().right - parseFloat(style.paddingRight) + 0.5,
+        textInside: range.getBoundingClientRect().right <= arrow.left + 0.5,
         height: button.getBoundingClientRect().height,
       };
     });
@@ -476,7 +482,7 @@ test('Normal, no pack: the nearest state-wide site is the subject', async ({ pag
   await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
   await expect(page.locator('.blacksky-dial-head p')).toHaveCount(0);
   await expect(distance(page)).toHaveText('2.13 km');
-  await expect(othersLine(page)).toHaveText('2 other places · 4.09 km – 5.07 km');
+  await expect(othersLine(page)).toHaveText('2 other places · 4.09–5.07 km');
   // E3-US2-AC2's rule is unchanged: the screen still says no pack covers this.
   await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
   await expectNoCalls(page);

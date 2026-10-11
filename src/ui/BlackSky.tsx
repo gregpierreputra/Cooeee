@@ -676,8 +676,8 @@ export default function BlackSky({
 }
 
 /** Several packs: which one to load, asked at the top of the screen. Once one
- *  is chosen the list folds to that pack in the amber ring, with Change under
- *  its address, so the dial stays high on the screen. Full-width targets for wet hands.
+ *  is chosen the list folds to that pack in the amber ring, with an arrow
+ *  beside its name to open the list again, so the dial stays high on the screen. Full-width targets for wet hands.
  *  Each pack keeps its key whether the list is folded or open, so the button
  *  just tapped stays in the page and keeps the focus. */
 function PackPicker({
@@ -714,20 +714,27 @@ function PackPicker({
               {/* The pack's own drawing, in amber like everything here. */}
               <Glyph kind={packIcon(pack)} />
               <span className="blacksky-pack-text">
-                <span className="pack-name">{shownPackName(pack.name)}</span>
+                {/* The name's line. Folded, an arrow at its right end says the
+                    card opens, as on Home's pack cards and the Notes heading,
+                    and Change is said to a screen reader with the card's
+                    collapsed state. On the name's line, not a column of its
+                    own, so the address and the covers line keep the width. */}
+                <span className="blacksky-pack-name-row">
+                  <span className="pack-name">{shownPackName(pack.name)}</span>
+                  {folded ? (
+                    <span className="blacksky-pack-change">
+                      <span className="visually-hidden">{copy.CHANGE_PACK}</span>
+                      <svg className="hint-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                        <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  ) : null}
+                </span>
                 <span className="blacksky-pack-address">{titleCase(pack.address)}</span>
                 {from && distanceM(from, pack) <= pack.radiusKm * 1000 ? (
                   <span className="blacksky-pack-here with-glyph">
                     <Glyph kind="locate" line />
                     {copy.PACK_COVERS_HERE}
-                  </span>
-                ) : null}
-                {folded ? (
-                  <span className="blacksky-pack-change">
-                    {copy.CHANGE_PACK}
-                    <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                      <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
                   </span>
                 ) : null}
               </span>
@@ -1291,7 +1298,13 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
           cut off, and a cut-off distance is a distance not given. The full
           list is one tap away, in the sheet. */}
       <button type="button" className="blacksky-others" onClick={() => sheet.current?.showModal()}>
-        {copy.OTHER_PLACES(places.map((place) => copy.distanceLabel(place.distanceM)))}
+        <Glyph kind="place" line />
+        <span className="blacksky-others-text">
+          {copy.OTHER_PLACES(places.map((place) => copy.distanceLabel(place.distanceM)))}
+        </span>
+        <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+          <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
       <dialog ref={sheet} className="blacksky-sheet" aria-labelledby={titleId}>
         <h2 id={titleId}>{copy.OTHER_PLACES_TITLE}</h2>
@@ -1300,24 +1313,34 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
         <ul className="list">
           {places.map((place) => {
             const { site, line } = siteNameBlock(place.name);
+            // Each place a card, as on the pack page and Nearby: the site in
+            // bold with its distance beside it, the suburb under it, then the
+            // direction and Show. The whole card is the one target, and a
+            // screen reader hears all of it.
             return (
-              <li key={place.id} className="blacksky-place blacksky-other">
-                <div>
-                  <h3>{site}</h3>
-                  {line ? <p className="muted">{line}</p> : null}
-                  <p className="figure">
-                    {copy.distanceLabel(place.distanceM)} · {cardinalPoint(place.bearingDeg)}
-                  </p>
-                </div>
+              <li key={place.id}>
                 <button
                   type="button"
-                  aria-label={copy.SHOW_PLACE_NAMED(site)}
+                  className="card blacksky-other"
                   onClick={() => {
                     sheet.current?.close();
                     onShow(place.id);
                   }}
                 >
-                  {copy.SHOW_PLACE}
+                  <span className="nearby-place">
+                    <span className="nearby-place-name">{site}</span>
+                    <span className="figure nearby-distance">{copy.distanceLabel(place.distanceM)}</span>
+                  </span>
+                  {line ? <span className="muted">{line}</span> : null}
+                  <span className="blacksky-other-foot">
+                    <span className="muted">{cardinalPoint(place.bearingDeg)}</span>
+                    <span className="blacksky-other-show">
+                      {copy.SHOW_PLACE}
+                      <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                        <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </span>
                 </button>
               </li>
             );

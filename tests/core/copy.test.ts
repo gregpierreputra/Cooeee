@@ -535,7 +535,9 @@ describe('the BlackSky dial', () => {
 
   it('folds the other places into one line: the count, and the range nearest to furthest', () => {
     expect(copy.OTHER_PLACES(['850 m'])).toBe('1 other place · 850 m');
-    expect(copy.OTHER_PLACES(['12.1 km', '13.1 km'])).toBe('2 other places · 12.1 km – 13.1 km');
+    // The same unit is said once; mixed units each keep their own.
+    expect(copy.OTHER_PLACES(['12.1 km', '13.1 km'])).toBe('2 other places · 12.1–13.1 km');
+    expect(copy.OTHER_PLACES(['850 m', '920 m'])).toBe('2 other places · 850–920 m');
     expect(copy.OTHER_PLACES(['850 m', '2.13 km', '4.09 km', '12.3 km'])).toBe(
       '4 other places · 850 m – 12.3 km',
     );
@@ -545,9 +547,8 @@ describe('the BlackSky dial', () => {
     expect(copy.OTHER_PLACES_COUNT(3)).toBe('3 other places');
   });
 
-  it('names each Show button by its place, starting with the visible word', () => {
+  it('ends each place card with Show', () => {
     expect(copy.SHOW_PLACE).toBe('Show');
-    expect(copy.SHOW_PLACE_NAMED('Community Hall')).toBe('Show Community Hall');
   });
 
   it('says plainly that the signal is lost, with the age in seconds and then minutes', () => {
