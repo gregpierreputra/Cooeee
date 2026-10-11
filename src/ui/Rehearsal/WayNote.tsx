@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NOTE_MAX_CHARS } from '../../core/constants';
 import * as copy from '../../core/copy';
 import { wayNote } from '../../core/rehearsal-note';
 import type { PackNote } from '../../core/types';
 import { putNote } from '../../data/db';
 import Glyph from '../components/Glyph';
+import Section from '../components/Section';
 import { continueBullets, typeBullets } from '../components/bulletTyping';
 
 type Mark = 'saved' | 'empty' | 'failed';
@@ -38,6 +39,16 @@ export default function WayNote({
   const [id] = useState(() => crypto.randomUUID());
   const [text, setText] = useState('');
   const [mark, setMark] = useState<Mark | null>(null);
+  // As on the pack page: words typed and not yet saved are said, and leaving
+  // the page with them asks first.
+  const [savedText, setSavedText] = useState('');
+  const unsaved = text.trim().length > 0 && text !== savedText;
+  useEffect(() => {
+    if (!unsaved) return undefined;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [unsaved]);
 
   async function keep() {
     if (text.trim().length === 0) {
@@ -46,6 +57,7 @@ export default function WayNote({
     }
     try {
       await save(wayNote(packId, text, id, now()));
+      setSavedText(text);
       setMark('saved');
     } catch {
       setMark('failed');
@@ -53,15 +65,12 @@ export default function WayNote({
   }
 
   return (
-    <section className="way-note">
-      <h3>
-        <Glyph kind="note" />
-        {copy.WAY_NOTE_HEADING}
-      </h3>
-      <p>{copy.WAY_NOTE_DETAIL}</p>
+    <Section kind="note" title={copy.WAY_NOTE_HEADING} heading className="way-note">
+      <p className="muted place-note">{copy.WAY_NOTE_DETAIL}</p>
       <div className="card note-card">
         <textarea
           aria-label={copy.WAY_NOTE_LABEL}
+          aria-describedby={unsaved ? 'way-note-unsaved' : undefined}
           value={text}
           maxLength={NOTE_MAX_CHARS}
           onChange={(event) => {
@@ -75,6 +84,12 @@ export default function WayNote({
             })
           }
         />
+        {unsaved ? (
+          <p id="way-note-unsaved" className="field-message with-glyph">
+            <Glyph kind="caution" line />
+            {copy.NOTE_UNSAVED}
+          </p>
+        ) : null}
         {/* Always present, so the live region exists before it speaks. */}
         <p
           className={`note-mark${mark === 'saved' ? ' note-mark-saved' : ''}`}
@@ -89,6 +104,6 @@ export default function WayNote({
           </button>
         </div>
       </div>
-    </section>
+    </Section>
   );
 }

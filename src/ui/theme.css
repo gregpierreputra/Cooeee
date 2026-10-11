@@ -2738,10 +2738,6 @@ html:has(.blacksky-sheet[open]) {
   transition: background-size 2s linear;
 }
 
-.blacksky-hold-label {
-  font-weight: var(--w-bold);
-}
-
 /* What the mode is, in the kicker's own treatment: small, wide-tracked and
    quieter than the label above it. */
 .blacksky-hold-sub {
@@ -5115,22 +5111,49 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .gap-list {
   gap: 0.75rem;
 }
-
+/* Body size inside a gap: the pack page's practice list sets .gap-list small. */
+.gap-list .gap-row {
+  font-size: var(--step-0);
+}
+.gap-row p {
+  margin: 0;
+}
 .gap-row > h3 {
   font-size: var(--step-1);
   margin: 0;
 }
+/* Which kind of gap, said under the title. */
+.gap-meaning {
+  font-size: var(--step-s);
+}
 
 /* Names the line beneath it as the reason or the one thing to do, so neither is read
-   as more explanation. */
+   as more explanation. Led by its drawing, at the size of the other labels. */
 .gap-action-label,
 .gap-reason-label {
-  font-size: var(--step-s);
+  font-size: var(--step-xs);
   font-weight: var(--w-heavy);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-wide);
   text-transform: uppercase;
   color: var(--ink-2);
-  margin: 0.25rem 0 0;
+  margin-top: 0.375rem !important;
+}
+p.gap-action-label,
+p.gap-reason-label {
+  align-items: center;
+}
+/* The one thing to do, in its own inset panel with its record and control. */
+.gap-todo {
+  display: grid;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding: 0.875rem 1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-input);
+  background: var(--surface-2);
+}
+.gap-todo .gap-action-label {
+  margin-top: 0 !important;
 }
 
 /* The reader's own record of an action they have taken, and the control that
@@ -5140,8 +5163,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .gap-done {
   font-size: var(--step-s);
   font-weight: var(--w-med);
-  color: var(--ink-2);
-  margin: 0.25rem 0 0;
+  color: var(--accent);
+  margin-top: 0.25rem !important;
 }
 
 .gap-mark {
@@ -5161,19 +5184,29 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
-/* One part of a journey screen under its grey label. */
-.journey-section {
-  display: grid;
-  gap: 0.625rem;
+/* The pack under a rehearsal's title: its drawing and its name in teal, as
+   its card on Rehearse names it. */
+.hero-pack {
+  margin: 0;
+  color: var(--accent);
+  font-weight: var(--w-bold);
 }
-/* Before going: the steps in order, each led by its drawing in a ring. */
+/* Before going: the steps in order as rows of one card, each led by its
+   drawing in a ring and parted by a hairline. */
 .journey-steps {
-  gap: 0.625rem;
+  list-style: none;
+  margin: 0;
+  padding-block: 0.25rem;
+  gap: 0;
 }
 .journey-step {
-  flex-direction: row;
+  display: flex;
   align-items: flex-start;
   gap: 0.875rem;
+  padding-block: 0.75rem;
+}
+.journey-step + .journey-step {
+  border-top: 1px solid var(--line);
 }
 .journey-step p {
   margin: 0;
@@ -5181,36 +5214,45 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .journey-step-title {
   font-weight: var(--w-bold);
 }
+/* While out: where BlackSky is, as an amber note with no ground of its own. */
+.journey-blacksky {
+  margin: 0;
+  color: var(--stale);
+  font-size: var(--step-s);
+}
+.journey-blacksky b {
+  font-weight: var(--w-heavy);
+}
 /* While out: the browser's report, amber while still online. */
 .journey-connection {
   margin: 0;
   color: var(--ink);
 }
-/* The result's facts about how it ran, under its grey label. */
+/* The result's facts about how it ran, then what moved since last time
+   under a hairline, in one card under its ringed head. */
 .result-summary {
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 .result-summary p {
   margin: 0;
+}
+.result-summary > p:not(.muted) {
+  font-weight: var(--w-med);
+}
+.result-summary .progress {
+  display: grid;
+  margin-top: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--line);
 }
 
 /* E5-US1-AC5 — the journey screen. The places sit in the card treatment the
    rest of the pack uses. The two endings are identical controls of identical
    weight, told apart by their words alone: neither reads as the expected one,
    and a greyscale screen says which is which exactly as a coloured one does. */
-/* The way note's heading, its drawing in a small ring. */
-.way-note > h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.way-note > h3 .glyph {
-  width: 36px;
-  height: 36px;
-}
-.way-note > h3 .glyph svg {
-  width: 18px;
-  height: 18px;
+/* The way note under its ringed head, as the other parts of the result. */
+.way-note > p {
+  margin: 0;
 }
 
 .journey-notes {
@@ -5245,6 +5287,11 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .journey-endings .actions {
   margin-top: 0;
+}
+/* With its drawing, an ending still fits a narrow card at 200% text. */
+.journey-endings .action {
+  padding-inline: 1rem;
+  overflow-wrap: anywhere;
 }
 
 /* Leaving is set apart from every other control on the run: a rule above it,
@@ -5327,12 +5374,18 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
    ever reads the most recent earlier run — and it must be visible to the
    reader, not a silent prune. */
 .progress {
-  gap: 0.5rem;
+  gap: 0.375rem;
+}
+.progress p {
+  margin: 0;
 }
 
 .progress > h3 {
-  font-size: var(--step-1);
+  font-size: var(--step-0);
   margin: 0;
+}
+.progress > .muted {
+  font-size: var(--step-s);
 }
 
 .progress-group {

@@ -31,10 +31,10 @@ describe('the two endings', () => {
   it('are exactly two, in a fixed order, and neither is chosen for her', () => {
     expect(REHEARSAL_ENDINGS).toEqual(['walked', 'dry-run']);
     expect(endingRows()).toEqual([
-      { ending: 'walked', label: 'I went there', detail: 'I went to the place.' },
-      { ending: 'dry-run', label: 'I did not go, a dry run', detail: 'I ended it without going.' },
+      { ending: 'walked', label: 'I went there' },
+      { ending: 'dry-run', label: 'I did not go, a dry run' },
     ]);
-    endingRows().forEach((row) => expect(Object.keys(row).sort()).toEqual(['detail', 'ending', 'label']));
+    endingRows().forEach((row) => expect(Object.keys(row).sort()).toEqual(['ending', 'label']));
   });
 
   it('accept only the two answers she can give', () => {
@@ -60,7 +60,7 @@ describe('a started rehearsal', () => {
       'Started 3 September 2026, without a location fix. Only you can say how it ended.',
     );
     expect(view.rows).toEqual(endingRows());
-    const words = [view.heading, view.detail, ...view.rows.flatMap((row) => [row.label, row.detail])].join(' ');
+    const words = [view.heading, view.detail, ...view.rows.map((row) => row.label)].join(' ');
     expect(words).not.toMatch(/interrupt|abandon|missed|partial|incomplete|so far|failed|resume/i);
   });
 

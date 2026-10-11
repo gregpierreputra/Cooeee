@@ -15,16 +15,17 @@ import type { PackChange, Progress } from '../../core/rehearsal-progress';
  *  percentage, not a bar, not a chart, and not an empty one standing in for a
  *  comparison that does not exist yet. A summary of what someone has not done
  *  is a mark, and this product does not mark its reader. */
+/** Drawn at the foot of the result's summary card, under a hairline. */
 export default function ProgressView({ progress }: { progress: Progress }) {
   // AC3. The first rehearsal says what is not there yet and stops. The gap list
   // itself is rendered by the result, in full, either way: a first rehearsal is
   // a whole result, not a partial one.
   if (progress.state === 'first') {
     return (
-      <section className="card progress">
+      <div className="progress">
         <h3>{copy.FIRST_REHEARSAL_HEADING}</h3>
         <p className="muted">{copy.FIRST_REHEARSAL_DETAIL}</p>
-      </section>
+      </div>
     );
   }
 
@@ -35,7 +36,7 @@ export default function ProgressView({ progress }: { progress: Progress }) {
   ];
 
   return (
-    <section className="card progress">
+    <div className="progress">
       <h3>{copy.PROGRESS_HEADING}</h3>
       <p className="muted">{progress.earlierOn}</p>
       <PackChangeLine change={progress.packChange} />
@@ -54,7 +55,7 @@ export default function ProgressView({ progress }: { progress: Progress }) {
             </ul>
           </div>
         ))}
-    </section>
+    </div>
   );
 }
 

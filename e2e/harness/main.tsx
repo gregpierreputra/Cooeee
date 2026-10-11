@@ -840,9 +840,12 @@ function RehearsalHarness() {
         <>
           <BackBar />
           <RehearsalEntry packId="rehearse-pack" now={rehearseNow} />
+          {/* BlackSky is reached from its hold in the bar, as in the app. */}
+          <BottomNav />
         </>
       ) : null}
-      <div style={harnessStyle} data-harness="true">
+      {/* Room under the furniture, so the fixed bottom bar never covers it. */}
+      <div style={{ ...harnessStyle, marginBottom: '8rem' }} data-harness="true">
         <span>test harness</span>
         <LocationProbe />
         <button

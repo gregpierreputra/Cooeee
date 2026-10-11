@@ -1,5 +1,4 @@
-import { Link } from 'react-router';
-import * as copy from '../../core/copy';
+import Glyph from '../components/Glyph';
 import Head from './Head';
 import { unfinishedView } from '../../core/rehearsal-ending';
 import type { UnfinishedRehearsal } from '../../core/types';
@@ -16,40 +15,40 @@ import { resumeWithEnding } from './run-state';
  *  start nothing is: that is why this asks rather than resuming a screen. The
  *  kicker still names it a rehearsal, as the choice of condition does.
  *
- *  Answering reaches the existing result, which records the rehearsal finished,
+ *  The title and the line under it are the hero, as every rehearsal screen
+ *  opens. Answering reaches the existing result, which records the rehearsal finished,
  *  with her ending, over the kept row. */
 export default function Unfinished({ rehearsal }: { rehearsal: UnfinishedRehearsal }) {
   const view = unfinishedView(rehearsal);
 
   return (
     <main className="page rehearsal-condition rehearsal-unfinished">
-      <Head />
-      <h2>{view.heading}</h2>
-      <p>{view.detail}</p>
+      <Head title={view.heading} detail={view.detail} />
 
       <ul className="list condition-list">
         {view.rows.map((row) => (
           <li key={row.ending}>
-            {/* The same tappable row as the choice of condition, so two equal
-                answers look equal and neither reads as the expected one. */}
+            {/* The same ringed row as the choice of condition, so two equal
+                answers look equal and neither reads as the expected one: the
+                place she reached, or the home she stayed at, drawn alike. */}
             <button
               type="button"
-              className="candidate-action condition-action"
+              className="candidate-action condition-action condition-choice"
               onClick={() => resumeWithEnding(rehearsal, row.ending)}
             >
-              <span className="condition-label">{row.label}</span>
-              <span className="condition-detail">{row.detail}</span>
+              <Glyph kind={row.ending === 'walked' ? 'place' : 'home'} />
+              <span className="condition-choice-text">
+                <span className="condition-label">{row.label}</span>
+              </span>
+              <svg className="card-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           </li>
         ))}
       </ul>
-
-      {/* Leaving answers nothing. No filled control: nothing here fixes anything. */}
-      <div className="actions">
-        <Link className="action" to={`/packs/${rehearsal.packId}`}>
-          {copy.BACK_TO_THIS_PACK}
-        </Link>
-      </div>
+      {/* Leaving answers nothing, by the Back control above: no second way
+          out here, and nothing filled, since nothing here fixes anything. */}
     </main>
   );
 }

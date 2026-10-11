@@ -63,7 +63,9 @@ const openExplainer = (page: Page) => main(page).getByRole('button', { name: 'Wh
 const heading = (page: Page, name: string | RegExp) =>
   main(page).getByRole('heading', { level: 1, name, exact: typeof name === 'string' });
 const goControl = (page: Page) => main(page).getByRole('button', { name: GO, exact: true });
-const holdControl = (page: Page) => main(page).getByRole('button', { name: /Hold for BlackSky/ });
+/** BlackSky's own hold, in the bottom bar. The running screen points to it. */
+const holdControl = (page: Page) => page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /Hold for BlackSky/ });
+const holdNotice = (page: Page) => main(page).getByText('Hold BlackSky in the bar below once you set off, as you would on the day.');
 const endingControl = (page: Page, label: string) => main(page).getByRole('button', { name: label, exact: true });
 const leaveControl = (page: Page) => main(page).getByRole('button', { name: 'Leave the rehearsal' });
 const places = (page: Page) => main(page).locator('.journey-places').getByRole('listitem');
@@ -211,9 +213,9 @@ test.describe('AC5 before she goes', () => {
     await expect(actions(page)).toHaveCount(1);
     await expect(goControl(page)).toBeVisible();
     await expect(main(page).getByRole('link')).toHaveCount(0);
-    // Nothing of a running rehearsal is here yet: no bar, no hold, no ending.
+    // Nothing of a running rehearsal is here yet: no bar, no hold notice, no ending.
     await expect(bar(page)).toHaveCount(0);
-    await expect(holdControl(page)).toHaveCount(0);
+    await expect(holdNotice(page)).toHaveCount(0);
     await expect(endingControl(page, ARRIVED)).toHaveCount(0);
     await expect(endingControl(page, WITHOUT_GOING)).toHaveCount(0);
   });
@@ -298,9 +300,9 @@ test.describe('AC5 going is the commitment', () => {
       await expect(page.locator('.rehearsal-bar-condition')).toHaveText(condition);
       await expect(bar(page)).not.toContainText(other);
 
-      // What to do, the places, the real hold, and the two endings beside it.
+      // The places, the notice pointing to the real hold, and the two endings.
       await expect(places(page).first()).toContainText(PLACE);
-      await expect(holdControl(page)).toBeVisible();
+      await expect(holdNotice(page)).toBeVisible();
       await expect(endingControl(page, ARRIVED)).toBeVisible();
       await expect(endingControl(page, WITHOUT_GOING)).toBeVisible();
       // The control that started it has gone with the state it belonged to.
@@ -539,7 +541,8 @@ test.describe('AC5 the two endings', () => {
     await expect(page.getByRole('heading', { name: ENDING_HEADING })).toBeVisible();
     await page.getByRole('button', { name: /^I did not go, a dry run/ }).click();
     await expect(page.getByRole('heading', { name: RESULT_HEADING })).toBeVisible();
-    await leaveControl(page).click();
+    // Once it has ended, the way out is Done.
+    await main(page).getByRole('button', { name: 'Done', exact: true }).click();
 
     // A fresh choice is setup again: the screen before she goes, not a running one.
     await page.getByRole('button', { name: new RegExp(NO_FIX) }).click();
@@ -676,14 +679,19 @@ test('AC5 the journey reads in greyscale: both states and both endings told apar
   await expect(bar(page)).toContainText('Rehearsal');
   await expect(page.locator('.rehearsal-bar-condition')).toHaveText(NO_FIX);
 
-  // The two endings: different words, identical treatment, no icon.
+  // The two endings: different words, identical treatment, and one drawing
+  // each of the same size, hidden from the name so the words alone say which.
   const arrived = endingControl(page, ARRIVED);
   const withoutGoing = endingControl(page, WITHOUT_GOING);
   await expect(arrived).toHaveText(ARRIVED);
   await expect(withoutGoing).toHaveText(WITHOUT_GOING);
-  for (const control of [arrived, withoutGoing]) {
-    await expect(control.locator('svg, img, [role="img"]')).toHaveCount(0);
-  }
+  const drawing = async (control: Locator) => {
+    await expect(control.locator('svg')).toHaveCount(1);
+    await expect(control.locator('[role="img"], img')).toHaveCount(0);
+    const box = (await control.locator('svg').boundingBox())!;
+    return `${Math.round(box.width)}x${Math.round(box.height)}`;
+  };
+  expect(await drawing(withoutGoing)).toBe(await drawing(arrived));
   // The pointer rests where the go control was, which is now an ending: park it
   // off the controls so a hover border is not read as a difference in treatment.
   await page.mouse.move(0, 0);
@@ -870,7 +878,7 @@ for (const state of ['before', 'running'] as const) {
         : [
             await position(bar(page)),
             await position(heading(page, RUNNING_HEADING)),
-            await position(holdControl(page)),
+            await position(holdNotice(page)),
             await position(main(page).getByRole('heading', { level: 2, name: PLACES_HEADING })),
             await position(places(page).first()),
             await position(endingControl(page, ARRIVED)),

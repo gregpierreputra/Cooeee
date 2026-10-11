@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import * as copy from '../../core/copy';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import { endRun } from './run-state';
@@ -18,26 +18,31 @@ import { endRun } from './run-state';
  *  product could ship, so the run holds nothing that could. */
 export default function Run({ run, children }: { run: RehearsalRun; children?: ReactNode }) {
   const navigate = useNavigate();
+  // Out the way it came in: the pack page when its Rehearse this pack opened
+  // the rehearsal, else the Rehearse tab.
+  const [params] = useSearchParams();
+  const leave = () => {
+    endRun();
+    navigate(params.get('from') === 'pack' ? `/packs/${run.packId}` : '/rehearse');
+  };
 
   return (
     <>
       <main className="page rehearsal-run">
         {children}
+        {/* Once it has ended, the way out is Done, filled as a finished game
+            ends. While it runs, leaving is set apart by a rule above it and the
+            app's red outline: it ends something, like delete. */}
         <div className="actions rehearsal-leave">
-          {/* Not a filled control: leaving a rehearsal is not what fixes
-              anything, and the filled control means "this is what would fix
-              it" everywhere else in this flow. Set apart by a rule above it
-              and the app's red outline: it ends something, like delete. */}
-          <button
-            className="action leave-action"
-            type="button"
-            onClick={() => {
-              endRun();
-              navigate(`/packs/${run.packId}`);
-            }}
-          >
-            {copy.LEAVE_REHEARSAL}
-          </button>
+          {run.ending ? (
+            <button className="action main-action" type="button" onClick={leave}>
+              {copy.GAME_DONE}
+            </button>
+          ) : (
+            <button className="action leave-action" type="button" onClick={leave}>
+              {copy.LEAVE_REHEARSAL}
+            </button>
+          )}
         </div>
       </main>
     </>

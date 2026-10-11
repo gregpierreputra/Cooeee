@@ -1321,6 +1321,13 @@ export const BEFORE_YOU_GO = 'Before you go';
 export const STEP_GO_WITH_BLACKSKY = 'Go with BlackSky';
 export const STEP_GO_WITH_BLACKSKY_DETAIL = 'Hold for BlackSky once you set off, as you would on the day.';
 export const STEP_SAY_HOW_IT_ENDED = 'Say how it ended';
+/** While out: BlackSky is reached from its own hold in the bottom bar. Said
+ *  around its name, which is set in bold; the whole line is the joined three. */
+export const HOLD_BLACKSKY_NOTICE_LEAD = 'Hold ';
+export const HOLD_BLACKSKY_NOTICE_REST = ' in the bar below once you set off, as you would on the day.';
+export const HOLD_BLACKSKY_NOTICE = `${HOLD_BLACKSKY_NOTICE_LEAD}${BLACKSKY_TITLE}${HOLD_BLACKSKY_NOTICE_REST}`;
+/** The result's labels: over what was missing, and over what was learnt. */
+export const RESULT_GAPS_LABEL = 'What was missing';
 export const STEP_SAY_HOW_IT_ENDED_DETAIL = 'Come back here when you arrive, or end it without going.';
 /** The two figures while she is out, under each figure. */
 export const TRACK_ELAPSED = 'elapsed';
@@ -1364,11 +1371,9 @@ export const UNFINISHED_HEADING = 'How did this rehearsal end?';
 export const UNFINISHED_DETAIL = (without: string, date: string) =>
   `Started ${date}, without ${without}. Only you can say how it ended.`;
 /** [DRAFT] pending Sharon's copy review. The two endings, as the criterion names
- *  them, each with what it means in her words. */
+ *  them. Each says itself in full, so neither carries a second line. */
 export const ENDING_WALKED = 'I went there';
-export const ENDING_WALKED_DETAIL = 'I went to the place.';
 export const ENDING_DRY_RUN = 'I did not go, a dry run';
-export const ENDING_DRY_RUN_DETAIL = 'I ended it without going.';
 /** [DRAFT] pending Sharon's copy review. A rehearsal recorded before the endings
  *  existed, in the shape PACK_CHANGE_UNKNOWN uses: not knowing is its own state,
  *  and never a default to either ending. */

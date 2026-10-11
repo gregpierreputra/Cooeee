@@ -149,10 +149,15 @@ describe('the rehearsal and the live BlackSky screen', () => {
     });
   });
 
-  it('reaches the real BlackSky by its route, through the shared hold, as Home does', () => {
+  it('reaches the real BlackSky by its route, through the bottom bar\'s shared hold, as Home does', () => {
+    // The running screen points to the bar's hold rather than drawing a second one.
     const journey = readFileSync(join('src', 'ui', 'Rehearsal', 'Journey.tsx'), 'utf8');
-    expect(journey).toMatch(/import HoldButton from '\.\.\/components\/HoldButton'/);
-    expect(journey).toContain("onHold={() => navigate('/blacksky', { state: { held: true } })}");
+    expect(journey).not.toContain('HoldButton');
+    expect(journey).toContain('copy.HOLD_BLACKSKY_NOTICE_LEAD');
+    expect(copy.HOLD_BLACKSKY_NOTICE).toBe('Hold BlackSky in the bar below once you set off, as you would on the day.');
+    const bar = readFileSync(join('src', 'ui', 'components', 'BottomNav.tsx'), 'utf8');
+    expect(bar).toMatch(/import HoldButton from '\.\/HoldButton'/);
+    expect(bar).toContain("onHold={() => navigate('/blacksky', { state: { held: true } })}");
     const app = readFileSync(join('src', 'app.tsx'), 'utf8');
     // The route renders the one real BlackSky, through the wrapper that opens
     // it only for a fresh hold or a visit that never ended.

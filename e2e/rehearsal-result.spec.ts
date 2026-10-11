@@ -303,8 +303,8 @@ test('AC1 a completion is still there on the next rehearsal', async ({ page }) =
   await expect(firstRow(page).locator('.gap-done')).toBeVisible();
   await expect.poll(() => storedCount(page, 'actionCompletions')).toBe(1);
 
-  // Leave the rehearsal and run another one on the same pack.
-  await page.getByRole('button', { name: 'Leave the rehearsal' }).click();
+  // Done with the result, then another rehearsal on the same pack.
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
   await rehearseToResult(page, NO_FIX);
 
@@ -496,7 +496,7 @@ test.describe('AC5 her note about the way', () => {
   test('is never required: leaving without writing keeps no note', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
     await expect(field(page)).toBeVisible();
-    await page.getByRole('button', { name: 'Leave the rehearsal' }).click();
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
     expect(await storedNotes(page)).toEqual([]);
   });
