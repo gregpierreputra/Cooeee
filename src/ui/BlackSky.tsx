@@ -784,15 +784,21 @@ function ScreenBody({
               the mark control. Offered for every ACQUIRING reason — someone
               who denied GPS is exactly who needs it. */}
           <StateCard heading={copy.NO_GPS} detail={copy.MARK_HINT}>
+            {/* Two centred lines: the pin leading I'm standing at, then the
+                address on its own. Named in one sentence for a screen reader. */}
             <button
               type="button"
-              className="with-glyph blacksky-mark"
+              className="blacksky-mark"
+              aria-label={copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
               onClick={() =>
                 onMark({ lat: screen.pack.lat, lon: screen.pack.lon, at: Date.now() })
               }
             >
-              <Glyph kind="place" line />
-              {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
+              <span className="with-glyph">
+                <Glyph kind="place" line />
+                {copy.MARK_STANDING_AT}
+              </span>
+              <span>{titleCase(screen.pack.address)}</span>
             </button>
           </StateCard>
           <ReferenceBody places={screen.places} />

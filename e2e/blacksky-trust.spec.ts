@@ -162,7 +162,7 @@ test('a vague position is prefixed about, with no bar while it is fresh', async 
   await expect(bar(page)).toHaveCount(0);
 });
 
-test('a position from a mark shows the bar with from your saved place, and a dashed arrow at the place', async ({
+test('a position from a mark shows the bar measuring from your saved place, and a dashed arrow at the place', async ({
   page,
 }) => {
   await openDial(page, 'pack');
@@ -171,7 +171,7 @@ test('a position from a mark shows the bar with from your saved place, and a das
     .click();
 
   await expect(page.getByText('GPS signal lost', { exact: true })).toBeVisible();
-  await expect(page.locator('.blacksky-bar')).toContainText('from your saved place');
+  await expect(page.locator('.blacksky-bar')).toContainText('Measuring from your saved place');
   // No glyph at the centre: the bar already says where the position is from.
   // The arrow is dashed and, north up, points at the place (due north of here).
   await expect(centre(page)).toHaveAttribute('data-centre', 'outline');

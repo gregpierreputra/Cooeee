@@ -12,7 +12,7 @@ export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
 
 export const NO_ADDRESS_MATCH = 'No match. Check the spelling or try a cross street.';
 
-export const NO_GPS = 'No GPS fix. Showing saved information.';
+export const NO_GPS = 'No GPS signal. Showing your saved places.';
 
 /** Said beside the arrows, never instead of them: a vague or old fix still
  *  points, with its error stated. */
@@ -467,8 +467,9 @@ export const GPS_SIGNAL_LOST = 'GPS signal lost';
 /** How old the position is, beside the bar's words: seconds, then minutes. */
 export const LAST_POSITION_AGE = (s: number) =>
   s < 60 ? `last position ${s} s ago` : `last position ${Math.floor(s / 60)} min ago`;
-/** The bar when the position is a mark the person made, not a fix. */
-export const FROM_YOUR_SAVED_PLACE = 'from your saved place';
+/** The bar when the position is a mark the person made, not a fix: the dial
+ *  measures from the place they said they stand at. */
+export const FROM_YOUR_SAVED_PLACE = 'Measuring from your saved place';
 /** Before a distance measured from an old, vague or estimated position. */
 export const ABOUT = 'about';
 /** The tag on a dial that nothing is turning. */
@@ -528,9 +529,11 @@ export const distanceLabel = (m: number): string => {
 };
 
 // E3-US1-AC4 marked-position estimate
-export const MARK_HINT = 'At your saved place? Mark it to estimate bearings. Not GPS.';
+export const MARK_HINT = 'At your saved place? Tap below to point the dial from there. It is an estimate, not GPS.';
 
-export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${address}`;
+/** The mark button's first line; its second is the saved address. */
+export const MARK_STANDING_AT = "I'm standing at";
+export const MARK_AT_SAVED_PLACE = (address: string) => `${MARK_STANDING_AT} ${address}`;
 
 /** Always the word ESTIMATE, and the uncertainty stated as growing — a marked
  *  position must never read like a fix. */
@@ -556,7 +559,7 @@ export const CHOOSE_PACK_HINT = 'Loads its places and notes.';
 /** Beside a pack whose area contains the position the arrows are drawn from. */
 export const PACK_COVERS_HERE = 'Covers where you are';
 /** With several packs, none chosen and no fix: the one thing the screen can say. */
-export const NO_GPS_YET = 'No GPS fix yet.';
+export const NO_GPS_YET = 'No GPS signal yet.';
 
 // Built-in static preparation guidance, readable on a fresh install that has
 // never been online since setup.

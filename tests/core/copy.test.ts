@@ -19,8 +19,10 @@ describe('mandated literals', () => {
     expect(copy.NO_ADDRESS_MATCH).not.toContain('-');
   });
 
-  it('no fix falls back to saved information, in words', () => {
-    expect(copy.NO_GPS).toBe('No GPS fix. Showing saved information.');
+  it('no fix falls back to the saved places, in plain words', () => {
+    expect(copy.NO_GPS).toBe('No GPS signal. Showing your saved places.');
+    expect(copy.MARK_HINT).toBe('At your saved place? Tap below to point the dial from there. It is an estimate, not GPS.');
+    expect(copy.MARK_AT_SAVED_PLACE('10 Old Road')).toBe("I'm standing at 10 Old Road");
   });
 
   it('a vague or old fix reports its own figure beside the arrow, never instead of it', () => {
@@ -181,7 +183,7 @@ describe('several packs stored', () => {
     expect(copy.CHOOSE_PACK).toBe('Choose a pack');
     expect(copy.CHOOSE_PACK_HINT).toBe('Loads its places and notes.');
     expect(copy.PACK_COVERS_HERE).toBe('Covers where you are');
-    expect(copy.NO_GPS_YET).toBe('No GPS fix yet.');
+    expect(copy.NO_GPS_YET).toBe('No GPS signal yet.');
   });
 });
 
@@ -557,7 +559,7 @@ describe('the BlackSky dial', () => {
     expect(copy.LAST_POSITION_AGE(59)).toBe('last position 59 s ago');
     expect(copy.LAST_POSITION_AGE(60)).toBe('last position 1 min ago');
     expect(copy.LAST_POSITION_AGE(185)).toBe('last position 3 min ago');
-    expect(copy.FROM_YOUR_SAVED_PLACE).toBe('from your saved place');
+    expect(copy.FROM_YOUR_SAVED_PLACE).toBe('Measuring from your saved place');
     expect(copy.ABOUT).toBe('about');
   });
 

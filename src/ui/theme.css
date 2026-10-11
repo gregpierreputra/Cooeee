@@ -1713,12 +1713,15 @@ main:focus {
 .blacksky-pack-change {
   display: grid;
 }
-/* I'm standing at your address: its words from the left beside the pin, as a
-   line of text reads, not centred. */
-.blacksky-mark.with-glyph {
+/* I'm standing at your address: two centred lines, the pin leading the first
+   and the address alone on the second. */
+.blacksky-mark {
   width: 100%;
-  justify-content: flex-start;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  text-align: center;
 }
 .blacksky-pack-address {
   font-size: var(--step-s);
@@ -1799,8 +1802,13 @@ main:focus {
 
 /* A phone with room to spare (taller than 700 px) opens the gaps round the
    dial, so the name, the distance row and the dial each stand clear. A short
-   phone keeps them tight: its dial is already at its floor. Wider screens size
-   the dial by their height and keep the tight gaps for it. */
+   phone keeps them tight: its dial is already at its floor. A laptop opens
+   them a little less, as its dial is sized by the height the gaps leave. */
+@media (min-height: 701px) and (min-width: 701px) {
+  .blacksky {
+    --bs-gap: 10px;
+  }
+}
 @media (min-height: 701px) and (max-width: 700px) {
   .blacksky {
     --bs-gap: 14px;
@@ -1811,7 +1819,7 @@ main:focus {
 }
 
 .blacksky:has(.blacksky-bar[data-on='true']) {
-  --bs-bar: calc(2.5rem + var(--bs-gap));
+  --bs-bar: calc(2.5rem + var(--bs-gap) + 6px); /* and the room under it */
 }
 
 /* Only while the dial is on screen: the no-fix reference screen keeps the
@@ -2544,6 +2552,11 @@ main:focus {
 
 .blacksky-bar span + span {
   font-weight: var(--w-med);
+}
+
+/* The bar stands a little clear of the place's name under it. */
+.blacksky-bar[data-on='true'] {
+  margin-bottom: 6px;
 }
 
 .blacksky-bar[data-on='false'] {
