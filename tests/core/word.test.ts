@@ -93,6 +93,16 @@ describe('Cooee Word past words', () => {
     ]);
   });
 
+  it('lists a word that comes round again on each of its days, told apart by number', () => {
+    // A word returns only in a later thousand day round, as its own day and its own game.
+    const later = today + 1000;
+    const rows = [row(today, 'won'), row(later - 1, 'lost', ['a', 'b', 'c', 'd', 'e', 'f'])];
+    expect(pastWords(rows, later)).toEqual([
+      { number: 1020, word: 'ember', status: 'lost', guesses: 6 },
+      { number: 21, word: 'ember', status: 'won', guesses: 1 },
+    ]);
+  });
+
   it('lists every earlier day, seven of them shown first, and none before any is played', () => {
     const rows = Array.from({ length: 12 }, (_, i) => row(today - 1 - i, 'won'));
     const listed = pastWords(rows, today);
