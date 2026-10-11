@@ -387,8 +387,12 @@ test('AC1 the condition rows are the same height, at normal type and at 200%', a
 // in rehearsal-run.spec.ts beside the rest of the bar's behaviour; what is
 // measured here is contrast, reflow at 200% and the target size of the one
 // control the run offers.
+/** Start a run and wait for the running screen itself, which draws once the
+ *  pack is read: the bar can show first, and a check made then would measure
+ *  only the bar and Leave. */
 const startRunFor = async (page: import('@playwright/test').Page, condition: string) => {
   await startJourney(page, condition, `${ORIGIN}/rehearse?mode=rehearsable`);
+  await expect(page.getByRole('main').getByRole('button', { name: 'I have arrived', exact: true })).toBeVisible();
 };
 
 test('AC2 the bar and the run meet the contrast minimum on every element', async ({ page }) => {
