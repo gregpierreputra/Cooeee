@@ -1619,8 +1619,16 @@ export const BLOCK_INTRO_FACTS = [
 ];
 /** The way out at the end of a finished game. */
 export const GAME_DONE = 'Done';
-export const BLOCK_INTRO_COSTS = 'A wrong tap costs 4 points. A hint costs 10.';
-export const BLOCK_TODAY_ALREADY = (score: number) => `Your highest today is ${score} out of 100. A new yard arrives at midnight.`;
+/** What costs points, as two small chips under a label. */
+export const BLOCK_COSTS_LABEL = 'Points off';
+export const BLOCK_COSTS = [
+  { figure: '−4', label: 'a wrong tap' },
+  { figure: '−10', label: 'a hint' },
+];
+/** Once played today: the day's best as a big figure, and when the next yard comes. */
+export const BLOCK_TODAY_LABEL = 'Best today';
+export const BLOCK_OUT_OF = 'out of 100';
+export const BLOCK_NEW_YARD = 'A new yard arrives at midnight.';
 export const START_BLOCK = 'Start looking';
 export const BLOCK_SCENE_LABEL = 'A home and its yard seen from above, with eight fire risks to find.';
 export const BLOCK_FOUND_COUNT = (found: number) => `Found ${found} of 8`;

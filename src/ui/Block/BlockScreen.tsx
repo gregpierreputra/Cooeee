@@ -10,6 +10,7 @@ import * as audio from '../Drill/audio';
 import SoundButton from '../Drill/SoundButton';
 import BlockDebrief from './BlockDebrief';
 import BlockGame, { type BlockOutcome } from './BlockGame';
+import Glyph from '../components/Glyph';
 import TabLabel from '../components/TabLabel';
 import FactTiles from '../Games/FactTiles';
 
@@ -98,8 +99,26 @@ export default function BlockScreen({ now, seconds = BLOCK_SECONDS, loadPlays = 
             <h1>{copy.BLOCK_INTRO_HEADING}</h1>
           </div>
           <FactTiles facts={copy.BLOCK_INTRO_FACTS} />
-          <p className="game-facts-note muted">{copy.BLOCK_INTRO_COSTS}</p>
-          {today !== null ? <p className="muted">{copy.BLOCK_TODAY_ALREADY(today)}</p> : null}
+          <div className="block-costs">
+            <span className="kicker section-label">{copy.BLOCK_COSTS_LABEL}</span>
+            {copy.BLOCK_COSTS.map(({ figure, label }) => (
+              <span key={label} className="block-cost">
+                <strong>{figure}</strong> {label}
+              </span>
+            ))}
+          </div>
+          {today !== null ? (
+            <section className="card block-today" aria-labelledby="block-today-label">
+              <span id="block-today-label" className="kicker section-label">{copy.BLOCK_TODAY_LABEL}</span>
+              <p className="block-today-score">
+                <span className="block-today-figure figure">{today}</span> {copy.BLOCK_OUT_OF}
+              </p>
+              <p className="muted with-glyph">
+                <Glyph kind="clock" line />
+                {copy.BLOCK_NEW_YARD}
+              </p>
+            </section>
+          ) : null}
           <div className="actions">
             {/* Start alone: the Back bar at the top is the way out before a
                 round, so a second way back here would only repeat it. */}
