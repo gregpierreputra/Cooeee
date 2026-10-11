@@ -45,9 +45,11 @@ test('the dial turns with the phone and stays drawn from a vague fix', async ({ 
   // No living background in BlackSky: every pixel that can stay off does.
   await expect(page.locator('canvas.particles')).toHaveCount(0);
   await expect(page.getByText(/GPS ± 350 m here/)).toBeVisible();
-  // UAT: the figure is named, and its meaning opens behind the ring.
-  await expect(page.getByText('Your position ± 350 m')).toBeVisible();
-  await page.getByRole('button', { name: 'About your position' }).click();
+  // UAT: the figure is named, and its meaning opens from those words.
+  const position = page.getByRole('button', { name: 'Your position ± 350 m' });
+  await expect(position).toHaveAttribute('aria-expanded', 'false');
+  await position.click();
+  await expect(position).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByText(/places you within 350 m/)).toBeVisible();
   await expect(page.getByText('North up', { exact: true })).toBeVisible();
 

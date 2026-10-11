@@ -2498,6 +2498,13 @@ main:focus {
   font-weight: var(--w-bold);
 }
 
+/* Your position opens its meaning from its own words: at BlackSky's 16 px
+   floor and a full 44 px target. */
+.blacksky .hint-text {
+  min-height: 44px;
+  font-size: var(--step-0);
+}
+
 .blacksky-guidance p {
   margin: 0;
 }

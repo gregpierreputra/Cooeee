@@ -412,9 +412,8 @@ export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
 
 export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
 /** UAT: the bare ± figure under the arrows was not understood, so it is named,
- *  and the detail sits behind an information ring. */
+ *  and the detail opens from these words. */
 export const ACCURACY_LABEL = 'Your position';
-export const ABOUT_ACCURACY = 'About your position';
 export const ACCURACY_DETAIL = (m: number) =>
   `Your phone places you within ${m} m of where you stand. The arrows and distances can be off by about that much.`;
 

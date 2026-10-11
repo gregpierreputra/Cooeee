@@ -664,7 +664,7 @@ export default function BlackSky({
       {chosen && !chosen.placesVerified ? <StateCard heading={copy.PLACES_UNVERIFIED} /> : null}
       {/* Who to call closes every state of the screen, so the numbers are
           always one scroll away, whatever the position or the pack. */}
-      <WhoToCall />
+      <WhoToCall reminder={chosen?.pack.reminder || copy.OFFICIAL_INSTRUCTIONS_FIRST} />
     </main>
   );
 }
@@ -786,7 +786,7 @@ function ScreenBody({
               {copy.MARK_AT_SAVED_PLACE(titleCase(screen.pack.address))}
             </button>
           </StateCard>
-          <ReferenceBody places={screen.places} pack={screen.pack} />
+          <ReferenceBody places={screen.places} />
           {notes}
         </>
       );
@@ -814,9 +814,6 @@ function ScreenBody({
           {notes}
           {estimating ? null : <ConfidenceLines confidence={screen.confidence} />}
           {screen.absence?.reason ? <StateCard heading={screen.absence.reason} /> : null}
-          {screen.pack.reminder ? (
-            <p className="blacksky-reminder">{screen.pack.reminder}</p>
-          ) : null}
         </>
       );
   }
@@ -824,8 +821,9 @@ function ScreenBody({
 
 /** Who to call, as on Recover: 000 with the red rule and the one filled Call,
  *  then the hotline with the amber rule. The lines around them say the call
- *  may not go through and where official word comes from. */
-function WhoToCall() {
+ *  may not go through and where official word comes from, and the loaded
+ *  pack's reminder closes it, in bold, once on the screen. */
+function WhoToCall({ reminder }: { reminder: string }) {
   return (
     <section className="call-group">
       <h2 className="kicker">{copy.WHO_TO_CALL}</h2>
@@ -835,7 +833,7 @@ function WhoToCall() {
         <CallCard name={copy.HOTLINE_LABEL} detail={copy.HOTLINE_DETAIL} number={HOTLINE_NUMBER} tone="caution" />
       </ul>
       <p className="muted">{copy.EMERGENCY_BROADCASTER}</p>
-      <p>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+      <p className="blacksky-reminder">{reminder}</p>
     </section>
   );
 }
@@ -1343,16 +1341,16 @@ function OtherPlaces({ places, onShow }: { places: Placed[]; onShow: (id: string
 
 /** The plain statement when the fix is vague or old, under the dial and never
  *  instead of it. The bare figure sits beside the distance. UAT: it was not
- *  understood, so here it is named, and its meaning opens behind a ring. */
+ *  understood, so here it is named, and its meaning opens from those words. */
 function ConfidenceLines({ confidence }: { confidence: Confidence }) {
   return (
     <>
+      {/* Opened from its own words, as every Source in the app is, not from a ring. */}
       <Hint
-        label={copy.ABOUT_ACCURACY}
+        label={`${copy.ACCURACY_LABEL} ${copy.ACCURACY_READOUT(confidence.accuracyM)}`}
         panelClass="blacksky-info-panel"
-        head={
-          <p className="muted figure">{`${copy.ACCURACY_LABEL} ${copy.ACCURACY_READOUT(confidence.accuracyM)}`}</p>
-        }
+        titled={false}
+        asText
       >
         <p>{copy.ACCURACY_DETAIL(confidence.accuracyM)}</p>
         <p>
@@ -1372,7 +1370,7 @@ function ConfidenceLines({ confidence }: { confidence: Confidence }) {
  *  pack page: one card each, the site in bold, then the suburb and the
  *  address. Their kind and publisher are said once, over the list. A place
  *  that could not be saved says why in a state card. */
-function ReferenceBody({ places, pack }: { places: Destination[]; pack: Pack }) {
+function ReferenceBody({ places }: { places: Destination[] }) {
   const sites = places.filter((place) => place.kind === 'nsp-bushfire');
   return (
     <>
@@ -1399,7 +1397,6 @@ function ReferenceBody({ places, pack }: { places: Destination[]; pack: Pack }) 
       {places.map((place) =>
         place.reason ? <StateCard key={place.id} heading={place.reason} /> : null,
       )}
-      {pack.reminder ? <p className="blacksky-reminder">{pack.reminder}</p> : null}
     </>
   );
 }
