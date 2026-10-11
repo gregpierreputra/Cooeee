@@ -66,6 +66,25 @@ test.describe('Cooee Word', () => {
     await expect(page.locator('.word-result .game-facts li').nth(1)).toHaveText('4 days played');
   });
 
+  test('the result lists the words of the days before, newest first', async ({ page }) => {
+    const later = WORD_ANSWERS[answerIndexFor(DAY + 10, WORD_ANSWERS.length)];
+    await page.goto(`${HARNESS}/word?day=10&history=lost,won`);
+    await expect(page.getByRole('heading', { name: 'Word 11' })).toBeVisible();
+    await type(page, later.word);
+    const past = page.getByRole('region', { name: 'Past words' });
+    await expect(past.getByRole('listitem')).toHaveText([
+      /^Word 10\s*Solved in 1\s*EMBER/,
+      /^Word 9\s*Not solved\s*EMBER/,
+    ]);
+  });
+
+  test('a first day has no past words', async ({ page }) => {
+    await open(page);
+    await type(page, answer.word);
+    await expect(page.getByRole('heading', { name: 'Solved in one guess' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Past words' })).toHaveCount(0);
+  });
+
   test('six misses end the day and give the word', async ({ page }) => {
     await open(page);
     const others = WORD_ANSWERS.filter((entry) => entry.word.length === answer.word.length && entry.word !== answer.word).slice(0, 6);

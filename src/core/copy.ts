@@ -1623,6 +1623,12 @@ export const WORD_ANSWER_WAS = (answer: string) => `The word was ${answer.toUppe
 export const WORD_FACT_LABEL = 'Why it matters';
 export const WORD_FACT_SOURCE = (source: string) => `From the ${source}`;
 export const WORD_COME_BACK = 'A new word arrives at midnight.';
+/** The earlier words, under the result: each its number, the word, and how it went. */
+export const WORD_PAST_LABEL = 'Past words';
+export const WORD_PAST_NOTE = 'Up to your last seven days played.';
+export const WORD_PAST_SOLVED = (guesses: number) => `Solved in ${guesses}`;
+export const WORD_PAST_NOT_SOLVED = 'Not solved';
+export const WORD_PAST_UNFINISHED = 'Not finished';
 export const WORD_UNAVAILABLE = 'Cooee Word could not load on this browser.';
 export const BACK_TO_REHEARSE = 'Back to Rehearse';
 

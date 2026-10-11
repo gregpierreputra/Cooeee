@@ -9,6 +9,8 @@ import {
   inWordList,
   keyboardMarks,
   markGuess,
+  PAST_WORDS_LIMIT,
+  pastWords,
   puzzleNumber,
   statusAfter,
   wordStreak,
@@ -71,6 +73,33 @@ describe('Cooee Word guesses', () => {
     expect(statusAfter(['smoke', 'ember'], 'ember')).toBe('won');
     expect(statusAfter(['smoke'], 'ember')).toBe('playing');
     expect(statusAfter(['smoke', 'smoke', 'smoke', 'smoke', 'smoke', 'flame'], 'ember')).toBe('lost');
+  });
+});
+
+describe('Cooee Word past words', () => {
+  const today = WORD_EPOCH_DAY + 20;
+
+  it('lists the days before today that were played, newest first, with how each went', () => {
+    const rows = [
+      row(today - 3, 'lost', ['a', 'b', 'c', 'd', 'e', 'f']),
+      row(today, 'won'),
+      { ...row(today - 1, 'won', ['a', 'b']), answer: 'smoke' },
+      row(today - 2, 'playing', ['a']),
+    ];
+    expect(pastWords(rows, today)).toEqual([
+      { number: 20, word: 'smoke', status: 'won', guesses: 2 },
+      { number: 19, word: 'ember', status: 'playing', guesses: 1 },
+      { number: 18, word: 'ember', status: 'lost', guesses: 6 },
+    ]);
+  });
+
+  it('keeps to the last seven, and lists none before any earlier day is played', () => {
+    const rows = Array.from({ length: 12 }, (_, i) => row(today - 1 - i, 'won'));
+    const listed = pastWords(rows, today);
+    expect(PAST_WORDS_LIMIT).toBe(7);
+    expect(listed).toHaveLength(7);
+    expect(listed.map((past) => past.number)).toEqual([20, 19, 18, 17, 16, 15, 14]);
+    expect(pastWords([row(today, 'won')], today)).toEqual([]);
   });
 });
 

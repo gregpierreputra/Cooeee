@@ -118,6 +118,24 @@ export function solvedWeek(rows: WordDay[], today: number): boolean[] {
   return Array.from({ length: 7 }, (_, i) => solved.has(today - 6 + i));
 }
 
+/** How many earlier words the result lists, so it stays one short glance. */
+export const PAST_WORDS_LIMIT = 7;
+
+/** One earlier word as the result lists it. */
+export type PastWord = { number: number; word: string; status: WordDay['status']; guesses: number };
+
+/** The words of the days before today that were played, newest first, at
+ *  most PAST_WORDS_LIMIT. Today is never among them: its word is the one on
+ *  screen. A day left part way is listed too, as its word can no longer be
+ *  played. */
+export function pastWords(rows: WordDay[], today: number): PastWord[] {
+  return rows
+    .filter((row) => row.day < today)
+    .sort((a, b) => b.day - a.day)
+    .slice(0, PAST_WORDS_LIMIT)
+    .map((row) => ({ number: puzzleNumber(row.day), word: row.answer, status: row.status, guesses: row.guesses.length }));
+}
+
 /** What the game's card on the Rehearse screen says. */
 export type WordTileView = {
   streak: number;

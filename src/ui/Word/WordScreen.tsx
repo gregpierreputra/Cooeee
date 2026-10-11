@@ -9,6 +9,7 @@ import {
   checkGuess,
   inWordList,
   keyboardMarks,
+  pastWords,
   puzzleNumber,
   statusAfter,
   wordTileView,
@@ -157,6 +158,7 @@ export default function WordScreen({
   }, []);
 
   const view = wordTileView(history, day);
+  const past = pastWords(history, day);
 
   return (
     <main className="page word-page">
@@ -223,6 +225,43 @@ export default function WordScreen({
                   {copy.WORD_COME_BACK}
                 </p>
               </section>
+              {/* The words of the days before, newest first and at most seven:
+                  each its number and how it went, then the word in small
+                  tiles, green where it was solved. */}
+              {past.length > 0 ? (
+                <section className="word-past" aria-labelledby="word-past-label">
+                  <h2 id="word-past-label" className="kicker section-label">{copy.WORD_PAST_LABEL}</h2>
+                  <p className="muted place-note">{copy.WORD_PAST_NOTE}</p>
+                  <ul className="card word-past-list">
+                    {past.map((word) => (
+                      <li key={word.number} className="word-past-row">
+                        <p className="word-past-head">
+                          <span className="figure">{copy.WORD_NUMBER(word.number)}</span>
+                          <span className={`word-past-outcome ${word.status}`}>
+                            {word.status === 'won'
+                              ? copy.WORD_PAST_SOLVED(word.guesses)
+                              : word.status === 'lost'
+                                ? copy.WORD_PAST_NOT_SOLVED
+                                : copy.WORD_PAST_UNFINISHED}
+                          </span>
+                        </p>
+                        <p className="word-past-tiles">
+                          {[...word.word].map((letter, i) => (
+                            <span
+                              key={i}
+                              className={word.status === 'won' ? 'word-cell mark-right' : 'word-cell'}
+                              aria-hidden="true"
+                            >
+                              {letter.toUpperCase()}
+                            </span>
+                          ))}
+                          <span className="visually-hidden">{word.word.toUpperCase()}</span>
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
               <div className="actions">
                 <button type="button" className="action main-action" onClick={() => navigate('/rehearse')}>
                   {copy.GAME_DONE}
