@@ -15,6 +15,7 @@ import {
   undoActionDone,
 } from '../../data/db';
 import { offersWayNote } from '../../core/rehearsal-note';
+import Head from './Head';
 import ProgressView from './Progress';
 import { endRun } from './run-state';
 import WayNote from './WayNote';
@@ -148,16 +149,23 @@ export default function Result({
   if (finished === null) return null;
   const result = rehearsalResult(finished, completions);
   const progress = rehearsalProgress(finished, earlier, completions);
+  // E5-US1-AC5: how it ran and how it ended, in one card under the title. Facts
+  // about this rehearsal, stated once, and never measured against anything.
+  // Words only: the two endings are told apart by their words alone.
+  const summary = (
+    <section className="card result-summary" aria-labelledby="result-summary-label">
+      <span id="result-summary-label" className="kicker section-label">{copy.RESULT_SUMMARY_LABEL}</span>
+      <p>{result.conditionLine}</p>
+      <p>{result.endingLine}</p>
+      {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
+    </section>
+  );
 
   if (result.state === 'no-gaps') {
     return (
       <>
-        <h2>{result.heading}</h2>
-        <p className="muted">{result.conditionLine}</p>
-        {/* E5-US1-AC5: how it ended, beside the condition. A fact about this
-            rehearsal, stated once, and never measured against anything. */}
-        <p className="muted">{result.endingLine}</p>
-        {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
+        <Head title={result.heading} />
+        {summary}
         <p>{result.detail}</p>
         <ProgressView progress={progress} />
         {/* E5-US1-AC5: after a walked rehearsal only, her optional note about the way. */}
@@ -168,11 +176,8 @@ export default function Result({
 
   return (
     <>
-      <h2>{copy.RESULT_HEADING}</h2>
-      <p className="muted">{result.conditionLine}</p>
-      {/* E5-US1-AC5: how it ended, beside the condition and above the gaps. */}
-      <p className="muted">{result.endingLine}</p>
-      {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
+      <Head title={copy.RESULT_HEADING} />
+      {summary}
       <ProgressView progress={progress} />
 
       <ul className="list gap-list">

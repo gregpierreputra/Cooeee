@@ -1219,6 +1219,8 @@ export const GAP_MEANING_CONDITION = `${GAP_MEANING_CONDITION_FACT} ${GAP_MEANIN
 // What could not be relied on.
 export const GAP_DESIGNATION = 'The official area designation for this address';
 export const GAP_PLACES = 'The official places saved with this pack';
+/** The label over the places on the journey screens, short enough for one line. */
+export const JOURNEY_PLACES_LABEL = 'Official places in this pack';
 export const GAP_PROVENANCE = 'The publisher and saved date on every stored item';
 export const GAP_LIVE_DIRECTION = 'Live direction and distance to your saved places';
 
@@ -1318,6 +1320,18 @@ export const JOURNEY_CONDITION_LINE = (without: string) => `This rehearsal is wi
 // browser reports while she is out. Reported state only: the app cannot see
 // phone signal, and the line never blocks, times or judges anything.
 export const MAKE_IT_REAL = 'Make it real';
+/** Before going: the label over the three steps, and the two after making it real. */
+export const BEFORE_YOU_GO = 'Before you go';
+export const STEP_GO_WITH_BLACKSKY = 'Go with BlackSky';
+export const STEP_GO_WITH_BLACKSKY_DETAIL = 'Hold for BlackSky once you set off, as you would on the day.';
+export const STEP_SAY_HOW_IT_ENDED = 'Say how it ended';
+export const STEP_SAY_HOW_IT_ENDED_DETAIL = 'Come back here when you arrive, or end it without going.';
+/** The two figures while she is out, under each figure. */
+export const TRACK_ELAPSED = 'elapsed';
+export const TRACK_WALKED = 'walked';
+export const TRACK_NOT_COUNTED = 'not counted without location';
+/** How the rehearsal ran, over the summary on the result. */
+export const RESULT_SUMMARY_LABEL = 'This rehearsal';
 export const CONDITION_HOW_TO: Record<'no-data' | 'no-location-fix', string> = {
   'no-data': 'Turn on aeroplane mode and turn Wi-Fi off.',
   'no-location-fix': 'Turn location off in the phone settings.',

@@ -21,7 +21,7 @@ export default function ProgressView({ progress }: { progress: Progress }) {
   // a whole result, not a partial one.
   if (progress.state === 'first') {
     return (
-      <section className="progress">
+      <section className="card progress">
         <h3>{copy.FIRST_REHEARSAL_HEADING}</h3>
         <p className="muted">{copy.FIRST_REHEARSAL_DETAIL}</p>
       </section>
@@ -35,7 +35,7 @@ export default function ProgressView({ progress }: { progress: Progress }) {
   ];
 
   return (
-    <section className="progress">
+    <section className="card progress">
       <h3>{copy.PROGRESS_HEADING}</h3>
       <p className="muted">{progress.earlierOn}</p>
       <PackChangeLine change={progress.packChange} />

@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 import type { RehearsalRun } from '../../core/rehearsal-run';
-import Head from './Head';
 import { endRun } from './run-state';
 
 /** E5-US1-AC2 — the shell every screen of a running rehearsal sits inside.
@@ -23,7 +22,6 @@ export default function Run({ run, children }: { run: RehearsalRun; children?: R
   return (
     <>
       <main className="page rehearsal-run">
-        <Head />
         {children}
         <div className="actions rehearsal-leave">
           {/* Not a filled control: leaving a rehearsal is not what fixes

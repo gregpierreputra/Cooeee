@@ -180,7 +180,7 @@ export async function rehearseToResult(
   await page.getByRole('main').getByRole('button', { name: ending, exact: true }).click();
   await expect(
     page.getByRole('main').getByRole('heading', {
-      level: 2,
+      level: 1,
       name: /^(What this rehearsal found|Nothing was missing in this rehearsal)$/,
     }),
   ).toBeVisible();

@@ -239,8 +239,15 @@ h2 {
 
 .hero {
   display: grid;
+  /* One column no wider than the page, so a long title at 200% text wraps
+     rather than widening everything under it. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.625rem;
   justify-items: start;
+}
+.hero h1 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 /* Rhythm comes from container gaps, not paragraph margins. */
@@ -5143,42 +5150,64 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   margin-top: 0.5rem;
 }
 
-/* The live time and distance at the top of a running rehearsal: one quiet
-   figure line in the accent, tabular so the digits do not jump each second. */
-.journey-track {
+/* The rehearsal's figures wear the accent. */
+.rehearsal-run {
+  --fact-accent: var(--accent);
+}
+/* The live time and distance at the top of a running rehearsal: two figure
+   tiles, tabular so the digits do not jump each second. */
+.game-facts.journey-track {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
-  font-weight: var(--w-bold);
-  color: var(--accent);
   font-variant-numeric: tabular-nums;
+}
+/* One part of a journey screen under its grey label. */
+.journey-section {
+  display: grid;
+  gap: 0.625rem;
+}
+/* Before going: the steps in order, each led by its drawing in a ring. */
+.journey-steps {
+  gap: 0.625rem;
+}
+.journey-step {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+.journey-step p {
+  margin: 0;
+}
+.journey-step-title {
+  font-weight: var(--w-bold);
+}
+/* While out: the browser's report, amber while still online. */
+.journey-connection {
+  margin: 0;
+  color: var(--ink);
+}
+/* The result's facts about how it ran, under its grey label. */
+.result-summary {
+  gap: 0.5rem;
+}
+.result-summary p {
+  margin: 0;
 }
 
 /* E5-US1-AC5 — the journey screen. The places sit in the card treatment the
    rest of the pack uses. The two endings are identical controls of identical
    weight, told apart by their words alone: neither reads as the expected one,
    and a greyscale screen says which is which exactly as a coloured one does. */
-.journey-places > h3,
-.journey-notes > h3 {
-  font-size: var(--step-1);
-  margin: 1rem 0 0.5rem;
-}
-
-/* The rehearsal glyphs: one on the places heading, one on the note heading,
-   the same drawing on every screen of a run. */
-.journey-places > h3,
-.journey-notes > h3,
+/* The way note's heading, its drawing in a small ring. */
 .way-note > h3 {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
-.journey-places > h3 .glyph,
-.journey-notes > h3 .glyph,
 .way-note > h3 .glyph {
   width: 36px;
   height: 36px;
 }
-.journey-places > h3 .glyph svg,
-.journey-notes > h3 .glyph svg,
 .way-note > h3 .glyph svg {
   width: 18px;
   height: 18px;
@@ -5196,6 +5225,15 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 .journey-place-list {
   gap: 0.75rem;
+}
+/* A place: its pin in a ring beside its name, where it is, and its date. */
+.journey-place {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+.journey-place-text p {
+  margin: 0;
 }
 
 .journey-place-name {
@@ -5229,18 +5267,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   background: transparent;
 }
 
-/* E5-US6 — the phone instruction before going: the drawing beside the kicker,
-   the instruction beneath both. */
-.condition-how-to {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 0.75rem;
-  align-items: center;
-}
-.condition-how-to p {
-  grid-column: 1 / 3;
-  margin: 0.5rem 0 0;
-}
 
 /* E5-US5 — the pack page's list of its rehearsals: the date leads each card,
    the rest reads beneath it in the result's own words. */
@@ -5307,11 +5333,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
    ever reads the most recent earlier run — and it must be visible to the
    reader, not a silent prune. */
 .progress {
-  display: flex;
-  flex-direction: column;
   gap: 0.5rem;
-  padding: 1rem 0 0;
-  border-top: 1px solid var(--line);
 }
 
 .progress > h3 {

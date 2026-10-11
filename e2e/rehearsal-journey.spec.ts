@@ -48,7 +48,7 @@ const WHAT_IT_IS_FOR =
 const INSTRUCTIONS_FIRST = 'Follow Country Fire Authority and emergency service instructions first.';
 const RUNNING_DETAIL =
   'Go with BlackSky open. Come back here to say how it ended.';
-const PLACES_HEADING = 'The official places saved with this pack';
+const PLACES_HEADING = 'Official places in this pack';
 const NO_PLACE_SAVED = 'Missing from your pack.';
 const PLACE = 'Kalorama Reserve';
 const PLACE_WHERE = 'Kalorama Memorial Reserve Road, Kalorama';
@@ -63,7 +63,7 @@ const main = (page: Page) => page.getByRole('main');
 const actions = (page: Page) => main(page).locator('button:not(.info-ring)');
 /** What a rehearsal is waits behind the ring beside the heading. */
 const openExplainer = (page: Page) => main(page).getByRole('button', { name: 'What a rehearsal is' }).click();
-const heading = (page: Page, name: string) => main(page).getByRole('heading', { level: 2, name, exact: true });
+const heading = (page: Page, name: string) => main(page).getByRole('heading', { level: 1, name, exact: true });
 const goControl = (page: Page) => main(page).getByRole('button', { name: GO, exact: true });
 const holdControl = (page: Page) => main(page).getByRole('button', { name: /Hold for BlackSky/ });
 const endingControl = (page: Page, label: string) => main(page).getByRole('button', { name: label, exact: true });
@@ -198,7 +198,7 @@ test.describe('AC5 before she goes', () => {
     for (const line of [WHAT_IT_IS, WHAT_IT_IS_FOR, INSTRUCTIONS_FIRST]) {
       await expect(main(page).getByText(line, { exact: true })).toBeVisible();
     }
-    await expect(main(page).getByRole('heading', { level: 3, name: PLACES_HEADING })).toBeVisible();
+    await expect(main(page).getByRole('heading', { level: 2, name: PLACES_HEADING })).toBeVisible();
     await expect(places(page)).toHaveCount(1);
     await expect(places(page).first()).toContainText(PLACE);
     await expect(places(page).first()).toContainText(PLACE_WHERE);
@@ -219,7 +219,7 @@ test.describe('AC5 before she goes', () => {
   test('a pack with no official place saved says so, and still offers the one control', async ({ page }) => {
     await choose(page, NO_FIX, WITH_GAP);
 
-    await expect(main(page).getByRole('heading', { level: 3, name: PLACES_HEADING })).toBeVisible();
+    await expect(main(page).getByRole('heading', { level: 2, name: PLACES_HEADING })).toBeVisible();
     await expect(main(page).getByText(NO_PLACE_SAVED, { exact: true })).toBeVisible();
     await expect(places(page)).toHaveCount(0);
     await expect(goControl(page)).toBeVisible();
@@ -483,7 +483,7 @@ test.describe('AC5 the two endings', () => {
         await go(page);
         await endingControl(page, label).click();
         const resultHeading = main(page).getByRole('heading', {
-          level: 2,
+          level: 1,
           name: new RegExp(`^(${RESULT_HEADING}|${NO_GAPS_HEADING})$`),
         });
         await expect(resultHeading).toBeVisible();
@@ -598,10 +598,11 @@ test('the walk is timed and measured while she is out, and both are kept when sh
   await context.setGeolocation({ latitude: -37.8, longitude: 145.3, accuracy: 10 });
   await choose(page, NO_DATA);
   await go(page);
-  const track = page.locator('.journey-track');
-  await expect(track).toHaveText(/^0:0\d elapsed · 0 m$/);
+  const track = page.locator('.journey-track li');
+  await expect(track.first()).toHaveText(/^0:0\d elapsed$/);
+  await expect(track.nth(1)).toHaveText('0 m walked');
   await context.setGeolocation({ latitude: -37.801, longitude: 145.3, accuracy: 10 }); // about 111 m
-  await expect(track).toHaveText(/elapsed · 1[01]0 m$/);
+  await expect(track.nth(1)).toHaveText(/^1[01]0 m walked$/);
   await endingControl(page, ARRIVED).click();
   await expect(page.getByText(/and covered 1[01]0 m\./)).toBeVisible();
   await expect
@@ -612,7 +613,9 @@ test('the walk is timed and measured while she is out, and both are kept when sh
 test('in No location fix the top reads the time and that distance is not counted', async ({ page }) => {
   await choose(page, NO_FIX);
   await go(page);
-  await expect(page.locator('.journey-track')).toHaveText(/^0:0\d elapsed · Distance not counted without location$/);
+  const track = page.locator('.journey-track li');
+  await expect(track.first()).toHaveText(/^0:0\d elapsed$/);
+  await expect(track.nth(1)).toHaveText('– not counted without location');
 });
 
 // How it is worded matters more here than anywhere else.
@@ -639,7 +642,7 @@ test.describe('AC5 the words of the journey screen', () => {
       let rest = text;
       if (state === 'while she is out') {
         const track = (await page.locator('.journey-track').innerText()).toLowerCase();
-        expect(track).toMatch(/^\d+:\d{2} elapsed · /);
+        expect(track).toMatch(/^\d+:\d{2}\s+elapsed/);
         rest = rest.split(track).join('');
       }
       for (const line of await places(page).locator('p').allInnerTexts()) {
@@ -862,7 +865,7 @@ for (const state of ['before', 'running'] as const) {
             await position(main(page).getByText(WHAT_IT_IS_FOR, { exact: true })),
             await position(main(page).getByText(CONDITION_LINE(NO_FIX), { exact: true })),
             await position(main(page).getByText(INSTRUCTIONS_FIRST, { exact: true })),
-            await position(main(page).getByRole('heading', { level: 3, name: PLACES_HEADING })),
+            await position(main(page).getByRole('heading', { level: 2, name: PLACES_HEADING })),
             await position(places(page).first()),
             await position(goControl(page)),
           ]
@@ -870,9 +873,9 @@ for (const state of ['before', 'running'] as const) {
             await position(bar(page)),
             await position(heading(page, RUNNING_HEADING)),
             await position(main(page).getByText(RUNNING_DETAIL, { exact: true })),
-            await position(main(page).getByRole('heading', { level: 3, name: PLACES_HEADING })),
-            await position(places(page).first()),
             await position(holdControl(page)),
+            await position(main(page).getByRole('heading', { level: 2, name: PLACES_HEADING })),
+            await position(places(page).first()),
             await position(endingControl(page, ARRIVED)),
             await position(endingControl(page, WITHOUT_GOING)),
             await position(leaveControl(page)),
@@ -886,8 +889,8 @@ for (const state of ['before', 'running'] as const) {
       .evaluateAll((els) => els.map((el) => `${el.tagName} ${el.textContent}`));
     expect(headings).toEqual(
       state === 'before'
-        ? [`H2 ${BEFORE_HEADING}`, `H3 ${PLACES_HEADING}`]
-        : [`H2 ${RUNNING_HEADING}`, `H3 ${PLACES_HEADING}`, 'H3 Notes'],
+        ? [`H1 ${BEFORE_HEADING}`, 'H2 Before you go', `H2 ${PLACES_HEADING}`]
+        : [`H1 ${RUNNING_HEADING}`, `H2 ${PLACES_HEADING}`, 'H2 Notes'],
     );
   });
 }
@@ -929,7 +932,7 @@ test.describe('US7 the pack notes on the journey', () => {
     await choose(page, NO_DATA, `${REHEARSABLE}&notes=1`);
     await expect(main(page).getByText('Gas is off at the meter.')).toHaveCount(0);
     await go(page);
-    await expect(main(page).getByRole('heading', { level: 3, name: 'Notes' })).toBeVisible();
+    await expect(main(page).getByRole('heading', { level: 2, name: 'Notes' })).toBeVisible();
     await expect(main(page).locator('.journey-note')).toHaveText(['Gas is off at the meter.']);
     await expect(main(page).getByRole('textbox')).toHaveCount(0);
     await expect(places(page)).toHaveCount(1);

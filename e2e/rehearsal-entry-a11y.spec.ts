@@ -593,14 +593,14 @@ test('AC1 the result reads in order: heading, condition, then each gap', async (
   await page.locator('.gap-row').first().waitFor();
 
   const order = await page.evaluate(() =>
-    [...document.querySelectorAll('.page h2, .page > p, .gap-row h3, .gap-row p')].map((el) => ({
+    [...document.querySelectorAll('.page h1, .result-summary p, .gap-row h3, .gap-row p')].map((el) => ({
       tag: el.tagName,
       className: el.className,
       text: el.textContent ?? '',
     })),
   );
 
-  const heading = order.findIndex((entry) => entry.tag === 'H2');
+  const heading = order.findIndex((entry) => entry.tag === 'H1');
   const condition = order.findIndex((entry) => entry.text.startsWith('Rehearsed without'));
   const firstGap = order.findIndex((entry) => entry.tag === 'H3');
 
@@ -775,14 +775,14 @@ test('AC2 the progress view reads before the gaps it summarises', async ({ page 
   await page.locator('.progress').waitFor();
 
   const order = await page.evaluate(() =>
-    [...document.querySelectorAll('.page h2, .progress h3, .gap-row h3')].map((el) => ({
+    [...document.querySelectorAll('.page h1, .progress h3, .gap-row h3')].map((el) => ({
       tag: el.tagName,
       className: el.className,
       inProgress: Boolean(el.closest('.progress')),
     })),
   );
 
-  const resultHeading = order.findIndex((entry) => entry.tag === 'H2');
+  const resultHeading = order.findIndex((entry) => entry.tag === 'H1');
   const progressHeading = order.findIndex((entry) => entry.inProgress);
   const firstGap = order.findIndex((entry) => entry.tag === 'H3' && !entry.inProgress);
 
