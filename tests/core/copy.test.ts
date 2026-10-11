@@ -177,11 +177,9 @@ describe('general official guidance', () => {
 });
 
 describe('several packs stored', () => {
-  it('asks which pack to load, and says the nearest places show either way', () => {
+  it('asks which pack to load, and says what loading it brings', () => {
     expect(copy.CHOOSE_PACK).toBe('Choose a pack');
-    expect(copy.CHOOSE_PACK_HINT).toBe(
-      'Loads its places and notes. The nearest official places show either way.',
-    );
+    expect(copy.CHOOSE_PACK_HINT).toBe('Loads its places and notes.');
     expect(copy.PACK_COVERS_HERE).toBe('Covers where you are');
     expect(copy.NO_GPS_YET).toBe('No GPS fix yet.');
   });
@@ -205,9 +203,8 @@ describe('deliberate activation', () => {
     expect(copy.HOLD_TO_LEAVE).toBe('Hold to leave. Two seconds.');
   });
 
-  it('a back press and a return are each said in one short line, the bar above naming the way out', () => {
+  it('a back press is said in one short line, the hold naming the way out', () => {
     expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky.');
-    expect(copy.BLACKSKY_RESUMED).toBe('Reopened where you left off.');
   });
 });
 

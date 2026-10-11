@@ -1621,6 +1621,15 @@ main:focus {
 .blacksky-leave .hold-sweep circle {
   stroke: var(--cooeee-teal);
 }
+/* Cooeee under the button turns with it, so the two read as one control. */
+.blacksky-leave .nav-blacksky-slot:has(.holding) .bottom-nav-label {
+  color: var(--cooeee-teal);
+}
+@media (hover: hover) {
+  .blacksky-leave .nav-blacksky-slot:has(.blacksky-leave-button:hover) .bottom-nav-label {
+    color: var(--cooeee-teal);
+  }
+}
 /* The hint after a tap floats above the button, as over the compass, at
    BlackSky's 16 px. */
 .blacksky-leave .nav-blacksky-slot .blacksky-hold-hint {
@@ -2482,8 +2491,6 @@ main:focus {
 
 .blacksky-reminder {
   margin: 0;
-  font-size: var(--step-1);
-  font-weight: var(--w-bold);
 }
 
 /* Your position opens its meaning from its own words: at BlackSky's 16 px

@@ -547,7 +547,7 @@ export const CHOOSE_PACK = 'Choose a pack';
 /** Over the chosen pack once the list has folded to it. */
 export const PACK_LOADED = 'Pack loaded';
 export const CHANGE_PACK = 'Change';
-export const CHOOSE_PACK_HINT = 'Loads its places and notes. The nearest official places show either way.';
+export const CHOOSE_PACK_HINT = 'Loads its places and notes.';
 /** Beside a pack whose area contains the position the arrows are drawn from. */
 export const PACK_COVERS_HERE = 'Covers where you are';
 /** With several packs, none chosen and no fix: the one thing the screen can say. */
@@ -570,12 +570,10 @@ export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
  *  Cooeee is the word under it, so the name holds it, as Hold for BlackSky
  *  holds the word under the compass. */
 export const LEAVE_BLACKSKY = 'Hold for Cooeee';
-/** Said under BlackSky's top bar, never over anything else: the phone's back
- *  button was pressed, or the app opened here again because BlackSky was the
- *  last screen open. The bar above them already says how to leave. */
 export const BLACKSKY_BLOCKED = 'Not opened. Hold its button two seconds to enter.';
+/** Said at the top of BlackSky when the phone's Back was pressed: the round
+ *  hold at its foot says how to leave. */
 export const BACK_PRESSED = 'Back does not leave BlackSky.';
-export const BLACKSKY_RESUMED = 'Reopened where you left off.';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 

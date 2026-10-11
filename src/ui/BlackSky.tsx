@@ -30,7 +30,6 @@ import {
   type PositionTrust,
 } from '../core/blacksky-dial';
 import {
-  isBlackSkyLatched,
   latchBlackSky,
   readChosenPack,
   rememberChosenPack,
@@ -174,11 +173,9 @@ export default function BlackSky({
   // storage key; the main place never changes by itself while it is set.
   const [shownId, setShownId] = useState<string | null>(null);
   const navigate = useNavigate();
-  // Latched before this mount means the app brought the person back here (a
-  // relaunch, a reload, or a return from another site), which is worth saying.
-  const [notice, setNotice] = useState(() =>
-    isBlackSkyLatched(localFlagStore()) ? copy.BLACKSKY_RESUMED : null,
-  );
+  // Said at the top once the phone's Back has been pressed, which does not
+  // leave. A reopening says nothing: the dark screen speaks for itself.
+  const [notice, setNotice] = useState<string | null>(null);
 
   // US1-AC4: with no fix, a marked position stands in for one. estimateFix
   // returns null once its growing uncertainty passes the confidence threshold,
@@ -610,7 +607,7 @@ export default function BlackSky({
           </span>
         </div>
       </div>
-      {/* Why BlackSky is still open, when it is: reopened, or Back pressed. */}
+      {/* Why BlackSky is still open after Back was pressed. */}
       {notice ? (
         <p className="muted blacksky-notice" role="status">
           {notice}
@@ -661,8 +658,9 @@ export default function BlackSky({
       )}
       {/* Under the dial, never above it: the dial is the one thing first. */}
       {chosen && !chosen.placesVerified ? <StateCard heading={copy.PLACES_UNVERIFIED} /> : null}
-      {/* The loaded pack's reminder closes every state of the screen, once. */}
-      <p className="blacksky-reminder">{chosen?.pack.reminder || copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+      {/* The loaded pack's reminder closes every state of the screen, once, as
+          a quiet note: the dial is what is read first. */}
+      <p className="muted blacksky-reminder">{chosen?.pack.reminder || copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
     </main>
   );
 }
