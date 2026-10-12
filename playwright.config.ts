@@ -9,6 +9,10 @@ export default defineConfig({
   fullyParallel: true,
   // A committed test.only would shrink the suite to one test and still pass.
   forbidOnly: Boolean(process.env.CI),
+  // On CI's slower machine a test that loses a timing race is tried once more.
+  // One that fails twice still fails the run, and one that passes on the second
+  // try is listed as flaky in the report, not hidden. Locally, no retries.
+  retries: process.env.CI ? 1 : 0,
   reporter: [['list']],
   use: { baseURL: `http://localhost:${PORT}` },
   webServer: [

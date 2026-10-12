@@ -142,6 +142,8 @@ test('saving a program in All programs does not move it until the list is opened
   await page.goto(RECOVER_URL);
   await page.getByRole('button', { name: copy.ALL_PROGRAMS }).click();
   const titles = page.locator('.card h2');
+  // Read once the cards are drawn, not the moment the list opens.
+  await expect(titles.nth(1)).toBeVisible();
   const before = await titles.allTextContents();
   await page.locator('.card').nth(1).getByRole('button', { name: copy.KEEP }).click();
   await expect(page.locator('.card').nth(1).getByRole('button', { name: copy.KEPT })).toHaveAttribute('aria-pressed', 'true');
