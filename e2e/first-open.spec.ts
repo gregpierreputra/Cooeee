@@ -67,6 +67,8 @@ test('a device with nothing stored opens on the disclosure screen, continue inac
   }
   await expect(page.locator('details')).toHaveCount(0);
   await expect(page.getByText(OFFICIAL_CHANNELS_LINE)).toBeVisible();
+  // The number to call stands out in bold within the red line.
+  await expect(page.locator('.official-channels strong')).toHaveText('Triple Zero (000)');
 
   await expect(checkbox(page)).not.toBeChecked();
   await expect(continueButton(page)).toBeDisabled();
@@ -111,6 +113,16 @@ test('ticking the box enables continue, which records the acknowledgement and mo
   // The call plays once more, over the first Home.
   await expect(page.locator('.splash')).toHaveCount(1);
   expect(await storedFlag(page)).toBe(ACKNOWLEDGEMENT_VALUE);
+});
+
+test('a tap anywhere in the Before you continue frame ticks the box', async ({ page }) => {
+  await openDisclosure(page);
+  await page.locator('.acknowledge').scrollIntoViewIfNeeded();
+  const frame = (await page.locator('.acknowledge').boundingBox())!;
+  // The frame's bottom right corner, away from the box and its words.
+  await page.mouse.click(frame.x + frame.width - 8, frame.y + frame.height - 8);
+  await expect(checkbox(page)).toBeChecked();
+  await expect(continueButton(page)).toBeEnabled();
 });
 
 test('unticking the box makes continue inactive again — the button follows the box', async ({

@@ -1,17 +1,23 @@
 import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AREA_MAP_HALF_KM,
   NEARBY_CLOCK_MS,
   NEARBY_FIX_MAX_AGE_MS,
   SEARCH_SHOW_MS,
   NEARBY_FIX_TIMEOUT_MS,
+  NEARBY_MAP_PLACES,
+  NEARBY_MAP_REFUGES,
   NEARBY_RESYNC_MS,
 } from '../core/constants';
+import { siteNameBlock } from '../core/blacksky-dial';
 import * as copy from '../core/copy';
 import DataSources from './components/DataSources';
 import {
   hasNearbyData,
   nearbyView,
+  placesNear,
   parsePostcode,
+  placeShareText,
   postcodeOrigin,
   type NearbyCache,
   type NearbyGroup,
@@ -19,13 +25,23 @@ import {
   type NearbySession,
 } from '../core/nearby';
 import type { LatLon } from '../core/types';
+import { readLocalitiesFile } from '../data/localities';
 import { readNearbyCache, syncNearby } from '../data/nearby';
+import { readRoadsFile } from '../data/roads';
 import Glyph, { type GlyphKind } from './components/Glyph';
 import Hint from './components/Hint';
+import NearbyMap, { type MapLoaders } from './components/NearbyMap';
 import KeyTerms from './components/KeyTerms';
+import { shareOrCopy } from './components/shareOrCopy';
+import { useCopied } from './components/useCopied';
 import StateCard from './components/StateCard';
+import TabLabel from './components/TabLabel';
 
-type Origin = LatLon & { label: ReactNode };
+/** Where distances are measured from: the line above the tabs, and its name
+ *  in plain words for the middle of the map. */
+type Origin = LatLon & { label: ReactNode; name: string };
+/** The map's files, read from the phone's own cache only. */
+const PRECACHED_FILES: MapLoaders = { loadRoads: readRoadsFile, loadLocalities: readLocalitiesFile };
 type GroupKind = NearbyGroup['kind'];
 const TABS: { kind: GroupKind; glyph: GlyphKind; label: string }[] = [
   { kind: 'bushfire', glyph: 'place', label: copy.TAB_BUSHFIRE },
@@ -39,7 +55,15 @@ const NOTHING_SYNCED: NearbySession = { staticSyncedNow: false, dynamicSyncedNow
  *  The screen renders what is on the device first and refreshes in place when a
  *  sync succeeds — it never waits on the network. Nothing typed or measured
  *  here leaves the device: the only requests are the two parameterless syncs. */
-export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeof fetch }) {
+export default function Nearby({
+  now,
+  fetcher,
+  mapFiles = PRECACHED_FILES,
+}: {
+  now?: number;
+  fetcher?: typeof fetch;
+  mapFiles?: MapLoaders;
+}) {
   const [cache, setCache] = useState<NearbyCache | null>(null);
   const [session, setSession] = useState(NOTHING_SYNCED);
   const [syncing, setSyncing] = useState(false);
@@ -49,6 +73,8 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [tab, setTab] = useState<GroupKind>('bushfire');
+  // The map starts folded, so the list stays the first thing on the screen.
+  const [mapOpen, setMapOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!navigator.onLine) return;
@@ -137,6 +163,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
             lat: position.coords.latitude,
             lon: position.coords.longitude,
             label: copy.FROM_POSITION(copy.ACCURACY_READOUT(Math.round(position.coords.accuracy))),
+            name: copy.NEARBY_MAP_POSITION,
           });
         });
       },
@@ -177,6 +204,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
       setNotice(null);
       setOrigin({
         ...point,
+        name: copy.NEARBY_MAP_POSTCODE(code),
         label: (
           <>
             {copy.FROM_POSTCODE} <span className="nearby-origin-code">{code}</span>
@@ -201,7 +229,7 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
   return (
     <main className="page nearby">
       <div className="hero">
-        <span className="kicker">{copy.NEARBY_KICKER}</span>
+        <TabLabel tab="nearby" text={copy.NEARBY_KICKER} />
         <h1>{copy.NEARBY_TITLE}</h1>
       </div>
 
@@ -272,25 +300,59 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
                 ))}
               </div>
               {group ? (
+                // Keyed by the tab, so its notes and data sources start closed
+                // whenever the tab changes.
                 <section
+                  key={tab}
                   id="nearby-panel"
                   className="nearby-group"
                   role="tabpanel"
                   aria-labelledby={`nearby-tab-${tab}`}
                 >
-                  {/* Keyed by the tab, so each tab's note starts closed. The heading
-                      beside the ring already names the note, so its panel has no title. */}
-                  <Hint key={tab} label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>} titled={false}>
+                  {/* The heading beside the ring already names the note, so its
+                      panel has no title. */}
+                  <Hint label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>} titled={false}>
                     <p>{group.note}</p>
                   </Hint>
+                  {/* The bushfire tab's nearest few places on a map, folded until asked for. */}
+                  {tab === 'bushfire' && cache ? (
+                    <div className="nearby-map-toggle">
+                      <button type="button" className="hint-text" aria-expanded={mapOpen} onClick={() => setMapOpen((open) => !open)}>
+                        {copy.NEARBY_MAP_SHOW}
+                        <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                          <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      {mapOpen ? (
+                        <NearbyMap
+                          origin={origin}
+                          originName={origin.name}
+                          loaders={mapFiles}
+                          places={([['NSP', NEARBY_MAP_PLACES, 'place'], ['CFR', NEARBY_MAP_REFUGES, 'home']] as const).flatMap(([type, count, glyph]) =>
+                            placesNear(cache.facilities, origin, type, count, AREA_MAP_HALF_KM * 1000).map(({ row, distanceM }) => ({
+                              id: `${type}-${row.facility_id}`,
+                              name: row.name,
+                              lat: row.lat,
+                              lon: row.lon,
+                              distanceM,
+                              glyph,
+                              kind: copy.FACILITY_TYPE_NAME[type],
+                            })),
+                          )}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
                   <ul className="list">
                     {group.rows.map((row) => (
-                      <PlaceRow key={row.type} row={row} />
+                      // Keyed by the place as well, so a new postcode starts a card afresh.
+                      <PlaceRow key={`${row.type}:${row.place?.name ?? ''}`} row={row} />
                     ))}
                   </ul>
+                  {/* This tab's own sources. */}
+                  <DataSources lines={group.sources} />
                 </section>
               ) : null}
-              <DataSources lines={view.health} />
             </>
           ) : null}
         </>
@@ -302,29 +364,81 @@ export default function Nearby({ now, fetcher }: { now?: number; fetcher?: typeo
 /** One facility type. Each row carries its own state word and timestamp, so a
  *  live static place and a cached relief centre can never read as equals. */
 function PlaceRow({ row }: { row: NearbyRow }) {
+  // The state on one line and its age, if any, beneath it, in the corner.
+  const [state, age] = row.stateLabel.split(copy.STATE_AGE_JOIN);
+  // With no share sheet the place is copied, and Share says so for a moment,
+  // as Copy does on a call card.
+  const [copied, showCopied] = useCopied();
+  const share = async () => {
+    const result = await shareOrCopy(placeShareText(row));
+    if (result === 'copied') showCopied('copied');
+    if (result === 'unavailable') showCopied('failed');
+  };
+  // The official name set as BlackSky sets it: the site in bold, and the town
+  // with any bracketed detail on the line beneath. Nothing is dropped but the
+  // closing words the card's label already says.
+  const name = row.place ? siteNameBlock(row.place.name) : null;
   return (
     <li className={row.state === 'cached' ? 'card card-stale' : 'card'}>
       <div className="nearby-row-head">
         <h3>{row.title}</h3>
         <span className={`state-pill state-${row.state}`}>
-          <span className="state-dot" aria-hidden="true" />
-          {row.stateLabel}
+          <span className="state-word">
+            <span className="state-dot" aria-hidden="true" />
+            {state}
+          </span>
+          {/* The join is read out, not shown, so the label reads as one line. */}
+          {age ? (
+            <span className="state-age">
+              <span className="visually-hidden">{copy.STATE_AGE_JOIN}</span>
+              {age}
+            </span>
+          ) : null}
         </span>
       </div>
+      {/* How current the card is: the date sits under the status, on every
+          card, whether or not a place is listed. */}
+      {row.timestamp ? <p className="muted figure nearby-stamp">{row.timestamp}</p> : null}
       {row.place ? (
-        <div className="nearby-place">
-          <div>
-            <p className="nearby-place-name">{row.place.name}</p>
-            {row.place.address ? <p className="muted">{row.place.address}</p> : null}
+        <div>
+          {/* Only the site sits beside the distance; where it is and its
+              address run the card's full width beneath. */}
+          <div className="nearby-place">
+            <p className="nearby-place-name">{name?.site}</p>
+            <p className="figure nearby-distance with-glyph">
+              <Glyph kind="go" line />
+              {row.place.distance}
+            </p>
           </div>
-          <p className="figure nearby-distance with-glyph">
-            <Glyph kind="go" line />
-            {row.place.distance}
-          </p>
+          {name?.line ? <p className="muted">{name.line}</p> : null}
+          {row.place.address ? <p className="muted">{row.place.address}</p> : null}
         </div>
       ) : null}
-      {row.timestamp ? <p className="muted figure">{row.timestamp}</p> : null}
       {row.note ? <p className="nearby-note">{row.note}</p> : null}
+      {/* The card's footer, set apart from the address, as a pack card ends in
+          one row: for an NSP what the place is and that no one will be there,
+          then Share as a small link, to send the place, never the sender's
+          position. */}
+      {row.place ? (
+        <>
+          <div className="nearby-foot">
+            {row.place.about ? (
+              <p className="nearby-about">
+                {row.place.about.kind ? <span>{row.place.about.kind}</span> : null}
+                <span className="muted">{row.place.about.note}</span>
+              </p>
+            ) : null}
+            <button type="button" className="nearby-share with-glyph" onClick={() => void share()}>
+              <Glyph kind={copied === 'copied' ? 'check' : 'share'} line />
+              {copied === 'copied' ? copy.COPIED : copied === 'failed' ? copy.NOT_COPIED : copy.SHARE_PLACE}
+              <span className="visually-hidden"> {row.place.name}</span>
+            </button>
+          </div>
+          <p className="visually-hidden" role="status">
+            {copied === 'copied' ? copy.COPIED_LINE : copied === 'failed' ? copy.SHARE_UNAVAILABLE : ''}
+          </p>
+        </>
+      ) : null}
     </li>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import {
@@ -8,7 +8,7 @@ import {
   type AddressCandidateResolution,
   type SettledSearch,
 } from '../../core/address-search';
-import { bpaExposureLayer } from '../../core/area-check';
+import { areaCheckView, bpaExposureLayer } from '../../core/area-check';
 import {
   ADDRESS_QUERY_DEBOUNCE_MS,
   ADDRESS_QUERY_MAX_CHARS,
@@ -20,7 +20,7 @@ import {
   PLACES_OFFERED,
 } from '../../core/constants';
 import * as copy from '../../core/copy';
-import { chosenDestinations, formatDistanceM, orderByDistance } from '../../core/destination';
+import { chosenDestinations, formatDistanceM, orderByDistance, placeName } from '../../core/destination';
 import { titleCase } from '../../core/home';
 import { destinationsForPack, selectSitesForPack, toDestination } from '../../core/nsp';
 import { readKept } from '../../core/kept';
@@ -34,12 +34,13 @@ import type {
   NspSnapshot,
   Pack,
   PackFile,
+  PackNote,
   PackOffer,
   PendingPlace,
   RecoveryProgram,
   TextPackContent,
 } from '../../core/types';
-import { listCompletePacks, listPrograms, listSavedPackNames } from '../../data/db';
+import { listCompletePacks, listNotes, listPrograms, listSavedPackNames } from '../../data/db';
 import { localFlagStore } from '../../data/acknowledgement';
 import { loadNspSnapshot } from '../../data/nsp';
 import { createPackOffer, saveTextOnlyPack } from '../../data/pack-build';
@@ -59,9 +60,9 @@ import { Candidates } from './Candidates';
 import { Confirm } from './Confirm';
 import { Conflict } from './Conflict';
 import { Destinations } from './Destinations';
-import FlowSteps from './FlowSteps';
+import FlowSteps, { FlowStepBack } from './FlowSteps';
 import { Note } from './Note';
-import { Size } from './Size';
+import { Size, type PackSummary } from './Size';
 
 /** Module scope, so the default has one stable identity for the life of the
  * module. A default created inside the component would be a new function on
@@ -127,6 +128,8 @@ type SearchProps = {
   onKeepSavedPlace?: () => void;
   buildOffer?: typeof createPackOffer;
   savePack?: typeof saveTextOnlyPack;
+  /** The notes the pack being replaced holds. */
+  loadNotes?: (packId: string) => Promise<PackNote[]>;
   makePackId?: () => string;
   now?: () => number;
   onPackSaved?: (packId: string) => void;
@@ -158,6 +161,7 @@ export function Search({
   onKeepSavedPlace,
   buildOffer = createPackOffer,
   savePack = saveTextOnlyPack,
+  loadNotes = listNotes,
   makePackId = () => crypto.randomUUID(),
   now = Date.now,
   onPackSaved,
@@ -205,7 +209,10 @@ export function Search({
   useEffect(() => {
     listSavedPackNames().then(setSavedNames, () => {});
   }, []);
-  const [supersedesId, setSupersedesId] = useState<string | undefined>(undefined);
+  const [supersedes, setSupersedes] = useState<Pack | undefined>(undefined);
+  // On a replace, the old pack's notes: how many, and whether they come along.
+  const [oldNotes, setOldNotes] = useState<PackNote[]>([]);
+  const [keepNotes, setKeepNotes] = useState(true);
   const [offerState, setOfferState] = useState<OfferState | null>(null);
   const [placesState, setPlacesState] = useState<PlacesState | null>(null);
   // The places the user chose, held while the note step is on screen, and the
@@ -428,7 +435,10 @@ export function Search({
       // The programs saved in Recover go into the pack, or none if nothing is
       // saved. A store that cannot be read gives none, never a failed pack.
       const programs = await loadPrograms().catch(() => []);
-      const seed = buildPackSeed(packId, now(), place, result.lgaName, result.source, supersedesId);
+      // A replacement keeps the date its place was first saved, so refreshing a
+      // pack never moves it on Home.
+      const createdAt = supersedes?.createdAt ?? now();
+      const seed = buildPackSeed(packId, createdAt, place, result.lgaName, result.source, supersedes?.id);
       const content: TextPackContent = {
         pack: seed,
         layers: [bpaExposureLayer(seed.id, result)],
@@ -486,7 +496,9 @@ export function Search({
     setAreaState(null);
     setConflictState(null);
     setCandidate(null);
-    setSupersedesId(undefined);
+    setSupersedes(undefined);
+    setOldNotes([]);
+    setKeepNotes(true);
     setOfferState(null);
     setPlacesState(null);
     setChosenPlaces(null);
@@ -513,10 +525,28 @@ export function Search({
     else if (at === 'area') {
       setAreaState(null);
       setConflictState(null);
-      setSupersedesId(undefined);
+      setSupersedes(undefined);
+      setOldNotes([]);
+      setKeepNotes(true);
     } else if (at === 'places') setPlacesState(null);
     else if (at === 'note') setChosenPlaces(null);
     else if (at === 'size') setOfferState(null);
+  }
+
+  /** Back to a step already done, by its place in the bar: the same as Back
+   *  pressed until that step is on screen, so every answer is kept. */
+  function backTo(index: number) {
+    flowRef.current += 1;
+    if (index <= 3) setOfferState(null);
+    if (index <= 2) setChosenPlaces(null);
+    if (index <= 1) setPlacesState(null);
+    if (index <= 0) {
+      setAreaState(null);
+      setConflictState(null);
+      setSupersedes(undefined);
+      setOldNotes([]);
+      setKeepNotes(true);
+    }
   }
 
   // Back, from the bar or the phone, steps back one step at a time. The steps
@@ -556,18 +586,23 @@ export function Search({
 
   // Each step replaces the page under the same path, so focus is moved to it
   // and the page starts at its top here; the route change that would
-  // otherwise do both never happens.
+  // otherwise do both never happens. Before the step is painted, so a long
+  // step is never drawn once at the last step's scroll and then jumps.
   const step = [
     !!candidate, !!pendingPlace, conflictState?.kind, areaState?.kind,
     placesState?.kind, !!chosenPlaces, offerState?.kind,
   ].join();
-  useEffect(() => {
+  useLayoutEffect(() => {
     window.scrollTo(0, 0);
     focusMain();
   }, [step]);
+  // A step already done in any screen's bar is a way back to it, except while
+  // a check or the save runs, or once the pack is saved.
+  const goBackTo = busy || saveStage === 'saved' ? null : backTo;
+  const wrap = (screen: ReactNode) => <FlowStepBack.Provider value={goBackTo}>{screen}</FlowStepBack.Provider>;
 
   if (pendingPlace && conflictState?.kind === 'checking') {
-    return (
+    return wrap(
       <StatusPage
         page="conflict-page"
         kicker={<FlowSteps at={0} />}
@@ -577,7 +612,7 @@ export function Search({
   }
 
   if (pendingPlace && conflictState?.kind === 'conflict') {
-    return (
+    return wrap(
       <Conflict
         savedAddress={conflictState.savedPack.address}
         onKeep={() => {
@@ -585,7 +620,10 @@ export function Search({
           resetToSearch();
         }}
         onReplace={() => {
-          setSupersedesId(conflictState.savedPack.id);
+          setSupersedes(conflictState.savedPack);
+          setKeepNotes(true);
+          setOldNotes([]);
+          loadNotes(conflictState.savedPack.id).then(setOldNotes, () => setOldNotes([]));
           setConflictState(null);
           void runAreaCheck(pendingPlace);
         }}
@@ -594,7 +632,7 @@ export function Search({
   }
 
   if (conflictState?.kind === 'unavailable') {
-    return (
+    return wrap(
       <StatusPage
         page="conflict-page"
         kicker={<FlowSteps at={0} />}
@@ -615,18 +653,8 @@ export function Search({
   }
 
   if (pendingPlace && offerState) {
-    if (offerState.kind === 'building') {
-      return (
-        <StatusPage
-          page="size-page"
-          kicker={<FlowSteps at={4} />}
-          card={<p>{copy.PREPARING_PACK_OFFER}</p>}
-        />
-      );
-    }
-
     if (offerState.kind === 'failed') {
-      return (
+      return wrap(
         <StatusPage
           page="size-page"
           kicker={<FlowSteps at={4} />}
@@ -655,21 +683,30 @@ export function Search({
       );
     }
 
-    return (
+    const ready = offerState.kind === 'ready' ? offerState : null;
+    const summary: PackSummary = {
+      name: pendingPlace.name,
+      address: pendingPlace.address,
+      area: areaState?.kind === 'result' ? areaCheckView(areaState.result).resultLine : copy.SUMMARY_NONE,
+      places: (chosenPlaces ?? []).map((place) => placeName(place)),
+      note: copy.SUMMARY_NOTE_VALUE(Boolean(note), supersedes ? oldNotes.length : 0, keepNotes),
+    };
+    return wrap(
       <Size
-        offer={offerState.offer}
-        address={offerState.content.pack.address}
-        download={async () => {
+        summary={summary}
+        offer={ready?.offer ?? null}
+        save={async () => {
+          if (!ready) return;
           setSaveStage('saving');
           try {
-            await savePack(offerState.content, offerState.offer, now(), offerState.files, note);
+            await savePack(ready.content, ready.offer, now(), ready.files, note, keepNotes);
             setSaveStage('saved');
           } catch (error) {
             setSaveStage('idle');
             throw error;
           }
         }}
-        onContinue={() => openSavedPack(offerState.content.pack.id)}
+        onContinue={() => ready && openSavedPack(ready.content.pack.id)}
       />
     );
   }
@@ -678,10 +715,14 @@ export function Search({
   // nearest chosen place, so the note is about this pack from the first word.
   if (pendingPlace && areaState?.kind === 'result' && chosenPlaces) {
     const nearest = chosenPlaces.find((row) => row.kind === 'nsp-bushfire');
-    return (
+    const replacingNotes = supersedes !== undefined && oldNotes.length > 0;
+    return wrap(
       <Note
         example={copy.NOTE_EXAMPLE(pendingPlace.name, nearest)}
-        initial={note}
+        // A replace with notes already written starts empty, so going on adds
+        // no second example beside them.
+        initial={note ?? (replacingNotes ? '' : undefined)}
+        replacing={replacingNotes ? { notes: oldNotes, keep: keepNotes, onKeep: setKeepNotes } : undefined}
         onContinue={(text) => {
           setNote(text);
           void buildPackOfferForResult(pendingPlace, areaState.result, chosenPlaces);
@@ -693,7 +734,7 @@ export function Search({
   if (pendingPlace && areaState?.kind === 'result' && placesState) {
     const { result } = areaState;
     if (placesState.kind === 'loading') {
-      return (
+      return wrap(
         <StatusPage
           page="places-page"
           kicker={<FlowSteps at={2} />}
@@ -703,7 +744,7 @@ export function Search({
     }
 
     if (placesState.kind === 'unavailable') {
-      return (
+      return wrap(
         <StatusPage
           page="places-page"
           kicker={<FlowSteps at={2} />}
@@ -733,7 +774,7 @@ export function Search({
     const area = titleCase(result.lgaName);
     const continueWith = async (chosen: Destination[]) =>
       setChosenPlaces(destinationsForPack(chosen, packId, snapshot, area, PACK_HAZARD));
-    return (
+    return wrap(
       <Destinations
         ordered={ordered}
         unlocated={unlocated}
@@ -750,7 +791,7 @@ export function Search({
   }
 
   if (pendingPlace && areaState) {
-    return (
+    return wrap(
       <AreaCheck
         place={pendingPlace}
         state={areaState}
@@ -764,7 +805,7 @@ export function Search({
   }
 
   if (candidate) {
-    return (
+    return wrap(
       <Confirm
         candidate={candidate}
         // The default is offered in normal case, not the official list's
@@ -778,7 +819,7 @@ export function Search({
     );
   }
 
-  return (
+  return wrap(
     <main className="page search-page">
       <form className="search-form" onSubmit={handleSubmit}>
         <div className="search-content">

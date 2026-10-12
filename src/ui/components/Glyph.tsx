@@ -9,9 +9,9 @@ export type GlyphKind =
   | Choice
   | 'map' | 'layer' | 'place' | 'note'
   | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate'
-  | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag'
+  | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag' | 'word' | 'block'
   | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline' | 'saved'
-  | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close'
+  | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close' | 'grab' | 'undo' | 'tap'
   | Exclude<PackIcon, 'place'>;
 
 const GLYPH_PATHS: Record<GlyphKind, string> = {
@@ -43,6 +43,10 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   door: 'M6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21M3 21h18M14.5 12.5h.01',
   bag: 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2',
   drill: 'M12 21c-3.9 0-6.5-2.7-6.5-6.2 0-3.3 2.4-5.4 3.8-8.3.5 2 1.6 3.2 2.9 3.8.3-2.7 1.4-4.8 3.3-6.3.2 3.3 3 5.5 3 9.2 0 4.3-2.6 7.8-6.5 7.8zM12 21c-1.7 0-3-1.3-3-3 0-1.9 1.6-2.8 2.4-4.4.9 1.1 3.6 2.2 3.6 4.5 0 1.6-1.2 2.9-3 2.9z',
+  // Cooee Word: four letter tiles.
+  word: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  // Ready the Block: a house, and a magnifier looking it over.
+  block: 'M3 11.5 9 6.5l6 5V19H3zM7.5 19v-4h3v4M17 12a3 3 0 1 0 0 6a3 3 0 1 0 0-6M19.2 17.2 21.5 19.5',
   // What was found: a magnifier.
   found: 'M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13M15.5 15.5 20 20',
   plus: 'M12 5v14M5 12h14',
@@ -74,6 +78,12 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   // A wheat ear, in open strokes: a barn read as a second house at this size.
   farm: 'M12 22V3M12 7.5 8 4M12 7.5l4-3.5M12 12.5 6.5 8.5M12 12.5l5.5-4M12 17.5 5.5 13M12 17.5l6.5-4.5',
   close: 'M6 6l12 12M18 6 6 18',
+  // A pointing finger pressing down: a tap.
+  tap: 'M9 12V5.5a1.5 1.5 0 0 1 3 0V11M12 10.5V9.5a1.5 1.5 0 0 1 3 0V11M15 11a1.5 1.5 0 0 1 3 0v3.5a6.5 6.5 0 0 1-6.5 6.5h-.6a5.5 5.5 0 0 1-4.6-2.5L4.6 15.6a1.5 1.5 0 0 1 2.5-1.7L9 16.5',
+  // An arrow turning back on itself: undo.
+  undo: 'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
+  // A hand closing round something: the drill's grab button.
+  grab: 'M7 11V8.5a1.5 1.5 0 0 1 3 0V11M10 10V7.5a1.5 1.5 0 0 1 3 0V11M13 10.5V8.5a1.5 1.5 0 0 1 3 0V12M16 11a1.5 1.5 0 0 1 3 0v3a7 7 0 0 1-7 7h-1a6 6 0 0 1-5.2-3L4 15a1.5 1.5 0 0 1 2.6-1.5L7 14',
 };
 
 /** `line` drops the tinted circle, for a glyph inside a button or a line of text. */

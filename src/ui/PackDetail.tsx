@@ -1,43 +1,57 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { Link, useSearchParams } from 'react-router';
 
-import { mapAcrossKm, mapBoxOf } from '../core/area-map-view';
-import { AREA_MAP_NAME, DTP_DATASET_URL } from '../core/constants';
+import { mapAcrossKm, mapBoxOf, mapPoint } from '../core/area-map-view';
+import { areaResultLine } from '../core/area-check';
+import { siteInSentence, siteNameBlock } from '../core/blacksky-dial';
+import { AREA_MAP_NAME, DTP_DATASET_URL, DTP_LICENCE, DTP_PUBLISHER } from '../core/constants';
 import * as copy from '../core/copy';
-import { shownPackName } from '../core/home';
+import { shownPackName, titleCase } from '../core/home';
 import { packIcon } from '../core/pack';
 import { formatDistanceM, placeName } from '../core/destination';
 import {
   decideOriginalSourceAccess,
-  formatSavedDate,
   packDetailAbsence,
   packDetailItems,
   packDetailPlaces,
 } from '../core/provenance';
 import { monogram } from '../core/recover';
 import { drillRows, type DrillRow } from '../core/drill-history';
+import { BAG_LIMIT } from '../core/drill-items';
 import { historyRows, type HistoryRow } from '../core/rehearsal-history';
 import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } from '../core/types';
-import { getCompletePackContent, listDrills, listRehearsalsForPack } from '../data/db';
+import { getCompletePackContent, listAllDrills, listRehearsalsForPack } from '../data/db';
 import AreaMap from './components/AreaMap';
-import Glyph from './components/Glyph';
-import InfoGlyph from './components/InfoGlyph';
+import Glyph, { type GlyphKind } from './components/Glyph';
+import Hint from './components/Hint';
 import KeyTerms from './components/KeyTerms';
 import ProvenanceLine from './components/ProvenanceLine';
 import Section from './components/Section';
+import ShortList from './components/ShortList';
 import WellbeingLines from './components/WellbeingLines';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
 import { useMinuteClock } from './components/useMinuteClock';
-import { useRevealedPanel } from './components/useRevealedPanel';
+import { DrillWhy, ScoreRing, Sprite } from './Drill/DrillArt';
 import { PlaceFacts } from './PackNew/Destinations';
 import { PackNotes } from './PackNotes';
+
+/** The pack page's five tabs, short enough to sit side by side on a phone.
+ *  Each panel keeps its full heading inside. */
+const PACK_TABS = [
+  { key: 'area', glyph: 'map', label: copy.PACK_TAB_AREA },
+  { key: 'places', glyph: 'place', label: copy.PACK_TAB_PLACES },
+  { key: 'support', glyph: 'kept', label: copy.PACK_TAB_SUPPORT },
+  { key: 'notes', glyph: 'note', label: copy.PACK_TAB_NOTES },
+  { key: 'practice', glyph: 'rehearse', label: copy.PACK_TAB_PRACTICE },
+] as const satisfies readonly { key: string; glyph: GlyphKind; label: string }[];
+type PackTab = (typeof PACK_TABS)[number]['key'];
 
 type PackDetailProps = {
   packId: string;
   loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
   loadRehearsals?: (id: string) => Promise<Rehearsal[]>;
-  loadDrills?: (id: string) => Promise<Drill[]>;
+  loadDrills?: () => Promise<Drill[]>;
   now?: number;
 };
 
@@ -48,7 +62,7 @@ export default function PackDetail({
   packId,
   loadContent = getCompletePackContent,
   loadRehearsals = listRehearsalsForPack,
-  loadDrills = listDrills,
+  loadDrills = listAllDrills,
   now: fixedNow,
 }: PackDetailProps) {
   // Every age on the page moves on with the clock while it stays open.
@@ -62,6 +76,29 @@ export default function PackDetail({
   // request is involved.
   const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
   const closeRef = useRef<HTMLButtonElement>(null);
+  // The open tab lives in the address, matched against the tabs on offer;
+  // anything else opens on Area. Replaced, not pushed, so Back leaves the pack.
+  const [params, setParams] = useSearchParams();
+  const tab: PackTab = PACK_TABS.find((each) => each.key === params.get('tab'))?.key ?? 'area';
+  const chooseTab = (next: PackTab) =>
+    setParams(
+      (current) => {
+        current.set('tab', next);
+        return current;
+      },
+      { replace: true },
+    );
+  // Left and Right step through the tabs, Home and End jump to either end, as
+  // the tab pattern expects.
+  const onTabKey = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    const at = PACK_TABS.findIndex((each) => each.key === tab);
+    const step: Record<string, number> = { ArrowLeft: at - 1, ArrowRight: at + 1, Home: 0, End: PACK_TABS.length - 1 };
+    if (!(event.key in step)) return;
+    event.preventDefault();
+    const next = PACK_TABS[(step[event.key] + PACK_TABS.length) % PACK_TABS.length].key;
+    chooseTab(next);
+    document.getElementById(`pack-tab-${next}`)?.focus();
+  };
 
   useEffect(() => {
     let live = true;
@@ -101,10 +138,10 @@ export default function PackDetail({
     };
   }, [loadRehearsals, packId]);
 
-  // E9 — the pack's own drills, read the same way.
+  // E9 — every drill on the phone, as a drill belongs to no pack.
   useEffect(() => {
     let live = true;
-    loadDrills(packId).then(
+    loadDrills().then(
       (rows) => {
         if (live) setDrills(drillRows(rows));
       },
@@ -113,7 +150,7 @@ export default function PackDetail({
     return () => {
       live = false;
     };
-  }, [loadDrills, packId]);
+  }, [loadDrills]);
 
   // The sheet takes focus while it is open, Escape closes it, and closing it
   // hands focus back to the link that opened it.
@@ -150,6 +187,18 @@ export default function PackDetail({
   const areaMap = content.files.find((file) => file.name === AREA_MAP_NAME);
   // The box the stored map was drawn for, read from its own request.
   const mapBox = areaMap ? mapBoxOf(areaMap.url) : null;
+  // The stored map's picture, once its bytes are read; absent on older packs.
+  const mapSrc = areaMap ? fileUrls[areaMap.id] : undefined;
+  // The bushfire area layer is the one layer a pack saves: its item is stated
+  // as the area check stated it. Any other item keeps its own name.
+  const bpa = content.layers.find((row) => row.code === 'BPA');
+  const answerOf = (item: PackDetailItem) => (item.id === bpa?.id ? areaResultLine(bpa.status) : item.name);
+  // The gazetted plan an address inside the area matched, stated in Source.
+  const areaPlan = items.find((item) => item.plan)?.plan;
+  // The answer and the map are both the Department's: one Source row for them.
+  const areaSource =
+    items[0]?.source ??
+    (areaMap ? { publisher: DTP_PUBLISHER, url: areaMap.url, licence: DTP_LICENCE, retrievedAt: areaMap.retrievedAt } : null);
   const interceptSource = (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => {
     event.preventDefault();
     setOfflineSource(decideOriginalSourceAccess(item).item);
@@ -163,199 +212,308 @@ export default function PackDetail({
 
   return (
     <main className="page pack-detail">
-      <header className="hero">
+      <header className="hero pack-detail-hero">
         <span className="kicker">{copy.EYEBROW_MY_PACK}</span>
         <div className="card-head">
           <Glyph kind={packIcon(content.pack)} />
           <h1 className="pack-name">{shownPackName(content.pack.name)}</h1>
         </div>
         <p className="muted">{content.pack.address}</p>
+        {/* The same page the pack's menu on Home prints, as a small ring at the
+            top right, where a pack card on Home keeps its menu. */}
+        <Link className="card-more pack-print" to={`/packs/${content.pack.id}/print?from=pack`} aria-label={copy.PRINT_PACK}>
+          <Glyph kind="print" line size={18} />
+        </Link>
       </header>
 
-      {/* The map of the pack's own area, from the bytes stored with the pack,
-          to pan, zoom and turn. Absent on packs built before the map was stored. */}
-      {areaMap && fileUrls[areaMap.id] ? (
-        <Section kind="map" title={copy.AREA_MAP_LABEL}>
-          <figure className="area-map">
-            <AreaMap src={fileUrls[areaMap.id]} box={mapBox} places={places} />
-            <figcaption className="muted">
-              <ul className="map-key">
-                <li><span className="swatch swatch-inside" aria-hidden="true" />{copy.AREA_MAP_KEY.inside}</li>
-                <li><span className="swatch swatch-outside" aria-hidden="true" />{copy.AREA_MAP_KEY.outside}</li>
-                <li><span className="swatch swatch-place" aria-hidden="true" />{copy.AREA_MAP_KEY.place}</li>
-                <li><span className="area-map-mark-key" aria-hidden="true"><Glyph kind="place" size={14} /></span>{copy.AREA_MAP_KEY.lastResort}</li>
-                {mapBox ? <li>{copy.AREA_MAP_ACROSS(mapAcrossKm(mapBox))}</li> : null}
-              </ul>
-              <p>{copy.AREA_MAP_SOURCE(formatSavedDate(areaMap.retrievedAt))}</p>
-            </figcaption>
-          </figure>
-        </Section>
-      ) : null}
+      {/* One subject at a time. The open tab is kept in the address, so a
+          reload or a return from printing comes back to it. Every panel stays
+          in the page, only hidden, so a note being written survives a switch. */}
+      <div className="pack-tabs" role="tablist" aria-label={copy.PACK_TABS_LABEL}>
+        {PACK_TABS.map((each) => (
+          <button
+            key={each.key}
+            id={`pack-tab-${each.key}`}
+            type="button"
+            role="tab"
+            aria-selected={tab === each.key}
+            aria-controls={`pack-panel-${each.key}`}
+            tabIndex={tab === each.key ? 0 : -1}
+            onClick={() => chooseTab(each.key)}
+            onKeyDown={onTabKey}
+          >
+            <Glyph kind={each.glyph} line />
+            {each.label}
+          </button>
+        ))}
+      </div>
 
-      {!content.recoveryVerified ? (
-        <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} />
-      ) : null}
-      {!content.contentVerified ? (
-        <StateCard heading={copy.PACK_ITEMS_UNVERIFIED} />
-      ) : null}
-
-      {/* A stored absence row: its own plain statement, never an item in the
-          list and never a source to open. */}
-      {absence ? <StateCard heading={absence} /> : null}
-
-      {items.length > 0 ? (
-        <Section kind="layer" title={copy.STORED_INFORMATION} count={items.length}>
-          <ul className="list pack-item-list">
-            {items.map((item) => (
-              <li key={item.id} className="card provenance-item">
-                <h2>{item.name}</h2>
-                <ProvenanceLine source={item.source} now={now} />
-                {sourceLinks(item)}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : absence || places.length > 0 ? null : (
-        <StateCard heading={copy.NO_STORED_ITEMS} />
-      )}
-
-      {/* E2-US2: the two places the user chose, side by side with equal weight.
-          Distance is a fact about each; there is no ordinal and no ranking. */}
-      {places.length > 0 ? (
-        <Section kind="place" title={copy.DESTINATIONS_STEP_TITLE} count={places.length}>
-          {places.some((place) => typeof place.distanceM === 'number') ? (
-            <p className="muted"><KeyTerms text={copy.DISTANCES_NOTE} /></p>
-          ) : null}
-          <ul className="list saved-destinations">
-            {places.map((place) => {
-              const item = {
-                id: place.id,
-                name: placeName(place),
-                source: place.source,
-                pageUrl: place.source.url,
-              };
+      <TabPanel tab="area" open={tab}>
+        {!content.contentVerified ? <StateCard heading={copy.PACK_ITEMS_UNVERIFIED} /> : null}
+        {/* The bushfire area: the answer the area check gave, in its own words,
+            then the map that shades the same area, then one Source row for both,
+            holding the gazetted plan the answer matched. The map is absent on packs built before it
+            was stored; it zooms and moves, north up. */}
+        {items.length > 0 || mapSrc ? (
+          <Section kind="map" title={copy.BUSHFIRE_AREA}>
+            {items.map((item) => {
+              const isBpa = item.id === bpa?.id;
+              // As on the area check: only inside is coloured, as only there is
+              // the colour true. Every other answer is plain, and its one amber
+              // line is that fire can still reach the person.
+              const inside = isBpa && bpa.status === 'present';
               return (
-                <li key={place.id} className="card provenance-item">
-                  <h2>{item.name}</h2>
-                  {typeof place.distanceM === 'number' ? (
-                    <p className="figure with-glyph place-distance">
-                      <Glyph kind="go" line />
-                      {formatDistanceM(place.distanceM)}
+                <div key={item.id} className="area-answer">
+                  <h2>{inside ? <KeyTerms text={answerOf(item)} /> : answerOf(item)}</h2>
+                  {isBpa && !inside ? (
+                    <p className="muted">
+                      <KeyTerms text={copy.AREA_MAP_IS_NOT_FIRE_REACH} />
                     </p>
                   ) : null}
-                  <PlaceFacts place={place} now={now} />
-                  {sourceLinks(item)}
-                </li>
+                </div>
               );
             })}
-          </ul>
-        </Section>
-      ) : null}
+            {mapSrc ? (
+              <figure className="area-map">
+                <AreaMap
+                  src={mapSrc}
+                  box={mapBox}
+                  places={places}
+                  address={content.pack.address}
+                  scale={mapBox ? copy.AREA_MAP_ACROSS(mapAcrossKm(mapBox)) : undefined}
+                />
+                {/* The key is the map's own footer, inside its frame, and stays in
+                    view, as the shading cannot be read without it. Each picture sits
+                    in a slot of one width, so both columns of words start in line. */}
+                <figcaption>
+                  <ul className="map-key">
+                    <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-inside" /></span>{copy.AREA_MAP_KEY.inside}</li>
+                    <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-outside" /></span>{copy.AREA_MAP_KEY.outside}</li>
+                    <li><span className="map-key-icon" aria-hidden="true"><span className="swatch swatch-place" /></span>{copy.AREA_MAP_KEY.place}</li>
+                    <li><span className="map-key-icon area-map-mark-key" aria-hidden="true"><Glyph kind="place" size={14} /></span>{copy.AREA_MAP_KEY.lastResort}</li>
+                  </ul>
+                </figcaption>
+              </figure>
+            ) : null}
+            {/* A chosen place past even the widest map is said in words, so it
+                is never simply missing. */}
+            {mapSrc && mapBox ? places.map((place) =>
+              place.lat !== undefined && place.lon !== undefined && typeof place.distanceM === 'number'
+                && !mapPoint(mapBox, { lat: place.lat, lon: place.lon }) ? (
+                  <p key={place.id} className="muted place-note">
+                    {copy.PLACE_OFF_MAP(siteInSentence(placeName(place)), formatDistanceM(place.distanceM))}
+                  </p>
+                ) : null) : null}
+            {/* One row: Source, set as Not for you? is on Home, then the saved
+                copy and the web page as small links beside it. */}
+            {areaSource ? (
+              <ProvenanceLine
+                source={areaSource}
+                now={now}
+                extra={[
+                  ...(areaPlan
+                    ? [
+                        { label: copy.SOURCE_PLAN, value: areaPlan.number },
+                        { label: copy.SOURCE_GAZETTED, value: areaPlan.gazetted },
+                        { label: copy.SOURCE_COUNCIL, value: titleCase(areaPlan.council) },
+                      ]
+                    : []),
+                  { label: copy.SOURCE_LICENCE, value: areaSource.licence },
+                ]}
+                links={items[0] ? sourceLinks(items[0]) : null}
+              />
+            ) : null}
+          </Section>
+        ) : null}
+        {!content.contentVerified || items.length > 0 || mapSrc || absence || places.length > 0 ? null : (
+          <StateCard heading={copy.NO_STORED_ITEMS} />
+        )}
+      </TabPanel>
 
-      {/* E4-US7: the programs kept when the pack was built, each with the copy
-          of its own page. One control opens and closes the whole section, so
-          the pack's other items stay uncluttered. */}
-      <Section kind="kept" title={copy.SAVED_PROGRAMS} count={content.recovery.length} defaultOpen={false}>
-        {content.recovery.length === 0 ? (
-          <p className="muted">{copy.NO_SAVED_PROGRAMS} <Link to="/recover">{copy.NAV_RECOVER}</Link></p>
-        ) : (
-          <ul className="list saved-programs">
-            {content.recovery.map((program) => (
-              <li key={program.id} className="card provenance-item">
-                <div className="card-head">
-                  <span className="monogram" aria-hidden="true">{monogram(program.org)}</span>
-                  <div>
-                    <h2>{program.title}</h2>
-                    <p>{program.org}</p>
+      <TabPanel tab="places" open={tab}>
+        {!content.contentVerified ? <StateCard heading={copy.PACK_ITEMS_UNVERIFIED} /> : null}
+        {/* A stored absence row: its own plain statement, never an item in the
+            list and never a source to open. */}
+        {absence ? <StateCard heading={absence} /> : null}
+        {/* E2-US2: the two places the user chose, one under the other with equal
+            weight. Distance is a fact about each; there is no ordinal and no
+            ranking. No count: a pack always holds the two it was saved with. */}
+        {places.length > 0 ? (
+          <Section kind="place" title={copy.DESTINATIONS_STEP_TITLE}>
+            {/* Every saved place is the one kind: said once, not on each card,
+                in the one footnote with how its distance is measured. */}
+            <p className="muted place-note">
+              {copy.SAVED_PLACES_KIND(places.length)}
+              {places.some((place) => typeof place.distanceM === 'number') ? (
+                <> <KeyTerms text={copy.DISTANCES_NOTE} /></>
+              ) : null}
+            </p>
+            <ul className="list saved-destinations">
+              {places.map((place) => {
+                const item = {
+                  id: place.id,
+                  name: placeName(place),
+                  source: place.source,
+                  pageUrl: place.source.url,
+                };
+                // Set as a card on Nearby: the site in bold with its distance
+                // beside it, then where it is. The kind is said once, over the list.
+                const { site, line } = siteNameBlock(item.name);
+                return (
+                  <li key={place.id} className="card provenance-item">
+                    <div className="nearby-place">
+                      <h2 className="nearby-place-name">{site}</h2>
+                      {typeof place.distanceM === 'number' ? (
+                        <p className="figure nearby-distance with-glyph">
+                          <Glyph kind="go" line />
+                          {formatDistanceM(place.distanceM)}
+                        </p>
+                      ) : null}
+                    </div>
+                    {line ? <p className="muted">{line}</p> : null}
+                    <PlaceFacts place={place} now={now} links={sourceLinks(item)} />
+                  </li>
+                );
+              })}
+            </ul>
+          </Section>
+        ) : null}
+      </TabPanel>
+
+      <TabPanel tab="support" open={tab}>
+        {!content.recoveryVerified ? <StateCard heading={copy.RECOVERY_ITEMS_UNVERIFIED} /> : null}
+        {/* E4-US7: the programs saved in Recover, each with the copy of its own
+            page. Every pack carries the same list, so the line says so, and the
+            way to save more is to Recover's full list. */}
+        <Section kind="kept" title={copy.SAVED_PROGRAMS} count={content.recovery.length}>
+          <p className="muted place-note">{copy.SAVED_PROGRAMS_SHARED}</p>
+          {content.recovery.length === 0 ? (
+            <p className="muted">{copy.NO_SAVED_PROGRAMS}</p>
+          ) : (
+            <ShortList
+              items={content.recovery}
+              className="list saved-programs"
+              render={(program) => (
+                <li key={program.id} className="card provenance-item">
+                  <div className="card-head">
+                    <span className="monogram" aria-hidden="true">{monogram(program.org)}</span>
+                    <div>
+                      <h2>{program.title}</h2>
+                      <p>{program.org}</p>
+                    </div>
                   </div>
-                </div>
-                <ul className="need-pills">
-                  {program.needs.map((need) => (
-                    <li key={need} className="need-pill">
-                      <Glyph kind={need} />
-                      {copy.NEED_PHRASE[need]}
-                    </li>
-                  ))}
-                </ul>
-                <ProvenanceLine source={program.source} now={now} />
-                {sourceLinks({ id: program.id, name: program.title, source: program.source, pageUrl: program.officialUrl })}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
+                  <ul className="need-pills">
+                    {program.needs.map((need) => (
+                      <li key={need} className="need-pill">
+                        <Glyph kind={need} />
+                        {copy.NEED_PHRASE[need]}
+                      </li>
+                    ))}
+                  </ul>
+                  <ProvenanceLine
+                    source={program.source}
+                    now={now}
+                    links={sourceLinks({ id: program.id, name: program.title, source: program.source, pageUrl: program.officialUrl })}
+                  />
+                </li>
+              )}
+            />
+          )}
+          {/* Drawn as New offline pack is: the plus, then the words. */}
+          <Link className="action with-glyph" to="/recover?need=all">
+            <Glyph kind="plus" line />
+            {copy.SAVE_MORE_PROGRAMS(content.recovery.length)}
+          </Link>
+        </Section>
 
-      {/* R3: the wellbeing lines travel with every pack. */}
-      <Section kind="calls" title={copy.TALK_TO_SOMEONE} defaultOpen={false}>
-        <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
-        <WellbeingLines />
-      </Section>
+        {/* R3: the wellbeing lines travel with every pack. */}
+        <Section kind="calls" title={copy.TALK_TO_SOMEONE}>
+          <p className="muted place-note">{copy.TALK_TO_SOMEONE_LINE}</p>
+          <WellbeingLines />
+        </Section>
+      </TabPanel>
 
-      <Section kind="note" title={copy.NOTES}>
-        <PackNotes packId={content.pack.id} notes={content.notes} />
-      </Section>
+      <TabPanel tab="notes" open={tab}>
+        <Section kind="note" title={copy.NOTES}>
+          <PackNotes packId={content.pack.id} notes={content.notes} />
+        </Section>
+      </TabPanel>
 
-      {/* E5-US5 — every rehearsal of this pack, newest first, in the result's
-          own words. Closed by default: it is a record, not the next step. */}
-      <Section kind="rehearse" title={copy.REHEARSALS} count={history.length} defaultOpen={false}>
-        {history.length === 0 ? (
-          <p>{copy.NOT_YET_REHEARSED}</p>
-        ) : (
-          <ul className="list history-list">
-            {history.map((row) => (
-              <li key={row.id} className="card history-row">
-                <p className="history-date">{row.date}</p>
-                <p className="muted">{row.condition}</p>
-                <p>{row.ending}</p>
-                <HistoryGaps id={row.id} gaps={row.gaps} found={row.found} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      {/* E9 — every drill of this pack, newest first. A record, like the
-          rehearsals above it, so it too is closed by default. */}
-      <Section kind="rehearse" title={copy.DRILLS} count={drills.length} defaultOpen={false}>
-        {drills.length === 0 ? (
-          <p>{copy.NOT_YET_DRILLED}</p>
-        ) : (
-          <ul className="list history-list">
-            {drills.map((row) => (
-              <li key={row.id} className="card history-row">
-                <p className="history-date">{row.date}</p>
-                <p>{row.outcome}</p>
-                <p className="figure">{row.packed}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      {/* E5-US1-AC4 — one of two ways into a rehearsal (the other is the bar's
-          Rehearse). It always leads to the gate, never straight into a
-          rehearsal: whether one can start at all is decided there, from what
-          this pack actually holds. */}
-      <div className="actions">
-        <Link className="action with-glyph" to={`/rehearse/${content.pack.id}`}>
+      <TabPanel tab="practice" open={tab}>
+        {/* E5-US1-AC4 — one of two ways into a rehearsal (the other is the bar's
+            Rehearse). It always leads to the gate, never straight into a
+            rehearsal: whether one can start at all is decided there, from what
+            this pack actually holds. */}
+        {/* Marked as from this pack, so Back on the rehearsal comes back here. */}
+        <Link className="action main-action with-glyph" to={`/rehearse/${content.pack.id}?from=pack`}>
           <Glyph kind="rehearse" line />
           {copy.REHEARSE_THIS_PACK}
         </Link>
-        {/* The same page the pack's menu on Home prints. */}
-        <Link className="action with-glyph" to={`/packs/${content.pack.id}/print`}>
-          <Glyph kind="print" line />
-          {copy.PRINT_PACK}
-        </Link>
-      </div>
+        {/* E5-US5 — every rehearsal of this pack, newest first, in the result's
+            own words. */}
+        <Section kind="rehearse" title={copy.REHEARSALS} count={history.length}>
+          {history.length === 0 ? (
+            <p>{copy.NOT_YET_REHEARSED}</p>
+          ) : (
+            <ShortList
+              items={history}
+              className="list history-list"
+              render={(row) => (
+                // Set as the other cards on this page: the condition as the
+                // small teal label with the date beside it, the ending in bold,
+                // then what the rehearsal found.
+                <li key={row.id} className="card history-row practice-card">
+                  <div className="practice-card-head">
+                    <p className="place-kind">{row.condition}</p>
+                    <p className="muted figure practice-date">{row.date}</p>
+                  </div>
+                  <p className="practice-outcome">{row.ending}</p>
+                  <RehearsalGaps gaps={row.gaps} found={row.found} />
+                </li>
+              )}
+            />
+          )}
+        </Section>
 
-      {/* BS_Enhancement-AC5: the road and locality layers BlackSky draws are
-          published under CC BY 4.0, which asks for this credit. BlackSky has no
-          room for it, so it stands here, one tap away. */}
-      <details className="map-credits">
-        <summary>{copy.MAP_DATA}</summary>
-        <p>{copy.ROADS_ATTRIBUTION}</p>
-        <p>{copy.LOCALITIES_ATTRIBUTION}</p>
-      </details>
+        {/* E9 — every drill, from whichever pack page, newest first. */}
+        <Section kind="rehearse" title={copy.DRILLS} count={drills.length}>
+          {drills.length === 0 ? (
+            <p>{copy.NOT_YET_DRILLED}</p>
+          ) : (
+            <ShortList
+              items={drills}
+              className="list history-list"
+              render={(row) => (
+                // Set as a rehearsal is: the drill's name as the teal label
+                // with the date, the outcome in bold, then the bag.
+                <li key={row.id} className="card history-row practice-card">
+                  <div className="practice-card-head">
+                    <p className="place-kind">{copy.DRILL_INTRO_HEADING}</p>
+                    <p className="muted figure practice-date">{row.date}</p>
+                  </div>
+                  {/* The score as the debrief's ring with its verdict; away from
+                      the door, its door mark and no number, as on the debrief. */}
+                  <div className="drill-outcome">
+                    {row.score !== null ? (
+                      <ScoreRing score={row.score} />
+                    ) : (
+                      <span className="debrief-over-mark">
+                        <Glyph kind="door" />
+                      </span>
+                    )}
+                    <div>
+                      <p className="practice-outcome">{row.score !== null ? copy.DRILL_ROW_DOOR : copy.DRILL_ROW_AWAY}</p>
+                      {row.verdict ? <p className="muted">{row.verdict}</p> : null}
+                      {row.twist ? <p className="muted">{copy.DRILL_ROW_TWIST(row.twist)}</p> : null}
+                    </div>
+                  </div>
+                  <DrillBag row={row} />
+                </li>
+              )}
+            />
+          )}
+        </Section>
+      </TabPanel>
 
       {offlineSource ? (
         <div className="sheet-backdrop">
@@ -398,57 +556,96 @@ export default function PackDetail({
   );
 }
 
-/** One rehearsal's gaps line, with the ring that names each gap it found.
- *  Every row carries its own ring and its own panel, so both are named from the
- *  rehearsal's id; the panel opens in flow beneath the pair, covering no other
- *  rehearsal. Never on hover, as the other two information rings. */
-function HistoryGaps({ id, gaps, found }: { id: string; gaps: string; found: HistoryRow['found'] }) {
-  const [open, setOpen] = useState(false);
-  const panel = useRevealedPanel<HTMLDivElement>(open);
-  const panelId = `history-gaps-${id}`;
-
+/** What one drill's bag held: the essentials packed, the bag as the game's
+ *  own pictures edged by what each did, with a slot for each unused space,
+ *  then the essentials left in the house and the things that cost points by
+ *  name, as the debrief names them, so nothing rests on colour alone. A tap
+ *  on a picture says what it is and why, as on the debrief; never a hover. */
+function DrillBag({ row }: { row: DrillRow }) {
+  const [chosen, setChosen] = useState<DrillRow['bag'][number] | null>(null);
   return (
-    <div className="history-gaps">
-      <p className="figure">{gaps}</p>
-      <button
-        type="button"
-        className="info-ring"
-        aria-label={copy.ABOUT_GAPS}
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <InfoGlyph />
-      </button>
-      {open ? (
-        <div id={panelId} ref={panel} tabIndex={-1} className="card info-panel">
-          <span className="kicker">{copy.ABOUT_GAPS}</span>
-          <ul className="info-lines">
-            <li>
-              <b>{copy.GAP_WHAT_IS.lead}</b> {copy.GAP_WHAT_IS.text}
-            </li>
-            {found.length === 0 ? (
-              <li>
-                <b>{copy.GAP_NONE_FOUND.lead}</b> {copy.GAP_NONE_FOUND.text}
-              </li>
-            ) : (
-              found.map((gap, index) => (
-                <li key={index} className="gap-line">
-                  <p>
-                    <b>{gap.title}.</b> {gap.reason}
-                  </p>
-                  <p>
-                    <b>{copy.ACTION_LABEL}.</b> {gap.action}
-                  </p>
-                </li>
-              ))
-            )}
-            <li>
-              <b>{copy.GAP_IS_A_COUNT.lead}</b> {copy.GAP_IS_A_COUNT.text}
-            </li>
-          </ul>
-        </div>
+    <div className="practice-found">
+      <p className="with-glyph practice-found-line">
+        <Glyph kind="bag" line />
+        {row.essentials}
+      </p>
+      <ul className="debrief-tiles drill-card-tiles" aria-label={copy.IN_YOUR_BAG}>
+        {row.bag.map((item, index) => (
+          <li key={`${item.id}-${index}`}>
+            <button
+              type="button"
+              className={`debrief-tile kind-${item.kind}`}
+              aria-label={item.name}
+              aria-pressed={chosen?.id === item.id}
+              onClick={() => setChosen(chosen?.id === item.id ? null : item)}
+            >
+              <Sprite id={item.id} size={28} />
+            </button>
+          </li>
+        ))}
+        {Array.from({ length: BAG_LIMIT - row.bag.length }, (_, index) => (
+          <li key={`empty-${index}`} className="debrief-empty" aria-hidden="true" />
+        ))}
+      </ul>
+      {/* The reason as a speech bubble pointing up at the tapped picture's
+          column; until a tap, only the small hint. */}
+      <div aria-live="polite">
+        {chosen ? (
+          <DrillWhy key={chosen.id} {...chosen} index={row.bag.indexOf(chosen)} />
+        ) : row.bag.length > 0 ? (
+          <p className="muted place-note">{copy.TAP_FOR_WHY}</p>
+        ) : null}
+      </div>
+      {/* Labelled rows, as on the debrief: a picture, the label in bold, the
+          names in grey. */}
+      {row.leftBehind.length > 0 ? (
+        <p className="with-glyph place-note drill-row">
+          <Glyph kind="stay" line />
+          <span>
+            <b>{copy.LEFT_BEHIND}</b> <span className="muted">{row.leftBehind.join(', ')}</span>
+          </span>
+        </p>
       ) : null}
+      {row.costYou.length > 0 ? (
+        <p className="with-glyph place-note drill-row">
+          <Glyph kind="caution" line />
+          <span>
+            <b>{copy.KIND_LABELS.bulky}</b> <span className="muted">{row.costYou.join(', ')}</span>
+          </span>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** What one rehearsal found. With nothing found, the four checks by short
+ *  name; with gaps, each one named, why it was found and what to do, on the
+ *  card where it can be acted on. What a gap is sits behind About gaps. */
+function RehearsalGaps({ gaps, found }: { gaps: string; found: HistoryRow['found'] }) {
+  return (
+    <div className="practice-found">
+      <p className="with-glyph practice-found-line">
+        <Glyph kind={found.length === 0 ? 'check' : 'caution'} line />
+        {gaps}
+      </p>
+      {found.length === 0 ? (
+        <p className="muted place-note">{copy.GAPS_CHECKED}</p>
+      ) : (
+        <ul className="gap-list">
+          {found.map((gap, index) => (
+            <li key={index}>
+              <p className="gap-title">{gap.title}</p>
+              <p className="muted">{gap.reason}</p>
+              <p className="muted">
+                <b>{copy.ACTION_LABEL}.</b> {gap.action}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Hint label={copy.ABOUT_GAPS} asText titled={false}>
+        <p>{copy.GAP_ABOUT}</p>
+      </Hint>
     </div>
   );
 }
@@ -461,6 +658,21 @@ const mediaType = (name: string) => (name.endsWith('.png') ? 'image/png' : 'appl
  *  live page on the web behind the explanation sheet. For a layer the page is
  *  the publisher's dataset page, not the stored query URL: that URL is a WFS
  *  endpoint answering in raw JSON, never a page. */
+/** One tab's panel. Hidden, not removed, while another tab is open. */
+function TabPanel({ tab, open, children }: { tab: PackTab; open: PackTab; children: ReactNode }) {
+  return (
+    <section
+      id={`pack-panel-${tab}`}
+      className="pack-panel"
+      role="tabpanel"
+      aria-labelledby={`pack-tab-${tab}`}
+      hidden={tab !== open}
+    >
+      {children}
+    </section>
+  );
+}
+
 function SourceLinks({
   item,
   file,
@@ -473,27 +685,25 @@ function SourceLinks({
   onWeb: (event: MouseEvent<HTMLAnchorElement>, item: PackDetailItem) => void;
 }) {
   return (
-    <>
-      {/* The saved copy opens with no signal, so it leads; the web page
-          follows. Each is told apart by its glyph. */}
-      <div className="source-links">
-        {file && href ? (
-          <a className="action with-glyph" href={href} download={file.name}>
-            <Glyph kind="documents" line />
-            {copy.OPEN_SOURCE_FILE}
-          </a>
-        ) : null}
-        <a
-          className="action with-glyph"
-          href={item.pageUrl ?? DTP_DATASET_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(event) => onWeb(event, item)}
-        >
-          <Glyph kind="web" line />
-          {copy.OPEN_ORIGINAL_SOURCE}
+    // The saved copy opens with no signal, so it leads; the web page follows.
+    // Small text links, so a card reads as its place, not as its buttons.
+    <div className="source-links">
+      {file && href ? (
+        <a className="source-link" href={href} download={file.name}>
+          <Glyph kind="documents" line size={16} />
+          {copy.OPEN_SOURCE_FILE}
         </a>
-      </div>
-    </>
+      ) : null}
+      <a
+        className="source-link"
+        href={item.pageUrl ?? DTP_DATASET_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(event) => onWeb(event, item)}
+      >
+        <Glyph kind="web" line size={16} />
+        {copy.OPEN_ORIGINAL_SOURCE}
+      </a>
+    </div>
   );
 }

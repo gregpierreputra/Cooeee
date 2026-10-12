@@ -5,23 +5,20 @@
 // string carries an em dash: scripts/banned-terms.mjs fails the build on one.
 // Never reword them without updating the tests.
 
-import type { Destination, FacilityType, NeedKey, PackIcon, SourceStatus } from './types';
+import type { Destination, FacilityType, NeedKey, PackIcon, SiteKind, SourceStatus } from './types';
 
 // Core Mandated Literals
 export const SORTED_BY_DISTANCE = 'sorted by distance, not a safety ranking';
 
 export const NO_ADDRESS_MATCH = 'No match. Check the spelling or try a cross street.';
 
-export const NO_GPS = 'No GPS fix. Showing saved information.';
+export const NO_GPS = 'No GPS signal. Showing your saved places.';
 
 /** Said beside the arrows, never instead of them: a vague or old fix still
  *  points, with its error stated. */
 export const GPS_APPROXIMATE = (m: number) => `GPS ± ${m} m here. Direction is approximate.`;
 export const FIX_AGE = (s: number) => `GPS fix ${s} s old. Direction may have changed.`;
 
-/** Said of the pack that is loaded, never of every pack: another saved pack
- *  may well cover this place, and the picker says so beside it. */
-export const OUTSIDE_AREAS = "You're outside this pack's area";
 
 // Shared vocabulary
 /** The eight compass points by name, index 0 = north, one every 45 degrees.
@@ -72,8 +69,9 @@ export const PACK_NAME_NOT_SAVED = 'The name was not saved. Try again.';
 export const PACK_ICON_LABEL = 'Icon';
 /** Print this pack: one page of the pack on paper, from the menu. */
 export const PRINT_PACK = 'Print this pack';
-export const PRINT_SAVED_ON = (date: string) => `Saved ${date}`;
 export const PRINT_AREA_TITLE = 'Bushfire area';
+/** The printed map's heading, over home and the chosen places. */
+export const PRINT_MAP_TITLE = 'Map of your places';
 export const PRINTED_FROM = (printed: string, saved: string) =>
   `Printed ${printed} from information saved ${saved}. Check VicEmergency for current warnings.`;
 export const CHANGE_ICON = 'Change icon';
@@ -99,6 +97,8 @@ export const CONFIRM_ADDRESS_QUESTION = 'Is this the place?';
 export const PLACE_NAME_LABEL = 'Place name';
 export const SAVE_THIS_PLACE = 'Save this place';
 export const SEARCH_AGAIN = 'Search again';
+/** The no to Is this the place?: back to the search, what was typed kept. */
+export const NOT_THIS_PLACE = 'Not this place';
 
 // E1-US1-AC2–AC4 address search
 export const BUILD_A_PACK = 'New offline pack';
@@ -167,12 +167,29 @@ export const REPLACE_SAVED_PACK = 'Replace with new';
 export const SAVED_PLACE_CHECK_FAILED = 'This phone could not be checked.';
 export const NOTHING_CHANGED = 'Nothing changed.';
 
-// E1-US1-AC9 pack offer and download
-export const READY_TO_DOWNLOAD = 'Ready to download';
-export const PACK_SIZE_LINE = (size: string) => `This pack is ${size}`;
+// E1-US1-AC9 the pack's summary and its save. "Save" throughout: it is what
+// the person does with a pack. "Download" is kept for what comes from the
+// internet, such as the places list.
+export const READY_TO_SAVE = 'Ready to save';
 export const SAVE_PACK = 'Save this pack';
 export const SAVING_PACK = 'Saving…';
-export const DOWNLOAD_STOPPED = 'Download stopped.';
+export const SAVE_STOPPED = 'Saving stopped before it finished.';
+/** The summary's rows: what the pack holds, said before it is saved. */
+export const SUMMARY_AREA = 'Bushfire area';
+export const SUMMARY_PLACES = 'Places of last resort';
+export const SUMMARY_NOTE = 'Note';
+export const SUMMARY_PROGRAMS = 'Saved programs';
+export const SUMMARY_SIZE = 'Size';
+export const SUMMARY_NONE = 'None';
+export const SUMMARY_PENDING = 'Working this out…';
+export const SUMMARY_PROGRAMS_VALUE = (count: number): string =>
+  count === 0 ? SUMMARY_NONE : count === 1 ? 'One program' : `${count} programs`;
+/** The note row: a new note, and on a replace, the notes already saved. */
+export const SUMMARY_NOTE_VALUE = (newNote: boolean, saved: number, keepSaved: boolean): string => {
+  const old = saved === 0 ? null : `${saved === 1 ? 'Your saved note' : `Your ${saved} saved notes`} ${keepSaved ? 'kept' : 'removed'}`;
+  if (old && newNote) return `${old}, and a new one`;
+  return old ?? (newNote ? 'One note' : SUMMARY_NONE);
+};
 export const PREVIOUS_PACK_UNTOUCHED = 'Nothing changed. Your previous pack is untouched.';
 /** The phone ran out of room while saving. Trying again cannot help until some is freed. */
 export const NOT_ENOUGH_SPACE = 'There is not enough space on this phone for this pack. Free some space, then try again.';
@@ -181,12 +198,17 @@ export const PLACE_SAVED = 'Place saved';
 // E1-US2-AC1–AC5 pack provenance and offline source access
 /** The small ring every source sits behind (UAT: publisher lines crowded each card). */
 export const SOURCE_LABEL = 'Source';
-export const ABOUT_SOURCE = 'About the source';
 // The labelled rows inside the Source ring.
 export const SOURCE_PUBLISHED_BY = 'Published by';
 export const SOURCE_SAVED = 'Saved';
 export const SOURCE_LICENCE = 'Licence';
 export const SOURCE_LIST_DATE = 'List date';
+/** An official place's council and its own designation date, in its Source. */
+export const SOURCE_COUNCIL = 'Council';
+export const SOURCE_DESIGNATED = 'Designated';
+/** The gazetted Bushfire Prone Area plan an address matched, in its Source. */
+export const SOURCE_PLAN = 'Bushfire Prone Area plan';
+export const SOURCE_GAZETTED = 'Gazetted';
 export const PROVENANCE_LINE = (publisher: string, date: string) =>
   `Published by ${publisher} · Saved ${date}`;
 export const ITEM_DAYS_AGO = (days: number) => `${dayCount(days)} ago`;
@@ -201,7 +223,6 @@ export const OPEN_ORIGINAL_SOURCE = 'Web page';
 
 /** The map of the pack's area stored with it: the Department's own drawing of
  *  its designation layer, and one line on how to read the picture. */
-export const AREA_MAP_LABEL = 'Map of the area';
 export const AREA_MAP_ALT =
   'Map of the area around the saved place, with the Designated Bushfire Prone Area shaded';
 /** The map's key, drawn as swatches beside these words rather than said. */
@@ -213,13 +234,22 @@ export const AREA_MAP_KEY = {
 } as const;
 /** Read from the stored map itself, so an older, smaller map says its own size. */
 export const AREA_MAP_ACROSS = (km: number) => `${km} km across`;
-/** The viewer's buttons. A finger pans, pinches and turns; these do the same. */
+/** A chosen place too far for even the widest map, said under it. */
+export const PLACE_OFF_MAP = (name: string, distance: string) => `${name} is ${distance} away, off this map.`;
+/** Nearby's map, folded under the bushfire tab until asked for. */
+export const NEARBY_MAP_SHOW = 'Show on a map';
+export const NEARBY_MAP_ALT = 'Map of the main roads and towns round where distances are measured from, with the nearest Neighbourhood Safer Places and Community Fire Refuges marked';
+export const NEARBY_MAP_KEY_HERE = 'Measured from here';
+export const NEARBY_MAP_POSTCODE = (code: string) => `Centre of postcode ${code}`;
+export const NEARBY_MAP_POSITION = 'Your position';
+export const NEARBY_MAP_NO_ROADS = "The map's roads are not on this phone yet. Open the app with a connection to download them.";
+export const NEARBY_MAP_NONE = 'No Neighbourhood Safer Place or Community Fire Refuge within 20 km.';
+/** The viewer's buttons. A finger pinches and moves; these zoom. */
 export const MAP_ZOOM_IN = 'Zoom in';
 export const MAP_ZOOM_OUT = 'Zoom out';
-export const MAP_TURN = 'Turn the map';
-export const MAP_NORTH_UP = 'North up, whole map';
-export const MAP_HOW = 'Drag to move. Pinch, or Ctrl and scroll, to zoom. Twist with two fingers to turn. With a map button selected, the arrow keys move it.';
-export const AREA_MAP_SOURCE = (date: string) => `Department of Transport and Planning map, saved ${date}`;
+/** Read out with the map buttons only: pinch and drag need no telling. */
+export const MAP_HOW = 'Pinch, or Ctrl and scroll, to zoom. Once zoomed in, drag to move. With a map button selected, the arrow keys move it.';
+
 export const EXTERNAL_SOURCE_NOTICE = 'May use your connection and leave Cooeee.';
 export const CONTINUE_TO_ORIGINAL_SOURCE = 'Continue to the web page';
 /** The citation a stored designation can state in the app itself: the gazetted
@@ -269,8 +299,6 @@ export const OFFLINE_BASEMAP = 'Offline basemap';
 
 export const DESTINATIONS_STEP_TITLE = 'Official places of last resort';
 export const NSP_COUNCIL_LABEL = (council: string) => `${council} council`;
-export const NSP_LIST_AS_AT = (date: string) => `Country Fire Authority list, ${date}`;
-export const NSP_DESIGNATED_ON = (date: string) => `Designated ${date}`;
 export const NSP_UNLOCATED_HEADING = 'Listed, but not on the map';
 export const OFFICIAL_LIST_UNAVAILABLE =
   'The official list could not be included for this area.';
@@ -302,7 +330,7 @@ export const NO_DESTINATION_PUBLISHED_FOR = (area: string) =>
 // changed any time from the pack screen; read back in BlackSky.
 
 export const NOTE_STEP_TITLE = 'Your note';
-export const NOTE_DISCLOSURE = 'Kept on this phone and opens with no signal, here and in BlackSky.';
+export const NOTE_DISCLOSURE = 'Kept on this phone. Opens in BlackSky with no signal.';
 /** UAT: the risk was lost at the end of the disclosure, so it stands alone as a caution. */
 export const NOTE_LABEL = 'Your note';
 /** The box is never blank: an example written for this place and, when one
@@ -317,8 +345,22 @@ export const NOTE_EXAMPLE = (placeName: string, chosen?: Destination) =>
     'Take the medication box, water, phone chargers and the dog lead.',
     'Turn the gas off at the meter before leaving.',
   ].filter(Boolean).map((point) => `• ${point}`).join('\n');
+/** Under the box: one note is all this step takes, and more can follow. */
+export const NOTE_MORE_LATER = "Add more notes any time from your pack's Notes tab.";
 export const KEEP_NOTE = 'Keep this note';
 export const SKIP_NOTE = 'Not now';
+/** Replacing a pack: the notes already written for the place, shown above the
+ *  box, come with the new pack unless the person chooses to start without them. */
+export const NOTES_SAVED_HEADING = 'Already saved for this place';
+export const NOTE_ADD_ANOTHER = 'Add another note';
+/** The box's heading on the note step for a new place: what goes in it, not the
+ *  step's own title again. */
+export const NOTE_FOR_THIS_PLACE = 'Note for this place';
+export const NOTES_KEPT = (count: number) => (count === 1 ? 'It stays with the new pack.' : 'These stay with the new pack.');
+export const NOTES_DROPPED = (count: number) =>
+  count === 1 ? 'It will be removed when the new pack is saved.' : 'These will be removed when the new pack is saved.';
+export const START_WITHOUT_NOTES = (count: number) => (count === 1 ? 'Start without it' : 'Start without them');
+export const KEEP_OLD_NOTES = (count: number) => (count === 1 ? 'Keep it' : 'Keep them');
 
 export const NOTES = 'Notes';
 export const ADD_NOTE = 'Add a note';
@@ -357,7 +399,9 @@ export const FLOW_STEPS = [
   { glyph: 'note', label: 'Note' },
   { glyph: 'bag', label: 'Save' },
 ] as const;
-export const FLOW_STEP_OF = (step: number, total: number, label: string) => `Step ${step} of ${total}, ${label}`;
+export const FLOW_STEPS_LABEL = 'Steps to build a pack';
+/** A step already done is a way back to it, every answer kept. */
+export const BACK_TO_STEP = (label: string) => `Back to ${label}`;
 
 // E3-US1-AC1 BlackSky prepared direction
 export const BLACKSKY_TITLE = 'BlackSky';
@@ -365,11 +409,11 @@ export const HOLD_FOR_BLACKSKY = 'Hold for BlackSky';
 
 export const ACCURACY_READOUT = (m: number) => `± ${m} m`;
 /** UAT: the bare ± figure under the arrows was not understood, so it is named,
- *  and the detail sits behind an information ring. */
+ *  and the detail opens from these words. */
 export const ACCURACY_LABEL = 'Your position';
-export const ABOUT_ACCURACY = 'About your position';
-export const ACCURACY_DETAIL = (m: number) =>
-  `Your phone places you within ${m} m of where you stand. The arrows and distances can be off by about that much.`;
+/** The ± figure's bubble: first what the distance is, then how sure. */
+export const DISTANCE_STRAIGHT_LINE = (distance: string) => `${distance} in a straight line, not by road.`;
+export const ACCURACY_DETAIL = (m: number) => `Your phone puts you within ${m} m, so it can be off by that much.`;
 
 // The compass. iOS only hands the orientation sensor over after a tap.
 export const TURN_ON_COMPASS = 'Turn on the compass';
@@ -398,14 +442,19 @@ export const OTHER_PLACES_COUNT = (count: number) =>
 export const OTHER_PLACES = (distances: string[]) => {
   const nearest = distances[0];
   const furthest = distances[distances.length - 1];
-  const range = nearest === furthest ? nearest : `${nearest} – ${furthest}`;
+  // Two figures in the same unit share it, "2.13–5.07 km", so the line fits
+  // beside its drawing and arrow on a narrow phone; mixed units stay whole.
+  const [figure, unit] = nearest.split(' ');
+  const range =
+    nearest === furthest
+      ? nearest
+      : furthest.endsWith(` ${unit}`)
+        ? `${figure}–${furthest}`
+        : `${nearest} – ${furthest}`;
   return `${OTHER_PLACES_COUNT(distances.length)}${PLACES_SEPARATOR}${range}`;
 };
 export const OTHER_PLACES_TITLE = 'Other places';
 export const SHOW_PLACE = 'Show';
-/** The Show button's name for a screen reader, so five buttons are not all
- *  called Show. It starts with the visible word (WCAG 2.5.3). */
-export const SHOW_PLACE_NAMED = (site: string) => `Show ${site}`;
 export const CLOSE_OTHER_PLACES = 'Close';
 /** A position, and nothing stored on the phone that can be pointed at. */
 export const NO_PLACE_TO_POINT_AT =
@@ -416,8 +465,9 @@ export const GPS_SIGNAL_LOST = 'GPS signal lost';
 /** How old the position is, beside the bar's words: seconds, then minutes. */
 export const LAST_POSITION_AGE = (s: number) =>
   s < 60 ? `last position ${s} s ago` : `last position ${Math.floor(s / 60)} min ago`;
-/** The bar when the position is a mark the person made, not a fix. */
-export const FROM_YOUR_SAVED_PLACE = 'from your saved place';
+/** The bar when the position is a mark the person made, not a fix: the dial
+ *  measures from the place they said they stand at. */
+export const FROM_YOUR_SAVED_PLACE = 'Measuring from your saved place';
 /** Before a distance measured from an old, vague or estimated position. */
 export const ABOUT = 'about';
 /** The tag on a dial that nothing is turning. */
@@ -428,12 +478,11 @@ export const NORTH_UP = 'North up';
 /** The button under the dial while the map has been dragged away from the
  *  person: it puts them back at the centre. */
 export const MAP_RETURN_BUTTON = 'Back to me';
-/** The attribution the road layer's licence asks for, on the About screen. */
-/** The road and locality credits, under a small Map data toggle on the pack page. */
-export const MAP_DATA = 'Map data';
-export const ROADS_ATTRIBUTION = 'Roads: Vicmap Transport, Department of Transport and Planning, CC BY 4.0';
-/** The same for the locality names on the map disc, under the roads line. */
-export const LOCALITIES_ATTRIBUTION = 'Localities: Vicmap Admin, Department of Transport and Planning, CC BY 4.0';
+/** The credit BlackSky's roads and place names carry under their CC BY 4.0
+ *  licence, in the dial's two bottom corners while the map is drawn. The
+ *  owner is as the Vicmap dataset pages state it. */
+export const MAP_CREDIT_OWNER = '© State of Victoria';
+export const MAP_CREDIT_DATA = 'Vicmap, CC BY 4.0';
 
 // BS_Enhancement-AC3 say the place, distance and side aloud
 // Everything the phone speaks, and the caption shows the same words. Each
@@ -478,37 +527,45 @@ export const distanceLabel = (m: number): string => {
 };
 
 // E3-US1-AC4 marked-position estimate
-export const MARK_HINT = 'At your saved place? Mark it to estimate bearings. Not GPS.';
+export const MARK_HINT = 'At your saved place? Tap below to point the dial from there. It is an estimate, not GPS.';
 
-export const MARK_AT_SAVED_PLACE = (address: string) => `I'm standing at ${address}`;
+/** The mark button's first line; its second is the saved address. */
+export const MARK_STANDING_AT = "I'm standing at";
+export const MARK_AT_SAVED_PLACE = (address: string) => `${MARK_STANDING_AT} ${address}`;
 
 /** Always the word ESTIMATE, and the uncertainty stated as growing — a marked
  *  position must never read like a fix. */
-export const ESTIMATE_READOUT = (m: number) => `ESTIMATE from your mark, ± ${m} m and growing`;
+/** Over the distance from a mark, where "about" stands for a vague fix:
+ *  always ESTIMATE, its ± figure beside the distance growing as time passes.
+ *  The figure's bubble says what that means. */
+export const ESTIMATE = 'ESTIMATE';
+export const ESTIMATE_DETAIL = (m: number) =>
+  `Measured from the place you marked, not GPS. Now within about ${m} m, and less exact over time.`;
 
 // E3-US2-AC1 outside the loaded pack's area
-/** Distance to a pack area's EDGE — never presented as a direction. */
-export const AREA_DISTANCE_LINE = (distance: string) => `${distance} to its area`;
+/** Said of the pack that is loaded, never of every pack: another saved pack
+ *  may well cover this place, and the picker says so beside it. The distance
+ *  is to the area's EDGE, and never presented as a direction. */
+export const OUTSIDE_PACK_AREA = (distance: string, pack: string) =>
+  `You're ${distance} outside your ${pack} pack's area.`;
 
 // General official guidance, stored in the app itself so it is readable with
 // zero network. The numbers are safety copy: exact-match tested, never retyped.
-export const GENERAL_GUIDANCE_TITLE = 'General official guidance';
-export const CALL_TRIPLE_ZERO = 'Call 000 (Triple Zero) for life-threatening emergencies.';
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
-export const EMERGENCY_BROADCASTER = 'ABC local radio carries official emergency information.';
-/** States what the app cannot detect — never a promise about the network. */
-export const PHONE_MAY_WORK = 'Calls may work if your phone shows signal. This app cannot detect it.';
 
 // E3-US2-AC2 no pack stored
 export const NO_PACK_HERE = 'No saved pack covers this place.';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack';
-export const CHOOSE_PACK_HINT = 'Loads its places and notes. The nearest official places show either way.';
+/** Over the chosen pack once the list has folded to it. */
+export const PACK_LOADED = 'Pack loaded';
+export const CHANGE_PACK = 'Change';
+export const CHOOSE_PACK_HINT = 'Loads its places and notes.';
 /** Beside a pack whose area contains the position the arrows are drawn from. */
 export const PACK_COVERS_HERE = 'Covers where you are';
 /** With several packs, none chosen and no fix: the one thing the screen can say. */
-export const NO_GPS_YET = 'No GPS fix yet.';
+export const NO_GPS_YET = 'No GPS signal yet.';
 
 // Built-in static preparation guidance, readable on a fresh install that has
 // never been online since setup.
@@ -518,24 +575,19 @@ export const PREP_KIT_LINE =
 export const PREP_PLAN_LINE = 'Decide where you would go and how, before you need to.';
 
 // E3-US2-AC3 BlackSky never says safe
-/** How every saved place is described, with its source. The term is the CFA's
- *  own — a place of LAST resort — and the wording promises nothing about it. */
-export const PLACE_DESCRIPTOR = (publisher: string) =>
-  `Official place of last resort · ${publisher}`;
 
 // E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter. Two seconds.';
 export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
-/** The label on the full-width Leave bar at the top of BlackSky. It says what
- *  to do, so the bar needs no second line of help. */
-export const LEAVE_BLACKSKY = 'Hold to leave';
-/** Said under BlackSky's top bar, never over anything else: the phone's back
- *  button was pressed, or the app opened here again because BlackSky was the
- *  last screen open. Both end with the one way out. */
+/** The name of BlackSky's round hold, where the compass that opened it sits.
+ *  Cooeee is the word under it, so the name holds it, as Hold for BlackSky
+ *  holds the word under the compass. */
+export const LEAVE_BLACKSKY = 'Hold for Cooeee';
 export const BLACKSKY_BLOCKED = 'Not opened. Hold its button two seconds to enter.';
-export const BACK_PRESSED = `Back does not leave BlackSky. Use ${LEAVE_BLACKSKY} at the top.`;
-export const BLACKSKY_RESUMED = `Reopened where you left off. To exit, use ${LEAVE_BLACKSKY} at the top.`;
+/** Said at the top of BlackSky when the phone's Back was pressed: the round
+ *  hold at its foot says how to leave. */
+export const BACK_PRESSED = 'Back does not leave BlackSky.';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 
@@ -562,10 +614,16 @@ export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
+/** The label over the game cards on Rehearse. */
+export const GAMES = 'Quick games';
+/** What Rehearse is for, on its tour stop and when no pack is saved yet. */
+export const REHEARSE_LINE = 'Practise the way to a saved place on a calm day.';
+/** The large title on the Rehearse tab's first screen. */
+export const REHEARSE_TITLE = 'Practise on a calm day';
 
 // E4 Recover: needs-first support matching, read from the programs on this phone
 export const RECOVER_QUESTION = 'What do you need?';
-export const RECOVER_PRIVACY_LINE = 'Nothing leaves this phone. Only the programs you save and the steps you tick are remembered.';
+export const RECOVER_PRIVACY_LINE = 'Nothing leaves this phone. Only what you save and tick is kept here.';
 export const NEED_PHRASE: Record<NeedKey, string> = {
   stay: 'Somewhere to stay',
   money: 'Money for essentials',
@@ -595,6 +653,9 @@ export const SHARE_LIST = 'Share this list';
 export const COPIED_LINE = 'Copied. Paste it into a message.';
 export const SHARE_UNAVAILABLE = 'Sharing is not available in this browser.';
 export const SHARED_FROM = 'Shared from Cooeee. Programs change, and the organisation decides.';
+/** Nearby: one place, sent to someone to meet there. */
+export const SHARE_PLACE = 'Share';
+export const SHARED_PLACE_FROM = 'Shared from Cooeee. Check VicEmergency for the latest.';
 export const RECOVER_STALE_LINE = 'Over three months old. Programs change, so check with the organisation.';
 export const CALL_LINE = (number: string) => `Call ${number}`;
 export const RECOVER_NO_MATCH_TITLE = 'This pack holds nothing for that need.';
@@ -602,12 +663,22 @@ export const RECOVER_NO_MATCH_LINE = 'Help may still exist. Try the official cha
 export const OFFICIAL_CHANNEL = 'Official channel (web)';
 export const RECOVER_NONE_TITLE = 'No support information is held on this phone.';
 export const SAVED_PROGRAMS = 'Saved programs';
-export const STORED_INFORMATION = 'Stored information';
-export const SHOW = 'Show';
-export const HIDE = 'Hide';
-export const SHOW_SECTION = (title: string) => `Show ${title}`;
-export const HIDE_SECTION = (title: string) => `Hide ${title}`;
-export const NO_SAVED_PROGRAMS = 'None saved yet. Save them in';
+export const BUSHFIRE_AREA = 'Bushfire area';
+/** The pack page's tabs: one word each, so five sit side by side on a phone. */
+export const PACK_TABS_LABEL = 'Parts of this pack';
+export const PACK_TAB_AREA = 'Area';
+export const PACK_TAB_PLACES = 'Places';
+export const PACK_TAB_SUPPORT = 'Support';
+export const PACK_TAB_NOTES = 'Notes';
+export const PACK_TAB_PRACTICE = 'Practice';
+/** Under a long list on the pack page: the rest of it, then back to three. */
+export const SHOW_MORE = (count: number) => `Show ${count} more`;
+export const SHOW_FEWER = 'Show fewer';
+export const NO_SAVED_PROGRAMS = 'None saved yet.';
+/** Every pack carries the programs saved in Recover, so the pack says so. */
+export const SAVED_PROGRAMS_SHARED = 'The same in every pack. Choose them in Recover.';
+/** "More" only once there is one already. */
+export const SAVE_MORE_PROGRAMS = (saved: number) => (saved === 0 ? 'Save programs in Recover' : 'Save more in Recover');
 export const KEPT_NOT_SAVED = (count: number) =>
   `${count} saved ${count === 1 ? 'program is' : 'programs are'} not in a pack yet`;
 export const IN_YOUR_PACKS = 'In your packs';
@@ -621,7 +692,7 @@ export const ROADMAP_TITLE = 'Recovery roadmap';
 /** The eyebrow over the single needs on Recover. */
 export const BY_NEED = 'By need';
 export const ROADMAP_LINE =
-  'A step by step guide to the first days, weeks and months after a fire. Work down each stage, tick a step when it is done, and tap its link to find help for it. Your progress is saved on this phone.';
+  'The first days, weeks and months after a fire, step by step. Tick a step when it is done.';
 export const ROADMAP_CLEAR = 'Clear progress';
 export const ROADMAP_CLEAR_QUESTION = 'Untick every step?';
 export const ROADMAP_SOURCE = 'Based on Emergency Recovery Victoria and Australian Red Cross guidance.';
@@ -701,9 +772,9 @@ export const PRINT_LIST = 'Print this list';
 export const RECOVER_NONE_LINE = 'Build a pack online. It carries the programs, so they open with no signal.';
 
 /** Home's heading, a greeting by the hour on this phone. Late at night it is
- *  a plain "Hi", since good morning at 2am reads oddly. */
+ *  a plain "Hello", since good morning at 2am reads oddly. */
 export const GREETING = (hour: number): string =>
-  hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 18 ? 'Good afternoon' : hour >= 18 ? 'Good evening' : 'Hi';
+  hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 18 ? 'Good afternoon' : hour >= 18 ? 'Good evening' : 'Hello';
 
 /** The eyebrow over the daily preparation line. Uppercased by `.kicker`, so it
  *  is written here in sentence case and read out as words, not as letters. */
@@ -809,17 +880,19 @@ export const TOUR_BACK = 'Back';
 export const TOUR_NEXT = 'Next';
 export const TOUR_FINISH = 'Finish';
 export const SKIP_TOUR = 'Skip tour';
-/** One glyph and one line per stop, 12 words at most (tests hold the limit). */
+/** One glyph and one line per stop, 12 words at most (tests hold the limit).
+ *  A list of packs rings only its top pack, so a long list never runs under
+ *  the panel while the tour holds the page still. */
 export const TOUR_STEPS = [
   { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'A daily preparation step, from Country Fire Authority guidance or your pack.' },
-  { path: '/', target: '.home .pack-card, .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
+  { path: '/', target: '.home .pack-card:not(.pack-card ~ .pack-card), .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
   { path: '/', target: '.home .main-action', glyph: 'plus', title: 'New offline pack', line: 'Add a pack for home, work, school or family.' },
   { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to official places offline.', more: 'blacksky' },
   { path: '/', target: '.app-header-inner', glyph: 'clock', title: 'The header', line: "Tap Cooeee to go home. The pill shows your oldest pack's age." },
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
   { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
   { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
-  { path: '/rehearse', target: '.rehearsal-entry .card, .condition-list', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: 'Practise the way to a saved place on a calm day.' },
+  { path: '/rehearse', target: '.rehearsal-entry .card, .rehearsal-condition .empty-state, .condition-list:not(.pack-choice-list), .pack-choice-list > li:first-child', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: REHEARSE_LINE },
   { path: '/recover', target: '.recover .hero', tab: '.bottom-nav-item[href="/recover"]', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
 
@@ -921,7 +994,7 @@ export const DISTANCES_NOTE = 'Straight-line distances, not by road.';
 export const NOT_A_RANKING = 'Not a ranking.';
 /** UAT: the words a person must not miss, coloured wherever they appear in a
  *  line passed through KeyTerms. Plain words only: they are joined into a regex. */
-export const KEY_TERMS = ['Bushfire Prone Area', 'Fire can still reach you', 'no password'] as const;
+export const KEY_TERMS = ['Bushfire Prone Area', 'Fire can still reach you'] as const;
 
 export const DOWNLOADING_PLACES = 'Downloading the official places…';
 export const FIRST_RUN_TITLE = 'Nothing downloaded yet';
@@ -936,6 +1009,11 @@ export const TAB_RELIEF = 'Relief centres';
 export const NEARBY_TABS_LABEL = 'Kind of place';
 export const GROUP_RELIEF_NOTE = 'Opened for one incident, and listed by VicEmergency only while it runs.';
 
+/** Over a list where every place is the one kind, said once in place of on each card. */
+export const NSP_PLURAL = 'Neighbourhood Safer Places';
+/** The same, under the pack page's own heading, as a quiet line. */
+export const SAVED_PLACES_KIND = (count: number) =>
+  count === 1 ? 'A Neighbourhood Safer Place.' : `${count === 2 ? 'Both are' : 'All are'} Neighbourhood Safer Places.`;
 export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
   NSP: 'Neighbourhood Safer Place',
   CFR: 'Community Fire Refuge',
@@ -947,14 +1025,15 @@ export const FACILITY_TYPE_NAME: Record<FacilityType, string> = {
 
 /** UAT: "Live" was read as the centre being open. The label is about the
  *  information, so it says when it was updated. */
-export const STATE_LIVE = 'Updated just now';
-export const STATE_CACHED = (age: string) => `Cached · ${age}`;
+export const STATE_LIVE = 'Just updated';
+/** Between a state and its age. A card sets the age on its own line beneath. */
+export const STATE_AGE_JOIN = ' · ';
+export const STATE_CACHED = (age: string) => `Cached${STATE_AGE_JOIN}${age}`;
 export const STATE_UNAVAILABLE = 'Unavailable';
 export const JUST_NOW = 'just now';
 /** One age wording everywhere, through ageLabel: "1 minute ago", "3 hours ago". */
 export const MINUTES_AGO = (minutes: number) => (minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`);
 export const HOURS_AGO = (hours: number) => (hours === 1 ? '1 hour ago' : `${hours} hours ago`);
-export const NEVER = 'never';
 
 export const VERIFIED_ON = (date: string) => `Verified ${date}`;
 export const SAVED_LINE = (date: string) => `Saved ${date}`;
@@ -967,6 +1046,10 @@ export const MAY_BE_OUTDATED = 'May be outdated. Check by radio or the hotline.'
 export const TOO_OLD_TO_SHOW = 'Over an hour old, so no place is shown.';
 export const SOURCE_UNCONFIRMED = (source: string) => `The ${source} was not reachable lately, so this is unconfirmed.`;
 export const SOURCE_NOT_READ = (source: string) => `The ${source} has not been read yet, so nothing is confirmed.`;
+/** Under an NSP's address: CFA's word for the place, then CFA's own words that
+ *  no one will be there ("There will be no staff or services available"). */
+export const NSP_SITE_KIND: Record<SiteKind, string> = { building: 'Building', open_space: 'Open space' };
+export const NSP_NO_SERVICES = 'No staff or services';
 export const NEEDS_REVIEW_NOTE = 'Missing from the latest Country Fire Authority list. Check before relying on it.';
 
 export const DATA_SOURCES_LABEL = 'Data sources';
@@ -982,9 +1065,12 @@ export const SOURCE_STATUS_WORD: Record<SourceStatus, string> = {
   down: 'unreachable',
   unknown: 'not yet read',
 };
-export const ABOUT_DATA_SOURCES = 'About the data sources';
-export const HEALTH_TEXT = (status: string, when: string) =>
-  `${status[0].toUpperCase()}${status.slice(1)} when last checked, ${when}.`;
+/** A source's status and when it was last read, or the status alone for a
+ *  source that has never been read. */
+export const HEALTH_TEXT = (status: string, when: string | null) => {
+  const word = `${status[0].toUpperCase()}${status.slice(1)}`;
+  return when === null ? word : `${word} · checked ${when}`;
+};
 
 // ── E5-US1-AC4 the rehearsal entry gate ───────────────────────────────────
 // Four states, four screens. Each names what is missing from the PACK. None of
@@ -1001,10 +1087,9 @@ export const REHEARSALS = 'Rehearsals';
 export const NOT_YET_REHEARSED = 'Not yet rehearsed.';
 export const HISTORY_GAPS = (count: number) =>
   count === 0 ? 'No gaps found' : count === 1 ? '1 gap found' : `${count} gaps found`;
-/** E5-US3-AC2 — asked when the bar's Rehearse is tapped and several packs are
- *  saved. Same question form as CHOOSE_CONDITION_HEADING. */
-export const CHOOSE_PACK_TO_REHEARSE = 'Which pack are we rehearsing?';
-export const CHOOSE_PACK_TO_REHEARSE_DETAIL = 'One rehearsal, one pack.';
+/** A pack card on Rehearse: when this pack was last rehearsed, from ageLabel. */
+export const REHEARSED_AGO = (age: string) => `Rehearsed ${age}`;
+export const NOT_REHEARSED_CARD = 'Not yet rehearsed';
 /** The way back to the pack the user came from, offered only where there is a
  *  readable pack to go back to. */
 export const BACK_TO_THIS_PACK = 'Back to this pack';
@@ -1077,7 +1162,8 @@ export const NO_PACK_OTHERS_DETAIL = (count: number) =>
  *  address from the list."), which is likely why a list under a question reads
  *  less like something to choose from; and the "we", which is the only place in
  *  the product where the app speaks of itself in the first person. */
-export const CHOOSE_CONDITION_HEADING = 'Rehearse without…';
+/** Read into the rows under it as one sentence: Rehearse with no mobile data. */
+export const CHOOSE_CONDITION_HEADING = 'Rehearse with…';
 export const CONDITION_NO_DATA = 'No mobile data';
 export const CONDITION_NO_DATA_DETAIL = 'Only what is saved on the phone works.';
 export const CONDITION_NO_FIX = 'No location fix';
@@ -1124,15 +1210,14 @@ export const GAP_HAZARD_LINE = (hazard: string) => `${hazard} journey`;
 
 // The two kinds, told apart by these words and by nothing else.
 export const GAP_MEANING_PACK_CONTENT = 'Missing from your pack.';
-/** The condition sentence in its two halves. The wording is unchanged and the
- *  joined sentence is byte-identical, so the result reads exactly as it did. */
-export const GAP_MEANING_CONDITION_FACT = 'Not available under this condition.';
-export const GAP_MEANING_CONDITION_NEXT = 'Do this instead.';
-export const GAP_MEANING_CONDITION = `${GAP_MEANING_CONDITION_FACT} ${GAP_MEANING_CONDITION_NEXT}`;
+/** The condition's kind. What to do instead follows in its own panel. */
+export const GAP_MEANING_CONDITION = 'Not available under this condition.';
 
 // What could not be relied on.
 export const GAP_DESIGNATION = 'The official area designation for this address';
 export const GAP_PLACES = 'The official places saved with this pack';
+/** The label over the places on the journey screens, short enough for one line. */
+export const JOURNEY_PLACES_LABEL = 'Official places in this pack';
 export const GAP_PROVENANCE = 'The publisher and saved date on every stored item';
 export const GAP_LIVE_DIRECTION = 'Live direction and distance to your saved places';
 
@@ -1147,18 +1232,11 @@ export const GAP_REASON_LIVE_DIRECTION = 'Without a location fix the phone canno
  *  is, then each gap that rehearsal found with its reason and action, or what
  *  was checked when it found none. A count, never a mark. */
 export const ABOUT_GAPS = 'About gaps';
-export const GAP_WHAT_IS = {
-  lead: 'What a gap is.',
-  text: 'One thing the rehearsal looked for and could not rely on that day, either because it was not in the pack or because the condition took it away.',
-};
-export const GAP_NONE_FOUND = {
-  lead: 'None found.',
-  text: `Everything the rehearsal looked for was on the phone that day. ${GAP_DESIGNATION}. ${GAP_PLACES}. ${GAP_PROVENANCE}. ${GAP_LIVE_DIRECTION}.`,
-};
-export const GAP_IS_A_COUNT = {
-  lead: 'It is a count.',
-  text: 'A number of things you can act on. Nothing here is a mark and nothing is ranked.',
-};
+/** What a gap is, in one short paragraph behind About gaps on a rehearsal card. */
+export const GAP_ABOUT =
+  'A gap is something the rehearsal looked for and could not rely on that day. It is a count of things to act on. Nothing is marked or ranked.';
+/** The four checks by short name, under a rehearsal that found no gap. */
+export const GAPS_CHECKED = 'Area answer · Saved places · Sources · Live direction';
 
 // The one action for each. None of them says the capability has come back.
 export const ACTION_BUILD_AGAIN_DESIGNATION = 'Build this pack again online to store the official area designation.';
@@ -1166,7 +1244,6 @@ export const ACTION_BUILD_AGAIN_PLACES = 'Build this pack again online to store 
 export const ACTION_BUILD_AGAIN_PROVENANCE = 'Build this pack again online so every item has its publisher and date.';
 /** Says what to do instead, and does not pretend the phone will find the way. */
 export const ACTION_WRITE_THE_WAY_DOWN = 'Write down the way from your door to each saved place. Keep it with your kit.';
-
 export const ACTION_LABEL = 'What to do';
 
 /** A rehearsal that found nothing to act on. It says what was checked and what
@@ -1231,15 +1308,30 @@ export const PACK_CHANGE_UNKNOWN = 'Whether the pack changed between them was no
 // OFFICIAL_INSTRUCTIONS_FIRST. All new strings below are [DRAFT] pending
 // Sharon's copy review.
 
-/** [DRAFT] Before she goes. */
-export const JOURNEY_BEFORE_HEADING = 'Rehearse the way there';
-/** [DRAFT] Takes the condition's without-form (conditionWithout). */
-export const JOURNEY_CONDITION_LINE = (without: string) => `This rehearsal is without ${without}.`;
 // E5-US6 — make the condition real on the phone. One instruction per
 // condition, in the phone's own words, and a plain statement of what the
 // browser reports while she is out. Reported state only: the app cannot see
 // phone signal, and the line never blocks, times or judges anything.
 export const MAKE_IT_REAL = 'Make it real';
+/** Before going: the label over the three steps, and the two after making it real. */
+export const BEFORE_YOU_GO = 'Before you go';
+export const STEP_GO_WITH_BLACKSKY = 'Go with BlackSky';
+export const STEP_GO_WITH_BLACKSKY_DETAIL = 'Hold for BlackSky once you set off, as you would on the day.';
+export const STEP_SAY_HOW_IT_ENDED = 'Say how it ended';
+/** While out: BlackSky is reached from its own hold in the bottom bar. Said
+ *  around its name, which is set in bold; the whole line is the joined three. */
+export const HOLD_BLACKSKY_NOTICE_LEAD = 'Hold ';
+export const HOLD_BLACKSKY_NOTICE_REST = ' in the bar below once you set off, as you would on the day.';
+export const HOLD_BLACKSKY_NOTICE = `${HOLD_BLACKSKY_NOTICE_LEAD}${BLACKSKY_TITLE}${HOLD_BLACKSKY_NOTICE_REST}`;
+/** The result's labels: over what was missing, and over what was learnt. */
+export const RESULT_GAPS_LABEL = 'What was missing';
+export const STEP_SAY_HOW_IT_ENDED_DETAIL = 'Come back here when you arrive, or end it without going.';
+/** The two figures while she is out, under each figure. */
+export const TRACK_ELAPSED = 'elapsed';
+export const TRACK_WALKED = 'walked';
+export const TRACK_NOT_COUNTED = 'not counted without location';
+/** How the rehearsal ran, over the summary on the result. */
+export const RESULT_SUMMARY_LABEL = 'This rehearsal';
 export const CONDITION_HOW_TO: Record<'no-data' | 'no-location-fix', string> = {
   'no-data': 'Turn on aeroplane mode and turn Wi-Fi off.',
   'no-location-fix': 'Turn location off in the phone settings.',
@@ -1258,8 +1350,6 @@ export const JOURNEY_WHAT_IT_IS_FOR = 'Practice at knowing the way, how long it 
 export const I_AM_GOING_NOW = "I'm going now";
 /** [DRAFT] While she is out. */
 export const JOURNEY_RUNNING_HEADING = 'Practising the way';
-/** [DRAFT] What to do while she is out. */
-export const JOURNEY_RUNNING_DETAIL = 'Go with BlackSky open. Come back here to say how it ended.';
 /** [DRAFT] The two endings on the journey screen, as the criterion names them. */
 export const JOURNEY_ENDINGS_LABEL = 'When you are done';
 export const ENDING_ARRIVED = 'I have arrived';
@@ -1275,14 +1365,13 @@ export const ENDING_WITHOUT_GOING = 'End without going';
 export const UNFINISHED_HEADING = 'How did this rehearsal end?';
 /** [DRAFT] pending Sharon's copy review. Takes the condition's without-form
  *  (conditionWithout), never its row title. */
-export const UNFINISHED_DETAIL = (without: string, date: string) =>
-  `Started ${date}, without ${without}. Only you can say how it ended.`;
+export const UNFINISHED_STARTED = (without: string, date: string) => `Started ${date}, without ${without}.`;
+/** [DRAFT] pending Sharon's copy review. Asks for the answer, over the two rows. */
+export const UNFINISHED_ASK = 'Only you can say how it ended.';
 /** [DRAFT] pending Sharon's copy review. The two endings, as the criterion names
- *  them, each with what it means in her words. */
+ *  them. Each says itself in full, so neither carries a second line. */
 export const ENDING_WALKED = 'I went there';
-export const ENDING_WALKED_DETAIL = 'I went to the place.';
 export const ENDING_DRY_RUN = 'I did not go, a dry run';
-export const ENDING_DRY_RUN_DETAIL = 'I ended it without going.';
 /** [DRAFT] pending Sharon's copy review. A rehearsal recorded before the endings
  *  existed, in the shape PACK_CHANGE_UNKNOWN uses: not knowing is its own state,
  *  and never a default to either ending. */
@@ -1294,21 +1383,22 @@ export const ENDING_NOT_RECORDED = 'Whether you went there was not recorded.';
 // no fast or slow, no best. A dry run is stated as the kind of rehearsal it is.
 // A rehearsal with no ending recorded is stated by ENDING_NOT_RECORDED above.
 
+/** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
+ *  kept with it. Every walk ended on the journey screen keeps one; this covers a
+ *  stored record that does not. It also leads the other two, in bold. */
+export const RESULT_WALKED_NO_TIME = 'You went there.';
 /** [DRAFT] pending Sharon's copy review. A walked rehearsal, and how long it took her. */
-export const RESULT_WALKED = (duration: string) => `You went there. It took you ${duration}.`;
+export const RESULT_WALKED = (duration: string) => `${RESULT_WALKED_NO_TIME} It took you ${duration}.`;
 /** A walked rehearsal with the distance her phone counted. */
 export const RESULT_WALKED_DISTANCE = (duration: string, distance: string) =>
-  `You went there. It took you ${duration} and covered ${distance}.`;
+  `${RESULT_WALKED_NO_TIME} It took you ${duration} and covered ${distance}.`;
 /** The live line at the top of a running rehearsal. */
 export const TRACK_LINE = (clock: string, distance: string) => `${clock} elapsed · ${distance}`;
 export const TRACK_NO_DISTANCE = 'Distance not counted without location';
-/** [DRAFT] pending Sharon's copy review. A walked rehearsal whose time was not
- *  kept with it. Every walk ended on the journey screen keeps one; this covers a
- *  stored record that does not. */
-export const RESULT_WALKED_NO_TIME = 'You went there.';
 /** [DRAFT] pending Sharon's copy review. A dry run, stated plainly, as a kind of
  *  rehearsal and not a lesser one. */
-export const RESULT_DRY_RUN = 'A dry run. You ended it without going.';
+export const RESULT_DRY_RUN_LEAD = 'A dry run.';
+export const RESULT_DRY_RUN = `${RESULT_DRY_RUN_LEAD} You ended it without going.`;
 /** [DRAFT] pending Sharon's copy review. Her time, in whole minutes. */
 export const DURATION_UNDER_A_MINUTE = 'less than a minute';
 export const DURATION_MINUTES = (minutes: number) => (minutes === 1 ? '1 minute' : `${minutes} minutes`);
@@ -1327,6 +1417,16 @@ export const WAY_NOTE_HEADING = 'What you learnt about the way';
 export const WAY_NOTE_DETAIL = 'Optional. The turns, what you met, what you would change. BlackSky shows it offline.';
 /** [DRAFT] pending Sharon's copy review. */
 export const WAY_NOTE_LABEL = 'Your note about the way';
+/** Once saved: where it went, and the way to take it back out. */
+export const WAY_NOTE_KEPT = "Saved to this pack's notes.";
+/** The Save control once the words are kept, until they change. */
+export const WAY_NOTE_SAVED = 'Saved to this pack';
+/** Puts back the words last saved, after a change. */
+export const WAY_NOTE_UNDO = 'Undo changes';
+export const WAY_NOTE_REMOVE = 'Remove from this pack';
+export const WAY_NOTE_REMOVED = 'Removed from this pack.';
+/** Before the pack's name under a rehearsal's title. */
+export const REHEARSING_PACK = 'Rehearsing';
 
 // ── E9 the drill ──────────────────────────────────────────────────────────
 // A game played before the rehearsal. It has a clock and a score, which the
@@ -1334,10 +1434,16 @@ export const WAY_NOTE_LABEL = 'Your note about the way';
 // Every number here is about the bag, never about the person.
 export const DRILL_LABEL = 'Drill';
 export const DRILL_INTRO_HEADING = 'Two minutes to leave';
-export const DRILL_STAT_DETAIL =
-  'This drill gives you two minutes in a house. Pack ten things and be at the front door when the time ends. Steer with the stick, or tap where to walk. Then it says how ready your bag was.';
+/** The drill's clock, as the game and its first screen both show it: 2:00. */
+export const DRILL_CLOCK = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+/** Under the three tiles on the drill's first screen, each drawn as the game
+ *  draws it: the clock, the bag count, and the door. */
+export const DRILL_INTRO_TIME = 'to leave';
+export const DRILL_INTRO_BAG = 'things to pack';
+export const DRILL_INTRO_DOOR = 'be there when time ends';
+/** Read before the door's words, as the drawing says it on screen. */
+export const DRILL_INTRO_DOOR_HIDDEN = 'Front door,';
 export const START_DRILL = 'Start the drill';
-export const SKIP_DRILL = 'Skip the drill';
 export const SKIP_CUTSCENE = 'Skip';
 export const NEXT_STAGE = 'Next';
 export const LEAVE_DRILL = 'Leave the drill';
@@ -1368,10 +1474,20 @@ export const CUTSCENE_LABEL = 'A home among gum trees as a bushfire arrives and 
 export const DRILL_SCENE_LABEL = 'A house seen from above, with the person you are steering.';
 export const DRILL_HINT = 'Be at the front door when the time ends.';
 export const BAG_COUNT = (count: number, limit: number) => `Bag ${count} of ${limit}`;
-export const PACK_ITEM = (name: string) => `Pack the ${name}`;
+export const GRAB_ITEM = (name: string) => `Grab the ${name}`;
+export const NOTHING_IN_REACH = 'Nothing in reach';
 export const BAG_FULL = 'Bag full';
+/** Said under the clock, and aloud, once the bag holds all it can. */
+export const BAG_FULL_GOAL = 'Bag full. Head to the front door.';
 export const SECONDS_LEFT = (seconds: number) => `${seconds} seconds left`;
-export const IN_ROOM = (room: string) => `In the ${room}`;
+export const HEAD_TO_DOOR = 'Head to the front door.';
+/** The guide over the paused game, before the clock starts. Touch wording on
+ *  a touch screen, mouse and keys wording where there is a fine pointer. Each
+ *  control's line comes in two parts, each set on its own line. */
+export const GUIDE_GOAL = 'Pack ten things, then be at the front door when the time ends.';
+export const GUIDE_MOVE = (keys: boolean) => (keys ? ['Drag here or use the arrow keys to walk,', 'or click the floor.'] : ['Drag here to walk,', 'or tap the floor.']);
+export const GUIDE_GRAB = (keys: boolean) => (keys ? ['Lights up next to an item.', 'Click it or press Space to grab.'] : ['Lights up next to an item.', 'Tap it to grab.']);
+export const GUIDE_START = (keys: boolean) => (keys ? 'Click anywhere or press Space to start' : 'Tap anywhere to start');
 export const SOUND = 'Sound';
 export const SOUND_ON = 'Sound on';
 export const SOUND_OFF = 'Sound off';
@@ -1393,11 +1509,184 @@ export const SIGNED_POINTS = (points: number) => (points > 0 ? `+${points}` : po
 export const TILE_LABEL = (name: string, points: string) => `${name}, ${points}`;
 export const HIGHEST_SO_FAR = (score: number) => `Your highest so far is ${score} out of 100.`;
 export const PLAY_AGAIN = 'Play again';
-export const GO_ON_TO_REHEARSAL = 'Go on to the rehearsal';
-export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures, so the rehearsal opens instead.';
-export const DRILLS = 'Drills';
+export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures. Try the drill on another browser.';
+/** Every drill, on every pack page, as the drill is the same game whatever is saved. */
+export const DRILLS = 'Drills · all packs';
 export const NOT_YET_DRILLED = 'Not yet drilled.';
-export const DRILL_ROW_DOOR = (score: number) => `At the door, ${score} out of 100`;
+export const DRILL_ROW_DOOR = 'At the door';
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';
-export const DRILL_ROW_PACKED = (count: number) =>
-  count === 1 ? '1 thing packed' : `${count} things packed`;
+export const DRILL_ROW_ESSENTIALS = (packed: number, total: number) => `${packed} of ${total} essentials packed`;
+
+// ── Games on the Rehearse screen: the drill's twists, Cooee Word, Ready the Block
+// Three games with a number in them, like the drill. Every number is about
+// the bag, the word or the yard, never about the person. Counts and times
+// are spelt out in words up to twelve, as the drill always has.
+
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+/** A count in words up to twelve, in figures past it. */
+export const NUMBER_WORD = (n: number): string => NUMBER_WORDS[n] ?? String(n);
+const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+/** A length of time as the drill says it: whole and half minutes in words,
+ *  anything else in seconds. */
+export const TIME_WORDS = (seconds: number): string => {
+  const minutes = seconds / 60;
+  if (seconds === 60) return 'one minute';
+  if (Number.isInteger(minutes)) return `${NUMBER_WORD(minutes)} minutes`;
+  if (Number.isInteger(minutes * 2) && minutes > 2) return `${NUMBER_WORD(Math.floor(minutes))} and a half minutes`;
+  return `${seconds} seconds`;
+};
+
+/** The drill's opening heading, for this twist's time. The classic drill
+ *  reads exactly as DRILL_INTRO_HEADING. */
+export const DRILL_INTRO_HEADING_FOR = (seconds: number) => `${capital(TIME_WORDS(seconds))} to leave`;
+/** The film's instructions for this twist. The classic drill's read exactly
+ *  as DRILL_TOUR_LINES. */
+export const DRILL_TOUR_LINES_FOR = (seconds: number, bag: number, powered: boolean) => [
+  powered
+    ? { text: `The lights are still on. You have ${TIME_WORDS(seconds)}.`, key: [TIME_WORDS(seconds)] }
+    : { text: `The power is out. You have ${TIME_WORDS(seconds)}.`, key: [TIME_WORDS(seconds)] },
+  { text: `Find and pack ${NUMBER_WORD(bag)} things. Each one is outlined in yellow.`, key: [`${NUMBER_WORD(bag)} things`, 'yellow'] },
+  { text: 'Then get out the front door before the time is up.', key: ['front door'] },
+];
+export const DRILL_TWIST_LABEL = 'This drill’s twist';
+export const DRILL_TWIST_LINE = (name: string, rule: string) => `${name}. ${rule}`;
+/** The twist on the drill card, and how long it stays. */
+/** Beside today's twist tag on the drill card. The tag is a rule of the
+ *  game, so it is filled, unlike the outlined pills of the person's results. */
+export const DRILL_TILE_CHANGES = (daysLeft: number) =>
+  daysLeft <= 1 ? 'Changes tomorrow' : `Changes in ${NUMBER_WORD(daysLeft)} days`;
+/** Read before the tag's name, so it is heard as a twist. */
+export const DRILL_TWIST_HIDDEN = 'Twist';
+export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this twist is ${score} out of 100.`;
+/** Under the score when the twist's bag is not ten, or some things are out of reach. */
+export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this twist’s bag could hold.';
+export const DRILL_ROW_TWIST = (name: string) => `${name} twist`;
+
+// Cooee Word
+export const WORD_TILE_TITLE = 'Cooee Word';
+/** The three figures on the Word result, as the facts on its first screen. */
+export const WORD_RESULT_STATS = (streak: number, played: number, guesses: number) => [
+  { figure: String(streak), label: 'day streak' },
+  { figure: String(played), label: played === 1 ? 'day played' : 'days played' },
+  { figure: `${guesses}/6`, label: 'guesses' },
+];
+export const WORD_TILE_DETAIL = 'Guess today’s word in six tries.';
+/** Before the Word card's big streak figure. */
+export const WORD_STAT_STREAK = 'Streak';
+export const WORD_TILE_TODAY = {
+  solved: 'Solved today',
+  'not-yet': 'Ready today',
+  'in-progress': (used: number) => `${used} of 6 guesses`,
+  'not-solved': 'Not solved today',
+};
+/** The week of dots on the Word card, read as one picture. */
+export const WORD_WEEK_LABEL = (solved: number) => `Solved ${solved} of the last 7 days`;
+export const WORD_LABEL = 'Cooee Word';
+export const WORD_NUMBER = (n: number) => `Word ${n}`;
+export const WORD_HINT_LABEL = 'Hint';
+/** The answer's theme, as the hint names it. */
+export const WORD_THEMES = {
+  fire: 'Fire',
+  weather: 'Weather',
+  land: 'The land',
+  animals: 'Animals',
+  home: 'Home and garden',
+  kit: 'Emergency kit',
+  health: 'Health',
+  community: 'Community',
+};
+/** The three things to know before Cooee Word, as on Ready the Block. */
+export const WORD_FACTS = (length: number) => [
+  { figure: String(length), label: 'letters' },
+  { figure: '6', label: 'tries' },
+  { figure: '1', label: 'new word a day' },
+];
+export const WORD_KEY_RIGHT = 'Right place';
+export const WORD_KEY_PRESENT = 'In the word';
+export const WORD_KEY_ABSENT = 'Not in the word';
+export const WORD_GRID_LABEL = 'Your guesses';
+export const WORD_ROW_LABEL = (row: number) => `Guess ${row}`;
+export const WORD_EMPTY = 'empty';
+export const LETTER_MARK = { right: 'right place', present: 'in the word, another place', absent: 'not in the word' };
+export const LETTER_LABEL = (letter: string, mark: string) => `${letter.toUpperCase()}, ${mark}`;
+export const WORD_KEYBOARD_LABEL = 'Letters';
+export const WORD_ENTER = 'Enter';
+export const WORD_DELETE = 'Delete';
+export const WORD_TOO_SHORT = (length: number) => `Type all ${NUMBER_WORD(length)} letters first.`;
+export const WORD_NOT_IN_LIST = 'That is not in the word list. Try another word.';
+export const WORD_ALREADY_TRIED = 'You have tried that word already.';
+export const WORD_GUESSES_LEFT = (left: number) => `${capital(NUMBER_WORD(left))} ${left === 1 ? 'guess' : 'guesses'} left`;
+export const WORD_LIST_UNAVAILABLE = 'The word list could not be loaded, so any letters count as a guess today.';
+export const WORD_SOLVED = (guesses: number) => `Solved in ${NUMBER_WORD(guesses)} ${guesses === 1 ? 'guess' : 'guesses'}`;
+export const WORD_NOT_SOLVED = 'Not this time';
+export const WORD_ANSWER_WAS = (answer: string) => `The word was ${answer.toUpperCase()}.`;
+export const WORD_FACT_LABEL = 'Why it matters';
+export const WORD_FACT_SOURCE = (source: string) => `From the ${source}`;
+export const WORD_COME_BACK = 'A new word arrives at midnight.';
+/** The earlier words, under the result: each its number, the word, and how it went. */
+export const WORD_PAST_LABEL = 'Past words';
+export const WORD_PAST_SOLVED = (guesses: number) => `Solved in ${guesses}`;
+export const WORD_PAST_NOT_SOLVED = 'Not solved';
+export const WORD_PAST_UNFINISHED = 'Not finished';
+export const WORD_UNAVAILABLE = 'Cooee Word could not load on this browser.';
+export const BACK_TO_REHEARSE = 'Back to Rehearse';
+
+// Ready the Block
+export const BLOCK_TILE_TITLE = 'Ready the Block';
+export const BLOCK_TILE_DETAIL = 'Find eight fire risks round a home in three minutes.';
+export const BLOCK_TILE_TODAY = (today: number | null) => (today === null ? 'Not played today' : `Today ${today}`);
+/** Before the big highest score out of 100, on the drill and Block cards.
+ *  Never best: the app does not call anything the best. */
+export const GAME_STAT_HIGHEST = 'Highest';
+export const BLOCK_LABEL = 'Ready the Block';
+export const BLOCK_INTRO_HEADING = 'Find the fire risks';
+/** The three things to know, each drawn as the game draws it, over a few
+ *  words: its found count, its clock, and a tap. */
+export const BLOCK_INTRO_RISKS = 'fire risks round the home';
+export const BLOCK_INTRO_RISKS_HIDDEN = '8';
+export const BLOCK_INTRO_TIME = 'to find them';
+export const BLOCK_INTRO_TAP_FIGURE = 'Tap';
+export const BLOCK_INTRO_TAP = 'each one you spot';
+/** The way out at the end of a finished game. */
+export const GAME_DONE = 'Done';
+/** What costs points, as two small chips under a label. */
+export const BLOCK_COSTS_LABEL = 'Points off';
+export const BLOCK_COSTS = [
+  { figure: '−4', label: 'Wrong tap' },
+  { figure: '−10', label: 'Hint' },
+];
+/** After each cost's figure, in small type. */
+export const BLOCK_POINTS = 'points';
+/** Once played today: the day's highest as a big figure, and when the next yard comes. */
+export const BLOCK_TODAY_LABEL = 'Highest today';
+export const BLOCK_OUT_OF = 'out of 100';
+export const BLOCK_NEW_YARD = 'A new yard arrives at midnight.';
+export const START_BLOCK = 'Start looking';
+export const BLOCK_SCENE_LABEL = 'A home and its yard seen from above, with eight fire risks to find.';
+export const BLOCK_FOUND_COUNT = (found: number) => `Found ${found} of 8`;
+export const BLOCK_FOUND = (name: string) => `Found ${name}.`;
+export const BLOCK_AGAIN = 'You found that one already.';
+export const BLOCK_CLEARED = 'That one has already been dealt with. A wrong tap costs 4 points.';
+export const BLOCK_DECOY = (name: string) => `${name}. Nothing to fix there. A wrong tap costs 4 points.`;
+export const BLOCK_NOTHING = 'Nothing there. Look for anything that could catch an ember.';
+export const BLOCK_HINT = (left: number) => `Hint, ${left} left`;
+export const BLOCK_HINT_DETAIL = 'A hint costs 10 points.';
+export const BLOCK_HINT_SHOWN = 'Look inside the ring.';
+export const ZOOM_IN = 'Zoom in';
+export const ZOOM_OUT = 'Zoom out';
+export const LEAVE_BLOCK = 'Leave Ready the Block';
+export const BLOCK_TIME_UP = 'Time is up';
+export const BLOCK_ALL_FOUND = 'You found all eight';
+export const BLOCK_VERDICT = (score: number) => (score >= 80 ? 'Sharp eyes' : score >= 50 ? 'Good spotting' : 'Plenty still to spot');
+export const BLOCK_FOUND_BADGE = 'Found';
+export const BLOCK_MISSED_BADGE = 'Missed';
+export const BLOCK_PENALTIES = (wrong: number, hints: number) =>
+  `${wrong} wrong ${wrong === 1 ? 'tap' : 'taps'}, ${hints} ${hints === 1 ? 'hint' : 'hints'}`;
+export const BLOCK_OUTCOME_LINE = (ending: string, penalties: string) => `${ending} \u00b7 ${penalties}`;
+export const BLOCK_LIST_HEADING = 'Today’s eight risks';
+export const BLOCK_CHECK_HOME = 'Is one of these at your place? Fix one this week.';
+export const BLOCK_SOURCE_LINE = 'The risks follow the Country Fire Authority’s guide to preparing your property.';
+export const BLOCK_UNAVAILABLE = 'This browser could not load the pictures for Ready the Block.';
+/** The drill card's line for this twist's time and bag. */
+export const DRILL_TILE_DETAIL_FOR = (seconds: number, bag: number) =>
+  `${capital(TIME_WORDS(seconds))} to pack ${NUMBER_WORD(bag)} things and reach the front door.`;

@@ -8,7 +8,7 @@
 export type Source = {
   publisher: string;      // 'Department of Transport and Planning'
   url: string;            // the exact request or document URL
-  licence: string;        // 'CC BY 4.0' | 'ODbL' | 'CFA website list — permission to be confirmed'
+  licence: string;        // 'CC BY 4.0' | 'ODbL' | 'Free to use, confirmed by the CFA'
   retrievedAt: number;    // epoch ms
 };
 
@@ -317,6 +317,8 @@ export type PackDetailItem = {
   // The stored citation for this item, when it has one — present only where the
   // saved row itself names what was matched.
   citation?: string;
+  // The same plan in its parts, for the labelled rows of the item's Source.
+  plan?: { number: string; gazetted: string; council: string };
   // The readable page to continue to, when it is not the DTP dataset page.
   pageUrl?: string;
 };
@@ -363,6 +365,8 @@ export type SourceStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 export type SourceHealth = { status: SourceStatus; last_success_at: string | null };
 export type DataHealth = Record<string, SourceHealth>;
 
+/** CFA's word for what an NSP is: a building, or open ground such as an oval. */
+export type SiteKind = 'building' | 'open_space';
 export type BundleFacility = {
   facility_id: number;
   type: StaticType;
@@ -371,6 +375,8 @@ export type BundleFacility = {
   lat: number;
   lon: number;
   lga_name: string | null;
+  // Missing for a refuge, a server that does not send it yet, or places saved before it.
+  site_kind?: SiteKind | null;
   designation_status: 'designated' | 'needs_review'; // needs_review = missing from the latest upstream run
   last_verified_at: string; // ISO-8601
 };
@@ -524,9 +530,9 @@ export type ActionCompletion = {
 /** One key/value row of the client's sync bookkeeping (spec §7.2 sync_meta). */
 export type SyncMetaRow = { key: string; value: string };
 
-/** One data source as a screen names it: what the list is, and in plain words
- *  how it read when last checked. */
-export type SourceLine = { lead: string; text: string };
+/** One data source as a screen names it: what the list is, its status (which
+ *  colours its dot), and in plain words how it read when last checked. */
+export type SourceLine = { lead: string; status: SourceStatus; text: string };
 
 /** E9 — ONE FINISHED drill: the timed packing game played before a rehearsal.
  *  Kept on the phone so the pack page can list it. The score is about the bag
@@ -534,9 +540,41 @@ export type SourceLine = { lead: string; text: string };
  *  number. */
 export type Drill = {
   id: string;          // crypto.randomUUID()
-  packId: string;
+  /** Absent: the drill is the same game whatever is saved, so it is kept
+   *  apart from every pack. Drills saved before that keep the pack they were
+   *  saved under, which nothing reads. */
+  packId?: string;
   finishedAt: number;  // epoch ms
   reachedDoor: boolean;
   score: number;       // 0 to 100, whole
-  packed: string[];    // drill item ids, at most BAG_LIMIT
+  packed: string[];    // drill item ids, at most the twist's bag limit
+  /** The twist the drill was played under (drill-twists.ts). Absent on a
+   *  drill from before twists, which played as the classic drill. */
+  twist?: string;
+};
+
+/** Cooee Word — one Melbourne calendar day's game. Written after every guess,
+ *  so a reload carries on where it was, and never changed once finished. The
+ *  answer is kept with it, so the day reads the same whatever the list holds
+ *  later. */
+export type WordDay = {
+  day: number;         // Melbourne calendar days since 1970 (core/day.ts)
+  answer: string;
+  guesses: string[];
+  status: 'playing' | 'won' | 'lost';
+  updatedAt: number;   // epoch ms
+  finishedAt?: number; // epoch ms, once won or lost
+};
+
+/** Ready the Block — one finished play. Every play is kept; the first of the
+ *  day marks the day as played, and any play can raise the highest score. */
+export type BlockPlay = {
+  id: string;
+  day: number;         // Melbourne calendar days since 1970
+  finishedAt: number;  // epoch ms
+  score: number;       // 0 to 100, whole
+  hazards: string[];   // the day's hazards, by id
+  found: string[];     // the ones found, a subset of hazards
+  wrongTaps: number;
+  hints: number;
 };

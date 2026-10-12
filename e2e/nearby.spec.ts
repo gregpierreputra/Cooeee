@@ -1,11 +1,13 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import {
-  ABOUT_DATA_SOURCES,
+  DATA_SOURCES_LABEL,
   FIRST_RUN_LINE,
   FIRST_RUN_TITLE,
   HOURS_AGO,
   MAY_BE_OUTDATED,
   MINUTES_AGO,
+  COPIED_LINE,
+  SHARED_PLACE_FROM,
   STATE_CACHED,
   TOO_OLD_TO_SHOW,
 } from '../src/core/copy';
@@ -84,18 +86,35 @@ test('AC4 offline, static places come from IndexedDB labelled cached with their 
   // E1-US3-AC7: one drawing per kind, carried on its tab.
   await expect(page.getByRole('tab').locator('.glyph')).toHaveCount(2);
 
-  // The data sources sit behind the information ring: closed until tapped,
-  // then plain words naming each list and when it was last checked.
-  const ring = page.getByRole('button', { name: ABOUT_DATA_SOURCES });
+  // The data sources sit behind their toggle: closed until tapped, then each of
+  // this tab's lists by name with its status and when it was last checked beneath.
+  const ring = page.getByRole('button', { name: DATA_SOURCES_LABEL });
   await expect(ring).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.data-sources .hint-panel')).toHaveCount(0);
   await ring.click();
   await expect(page.locator('.data-sources .hint-panel')).toBeVisible();
-  await expect(page.locator('.data-sources .info-lines li')).toContainText([
-    /Country Fire Authority Neighbourhood Safer Places list\. Reachable when last checked/,
-  ]);
+  const feed = page.locator('.data-sources .source-health li').first();
+  await expect(feed.locator('.source-health-name')).toHaveText('VicEmergency feed');
+  await expect(feed.locator('.source-health-state')).toHaveText(/^Reachable · checked /);
   await ring.click();
   await expect(page.locator('.data-sources .hint-panel')).toHaveCount(0);
+});
+
+// Each tab lists only the sources behind its own cards, closed again after a switch.
+test('each tab has its own data sources, closed after a switch', async ({ page, context }) => {
+  await openOffline(page, context, 'cached');
+  await findPostcode(page);
+  const sources = page.getByRole('button', { name: DATA_SOURCES_LABEL });
+  const names = page.locator('.data-sources .source-health-name');
+  await sources.click();
+  await expect(names.filter({ hasText: 'Country Fire Authority Neighbourhood Safer Places list' })).toHaveCount(1);
+  await expect(names.filter({ hasText: 'VicEmergency feed' })).toHaveCount(0);
+
+  await openTab(page, 'Relief centres');
+  await expect(sources).toHaveAttribute('aria-expanded', 'false');
+  await sources.click();
+  await expect(names.filter({ hasText: 'VicEmergency feed' })).toHaveCount(1);
+  await expect(names.filter({ hasText: 'Country Fire Authority' })).toHaveCount(0);
 });
 
 test('AC5 offline with a snapshot past the threshold, no relief centre is shown — only the stale line and the hotline', async ({ page, context }) => {
@@ -117,4 +136,52 @@ test('AC6 offline and never synced, the first-run state is stated rather than a 
   await expect(page.getByRole('heading', { name: FIRST_RUN_TITLE })).toBeVisible();
   await expect(page.getByText(FIRST_RUN_LINE)).toBeVisible();
   await expect(page.getByLabel('Type a postcode')).toHaveCount(0);
+});
+
+// One place can be sent to someone, say to meet there. With no share sheet it
+// goes to the clipboard: the place and how current it is, never the distance.
+test('Share on a place copies it to send, without the distance', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: ORIGIN });
+  await page.goto(`${ORIGIN}/nearby?mode=fresh`);
+  await page.getByRole('heading', { name: 'Nearest official places' }).waitFor();
+  await findPostcode(page);
+  const card = page.locator('.card', { hasText: 'Kalorama Memorial Reserve' });
+  const share = card.getByRole('button', { name: 'Share Kalorama Memorial Reserve' });
+  await share.click();
+  // Said on the link itself for a moment, as Copy does on a call card, and to
+  // a screen reader in full.
+  await expect(card.getByRole('button', { name: 'Copied Kalorama Memorial Reserve' })).toBeVisible();
+  await expect(card.getByRole('status')).toHaveText(COPIED_LINE);
+  const text = await page.evaluate(() => navigator.clipboard.readText());
+  expect(text.startsWith('Neighbourhood Safer Place\nKalorama Memorial Reserve\nRidge Road, Kalorama')).toBe(true);
+  expect(text.endsWith(SHARED_PLACE_FROM)).toBe(true);
+  expect(text).not.toMatch(/\d+ ?(m|km)\b/);
+  // Then it reads Share again, and nothing is left on the card.
+  await expect(share).toBeVisible({ timeout: 5000 });
+  await expect(card.getByRole('status')).toHaveText('');
+});
+
+// The nearest places of last resort on a map, folded until asked for, drawn on
+// the phone from files it already holds, so it opens with no signal.
+test('Show on a map opens a map of the nearest places and refuges, with no signal', async ({ page, context }) => {
+  await openOffline(page, context, 'cached');
+  await findPostcode(page);
+  const toggle = page.getByRole('button', { name: 'Show on a map' });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.nearby-map')).toHaveCount(0);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('img', { name: /Map of the main roads and towns/ })).toBeVisible();
+  await expect(page.locator('.nearby-map .blacksky-road').first()).toBeAttached();
+  await expect(page.locator('.nearby-map .area-map-mark').first()).toBeVisible();
+  // Both kinds of bushfire place, each said for what it is, and a key.
+  const map = page.locator('.nearby-map');
+  await expect(map.getByRole('button', { name: 'Kalorama Memorial Reserve · 580 m, Neighbourhood Safer Place' })).toBeVisible();
+  await expect(map.getByRole('button', { name: /^Ferny Creek Community Fire Refuge · .*, Community Fire Refuge$/ })).toBeVisible();
+  await expect(map.locator('.map-key li')).toHaveText(['Measured from here', 'Neighbourhood Safer Place', 'Community Fire Refuge']);
+  // The middle is where distances are measured from, named as such. A place
+  // 580 m away sits over it at this size, so it is opened from the keyboard.
+  await page.locator('.nearby-map .area-map-pin').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.nearby-map .area-map-label')).toHaveText('Centre of postcode 3766');
 });

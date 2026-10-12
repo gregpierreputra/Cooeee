@@ -152,6 +152,29 @@ test('US2-AC1 nothing is pre-selected and Save waits for exactly two', async ({ 
   await expect(save).toBeEnabled();
 });
 
+test('a place is chosen by a tap anywhere on its card, which then wears the teal ring', async ({ page }) => {
+  await page.goto(SELECT_URL);
+  const cards = page.locator('[data-testid=ordered-destinations] .destination-item');
+  // The kind is said once, over the list, not on every card.
+  await expect(page.locator('.destination-kind')).toHaveText('Neighbourhood Safer Places');
+  await expect(page.locator('main')).not.toContainText(/Neighbourhood Safer Place(?!s)/);
+  // Set as a Nearby card: the site with the distance beside it, the council as its footer.
+  await expect(cards.first().locator('.nearby-distance')).toHaveText(DISTANCE);
+  await expect(cards.first().locator('.destination-foot')).toHaveText('Yarra Ranges Shire council');
+  // The box is named by the site alone.
+  const box = page.getByRole('checkbox', { name: BY_DISTANCE[0], exact: true });
+  await expect(box).not.toBeChecked();
+  // Over the name, then low on the card by the council: both choose it.
+  const name = await cards.first().locator('.nearby-place-name').boundingBox();
+  const card = await cards.first().boundingBox();
+  await page.mouse.click(name!.x + 10, name!.y + 10);
+  await expect(box).toBeChecked();
+  await expect(cards.first()).toHaveClass(/destination-item-chosen/);
+  await page.mouse.click(card!.x + 20, card!.y + card!.height - 12);
+  await expect(box).not.toBeChecked();
+  await expect(cards.first()).not.toHaveClass(/destination-item-chosen/);
+});
+
 test('US2-AC1 a third choice is refused with a reason; the two stay chosen', async ({ page }) => {
   await page.goto(SELECT_URL);
   const boxes = page.locator('[data-testid=ordered-destinations] input[type=checkbox]');

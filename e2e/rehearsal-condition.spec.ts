@@ -5,12 +5,12 @@ const ORIGIN = 'http://127.0.0.1:4174';
 const REHEARSABLE = `${ORIGIN}/rehearse?mode=rehearsable`;
 const EMPTY = `${ORIGIN}/rehearse?mode=empty`;
 
-const HEADING = 'Rehearse without…';
+const HEADING = 'Rehearse with…';
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
 /** Each condition as it reads after "without". */
-const WITHOUT: Record<string, string> = { [NO_DATA]: 'mobile data', [NO_FIX]: 'a location fix' };
-const JOURNEY_HEADING = 'Rehearse the way there';
+/** Before going, the title is the option chosen. */
+const JOURNEY_HEADING = /^(No mobile data|No location fix)$/;
 const GO = "I'm going now";
 
 // E5-US1-AC1 — the user says what the rehearsal is run without.
@@ -82,9 +82,9 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
       await page.getByRole('button', { name: new RegExp(label) }).click();
 
       // Chosen and not yet gone on (E5-US1-AC5): the journey screen names the
-      // chosen condition in words, and never the other.
-      await expect(page.getByText(`This rehearsal is without ${WITHOUT[label]}.`)).toBeVisible();
-      await expect(page.locator('main')).not.toContainText(`without ${WITHOUT[other]}`);
+      // chosen condition as its title, and never the other.
+      await expect(page.getByRole('heading', { level: 1, name: label, exact: true })).toBeVisible();
+      await expect(page.locator('main')).not.toContainText(other);
       await page.getByRole('main').getByRole('button', { name: GO, exact: true }).click();
 
       // The chosen condition is carried onto the run, on the bar that marks it.
@@ -168,7 +168,7 @@ test.describe('AC1 choosing carries exactly that one condition forward', () => {
     // With a note: exactly one note row added, and nothing else.
     await page.getByLabel('Your note about the way').fill('The gate by the oval is locked after dark.');
     await page.getByRole('main').getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByText('Note saved.')).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Saved to this pack' })).toBeVisible();
     await expect.poll(async () => (await deviceStorage(page)).recordCounts.notes).toBe(before.recordCounts.notes + 1);
     await page.waitForTimeout(500);
     expect(await deviceStorage(page)).toEqual({

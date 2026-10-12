@@ -1,5 +1,6 @@
 import { isInsideVictoria, MAX_SYNC_ROWS } from '../../src/core/constants.ts';
 import { readJsonBounded } from '../../src/data/bounded-body.ts';
+import type { SiteKind } from '../../src/core/types.ts';
 import type { Db } from '../db.ts';
 import { runSync } from '../sources.ts';
 import { type FacilityInput, rebuildNearestStatic, upsertFacilities } from './static.ts';
@@ -19,6 +20,13 @@ type Feature = {
 const text = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value.trim() : null;
 
+/** CFA's loc_type, the only fact the layer gives about what is at the place.
+ *  Anything else it might send is stored as unknown, never guessed. */
+function siteKind(value: unknown): SiteKind | null {
+  const kind = text(value);
+  return kind === 'Building' ? 'building' : kind === 'Open Space' ? 'open_space' : null;
+}
+
 /** One ArcGIS feature → one facility, or null when it lacks an id, a name or a point. */
 export function toFacility(feature: Feature): FacilityInput | null {
   const props = feature.properties ?? {};
@@ -31,7 +39,16 @@ export function toFacility(feature: Feature): FacilityInput | null {
     return null;
   }
   if (!isInsideVictoria(lat, lon)) return null; // a transposed or foreign point is not a place to go
-  return { externalRef, typeCode: 'NSP', name, address: text(props.address), lat, lon, lgaName: text(props.lga) };
+  return {
+    externalRef,
+    typeCode: 'NSP',
+    name,
+    address: text(props.address),
+    lat,
+    lon,
+    lgaName: text(props.lga),
+    siteKind: siteKind(props.loc_type),
+  };
 }
 
 /** Every page of the layer, following ArcGIS's exceededTransferLimit paging. */

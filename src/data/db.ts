@@ -1,5 +1,8 @@
 import Dexie, { liveQuery, type Table } from 'dexie';
-import { BAG_LIMIT, DRILL_ITEM_IDS } from '../core/drill-items';
+import { BLOCK_HAZARD_IDS, BLOCK_PICKS } from '../core/block-hazards';
+import { ALL_DRILL_ITEM_IDS } from '../core/drill-items';
+import { rulesFor, TWIST_IDS } from '../core/drill-twists';
+import { WORD_GUESSES } from '../core/word';
 import { NOTE_MAX_CHARS, PACK_NAME_MAX_CHARS } from '../core/constants';
 import { clearNoteDraft } from '../core/note-draft';
 import { isPackIcon, samePackName } from '../core/pack';
@@ -8,6 +11,7 @@ import { isRehearsalEnding, isUnfinished } from '../core/rehearsal-ending';
 import type { RehearsalInput } from '../core/rehearsal-entry';
 import type {
   ActionCompletion,
+  BlockPlay,
   BundleFacility,
   BundlePostcode,
   CompletePackContent,
@@ -29,6 +33,7 @@ import type {
   SyncMetaRow,
   TileRow,
   UnfinishedRehearsal,
+  WordDay,
 } from '../core/types';
 import { fileMeta, groupMatches, sha256Hex } from './integrity';
 
@@ -57,6 +62,10 @@ class CooeeeDb extends Dexie {
   actionCompletions!: Table<ActionCompletion, string>;
   // E9: finished drills, the timed packing game played before a rehearsal.
   drills!: Table<Drill, string>;
+  // The games played from the Rehearse screen. These belong to the phone, not
+  // to any pack: deleting a pack never touches them.
+  wordDays!: Table<WordDay, number>;
+  blockPlays!: Table<BlockPlay, string>;
   // The CFA site list, for BlackSky's nearest-places pointer.
   snapshots!: Table<StoredSnapshot, string>;
 
@@ -123,6 +132,11 @@ class CooeeeDb extends Dexie {
     // Version 10 adds the drills store: one row per finished drill, indexed by
     // pack and by finish time for the pack page's newest first list.
     this.version(10).stores({ drills: 'id, packId, finishedAt' });
+
+    // Version 11 adds the two daily games. Cooee Word keeps one row per
+    // Melbourne day; Ready the Block one row per finished play, indexed by day.
+    // Neither is pack owned, so neither is in ownedTables() or historyTables().
+    this.version(11).stores({ wordDays: 'day', blockPlays: 'id, day, finishedAt' });
   }
 }
 
@@ -165,7 +179,7 @@ export const actionCompletionId = (packId: string, actionId: string): string =>
  *  belongs to the place rather than to the row that happened to hold it. So the
  *  replacement path moves these rather than deleting them (see
  *  carryHistoryToNewPack). An outright delete still takes them. */
-export const historyTables = () => [db.rehearsals, db.actionCompletions, db.drills];
+export const historyTables = () => [db.rehearsals, db.actionCompletions];
 
 /** Move one pack's rehearsals to another. The row's key is its own id, which
  *  says nothing about the pack, so only the field changes. */
@@ -201,16 +215,16 @@ async function carryCompletions(oldId: string, newId: string): Promise<void> {
  *  action the reader had marked done against it — and the action a rehearsal
  *  most often asks for is to build the pack again, so doing what the product
  *  asked would destroy the record of having done it. */
-export async function carryHistoryToNewPack(oldId: string, newId: string): Promise<void> {
+export async function carryHistoryToNewPack(oldId: string, newId: string, keepNotes = true): Promise<void> {
   await carryRehearsals(oldId, newId);
   await carryCompletions(oldId, newId);
-  // A drill's key is its own id too, so only the field changes.
-  await db.drills.where('packId').equals(oldId).modify({ packId: newId });
   // The reader's own notes are theirs, about the place, and nothing can write
-  // them again. They move with the history instead of going with the old rows.
-  // A note's key is its own id, so only the field changes. The caller's
-  // transaction already holds the notes table, which ownedTables() lists.
-  await db.notes.where('packId').equals(oldId).modify({ packId: newId });
+  // them again. They move with the history instead of going with the old rows,
+  // unless the reader chose to start without them: then they stay behind and go
+  // with the old pack's rows. A note's key is its own id, so only the field
+  // changes. The caller's transaction already holds the notes table, which
+  // ownedTables() lists.
+  if (keepNotes) await db.notes.where('packId').equals(oldId).modify({ packId: newId });
 }
 
 /** Remove every row the given packs own. Callers run this inside their own
@@ -394,8 +408,9 @@ export async function listSavedProgramIds(): Promise<string[]> {
   return [...new Set(rows.map((row) => row.programId))];
 }
 
-/** A pack's notes, oldest first. Only the complete-pack reads below call this. */
-const listNotes = (packId: string): Promise<PackNote[]> =>
+/** A pack's notes, oldest first: for the complete-pack reads below, and to
+ *  show what a replace keeps. */
+export const listNotes = (packId: string): Promise<PackNote[]> =>
   db.notes.where('packId').equals(packId).sortBy('updatedAt');
 
 /** The one rule for note text, applied wherever a note is written: trimmed,
@@ -589,12 +604,13 @@ export const isDrill = (row: unknown): row is Drill => {
   const drill = row as Record<string, unknown>;
   return (
     typeof drill.id === 'string' &&
-    typeof drill.packId === 'string' &&
+    (drill.packId === undefined || typeof drill.packId === 'string') &&
     typeof drill.finishedAt === 'number' && Number.isFinite(drill.finishedAt) && drill.finishedAt > 0 &&
     typeof drill.reachedDoor === 'boolean' &&
     Number.isInteger(drill.score) && (drill.score as number) >= 0 && (drill.score as number) <= 100 &&
-    Array.isArray(drill.packed) && drill.packed.length <= BAG_LIMIT &&
-    drill.packed.every((id) => typeof id === 'string' && DRILL_ITEM_IDS.has(id))
+    (drill.twist === undefined || (typeof drill.twist === 'string' && TWIST_IDS.has(drill.twist))) &&
+    Array.isArray(drill.packed) && drill.packed.length <= rulesFor((drill.twist as string | undefined) ?? 'classic').bagLimit &&
+    drill.packed.every((id) => typeof id === 'string' && ALL_DRILL_ITEM_IDS.has(id))
   );
 };
 
@@ -605,6 +621,88 @@ export async function saveDrill(drill: Drill): Promise<void> {
   await db.drills.add(drill);
 }
 
-/** Every drill for one pack that passes isDrill, in store order. */
-export const listDrills = async (packId: string): Promise<Drill[]> =>
-  (await db.drills.where('packId').equals(packId).toArray()).filter(isDrill);
+/** Every drill on the phone that passes isDrill. Drills belong to no pack,
+ *  so every pack page lists them all, and the highest under a twist counts
+ *  them all. Deleting or replacing a pack leaves them alone. */
+export const listAllDrills = async (): Promise<Drill[]> => (await db.drills.toArray()).filter(isDrill);
+
+// ── The Rehearse screen's daily games ──────────────────────────────────────
+
+const LOWER_WORD = /^[a-z]{4,7}$/;
+const whenOk = (value: unknown): boolean => typeof value === 'number' && Number.isFinite(value) && value > 0;
+
+/** Cooee Word — whether a stored row is a day this game could have written:
+ *  real guesses of the answer's length, at most six, and a status that
+ *  follows from them. */
+export const isWordDay = (row: unknown): row is WordDay => {
+  if (typeof row !== 'object' || row === null) return false;
+  const day = row as Record<string, unknown>;
+  if (!Number.isInteger(day.day) || typeof day.answer !== 'string' || !LOWER_WORD.test(day.answer)) return false;
+  const answer = day.answer;
+  if (!Array.isArray(day.guesses) || day.guesses.length > WORD_GUESSES) return false;
+  const guesses = day.guesses as unknown[];
+  if (!guesses.every((guess) => typeof guess === 'string' && guess.length === answer.length && LOWER_WORD.test(guess))) return false;
+  if (!whenOk(day.updatedAt)) return false;
+  const solved = guesses.indexOf(answer);
+  switch (day.status) {
+    case 'playing':
+      return solved === -1 && guesses.length < WORD_GUESSES && day.finishedAt === undefined;
+    case 'won':
+      return solved === guesses.length - 1 && whenOk(day.finishedAt);
+    case 'lost':
+      return solved === -1 && guesses.length === WORD_GUESSES && whenOk(day.finishedAt);
+    default:
+      return false;
+  }
+};
+
+/** Keep today's game as it stands, after every guess. A finished day is
+ *  never changed, and a day keeps the answer it started with. */
+export async function saveWordDay(row: WordDay): Promise<void> {
+  if (!isWordDay(row)) throw new RangeError('a word day is kept only as the game could have produced it');
+  await db.transaction('rw', db.wordDays, async () => {
+    const before = await db.wordDays.get(row.day);
+    if (before && isWordDay(before) && (before.status !== 'playing' || before.answer !== row.answer)) {
+      throw new RangeError('a finished word day is never changed');
+    }
+    await db.wordDays.put(row);
+  });
+}
+
+/** One day's game, or undefined when it has not been started (or the row
+ *  fails isWordDay). */
+export const getWordDay = async (day: number): Promise<WordDay | undefined> => {
+  const row = await db.wordDays.get(day);
+  return isWordDay(row) ? row : undefined;
+};
+
+/** Every word day that passes isWordDay. */
+export const listWordDays = async (): Promise<WordDay[]> => (await db.wordDays.toArray()).filter(isWordDay);
+
+/** Ready the Block — whether a stored row is a play this game could have
+ *  written: the day's hazards, the found ones among them, and a whole score. */
+export const isBlockPlay = (row: unknown): row is BlockPlay => {
+  if (typeof row !== 'object' || row === null) return false;
+  const play = row as Record<string, unknown>;
+  const ids = (value: unknown): value is string[] =>
+    Array.isArray(value) && value.every((id) => typeof id === 'string' && BLOCK_HAZARD_IDS.has(id)) && new Set(value).size === value.length;
+  const count = (value: unknown) => Number.isInteger(value) && (value as number) >= 0;
+  return (
+    typeof play.id === 'string' && play.id.length > 0 &&
+    Number.isInteger(play.day) &&
+    whenOk(play.finishedAt) &&
+    Number.isInteger(play.score) && (play.score as number) >= 0 && (play.score as number) <= 100 &&
+    ids(play.hazards) && play.hazards.length === BLOCK_PICKS &&
+    ids(play.found) && play.found.every((id) => (play.hazards as string[]).includes(id)) &&
+    count(play.wrongTaps) && count(play.hints)
+  );
+};
+
+/** Record one finished play. Every play is kept. */
+export async function saveBlockPlay(play: BlockPlay): Promise<void> {
+  if (!isBlockPlay(play)) throw new RangeError('a play is kept only as the game could have produced it');
+  await db.blockPlays.add(play);
+}
+
+/** Every play that passes isBlockPlay. */
+export const listBlockPlays = async (): Promise<BlockPlay[]> => (await db.blockPlays.toArray()).filter(isBlockPlay);

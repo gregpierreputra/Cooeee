@@ -126,6 +126,37 @@ test('the long-press menu of a touch does not cancel the hold, and never opens',
   await touch.up();
 });
 
+// The ring is the hold's own clock: it fills only while the hold runs, and a
+// cut-short hold takes it back at once.
+test('the ring fills only while the hold runs, and empties when it is cut short', async ({ page }) => {
+  const { box, centre } = await openHome(page);
+  const touch = await finger(page);
+  await touch.down(centre);
+  await expect(hold(page)).toHaveClass(/holding/);
+  await touch.move({ x: centre.x, y: box.y - HOLD_LEAVE_MARGIN_PX - 40 });
+  await expect(hold(page)).not.toHaveClass(/holding/);
+  await touch.up();
+});
+
+// On a busy phone the timer can run late. A finger lifted as the ring fills,
+// two seconds in, arrives before it: the hold is done, and BlackSky opens.
+test('a finger lifted as the ring fills enters, even when the timer is late', async ({ page }) => {
+  const { centre } = await openHome(page);
+  const touch = await finger(page);
+  // The phone is busy: the two second timer will run 600 ms late.
+  await page.evaluate((holdMs) => {
+    const plain = window.setTimeout.bind(window);
+    window.setTimeout = ((fn: TimerHandler, ms?: number, ...rest: unknown[]) =>
+      plain(fn, ms === holdMs ? holdMs + 600 : ms, ...rest)) as typeof window.setTimeout;
+  }, HOLD_MS);
+  await touch.down(centre);
+  // Lifted as the ring fills, past two seconds, before the late timer.
+  await page.waitForTimeout(HOLD_MS + 200);
+  await touch.up();
+  await expect(page).toHaveURL('/blacksky');
+  await expect(page.getByText(HOLD_TO_ENTER)).toHaveCount(0);
+});
+
 test.describe('a mouse', () => {
   test.use({ hasTouch: false });
 

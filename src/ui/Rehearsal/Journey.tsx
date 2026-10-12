@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
 import { TICK_MS } from '../../core/constants';
 import * as copy from '../../core/copy';
 import { formatDistanceM } from '../../core/destination';
+import { siteNameBlock } from '../../core/blacksky-dial';
+import { shownPackName } from '../../core/home';
+import { packIcon } from '../../core/pack';
 import {
-  conditionWithout,
+  conditionLabel,
   connectionLine,
   howToLine,
   type RehearsalCondition,
@@ -12,12 +14,12 @@ import {
 import { journeyEndingRows, unfinishedFrom } from '../../core/rehearsal-ending';
 import { journeyNotes, journeyPlaces, type JourneyPlace } from '../../core/rehearsal-journey';
 import { elapsedClock, type RehearsalRun } from '../../core/rehearsal-run';
-import type { CompletePackContent, UnfinishedRehearsal } from '../../core/types';
+import type { CompletePackContent, PackIcon, UnfinishedRehearsal } from '../../core/types';
 import { getCompletePackWithoutFiles, saveStartedRehearsal } from '../../data/db';
 import Glyph from '../components/Glyph';
-import Hint from '../components/Hint';
 import NoteText from '../components/NoteText';
-import HoldButton from '../components/HoldButton';
+import Section from '../components/Section';
+import FactTiles from '../Games/FactTiles';
 import { focusMain } from '../components/focusMain';
 import { useOnline } from '../components/useOnline';
 import Head from './Head';
@@ -38,7 +40,13 @@ type LoadContent = (id: string) => Promise<CompletePackContent | undefined>;
 
 /** The official places the pack holds, read from the pack. null until read, and
  *  nothing is drawn for that wait. */
-type Journey = { places: JourneyPlace[]; notes: { id: string; text: string }[] };
+type Journey = {
+  packName: string;
+  packIcon: PackIcon;
+  places: JourneyPlace[];
+  notes: { id: string; text: string }[];
+};
+const NONE: Journey = { packName: '', packIcon: 'place', places: [], notes: [] };
 
 function useJourney(packId: string, loadContent: LoadContent): Journey | null {
   const [journey, setJourney] = useState<Journey | null>(null);
@@ -47,13 +55,20 @@ function useJourney(packId: string, loadContent: LoadContent): Journey | null {
     loadContent(packId).then((content) => {
       if (live) {
         setJourney(
-          content ? { places: journeyPlaces(content), notes: journeyNotes(content) } : { places: [], notes: [] },
+          content
+            ? {
+                packName: shownPackName(content.pack.name),
+                packIcon: packIcon(content.pack),
+                places: journeyPlaces(content),
+                notes: journeyNotes(content),
+              }
+            : NONE,
         );
       }
     }, () => {
       // A pack that cannot be read lists no places, as a pack with none does, so
       // the running rehearsal can still be given its ending.
-      if (live) setJourney({ places: [], notes: [] });
+      if (live) setJourney(NONE);
     });
     return () => {
       live = false;
@@ -62,29 +77,38 @@ function useJourney(packId: string, loadContent: LoadContent): Journey | null {
   return journey;
 }
 
-/** The places, by the destinations list's name and the shared provenance line.
- *  A pack with none says so in the result's own sentence. */
+/** The places, under a ringed head as on the pack page, each set as there:
+ *  the site in bold, the town and where it is, then the saved date. The kind
+ *  is said once, over the list. A pack with none says so in the result's own
+ *  sentence. */
 function Places({ places }: { places: JourneyPlace[] }) {
   return (
-    <section className="journey-places">
-      <h3>
-        <Glyph kind="place" />
-        {copy.GAP_PLACES}
-      </h3>
+    <Section kind="place" title={copy.JOURNEY_PLACES_LABEL} heading className="journey-places">
       {places.length > 0 ? (
-        <ul className="list journey-place-list">
-          {places.map((place) => (
-            <li key={place.id} className="card journey-place">
-              <p className="journey-place-name">{place.name}</p>
-              {place.where ? <p className="muted">{place.where}</p> : null}
-              <p className="figure">{place.savedLine}</p>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="muted place-note">{copy.SAVED_PLACES_KIND(places.length)}</p>
+          <ul className="list journey-place-list">
+            {places.map((place) => {
+              const { site, line } = siteNameBlock(place.name);
+              return (
+                <li key={place.id} className="card journey-place">
+                  <p className="nearby-place-name">{site}</p>
+                  {/* The town and where it is as one grey line, then the
+                      saved date as the card's foot, as a pack card ends. */}
+                  {line || place.where ? <p className="muted">{[line, place.where].filter(Boolean).join(', ')}</p> : null}
+                  <p className="muted figure saved-place-footer with-glyph">
+                    <Glyph kind="saved" line />
+                    {place.savedLine}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       ) : (
-        <p>{copy.GAP_MEANING_PACK_CONTENT}</p>
+        <p className="muted place-note">{copy.GAP_MEANING_PACK_CONTENT}</p>
       )}
-    </section>
+    </Section>
   );
 }
 
@@ -117,31 +141,43 @@ export function JourneyBefore({
 
   return (
     <main className="page rehearsal-journey">
-      <Head />
-      <Hint label={copy.ABOUT_REHEARSAL} head={<h2>{copy.JOURNEY_BEFORE_HEADING}</h2>}>
-        <ul className="info-lines glyph-lines">
-          <li><Glyph kind="go" line />{copy.JOURNEY_WHAT_IT_IS}</li>
-          <li><Glyph kind="clock" line />{copy.JOURNEY_WHAT_IT_IS_FOR}</li>
-        </ul>
-      </Hint>
-      <p>{copy.JOURNEY_CONDITION_LINE(conditionWithout(condition))}</p>
-      <p className="with-glyph">
+      {/* The option chosen is the title, as on the choice and the bar, with
+          the pack under it in its own drawing and teal. */}
+      <Head title={conditionLabel(condition)} pack={{ name: journey.packName, icon: journey.packIcon }} />
+      {/* The official instruction, in the red line it wears everywhere. */}
+      <p className="official-channels emergency-line">
         <Glyph kind="calls" line />
-        {copy.OFFICIAL_INSTRUCTIONS_FIRST}
+        <span>{copy.OFFICIAL_INSTRUCTIONS_FIRST}</span>
       </p>
-      {/* E5-US6 — the condition is made on the phone, not pretended. */}
-      <section className="card condition-how-to">
-        <Glyph kind="not" />
-        <span className="kicker">{copy.MAKE_IT_REAL}</span>
-        <p>{howToLine(condition)}</p>
-      </section>
+
+      {/* What to do, in order, as rows of one card, each led by its drawing.
+          Left open: the first step is what makes the rehearsal real. No
+          numbers: nothing on this screen is counted. E5-US6: the first step
+          makes the condition real on the phone, not pretended. */}
+      <Section kind="go" title={copy.BEFORE_YOU_GO} heading>
+        <ol className="card journey-steps">
+          {([
+            { glyph: condition === 'no-data' ? 'offline' : 'locate', title: copy.MAKE_IT_REAL, detail: howToLine(condition) },
+            { glyph: 'moon', title: copy.STEP_GO_WITH_BLACKSKY, detail: copy.STEP_GO_WITH_BLACKSKY_DETAIL },
+            { glyph: 'found', title: copy.STEP_SAY_HOW_IT_ENDED, detail: copy.STEP_SAY_HOW_IT_ENDED_DETAIL },
+          ] as const).map((step) => (
+            <li key={step.title} className="journey-step">
+              <Glyph kind={step.glyph} />
+              <div>
+                <p className="journey-step-title">{step.title}</p>
+                <p className="muted">{step.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </Section>
       <Places places={journey.places} />
 
-      {/* Not filled: going on a practice walk fixes nothing. */}
+      {/* The one thing to do on this screen, filled as every screen's start is. */}
       <div className="actions">
         <button
           type="button"
-          className="action journey-go with-glyph"
+          className="action main-action journey-go with-glyph"
           onClick={() => {
             onGone();
             const run = startRun(packId, condition);
@@ -156,10 +192,11 @@ export function JourneyBefore({
   );
 }
 
-/** The time since she went and the distance her phone has counted, at the top
- *  of the running screen, redrawn every second. Only this line redraws. It is
- *  not announced: a screen reader would hear it every second. */
-function TrackLine({ startedAt }: { startedAt: number }) {
+/** The time since she went and the distance her phone has counted, as two
+ *  figure tiles at the top of the running screen, redrawn every second. Only
+ *  these redraw. They are not announced: a screen reader would hear them
+ *  every second. */
+function TrackTiles({ startedAt }: { startedAt: number }) {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), TICK_MS);
@@ -167,9 +204,17 @@ function TrackLine({ startedAt }: { startedAt: number }) {
   }, []);
   const walked = walkedSoFar();
   return (
-    <p className="figure journey-track" aria-live="off">
-      {copy.TRACK_LINE(elapsedClock(now - startedAt), walked === null ? copy.TRACK_NO_DISTANCE : formatDistanceM(walked))}
-    </p>
+    <div aria-live="off">
+      <FactTiles
+        className="journey-track"
+        facts={[
+          { figure: elapsedClock(now - startedAt), label: copy.TRACK_ELAPSED },
+          walked === null
+            ? { figure: '–', label: copy.TRACK_NOT_COUNTED }
+            : { figure: formatDistanceM(walked), label: copy.TRACK_WALKED },
+        ]}
+      />
+    </div>
   );
 }
 
@@ -183,32 +228,46 @@ export function JourneyRunning({
   run: RehearsalRun;
   loadContent?: LoadContent;
 }) {
-  const navigate = useNavigate();
   const journey = useJourney(run.packId, loadContent);
   // E5-US6 — what the browser reports, stated and never acted on.
-  const connection = connectionLine(run.condition, useOnline());
+  const online = useOnline();
+  const connection = connectionLine(run.condition, online);
   if (journey === null) return null;
 
   return (
     <>
-      <TrackLine startedAt={run.startedAt} />
-      <h2>{copy.JOURNEY_RUNNING_HEADING}</h2>
-      <p>{copy.JOURNEY_RUNNING_DETAIL}</p>
+      <Head title={copy.JOURNEY_RUNNING_HEADING} />
+      <TrackTiles startedAt={run.startedAt} />
+      {/* E5-US6 — what the browser reports: amber while the phone is still
+          online, a calm line once it is offline as on the day. */}
       {connection ? (
-        <p className="journey-connection" role="status">
-          {connection}
+        <p
+          className={`official-channels with-glyph journey-connection${online ? ' caution-line' : ''}`}
+          role="status"
+        >
+          <Glyph kind={online ? 'online' : 'offline'} line />
+          <span>{connection}</span>
         </p>
       ) : null}
+
+      {/* BlackSky is reached by its own real hold in the bottom bar, as on the
+          day, so this screen points to it in an amber note rather than
+          repeating it. Its name in bold, as the bar names it. */}
+      <p className="journey-blacksky with-glyph">
+        <Glyph kind="moon" line />
+        <span>
+          {copy.HOLD_BLACKSKY_NOTICE_LEAD}
+          <b>{copy.BLACKSKY_TITLE}</b>
+          {copy.HOLD_BLACKSKY_NOTICE_REST}
+        </span>
+      </p>
+
       <Places places={journey.places} />
 
       {/* E5-US7 — her own notes, read here as BlackSky shows them on the day.
           A paragraph each, not list items: the places list above is the one
           list on this screen, and a screen reader's count of it stays true. */}
-      <section className="journey-notes">
-        <h3>
-          <Glyph kind="note" />
-          {copy.NOTES}
-        </h3>
+      <Section kind="note" title={copy.NOTES} heading className="journey-notes">
         {journey.notes.length > 0 ? (
           journey.notes.map((note) => (
             <div key={note.id} className="card journey-note">
@@ -216,24 +275,20 @@ export function JourneyRunning({
             </div>
           ))
         ) : (
-          <p>{copy.NO_NOTES_ON_JOURNEY}</p>
+          <p className="muted place-note">{copy.NO_NOTES_ON_JOURNEY}</p>
         )}
-      </section>
-
-      <div className="actions journey-hold">
-        <HoldButton onHold={() => navigate('/blacksky', { state: { held: true } })} hint={copy.HOLD_TO_ENTER}>
-          <span className="blacksky-hold-label">{copy.HOLD_FOR_BLACKSKY}</span>
-        </HoldButton>
-      </div>
+      </Section>
 
       {/* The endings sit in their own card, apart from the hold above and the
           Leave control below: they finish the rehearsal, the other two do not.
-          Inside it the two stay identical, told apart by their words alone. */}
+          Inside it the two stay identical, each led by a drawing of the same
+          size and weight: the place she reached, or the home she stayed at. */}
       <section className="card journey-endings">
         <span className="kicker">{copy.JOURNEY_ENDINGS_LABEL}</span>
         <div className="actions">
           {journeyEndingRows().map((row) => (
-            <button key={row.ending} type="button" className="action" onClick={() => endWith(row.ending)}>
+            <button key={row.ending} type="button" className="action with-glyph" onClick={() => endWith(row.ending)}>
+              <Glyph kind={row.ending === 'walked' ? 'place' : 'home'} line />
               {row.label}
             </button>
           ))}

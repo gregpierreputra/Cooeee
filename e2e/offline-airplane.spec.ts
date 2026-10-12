@@ -70,8 +70,8 @@ test('every offline feature works in airplane mode, and the online ones say they
   await expect(page.locator('.pack-detail h1')).toHaveText('Kalorama');
   await openSources(page);
   await expect(page.locator('.area-map img')).toBeVisible();
+  await page.getByRole('tab', { name: 'Support' }).click();
   const programs = page.locator('.pack-section', { hasText: 'Saved programs' });
-  await programs.getByRole('button', { name: 'Show Saved programs' }).click();
   await expect(programs.getByRole('link', { name: 'Saved PDF' })).toBeVisible();
 
   // Print this pack.
@@ -88,14 +88,25 @@ test('every offline feature works in airplane mode, and the online ones say they
   await page.getByRole('button', { name: `${COPY} Lifeline` }).click();
   await expect(page.getByRole('button', { name: `${COPIED} Lifeline` })).toBeVisible();
 
-  // Rehearse: the drill with its pictures, then the rehearsal itself.
+  // Rehearse: the pack's rehearsal, then the drill with its pictures.
   await page.goto('/rehearse');
+  await page.locator('.pack-choice-list .pack-name a').first().click();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
+  await page.goto('/rehearse');
+  await page.getByRole('button', { name: /Play the drill/ }).click();
   await page.getByRole('button', { name: 'Start the drill' }).click();
   await page.getByRole('button', { name: 'Skip', exact: true }).click();
-  await expect(page.locator('main')).toContainText('Bag 0 of 10');
+  // The bag's size follows the day's twist.
+  await expect(page.locator('main')).toContainText(/Bag 0 of \d+/);
+
+  // The two daily games, with their pictures and their word list, from the cache.
   await page.goto('/rehearse');
-  await page.getByRole('button', { name: 'Skip the drill' }).click();
-  await expect(page.getByRole('heading', { name: 'Rehearse without…' })).toBeVisible();
+  await page.getByRole('button', { name: /Cooee Word/ }).click();
+  await expect(page.getByRole('heading', { name: /^Word \d+$/ })).toBeVisible();
+  await page.goto('/rehearse/block');
+  await page.getByRole('button', { name: 'Start looking' }).click();
+  await expect(page.getByRole('img', { name: /yard seen from above/ })).toBeVisible();
+  await expect(page.locator('.block-stage canvas')).toHaveAttribute('data-camera', /\d/);
 
   // The tour.
   await page.goto('/');
@@ -132,9 +143,8 @@ test('the first visit is served offline without a reload', async ({ page, contex
   await page.goto('/');
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
   await context.setOffline(true);
-  const drillArt = await page.evaluate(() =>
-    Promise.all(['/drill/house.png', '/drill/sprites.png'].map((path) => fetch(path).then((r) => r.ok))),
-  );
-  expect(drillArt).toEqual([true, true]);
+  const gameFiles = ['/drill/house.png', '/drill/sprites.png', '/block/yard.png', '/block/sprites.png', '/word/words-4.json', '/word/words-5.json', '/word/words-6.json', '/word/words-7.json'];
+  const cached = await page.evaluate((paths) => Promise.all(paths.map((path) => fetch(path).then((r) => r.ok))), gameFiles);
+  expect(cached).toEqual(gameFiles.map(() => true));
   await context.setOffline(false);
 });

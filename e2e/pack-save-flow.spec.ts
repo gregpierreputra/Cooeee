@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
+import { INSIDE_BUSHFIRE_AREA, PACK_NAME_TAKEN, PLACE_ALREADY_SAVED, REPLACE_SAVED_PACK } from '../src/core/copy';
 import { titleCase as displayAddress } from '../src/core/home';
 import {
   acknowledgeFirstOpen,
@@ -30,7 +30,7 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   );
   await page.getByRole('button', { name: 'Continue' }).click();
   await chooseLastResortPlaces(page);
-  await expect(page.getByRole('heading')).toHaveText('Ready to download');
+  await expect(page.getByRole('heading')).toHaveText('Ready to save');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -64,15 +64,15 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
   await page.getByRole('button', { name: 'Keep this note' }).click();
 
-  await expect(page.getByRole('heading')).toHaveText('Ready to download');
+  await expect(page.getByRole('heading')).toHaveText('Ready to save');
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByRole('link', { name: 'Choose programs in Recover' })).toHaveCount(0);
   expect(await page.evaluate(() => window.localStorage.getItem('cooeee.kept.v1'))).toBe('["services-australia-crisis-payment"]');
   await page.getByRole('button', { name: 'Open saved pack' }).click();
+  await page.getByRole('tab', { name: 'Support' }).click();
   const section = page.locator('.pack-section', { hasText: 'Saved programs' });
   await expect(section.locator('.section-count')).toHaveText('1');
-  await section.getByRole('button', { name: 'Show Saved programs' }).click();
   await expect(section.getByRole('link', { name: 'Saved PDF' })).toHaveAttribute('download', /crisis-payment/);
 });
 
@@ -84,7 +84,10 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   });
 
   await searchConfirmAndReachOffer(page);
-  await expect(page.locator('.pack-size')).toContainText('This pack is');
+  // One summary of what the steps chose, with the size worked out before the save.
+  await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
+  await expect(page.locator('.pack-summary .source-rows dd').first()).toContainText('Bushfire Prone Area');
+  await expect(page.locator('.pack-summary .source-rows dd').last()).toHaveText(/\d+ KB/);
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
@@ -92,7 +95,8 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(page.locator('.pack-detail h1')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible(); // the bar follows to every page
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
-  await expect(page.getByRole('heading', { name: 'Designated Bushfire Prone Area' })).toBeVisible();
+  // The bushfire area answer leads its section, in the area check's own words.
+  await expect(page.getByRole('heading', { name: INSIDE_BUSHFIRE_AREA })).toBeVisible();
   await openSources(page);
   await expect(page.locator('.source-rows', { hasText: 'Department of Transport and Planning' }).first()).toBeVisible();
   // E2-US2: both chosen places are in the saved pack, each with its council.
@@ -100,17 +104,36 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await expect(savedPlaces).toHaveCount(2);
   // The map of the area, from the bytes stored with the pack.
   await expect(page.locator('.area-map img')).toBeVisible();
-  // Both chosen places are marked on it, and the buttons zoom and turn it.
+  // Both chosen places are marked on it, and the buttons zoom it. North stays
+  // up, and fully zoomed out the map does not move: it already fills the frame.
   await expect(page.locator('.area-map-mark')).toHaveCount(2);
+  // Each marker is named for its place, and a tap opens a label above it that
+  // a press on the map closes again.
+  await expect(page.getByRole('button', { name: `Your place, ${ADDRESS}` })).toBeVisible();
+  const placeMark = page.locator('.area-map-mark').first();
+  await placeMark.click();
+  await expect(placeMark).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.area-map-label')).toHaveCount(1);
+  const frameBox = (await page.locator('.area-map-frame').boundingBox())!;
+  await page.mouse.click(frameBox.x + 30, frameBox.y + frameBox.height - 30);
+  await expect(page.locator('.area-map-label')).toHaveCount(0);
+  // The bushfire area's Source, opened above with the others: publisher, saved,
+  // the gazetted plan the address matched, and licence.
+  const areaSection = page.locator('.pack-section', { hasText: 'Bushfire area' });
+  await expect(areaSection.locator('.source-rows dt')).toHaveText([
+    'Published by', 'Saved', 'Bushfire Prone Area plan', 'Gazetted', 'Council', 'Licence',
+  ]);
+  await areaSection.getByRole('button', { name: 'Source' }).click();
   const layer = page.locator('.area-map-layer');
   const transform = () => layer.evaluate((el) => (el as HTMLElement).style.transform);
   const home = await transform();
+  await expect(page.getByRole('button', { name: 'Turn the map' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Zoom in' }).click();
-  await page.getByRole('button', { name: 'Turn the map' }).click();
-  expect(await transform()).toMatch(/rotate\(45deg\) scale\(1\.6\)/);
-  await page.getByRole('button', { name: 'North up, whole map' }).click();
+  expect(await transform()).toMatch(/scale\(1\.6\)/);
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  expect(await transform()).toBe(home);
   // Two real fingers, through the browser's touch input: spreading them zooms
-  // in, and turning them turns the map.
+  // in, and turning them does not turn the map.
   await page.locator('.area-map-frame').scrollIntoViewIfNeeded();
   const box = (await page.locator('.area-map-frame').boundingBox())!;
   const [cx, cy] = [box.x + box.width / 2, box.y + box.height / 2];
@@ -121,15 +144,34 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await touch('touchStart', [[cx - 40, cy], [cx + 40, cy]]);
   await touch('touchMove', [[cx - 70, cy - 30], [cx + 70, cy + 30]]);
   await touch('touchEnd', []);
-  expect(await transform()).toMatch(/rotate\((?!0deg)[-\d.]+deg\) scale\((?!1\))[\d.]+\)/);
-  await page.getByRole('button', { name: 'North up, whole map' }).click();
-  expect(await transform()).toBe(home);
-  await expect(savedPlaces.locator('.place-meta')).toHaveCount(2);
+  expect(await transform()).toMatch(/^translate\([-\d.]+px, [-\d.]+px\) scale\((?!1\))[\d.]+\)$/);
+  // A long drag stops at the picture's edge: no blank ground comes into view.
+  // Started beside the saved place's marker: a press on a marker opens its
+  // label rather than dragging.
+  await touch('touchStart', [[cx + 60, cy + 60]]);
+  await touch('touchMove', [[cx + 2060, cy + 2060]]);
+  await touch('touchEnd', []);
+  const [shiftX, shiftY, scale] = (await transform()).match(/[-\d.]+/g)!.map(Number);
+  expect(shiftX).toBeCloseTo((box.width / 2) * (scale - 1), 0);
+  expect(shiftY).toBeCloseTo((box.width / 2) * (scale - 1), 0);
+  // Each place's council and the CFA's dates sit in its own Source.
+  await page.getByRole('tab', { name: 'Places' }).click();
+  await expect(page.getByRole('tab', { name: 'Places' })).toHaveAttribute('aria-selected', 'true');
+  await openSources(page);
+  await expect(savedPlaces.locator('.source-rows dt', { hasText: 'Council' })).toHaveCount(2);
+  await expect(savedPlaces.locator('.source-rows dt', { hasText: 'List date' })).toHaveCount(2);
+  // The kind is said once under the heading, not on each card.
+  await expect(page.locator('#pack-panel-places')).toContainText('Both are Neighbourhood Safer Places.');
+  await expect(savedPlaces.locator('.place-kind')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
+  // The open tab is kept in the address, so a reload comes back to it.
+  await page.getByRole('tab', { name: 'Places' }).click();
+  await expect(page).toHaveURL(/[?&]tab=places/);
   // AC1 TC-1.1.1-B: a full close and reopen still shows the saved place.
   await page.reload();
+  await expect(page.getByRole('tab', { name: 'Places' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.pack-detail h1')).toBeVisible();
   await expect(page.locator('.pack-detail')).toContainText(ADDRESS);
 
@@ -223,11 +265,11 @@ test('a second address becomes a second pack beside the first, with no question 
 
   // With two packs, Back from a pack's rehearsal goes up to the chooser.
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Rehearse', exact: true }).click();
-  await page.locator('.condition-list button').first().click();
+  await page.locator('.pack-choice-list .pack-name a').first().click();
   await expect(page).toHaveURL(/\/rehearse\/.+/);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(/\/rehearse$/);
-  await expect(page.locator('.condition-list button')).toHaveCount(2);
+  await expect(page.locator('.pack-choice-list .pack-card')).toHaveCount(2);
 });
 
 // An age in words moves on while the screen stays open: a pack saved just now
@@ -269,8 +311,41 @@ test('the pack menu opens the pack\'s print page', async ({ page }) => {
   await expect(page).toHaveURL(/\/packs\/[^/]+\/print$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kalorama');
   await expect(page.locator('.print-section').first()).toContainText('Bushfire area');
+  // The stored map, cut down to home and the chosen places, on its own page.
+  await expect(page.locator('.print-map img')).toBeVisible();
+  await expect(page.locator('.print-map-frame .print-map-mark')).toHaveCount(2);
+  await expect(page.locator('.print-map-places li')).toHaveCount(2);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
+});
+
+// Each place's box sits above its card's tap area, but never above the Back
+// bar: scrolled beneath it, the box goes under it as the rest of the page does.
+test("a place's tick box scrolls under the Back bar, not over it", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(ADDRESS, 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: LGA_NAME,
+    bpaHits: [bpaHitFeature(LGA_NAME)],
+  });
+  await page.goto('/');
+  await page.getByRole('link', { name: 'New offline pack' }).first().click();
+  await page.getByLabel('Street address').fill('RIDGE');
+  await page.getByLabel('Street address').press('Enter');
+  await page.getByRole('button', { name: ADDRESS }).click();
+  await page.getByLabel('Place name').fill('Our house');
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  const bar = await page.locator('.back-bar').boundingBox();
+  const box = page.getByRole('checkbox').first();
+  const at = await box.boundingBox();
+  await page.mouse.wheel(0, at!.y - bar!.y - bar!.height / 2);
+  await expect.poll(async () => (await box.boundingBox())!.y).toBeLessThan(bar!.y + bar!.height);
+  const onTop = await box.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === el;
+  });
+  expect(onTop).toBe(false);
 });
 
 // UR-US36: Back steps back through the builder one step at a time, keeping
@@ -294,13 +369,20 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await boxes.nth(0).check();
   await boxes.nth(1).check();
   await page.getByRole('button', { name: 'Save last-resort places' }).click();
-  await page.getByLabel('Your note').fill('Meet at the oval gate.');
+  // Where the note is kept, in words alone, with no saved sign: nothing is saved yet.
+  await expect(page.locator('.note-page .hero p')).toHaveText('Kept on this phone. Opens in BlackSky with no signal.');
+  await expect(page.locator('.note-page .hero p .glyph')).toHaveCount(0);
+  // One note here, and a footnote under the box saying more can follow.
+  await expect(page.getByLabel('Note for this place')).toHaveAccessibleDescription(
+    "Add more notes any time from your pack's Notes tab.",
+  );
+  await page.getByLabel('Note for this place').fill('Meet at the oval gate.');
   await page.getByRole('button', { name: 'Keep this note' }).click();
-  await expect(page.getByRole('heading')).toHaveText('Ready to download');
+  await expect(page.getByRole('heading')).toHaveText('Ready to save');
 
   // The Back bar: the size, then the note as written.
   await back.click();
-  await expect(page.getByLabel('Your note')).toHaveValue('Meet at the oval gate.');
+  await expect(page.getByLabel('Note for this place')).toHaveValue('Meet at the oval gate.');
   // The phone's Back button: the places, with the same two ticked.
   await page.goBack();
   await expect(boxes.nth(0)).toBeChecked();
@@ -329,6 +411,9 @@ test('once the pack is saved, Back to Home is the one way out', async ({ page })
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+  // Back is held, but its room is kept, so the screen does not lift as it saves.
+  await expect(page.locator('.back-bar-held')).toHaveCount(1);
+  expect((await page.locator('.back-bar').boundingBox())!.height).toBeGreaterThan(44);
   await page.getByRole('link', { name: 'Back to Home' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('.pack-card')).toHaveCount(1);
@@ -378,7 +463,7 @@ test('US2 the global Back bar works offline and the stored pack survives it', as
   await context.setOffline(false);
 });
 
-test('Back from a pack goes Home with another tab behind it, and a lone pack\'s rehearsal has no Back', async ({ page }) => {
+test('Back from a pack goes Home with another tab behind it, and a lone pack\'s rehearsal goes back to Rehearse', async ({ page }) => {
   await saveAPackAndOpenIt(page);
   const nav = page.getByRole('navigation', { name: 'Main' });
   await nav.getByRole('link', { name: 'Nearby', exact: true }).click();
@@ -389,10 +474,26 @@ test('Back from a pack goes Home with another tab behind it, and a lone pack\'s 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('.pack-card')).toBeVisible();
 
-  // One pack: Rehearse opens its rehearsal straight away, so Back there would loop.
+  // One pack: Rehearse still lists it, and its rehearsal goes back there.
   await nav.getByRole('link', { name: 'Rehearse', exact: true }).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
+  await page.locator('.pack-choice-list .pack-name a').click();
   await expect(page).toHaveURL(/\/rehearse\/.+/);
-  await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
+
+  // Opened from the pack page, Back goes back to that pack instead.
+  await page.goto('/');
+  await page.locator('.pack-card .pack-name a').click();
+  await page.getByRole('tab', { name: 'Practice' }).click();
+  await page.getByRole('link', { name: 'Rehearse this pack' }).click();
+  // A chosen condition steps back to the choice first, then to the pack.
+  await page.getByRole('button', { name: /No mobile data/ }).click();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(/\/packs\/.+/);
 });
 
 test('US2 the pack reopens unchanged after returning to the pack list', async ({ page }) => {
@@ -410,4 +511,34 @@ test('US2 the pack reopens unchanged after returning to the pack list', async ({
   // A full reload of the detail route is still the same stored pack.
   await page.reload();
   expect(await page.locator('.pack-detail').innerText()).toBe(before);
+});
+// A pack's map takes in the places chosen for it. Far from the nearest places,
+// as at Bimbourie in the Mallee, the map widens past its usual 40 km, up to
+// 120 km across; a chosen place past even that is said under the map.
+test('the pack map widens to its chosen places, and names one too far for it', async ({ page }) => {
+  const FAR_ADDRESS = '1 MAIN STREET BIMBOURIE 3533';
+  await mockOfficialServices(page, {
+    candidates: [addressFeature(FAR_ADDRESS, 'BIMBOURIE', 142.75978, -35.34034)],
+    lgaName: 'MILDURA',
+    bpaHits: [bpaHitFeature('MILDURA')],
+  });
+  await page.goto('/packs/new');
+  await page.getByLabel('Street address').fill('MAIN');
+  await page.getByLabel('Street address').press('Enter');
+  await page.getByRole('button', { name: FAR_ADDRESS }).click();
+  await page.getByLabel('Place name').fill('Bimbourie');
+  await page.getByRole('button', { name: 'Save this place' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  const boxes = page.getByRole('checkbox');
+  await boxes.nth(0).check();
+  await boxes.nth(1).check();
+  await page.getByRole('button', { name: 'Save last-resort places' }).click();
+  await page.getByRole('button', { name: 'Not now' }).click();
+  await page.getByRole('button', { name: 'Save this pack' }).click();
+  await page.getByRole('button', { name: 'Open saved pack' }).click();
+
+  // The nearest, about 40 km off, is on the map; the next, about 69 km, is not.
+  await expect(page.locator('.area-map')).toContainText('120 km across');
+  await expect(page.locator('.area-map-mark')).toHaveCount(1);
+  await expect(page.locator('#pack-panel-area .place-note')).toHaveText([/^Showgrounds Recreation Reserve, Swan Hill is \d+(\.\d)? km away, off this map\.$/]);
 });

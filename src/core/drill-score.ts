@@ -6,22 +6,29 @@
 // how ready a bag was, out of 100. The number is about the BAG, never about the
 // person, and it is built only from what was packed.
 
-import { BAG_LIMIT, DRILL_ITEMS, itemById, type DrillItem } from './drill-items';
+import { BAG_LIMIT, DRILL_ITEMS, type DrillItem } from './drill-items';
+import { CLASSIC, type DrillRules } from './drill-twists';
 
 export type DebriefRow = { item: DrillItem; effect: 'added' | 'took' | 'nothing' };
 
-/** The score for a bag: the weights added up, held between 0 and 100. */
-export function scoreDrill(packedIds: string[]): number {
+/** A thing as this drill's twist has it: its weight and place. */
+const itemIn = (rules: DrillRules, id: string): DrillItem | undefined => rules.items.find((item) => item.id === id);
+
+/** The score for a bag: the weights added up, out of the best bag the twist
+ *  allows, held between 0 and 100. In the classic drill the best bag is
+ *  exactly 100 points, so the score is the plain sum. */
+export function scoreDrill(packedIds: string[], rules: DrillRules = CLASSIC): number {
   const total = packedIds
-    .slice(0, BAG_LIMIT)
-    .reduce((sum, id) => sum + (itemById(id)?.weight ?? 0), 0);
-  return Math.max(0, Math.min(100, Math.round(total)));
+    .slice(0, rules.bagLimit)
+    .reduce((sum, id) => sum + (itemIn(rules, id)?.weight ?? 0), 0);
+  const score = rules.maxPoints > 0 ? (100 * total) / rules.maxPoints : 0;
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 /** One row per packed item, in the order they were packed. */
-export const debriefRows = (packedIds: string[]): DebriefRow[] =>
+export const debriefRows = (packedIds: string[], rules: DrillRules = CLASSIC): DebriefRow[] =>
   packedIds.flatMap((id) => {
-    const item = itemById(id);
+    const item = itemIn(rules, id);
     if (!item) return [];
     const effect = item.weight > 0 ? 'added' : item.weight < 0 ? 'took' : 'nothing';
     return [{ item, effect }];
@@ -35,13 +42,6 @@ export const topTenTotal = (): number =>
     .slice(0, BAG_LIMIT)
     .reduce((sum, item) => sum + item.weight, 0);
 
-/** Every essential (the heaviest weight) that stayed in the house, for the
- *  debrief: what was packed is only half of the lesson. */
-export const leftBehind = (packedIds: string[]): DrillItem[] => {
-  const heaviest = Math.max(...DRILL_ITEMS.map((item) => item.weight));
-  return DRILL_ITEMS.filter((item) => item.weight === heaviest && !packedIds.includes(item.id));
-};
-
 export type ScoreGroup = {
   kind: 'essential' | 'listed' | 'neutral' | 'bulky';
   items: DrillItem[];
@@ -49,19 +49,24 @@ export type ScoreGroup = {
   points: number;
 };
 
-/** The bag sorted into what counted and how much: the "why" behind the score.
- *  Every group is returned, empty ones too, so the debrief can say "0 of 10". */
 /** Which kind a thing is, from its points: the colour it wears on the debrief. */
 export const kindOf = (weight: number): ScoreGroup['kind'] =>
   weight >= 10 ? 'essential' : weight > 0 ? 'listed' : weight < 0 ? 'bulky' : 'neutral';
 
-export function scoreBreakdown(packedIds: string[]): ScoreGroup[] {
+/** Every essential that stayed in the house and could have been reached, for
+ *  the debrief: what was packed is only half of the lesson. A thing behind a
+ *  shut door is not counted against the bag. */
+export const leftBehind = (packedIds: string[], rules: DrillRules = CLASSIC): DrillItem[] =>
+  rules.reachable.filter((item) => kindOf(item.weight) === 'essential' && !packedIds.includes(item.id));
+
+/** The bag sorted into what counted and how much: the "why" behind the score.
+ *  Every group is returned, empty ones too, so the debrief can say "0 of 10". */
+export function scoreBreakdown(packedIds: string[], rules: DrillRules = CLASSIC): ScoreGroup[] {
   const groups: ScoreGroup[] = (['essential', 'listed', 'neutral', 'bulky'] as const).map((kind) => ({ kind, items: [], points: 0 }));
-  for (const { item } of debriefRows(packedIds.slice(0, BAG_LIMIT))) {
+  for (const { item } of debriefRows(packedIds.slice(0, rules.bagLimit), rules)) {
     const group = groups.find((candidate) => candidate.kind === kindOf(item.weight))!;
     group.items.push(item);
     group.points += item.weight;
   }
   return groups;
 }
-

@@ -5,9 +5,12 @@ import {
   hasNearbyData,
   nearbyView,
   nearestOfType,
+  placesNear,
   parsePostcode,
+  placeShareText,
   postcodeOrigin,
   type NearbyCache,
+  type NearbyRow,
   type NearbyView,
 } from '../../src/core/nearby';
 import type { BundleFacility, SnapshotActivation } from '../../src/core/types';
@@ -105,8 +108,19 @@ describe('nearbyView', () => {
     expect(nsp.state).toBe('cached');
     expect(nsp.stateLabel).toBe(copy.STATE_CACHED(copy.HOURS_AGO(2)));
     expect(nsp.timestamp).toBe(copy.VERIFIED_ON('31 August 2026'));
-    expect(nsp.place).toEqual({ name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', distance: '580 m' });
+    expect(nsp.place).toEqual({
+      name: 'Kalorama Memorial Reserve',
+      address: 'Ridge Road, Kalorama',
+      distance: '580 m',
+      about: { kind: null, note: copy.NSP_NO_SERVICES },
+    });
     expect(nsp.note).toBeNull();
+  });
+
+  it("an NSP says CFA's word for the place and that no one is there; a refuge says neither", () => {
+    const view = nearbyView(NOW, KALORAMA, cache({ facilities: [facility({ site_kind: 'open_space' }), facility({ facility_id: 2, type: 'CFR', site_kind: 'building' })] }), OFFLINE);
+    expect(row(view, 'NSP').place?.about).toEqual({ kind: 'Open space', note: copy.NSP_NO_SERVICES });
+    expect(row(view, 'CFR').place?.about).toBeUndefined();
   });
 
   it('a fresh dynamic snapshot offline shows the centre as cached and possibly outdated', () => {
@@ -190,13 +204,67 @@ describe('nearbyView', () => {
     expect(row(view, 'NSP').note).toContain(copy.SOURCE_NOT_READ('Country Fire Authority Neighbourhood Safer Places list'));
   });
 
-  it('lists every source with its status and age; the snapshot reading of the feed wins', () => {
+  it('lists each tab\'s own sources with their status and age; the snapshot reading of the feed wins', () => {
     const view = nearbyView(NOW, KALORAMA, cache(), OFFLINE);
-    expect(view.health).toContainEqual({ lead: 'Country Fire Authority Neighbourhood Safer Places list', text: copy.HEALTH_TEXT('reachable', copy.ITEM_DAYS_AGO(1)) });
-    expect(view.health).toContainEqual({ lead: 'VicEmergency feed', text: copy.HEALTH_TEXT('reachable', copy.MINUTES_AGO(10)) });
-    expect(view.health).toContainEqual({ lead: 'other', text: copy.HEALTH_TEXT('reachable', copy.HOURS_AGO(1)) });
-    expect(copy.HEALTH_TEXT('reachable', 'a day ago')).toBe('Reachable when last checked, a day ago.');
+    const sources = (kind: 'bushfire' | 'relief', v = view) => v.groups.find((group) => group.kind === kind)!.sources;
+    const cfa = { lead: 'Country Fire Authority Neighbourhood Safer Places list', status: 'healthy', text: copy.HEALTH_TEXT('reachable', copy.ITEM_DAYS_AGO(1)) };
+    const feed = { lead: 'VicEmergency feed', status: 'healthy', text: copy.HEALTH_TEXT('reachable', copy.MINUTES_AGO(10)) };
+    const other = { lead: 'other', status: 'healthy', text: copy.HEALTH_TEXT('reachable', copy.HOURS_AGO(1)) };
+    // Each tab lists the sources behind its cards; one it does not know serves both.
+    expect(sources('bushfire')).toContainEqual(cfa);
+    expect(sources('bushfire')).not.toContainEqual(feed);
+    expect(sources('relief')).toContainEqual(feed);
+    expect(sources('relief')).not.toContainEqual(cfa);
+    expect(sources('bushfire')).toContainEqual(other);
+    expect(sources('relief')).toContainEqual(other);
+    // A tab's own sources come first, whatever order the data gives them.
+    const shuffled = nearbyView(NOW, KALORAMA, cache({ meta: { ...cache().meta, data_health: JSON.stringify({ other: healthy(HOUR), cfr_static_list: healthy(24 * HOUR), cfa_nsp_arcgis: healthy(24 * HOUR) }) } }), OFFLINE);
+    expect(sources('bushfire', shuffled).map((line) => line.lead)).toEqual(['Country Fire Authority Neighbourhood Safer Places list', 'Community Fire Refuge list', 'other']);
+    expect(sources('relief', shuffled).map((line) => line.lead)).toEqual(['VicEmergency feed', 'other']);
+    expect(copy.HEALTH_TEXT('reachable', 'a day ago')).toBe('Reachable · checked a day ago');
+    expect(copy.HEALTH_TEXT('not yet read', null)).toBe('Not yet read');
     const never = nearbyView(NOW, KALORAMA, cache({ meta: { static_synced_at: ago(0), data_health: JSON.stringify({ vicemergency_feed: { status: 'unknown', last_success_at: null } }) } }), OFFLINE);
-    expect(never.health).toContainEqual({ lead: 'VicEmergency feed', text: copy.HEALTH_TEXT('not yet read', copy.NEVER) });
+    expect(sources('relief', never)).toContainEqual({ lead: 'VicEmergency feed', status: 'unknown', text: copy.HEALTH_TEXT('not yet read', null) });
+  });
+});
+
+describe('placeShareText', () => {
+  const row: NearbyRow = {
+    type: 'NSP',
+    title: 'Neighbourhood Safer Place',
+    place: { name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', distance: '580 m', about: { kind: 'Open space', note: 'No staff or services' } },
+    state: 'cached',
+    stateLabel: 'Cached · 2 hours ago',
+    timestamp: 'Verified 31 August 2026',
+    note: null,
+  };
+
+  it('sends the place, how current it is and where to check, never the distance', () => {
+    expect(placeShareText(row)).toBe(
+      'Neighbourhood Safer Place\nKalorama Memorial Reserve\nRidge Road, Kalorama\nOpen space · No staff or services\nVerified 31 August 2026\n\nShared from Cooeee. Check VicEmergency for the latest.',
+    );
+    expect(placeShareText(row)).not.toContain('580 m');
+  });
+
+  it('carries the warning on its card, and is empty with no place', () => {
+    expect(placeShareText({ ...row, note: 'May be outdated.' })).toContain('May be outdated.');
+    expect(placeShareText({ ...row, place: null })).toBe('');
+  });
+});
+
+describe('placesNear', () => {
+  it('lists the nearest places of last resort within reach, nearest first, at most the count', () => {
+    const at = (id: number, lat: number) => facility({ facility_id: id, name: `Place ${id}`, lat, lon: KALORAMA.lon });
+    const facilities = [
+      at(1, KALORAMA.lat - 0.05),
+      at(2, KALORAMA.lat - 0.01),
+      at(3, KALORAMA.lat - 0.02),
+      at(4, KALORAMA.lat - 0.5), // about 55 km away
+      facility({ facility_id: 5, type: 'CFR', lat: KALORAMA.lat, lon: KALORAMA.lon }),
+    ];
+    const near = placesNear(facilities, KALORAMA, 'NSP', 2, 20_000);
+    expect(near.map(({ row }) => row.facility_id)).toEqual([2, 3]);
+    expect(placesNear(facilities, KALORAMA, 'NSP', 5, 20_000).map(({ row }) => row.facility_id)).toEqual([2, 3, 1]);
+    expect(placesNear(facilities, KALORAMA, 'CFR', 5, 20_000).map(({ row }) => row.facility_id)).toEqual([5]);
   });
 });

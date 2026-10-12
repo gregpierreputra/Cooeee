@@ -1,42 +1,33 @@
-import { useState, type ReactNode } from 'react';
-import * as copy from '../../core/copy';
+import type { ReactNode } from 'react';
 import Glyph, { type GlyphKind } from './Glyph';
 
-/** One block of the pack page: a glyph and a title in the head, one control
- *  that shows or hides everything beneath, and an optional count. Open or
- *  closed lives in component state for the visit only. */
+/** One block of a pack tab: a glyph and a title in the head, an optional
+ *  count, then its content. The tabs above do the hiding. `heading` makes the
+ *  title an h2, for a screen whose sections are reached by heading. */
 export default function Section({
   kind,
   title,
   count,
-  defaultOpen = true,
+  heading = false,
+  className,
   children,
 }: {
   kind: GlyphKind;
   title: string;
   count?: number;
-  defaultOpen?: boolean;
+  heading?: boolean;
+  className?: string;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const Title = heading ? 'h2' : 'span';
   return (
-    <section className="pack-section">
+    <section className={className ? `pack-section ${className}` : 'pack-section'}>
       <div className="pack-section-head">
         <Glyph kind={kind} />
-        <span className="kicker">{title}</span>
+        <Title className="kicker">{title}</Title>
         {count === undefined ? null : <span className="section-count">{count}</span>}
-        <button
-          type="button"
-          className="section-toggle"
-          aria-expanded={open}
-          aria-label={open ? copy.HIDE_SECTION(title) : copy.SHOW_SECTION(title)}
-          onClick={() => setOpen(!open)}
-        >
-          {open ? copy.HIDE : copy.SHOW}
-        </button>
       </div>
-      {/* Hidden, not unmounted: a note being written survives a hide. */}
-      <div hidden={!open}>{children}</div>
+      {children}
     </section>
   );
 }

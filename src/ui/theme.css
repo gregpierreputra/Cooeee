@@ -78,6 +78,49 @@
   --blacksky-accent: #ffb020;
   --blacksky-fill: #3a2808;
   --blacksky-ink-2: #b87a12;
+  /* BlackSky's true black, kept by the compass, its hint and its info panel
+     outside the mode, so they read as the dark screen whatever the page. */
+  --blacksky-bg: #000000;
+  /* The app's own teal, kept by BlackSky's leave hold while it is held, so it
+     reads as the way back to the app. */
+  --cooeee-teal: #2dd4bf;
+
+  /* The pack map's own colours. They sit on the light map picture, so they
+     never rebind with the page around it. */
+  --area-map-paper: #ffffff;
+  --area-map-glass: rgb(255 255 255 / 0.72);
+  --area-map-ink: #1a1f24;
+  --area-map-inside: #f2d64b;
+
+  /* The games on the Rehearse screens, each in its own warm colour: the
+     drill keeps BlackSky's amber, Cooee Word a eucalyptus green, Ready the
+     Block an ember red. Each has its accent (border, glyph circle, chevron),
+     the ink drawn on that accent, and two washes for the card's gradient. */
+  --drill-wash-1: rgb(255 150 40 / 22%);
+  --drill-wash-2: rgb(255 90 30 / 8%);
+  --drill-wash-hover-1: rgb(255 150 40 / 30%);
+  --drill-wash-hover-2: rgb(255 90 30 / 12%);
+  --drill-ink-on: #1a0d04;
+  --word-accent: #8fd3a0;
+  --word-wash-1: rgb(110 200 140 / 20%);
+  --word-wash-2: rgb(40 140 100 / 8%);
+  --word-wash-hover-1: rgb(110 200 140 / 28%);
+  --word-wash-hover-2: rgb(40 140 100 / 12%);
+  --word-ink-on: #08200f;
+  --block-accent: #ff7a5c;
+  --block-wash-1: rgb(255 110 80 / 20%);
+  --block-wash-2: rgb(200 50 30 / 8%);
+  --block-wash-hover-1: rgb(255 110 80 / 28%);
+  --block-wash-hover-2: rgb(200 50 30 / 12%);
+  --block-ink-on: #2a0904;
+  /* Cooee Word's three marks. Each also wears a shape (a tick, a dot, a
+     dashed edge), so a mark never rests on colour alone. */
+  --word-right: #2f8a4c;
+  --word-right-ink: #ffffff;
+  --word-present: #d8a531;
+  --word-present-ink: #1a1204;
+  --word-absent: #26303c;
+  --word-absent-ink: #a9b8c9;
 
   /* Connection notice. Fixed green/red by requirement, in every mode: the
      state colour IS the information, so it never rebinds per mode. */
@@ -196,8 +239,15 @@ h2 {
 
 .hero {
   display: grid;
+  /* One column no wider than the page, so a long title at 200% text wraps
+     rather than widening everything under it. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.625rem;
   justify-items: start;
+}
+.hero h1 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 /* Rhythm comes from container gaps, not paragraph margins. */
@@ -227,23 +277,79 @@ a {
   font-size: var(--step-0);
 }
 
-/* Selecting places to save. The checkbox is small, so the label carries the
-   44px target and the whole row head is the hit area. */
-.destination-item-head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+/* A place to choose, set as a card on Nearby: the box first, then the site
+   with its distance, where it is, and the council as a footer under a thin
+   line, all in one column beside the box. */
+.destination-item {
+  position: relative;
+  /* The box's own layer, above the card's tap area, stays inside the card, so
+     it never rises over the Back bar or the header as the list scrolls. */
+  isolation: isolate;
 }
-.destination-item-head input[type='checkbox'] {
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
+/* .card sets a column of flex; this card is a grid of box and body. */
+.card.destination-item-pickable {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+  align-items: start;
+}
+.destination-item-pickable > :not(input, .destination-hit) {
+  grid-column: 2;
+}
+.destination-item-pickable > .destination-body {
+  grid-row: 1;
+}
+/* The box sits centred on the name's first line, which the larger distance
+   beside it pushes down to share its baseline. */
+.destination-item-pickable > input[type='checkbox'] {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0.6875rem 0 0;
+}
+.destination-item > input[type='checkbox'] {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  min-height: 0;
+  padding: 0;
   flex: none;
+  accent-color: var(--accent);
 }
-.destination-item-head label {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
+.destination-foot {
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--line);
+  font-size: var(--step-s);
+}
+/* The whole card is the hit area: a label stretched over it. The box sits
+   above it, so a tap on the box itself still reaches the box. */
+.destination-hit {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
   cursor: pointer;
+}
+.destination-item > input[type='checkbox'] {
+  position: relative;
+  z-index: 1;
+}
+/* The kind, said once over the list, sits close to the cards it names. */
+.destination-kind {
+  margin: 0.5rem 0 -0.25rem;
+}
+/* A chosen place wears the teal ring and tint a kept card wears. */
+.destination-item-chosen {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+.destination-item-pickable:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .destination-item-pickable:not(.destination-item-chosen):hover {
+    border-color: var(--accent);
+  }
 }
 
 /* The rule on top: the counter ring, then Choose two in the accent. */
@@ -616,8 +722,24 @@ input[aria-invalid='true'] {
 
 /* The stored picture of the pack's area: square, with the saved place marked
    at its centre by a ring in the accent colour, so it reads over any ground. */
+/* The bushfire area answer leads its section, the plan it matched beneath. */
+.area-answer {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+.area-answer h2 {
+  margin: 0;
+  font-size: var(--step-1);
+}
+
+/* The map and its key as one card: the key is the map's footer strip. */
 .area-map {
   margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
 }
 
 /* Fingers and the mouse move the map, not the page, while they are on it. */
@@ -627,9 +749,7 @@ input[aria-invalid='true'] {
      under the sticky Back bar and header with the image, never over them. */
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--r-card);
-  background: #ffffff;
+  background: var(--area-map-paper);
   touch-action: none;
   cursor: grab;
 }
@@ -644,7 +764,8 @@ input[aria-invalid='true'] {
   transform-origin: center;
 }
 
-.area-map-layer img {
+.area-map-layer img,
+.nearby-map-picture {
   display: block;
   width: 100%;
   aspect-ratio: 1;
@@ -652,14 +773,96 @@ input[aria-invalid='true'] {
   -webkit-user-drag: none;
 }
 
-/* Each marker undoes the map's turn and zoom, so it stays upright and the
-   same size, centred on its own spot. */
+/* Each marker undoes the map's zoom, so it stays the same size, centred on
+   its own spot. */
 .area-map-pin,
 .area-map-mark {
   position: absolute;
-  transform: translate(-50%, -50%) rotate(calc(var(--map-angle, 0deg) * -1)) scale(calc(1 / var(--map-scale, 1)));
+  transform: translate(-50%, -50%) scale(calc(1 / var(--map-scale, 1)));
 }
 
+/* Each marker is a button: none of the usual button's size or fill, with an
+   invisible ring round it that makes a 44 px tap area. */
+.area-map-marker {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+}
+.area-map-marker::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+/* The open marker, and so its label, sits above every other marker. */
+.area-map-marker[aria-expanded='true'] {
+  z-index: 2;
+}
+/* A marker's label: a small bubble above it, pointing down at it. */
+.area-map-label {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  gap: 0.125rem;
+  width: max-content;
+  max-width: 13rem;
+  padding: 0.375rem 0.625rem;
+  transform: translateX(-50%);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--step-xs);
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: left;
+  pointer-events: none;
+}
+.area-map-label b {
+  color: var(--ink);
+}
+/* Near the map's top edge the label opens below; near a side it is held to
+   that side, its pointer still on the marker. */
+.area-map-label.below {
+  top: calc(100% + 10px);
+  bottom: auto;
+}
+.area-map-label.below::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--surface-2);
+}
+.area-map-label.start {
+  left: -8px;
+  transform: none;
+}
+.area-map-label.start::after {
+  left: 16px;
+}
+.area-map-label.end {
+  left: auto;
+  right: -8px;
+  transform: none;
+}
+.area-map-label.end::after {
+  left: auto;
+  right: 16px;
+  transform: none;
+}
+.area-map-label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--surface-2);
+}
 .area-map-pin {
   top: 50%;
   left: 50%;
@@ -667,8 +870,8 @@ input[aria-invalid='true'] {
   height: 1rem;
   border: 3px solid var(--accent);
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.6);
-  box-shadow: 0 0 0 2px #fff;
+  background: color-mix(in srgb, var(--area-map-paper) 60%, transparent);
+  box-shadow: 0 0 0 2px var(--area-map-paper);
 }
 
 /* An official place of last resort: the places glyph in a dark disc, so it
@@ -679,7 +882,7 @@ input[aria-invalid='true'] {
   height: 28px;
   background: var(--bg);
   color: var(--accent);
-  box-shadow: 0 0 0 2px #fff;
+  box-shadow: 0 0 0 2px var(--area-map-paper);
 }
 
 .area-map-mark-key .glyph {
@@ -698,15 +901,25 @@ input[aria-invalid='true'] {
   z-index: 1;
   display: grid;
   border-radius: var(--r-pill);
-  background: rgb(255 255 255 / 0.72);
+  background: var(--area-map-glass);
   backdrop-filter: blur(8px);
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
   cursor: default;
 }
 
-.area-map-how {
-  margin: 0.5rem 0 0;
-  font-size: var(--step-s);
+/* How far the map reaches, in its bottom corner as a printed map's scale. */
+.area-map-scale {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 1;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--r-pill);
+  background: var(--area-map-glass);
+  backdrop-filter: blur(8px);
+  color: var(--area-map-ink);
+  font-size: var(--step-xs);
+  pointer-events: none;
 }
 
 /* 44 px targets with no fill or border of their own: the column is the shape. */
@@ -719,23 +932,37 @@ input[aria-invalid='true'] {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #1a1f24;
+  color: var(--area-map-ink);
   font-size: var(--step-1);
   line-height: 1;
 }
 .map-button[aria-disabled='true'] {
-  color: rgb(26 31 36 / 0.35);
+  color: color-mix(in srgb, var(--area-map-ink) 35%, transparent);
   cursor: default;
 }
 
 .area-map figcaption {
-  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--line);
 }
 
+/* The pack's places one under the other, at every width, as on Nearby. */
 .saved-destinations {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: 0.75rem;
+}
+/* The kind of place, a small teal label over the site, as on a Nearby card. */
+.place-kind {
+  margin: 0;
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+/* The straight-line note over the places, kept small so the places lead. */
+.place-note {
+  font-size: var(--step-s);
 }
 
 .card-confirm-actions {
@@ -809,9 +1036,53 @@ textarea {
   resize: vertical;
 }
 
+/* On a replace, the notes already written for the place, above the box: small
+   read-only cards, long ones cut to three lines, then what happens to them and
+   a small outlined button to choose. Chosen to go, they fade. */
+.notes-saved {
+  display: grid;
+  gap: 0.5rem;
+}
+.notes-saved .note-card {
+  padding: 0.75rem 1rem;
+  font-size: var(--step-s);
+}
+.notes-saved .note-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.notes-dropped .note-card {
+  opacity: 0.45;
+}
+/* The choice about the saved notes: across the column as the note cards and
+   the box are, its words kept smaller than the step's main button, and a wider
+   gap after it closing the saved notes off from the new one. */
+.notes-choice {
+  justify-self: stretch;
+  justify-content: center;
+  min-height: 48px;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: var(--step-s);
+}
+
+/* The area step's reminder: the card's footer, under a thin line, at full
+   strength as the one thing to do. */
+.area-priority {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-size: var(--step-s);
+}
+
 /* The note step's box shows the whole pre-filled example without scrolling. */
 .note-page textarea {
   min-height: 22rem;
+}
+.note-page.replacing textarea {
+  min-height: 9rem;
 }
 
 /* The default control is a ghost pill, as the mockups' .btn.g. Screens whose
@@ -852,7 +1123,7 @@ button,
 @media (hover: hover) {
   /* Controls whose border colour carries meaning (red ends something, amber
      is BlackSky, a debrief tile's kind) keep it under the pointer. */
-  button:not(:disabled, .leave-action, .drill-tile, .debrief-tile, .blacksky-hold, .card-confirm-yes, .note-delete):hover,
+  button:not(:disabled, .leave-action, .game-tile, .debrief-tile, .blacksky-hold, .card-confirm-yes, .note-delete):hover,
   .action:not(.leave-action):hover {
     border-color: var(--accent);
   }
@@ -1021,8 +1292,6 @@ main:focus {
   color: var(--ink-2);
 }
 
-/* A caution read with the heading: the map is not where fire can go, or a note
-   has no password. Amber, the attention colour, at full text strength. */
 /* A key term inside a line: the attention colour, so it is seen first. */
 .key-term {
   color: var(--stale);
@@ -1057,7 +1326,7 @@ main:focus {
   letter-spacing: -0.01em;
 }
 
-/* ── Pack size and download ────────────────────────────────────────────────── */
+/* ── Pack summary and save ─────────────────────────────────────────────────── */
 
 .size-content {
   display: grid;
@@ -1068,10 +1337,38 @@ main:focus {
   margin: 0;
 }
 
-.pack-size {
-  color: var(--ink);
+.pack-summary {
+  gap: 1rem;
+}
+.pack-summary-place {
+  display: grid;
+  gap: 0.125rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.pack-summary-name {
   font-size: var(--step-1);
-  font-weight: var(--w-med);
+  font-weight: var(--w-bold);
+  letter-spacing: -0.01em;
+}
+.pack-summary-address {
+  color: var(--ink-2);
+}
+.pack-summary-list {
+  margin: 0;
+  padding-left: 1.125rem;
+}
+.size-status:empty {
+  display: none;
+}
+.size-status {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--ink-2);
+}
+.size-status .save-stopped {
+  color: var(--ink);
+  font-weight: var(--w-bold);
 }
 
 /* ── Pack detail and provenance ────────────────────────────────────────────── */
@@ -1265,6 +1562,11 @@ main:focus {
   margin: 0 auto;
 }
 
+/* The room Back takes, kept while Back is held in the pack builder. */
+.back-bar-held {
+  min-height: 44px;
+}
+
 /* A running rehearsal's bar sits inside the back bar, above the control, flush
    with the top edge so the two read as one strip. */
 .back-bar .rehearsal-bar {
@@ -1301,131 +1603,137 @@ main:focus {
 /* The bearing figure is the biggest thing on screen — readable at arm's length,
    while walking. Everything else recedes into dim amber. */
 
-/* The top bar: the one way out, a hold across the full content width, 48 px
-   high, with the mode's name set over its right-hand end (E3-US3-AC1, restored
-   after the phone test of 28 Sep: a finger on the old pill hid it, so nobody
-   could see the hold going). A grid, so that the hold's hint and the "still
-   open" notice, which the markup places after the button, fall into
-   full-width rows UNDER the bar. They push the page down when they appear; the
-   bar above them never moves, so it cannot slide out from under the finger
-   that is holding it. */
-.blacksky-topbar {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.25rem;
-}
-
-.blacksky-topbar > .blacksky-hold-hint {
-  text-align: left;
-  font-size: var(--step-0); /* nothing on this screen but the two small labels is under 16 px */
-}
-
-/* The bar and its fill. The fill is the mode's full amber, sweeping left to
-   right across the whole bar for the 2 s of the hold (HOLD_MS), so both ends
-   of it show beside a thumb: amber on the black bar is 11.5 to 1. The words
-   turn dark as the fill passes under them, so they read on both. */
-.blacksky-topbar > .blacksky-leave-bar {
-  min-height: 0;
-  height: 48px;
-  padding: 0;
-  border: 1px solid var(--accent);
-  border-radius: var(--r-pill);
-  flex-direction: row;
-  justify-content: flex-start;
-  white-space: nowrap;
-  background-color: var(--bg);
-  background-image: linear-gradient(var(--accent), var(--accent));
-}
-
-.blacksky-topbar > .blacksky-leave-bar:active {
-  background-size: 100% 100%;
-  transition: background-size 2s linear; /* HOLD_MS, as on every hold control */
-}
-
-/* The words, and the mode's name over the other end, painted by the same sweep
-   as the fill: dark where the fill has reached, amber where it has not. Each
-   spans the whole bar, so its sweep and the bar's are the same. */
-.blacksky-leave-label,
-.blacksky-topbar > .blacksky-title {
-  box-sizing: border-box;
-  width: 100%;
-  background-image: linear-gradient(var(--ink-on-accent), var(--ink-on-accent)), linear-gradient(var(--accent), var(--accent));
-  background-repeat: no-repeat;
-  background-position: left;
-  background-size: 0% 100%, 100% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  transition: background-size 0.2s ease;
-}
-
-.blacksky-leave-label {
-  padding: 0 1.25rem;
-  text-align: left;
-  font-size: var(--step-0);
-  font-weight: var(--w-bold);
-  line-height: 46px;
-}
-
-/* The name: over the bar's right-hand end, never touched: the pointer goes
-   through it to the bar. Inset by the bar's 1 px border, so its sweep lines up
-   with the fill's. */
-.blacksky-topbar > .blacksky-title {
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: auto;
-  right: 1px;
-  height: 46px;
+/* The one way out: a round hold on exactly the spot of the tab bar's compass,
+   the same 56 px slot with the button risen 32 px out of it, and Cooeee under
+   it where BlackSky sits. No bar: the page fades to black behind it, so text
+   dims out rather than showing through, and only the button takes a tap.
+   Black with the mode's dim amber at rest, so it recedes; the sweep and the
+   mark turn teal while held, the colour of the app it goes back to. */
+.blacksky-leave {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 1.25rem;
+  justify-content: center;
+  padding-top: var(--bs-fade);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Clear to black, solid from where the sweep's top edge is. */
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0), var(--bg) calc(var(--bs-fade) - 39px));
   pointer-events: none;
-  z-index: 1;
 }
-
-.blacksky-topbar > .blacksky-leave-bar:active .blacksky-leave-label,
-.blacksky-topbar:has(> .blacksky-leave-bar:active) > .blacksky-title {
-  background-size: 100% 100%, 100% 100%;
-  transition: background-size 2s linear;
+.blacksky-leave .nav-blacksky-slot {
+  flex: none;
+  width: 72px;
+  color: var(--ink-2);
+}
+.blacksky-leave .blacksky-leave-button {
+  position: absolute;
+  left: 50%;
+  top: -32px;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  min-height: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink-2);
+  border-radius: 50%;
+  background: var(--bg);
+  background-image: none; /* the sweep shows the hold, not the shared fill */
+  color: var(--ink-2);
+  pointer-events: auto;
+}
+.blacksky-leave .blacksky-leave-button.holding {
+  border-color: var(--cooeee-teal);
+  color: var(--cooeee-teal);
+}
+@media (hover: hover) {
+  .blacksky-leave .blacksky-leave-button:hover {
+    border-color: var(--cooeee-teal);
+    color: var(--cooeee-teal);
+  }
+}
+.blacksky-leave .hold-sweep circle {
+  stroke: var(--cooeee-teal);
+}
+/* Cooeee under the button turns with it, so the two read as one control. */
+.blacksky-leave .nav-blacksky-slot:has(.holding) .bottom-nav-label {
+  color: var(--cooeee-teal);
+}
+@media (hover: hover) {
+  .blacksky-leave .nav-blacksky-slot:has(.blacksky-leave-button:hover) .bottom-nav-label {
+    color: var(--cooeee-teal);
+  }
 }
 
 /* Which pack to load, when several are saved: asked under the title and left
-   there. Full-width choices for wet hands, the chosen one filled in the mode's
-   amber. */
+   there. Full-width choices for wet hands. The chosen one wears the amber ring
+   a chosen place wears elsewhere in the app, never a fill, and once chosen the
+   list folds to it with an arrow at its right edge. */
 .blacksky-picker {
   display: grid;
   gap: 0.75rem;
   padding-bottom: 1.125rem;
   border-bottom: 1px solid var(--line);
 }
+/* Every pack card the height of the tallest, so the one that says Covers where
+   you are does not stand a line taller than the rest. */
+.blacksky-picker .list {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 0.75rem;
+}
 .blacksky-pack {
+  height: 100%;
   width: 100%;
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 0.875rem;
+  gap: 0.5rem;
   text-align: left;
-  padding: 0.875rem 1.25rem;
+  padding: 0.875rem 0.75rem 0.875rem 1rem;
   border-radius: var(--r-card); /* three lines of text: the card's corner, not the pill's */
 }
-.blacksky-pack[aria-pressed='true'] {
-  background: var(--accent);
+.blacksky-pack[aria-pressed='true'],
+.blacksky-pack[aria-expanded] {
   border-color: var(--accent);
-  color: var(--ink-on-accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .blacksky-pack-text {
   display: grid;
   gap: 0.125rem;
   min-width: 0;
 }
-/* On the filled amber of the chosen pack, the drawing turns black on a faint
-   dark ring, so it never disappears into the fill. */
-.blacksky-pack[aria-pressed='true'] .glyph {
-  background: rgb(0 0 0 / 0.15);
-  color: var(--ink-on-accent);
+/* Change, set as every other toggle is: underlined words with a chevron. */
+/* The folded card's arrow, centred in its own narrow column at the right
+   edge. The card is set compact (a 36 px drawing, less padding and gap) so the
+   text keeps the width it had without the arrow. */
+.blacksky-pack[aria-expanded] {
+  grid-template-columns: auto 1fr auto;
+}
+.blacksky-pack .glyph {
+  width: 36px;
+  height: 36px;
+}
+.blacksky-pack-change {
+  display: grid;
+}
+/* I'm standing at your address: two centred lines, the pin leading the first
+   and the address alone on the second. */
+.blacksky-mark {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  text-align: center;
+}
+/* The first line a quiet label, the address the thing that stands out. */
+.blacksky-mark > .with-glyph {
+  font-weight: 400;
+  color: var(--ink-2);
 }
 .blacksky-pack-address {
   font-size: var(--step-s);
@@ -1434,28 +1742,25 @@ main:focus {
 }
 .blacksky-pack-here {
   margin-top: 0.25rem;
-  font-size: var(--step-xs);
-  font-weight: var(--w-heavy);
-  letter-spacing: var(--track-wide);
-  text-transform: uppercase;
-}
-
-.blacksky-place {
-  padding: 1.125rem 0;
-  display: grid;
-  gap: 0.375rem;
-  border-bottom: 1px solid var(--line);
-}
-
-/* The hairline separates rows; a trailing one under the last row would read
-   as a divider to nothing. */
-.blacksky-place:last-child {
-  border-bottom: 0;
-}
-
-.blacksky-place h2 {
-  font-size: var(--step-1);
+  /* A short amber line in sentence case, on one line beside its drawing: as a
+     spaced capital label it wrapped, and the drawing sat between its lines. */
+  font-size: var(--step-s);
   font-weight: var(--w-bold);
+}
+/* In line with the address, not centred in the column as .with-glyph would. */
+.blacksky-pack-here.with-glyph {
+  justify-content: flex-start;
+}
+
+/* The saved places on the no GPS screen, set as on the pack page: the
+   heading and the line about them, then one card each. */
+.blacksky-saved-places {
+  display: grid;
+  gap: 0.75rem;
+}
+/* Read at arm's length: the site a size up from the pack page's. */
+.blacksky-saved-places .nearby-place-name {
+  font-size: var(--step-1);
 }
 
 /* ── The dial (BS_Enhancement-AC1) ─────────────────────────────────────────
@@ -1483,25 +1788,50 @@ main:focus {
    off and the dial takes the room. */
 .blacksky {
   --bs-gap: 6px;
-  /* Above the body: the page's top padding, the top bar (the 48 px hold), and
-     the gap under it. */
-  --bs-above: calc(max(1.5rem, env(safe-area-inset-top) + 1rem) + 48px + var(--bs-gap));
-  --bs-line: 0px; /* a line of text standing between the bar and the body */
+  /* The foot the leave hold takes: the fade over it, then the tab bar's own
+     56 px slot and the phone's bottom edge. The fade is clear at its top and
+     solid from the sweep's top edge, 39 px above the slot. */
+  --bs-fade: 64px;
+  --bs-leave: calc(var(--bs-fade) + 56px + env(safe-area-inset-bottom));
+  /* Above the body: the page's top padding. */
+  --bs-above: max(1rem, calc(env(safe-area-inset-top) + 0.5rem));
+  --bs-line: 0px; /* the line saying why BlackSky is still open */
   --bs-bar: 0px; /* the GPS signal lost bar */
-  /* Below it: the page's bottom padding, or the Notes heading and its gap. */
-  --bs-below: max(1.75rem, env(safe-area-inset-bottom));
+  /* Below it: the leave hold, and over it the Notes heading and its gap. */
+  --bs-below: calc(var(--bs-leave) + var(--bs-gap));
+  /* The page's foot keeps the leave hold's room, so the last line scrolls
+     clear of it. */
+  padding-bottom: calc(var(--bs-leave) + 1.5rem);
 }
 
 .blacksky:has(.blacksky-notes) {
-  --bs-below: calc(var(--bs-gap) + 56px);
+  --bs-below: calc(var(--bs-leave) + var(--bs-gap) + 56px);
 }
 
-.blacksky:has(> .muted + .blacksky-dial-body) {
+.blacksky:has(> .blacksky-notice) {
   --bs-line: calc(1.5rem + var(--bs-gap));
 }
 
+/* A phone with room to spare (taller than 700 px) opens the gaps round the
+   dial, so the name, the distance row and the dial each stand clear. A short
+   phone keeps them tight: its dial is already at its floor. A laptop opens
+   them a little less, as its dial is sized by the height the gaps leave. */
+@media (min-height: 701px) and (min-width: 701px) {
+  .blacksky {
+    --bs-gap: 10px;
+  }
+}
+@media (min-height: 701px) and (max-width: 700px) {
+  .blacksky {
+    --bs-gap: 14px;
+  }
+  .blacksky .blacksky-dial-head {
+    gap: 0.25rem;
+  }
+}
+
 .blacksky:has(.blacksky-bar[data-on='true']) {
-  --bs-bar: calc(2.5rem + var(--bs-gap));
+  --bs-bar: calc(2.5rem + var(--bs-gap) + 6px); /* and the room under it */
 }
 
 /* Only while the dial is on screen: the no-fix reference screen keeps the
@@ -1520,7 +1850,7 @@ main:focus {
 
 .blacksky-dial-body {
   display: grid;
-  gap: 6px;
+  gap: var(--bs-gap);
   grid-template-rows: auto auto min(360px, calc(100vw - 2rem));
   grid-auto-rows: auto;
 }
@@ -1621,20 +1951,56 @@ main:focus {
   font-weight: var(--w-med);
 }
 
-/* A marked position's readout is a sentence: full width, under the figures. */
-.blacksky-dial-beside:has([data-long='true']) {
-  display: contents;
+/* The plain "± 10 m" opens what it means: underlined words with a small arrow
+   that turns down while open, as every other toggle. A margin no one sees
+   gives it a 44 px tap area, as the information rings have, so the row keeps
+   its height. */
+.blacksky-dial-figures {
+  position: relative;
+}
+.blacksky-readout-toggle {
+  position: relative;
+  justify-self: start;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-2);
+  font-size: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.blacksky-readout-toggle::after {
+  content: '';
+  position: absolute;
+  inset: -12px -8px;
+}
+.blacksky-readout-toggle[aria-expanded='true'] .hint-chevron {
+  transform: rotate(90deg);
+}
+/* The bubble lies over the top of the dial, under the row, until closed.
+   Named with the bubble's own class, which sets it in flow, so this wins. */
+.hint-panel.blacksky-readout-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 6;
+  margin: 0;
 }
 
-.blacksky-dial-readout[data-long='true'] {
-  grid-column: 1 / -1;
-}
-
-/* Outside the pack's area, the readout is E3-US2-AC1's line, one fact a line. */
-.blacksky-outside,
-.blacksky-outside-pack {
-  display: block;
-  line-height: 1.2;
+/* Outside the pack's area: an amber notice under the dial, at reading size,
+   led by the pack's own drawing. */
+.blacksky-outside {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  justify-content: flex-start;
 }
 
 /* The distance is the largest text on the screen, 44 px, the height of its
@@ -1798,14 +2164,35 @@ main:focus {
   position: absolute;
   top: 0;
   left: 0;
-  padding: 0.125rem 0.75rem;
-  border: 1px solid var(--ink-2);
-  border-radius: 999px;
+  /* A quiet label, not a pill: no outline, so it never reads as a third
+     button beside the speaker. */
+  padding: 0 0.125rem 0 0;
   /* The ring reaches nearly to the box's corners, so a tag sits over its line
      there: a solid ground keeps the line from running through the words. */
   background: var(--bg);
-  font-weight: var(--w-bold);
+  /* A label's size, as the compass point beside the distance: the corner the
+     ring leaves is small, and at 16 px the words ran over its line. */
+  font-size: var(--step-s);
+  line-height: 1.25;
+  font-weight: var(--w-med);
   color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+/* The north badge beside the words: the ring and N drawn in line, the pointer
+   at its top filled, as the notch at the top of the dial is. */
+.blacksky-tag svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blacksky-tag .blacksky-north-pointer {
+  fill: currentColor;
+  stroke: none;
 }
 
 /* ── Roads inside the dial (BS_Enhancement-AC5) ───────────────────────────
@@ -1822,7 +2209,9 @@ main:focus {
    build and flagged for the accessibility check on the card. Road names
    #333333 on their white halo 12.6 to 1; the arrow and the drop #111111 on
    the disc 16.5 to 1, their amber edge #FBBF24 12.6 to 1 on the black. */
-.blacksky-dial {
+/* Nearby's map draws its roads with the same colours. */
+.blacksky-dial,
+.nearby-map {
   --map-disc: #f2efe9;
   --map-freeway-casing: #d98b21;
   --map-freeway-fill: #f2a33a;
@@ -2006,6 +2395,22 @@ main:focus {
    page's flow, so the dial never changes size for it. The ring's line may pass
    behind it; the solid ground the tags have keeps the line out of the words.
    44 px high, the smallest target on this screen. */
+/* The road map's credit, split across the dial box's two bottom corners,
+   where the ring leaves black space: small, in the dim amber, never tapped. */
+.blacksky-map-credit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.5625rem;
+  line-height: 1.2;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
 .blacksky-map-return {
   position: absolute;
   left: 50%;
@@ -2060,14 +2465,19 @@ main:focus {
   stroke-linecap: round;
 }
 
-/* The caption: the words being spoken, over the foot of the dial. A solid
-   ground, so the ring behind it never runs through the letters. */
+/* The caption: the words being spoken, floating just above the leave hold,
+   where its hint floats, so it never covers the dial. A solid ground, so the
+   page behind never runs through the letters. The hint, while it shows after
+   a short tap, takes the place for its few seconds. */
 .blacksky-caption {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  bottom: calc(100% + 36px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(calc(100vw - 2rem), 360px);
   margin: 0;
+  font-size: var(--step-0); /* the slot it sits in sets its labels at 12 px */
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--accent);
   border-radius: 10px;
@@ -2075,6 +2485,9 @@ main:focus {
   color: var(--ink);
   font-weight: var(--w-med);
   text-align: center;
+}
+.blacksky-leave:has(.blacksky-hold-hint) .blacksky-caption {
+  display: none;
 }
 
 /* Every other place, folded into one line that opens the sheet: the count and
@@ -2084,9 +2497,18 @@ main:focus {
   width: 100%;
   min-height: 48px;
   padding-inline: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   text-align: left;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+/* The words take the room between the pin drawing and the arrow, which sits
+   at the far end. */
+.blacksky-others-text {
+  flex: 1;
+  min-width: 0;
 }
 
 /* The sheet: a native dialog pinned to the foot of the screen, at thumb reach,
@@ -2103,16 +2525,27 @@ main:focus {
   border-radius: var(--r-card) var(--r-card) 0 0;
   background: var(--bg);
   color: var(--ink);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
+/* The title and note at the top and Close at the foot hold still; the list
+   between them takes the room left and scrolls on its own. */
 .blacksky-sheet[open] {
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 0.75rem;
 }
 
 .blacksky-sheet::backdrop {
   background: rgb(0 0 0 / 0.8);
+}
+
+/* While the sheet is open the page behind holds still: the wheel over the
+   title or Close, or past either end of the list, never moves it. The page's
+   scroll bar keeps its room, so nothing shifts sideways as it opens. */
+html:has(.blacksky-sheet[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
 }
 
 .blacksky-sheet p {
@@ -2124,17 +2557,60 @@ main:focus {
   font-weight: var(--w-heavy);
 }
 
+/* The note's two lines close together, one unit; the first starts with a
+   capital, as a sentence does. */
+.blacksky-sheet-note {
+  display: grid;
+  gap: 0.125rem;
+}
+.blacksky-sheet-note span:first-child::first-letter {
+  text-transform: uppercase;
+}
+
+/* Each other place a card, as on the pack page and Nearby, the whole card the
+   one target: the site in bold with its distance beside it, the suburb under
+   it, then the direction and Show at its foot. The list scrolls inside the
+   sheet with a thin bar in the mode's dim amber, kept clear of the cards, and
+   a little room top and bottom so a card's focus ring is never cut. */
+.blacksky-sheet .list {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 3px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-2) transparent;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain; /* the list's own end is the end of the scroll */
+}
 .blacksky-other {
-  grid-template-columns: 1fr auto;
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  justify-items: stretch;
+  gap: 0.25rem;
+  padding: 0.875rem 1.125rem;
+  border-radius: var(--r-card);
+  text-align: left;
+  font-weight: 400;
+  white-space: normal;
+}
+.blacksky-other .nearby-place-name {
+  font-size: var(--step-1);
+}
+.blacksky-other-foot {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
 }
-
-.blacksky-other h3 {
-  margin: 0;
-  font-size: var(--step-1);
+.blacksky-other-show {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--accent);
   font-weight: var(--w-bold);
-  overflow-wrap: anywhere;
 }
 
 /* ── The bar (BS_Enhancement-AC2) ──────────────────────────────────────────
@@ -2157,6 +2633,11 @@ main:focus {
   font-weight: var(--w-med);
 }
 
+/* The bar stands a little clear of the place's name under it. */
+.blacksky-bar[data-on='true'] {
+  margin-bottom: 6px;
+}
+
 .blacksky-bar[data-on='false'] {
   position: absolute;
   width: 1px;
@@ -2168,21 +2649,11 @@ main:focus {
 
 /* The notes fold: a native <details>, so no script and no re-render on the
    tick. Beside the dial it stands open, so the notes are read without a tap;
-   on the no-fix reference screen it starts folded. The summary is a ruled bar
-   at reading size with its own open/closed mark; each note is a ruled row like
-   the places above it. */
+   on the no-fix reference screen it starts folded. The summary is headed as a
+   pack page section, 56 px high (the layout keeps it on the first screen), with
+   the chevron at its end; each note is a card, at reading size. */
 .blacksky-notes summary {
   min-height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  font-size: var(--step-1);
-  font-weight: var(--w-heavy);
-  letter-spacing: var(--track-wide);
-  text-transform: uppercase;
-  color: var(--accent);
   cursor: pointer;
   list-style: none;
 }
@@ -2191,12 +2662,22 @@ main:focus {
   display: none;
 }
 
-.blacksky-notes summary::after {
-  content: '+';
+/* The count keeps BlackSky's 16 px floor. */
+.blacksky-notes .section-count {
+  font-size: var(--step-0);
 }
 
-.blacksky-notes[open] summary::after {
-  content: '−';
+.blacksky-notes .hint-chevron {
+  margin-left: auto;
+}
+
+.blacksky-notes[open] .hint-chevron {
+  transform: rotate(90deg);
+}
+
+.blacksky-notes .list {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .blacksky-note {
@@ -2208,21 +2689,13 @@ main:focus {
 
 .blacksky-reminder {
   margin: 0;
-  font-size: var(--step-1);
-  font-weight: var(--w-bold);
 }
 
 .blacksky-guidance p {
   margin: 0;
 }
 
-.blacksky-guidance a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--accent);
-  font-weight: var(--w-med);
-}
+
 
 .blacksky-hold {
   min-height: 64px;
@@ -2260,13 +2733,9 @@ main:focus {
   transition: background-size 0.2s ease;
 }
 
-.blacksky-hold:active {
+.blacksky-hold.holding {
   background-size: 100% 100%;
   transition: background-size 2s linear;
-}
-
-.blacksky-hold-label {
-  font-weight: var(--w-bold);
 }
 
 /* What the mode is, in the kicker's own treatment: small, wide-tracked and
@@ -2484,13 +2953,27 @@ main:focus {
 .tour-body .welcome-does {
   margin-top: 0.5rem;
 }
+/* Set as every other toggle is: underlined teal words with a chevron, so it is
+   never read as one of the welcome's bold teal key words, which do not open. */
 .welcome-more summary {
   cursor: pointer;
   min-height: 44px;
   display: flex;
   align-items: center;
-  font-weight: var(--w-bold);
+  gap: 0.25rem;
+  width: fit-content;
+  list-style: none;
   color: var(--accent);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.welcome-more summary::-webkit-details-marker {
+  display: none;
+}
+.welcome-more[open] summary .hint-chevron {
+  transform: rotate(90deg);
 }
 .welcome-more .info-lines {
   margin: 0.25rem 0 0;
@@ -2501,19 +2984,6 @@ main:focus {
 }
 /* The map data credit at the foot of the pack page: small and quiet, opened
    on a tap. */
-.map-credits {
-  font-size: var(--step-xs);
-  color: var(--ink-3);
-}
-.map-credits summary {
-  cursor: pointer;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-.map-credits p {
-  margin: 0.25rem 0 0;
-}
 /* While the tour runs, every page has room at its foot to bring its last
    feature clear of the panel. */
 body.touring .page {
@@ -2529,14 +2999,14 @@ body.touring .page {
 /* The panel: BlackSky's own colours, true black under amber, so it reads as a
    glimpse of the mode rather than one more card on the screen. */
 .blacksky-info-panel {
-  --bubble-bg: #000000;
+  --bubble-bg: var(--blacksky-bg);
   --bubble-line: var(--blacksky-fill);
   display: grid;
   gap: 0.75rem;
   padding: 1.125rem 1.25rem;
   border: 1px solid var(--blacksky-fill);
   border-radius: var(--r-card);
-  background: #000000;
+  background: var(--blacksky-bg);
 }
 /* Named through the list so the amber outranks the shared accent lead colour
    in .info-lines b below, whatever order the two rules sit in. */
@@ -2710,8 +3180,8 @@ body.touring .page {
   }
   /* The hold's fill is a progress bar, not motion. On iOS, with no vibration,
      it is the only sign of how long is left, so it keeps its two seconds. */
-  .blacksky-hold:active,
-  .nav-blacksky:active .nav-blacksky-sweep circle {
+  .blacksky-hold.holding,
+  .holding .hold-sweep circle {
     transition-duration: 2s !important;
   }
 }
@@ -2867,6 +3337,51 @@ body.touring .page {
 .packs-title {
   margin-top: 1.25rem;
 }
+/* On Rehearse the game cards above already leave the room. */
+.rehearsal-condition .packs-title {
+  margin-top: 0;
+}
+/* A section's label: the same small capitals as the tab label, in grey and
+   without a drawing, so only the tab's own name is teal. */
+.kicker.section-label {
+  color: var(--ink-2);
+}
+/* The tab's name, led by its bottom bar drawing at the height of the words. */
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.tab-label .bottom-nav-icon {
+  width: 1.5em;
+  height: 1.5em;
+}
+/* When a pack was last rehearsed, on its Rehearse card: a small pill, grey
+   before, teal with a tick once rehearsed. */
+.rehearsed-pill {
+  justify-self: start;
+  align-self: flex-start;
+  width: fit-content;
+  margin: 0.25rem 0 0;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  color: var(--ink-2);
+}
+.rehearsed-pill.done {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink);
+}
+.rehearsed-pill.done.with-glyph {
+  display: inline-flex;
+  gap: 0.375rem;
+}
+.rehearsed-pill .glyph.line-glyph {
+  color: var(--accent);
+}
 .packs-count {
   margin-left: 0.5rem;
   color: var(--ink-3);
@@ -2960,11 +3475,15 @@ body.touring .page {
   pointer-events: none;
 }
 
-/* The same centred column as every page. */
+/* The same centred column as every page. Two equal columns either side of
+   the compass, so it stands at the exact middle, over its notch, whatever the
+   width of the names beside it, and BlackSky's leave hold can stand on the
+   same spot. A name a little wider than its column runs into the gap. */
 .bottom-nav-inner {
   width: min(100% - 3.5rem, 560px);
   margin: 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
@@ -2999,7 +3518,7 @@ body.touring .page {
   place-items: center;
   border: 2px solid var(--blacksky-accent);
   border-radius: 50%;
-  background: #000;
+  background: var(--blacksky-bg);
   background-image: none;
   color: var(--blacksky-accent);
   box-shadow: 0 4px 14px rgb(0 0 0 / 45%);
@@ -3007,7 +3526,7 @@ body.touring .page {
 /* The sweep is a circle's stroke drawn round from the top: a stroke offset
    animates in every browser, where a gradient's angle does not repaint in
    Safari. */
-.nav-blacksky-sweep {
+.hold-sweep {
   position: absolute;
   inset: -7px;
   width: calc(100% + 14px);
@@ -3015,7 +3534,7 @@ body.touring .page {
   transform: rotate(-90deg);
   pointer-events: none;
 }
-.nav-blacksky-sweep circle {
+.hold-sweep circle {
   fill: none;
   stroke: var(--blacksky-accent);
   stroke-width: 3;
@@ -3023,7 +3542,7 @@ body.touring .page {
   stroke-dashoffset: 100;
   transition: stroke-dashoffset 0.2s ease;
 }
-.nav-blacksky:active .nav-blacksky-sweep circle {
+.holding .hold-sweep circle {
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 2s linear;
 }
@@ -3037,9 +3556,11 @@ body.touring .page {
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--blacksky-accent);
   border-radius: var(--r-pill);
-  background: #000;
+  background: var(--blacksky-bg);
   color: var(--blacksky-accent);
-  font-size: var(--step-xs);
+  /* 16 px, the same pill entering and leaving: one instruction, said alike on
+     both sides of the door. */
+  font-size: var(--step-0);
 }
 
 .bottom-nav-item {
@@ -3080,20 +3601,18 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   min-height: calc(100dvh - 5.25rem - 1px);
 }
 
-/* Two screens have no bar: BlackSky, whose only way out is its own Leave
-   control, and the first-open disclosure, which stands before the router. Both
-   keep the plain bottom padding. */
-.blacksky,
+/* The first-open disclosure and the password page stand before the router,
+   with no bar, so they keep the plain bottom padding. BlackSky keeps room for
+   its own leave band (see .blacksky). */
 .first-open,
 .gate {
   padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
 }
 
-/* BlackSky's Leave control sits in the top bar, so the bar is kept clear of the
-   phone's top edge: the system's pull-down starts there, and a finger reaching
-   for one must not land on the other. */
+/* BlackSky's top holds no control, so it needs only to clear the phone's
+   own top edge. */
 .blacksky {
-  padding-top: max(1.5rem, calc(env(safe-area-inset-top) + 1rem));
+  padding-top: max(1rem, calc(env(safe-area-inset-top) + 0.5rem));
 }
 
 /* ── Welcome, before the disclosure ───────────────────────────────────────── */
@@ -3106,39 +3625,65 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   justify-self: center;
 }
 
-/* One card per moment: the drawing, the moment's name, one line. */
+/* One card of three moments in order: each a drawing, its name, one line,
+   the drawings joined by a line down the card as the builder's steps are
+   joined across. */
+.welcome-steps {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 1.25rem;
+  list-style: none;
+}
 .welcome-step {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: auto auto;
   column-gap: 1rem;
   align-items: center;
 }
+.welcome-step + .welcome-step {
+  margin-top: 1.25rem;
+}
 .welcome-step .glyph {
+  position: relative;
+  z-index: 1;
   grid-row: 1 / 3;
+  align-self: start;
+  /* Solid, so the line behind it stops at its edge. */
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
 }
 .welcome-step p {
   margin: 0;
   font-weight: var(--w-med);
 }
+/* The line from each drawing's middle to the next one's, behind both, however
+   many lines the words between them take. */
+.welcome-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 21px;
+  top: 22px;
+  bottom: calc(-1.25rem - 22px);
+  width: 2px;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
 
-/* Two facts, smaller drawings, no card: the quiet line under the promise. */
+/* Two facts as footnotes: small line drawings and grey words, side by side
+   where they fit, centred under the card. */
 .welcome-facts {
-  gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .welcome-fact {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
   color: var(--ink-2);
-}
-.welcome-fact .glyph {
-  width: 32px;
-  height: 32px;
-}
-.welcome-fact .glyph svg {
-  width: 18px;
-  height: 18px;
+  font-size: var(--step-s);
 }
 
 /* ── Development gate (feature 1) ──────────────────────────────────────────── */
@@ -3183,12 +3728,16 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 /* The motes behind every screen but BlackSky: full screen, under the text,
    and inert to every tap. */
+/* As tall as the screen at its tallest, with the address bar hidden, so it
+   still covers the page while the bar or the keyboard shows (Particles.tsx). */
 .particles {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   z-index: -1;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100lvh;
   pointer-events: none;
 }
 
@@ -3196,11 +3745,19 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   gap: 0.375rem;
 }
 
-/* The mark and the name are the hero title of this screen, so they are stacked
-   and centred rather than set as a header lockup on the left margin. Only these
-   two are centred; the line under them reads as body text and stays ranged
-   left. */
-.first-open-hero .mark,
+/* The mark, the name and the line under them are the hero title of these
+   screens, so they are stacked and centred, the mark in a ring as on the
+   tour's welcome. */
+.first-open-mark {
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 0.25rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
 .first-open-hero h1 {
   justify-self: center;
   text-align: center;
@@ -3225,14 +3782,15 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   padding: 0.25rem 1.25rem;
 }
 
-/* Icon, heading, statement: a fixed 20 px leading column with the text beside
-   it, the statement running under the heading in the same column. */
+/* Drawing and heading on one line, the drawing in its ring as on the tour's
+   lines; the statement under them takes the card's whole width, so it runs
+   to as few lines as it can. */
 .disclosure-row {
   display: grid;
-  grid-template-columns: 20px 1fr;
-  align-items: start;
+  grid-template-columns: 32px 1fr;
+  align-items: center;
   column-gap: 0.75rem;
-  row-gap: 0.25rem;
+  row-gap: 0.5rem;
   padding: 0.875rem 0;
   border-top: 1px solid var(--line);
 }
@@ -3243,12 +3801,13 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   border-top: 0;
 }
 
-.disclosure-icon {
-  display: flex;
-  align-items: center;
-  /* Optically centred on the heading's first line rather than its box. */
-  min-height: 1.5rem;
-  color: var(--accent);
+.disclosure-row .glyph {
+  width: 32px;
+  height: 32px;
+}
+.disclosure-row .glyph svg {
+  width: 17px;
+  height: 17px;
 }
 
 /* Heading and statement share a size — body text on this screen never goes
@@ -3262,7 +3821,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 .disclosure-row p {
-  grid-column: 2;
+  grid-column: 1 / -1;
 }
 
 /* The note under the statements: its own small card, so the line that points
@@ -3293,6 +3852,12 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-0);
 }
 
+/* The number to call, in bold within the line and in its own colour. */
+.emergency-term {
+  font-weight: var(--w-heavy);
+  color: var(--ink);
+}
+
 /* The mark beside the line takes the same red, so the pair reads as one. */
 .emergency-line > svg {
   color: var(--offline);
@@ -3302,7 +3867,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
    black. The red rule alone marks the line, and on a screen that is otherwise
    all amber it is the one thing in another colour. */
 :root[data-mode='blacksky'] .emergency-line {
-  background: #000000;
+  background: var(--bg);
 }
 
 .official-channels svg {
@@ -3310,8 +3875,12 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 /* A row, not a stack: the label is the statement, and it is the label element
-   itself so a screen reader reads the whole sentence with the box. */
+   itself so a screen reader reads the whole sentence with the box. The label
+   is stretched over the whole frame, so a tap anywhere in it ticks the box,
+   as anywhere on a place card does. */
 .acknowledge {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
@@ -3333,6 +3902,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 .acknowledge input[type='checkbox'] {
+  position: relative;
+  z-index: 1;
   min-height: 28px;
   width: 28px;
   height: 28px;
@@ -3349,6 +3920,12 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-weight: var(--w-med);
   font-size: var(--step-0);
   cursor: pointer;
+}
+.acknowledge label::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
 }
 
 /* Under the inactive button: what makes it active, in the accent so it reads
@@ -3393,12 +3970,96 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-s);
 }
 /* The postcode in the origin line, picked out in the accent. */
+/* Share: a small teal link like Saved PDF and Web page on a pack card, held
+   to the right of the footer. */
+.nearby-share {
+  gap: 0.25rem;
+  min-height: 32px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+/* Nearby's map: a text toggle like Source, then the map beneath it. */
+.nearby-map-toggle {
+  display: grid;
+  gap: 0.625rem;
+}
+.nearby-map {
+  display: grid;
+  gap: 0.375rem;
+}
+.nearby-map-ground {
+  fill: var(--map-disc);
+}
+.nearby-map-town {
+  font-weight: var(--w-med);
+  fill: var(--map-locality);
+  stroke: var(--map-locality-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
 .nearby-origin-code {
   color: var(--accent);
   font-weight: var(--w-bold);
 }
 
 /* The two Nearby tabs: one pill track, the chosen half filled in teal. */
+/* The pack page's five tabs, set as Nearby's: a pill of choices, the open one
+   filled teal. Each is a picture over one word, so five fit on a phone. */
+.pack-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+}
+.pack-tabs [role='tab'] {
+  display: grid;
+  justify-items: center;
+  gap: 0.125rem;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0.375rem 0.125rem;
+  border-color: transparent;
+  border-radius: calc(var(--r-card) - 0.25rem);
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--step-xs);
+}
+.pack-tabs [role='tab'][aria-selected='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+}
+.pack-panel {
+  display: grid;
+  gap: 1rem;
+}
+.pack-panel[hidden] {
+  display: none;
+}
+/* Print, a small ring at the top right of the pack's header. */
+.pack-detail-hero {
+  position: relative;
+  padding-right: 3rem;
+}
+.pack-print {
+  top: 0;
+  right: 0;
+}
+
 .nearby-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3441,15 +4102,40 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 
 .nearby-row-head {
   display: flex;
-  flex-wrap: wrap; /* the pill drops under the type when both do not fit */
   justify-content: space-between;
-  align-items: center;
-  gap: 0.375rem 0.75rem;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
+/* The status stays in the top right corner: a long type wraps on its own
+   side rather than pushing the status under it, and keeps room for its
+   longest word, so the status gives way first. */
+.nearby-row-head h3 {
+  flex: 1;
+}
+/* In the corner: the dot and the state on one line, its age beneath,
+   right-aligned, so the status stays narrow beside a long type. */
+.nearby-row-head .state-pill {
+  display: grid;
+  justify-items: end;
+  gap: 0;
+}
+.state-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.state-age {
+  font-weight: var(--w-med);
+}
+/* The kind of place, set as a teal label like the screen's own eyebrows, so
+   the place's name below is the one bold line on the card. */
 .nearby-row-head h3 {
   margin: 0;
-  font-size: var(--step-0);
-  font-weight: var(--w-bold);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .state-pill {
@@ -3467,6 +4153,44 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   block-size: 10px;
   border-radius: var(--r-pill);
   background: var(--ink-3);
+}
+/* Data sources: each list by name, then its status beneath in smaller grey
+   words, led by a dot in the status's colour, like the place cards above. */
+.source-health {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.875rem;
+}
+.source-health li {
+  display: grid;
+  gap: 0.25rem;
+}
+.source-health-name {
+  font-weight: var(--w-med);
+}
+.source-health-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: var(--step-s);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+/* Level with the first line when the status wraps onto two. */
+.source-health-state .state-dot {
+  flex: none;
+  margin-top: 0.4em;
+}
+.source-healthy .state-dot {
+  background: var(--online);
+}
+.source-degraded .state-dot {
+  background: var(--stale);
+}
+.source-down .state-dot {
+  background: var(--offline);
 }
 .state-live .state-dot {
   background: var(--online);
@@ -3489,6 +4213,32 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 
 /* Name on the left, the distance as the bold right-aligned figure. */
+/* The card's date, smaller and close under its status, so the two read as
+   one line about how current the card is. */
+.nearby-stamp {
+  margin-top: -0.25rem;
+  font-size: var(--step-s);
+}
+
+/* An NSP's footer: below a hairline so it never reads as part of the
+   address, as small as the date so the place still leads the card. */
+/* A Nearby card's last row, set apart from the address: what the place is
+   on the left, Share on the right, as a pack card ends in Source and links. */
+.nearby-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--line);
+  font-size: var(--step-s);
+}
+.nearby-about {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
 .nearby-place {
   display: flex;
   justify-content: space-between;
@@ -3496,11 +4246,13 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   gap: 0.75rem;
 }
 /* The name wraps, so the distance keeps its place on the right. */
-.nearby-place > div {
+.nearby-place-name {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .nearby-place-name {
+  margin: 0;
+  font-size: var(--step-0);
   font-weight: var(--w-bold);
 }
 .nearby-distance {
@@ -3539,7 +4291,7 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   content: '';
   position: absolute;
   top: -7px;
-  left: 14px;
+  left: var(--pointer-at, 14px);
   width: 12px;
   height: 12px;
   background: var(--bubble-bg, var(--surface-2));
@@ -3584,6 +4336,14 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .hint-text[aria-expanded='true'] .hint-chevron {
   transform: rotate(90deg);
+}
+/* Show more and Show fewer: the list grows down and folds back up, so the
+   chevron points down to more, and up to fold away. */
+.more-toggle .hint-chevron {
+  transform: rotate(90deg);
+}
+.more-toggle[aria-expanded='true'] .hint-chevron {
+  transform: rotate(-90deg);
 }
 /* A long word beside the ring wraps at large text rather than pushing past
    the screen edge. */
@@ -3759,27 +4519,42 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .roadmap-source {
   font-size: var(--step-s);
 }
-/* Who to call: two groups under their eyebrows, and each number a card. The
-   number is the largest thing on the card, so it can be read out to someone.
-   Call is tinted and Copy is a ghost pill. Only the hotline's Call is filled. */
+/* Who to call: two groups under their eyebrows, and each number a compact
+   card: who answers with Copy beside the name, then Call across the card
+   carrying the number in large figures, so it can be read out to someone.
+   Call is tinted and Copy is a ghost pill. Only 000's Call is filled. */
 .call-group {
   display: grid;
   gap: 0.75rem;
 }
 .call-card {
-  gap: 0.875rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 1rem 1.125rem;
 }
 .call-card h3 {
   margin: 0;
-  font-size: var(--step-1);
+  font-size: 1.125rem;
 }
-.call-card .card-head p {
-  margin: 0.125rem 0 0;
+.call-card > p {
+  grid-column: 1 / -1;
   font-size: var(--step-s);
 }
+.call-card .action {
+  min-height: 44px;
+  padding: 0.5rem 0.875rem;
+  font-size: var(--step-s);
+  white-space: nowrap;
+}
+.call-link {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  margin-top: 0.5rem;
+}
 .call-number {
-  margin: 0;
-  font-size: var(--step-3);
+  font-size: var(--step-1);
   font-weight: var(--w-heavy);
   letter-spacing: 0.02em;
 }
@@ -3788,19 +4563,11 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   color: var(--accent);
 }
-.emergency-line .card-head .glyph {
-  background: color-mix(in srgb, var(--offline) 18%, transparent);
-  color: var(--offline);
-}
 /* The hotline: the amber rule and ground, the attention colour, so it stands
    out without reading as the number to call in danger. Red is kept for 000. */
 .caution-line {
   border-inline-start: 3px solid var(--stale);
   background: color-mix(in srgb, var(--stale) 10%, var(--surface));
-}
-.caution-line .card-head .glyph {
-  background: color-mix(in srgb, var(--stale) 18%, transparent);
-  color: var(--stale);
 }
 
 /* The source at a glance: its initials in a ring at the head of the card. */
@@ -3965,14 +4732,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-weight: var(--w-heavy);
   font-variant-numeric: tabular-nums;
 }
-.section-toggle {
-  margin-left: auto;
-  min-height: 44px;
-  padding: 0.5rem 1rem;
-  font-size: var(--step-s);
-}
-
-
 /* More about Cooeee, in the tour's welcome: a glyph ring leads each line, so
    the shape says what the line is. Scoped here: the BlackSky panel shares the
    led-line list without a glyph, and reads as prose. The rings only: the
@@ -4077,6 +4836,47 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   .print-section {
     break-inside: avoid;
   }
+  /* Notes can be long: they run on to the next sheet, between their lines,
+     the heading kept with the first, rather than leaving the sheet before
+     half empty. The page's column layout is set aside on paper, as a printer
+     only breaks plain blocks between lines. */
+  .pack-print {
+    display: block;
+  }
+  .pack-print > * + * {
+    margin-top: 1rem;
+  }
+  .print-notes {
+    display: block;
+    break-inside: auto;
+  }
+  .print-notes .kicker {
+    break-after: avoid;
+    margin-bottom: 0.5rem;
+  }
+  /* The essentials kept to one sheet: a little less room between sections,
+     and the footer never left alone on a page. */
+  /* The map on a page of its own, after the essentials, as large as the
+     page allows. */
+  .print-map {
+    break-before: page;
+    /* A printer leaves out backgrounds unless told: the key's swatches and
+       the marks are backgrounds, so the map keeps its colours on paper. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .print-map-frame {
+    border-color: #000;
+  }
+  .pack-print .print-map-mark {
+    background: #000;
+    color: #fff;
+  }
+  .pack-print .area-map-scale {
+    background: #fff;
+    color: #000;
+    backdrop-filter: none;
+  }
 }
 /* Print this pack, on screen and on paper: sections under eyebrows, one line
    per fact, the numbers written out in full. */
@@ -4109,14 +4909,67 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .print-note {
   white-space: pre-wrap;
 }
-.print-footer {
+/* The printed map: home and the chosen places on the stored map, cut down to
+   them, still and square, with the pack page's marks and key. */
+.print-map figure {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+.print-map-frame {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--area-map-paper);
+}
+.print-map-frame img {
+  position: absolute;
+  max-width: none;
+  aspect-ratio: 1;
+}
+.print-map-mark {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px var(--area-map-paper);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+}
+.print-map-mark-key {
+  position: static;
+  width: 20px;
+  height: 20px;
+  transform: none;
+  font-size: 0.6875rem;
+}
+/* The places named under the map, by the numbers on it. */
+.print-map-places {
   display: grid;
   gap: 0.25rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
-}
-.print-footer p {
   margin: 0;
+  padding-left: 1.5rem;
+  font-size: var(--step-s);
+}
+.print-map .area-map-pin {
+  z-index: 1;
+}
+
+/* Whose instructions come first, under the pack's name: its own line,
+   marked by a rule as the area's reminder is. */
+.print-first {
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 3px solid var(--accent);
+  font-weight: var(--w-med);
 }
 /* E5-US1-AC1 — the two conditions a rehearsal can run under. IDENTICAL rows:
    same treatment, same weight, same target, in a fixed order that is
@@ -4168,29 +5021,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-2);
   font-weight: var(--w-med);
 }
-/* The Rehearse pack list: the pack's drawing beside its three lines. */
-.condition-action.pack-choice {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.875rem;
-  position: relative;
-  padding-right: 1.4375rem; /* 3px more than before, the room the chevron needs */
-}
-/* The chevron, centred down the card's right side and mostly in its padding,
-   so it takes almost nothing from the words beside the pack's picture. */
-.pack-choice .card-chevron {
-  position: absolute;
-  right: 0.375rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--ink-3);
-}
-.pack-choice-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
-}
 /* Left-aligned like the line under it; outranks .with-glyph's centring. A
    long word wraps at 200% text rather than running off the right edge. */
 .condition-action .condition-label {
@@ -4199,6 +5029,28 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   overflow-wrap: anywhere;
 }
 
+/* A choice on a pack's rehearsal, set as Recover's need rows: its drawing in
+   a ring, its two lines, and an arrow saying it opens. */
+.condition-action.condition-choice {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.875rem;
+  padding-left: 0.75rem;
+}
+.condition-choice-text {
+  display: grid;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+}
+.condition-choice .condition-label {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+}
+.condition-choice .card-chevron {
+  flex: none;
+  color: var(--ink-3);
+}
 /* NOT .muted. Muted is this product's convention for passive explanatory prose,
    and a control whose second line is muted reads as a card of text rather than
    as something to tap. Every line of an address candidate row is full-strength
@@ -4259,22 +5111,49 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .gap-list {
   gap: 0.75rem;
 }
-
+/* Body size inside a gap: the pack page's practice list sets .gap-list small. */
+.gap-list .gap-row {
+  font-size: var(--step-0);
+}
+.gap-row p {
+  margin: 0;
+}
 .gap-row > h3 {
   font-size: var(--step-1);
   margin: 0;
 }
+/* Which kind of gap, said under the title. */
+.gap-meaning {
+  font-size: var(--step-s);
+}
 
 /* Names the line beneath it as the reason or the one thing to do, so neither is read
-   as more explanation. */
+   as more explanation. Led by its drawing, at the size of the other labels. */
 .gap-action-label,
 .gap-reason-label {
-  font-size: var(--step-s);
+  font-size: var(--step-xs);
   font-weight: var(--w-heavy);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-wide);
   text-transform: uppercase;
   color: var(--ink-2);
-  margin: 0.25rem 0 0;
+  margin-top: 0.375rem !important;
+}
+p.gap-action-label,
+p.gap-reason-label {
+  align-items: center;
+}
+/* The one thing to do, in its own inset panel with its record and control. */
+.gap-todo {
+  display: grid;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding: 0.875rem 1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-input);
+  background: var(--surface-2);
+}
+.gap-todo .gap-action-label {
+  margin-top: 0 !important;
 }
 
 /* The reader's own record of an action they have taken, and the control that
@@ -4284,8 +5163,8 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .gap-done {
   font-size: var(--step-s);
   font-weight: var(--w-med);
-  color: var(--ink-2);
-  margin: 0.25rem 0 0;
+  color: var(--accent);
+  margin-top: 0.25rem !important;
 }
 
 .gap-mark {
@@ -4294,50 +5173,124 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   margin-top: 0.5rem;
 }
 
-/* The live time and distance at the top of a running rehearsal: one quiet
-   figure line in the accent, tabular so the digits do not jump each second. */
-.journey-track {
+/* The rehearsal's figures wear the accent. */
+.rehearsal-run {
+  --fact-accent: var(--accent);
+}
+/* The live time and distance at the top of a running rehearsal: two figure
+   tiles, tabular so the digits do not jump each second. */
+.game-facts.journey-track {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
-  font-weight: var(--w-bold);
-  color: var(--accent);
   font-variant-numeric: tabular-nums;
+}
+/* The question on returning, put directly over its two answers. */
+.unfinished-ask {
+  margin: 0;
+  font-weight: var(--w-med);
+}
+/* The pack under a rehearsal's title: its drawing and its name in teal, as
+   its card on Rehearse names it. */
+.hero-pack {
+  margin: 0;
+  color: var(--accent);
+  font-weight: var(--w-bold);
+}
+.hero-pack-lead {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+/* Before going: the steps in order as rows of one card, each led by its
+   drawing in a ring and parted by a hairline. */
+.journey-steps {
+  list-style: none;
+  margin: 0;
+  padding-block: 0.25rem;
+  gap: 0;
+}
+.journey-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding-block: 0.75rem;
+}
+.journey-step + .journey-step {
+  border-top: 1px solid var(--line);
+}
+.journey-step p {
+  margin: 0;
+}
+.journey-step-title {
+  font-weight: var(--w-bold);
+}
+/* While out: where BlackSky is, as an amber note with no ground of its own. */
+.journey-blacksky {
+  margin: 0;
+  color: var(--stale);
+  font-size: var(--step-s);
+}
+.journey-blacksky b {
+  font-weight: var(--w-heavy);
+}
+/* While out: the browser's report, amber while still online. */
+.journey-connection {
+  margin: 0;
+  color: var(--ink);
+}
+/* The result's facts about how it ran, then what moved since last time
+   under a hairline, in one card under its ringed head. */
+.result-summary {
+  gap: 0.375rem;
+}
+.result-summary p {
+  margin: 0;
+}
+.result-summary b {
+  font-weight: var(--w-bold);
+}
+.result-summary .progress {
+  display: grid;
+  margin-top: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--line);
 }
 
 /* E5-US1-AC5 — the journey screen. The places sit in the card treatment the
    rest of the pack uses. The two endings are identical controls of identical
    weight, told apart by their words alone: neither reads as the expected one,
    and a greyscale screen says which is which exactly as a coloured one does. */
-.journey-places > h3,
-.journey-notes > h3 {
-  font-size: var(--step-1);
-  margin: 1rem 0 0.5rem;
+/* The way note under its ringed head, as the other parts of the result. Save
+   and Remove stack at full width, so neither squeezes the other. */
+/* Where the note stands, in one line under the field: amber while not kept,
+   teal once kept, grey once taken out. It always holds one line, as tall as
+   its drawing, so the buttons under it never move when it speaks. The card's
+   gap is tightened either side of it. */
+.way-note-status {
+  margin-block: -0.25rem;
+  min-height: 1.375rem;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
 }
-
-/* The rehearsal glyphs: one on the kicker of every rehearsal screen, one on
-   the places heading, one on the note heading. The pack page's section-head
-   size, and the same drawing on every screen of a run, so the picture says
-   which part of the rehearsal this is without a word being added. */
-.rehearsal-head {
+/* Save, once the words are kept: the teal outline and a tick, done. */
+.way-note .way-note-kept {
+  color: var(--accent);
+  border-color: var(--accent);
+  cursor: default;
+}
+.way-note-caution {
+  color: var(--stale);
+}
+.way-note-saved {
+  color: var(--accent);
+}
+.way-note-quiet {
+  color: var(--ink-2);
+}
+.way-note .note-actions {
+  flex-direction: column;
+}
+.way-note > p {
   margin: 0;
-}
-.journey-places > h3,
-.journey-notes > h3,
-.way-note > h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.journey-places > h3 .glyph,
-.journey-notes > h3 .glyph,
-.way-note > h3 .glyph {
-  width: 36px;
-  height: 36px;
-}
-.journey-places > h3 .glyph svg,
-.journey-notes > h3 .glyph svg,
-.way-note > h3 .glyph svg {
-  width: 18px;
-  height: 18px;
 }
 
 .journey-notes {
@@ -4353,11 +5306,14 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 .journey-place-list {
   gap: 0.75rem;
 }
-
-.journey-place-name {
-  font-weight: var(--w-bold);
+/* A place, set as on the pack page: the site, the town, where it is, its date. */
+.journey-place {
+  gap: 0.2rem;
+}
+.journey-place p {
   margin: 0;
 }
+
 
 .journey-go,
 .journey-endings .action {
@@ -4369,6 +5325,11 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
 }
 .journey-endings .actions {
   margin-top: 0;
+}
+/* With its drawing, an ending still fits a narrow card at 200% text. */
+.journey-endings .action {
+  padding-inline: 1rem;
+  overflow-wrap: anywhere;
 }
 
 /* Leaving is set apart from every other control on the run: a rule above it,
@@ -4385,18 +5346,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   background: transparent;
 }
 
-/* E5-US6 — the phone instruction before going: the drawing beside the kicker,
-   the instruction beneath both. */
-.condition-how-to {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 0.75rem;
-  align-items: center;
-}
-.condition-how-to p {
-  grid-column: 1 / 3;
-  margin: 0.5rem 0 0;
-}
 
 /* E5-US5 — the pack page's list of its rehearsals: the date leads each card,
    the rest reads beneath it in the result's own words. */
@@ -4411,17 +5360,42 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-weight: var(--w-bold);
 }
 
-/* The gaps line and the ring that explains it share a row, as the hold control
-   and its ring do on Home. The panel takes the full width beneath the pair, so
-   it opens in flow and covers no other rehearsal. */
-.history-gaps {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.5rem;
-  align-items: center;
+/* A rehearsal or a drill, set as the other cards on the pack page: its label
+   in teal with the date at the right, the outcome in bold, then what it found
+   under a hairline, as a Nearby card's footer is. */
+.practice-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
 }
-.history-gaps > .info-panel {
-  grid-column: 1 / -1;
+.practice-date {
+  font-size: var(--step-s);
+}
+.practice-outcome {
+  font-weight: var(--w-bold);
+}
+.practice-found {
+  display: grid;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--line);
+}
+.practice-found-line {
+  font-weight: var(--w-med);
+}
+.gap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.625rem;
+  font-size: var(--step-s);
+}
+.gap-title {
+  font-weight: var(--w-bold);
 }
 
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
@@ -4438,16 +5412,18 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
    ever reads the most recent earlier run — and it must be visible to the
    reader, not a silent prune. */
 .progress {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem 0 0;
-  border-top: 1px solid var(--line);
+  gap: 0.375rem;
+}
+.progress p {
+  margin: 0;
 }
 
 .progress > h3 {
-  font-size: var(--step-1);
+  font-size: var(--step-0);
   margin: 0;
+}
+.progress > .muted {
+  font-size: var(--step-s);
 }
 
 .progress-group {
@@ -4521,6 +5497,10 @@ body.drill-open .banner {
    control floats over it like a phone game. touch-action none so no thumb on
    the stage scrolls or zooms the page. */
 .drill-stage {
+  /* Inside the game every control wears BlackSky's amber, the colour of the
+     fire scene, in place of the app's teal. */
+  --accent: var(--blacksky-accent);
+  --ink-on-accent: var(--blacksky-fill);
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -4549,49 +5529,225 @@ body.drill-open .banner {
   top: calc(env(safe-area-inset-top) + 0.75rem);
   left: calc(env(safe-area-inset-left) + 1rem);
   right: calc(env(safe-area-inset-right) + 1rem);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  /* The clock in the middle, the sound and close buttons at the right. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
   gap: 0.75rem;
 }
-.drill-counts,
+.drill-timer,
+.drill-goal,
 .drill-chip,
-.drill-room {
+.drill-bag {
   background: rgba(8, 10, 18, 0.62);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
-.drill-counts {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
-  margin: 0;
-  padding: 0.5rem 1.1rem 0.6rem;
-  border-radius: var(--r-pill);
-}
-.drill-counts p {
-  margin: 0;
-}
 .drill-timer {
+  grid-column: 2;
+  margin: 0;
+  padding: 0.4rem 1.1rem 0.5rem;
+  border-radius: var(--r-pill);
   /* Big enough to read at a glance, mid game, on a small phone. */
   font-size: clamp(2.1rem, 9vw, 2.75rem);
   font-weight: var(--w-heavy);
   letter-spacing: var(--track-tight);
   line-height: 1;
 }
-/* The last ten seconds borrow BlackSky's amber: the one colour this product
-   already uses for "now". The clock still reads without it. */
-.drill-timer.late {
-  color: var(--blacksky-accent);
-}
-.drill-bag {
+/* The one rule that decides the score, briefly under the clock. Placed out
+   of the row, so a long line never pushes the clock off the middle. */
+.drill-goal {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--r-pill);
   font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  text-align: center;
+  text-wrap: balance;
+}
+/* Red from half a minute left, never the controls' amber, so it stands
+   out. The digits still read without the colour. */
+.drill-top.warn .drill-timer,
+.drill-top.late .drill-timer,
+.drill-top.warn .drill-goal,
+.drill-top.late .drill-goal {
+  border-color: var(--kind-bulky);
+  color: var(--kind-bulky);
+}
+/* The last ten seconds: a slow pulse, about once a second, never a flash. */
+.drill-top.late .drill-timer {
+  animation: drill-clock-pulse 1s ease-in-out infinite;
+}
+@keyframes drill-clock-pulse {
+  50% {
+    transform: scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-top.late .drill-timer {
+    animation: none;
+  }
+}
+/* The guide over the paused game, before the clock starts. It dims the
+   scene; the controls above it are ringed, and ignore taps until it goes, so
+   a tap anywhere starts. Sound and close stay usable. */
+.drill-guide {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 5, 9, 0.62);
+  outline: none;
+}
+/* The tap target: the whole guide, under its words, which let taps through. */
+.drill-guide-start-area {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.drill-guide-middle,
+.drill-guide-tips {
+  pointer-events: none;
+}
+/* Centred in the open space between the clock and the bubbles over the
+   controls, so it never runs under either on a short screen. */
+.drill-guide-middle {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 5rem);
+  bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.75rem + 7.5rem + 5.5rem);
+  left: calc(env(safe-area-inset-left) + 1.5rem);
+  right: calc(env(safe-area-inset-right) + 1.5rem);
+  max-width: 26rem;
+  margin-inline: auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.875rem;
+  text-align: center;
+}
+.drill-guide-goal {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--blacksky-fill);
+  border-radius: var(--r-card);
+  background: rgba(8, 10, 18, 0.88);
+  font-size: clamp(1.25rem, 5.5vw, 1.5rem);
+  font-weight: var(--w-heavy);
+  line-height: 1.2;
+  text-wrap: balance;
+}
+/* Plain words, not a button: a tap anywhere starts. */
+.drill-guide-start {
+  margin: 0;
+  color: rgba(244, 241, 234, 0.8);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  letter-spacing: 0.02em;
+}
+/* Laid over the two controls exactly as .drill-controls lays them out. */
+.drill-guide-tips {
+  position: absolute;
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.75rem);
+  max-width: 40rem;
+  height: 7.5rem;
+  margin-inline: auto;
+}
+/* Each line a speech bubble, its pointer down at the middle of its control. */
+.drill-guide-tip {
+  position: absolute;
+  max-width: min(19rem, 42vw);
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--blacksky-fill);
+  border-radius: 10px;
+  background: rgba(8, 10, 18, 0.92);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+/* With room, each part on its own line; on a phone the parts flow on and
+   wrap evenly, as the bubbles are narrow there. */
+@media (min-width: 600px) {
+  .drill-guide-tip span {
+    display: block;
+  }
+}
+.drill-guide-tip::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  border-right: 1px solid var(--blacksky-fill);
+  border-bottom: 1px solid var(--blacksky-fill);
+  transform: rotate(45deg);
+}
+.drill-guide-tip.move {
+  left: 0;
+  bottom: calc(100% + 0.875rem);
+}
+.drill-guide-tip.move::after {
+  left: calc(3.75rem - 6px);
+}
+.drill-guide-tip.grab {
+  right: 0;
+  bottom: calc(5.5rem + 0.875rem);
+}
+.drill-guide-tip.grab::after {
+  right: calc(2.75rem - 6px);
+}
+.drill-stage.ready .drill-controls > *,
+.drill-stage.ready .drill-bag {
+  pointer-events: none;
+}
+.drill-stage.ready .drill-stick,
+.drill-stage.ready .drill-grab-ring,
+.drill-stage.ready .drill-timer,
+.drill-stage.ready .drill-bag {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* The bag count, just above the ten slots it counts. */
+.drill-bag {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.125rem);
+  width: fit-content;
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--r-pill);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
   white-space: nowrap;
-  opacity: 0.85;
+  pointer-events: none;
+}
+/* The bag full: the count in the game's accent with a tick. */
+.drill-bag.full {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, rgba(8, 10, 18, 0.62));
 }
 .drill-top-actions {
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   gap: 0.5rem;
 }
@@ -4608,6 +5764,8 @@ body.drill-open .banner {
   cursor: pointer;
 }
 .drill-close {
+  border-color: var(--accent);
+  color: var(--accent);
   width: 44px;
   height: 44px;
   min-width: 44px;
@@ -4616,18 +5774,6 @@ body.drill-open .banner {
   border-radius: 50%;
   font-size: 1.4rem;
   line-height: 1;
-}
-.drill-room {
-  position: absolute;
-  top: calc(env(safe-area-inset-top) + 6.1rem);
-  left: calc(env(safe-area-inset-left) + 1rem);
-  margin: 0;
-  padding: 0.2rem 0.75rem;
-  border-radius: var(--r-pill);
-  font-size: var(--step-s);
-}
-.drill-room::first-letter {
-  text-transform: uppercase;
 }
 
 /* The film's words: one line at a time, low on the picture, on a dark fade
@@ -4718,6 +5864,9 @@ body.drill-open .banner {
   left: calc(env(safe-area-inset-left) + 1rem);
   right: calc(env(safe-area-inset-right) + 1rem);
   bottom: calc(env(safe-area-inset-bottom) + var(--drill-bag, 3rem) + 0.75rem);
+  /* On a wide screen the two controls flank the bag, not the window's corners. */
+  max-width: 40rem;
+  margin-inline: auto;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -4735,12 +5884,21 @@ body.drill-open .banner {
   height: 7.5rem;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
   background: rgba(8, 10, 18, 0.38);
+  color: var(--accent);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   touch-action: none;
   cursor: pointer;
+}
+.drill-stick-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  opacity: 0.8;
 }
 .drill-knob {
   position: absolute;
@@ -4753,44 +5911,79 @@ body.drill-open .banner {
   background: var(--accent);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
-.drill-pack {
-  width: min(11rem, 44vw);
-  min-height: 5.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 1.5rem;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: var(--ink-on-accent);
+.drill-grab {
+  display: grid;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
   font: inherit;
   font-weight: var(--w-bold);
   line-height: 1.2;
   touch-action: none;
   cursor: pointer;
 }
-.drill-pack {
-  animation: drill-pack-in 0.18s ease-out both;
+/* The same size as the stick's ring, so each thumb has one round control. */
+.drill-grab-ring {
+  display: grid;
+  place-items: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
-@keyframes drill-pack-in {
+/* Named past the shared line glyph size, so the hand fills the ring. */
+.drill-grab-ring .glyph.line-glyph svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+/* Centred over both controls, where it has the whole width: one line for
+   most names, and even lines for the longest on a small phone. */
+.drill-grab-name {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--r-pill);
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-align: center;
+  text-wrap: balance;
+  animation: drill-grab-in 0.18s ease-out both;
+}
+@keyframes drill-grab-in {
   from {
     opacity: 0;
     transform: scale(0.85);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .drill-pack {
+  .drill-grab-name {
     animation: none;
   }
 }
-.drill-pack:disabled {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(8, 10, 18, 0.55);
-  color: rgba(244, 241, 234, 0.72);
+.drill-grab:disabled {
   cursor: default;
+}
+.drill-grab:disabled .drill-grab-ring {
+  background: rgba(8, 10, 18, 0.55);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 /* The report: read by shape and colour first, words second. The four kinds
-   of thing each keep one colour everywhere on it. */
-.drill-page {
+   of thing each keep one colour everywhere: on the debrief and on a drill's
+   card on the pack page. */
+:root {
   --kind-essential: #5be38a;
   --kind-listed: #3fc8d8;
   --kind-neutral: #8a94a6;
@@ -4848,7 +6041,7 @@ body.drill-open .banner {
   width: 5.5rem;
   height: 5.5rem;
   border-radius: 50%;
-  background: rgba(255, 90, 79, 0.16);
+  background: color-mix(in srgb, var(--kind-bulky) 16%, transparent);
   border: 2px solid var(--kind-bulky);
   color: var(--kind-bulky);
 }
@@ -4863,6 +6056,38 @@ body.drill-open .banner {
 
 .debrief-block {
   margin-bottom: 1.25rem;
+}
+/* The bag and what was left behind, each in a card as on the pack page. */
+.debrief-card {
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+}
+.debrief-card p,
+.debrief-card .debrief-label {
+  margin: 0;
+}
+.debrief-card .debrief-bar {
+  margin: 0.375rem 0 0;
+}
+/* Its head as a pack page section opens: a ringed drawing, the name in teal
+   capitals, and the count in grey at the right. */
+.debrief-card > .debrief-label {
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  color: var(--accent);
+}
+.debrief-card > .debrief-label .glyph {
+  width: 36px;
+  height: 36px;
+}
+.debrief-card > .debrief-label .glyph svg {
+  width: 18px;
+  height: 18px;
+}
+.debrief-card > .debrief-label .figure {
+  font-size: var(--step-s);
+  color: var(--ink-2);
 }
 .debrief-label {
   display: flex;
@@ -4923,6 +6148,53 @@ body.drill-open .banner {
 .kind-listed { --kind: var(--kind-listed); }
 .kind-neutral { --kind: var(--kind-neutral); }
 .kind-bulky { --kind: var(--kind-bulky); }
+/* On a drill's card on the pack page: the debrief's ring and tiles, smaller. */
+.drill-outcome {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.drill-outcome .debrief-ring {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+.drill-outcome .debrief-over-mark {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+.drill-outcome .debrief-over-mark svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.drill-card-tiles {
+  gap: 0.375rem;
+}
+/* A reason sits snug under the bag; the rows under it start with a picture. */
+.drill-why {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  gap: 0.25rem;
+  font-size: var(--step-s);
+}
+/* The tapped thing's name, and its kind in its own colour at the right. */
+.drill-why-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+.drill-why-name {
+  font-weight: var(--w-bold);
+  color: var(--ink);
+}
+.drill-why-kind {
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--kind);
+}
 .debrief-sprite {
   display: block;
   background-image: url('/drill/sprites.png');
@@ -4980,58 +6252,180 @@ body.drill-open .banner {
   font-size: var(--step-s);
 }
 
-/* The way into the drill from the Rehearse screens: amber and warm where
-   every other row there is neutral, with a flame and a way on, so it reads as
-   a different thing to do, not one more choice. */
-.drill-tile {
+/* The ways into the games from the Rehearse screens: warm and coloured where
+   every other row there is neutral, with a glyph and a way on, so each reads
+   as a different thing to do, not one more choice. One shape for all three;
+   each game sets its own colour below. */
+.game-tiles {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.25rem 0 1.25rem;
+}
+.game-tile {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   width: 100%;
   min-height: 72px;
-  margin: 0.25rem 0 1.25rem;
   padding: 0.9rem 1rem;
-  border: 2px solid var(--blacksky-accent);
+  border: 2px solid var(--tile-accent);
   border-radius: var(--r-card);
-  background: linear-gradient(135deg, rgba(255, 150, 40, 0.22), rgba(255, 90, 30, 0.08));
+  background: linear-gradient(135deg, var(--tile-wash-1), var(--tile-wash-2));
   color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.drill-tile:hover {
-  background: linear-gradient(135deg, rgba(255, 150, 40, 0.3), rgba(255, 90, 30, 0.12));
+.game-tile:hover {
+  background: linear-gradient(135deg, var(--tile-wash-hover-1), var(--tile-wash-hover-2));
 }
-.drill-tile .glyph {
+.game-tile .glyph {
   display: grid;
   place-items: center;
   flex: none;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--blacksky-accent);
-  color: #1a0d04;
+  background: var(--tile-accent);
+  color: var(--tile-ink-on);
 }
-.drill-tile-text {
+.game-tile-text {
   display: grid;
   gap: 0.15rem;
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.drill-tile-title {
+.game-tile-title {
   font-weight: var(--w-heavy);
   font-size: var(--step-1);
 }
-.drill-tile-detail {
+.game-tile-detail {
   font-size: var(--step-s);
   color: var(--ink-2);
 }
-.drill-tile-go {
+/* A rule of the game for now: a tag filled with the game's colour, unlike
+   the outlined result pills, with when it changes beside it in grey. */
+.game-tile-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.375rem;
+}
+.game-tile-tag {
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  background: var(--tile-accent);
+  color: var(--tile-ink-on);
+  font-size: var(--step-s);
+  font-weight: var(--w-heavy);
+}
+.game-tile-tag-detail {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+/* Where a game stands, in small pills tinted with the game's own colour. */
+.game-tile-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+.game-tile-pill {
+  padding: 0.125rem 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--tile-accent) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tile-accent) 16%, transparent);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+  color: var(--ink);
+}
+/* A pill's numbers, bold and in full white, so a score stands out. */
+.game-tile-pill strong {
+  font-weight: var(--w-heavy);
+  color: var(--ink);
+}
+/* The title, with the card's one big number at the right of it: large,
+   heavy and in the game's colour, its small label before it on the same
+   line, so the number adds no height under the title. */
+/* The title and the highest score on one line where they fit. Where they do
+   not, the score drops under the title, so the title never breaks a word. */
+.game-tile-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+.game-tile-head .game-tile-title {
+  min-width: min-content;
+  overflow-wrap: break-word;
+}
+.game-tile-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  flex: none;
+}
+.game-tile-stat-figure {
+  font-size: var(--step-2);
+  font-weight: var(--w-heavy);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--tile-accent);
+}
+.game-tile-stat-label {
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+/* Cooee Word's last seven days, today last: filled where solved. */
+.word-week {
+  display: flex;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+.word-week span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--tile-accent);
+}
+.word-week .solved {
+  background: var(--tile-accent);
+}
+.game-tile-go {
   flex: none;
   font-size: 1.75rem;
   line-height: 1;
-  color: var(--blacksky-accent);
+  color: var(--tile-accent);
+}
+.drill-tile {
+  --tile-accent: var(--blacksky-accent);
+  --tile-ink-on: var(--drill-ink-on);
+  --tile-wash-1: var(--drill-wash-1);
+  --tile-wash-2: var(--drill-wash-2);
+  --tile-wash-hover-1: var(--drill-wash-hover-1);
+  --tile-wash-hover-2: var(--drill-wash-hover-2);
+}
+.word-tile {
+  --tile-accent: var(--word-accent);
+  --tile-ink-on: var(--word-ink-on);
+  --tile-wash-1: var(--word-wash-1);
+  --tile-wash-2: var(--word-wash-2);
+  --tile-wash-hover-1: var(--word-wash-hover-1);
+  --tile-wash-hover-2: var(--word-wash-hover-2);
+}
+.block-tile {
+  --tile-accent: var(--block-accent);
+  --tile-ink-on: var(--block-ink-on);
+  --tile-wash-1: var(--block-wash-1);
+  --tile-wash-2: var(--block-wash-2);
+  --tile-wash-hover-1: var(--block-wash-hover-1);
+  --tile-wash-hover-2: var(--block-wash-hover-2);
 }
 
 /* Read by a screen reader, drawn nowhere. */
@@ -5049,10 +6443,6 @@ body.drill-open .banner {
 
 /* A glyph inside a control or a line: no circle, the text's own colour. Named
    twice so it outranks every tinted .glyph rule above. */
-/* The age on a Rehearse pack choice, led by the saved glyph from the left. */
-.pack-choice-age.with-glyph {
-  justify-content: flex-start;
-}
 /* The tick on the saved glyph's badge, cut out in the card's own colour. */
 .glyph-badge-tick {
   stroke: var(--surface);
@@ -5060,8 +6450,7 @@ body.drill-open .banner {
 /* The saved glyph is drawn as tall as its line (1.5em, 21px beside 14px
    words), so its arrow, tray and tick read as one picture. */
 .saved-place-footer .glyph.line-glyph svg,
-.in-packs .glyph.line-glyph svg,
-.pack-choice-age .glyph.line-glyph svg {
+.in-packs .glyph.line-glyph svg {
   width: 1.5em;
   height: 1.5em;
 }
@@ -5085,7 +6474,14 @@ body.drill-open .banner {
 p.with-glyph {
   display: flex;
   justify-content: flex-start;
+  /* The picture leads the first line, not the middle of a paragraph that
+     wraps: its box is one line of this paragraph tall, at the top, so a line
+     that never wraps looks just as it did. */
+  align-items: flex-start;
   margin: 0;
+}
+p.with-glyph > .glyph.line-glyph {
+  height: 1lh;
 }
 /* State is told by the word and the glyph together, the colour only adds. */
 .tone-amber {
@@ -5112,10 +6508,12 @@ p.with-glyph {
   border-radius: var(--r-card);
   background: color-mix(in srgb, var(--surface) 55%, transparent);
 }
-.empty-state h2 {
+.empty-state h2,
+.empty-state h3 {
   font-size: var(--step-0);
   font-weight: var(--w-med);
   color: var(--ink-2);
+  margin: 0;
 }
 .empty-state p {
   margin: 0;
@@ -5128,18 +6526,54 @@ p.with-glyph {
 /* The pack builder's step strip: small rings joined by a line, done steps
    filled, the current one ringed and named. */
 .flow-steps {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  width: 100%;
 }
+/* Five equal columns: each step's drawing over its name, a line behind the
+   drawings joining them. */
 .flow-steps ol {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.flow-steps li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+/* The line between two drawings, stopping short of each: the drawings of the
+   steps done are see-through, so a line under them would show. 18px is the
+   drawing's 15px radius and a little room. */
+.flow-steps li + li::before {
+  content: '';
+  position: absolute;
+  top: calc(0.25rem + 14px);
+  right: calc(50% + 18px);
+  width: calc(100% - 36px);
+  height: 2px;
+  background: var(--line);
+}
+.flow-steps .done + li::before,
+.flow-steps .done + .now::before {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.flow-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.25rem 0.125rem;
+  border: 0;
+  border-radius: var(--r-input);
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+}
+button.flow-step {
+  cursor: pointer;
 }
 .flow-steps .glyph {
   width: 30px;
@@ -5155,18 +6589,42 @@ p.with-glyph {
   background: var(--accent);
   color: var(--ink-on-accent);
 }
-.flow-steps li + li::before {
-  content: '';
-  display: inline-block;
-  width: 0.5rem;
-  height: 2px;
-  margin-right: 0.375rem;
-  vertical-align: middle;
-  background: var(--line);
+.flow-step-label {
+  font-size: var(--step-xs);
+  font-weight: var(--w-bold);
+  line-height: 1.2;
 }
-.flow-steps li {
-  display: flex;
-  align-items: center;
+.flow-steps .done .flow-step-label {
+  color: var(--accent);
+}
+.flow-steps .now .flow-step-label {
+  color: var(--ink);
+}
+/* A step already done is a way back: under a mouse or trackpad its drawing
+   lights a stronger teal and its name underlines, as a link does. The steps
+   that cannot be tapped do neither. */
+button.flow-step .glyph,
+button.flow-step .flow-step-label {
+  transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+button.flow-step .flow-step-label {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+}
+@media (hover: hover) {
+  .flow-steps .done button.flow-step:hover .glyph {
+    background: color-mix(in srgb, var(--accent) 34%, transparent);
+  }
+  .flow-steps .done button.flow-step:hover .flow-step-label {
+    text-decoration-color: currentColor;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button.flow-step .glyph,
+  button.flow-step .flow-step-label {
+    transition: none;
+  }
 }
 .tone-amber .glyph {
   background: color-mix(in srgb, var(--stale) 16%, transparent);
@@ -5175,17 +6633,25 @@ p.with-glyph {
 /* The map's key: the map's own colours as swatches, the words beside them. */
 .map-key {
   list-style: none;
-  margin: 0 0 0.375rem;
+  margin: 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem 1rem;
   font-size: var(--step-s);
+  color: var(--ink-2);
 }
+/* One slot of one width for every picture, so the words in each column start
+   on the same line whatever the picture's size. */
 .map-key li {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.5rem;
+}
+.map-key-icon {
+  display: grid;
+  place-items: center;
 }
 .swatch {
   width: 0.875rem;
@@ -5194,26 +6660,745 @@ p.with-glyph {
   border: 1px solid var(--line);
 }
 .swatch-inside {
-  background: #f2d64b;
+  background: var(--area-map-inside);
 }
 .swatch-outside {
-  background: #ffffff;
+  background: var(--area-map-paper);
 }
 .swatch-place {
   border: 3px solid var(--accent);
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.6);
+  background: color-mix(in srgb, var(--area-map-paper) 60%, transparent);
 }
+/* Source and an item's links on one row that wraps link by link, never into
+   a narrow column; the panel Source opens takes the full width beneath. */
+.source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+.source-row .source-links {
+  display: contents;
+}
+.source-row > .hint-panel {
+  flex-basis: 100%;
+}
+/* An item's saved copy and web page as small links on one row, in the style
+   of the Source toggle, so a card reads as its content, not its buttons. */
 .source-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.25rem 1rem;
 }
-.place-meta {
+.source-links .source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 32px;
+  color: var(--accent);
   font-size: var(--step-s);
+  font-weight: var(--w-med);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.place-distance {
+
+/* ── The drill's twist, on its first screen and its report ───────────────── */
+.drill-twist {
+  border: 2px solid var(--blacksky-accent);
+  background: linear-gradient(135deg, var(--drill-wash-1), var(--drill-wash-2));
+}
+.drill-twist .kicker {
+  color: var(--blacksky-accent);
+}
+.drill-twist-name {
+  margin: 0.15rem 0 0.35rem;
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+}
+.drill-twist p {
+  margin: 0;
+}
+.debrief-twist {
+  gap: 0.35rem;
+  margin: 0 0 1.5rem;
+}
+
+/* ── Cooee Word ─────────────────────────────────────────────────────────── */
+.word-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.1rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.word-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.word-legend .word-cell {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 6px;
+}
+/* In the key the box is empty, so its mark sits in the very middle. The
+   tick's optical centre is a little above its box once turned. */
+.word-legend .word-cell.mark-right::after {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -70%) rotate(-45deg);
+}
+.word-legend .word-cell.mark-present::after {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+}
+.word-hero h1 {
+  word-spacing: 0.25em;
+}
+.word-hint {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--word-accent);
+  border-radius: var(--r-input);
+  background: var(--surface);
+}
+.word-hint-theme {
+  justify-self: start;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--r-pill);
+  background: var(--word-accent);
+  color: var(--word-ink-on);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+}
+.word-hint-clue {
+  margin: 0;
   font-size: var(--step-1);
   font-weight: var(--w-bold);
+}
+.word-grid {
+  display: grid;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+.word-row {
+  display: grid;
+  grid-template-columns: repeat(var(--word-length, 5), min(3.4rem, calc((100vw - 3rem) / var(--word-length, 5) - 0.4rem)));
+  gap: 0.4rem;
+}
+.word-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
   color: var(--ink);
+  font-size: clamp(1.25rem, 6vw, 1.75rem);
+  font-weight: var(--w-heavy);
+  line-height: 1;
+}
+.word-row.current .word-cell {
+  border-color: var(--ink-3);
+}
+.word-cell.typed {
+  border-color: var(--word-accent);
+}
+.word-cell.mark-right,
+.word-key.mark-right {
+  border-color: var(--word-right);
+  background: var(--word-right);
+  color: var(--word-right-ink);
+}
+.word-cell.mark-present,
+.word-key.mark-present {
+  border-color: var(--word-present);
+  background: var(--word-present);
+  color: var(--word-present-ink);
+}
+.word-cell.mark-absent,
+.word-key.mark-absent {
+  border: 2px dashed var(--ink-3);
+  background: var(--word-absent);
+  color: var(--word-absent-ink);
+}
+/* The shapes: a tick in the corner for the right place, a dot for elsewhere
+   in the word. */
+.word-cell.mark-right::after,
+.word-key.mark-right::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 0.45rem;
+  height: 0.25rem;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+.word-cell.mark-present::after,
+.word-key.mark-present::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .word-row:not(.current) .word-cell[class*='mark-'] {
+    animation: word-turn 0.35s ease-out both;
+  }
+}
+@keyframes word-turn {
+  from {
+    transform: rotateX(90deg);
+  }
+  to {
+    transform: none;
+  }
+}
+.word-message {
+  min-height: 1.5rem;
+  margin: 0.5rem 0 0.75rem;
+  text-align: center;
+  font-weight: var(--w-bold);
+}
+.word-keyboard {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0 0 1.5rem;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.word-keys {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+}
+.word-key {
+  position: relative;
+  flex: 1 1 0;
+  max-width: 3rem;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.word-key.wide {
+  flex: 1.6 1 0;
+  max-width: 5rem;
+  font-size: var(--step-s);
+}
+.word-key.wide span {
+  font-size: var(--step-1);
+}
+.word-result {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0.5rem 0 1.5rem;
+}
+.word-result-card {
+  gap: 1rem;
+  border: 2px solid var(--word-accent);
+}
+.word-result-card h2,
+.word-result-card p {
+  margin: 0;
+}
+/* The outcome: a ring with a tick in Word green once solved, a quiet ring
+   with the game's drawing when not. */
+.word-result-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.word-result-head .glyph {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.word-result-head.won .glyph {
+  background: var(--word-accent);
+  color: var(--word-ink-on);
+}
+/* The word in the game's own tiles, green once solved, plain when not. */
+/* The word on one line at any width: each tile is 2.5rem, and narrower only
+   when the line runs out of room. */
+.word-answer-tiles {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 2.5rem);
+  justify-content: start;
+  gap: 0.375rem;
+  width: 100%;
+}
+.word-answer-tiles .word-cell {
+  font-size: var(--step-1);
+}
+.word-answer-tiles .word-cell::after {
+  display: none;
+}
+.word-result-card .game-facts {
+  margin: 0;
+}
+/* Why it matters, edged in Word green as the hint is. */
+/* The words of the days before, behind their toggle: one card, a row each
+   parted by a hairline, the number and how it went over the word in small
+   tiles. A row opens why it matters under it. */
+.word-past {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.word-past-body {
+  display: grid;
+  gap: 0.5rem;
+}
+.word-past-list {
+  list-style: none;
+  margin: 0;
+  padding-block: 0.25rem;
+  gap: 0;
+}
+.word-past-row {
+  display: grid;
+  gap: 0.5rem;
+  padding-block: 0.25rem;
+}
+.word-past-row + .word-past-row {
+  border-top: 1px solid var(--line);
+}
+.word-past-row .word-fact {
+  margin-bottom: 0.5rem;
+}
+.word-past-row .word-fact p {
+  margin: 0;
+}
+/* The whole row is the control: no pill, no fill, the width of the card. */
+.word-past-button {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.word-past-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  color: var(--ink);
+}
+.word-past-outcome {
+  color: var(--ink-2);
+}
+.word-past-outcome.won {
+  color: var(--word-accent);
+}
+.word-past-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+.word-past-tiles .word-cell {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 6px;
+  font-size: var(--step-s);
+}
+/* The row's chevron at the far right, turning down while it is open. */
+.word-past-tiles .hint-chevron {
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform 0.15s ease;
+}
+.word-past-button[aria-expanded='true'] .hint-chevron {
+  transform: rotate(90deg);
+}
+/* No tick or dot on a tile this small: the colour and the line above say it. */
+.word-past-tiles .word-cell::after {
+  content: none;
+}
+.word-fact {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--word-accent);
+  border-radius: var(--r-input);
+  background: var(--surface-2);
+}
+.word-fact .kicker {
+  color: var(--word-accent);
+}
+.word-come-back {
+  font-size: var(--step-s);
+}
+
+/* ── Ready the Block ────────────────────────────────────────────────────── */
+.block-stage {
+  background: #2b4a2a;
+}
+.block-stage canvas {
+  touch-action: none;
+  cursor: pointer;
+}
+/* The count and what a tap found, under the clock as the drill's rule is.
+   Placed out of the row, so a long line never pushes the clock off the middle. */
+.block-status {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  pointer-events: none;
+}
+.block-found,
+.block-message {
+  width: fit-content;
+  max-width: min(100%, 34rem);
+  margin: 0;
+  border-radius: var(--r-pill);
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  text-align: center;
+  text-wrap: balance;
+}
+.block-found {
+  padding: 0.1rem 0.6rem;
+  white-space: nowrap;
+}
+.block-message {
+  padding: 0.2rem 0.75rem;
+}
+.block-message:empty {
+  display: none;
+}
+.block-controls {
+  position: absolute;
+  left: calc(env(safe-area-inset-left) + 1rem);
+  right: calc(env(safe-area-inset-right) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  pointer-events: none;
+}
+.block-controls > * {
+  pointer-events: auto;
+}
+.block-zoom {
+  display: flex;
+  gap: 0.5rem;
+}
+.block-zoom-button {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.block-hint {
+  min-height: 56px;
+  padding: 0 1.25rem;
+  border-color: var(--block-accent);
+}
+.block-hint:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.block-list {
+  display: grid;
+  gap: 0.6rem;
+}
+.block-list .block-row {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  align-items: start;
+  gap: 0.9rem;
+  margin: 0;
+}
+.block-row.spotted {
+  border-left: 3px solid var(--word-right);
+}
+.block-row.missed {
+  border-left: 3px solid var(--block-accent);
+}
+.block-sprite {
+  display: block;
+  justify-self: center;
+  margin-top: 0.25rem;
+  background-image: url('/block/sprites.png');
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.block-row-text p {
+  margin: 0 0 0.25rem;
+}
+.block-row-head {
+  display: grid;
+  justify-items: start;
+  gap: 0.3rem;
+}
+.block-row-name {
+  font-weight: var(--w-bold);
+}
+.block-row-name::first-letter {
+  text-transform: uppercase;
+}
+.block-badge {
+  padding: 0.05rem 0.55rem;
+  border-radius: var(--r-pill);
+  font-size: var(--step-xs);
+  font-weight: var(--w-heavy);
+  text-transform: uppercase;
+  letter-spacing: var(--track-wide);
+}
+.block-row.spotted .block-badge {
+  background: var(--word-right);
+  color: var(--word-right-ink);
+}
+.block-row.missed .block-badge {
+  border: 1px dashed var(--block-accent);
+  color: var(--block-accent);
+}
+
+
+
+/* ── Ready the Block's opening facts ───────────────────────────────────── */
+.game-facts {
+  display: grid;
+  /* Three equal columns, whatever their figures hold. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  list-style: none;
+}
+.game-facts li {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  padding: 0.9rem 0.75rem;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--fact-accent);
+  border-radius: var(--r-input);
+  background: var(--surface);
+  text-align: center;
+}
+.game-fact-figure {
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
+  line-height: 1;
+  color: var(--fact-accent);
+}
+.game-fact-label {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+/* Each game's facts wear its own colour. Ready the Block is also a
+   .drill-page, so its rule comes after. */
+.drill-page {
+  --fact-accent: var(--blacksky-accent);
+}
+.word-page {
+  --fact-accent: var(--word-accent);
+}
+.block-page {
+  --fact-accent: var(--block-accent);
+}
+/* What costs points on Ready the Block: a grey label, then a chip each,
+   the points in the Block's colour. */
+/* The yard to search, from above, in its own pixels, with dashed rings in
+   the Block's colour where risks may hide. They breathe slowly, and hold
+   still for anyone who asks for less motion. */
+.block-yard {
+  position: relative;
+  margin: 0 0 1rem;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  aspect-ratio: 576 / 448;
+}
+.block-yard img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.block-yard-thing {
+  position: absolute;
+  translate: -50% -100%;
+  background-image: url('/block/sprites.png');
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.block-yard-ring {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 3px dashed var(--block-accent);
+  background: color-mix(in srgb, var(--block-accent) 22%, transparent);
+  color: #fff;
+  font-weight: var(--w-heavy);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  animation: block-ring 2.4s ease-in-out infinite;
+}
+.block-yard-ring.roof { left: 38%; top: 34%; }
+.block-yard-ring.deck { left: 64%; top: 60%; animation-delay: 0.6s; }
+.block-yard-ring.yard { left: 22%; top: 80%; animation-delay: 1.2s; }
+.block-yard-ring.shed { left: 84%; top: 14%; animation-delay: 1.8s; }
+@keyframes block-ring {
+  50% {
+    scale: 1.12;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .block-yard-ring {
+    animation: none;
+  }
+}
+/* What costs points: two equal tiles side by side under their label, each
+   what costs them led by its drawing, then the points off large in the
+   Block's colour with the word points small beside it. */
+.block-costs {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+.block-cost-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.block-cost {
+  /* Centred, as the facts above are. */
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 0.875rem;
+  text-align: center;
+}
+.block-cost-name {
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  color: var(--ink);
+}
+.block-cost-name .glyph {
+  color: var(--block-accent);
+}
+.block-cost-points {
+  font-size: var(--step-s);
+  color: var(--ink-2);
+}
+.block-cost-points strong {
+  font-size: var(--step-1);
+  font-weight: var(--w-heavy);
+  color: var(--block-accent);
+}
+/* Once played today: the day's best, large in the Block's colour. */
+.block-today {
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.block-today p {
+  margin: 0;
+}
+.block-today-score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  color: var(--ink-2);
+}
+.block-today-figure {
+  font-size: var(--step-3);
+  font-weight: var(--w-heavy);
+  line-height: 1;
+  color: var(--block-accent);
+}
+/* The drill's tiles, drawn as the game draws them: its clock, its bag count
+   and the door, each in the game's dark pill of one height, so the three
+   labels under them start on one line. */
+.drill-page .game-fact-figure {
+  display: flex;
+  justify-content: center;
+}
+.drill-fact-clock,
+.drill-fact-bag,
+.drill-fact-door {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 2.25rem;
+  max-width: 100%;
+  padding: 0 0.6rem;
+  font-size: clamp(0.95rem, 4.5vw, 1.15rem);
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 10, 18, 0.62);
+  color: #fff;
+  letter-spacing: var(--track-tight);
+}
+.drill-page .game-facts li {
+  padding-inline: 0.5rem;
+}
+.game-fact-figure .glyph.line-glyph {
+  justify-self: center;
+  color: var(--fact-accent);
+}
+/* The one muted line under a game's facts. */
+.game-facts-note {
+  margin: 0 0 1.5rem;
+  font-size: var(--step-s);
+  text-align: center;
 }

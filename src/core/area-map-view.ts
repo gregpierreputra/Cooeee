@@ -1,3 +1,4 @@
+import { AREA_MAP_HALF_KM, AREA_MAP_MARGIN_KM, AREA_MAP_MAX_HALF_KM, PRINT_MAP_MIN_HALF_KM } from './constants';
 import type { LatLon } from './types';
 
 // The stored map of a pack's area is one picture drawn in plain longitude and
@@ -16,6 +17,33 @@ export function mapBoxAround({ lat, lon }: LatLon, halfKm: number): MapBox {
   const halfLat = halfKm / KM_PER_DEGREE_LAT;
   const halfLon = halfLat / Math.cos((lat * Math.PI) / 180);
   return { west: lon - halfLon, south: lat - halfLat, east: lon + halfLon, north: lat + halfLat };
+}
+
+/** How far a pack's map reaches each way, in whole kilometres: AREA_MAP_HALF_KM,
+ *  or as far as the farthest chosen place east, west, north or south and a
+ *  little room past it, up to AREA_MAP_MAX_HALF_KM. A place past that is said
+ *  in words under the map. */
+export function areaMapHalfKm(centre: LatLon, places: LatLon[]): number {
+  return Math.min(AREA_MAP_MAX_HALF_KM, Math.max(AREA_MAP_HALF_KM, Math.ceil(farthestKm(centre, places) + AREA_MAP_MARGIN_KM)));
+}
+
+/** How far the farthest place lies east, west, north or south of the centre,
+ *  in kilometres: what decides whether a square around the centre holds it. */
+export function farthestKm(centre: LatLon, places: LatLon[]): number {
+  return places.reduce((most, { lat, lon }) => {
+    const northSouth = Math.abs(lat - centre.lat) * KM_PER_DEGREE_LAT;
+    const eastWest = Math.abs(lon - centre.lon) * KM_PER_DEGREE_LAT * Math.cos((centre.lat * Math.PI) / 180);
+    return Math.max(most, northSouth, eastWest);
+  }, 0);
+}
+
+/** The printed map's reach each way, in whole kilometres: home and the chosen
+ *  places with a little room, at least PRINT_MAP_MIN_HALF_KM and never past
+ *  the stored map. Cut down this way its road names print large enough to
+ *  read, where the whole stored map would print them too small. */
+export function printMapHalfKm(centre: LatLon, places: LatLon[], mapHalfKm: number): number {
+  const wanted = Math.ceil(farthestKm(centre, places) * 1.15 + 1);
+  return Math.min(mapHalfKm, Math.max(PRINT_MAP_MIN_HALF_KM, wanted));
 }
 
 /** The box a stored map was drawn for, read back from its own request, so a
@@ -44,39 +72,33 @@ export function mapPoint(box: MapBox, { lat, lon }: LatLon): { x: number; y: num
   return x >= 0 && x <= 1 && y >= 0 && y <= 1 ? { x, y } : null;
 }
 
-/** The viewer's state: a shift in pixels, a zoom and a turn in degrees, applied
- *  about the middle of the frame. */
-export type MapView = { x: number; y: number; scale: number; angle: number };
+/** The viewer's state: a shift in pixels and a zoom, applied about the middle
+ *  of the frame. North is always up: a turned square leaves blank corners. */
+export type MapView = { x: number; y: number; scale: number };
 
-export const MAP_HOME: MapView = { x: 0, y: 0, scale: 1, angle: 0 };
+export const MAP_HOME: MapView = { x: 0, y: 0, scale: 1 };
 export const MAP_MAX_SCALE = 8;
 
-/** Keeps the zoom between 1 and MAP_MAX_SCALE, and the picture's middle within
- *  reach of the frame, so the map can never be lost off screen. half is half
- *  the frame's width in pixels. */
-export function clampView(view: MapView, half: number): MapView {
-  const scale = Math.min(MAP_MAX_SCALE, Math.max(1, view.scale));
-  const limit = half * scale;
+/** The closest zoom for a map: MAP_MAX_SCALE on the usual 40 km, and more on a
+ *  wider one, so the streets near home can be read as closely on either. */
+export const mapMaxScale = (box: MapBox | null): number =>
+  box ? MAP_MAX_SCALE * Math.max(1, mapAcrossKm(box) / (AREA_MAP_HALF_KM * 2)) : MAP_MAX_SCALE;
+
+/** Keeps the zoom between 1 and maxScale, and the picture over the whole
+ *  frame: nothing lies past its edge, so the map moves only as far as the edge.
+ *  Fully zoomed out it does not move at all. half is half the frame's width. */
+export function clampView(view: MapView, half: number, maxScale = MAP_MAX_SCALE): MapView {
+  const scale = Math.min(maxScale, Math.max(1, view.scale));
+  const limit = half * (scale - 1);
   const bound = (value: number) => Math.min(limit, Math.max(-limit, value));
-  return { x: bound(view.x), y: bound(view.y), scale, angle: view.angle };
+  return { x: bound(view.x), y: bound(view.y), scale };
 }
 
-/** The view after zooming by factor and turning by turn degrees about the point
- *  at (px, py) from the frame's middle, so the ground under that point stays
- *  under it, as under two fingers. */
-export function zoomTurnAbout(view: MapView, px: number, py: number, factor: number, turn: number, half: number): MapView {
-  const scale = Math.min(MAP_MAX_SCALE, Math.max(1, view.scale * factor));
+/** The view after zooming by factor about the point at (px, py) from the
+ *  frame's middle, so the ground under that point stays under it, as under two
+ *  fingers. */
+export function zoomAbout(view: MapView, px: number, py: number, factor: number, half: number, maxScale = MAP_MAX_SCALE): MapView {
+  const scale = Math.min(maxScale, Math.max(1, view.scale * factor));
   const k = scale / view.scale;
-  const r = (turn * Math.PI) / 180;
-  const dx = view.x - px;
-  const dy = view.y - py;
-  return clampView(
-    {
-      x: px + k * (dx * Math.cos(r) - dy * Math.sin(r)),
-      y: py + k * (dx * Math.sin(r) + dy * Math.cos(r)),
-      scale,
-      angle: (view.angle + turn) % 360,
-    },
-    half,
-  );
+  return clampView({ x: px + k * (view.x - px), y: py + k * (view.y - py), scale }, half, maxScale);
 }

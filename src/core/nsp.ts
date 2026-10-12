@@ -1,7 +1,6 @@
 import { isInsideVictoria } from './constants';
 import { absenceRow } from './destination';
 import { distanceM } from './geo';
-import * as copy from './copy';
 import type { Destination, HazardType, LatLon, NspSite, NspSnapshot } from './types';
 
 // The council names in the CFA list carry a governance suffix ("Yarra Ranges
@@ -110,10 +109,6 @@ export const formatIsoDateShort = (iso: string): string => {
   }).format(date);
 };
 
-/** The mandated per-entry date line: the list's own date, labelled as the list's
- *  date. A site's own designation date is shown separately, only when recorded. */
-export const nspListDateLabel = (listAsAt: string): string =>
-  copy.NSP_LIST_AS_AT(formatIsoDateShort(listAsAt));
 
 /** The destination rows to persist for a pack.
  *

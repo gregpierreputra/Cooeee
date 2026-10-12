@@ -127,7 +127,7 @@ test('AC4 heading, detail and actions are in reading order', async ({ page }) =>
     return nodes.map((el) => ({ tag: el.tagName, text: el.textContent ?? '' }));
   });
 
-  const kicker = order.findIndex((entry) => entry.text.includes('Rehearsal'));
+  const kicker = order.findIndex((entry) => entry.text.includes('Rehearse'));
   const head = order.findIndex((entry) => entry.tag === 'H2');
   const detail = order.findIndex((entry) => entry.text.includes('has no area designation'));
   const action = order.findIndex((entry) => entry.tag === 'A');
@@ -236,7 +236,7 @@ test('AC4 nothing to rehearse fills no action, because none of them fixes it', a
 // than a heading and paragraphs), so it is measured on its own terms rather
 // than folded into the loops above.
 const CONDITION = `${ORIGIN}/rehearse?mode=rehearsable`;
-const CHOOSE_HEADING = 'Rehearse without…';
+const CHOOSE_HEADING = 'Rehearse with…';
 
 test('AC1 the choice survives 200% text with no clipping or overlap', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
@@ -292,13 +292,14 @@ test('AC1 the choice survives 200% text with no clipping or overlap', async ({ p
   expect(report.rows).toBe(2);
 });
 
-test('AC1 every row and the action meet the minimum target size', async ({ page }) => {
+test('AC1 every row meets the minimum target size', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await page.goto(CONDITION);
   await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
 
-  const targets = await page.locator('.condition-action, .actions a').all();
-  expect(targets).toHaveLength(3);
+  // Back at the top is the way out, so the two rows are the only targets.
+  const targets = await page.locator('.condition-action').all();
+  expect(targets).toHaveLength(2);
   for (const target of targets) {
     const box = await target.boundingBox();
     expect(box).not.toBeNull();
@@ -312,18 +313,18 @@ test('AC1 the choice meets the contrast minimum on every element', async ({ page
   await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
 
   const rows = await contrastRows(page);
-  // Kicker, heading, both condition rows and the action.
+  // Kicker, title, address, heading and both condition rows.
   expect(rows.length).toBeGreaterThanOrEqual(5);
   const failing = rows.filter((row) => row.ratio < row.required);
   expect(failing, JSON.stringify(failing)).toEqual([]);
 });
 
-test('AC1 kicker, heading, rows and action are in reading order', async ({ page }) => {
+test('AC1 kicker, heading and rows are in reading order', async ({ page }) => {
   await page.goto(CONDITION);
   await page.getByRole('heading', { name: CHOOSE_HEADING }).waitFor();
 
   const order = await page.evaluate(() =>
-    [...document.querySelectorAll('.kicker, h2, .condition-action, .actions a')].map((el) => ({
+    [...document.querySelectorAll('.kicker, h2, .condition-action')].map((el) => ({
       tag: el.tagName,
       className: el.className,
       text: el.textContent ?? '',
@@ -333,12 +334,10 @@ test('AC1 kicker, heading, rows and action are in reading order', async ({ page 
   const kicker = order.findIndex((entry) => entry.className.includes('kicker'));
   const head = order.findIndex((entry) => entry.tag === 'H2');
   const firstRow = order.findIndex((entry) => entry.className.includes('condition-action'));
-  const action = order.findIndex((entry) => entry.tag === 'A');
 
   expect(kicker).toBeGreaterThanOrEqual(0);
   expect(head).toBeGreaterThan(kicker);
   expect(firstRow).toBeGreaterThan(head);
-  expect(action).toBeGreaterThan(firstRow);
 });
 
 // E5-US1-AC1 — the two conditions must read as equals, so they are shown as
@@ -388,8 +387,12 @@ test('AC1 the condition rows are the same height, at normal type and at 200%', a
 // in rehearsal-run.spec.ts beside the rest of the bar's behaviour; what is
 // measured here is contrast, reflow at 200% and the target size of the one
 // control the run offers.
+/** Start a run and wait for the running screen itself, which draws once the
+ *  pack is read: the bar can show first, and a check made then would measure
+ *  only the bar and Leave. */
 const startRunFor = async (page: import('@playwright/test').Page, condition: string) => {
   await startJourney(page, condition, `${ORIGIN}/rehearse?mode=rehearsable`);
+  await expect(page.getByRole('main').getByRole('button', { name: 'I have arrived', exact: true })).toBeVisible();
 };
 
 test('AC2 the bar and the run meet the contrast minimum on every element', async ({ page }) => {
@@ -594,14 +597,14 @@ test('AC1 the result reads in order: heading, condition, then each gap', async (
   await page.locator('.gap-row').first().waitFor();
 
   const order = await page.evaluate(() =>
-    [...document.querySelectorAll('.page h2, .page > p, .gap-row h3, .gap-row p')].map((el) => ({
+    [...document.querySelectorAll('.page h1, .result-summary p, .gap-row h3, .gap-row p')].map((el) => ({
       tag: el.tagName,
       className: el.className,
       text: el.textContent ?? '',
     })),
   );
 
-  const heading = order.findIndex((entry) => entry.tag === 'H2');
+  const heading = order.findIndex((entry) => entry.tag === 'H1');
   const condition = order.findIndex((entry) => entry.text.startsWith('Rehearsed without'));
   const firstGap = order.findIndex((entry) => entry.tag === 'H3');
 
@@ -776,14 +779,14 @@ test('AC2 the progress view reads before the gaps it summarises', async ({ page 
   await page.locator('.progress').waitFor();
 
   const order = await page.evaluate(() =>
-    [...document.querySelectorAll('.page h2, .progress h3, .gap-row h3')].map((el) => ({
+    [...document.querySelectorAll('.page h1, .progress h3, .gap-row h3')].map((el) => ({
       tag: el.tagName,
       className: el.className,
       inProgress: Boolean(el.closest('.progress')),
     })),
   );
 
-  const resultHeading = order.findIndex((entry) => entry.tag === 'H2');
+  const resultHeading = order.findIndex((entry) => entry.tag === 'H1');
   const progressHeading = order.findIndex((entry) => entry.inProgress);
   const firstGap = order.findIndex((entry) => entry.tag === 'H3' && !entry.inProgress);
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import * as copy from '../../core/copy';
 import { provenanceView } from '../../core/provenance';
 import type { Source } from '../../core/types';
@@ -24,10 +25,11 @@ function SourceRows({ rows }: { rows: SourceRow[] }) {
   );
 }
 
-/** The small Source ring and the facts it opens. */
-export function SourceRing({ rows }: { rows: SourceRow[] }) {
+/** Source as words that open the facts, as Not for you? does on Home, with
+ *  any links beside it on one row. */
+export function SourceText({ rows, links = null }: { rows: SourceRow[]; links?: ReactNode }) {
   return (
-    <Hint label={copy.ABOUT_SOURCE} head={<span className="muted">{copy.SOURCE_LABEL}</span>} panelClass="source-panel" titled={false}>
+    <Hint className="hint source-row" label={copy.SOURCE_LABEL} asText titled={false} panelClass="source-panel" head={links}>
       <SourceRows rows={rows} />
     </Hint>
   );
@@ -40,11 +42,13 @@ type ProvenanceLineProps = {
   extra?: SourceRow[];
   /** Shows the facts open, for a screen whose whole job is the source. */
   open?: boolean;
+  /** Links beside Source on its row, as on the pack page; none by default. */
+  links?: ReactNode;
 };
 
 /** Who published an item and when it was saved. UAT: these lines crowded every
- *  card, so they sit behind a small Source ring. */
-export default function ProvenanceLine({ source, now, extra = [], open = false }: ProvenanceLineProps) {
+ *  card, so they sit behind Source, in words as Not for you? is on Home. */
+export default function ProvenanceLine({ source, now, extra = [], open = false, links = null }: ProvenanceLineProps) {
   const view = provenanceView(now, source);
   const rows: SourceRow[] = [
     { label: copy.SOURCE_PUBLISHED_BY, value: view.publisher },
@@ -53,7 +57,7 @@ export default function ProvenanceLine({ source, now, extra = [], open = false }
   ];
   return (
     <div className="provenance">
-      {open ? <SourceRows rows={rows} /> : <SourceRing rows={rows} />}
+      {open ? <SourceRows rows={rows} /> : <SourceText rows={rows} links={links} />}
     </div>
   );
 }

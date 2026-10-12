@@ -10,26 +10,32 @@ export default function Welcome({ onContinue }: { onContinue: () => void }) {
   return (
     <main className="page first-open welcome">
       <header className="hero first-open-hero">
-        <Mark className="mark" size={44} />
+        {/* The mark in its ring, as on the tour's welcome. */}
+        <span className="first-open-mark">
+          <Mark className="mark" size={40} />
+        </span>
         <h1>{copy.APP_NAME}</h1>
         <p className="muted welcome-tagline">{copy.APP_TAGLINE}</p>
       </header>
 
-      <ul className="list welcome-steps">
+      {/* Before, during and after as one card of three moments in order, their
+          drawings joined by a line as the pack builder's steps are. */}
+      <ol className="card welcome-steps">
         {copy.WELCOME_STEPS.map((step) => (
-          <li key={step.kicker} className="card welcome-step">
+          <li key={step.kicker} className="welcome-step">
             <Glyph kind={step.glyph} />
             <span className="kicker">{step.kicker}</span>
             <p>{step.line}</p>
           </li>
         ))}
-      </ul>
+      </ol>
 
-      <ul className="list welcome-facts">
+      {/* Two facts as footnotes: small line drawings, grey words, one row. */}
+      <ul className="welcome-facts">
         {copy.WELCOME_FACTS.map((fact) => (
-          <li key={fact.line} className="welcome-fact">
-            <Glyph kind={fact.glyph} />
-            <span>{fact.line}</span>
+          <li key={fact.line} className="welcome-fact with-glyph">
+            <Glyph kind={fact.glyph} line />
+            {fact.line}
           </li>
         ))}
       </ul>

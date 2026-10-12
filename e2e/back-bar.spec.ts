@@ -55,9 +55,8 @@ test('Back from an address the app does not know goes Home', async ({ page }) =>
   await expect(page).toHaveURL(/\/$/);
 });
 
-test('no Back on a rehearsal the Rehearse tab would open again', async ({ page }) => {
-  // No pack saved: Rehearse shows this same screen's words, so Back would loop.
+test('Back on a pack\'s rehearsal goes up to Rehearse, which always lists the packs', async ({ page }) => {
   await page.goto('/rehearse/no-such-pack');
-  await expect(page.locator('main').first()).toBeVisible();
-  await expect(back(page)).toHaveCount(0);
+  await back(page).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
 });

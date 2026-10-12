@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOTLINE_NUMBER } from '../../src/core/constants';
+import { HOTLINE_NUMBER, TRIPLE_ZERO } from '../../src/core/constants';
 import * as copy from '../../src/core/copy';
 
 // Exact match, character for character, em dashes and the ± sign included. These
@@ -19,8 +19,10 @@ describe('mandated literals', () => {
     expect(copy.NO_ADDRESS_MATCH).not.toContain('-');
   });
 
-  it('no fix falls back to saved information, in words', () => {
-    expect(copy.NO_GPS).toBe('No GPS fix. Showing saved information.');
+  it('no fix falls back to the saved places, in plain words', () => {
+    expect(copy.NO_GPS).toBe('No GPS signal. Showing your saved places.');
+    expect(copy.MARK_HINT).toBe('At your saved place? Tap below to point the dial from there. It is an estimate, not GPS.');
+    expect(copy.MARK_AT_SAVED_PLACE('10 Old Road')).toBe("I'm standing at 10 Old Road");
   });
 
   it('a vague or old fix reports its own figure beside the arrow, never instead of it', () => {
@@ -28,16 +30,13 @@ describe('mandated literals', () => {
     expect(copy.FIX_AGE(45)).toBe('GPS fix 45 s old. Direction may have changed.');
   });
 
-  it("being outside the loaded pack's area is stated plainly", () => {
-    expect(copy.OUTSIDE_AREAS).toBe("You're outside this pack's area");
-  });
-
-
-  it('the app states what it cannot detect', () => {
-    expect(copy.PHONE_MAY_WORK).toBe(
-      'Calls may work if your phone shows signal. This app cannot detect it.',
+  it("being outside the loaded pack's area is stated plainly, as one sentence", () => {
+    expect(copy.OUTSIDE_PACK_AREA('19.4 km', 'Ferny Creek')).toBe(
+      "You're 19.4 km outside your Ferny Creek pack's area.",
     );
   });
+
+
 });
 
 describe('composed lines', () => {
@@ -163,7 +162,11 @@ describe('BlackSky compass sectors', () => {
 // E3-US1-AC4: a marked position must never read like a fix.
 describe('marked-position estimate copy', () => {
   it('is labelled ESTIMATE with the uncertainty stated as growing', () => {
-    expect(copy.ESTIMATE_READOUT(53)).toBe('ESTIMATE from your mark, ± 53 m and growing');
+    expect(copy.ESTIMATE).toBe('ESTIMATE');
+    // The figure grows; the bubble says why.
+    expect(copy.ESTIMATE_DETAIL(53)).toBe('Measured from the place you marked, not GPS. Now within about 53 m, and less exact over time.');
+    expect(copy.DISTANCE_STRAIGHT_LINE('2.60 km')).toBe('2.60 km in a straight line, not by road.');
+    expect(copy.ACCURACY_DETAIL(10)).toBe('Your phone puts you within 10 m, so it can be off by that much.');
   });
 });
 
@@ -171,23 +174,23 @@ describe('marked-position estimate copy', () => {
 // the worst possible typo, so each is pinned character for character.
 describe('general official guidance', () => {
   it('carries the exact emergency numbers', () => {
-    expect(copy.CALL_TRIPLE_ZERO).toBe('Call 000 (Triple Zero) for life-threatening emergencies.');
+    expect(TRIPLE_ZERO).toBe('000');
+    expect(HOTLINE_NUMBER).toBe('1800 226 226');
     expect(copy.VICEMERGENCY_HOTLINE).toBe('VicEmergency hotline 1800 226 226.');
   });
 
   it('states the area distance without implying a direction', () => {
-    expect(copy.AREA_DISTANCE_LINE('9.2 km')).toBe('9.2 km to its area');
+    const line = copy.OUTSIDE_PACK_AREA('9.2 km', 'Home');
+    for (const word of ['north', 'south', 'east', 'west', 'towards', 'head']) expect(line.toLowerCase()).not.toContain(word);
   });
 });
 
 describe('several packs stored', () => {
-  it('asks which pack to load, and says the nearest places show either way', () => {
+  it('asks which pack to load, and says what loading it brings', () => {
     expect(copy.CHOOSE_PACK).toBe('Choose a pack');
-    expect(copy.CHOOSE_PACK_HINT).toBe(
-      'Loads its places and notes. The nearest official places show either way.',
-    );
+    expect(copy.CHOOSE_PACK_HINT).toBe('Loads its places and notes.');
     expect(copy.PACK_COVERS_HERE).toBe('Covers where you are');
-    expect(copy.NO_GPS_YET).toBe('No GPS fix yet.');
+    expect(copy.NO_GPS_YET).toBe('No GPS signal yet.');
   });
 });
 
@@ -198,14 +201,6 @@ describe('no pack stored', () => {
   });
 });
 
-// E3-US2-AC3: every saved place is described by the official term, with its
-// source — and by nothing that promises anything about it.
-describe('place descriptor', () => {
-  it('names the place kind and its publisher, nothing more', () => {
-    expect(copy.PLACE_DESCRIPTOR('CFA')).toBe('Official place of last resort · CFA');
-  });
-});
-
 // E3-US3-AC1: deliberate activation — the stray-tap hint and the one exit.
 describe('deliberate activation', () => {
   it('a stray tap earns only the hold hint', () => {
@@ -213,18 +208,12 @@ describe('deliberate activation', () => {
   });
 
   it('leaving the mode is one plainly named action, and its label says to hold', () => {
-    expect(copy.LEAVE_BLACKSKY).toBe('Hold to leave');
+    expect(copy.LEAVE_BLACKSKY).toBe('Hold for Cooeee');
     expect(copy.HOLD_TO_LEAVE).toBe('Hold to leave. Two seconds.');
   });
 
-  it('a back press and a return both name the one way out', () => {
-    expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky. Use Hold to leave at the top.');
-    expect(copy.BLACKSKY_RESUMED).toBe(
-      'Reopened where you left off. To exit, use Hold to leave at the top.',
-    );
-    // Both name the control by the label it actually carries.
-    for (const notice of [copy.BACK_PRESSED, copy.BLACKSKY_RESUMED]) expect(notice).toContain(copy.LEAVE_BLACKSKY);
-    expect(copy.BACK_PRESSED).not.toContain('Leave BlackSky');
+  it('a back press is said in one short line, the hold naming the way out', () => {
+    expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky.');
   });
 });
 
@@ -257,7 +246,7 @@ describe('the returning-user home', () => {
   });
 
   it('greets by the hour, and labels the preparation line as a daily reminder', () => {
-    expect(copy.GREETING(4)).toBe('Hi');
+    expect(copy.GREETING(4)).toBe('Hello');
     expect(copy.GREETING(5)).toBe('Good morning');
     expect(copy.GREETING(12)).toBe('Good afternoon');
     expect(copy.GREETING(18)).toBe('Good evening');
@@ -413,13 +402,11 @@ describe('E4 Recover mandated copy', () => {
     expect(copy.PREPARATION_LINES.filter((line) => line.source === copy.PREPARATION_SOURCE_RECOVERY)).toHaveLength(2);
   });
 
-  it('names the saved programs section, its one control and the Home nudge', () => {
+  it('names the saved programs section, the pack tabs and the Home nudge', () => {
     expect(copy.SAVED_PROGRAMS).toBe('Saved programs');
-    expect(copy.SHOW).toBe('Show');
-    expect(copy.HIDE).toBe('Hide');
-    expect(copy.SHOW_SECTION('Saved programs')).toBe('Show Saved programs');
-    expect(copy.HIDE_SECTION('Notes')).toBe('Hide Notes');
-    expect(copy.STORED_INFORMATION).toBe('Stored information');
+    expect([copy.PACK_TAB_AREA, copy.PACK_TAB_PLACES, copy.PACK_TAB_SUPPORT, copy.PACK_TAB_NOTES, copy.PACK_TAB_PRACTICE])
+      .toEqual(['Area', 'Places', 'Support', 'Notes', 'Practice']);
+    expect(copy.BUSHFIRE_AREA).toBe('Bushfire area');
     expect(copy.KEPT_NOT_SAVED(1)).toBe('1 saved program is not in a pack yet');
     expect(copy.KEPT_NOT_SAVED(2)).toBe('2 saved programs are not in a pack yet');
   });
@@ -439,7 +426,7 @@ describe('E4 Recover mandated copy', () => {
 
   it('states that nothing chosen leaves the phone', () => {
     expect(copy.RECOVER_PRIVACY_LINE).toBe(
-      'Nothing leaves this phone. Only the programs you save and the steps you tick are remembered.',
+      'Nothing leaves this phone. Only what you save and tick is kept here.',
     );
   });
 
@@ -514,7 +501,7 @@ describe('the rehearsal entry gate', () => {
 // what is missing, then what that means when it is, and neither is ranked.
 describe('the choice of condition', () => {
   it('names what the rehearsal is run without', () => {
-    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse without…');
+    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse with…');
   });
 
   it('states each condition in plain words rather than as a technical state', () => {
@@ -557,7 +544,9 @@ describe('the BlackSky dial', () => {
 
   it('folds the other places into one line: the count, and the range nearest to furthest', () => {
     expect(copy.OTHER_PLACES(['850 m'])).toBe('1 other place · 850 m');
-    expect(copy.OTHER_PLACES(['12.1 km', '13.1 km'])).toBe('2 other places · 12.1 km – 13.1 km');
+    // The same unit is said once; mixed units each keep their own.
+    expect(copy.OTHER_PLACES(['12.1 km', '13.1 km'])).toBe('2 other places · 12.1–13.1 km');
+    expect(copy.OTHER_PLACES(['850 m', '920 m'])).toBe('2 other places · 850–920 m');
     expect(copy.OTHER_PLACES(['850 m', '2.13 km', '4.09 km', '12.3 km'])).toBe(
       '4 other places · 850 m – 12.3 km',
     );
@@ -567,9 +556,8 @@ describe('the BlackSky dial', () => {
     expect(copy.OTHER_PLACES_COUNT(3)).toBe('3 other places');
   });
 
-  it('names each Show button by its place, starting with the visible word', () => {
+  it('ends each place card with Show', () => {
     expect(copy.SHOW_PLACE).toBe('Show');
-    expect(copy.SHOW_PLACE_NAMED('Community Hall')).toBe('Show Community Hall');
   });
 
   it('says plainly that the signal is lost, with the age in seconds and then minutes', () => {
@@ -578,7 +566,7 @@ describe('the BlackSky dial', () => {
     expect(copy.LAST_POSITION_AGE(59)).toBe('last position 59 s ago');
     expect(copy.LAST_POSITION_AGE(60)).toBe('last position 1 min ago');
     expect(copy.LAST_POSITION_AGE(185)).toBe('last position 3 min ago');
-    expect(copy.FROM_YOUR_SAVED_PLACE).toBe('from your saved place');
+    expect(copy.FROM_YOUR_SAVED_PLACE).toBe('Measuring from your saved place');
     expect(copy.ABOUT).toBe('about');
   });
 

@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { backTarget, ONE_STEP } from '../../core/back';
 import * as copy from '../../core/copy';
-import { listCompletePacks } from '../../data/db';
 import { useBuilderBack } from '../PackNew/builder-back';
 import RehearsalBar from '../Rehearsal/RehearsalBar';
 import { useRehearsalRun } from '../Rehearsal/run-state';
@@ -21,24 +19,21 @@ export default function BackBar() {
   const { pathname, search } = useLocation();
   const run = useRehearsalRun();
   const builder = useBuilderBack();
-  // On a rehearsal, Back to the chooser only makes sense with several packs.
-  const [packCount, setPackCount] = useState<number | null>(null);
-  useEffect(() => {
-    if (!pathname.startsWith('/rehearse/')) return;
-    let live = true;
-    listCompletePacks().then(
-      (packs) => live && setPackCount(packs.length),
-      () => live && setPackCount(0),
-    );
-    return () => {
-      live = false;
-    };
-  }, [pathname]);
-
-  const target = backTarget(pathname, search, { packCount, runPackId: run?.packId ?? null, builder });
+  const target = backTarget(pathname, search, { runPackId: run?.packId ?? null, builder });
   // Only on the running rehearsal's own screens: another pack's rehearsal
   // page is not a screen of this run, and must not wear its bar.
   const runBar = run && pathname.startsWith(`/rehearse/${run.packId}`) ? <RehearsalBar run={run} /> : null;
+  // In the pack builder, Back is held while a check or the save runs and once
+  // the pack is saved, but its room is kept: taking the bar away would lift
+  // every step by its height, and drop it back a moment later.
+  const held = !target && builder === 'hidden' && pathname === '/packs/new' && new URLSearchParams(search).has('step');
+  if (held) {
+    return (
+      <nav className="back-bar" aria-hidden="true">
+        <div className="back-bar-inner back-bar-held" />
+      </nav>
+    );
+  }
   if (!target && !runBar) return null;
 
   return (

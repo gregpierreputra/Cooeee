@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import * as copy from '../../core/copy';
 import { shownPackName } from '../../core/home';
 import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../core/rehearsal-entry';
-import type { RehearsalCondition } from '../../core/rehearsal-condition';
+import { isRehearsalCondition, type RehearsalCondition } from '../../core/rehearsal-condition';
 import { isRunFor } from '../../core/rehearsal-run';
 import type { UnfinishedRehearsal } from '../../core/types';
 import { findUnfinishedRehearsal, readRehearsalSource } from '../../data/db';
@@ -16,8 +16,7 @@ import { currentRun, endRun, useRehearsalRun } from './run-state';
 import Glyph from '../components/Glyph';
 import StatusPage from '../components/StatusPage';
 import { focusMain } from '../components/focusMain';
-import Drill from '../Drill/Drill';
-import { markDrilled, replayDrill, useDrilled } from '../Drill/drill-state';
+import TabLabel from '../components/TabLabel';
 
 type EntryProps = {
   packId: string;
@@ -52,9 +51,19 @@ export default function RehearsalEntry({
   // finds none.
   const run = useRehearsalRun();
   // E5-US1-AC5 — the condition she has chosen and not yet gone on. Setup, not
-  // commitment: held by this screen alone, never written and never held beyond
-  // it, so a curious tap leaves nothing behind once she leaves the screen.
-  const [chosen, setChosen] = useState<RehearsalCondition | null>(null);
+  // commitment: held in the address alone, never written to the phone, so a
+  // curious tap leaves nothing behind once she leaves the screen. In the
+  // address, Back steps from it to the choice, not past the choice.
+  const [params, setParams] = useSearchParams();
+  const asked = params.get('condition');
+  const chosen = isRehearsalCondition(asked) ? asked : null;
+  const setChosen = (condition: RehearsalCondition | null) => {
+    const next = new URLSearchParams(params);
+    if (condition === null) next.delete('condition');
+    else next.set('condition', condition);
+    // Choosing is a step to come back from; going on replaces it.
+    setParams(next, { replace: condition === null });
+  };
   // E5-US1-AC5 — a kept rehearsal still waiting for its ending. Read whenever no
   // run is in memory: on opening, and again when a run ends, so leaving a run
   // without an ending comes straight back to the question. undefined = not read
@@ -87,9 +96,6 @@ export default function RehearsalEntry({
   // Date.now() on every render, so watching it would read the pack, set the
   // gate, render, and read the pack again, for as long as the screen is open.
   const [openedAt] = useState(now);
-  // E9 — whether this pack has had its drill this session. Read as a hook so
-  // the debrief's way on re-renders this screen into the choice of condition.
-  const drilled = useDrilled(packId);
 
   useEffect(() => {
     let live = true;
@@ -115,7 +121,7 @@ export default function RehearsalEntry({
   // keep the focus they place themselves.
   const screen = [
     gate?.state, isRunFor(run, packId), run?.ending !== undefined,
-    unfinished === undefined, unfinished?.id, drilled, chosen,
+    unfinished === undefined, unfinished?.id, chosen,
   ].join();
   useEffect(focusMain, [screen]);
 
@@ -149,14 +155,10 @@ export default function RehearsalEntry({
     if (unfinished !== null && unfinished.packId === gate.packId) {
       return <Unfinished rehearsal={unfinished} />;
     }
-    // E9 — the drill comes before the choice of condition, once per pack per
-    // session, whichever way in was taken. Skipping it and finishing it both
-    // mark it done.
-    if (!drilled) return <Drill packId={gate.packId} onDone={() => markDrilled(gate.packId)} />;
     return chosen !== null ? (
       <JourneyBefore packId={gate.packId} condition={chosen} onGone={() => setChosen(null)} />
     ) : (
-      <Condition packId={gate.packId} onChoose={setChosen} onDrill={() => replayDrill(gate.packId)} />
+      <Condition packName={shownPackName(gate.packName)} packAddress={gate.packAddress} onChoose={setChosen} />
     );
   }
 
@@ -167,15 +169,21 @@ export default function RehearsalEntry({
   const returnPackId =
     gate.state === 'nothing-to-rehearse' || gate.state === 'unreadable' ? gate.packId : null;
 
+  // No pack on the phone at all is an empty space, not a problem, so it is
+  // drawn dashed as on Home, led by what Rehearse is for.
+  const empty = gate.state === 'no-pack' && gate.otherCompletePacks === 0;
+
   return (
     <StatusPage
       page="rehearsal-entry"
-      kicker={copy.REHEARSAL_LABEL}
+      kicker={<TabLabel tab="rehearse" text={copy.NAV_REHEARSE} />}
+      cardClass={empty ? 'empty-state' : undefined}
       card={
         <>
+          {empty ? <Glyph kind="rehearse" /> : null}
           <h2>{heading(gate)}</h2>
           {detail(gate).map((line) => (
-            <p key={line}>{line}</p>
+            <p key={line} className={empty ? 'muted' : undefined}>{line}</p>
           ))}
         </>
       }
@@ -263,6 +271,6 @@ function detail(gate: Exclude<RehearsalGate, { state: 'ready' }>): string[] {
     default:
       return gate.otherCompletePacks > 0
         ? [copy.NO_PACK_OTHERS_DETAIL(gate.otherCompletePacks), copy.NO_PACK_TO_REHEARSE_DETAIL]
-        : [copy.NO_PACK_TO_REHEARSE_DETAIL];
+        : [copy.REHEARSE_LINE, copy.NO_PACK_TO_REHEARSE_DETAIL];
   }
 }

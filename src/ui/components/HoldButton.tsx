@@ -51,6 +51,12 @@ export default function HoldButton({
     return () => window.clearTimeout(hide);
   }, [showHint, hintMs]);
   const holdTimer = useRef<number | null>(null);
+  // When the hold began, and whether one is running. The fill is drawn from
+  // this, not from the browser's own pressed state, so the fill and the timer
+  // share one clock: a fill that is full is a hold that is done, and a hold
+  // that ends early takes the fill back with it.
+  const startedAt = useRef(0);
+  const [holding, setHolding] = useState(false);
   // Which kind of pointer is pressing, from its pointerdown until it lifts. The
   // contextmenu event must be answered differently for a finger and a mouse,
   // and not every browser says on the event itself which one raised it.
@@ -60,6 +66,13 @@ export default function HoldButton({
       clearTimeout(holdTimer.current);
       holdTimer.current = null;
     }
+    setHolding(false);
+  };
+
+  const completeHold = () => {
+    clearHold();
+    if (typeof navigator.vibrate === 'function') navigator.vibrate(vibrateMs);
+    onHold();
   };
 
   // Once shown, the hint stays until the hold completes (onHold unmounts this
@@ -70,18 +83,30 @@ export default function HoldButton({
 
   const startHold = () => {
     clearHold(); // a key press during a pointer hold must not start a second timer
-    holdTimer.current = window.setTimeout(() => {
-      holdTimer.current = null;
-      if (typeof navigator.vibrate === 'function') navigator.vibrate(vibrateMs);
-      onHold();
-    }, HOLD_MS);
+    startedAt.current = performance.now();
+    setHolding(true);
+    holdTimer.current = window.setTimeout(completeHold, HOLD_MS);
   };
 
+  // A lift ends the hold. On a busy phone the timer can run a little late, so
+  // a finger lifted as the fill completes may arrive before it: by then two
+  // seconds have passed, and the hold is done, not cut short.
   const releaseHold = () => {
-    if (holdTimer.current !== null) {
-      clearHold();
-      setShowHint(true);
+    if (holdTimer.current === null) return;
+    if (performance.now() - startedAt.current >= HOLD_MS) {
+      completeHold();
+      return;
     }
+    clearHold();
+    setShowHint(true);
+  };
+
+  // The browser took the pointer, or focus went: the hold is not done by the
+  // finger, so it is cut short however long it ran.
+  const cancelHold = () => {
+    if (holdTimer.current === null) return;
+    clearHold();
+    setShowHint(true);
   };
 
   // The pointer has moved. With the pointer captured every move is delivered
@@ -95,7 +120,7 @@ export default function HoldButton({
       e.clientX > box.right + HOLD_LEAVE_MARGIN_PX ||
       e.clientY < box.top - HOLD_LEAVE_MARGIN_PX ||
       e.clientY > box.bottom + HOLD_LEAVE_MARGIN_PX;
-    if (off) releaseHold();
+    if (off) cancelHold();
   };
 
   useEffect(() => clearHold, []);
@@ -104,7 +129,7 @@ export default function HoldButton({
     <>
       <button
         type="button"
-        className={className ? `blacksky-hold ${className}` : 'blacksky-hold'}
+        className={['blacksky-hold', className, holding ? 'holding' : null].filter(Boolean).join(' ')}
         aria-label={label}
         // Only the main button holds. A right click opens a menu that swallows
         // the pointerup, and the timer would then enter BlackSky with no hold.
@@ -132,14 +157,14 @@ export default function HoldButton({
         // arriving at the edge, so there leaving the box has to end the hold,
         // or it would run on with the pointer somewhere else.
         onPointerLeave={(e) => {
-          if (!e.currentTarget.hasPointerCapture(e.pointerId)) releaseHold();
+          if (!e.currentTarget.hasPointerCapture(e.pointerId)) cancelHold();
         }}
         // The browser took the pointer away (a system gesture, a call coming
         // in). touch-action: none in the stylesheet is what stops an ordinary
         // finger drift from landing here as the start of a scroll.
         onPointerCancel={() => {
           pressing.current = null;
-          releaseHold();
+          cancelHold();
         }}
         // A long press is exactly what this control asks for, and on a phone a
         // long press also raises the context menu, about half a second in. For
@@ -150,10 +175,10 @@ export default function HoldButton({
         onContextMenu={(e) => {
           const type = (e.nativeEvent as globalThis.PointerEvent).pointerType || pressing.current;
           if (type === 'touch' || type === 'pen') e.preventDefault();
-          else releaseHold();
+          else cancelHold();
         }}
         // Tab away while Space is down and the keyup lands elsewhere.
-        onBlur={releaseHold}
+        onBlur={cancelHold}
         onKeyDown={(e) => {
           if (e.key === ' ') e.preventDefault(); // Space must not scroll the page under a hold
           if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) startHold();

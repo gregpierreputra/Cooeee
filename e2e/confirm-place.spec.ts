@@ -10,13 +10,13 @@ test('AC1 renders the confirmation order and immutable address', async ({ page }
   const address = page.getByTestId('returned-address');
   const name = page.getByLabel('Place name');
   const save = page.getByRole('button', { name: 'Save this place' });
-  const searchAgain = page.getByRole('button', { name: 'Search again' });
+  const notThisPlace = page.getByRole('button', { name: 'Not this place' });
 
   await expect(heading).toBeVisible();
   await expect(address).toHaveText('6 RIDGE ROAD KALORAMA 3766');
   await expect(name).toHaveValue('KALORAMA');
 
-  const order = await Promise.all([heading, address, name, save, searchAgain].map(async (locator) =>
+  const order = await Promise.all([heading, address, name, save, notThisPlace].map(async (locator) =>
     locator.evaluate((element) => {
       const all = [...document.querySelectorAll('h1, p, input, button')];
       return all.indexOf(element);
@@ -51,12 +51,31 @@ test('AC1 keeps a name as typed in memory only, and a blank name cannot be saved
   });
 });
 
+test('Enter in the name moves on to the drawing, and does not save the place', async ({ page }) => {
+  await page.goto(HARNESS_URL);
+  const name = page.getByLabel('Place name');
+  // A phone's Enter key reads Next, as a drawing is still to come.
+  await expect(name).toHaveAttribute('enterkeyhint', 'next');
+  await name.fill('Home base');
+  await name.press('Enter');
+  // Nothing is confirmed: focus is on the drawing chosen, the keyboard gone.
+  await expect(page.getByRole('radio', { name: 'Place' })).toBeFocused();
+  expect(await page.evaluate(() => window.__confirmedPlace)).toBeUndefined();
+  // A drawing chosen, Enter there saves the place with it.
+  await page.keyboard.press('ArrowRight');
+  const chosen = page.locator('input[name="place-icon"]:checked');
+  const icon = await chosen.inputValue();
+  expect(icon).not.toBe('place');
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => window.__confirmedPlace?.icon)).toBe(icon);
+});
+
 test('AC1 search again retains nothing and makes no request', async ({ page }) => {
   await page.goto(HARNESS_URL);
   let requests = 0;
   page.on('request', () => requests += 1);
 
-  await page.getByRole('button', { name: 'Search again' }).click();
+  await page.getByRole('button', { name: 'Not this place' }).click();
 
   expect(await page.evaluate(() => window.__searchAgainCount)).toBe(1);
   expect(await page.evaluate(() => window.__confirmedPlace)).toBeUndefined();
@@ -92,7 +111,7 @@ test('AC1 keyboard order, focus and targets are accessible', async ({ page }) =>
     page.getByLabel('Place name'),
     page.getByRole('radio', { name: 'Place' }),
     page.getByRole('button', { name: 'Save this place' }),
-    page.getByRole('button', { name: 'Search again' }),
+    page.getByRole('button', { name: 'Not this place' }),
   ]) {
     await page.keyboard.press('Tab');
     await expect(target).toBeFocused();
@@ -101,7 +120,7 @@ test('AC1 keyboard order, focus and targets are accessible', async ({ page }) =>
 
   for (const button of [
     page.getByRole('button', { name: 'Save this place' }),
-    page.getByRole('button', { name: 'Search again' }),
+    page.getByRole('button', { name: 'Not this place' }),
   ]) {
     const box = await button.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);

@@ -1,65 +1,42 @@
 import { useState } from 'react';
 import * as copy from '../../core/copy';
-import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
+import type { DrillItem } from '../../core/drill-items';
 import { debriefRows, kindOf, leftBehind, scoreBreakdown, scoreDrill } from '../../core/drill-score';
+import { CLASSIC, type DrillRules } from '../../core/drill-twists';
 import Glyph from '../components/Glyph';
-import { ATLAS, SHEET } from '../../core/drill-atlas';
+import { DrillWhy, ScoreRing, Sprite } from './DrillArt';
 import type { DrillOutcome } from './Game';
 
-const TILE_SIZE = 40; // css pixels a thing's picture fits inside
-
-/** One thing's own picture from the game, drawn from the sprite sheet. */
-function Sprite({ id }: { id: string }) {
-  const [x, y, w, h] = ATLAS[id];
-  const scale = Math.min(TILE_SIZE / w, TILE_SIZE / h, 3);
-  return (
-    <span
-      className="debrief-sprite"
-      aria-hidden="true"
-      style={{
-        width: w * scale,
-        height: h * scale,
-        backgroundSize: `${SHEET[0] * scale}px ${SHEET[1] * scale}px`,
-        backgroundPosition: `${-x * scale}px ${-y * scale}px`,
-      }}
-    />
-  );
-}
-
-/** The score as a ring filled to the score, green, amber or red. */
-function ScoreRing({ score }: { score: number }) {
-  const band = score >= 80 ? 'good' : score >= 50 ? 'fair' : 'poor';
-  const length = 2 * Math.PI * 52;
-  return (
-    <svg className={`debrief-ring ${band}`} viewBox="0 0 120 120" role="img" aria-label={copy.DEBRIEF_SCORE(score)}>
-      <circle className="track" cx="60" cy="60" r="52" />
-      {score > 0 ? <circle className="fill" cx="60" cy="60" r="52" strokeDasharray={`${(length * score) / 100} ${length}`} /> : null}
-      <text x="60" y="68" textAnchor="middle">{score}</text>
-    </svg>
-  );
-}
+/** A list of names as a line: its first letter a capital. */
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 type Props = {
   outcome: DrillOutcome;
-  /** The highest score of this pack's drills that reached the door, this one included. */
+  /** The twist the drill was played under. */
+  rules?: DrillRules;
+  /** The highest score of the drills under this twist that reached the door, this one included. */
   highest: number | null;
   onAgain: () => void;
   onDone: () => void;
 };
 
 /** E9-US3 — the report after the two minutes, read at a glance: a ring for the
- *  score, the bag as pictures edged by what each did, a bar of how the points
- *  add up, and the essentials left behind. Each reason is one tap away rather
- *  than printed. Away from the door there is no number anywhere. */
-export default function Debrief({ outcome, highest, onAgain, onDone }: Props) {
+ *  score, then the bag and what was left behind in cards as a drill's card on
+ *  the pack page sets them. Each reason is one tap away, in a bubble pointing
+ *  at the thing tapped. Away from the door there is no number anywhere. */
+export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, onDone }: Props) {
   const [chosen, setChosen] = useState<DrillItem | null>(null);
+  const classic = rules === CLASSIC;
   const scored = outcome.reachedDoor;
-  const score = scoreDrill(outcome.packed);
-  const packed = debriefRows(outcome.packed).map((row) => row.item);
-  const left = leftBehind(outcome.packed);
-  const groups = scoreBreakdown(outcome.packed);
-  const gained = groups.filter((group) => group.points > 0).reduce((sum, group) => sum + group.points, 0);
-  const lost = -groups.filter((group) => group.points < 0).reduce((sum, group) => sum + group.points, 0);
+  const score = scoreDrill(outcome.packed, rules);
+  const packed = debriefRows(outcome.packed, rules).map((row) => row.item);
+  const left = leftBehind(outcome.packed, rules);
+  const groups = scoreBreakdown(outcome.packed, rules);
+  // The bar is drawn against what the twist's best bag adds up to, so it
+  // fills exactly as the score does.
+  const share = (points: number) => Math.min(100, (100 * points) / Math.max(1, rules.maxPoints));
+  const gained = share(groups.filter((group) => group.points > 0).reduce((sum, group) => sum + group.points, 0));
+  const lost = share(-groups.filter((group) => group.points < 0).reduce((sum, group) => sum + group.points, 0));
 
   const tile = (item: DrillItem, faded = false) => {
     const points = copy.SIGNED_POINTS(item.weight);
@@ -78,6 +55,25 @@ export default function Debrief({ outcome, highest, onAgain, onDone }: Props) {
       </li>
     );
   };
+  /** The reason under the list that holds the tapped thing, pointing at it.
+   *  Its points only where they counted. */
+  const why = (list: DrillItem[], faded: boolean) => {
+    const index = chosen ? list.findIndex((item) => item.id === chosen.id) : -1;
+    return (
+      <div aria-live="polite">
+        {chosen && index >= 0 ? (
+          <DrillWhy
+            key={chosen.id}
+            name={chosen.name}
+            kind={kindOf(chosen.weight)}
+            points={scored && !faded ? copy.SIGNED_POINTS(chosen.weight) : null}
+            why={chosen.why}
+            index={index}
+          />
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -94,29 +90,42 @@ export default function Debrief({ outcome, highest, onAgain, onDone }: Props) {
         <div role="status">
           <h1>{scored ? copy.VERDICT(score) : copy.OVER_HEADING}</h1>
           {scored ? (
-            highest !== null ? <p className="muted">{copy.HIGHEST_SO_FAR(highest)}</p> : null
+            highest !== null ? <p className="muted">{classic ? copy.HIGHEST_SO_FAR(highest) : copy.HIGHEST_FOR_TWIST(highest)}</p> : null
           ) : (
             <p className="muted">{copy.OVER_DETAIL}</p>
           )}
         </div>
       </section>
 
-      <section className="debrief-block" aria-labelledby="debrief-bag">
+      {classic ? null : (
+        <section className="card drill-twist debrief-twist" aria-labelledby="debrief-twist-label">
+          <p id="debrief-twist-label" className="kicker">{copy.DRILL_TWIST_LABEL}</p>
+          <p className="drill-twist-name">{rules.name}</p>
+          <p>{rules.rule}</p>
+          {scored && rules.maxPoints !== 100 ? <p className="muted">{copy.DRILL_TWIST_SCORE_NOTE}</p> : null}
+        </section>
+      )}
+
+      {/* The bag in its card: the pictures, the reason for the one tapped,
+          the bar of how the points add up, and what each colour means. */}
+      <section className="card debrief-card" aria-labelledby="debrief-bag">
         <h2 id="debrief-bag" className="debrief-label">
           <Glyph kind="bag" />
           {copy.IN_YOUR_BAG}
-          <span className="figure">{copy.OF_LIMIT(packed.length, BAG_LIMIT)}</span>
+          <span className="figure">{copy.OF_LIMIT(packed.length, rules.bagLimit)}</span>
         </h2>
         <ul className="debrief-tiles">
           {packed.map((item) => tile(item))}
-          {Array.from({ length: BAG_LIMIT - packed.length }, (_, i) => (
+          {Array.from({ length: Math.max(0, rules.bagLimit - packed.length) }, (_, i) => (
             <li key={`empty-${i}`} className="debrief-empty" aria-hidden="true" />
           ))}
         </ul>
+        {why(packed, false)}
+        {chosen ? null : <p className="muted place-note">{copy.TAP_FOR_WHY}</p>}
         {scored ? (
           <div className="debrief-bar" aria-hidden="true">
-            <span className="gained" style={{ width: `${Math.min(100, gained)}%` }} />
-            <span className="lost" style={{ width: `${Math.min(100, lost)}%` }} />
+            <span className="gained" style={{ width: `${gained}%` }} />
+            <span className="lost" style={{ width: `${lost}%` }} />
           </div>
         ) : null}
         <ul className="debrief-key" aria-hidden="true">
@@ -128,31 +137,26 @@ export default function Debrief({ outcome, highest, onAgain, onDone }: Props) {
         </ul>
       </section>
 
+      {/* The essentials left in the house, as pictures and by name, as the
+          pack page's drill card names them. */}
       {left.length > 0 ? (
-        <section className="debrief-block" aria-labelledby="debrief-left">
+        <section className="card debrief-card" aria-labelledby="debrief-left">
           <h2 id="debrief-left" className="debrief-label">
             <Glyph kind="stay" />
             {copy.LEFT_BEHIND}
           </h2>
           <ul className="debrief-tiles">{left.map((item) => tile(item, true))}</ul>
+          {why(left, true)}
+          <p className="muted place-note">{sentence(left.map((item) => item.name).join(', '))}</p>
         </section>
       ) : null}
 
-      {/* The one reason in view: the thing last tapped, or the hint to tap. */}
-      <p className="debrief-why" aria-live="polite">
-        {chosen ? (
-          <>
-            <b>{chosen.name}</b> {chosen.why}
-          </>
-        ) : (
-          copy.TAP_FOR_WHY
-        )}
-      </p>
-      <p className="muted debrief-source">{copy.DRILL_SOURCE}</p>
+      <p className="muted place-note debrief-source">{copy.DRILL_SOURCE}</p>
 
+      {/* Done, as every game ends, back to Rehearse; then another go. */}
       <div className="actions">
         <button type="button" className="action main-action" onClick={onDone}>
-          {copy.GO_ON_TO_REHEARSAL}
+          {copy.GAME_DONE}
         </button>
         <button type="button" className="action" onClick={onAgain}>
           {scored ? copy.PLAY_AGAIN : copy.TRY_AGAIN}

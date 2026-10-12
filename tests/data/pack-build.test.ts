@@ -184,4 +184,39 @@ describe('E1-US1-AC9 text-only staging and finalisation', () => {
       { id: 'note-1', packId: 'new-pack', text: 'Gate code 4471', updatedAt: 5 },
     ]);
   });
+
+  it('leaves the old notes behind with the old pack when the reader starts without them', async () => {
+    const old = pack({ id: 'old-pack', address: 'OLD ADDRESS' });
+    await db.packs.put(old);
+    await db.notes.put({ id: 'note-1', packId: 'old-pack', text: 'Gate code 4471', updatedAt: 5 });
+    const proposed = content({
+      pack: seed({ id: 'new-pack', supersedes: old.id }),
+      layers: [{ ...content().layers[0], id: 'new-pack:BPA', packId: 'new-pack' }],
+      destinations: [destination({ id: 'new-pack:d', packId: 'new-pack' })],
+      recovery: [packProgram({ id: 'new-pack:prog-1', packId: 'new-pack' })],
+    });
+    await saveTextOnlyPack(proposed, await createPackOffer(proposed), 999, [], 'Meet at the gate.', false);
+
+    expect((await listCompletePacks()).map(({ id }) => id)).toEqual(['new-pack']);
+    // Only the new pack's own note is left.
+    expect((await db.notes.toArray()).map(({ packId, text }) => [packId, text])).toEqual([['new-pack', 'Meet at the gate.']]);
+  });
+
+  it('keeps the old notes when a replace that would drop them fails', async () => {
+    const old = pack({ id: 'old-pack', address: 'OLD ADDRESS' });
+    await db.packs.put(old);
+    await db.notes.put({ id: 'note-1', packId: 'old-pack', text: 'Gate code 4471', updatedAt: 5 });
+    const proposed = content({
+      pack: seed({ id: 'new-pack', supersedes: old.id }),
+      layers: [{ ...content().layers[0], id: 'new-pack:BPA', packId: 'new-pack' }],
+      destinations: [destination({ id: 'new-pack:d', packId: 'new-pack' })],
+      recovery: [packProgram({ id: 'new-pack:prog-1', packId: 'new-pack' })],
+    });
+    const offer = await createPackOffer(proposed);
+    // An offer that no longer matches what is staged fails the final check.
+    await expect(saveTextOnlyPack(proposed, { ...offer, textBytes: offer.textBytes + 1 }, 999, [], undefined, false)).rejects.toThrow();
+
+    expect((await listCompletePacks()).map(({ id }) => id)).toEqual(['old-pack']);
+    expect(await db.notes.toArray()).toEqual([{ id: 'note-1', packId: 'old-pack', text: 'Gate code 4471', updatedAt: 5 }]);
+  });
 });

@@ -7,6 +7,7 @@ import { localFlagStore } from '../data/acknowledgement';
 import CountRing from './components/CountRing';
 import Glyph from './components/Glyph';
 import { focusMain } from './components/focusMain';
+import TabLabel from './components/TabLabel';
 
 /** Where a step's link goes, and what it says. */
 function StepLink({ link }: { link: copy.RoadmapLink }) {
@@ -65,35 +66,10 @@ export default function Roadmap() {
   return (
     <main className="page recover roadmap">
       <header className="hero">
-        <span className="kicker">{copy.NAV_RECOVER}</span>
+        <TabLabel tab="recover" text={copy.NAV_RECOVER} />
         <h1>{copy.ROADMAP_TITLE}</h1>
         <p className="muted">{copy.ROADMAP_LINE}</p>
       </header>
-      {asking ? (
-        <section className="card" aria-labelledby="roadmap-clear-question">
-          <p id="roadmap-clear-question">{copy.ROADMAP_CLEAR_QUESTION}</p>
-          <div className="card-confirm-actions">
-            <button ref={keepRef} type="button" className="card-confirm-no" onClick={() => setAsking(false)}>
-              {copy.KEEP_KEPT}
-            </button>
-            <button type="button" className="card-confirm-yes with-glyph" onClick={clearAll}>
-              <Glyph kind="trash" line />
-              {copy.ROADMAP_CLEAR}
-            </button>
-          </div>
-        </section>
-      ) : (
-        <button
-          ref={clearRef}
-          type="button"
-          className="clear-kept with-glyph"
-          disabled={done.length === 0}
-          onClick={() => setAsking(true)}
-        >
-          <Glyph kind="trash" line />
-          {copy.ROADMAP_CLEAR}
-        </button>
-      )}
       {copy.ROADMAP_STAGES.map((stage) => {
         const count = stage.steps.filter((step) => done.includes(step.id)).length;
         return (
@@ -129,6 +105,33 @@ export default function Roadmap() {
           </section>
         );
       })}
+      {/* After the stages, where the ticks were made, so the first thing on
+          the page is never the one control that undoes them. */}
+      {asking ? (
+        <section className="card" aria-labelledby="roadmap-clear-question">
+          <p id="roadmap-clear-question">{copy.ROADMAP_CLEAR_QUESTION}</p>
+          <div className="card-confirm-actions">
+            <button ref={keepRef} type="button" className="card-confirm-no" onClick={() => setAsking(false)}>
+              {copy.KEEP_KEPT}
+            </button>
+            <button type="button" className="card-confirm-yes with-glyph" onClick={clearAll}>
+              <Glyph kind="trash" line />
+              {copy.ROADMAP_CLEAR}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <button
+          ref={clearRef}
+          type="button"
+          className="clear-kept with-glyph"
+          disabled={done.length === 0}
+          onClick={() => setAsking(true)}
+        >
+          <Glyph kind="trash" line />
+          {copy.ROADMAP_CLEAR}
+        </button>
+      )}
       <p className="muted roadmap-source">{copy.ROADMAP_SOURCE}</p>
     </main>
   );

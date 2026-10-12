@@ -19,6 +19,21 @@ describe('areaMapUrl', () => {
   });
 });
 
+describe('areaMapUrl, widened', () => {
+  it('asks for the square it is given, as wide as the chosen places need', () => {
+    const bbox = new URL(areaMapUrl(centre, 4096, 180, 45)).searchParams.get('bbox') ?? '';
+    const [, south, , north] = bbox.split(',').map(Number);
+    expect((north - south) * 111).toBeCloseTo(90, 6);
+  });
+
+  it('loads the widened square', async () => {
+    serve(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    const file = await loadAreaMap('pack-1', centre, 1_000, 45);
+    const [, south, , north] = (new URL(file.url).searchParams.get('bbox') ?? '').split(',').map(Number);
+    expect((north - south) * 111).toBeCloseTo(90, 6);
+  });
+});
+
 describe('loadAreaMap', () => {
   it('refuses a body that is not a PNG, whatever the status says', async () => {
     serve('<ServiceExceptionReport>bad bbox</ServiceExceptionReport>');

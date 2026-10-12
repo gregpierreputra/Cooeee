@@ -1,6 +1,7 @@
 import { BUNDLED_FILE_TIMEOUT_MS, MAX_RESPONSE_BYTES, PACK_MAX_BYTES } from '../core/constants';
 import { sourcePageUrls } from '../core/provenance';
 import type { PackFile, TextPackContent } from '../core/types';
+import { areaMapHalfKm } from '../core/area-map-view';
 import { loadAreaMap } from './area-map';
 import { readBodyBounded, timeoutSignal } from './bounded-body';
 import { sha256Hex } from './integrity';
@@ -70,6 +71,10 @@ export async function loadPackFiles(packId: string, content: TextPackContent): P
   const used =
     new TextEncoder().encode(JSON.stringify(content)).byteLength +
     pages.reduce((sum, page) => sum + page.sizeBytes, 0);
-  const map = await loadAreaMap(packId, content.pack, PACK_MAX_BYTES - used).catch(() => null);
+  // Wide enough to take in the places of last resort chosen for the pack.
+  const chosen = content.destinations.flatMap((place) =>
+    place.kind === 'nsp-bushfire' && place.lat !== undefined && place.lon !== undefined ? [{ lat: place.lat, lon: place.lon }] : []);
+  const halfKm = areaMapHalfKm(content.pack, chosen);
+  const map = await loadAreaMap(packId, content.pack, PACK_MAX_BYTES - used, halfKm).catch(() => null);
   return map ? [...pages, map] : pages;
 }

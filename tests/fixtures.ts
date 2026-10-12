@@ -17,7 +17,7 @@ export const CBD = { lat: -37.8136, lon: 144.9631 };
 export const source = (over: Partial<Source> = {}): Source => ({
   publisher: 'Country Fire Authority',
   url: 'https://www.cfa.vic.gov.au/example',
-  licence: 'CFA website list — permission to be confirmed',
+  licence: 'Free to use, confirmed by the CFA',
   retrievedAt: 1_756_100_000_000,
   ...over,
 });

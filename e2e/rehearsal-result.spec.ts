@@ -9,15 +9,14 @@ const WITH_GAP = `${ORIGIN}/rehearse?mode=gap`;
 
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
-const CHOOSE_HEADING = 'Rehearse without…';
+const CHOOSE_HEADING = 'Rehearse with…';
 
 /** E5-US1-AC5: how the rehearsal ended, beside the condition line. */
 const WALKED_LINE = 'You went there. It took you 14 minutes.';
 const DRY_RUN_LINE = 'A dry run. You ended it without going.';
 
 const PACK_CONTENT_MEANING = 'Missing from your pack.';
-const CONDITION_MEANING =
-  'Not available under this condition. Do this instead.';
+const CONDITION_MEANING = 'Not available under this condition.';
 
 // E5-US2-AC1 — one action for each gap.
 
@@ -303,8 +302,8 @@ test('AC1 a completion is still there on the next rehearsal', async ({ page }) =
   await expect(firstRow(page).locator('.gap-done')).toBeVisible();
   await expect.poll(() => storedCount(page, 'actionCompletions')).toBe(1);
 
-  // Leave the rehearsal and run another one on the same pack.
-  await page.getByRole('button', { name: 'Leave the rehearsal' }).click();
+  // Done with the result, then another rehearsal on the same pack.
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
   await rehearseToResult(page, NO_FIX);
 
@@ -337,6 +336,10 @@ test('AC1 a completion adds no total, count or verdict', async ({ page }) => {
 test.describe('AC5 the result says how the rehearsal ended', () => {
   const position = (locator: Locator) =>
     locator.evaluate((el) => Array.from(document.querySelectorAll('*')).indexOf(el));
+  /** Counted in paragraphs, so a word set in bold inside a line does not move
+   *  the line after it. */
+  const paragraph = (locator: Locator) =>
+    locator.evaluate((el) => Array.from(document.querySelectorAll('p')).indexOf(el as HTMLParagraphElement));
 
   test('walked: that she went and how long it took her, beside the condition and above the gaps', async ({
     page,
@@ -352,9 +355,10 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
     await expect(page.locator('main')).not.toContainText('second');
 
     // Straight after the condition line, and before the progress view and the gaps.
-    const condition = await position(page.getByText('Rehearsed without a location fix.', { exact: true }));
+    const condition = await paragraph(page.getByText('Rehearsed without a location fix.', { exact: true }));
+    expect(condition).toBeGreaterThanOrEqual(0);
+    expect(await paragraph(line)).toBe(condition + 1);
     const ending = await position(line);
-    expect(ending).toBe(condition + 1);
     expect(ending).toBeLessThan(await position(page.locator('.progress')));
     expect(ending).toBeLessThan(await position(page.locator('.gap-row').first()));
     await expect(page.locator('.gap-list')).not.toContainText('walked');
@@ -369,9 +373,10 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
     await expect(page.getByRole('heading', { name: 'Nothing was missing in this rehearsal' })).toBeVisible();
     const line = page.getByText(WALKED_LINE, { exact: true });
     await expect(line).toBeVisible();
-    const condition = await position(page.getByText('Rehearsed without mobile data.', { exact: true }));
+    const condition = await paragraph(page.getByText('Rehearsed without mobile data.', { exact: true }));
+    expect(condition).toBeGreaterThanOrEqual(0);
+    expect(await paragraph(line)).toBe(condition + 1);
     const ending = await position(line);
-    expect(ending).toBe(condition + 1);
     expect(ending).toBeLessThan(await position(page.getByText('Checked on this pack today.')));
   });
 
@@ -405,8 +410,9 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
     expect((await storedRehearsals(page))[0]).not.toHaveProperty('elapsedMs');
     await expect(page.locator('main')).not.toContainText('minute');
 
-    const condition = await position(page.getByText('Rehearsed without a location fix.', { exact: true }));
-    expect(await position(line)).toBe(condition + 1);
+    const condition = await paragraph(page.getByText('Rehearsed without a location fix.', { exact: true }));
+    expect(condition).toBeGreaterThanOrEqual(0);
+    expect(await paragraph(line)).toBe(condition + 1);
   });
 
   // WCAG 1.4.1. With every colour removed only the words are left.
@@ -478,6 +484,8 @@ test.describe('AC5 her note about the way', () => {
   const WORDS = 'Left at the church, not the second gate.\nThe footbridge floods — use the road.';
   const field = (page: Page) => page.getByLabel(WAY_NOTE_LABEL);
   const saveControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Save', exact: true });
+  /** Save, once the words are kept and unchanged. */
+  const keptControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Saved to this pack' });
 
   test('is offered after a walked rehearsal, and not after a dry run', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
@@ -496,7 +504,7 @@ test.describe('AC5 her note about the way', () => {
   test('is never required: leaving without writing keeps no note', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
     await expect(field(page)).toBeVisible();
-    await page.getByRole('button', { name: 'Leave the rehearsal' }).click();
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.getByRole('heading', { name: CHOOSE_HEADING })).toBeVisible();
     expect(await storedNotes(page)).toEqual([]);
   });
@@ -513,7 +521,7 @@ test.describe('AC5 her note about the way', () => {
 
     await field(page).fill(WORDS);
     await saveControl(page).click();
-    await expect(page.getByText('Note saved.')).toBeVisible();
+    await expect(keptControl(page)).toBeVisible();
 
     await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
     const [note] = await storedNotes(page);
@@ -537,6 +545,76 @@ test.describe('AC5 her note about the way', () => {
     await expect.poll(async () => (await storedNotes(page))[0]?.text).toBe(`${WORDS}\nCarry water.`);
     expect(await storedNotes(page)).toHaveLength(1);
     expect((await storedNotes(page))[0].id).toBe(note.id);
+  });
+
+  test('a saved note can be taken back out, keeping her words in the field', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    const remove = page.getByRole('main').getByRole('button', { name: 'Remove from this pack' });
+    await expect(remove).toHaveCount(0);
+    await field(page).fill(WORDS);
+    await saveControl(page).click();
+    await expect(keptControl(page)).toBeVisible();
+    await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
+
+    await remove.click();
+    await expect(page.getByText('Removed from this pack.')).toBeVisible();
+    await expect.poll(async () => (await storedNotes(page)).length).toBe(0);
+    await expect(field(page)).toHaveValue(WORDS);
+    // One line says where it stands: removed, until she types again.
+    await expect(page.getByText('Not saved yet.')).toHaveCount(0);
+    await expect(remove).toHaveCount(0);
+    await field(page).press('End');
+    await field(page).pressSequentially('!');
+    await expect(page.getByText('Not saved yet.')).toBeVisible();
+    await expect(page.getByText('Removed from this pack.')).toHaveCount(0);
+  });
+
+  test('saved, the control says so and does nothing until the words change, which Undo changes puts back', async ({
+    page,
+  }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    await field(page).fill(WORDS);
+    await saveControl(page).click();
+    await expect(keptControl(page)).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByRole('status').filter({ hasText: "Saved to this pack's notes." })).toHaveCount(1);
+    await expect.poll(async () => (await storedNotes(page))[0]?.updatedAt).toBeTruthy();
+    const savedAt = (await storedNotes(page))[0].updatedAt;
+    // A tap on it, as a thumb would give, writes nothing.
+    await keptControl(page).click({ force: true });
+    await page.waitForTimeout(300);
+    expect((await storedNotes(page))[0].updatedAt).toBe(savedAt);
+
+    // A change: Save again, and Undo changes in place of Remove.
+    await field(page).press('End');
+    await field(page).pressSequentially(' Carry water.');
+    await expect(saveControl(page)).toBeVisible();
+    await expect(page.getByText('Not saved yet.')).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Remove from this pack' })).toHaveCount(0);
+    await page.getByRole('main').getByRole('button', { name: 'Undo changes' }).click();
+    await expect(field(page)).toHaveValue(WORDS);
+    await expect(keptControl(page)).toBeVisible();
+    await expect(page.getByText('Not saved yet.')).toHaveCount(0);
+    expect((await storedNotes(page))[0].text).toBe(WORDS);
+  });
+
+  test('the buttons stay put while the line under the box changes', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    const save = page.getByRole('main').getByRole('button', { name: /^Save/ });
+    // Measured inside the card, so scrolling the page does not count.
+    const top = () =>
+      save.evaluate((el) =>
+        Math.round(el.getBoundingClientRect().top - el.closest('.note-card')!.getBoundingClientRect().top),
+      );
+    const empty = await top();
+    await field(page).fill(WORDS);
+    await expect(page.getByText('Not saved yet.')).toBeVisible();
+    expect(await top()).toBe(empty);
+    await saveControl(page).click();
+    await expect(keptControl(page)).toBeVisible();
+    expect(await top()).toBe(empty);
+    await page.getByRole('main').getByRole('button', { name: 'Remove from this pack' }).click();
+    await expect(page.getByText('Removed from this pack.')).toBeVisible();
+    expect(await top()).toBe(empty);
   });
 
   test('an empty note writes nothing, and says so', async ({ page }) => {

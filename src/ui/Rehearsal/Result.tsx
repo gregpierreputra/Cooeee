@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import * as copy from '../../core/copy';
 import { detectGaps } from '../../core/rehearsal-checks';
 import { endingRecord } from '../../core/rehearsal-ending';
@@ -15,9 +15,27 @@ import {
   undoActionDone,
 } from '../../data/db';
 import { offersWayNote } from '../../core/rehearsal-note';
+import Glyph from '../components/Glyph';
+import Section from '../components/Section';
+import Head from './Head';
 import ProgressView from './Progress';
 import { endRun } from './run-state';
 import WayNote from './WayNote';
+
+/** The line with each of its named parts in bold, in order: the kind of
+ *  ending, her time, and the distance where one was counted. Words only, so
+ *  the line still has no drawing. */
+function boldParts(line: string, bold: string[]): ReactNode {
+  let rest = line;
+  const parts: ReactNode[] = [];
+  bold.forEach((part) => {
+    const at = rest.indexOf(part);
+    if (at < 0) return;
+    parts.push(rest.slice(0, at), <b key={part}>{part}</b>);
+    rest = rest.slice(at + part.length);
+  });
+  return [...parts, rest];
+}
 
 type ResultProps = {
   run: RehearsalRun;
@@ -148,68 +166,94 @@ export default function Result({
   if (finished === null) return null;
   const result = rehearsalResult(finished, completions);
   const progress = rehearsalProgress(finished, earlier, completions);
+  // E5-US1-AC5: how it ran and how it ended, then what moved since the last
+  // one like it, in one card under a ringed head as the pack page's sections
+  // open. Facts about this rehearsal, stated once, and never measured against
+  // anything. Words only: the two endings are told apart by their words alone.
+  const summary = (
+    <Section kind="rehearse" title={copy.RESULT_SUMMARY_LABEL} heading>
+      <div className="card result-summary">
+        {/* The condition's phrase in bold, the ending by its parts. The two
+            paragraphs keep one style: only the words inside them differ. */}
+        <p>{boldParts(result.conditionLine, [result.conditionLine.replace(/\.$/, '')])}</p>
+        <p>{boldParts(result.endingLine, result.endingBold)}</p>
+        {/* What was checked, after how it ended, when nothing was missing. */}
+        {result.state === 'no-gaps' ? <p className="muted place-note">{result.detail}</p> : null}
+        {runKept ? null : <p className="muted place-note">{copy.RUN_NOT_KEPT}</p>}
+        <ProgressView progress={progress} />
+      </div>
+    </Section>
+  );
+  /** E5-US1-AC5: after a walked rehearsal only, her optional note about the
+   *  way. Last, after the gaps, and never among them. */
+  const wayNote = offersWayNote(finished) ? <WayNote packId={finished.packId} /> : null;
 
   if (result.state === 'no-gaps') {
     return (
       <>
-        <h2>{result.heading}</h2>
-        <p className="muted">{result.conditionLine}</p>
-        {/* E5-US1-AC5: how it ended, beside the condition. A fact about this
-            rehearsal, stated once, and never measured against anything. */}
-        <p className="muted">{result.endingLine}</p>
-        {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
-        <p>{result.detail}</p>
-        <ProgressView progress={progress} />
-        {/* E5-US1-AC5: after a walked rehearsal only, her optional note about the way. */}
-        {offersWayNote(finished) ? <WayNote packId={finished.packId} /> : null}
+        <Head title={result.heading} />
+        {summary}
+        {wayNote}
       </>
     );
   }
 
   return (
     <>
-      <h2>{copy.RESULT_HEADING}</h2>
-      <p className="muted">{result.conditionLine}</p>
-      {/* E5-US1-AC5: how it ended, beside the condition and above the gaps. */}
-      <p className="muted">{result.endingLine}</p>
-      {runKept ? null : <p className="muted">{copy.RUN_NOT_KEPT}</p>}
-      <ProgressView progress={progress} />
+      <Head title={copy.RESULT_HEADING} />
+      {summary}
 
-      <ul className="list gap-list">
-        {result.rows.map((row) => (
-          <li key={`${row.gapType}:${row.hazardLine}`} className="card gap-row">
-            <span className="kicker">{row.hazardLine}</span>
-            <h3>{row.title}</h3>
-            <p className="gap-reason-label">{copy.GAP_REASON_LABEL}</p>
-            <p>{row.reason}</p>
-            {/* Which of the two kinds this is, said in words. The two kinds are
-                told apart by this sentence and by nothing else: no severity, no
-                ranking, no separate list, no colour. */}
-            <p className="muted">{row.meaning}</p>
-            <p className="gap-action-label">{copy.ACTION_LABEL}</p>
-            <p>{row.action}</p>
-
-            {/* The date is shown only where a completion is actually held. */}
-            {row.doneOn ? <p className="gap-done">{copy.ACTION_DONE_ON(row.doneOn)}</p> : null}
-            <button
-              type="button"
-              className="action gap-mark"
-              onClick={() => toggle(row.actionId, row.doneOn !== null)}
-            >
-              {row.doneOn ? copy.UNDO_ACTION_DONE : copy.MARK_ACTION_DONE}
-            </button>
-            {notKept === row.actionId ? (
-              <p className="muted" role="status">
-                {copy.ACTION_NOT_KEPT}
+      <Section kind="found" title={copy.RESULT_GAPS_LABEL} heading>
+        <ul className="list gap-list">
+          {result.rows.map((row) => (
+            <li key={`${row.gapType}:${row.hazardLine}`} className="card gap-row">
+              <span className="kicker">{row.hazardLine}</span>
+              <h3>{row.title}</h3>
+              {/* Which of the two kinds this is, said in words under the title.
+                  The two kinds are told apart by this sentence and by nothing
+                  else: no severity, no ranking, no separate list, no colour. */}
+              <p className="muted gap-meaning">{row.meaning}</p>
+              <p className="gap-reason-label with-glyph">
+                <Glyph kind="why" line />
+                {copy.GAP_REASON_LABEL}
               </p>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+              <p>{row.reason}</p>
 
-      {/* E5-US1-AC5: after a walked rehearsal only, her optional note about the
-          way. After the gaps, and never among them. */}
-      {offersWayNote(finished) ? <WayNote packId={finished.packId} /> : null}
+              {/* The one thing to do, set apart in its own panel with the
+                  reader's record of it and the control that keeps it. */}
+              <div className="gap-todo">
+                <p className="gap-action-label with-glyph">
+                  <Glyph kind="go" line />
+                  {copy.ACTION_LABEL}
+                </p>
+                <p>{row.action}</p>
+                {/* The date is shown only where a completion is actually held. */}
+                {row.doneOn ? (
+                  <p className="gap-done with-glyph">
+                    <Glyph kind="check" line />
+                    {copy.ACTION_DONE_ON(row.doneOn)}
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  className="action gap-mark with-glyph"
+                  onClick={() => toggle(row.actionId, row.doneOn !== null)}
+                >
+                  <Glyph kind={row.doneOn ? 'close' : 'check'} line />
+                  {row.doneOn ? copy.UNDO_ACTION_DONE : copy.MARK_ACTION_DONE}
+                </button>
+                {notKept === row.actionId ? (
+                  <p className="muted place-note" role="status">
+                    {copy.ACTION_NOT_KEPT}
+                  </p>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      {wayNote}
     </>
   );
 }

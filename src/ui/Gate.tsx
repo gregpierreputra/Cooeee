@@ -49,9 +49,13 @@ export default function Gate({ onPass }: { onPass: () => void }) {
   return (
     <main className="page gate">
       <header className="hero first-open-hero">
-        <Mark className="mark" size={44} />
+        {/* The mark in its ring and the name and line centred under it, as on
+            the welcome and the disclosure that follow. */}
+        <span className="first-open-mark">
+          <Mark className="mark" size={40} />
+        </span>
         <h1>{copy.APP_NAME}</h1>
-        <p className="muted">{copy.GATE_LINE}</p>
+        <p className="muted welcome-tagline">{copy.GATE_LINE}</p>
       </header>
 
       <form id="gate-form" className="gate-form" onSubmit={submit}>

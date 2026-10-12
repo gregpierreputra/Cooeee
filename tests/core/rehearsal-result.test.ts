@@ -56,9 +56,7 @@ describe('a result with gaps', () => {
 
     const [content, persistent] = result.rows;
     expect(content.meaning).toBe('Missing from your pack.');
-    expect(persistent.meaning).toBe(
-      'Not available under this condition. Do this instead.',
-    );
+    expect(persistent.meaning).toBe('Not available under this condition.');
     expect(content.meaning).not.toBe(persistent.meaning);
   });
 
@@ -95,7 +93,13 @@ describe('a result with gaps', () => {
     const gaps = [packContentGap, persistentGap];
     const withoutEnding = rehearsalResult(rehearsal(gaps));
     [rehearsalResult(rehearsal(gaps, walked)), rehearsalResult(rehearsal(gaps, { ending: 'dry-run' }))].forEach(
-      (result) => expect({ ...result, endingLine: '' }).toEqual({ ...withoutEnding, endingLine: '' }),
+      // The bold parts are the ending line's own words, picked out to be set in bold.
+      (result) =>
+        expect({ ...result, endingLine: '', endingBold: [] }).toEqual({
+          ...withoutEnding,
+          endingLine: '',
+          endingBold: [],
+        }),
     );
   });
 

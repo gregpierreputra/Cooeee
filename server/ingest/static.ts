@@ -1,6 +1,7 @@
 import { type Db, nowIso, transaction } from '../db.ts';
 import { findNearest } from '../geo.ts';
 import type { SyncCounts } from '../sources.ts';
+import type { SiteKind } from '../../src/core/types.ts';
 
 export type FacilityInput = {
   externalRef: string;
@@ -10,6 +11,8 @@ export type FacilityInput = {
   lat: number;
   lon: number;
   lgaName: string | null;
+  /** CFA's own word for an NSP: a building or open space. */
+  siteKind?: SiteKind | null;
 };
 
 /** Spec §6 static rules: an empty run never touches the database; rows are
@@ -23,12 +26,12 @@ export function upsertFacilities(db: Db, sourceId: string, rows: FacilityInput[]
   const existing = db.prepare('SELECT facility_id FROM facilities WHERE source_id = ? AND external_ref = ?');
   const insert = db.prepare(
     `INSERT INTO facilities
-       (source_id, external_ref, type_code, name, address, lat, lon, lga_name, last_verified_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (source_id, external_ref, type_code, name, address, lat, lon, lga_name, site_kind, last_verified_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   const update = db.prepare(
     `UPDATE facilities
-       SET name = ?, address = ?, lat = ?, lon = ?, lga_name = ?, designation_status = 'designated',
+       SET name = ?, address = ?, lat = ?, lon = ?, lga_name = ?, site_kind = ?, designation_status = 'designated',
            last_verified_at = ?, updated_at = ?
      WHERE facility_id = ?`,
   );
@@ -45,10 +48,13 @@ export function upsertFacilities(db: Db, sourceId: string, rows: FacilityInput[]
     for (const row of rows) {
       const found = existing.get(sourceId, row.externalRef) as { facility_id: number } | undefined;
       if (found) {
-        update.run(row.name, row.address, row.lat, row.lon, row.lgaName, now, now, found.facility_id);
+        update.run(row.name, row.address, row.lat, row.lon, row.lgaName, row.siteKind ?? null, now, now, found.facility_id);
         updated += 1;
       } else {
-        insert.run(sourceId, row.externalRef, row.typeCode, row.name, row.address, row.lat, row.lon, row.lgaName, now, now, now);
+        insert.run(
+          sourceId, row.externalRef, row.typeCode, row.name, row.address, row.lat, row.lon, row.lgaName,
+          row.siteKind ?? null, now, now, now,
+        );
         added += 1;
       }
     }

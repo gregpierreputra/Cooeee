@@ -1,18 +1,27 @@
 import * as copy from '../../core/copy';
-import Glyph from '../components/Glyph';
+import GameTile from '../Games/GameTile';
 
-/** E9-US4 — the way back into the drill from the Rehearse screens, at any
- *  time. Drawn unlike every other row there (amber, a flame, its own line), so
- *  it reads as a different thing to do rather than one more choice. */
-export default function DrillTile({ onPlay }: { onPlay: () => void }) {
+/** The way into the drill from the Rehearse screens: with a twist on, a tag
+ *  saying which and how long it stays, and its best score once played. */
+export default function DrillTile({
+  onPlay,
+  twist,
+  highest,
+}: {
+  onPlay: () => void;
+  twist?: { name: string; daysLeft: number; seconds: number; bag: number } | null;
+  highest: number | null;
+}) {
   return (
-    <button type="button" className="drill-tile" onClick={onPlay}>
-      <Glyph kind="drill" />
-      <span className="drill-tile-text">
-        <span className="drill-tile-title">{copy.DRILL_TILE_TITLE}</span>
-        <span className="drill-tile-detail">{copy.DRILL_TILE_DETAIL}</span>
-      </span>
-      <span className="drill-tile-go" aria-hidden="true">›</span>
-    </button>
+    <GameTile
+      variant="drill"
+      glyph="drill"
+      title={copy.DRILL_TILE_TITLE}
+      detail={twist ? copy.DRILL_TILE_DETAIL_FOR(twist.seconds, twist.bag) : copy.DRILL_TILE_DETAIL}
+      tag={twist ? { label: twist.name, detail: copy.DRILL_TILE_CHANGES(twist.daysLeft) } : undefined}
+      pills={[]}
+      stat={highest === null ? undefined : { figure: highest, label: copy.GAME_STAT_HIGHEST }}
+      onPlay={onPlay}
+    />
   );
 }

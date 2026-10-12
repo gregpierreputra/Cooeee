@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import * as copy from '../../core/copy';
-import { SPAWN, onDoorMat, pathTo, roomAt } from '../../core/drill-house';
-import { BAG_LIMIT, type DrillItem } from '../../core/drill-items';
+import { SPAWN, onDoorMat, pathTo } from '../../core/drill-house';
+import type { DrillItem } from '../../core/drill-items';
+import type { DrillRules } from '../../core/drill-twists';
 import { DOWN, EARLY_EXIT_HOLD, facing, haze, leavingEarly, nearestItem, speedFor, step } from '../../core/drill-play';
+import Glyph from '../components/Glyph';
 import * as audio from './audio';
-import { BEATS, CUTSCENE_SECONDS, LINES, OUTSIDE_SECONDS, POWER_OFF_AT, beatAt, beatStart, drawOutside, insideScene, stillAt } from './cutscene';
+import { BEATS, CUTSCENE_SECONDS, OUTSIDE_SECONDS, POWER_OFF_AT, beatAt, beatStart, drawOutside, insideScene, linesFor, stillAt } from './cutscene';
 import { attachKeys, stickVector } from './input';
 import SoundButton from './SoundButton';
 import { startLoop } from './loop';
@@ -15,14 +17,18 @@ export type DrillOutcome = { reachedDoor: boolean; packed: string[] };
 
 const STICK_RADIUS = 48; // css pixels
 const PICK_SECONDS = 0.4; // the figure bends down: packing costs a moment
+// The clock turns red with half a minute left, and pulses for the last ten.
+const WARN_SECONDS = 30;
 const LATE_SECONDS = 10;
+// How long the rule stays under the clock once the drill starts.
+const RULE_SECONDS = 5;
 const DOOR_ARROW_SECONDS = 20;
 const DOOR_OPENS_SECONDS = 0.9;
 
 /** Everything the loop reads and writes, outside React so a frame never
  *  waits on a render. */
 type World = {
-  phase: 'opening' | 'play' | 'leaving';
+  phase: 'opening' | 'ready' | 'play' | 'leaving';
   clock: number; // seconds this screen has been drawing
   opening: number; // seconds into the opening film
   elapsed: number; // seconds of the two minutes used
@@ -62,6 +68,8 @@ type Props = {
   /** Show the opening film first. Play again goes straight to the clock. */
   opening: boolean;
   seconds: number;
+  /** The twist this drill is played under. */
+  rules: DrillRules;
   onEnd: (outcome: DrillOutcome) => void;
   onUnavailable: () => void;
   onLeave: () => void;
@@ -71,31 +79,39 @@ type Props = {
  *  canvas that fills the screen, so there is no break between them. Left thumb
  *  steers, or a tap on the floor walks there; the one button packs whatever
  *  is in reach, and where the figure stands at 0:00 decides. */
-export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }: Props) {
+export default function Game({ opening, seconds, rules, onEnd, onUnavailable, onLeave }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const knobRef = useRef<HTMLSpanElement>(null);
+  const guideRef = useRef<HTMLDivElement>(null);
   const world = useRef<World>(freshWorld(opening));
   const [calm] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // Mouse and keys, or touch: which wording the guide uses.
+  const [keys] = useState(() => window.matchMedia('(pointer: fine)').matches);
   const [hud, setHud] = useState({
-    playing: !opening, beat: 0, seconds, packed: 0, near: null as DrillItem | null, room: roomAt(SPAWN.x, SPAWN.y),
+    playing: !opening, ready: false, beat: 0, seconds, packed: 0, near: null as DrillItem | null,
   });
 
+  // After the film the game waits behind the guide, clock stopped, until the
+  // person starts it. Play again has no film and no guide.
   const skipOpening = () => {
-    world.current.phase = 'play';
+    world.current.phase = 'ready';
   };
   const nextBeat = () => {
     const w = world.current;
     const beat = beatAt(w.opening) + 1;
-    if (beat >= BEATS) w.phase = 'play';
+    if (beat >= BEATS) w.phase = 'ready';
     else w.opening = beatStart(beat);
+  };
+  const start = () => {
+    if (world.current.phase === 'ready') world.current.phase = 'play';
   };
 
   const pack = () => {
     const w = world.current;
     // Checked here as well as on the button, so nothing packs out of reach,
-    // past ten, or outside the two minutes.
-    if (w.phase !== 'play' || !w.near || w.packed.length >= BAG_LIMIT || w.clock < w.pickUntil) return;
+    // past the bag's limit, or outside the time.
+    if (w.phase !== 'play' || !w.near || w.packed.length >= rules.bagLimit || w.clock < w.pickUntil) return;
     w.packed = [...w.packed, w.near.id];
     w.packedAt = w.clock;
     w.pickUntil = w.clock + PICK_SECONDS;
@@ -113,7 +129,7 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
     const { left, top, perCss } = camera.current;
     const x = ((event.clientX - box.left) * perCss + left) / TILE;
     const y = ((event.clientY - box.top) * perCss + top) / TILE;
-    w.route = pathTo(w.x, w.y, x, y);
+    w.route = pathTo(w.x, w.y, x, y, rules.closed);
     w.target = w.route.at(-1) ?? null;
   };
 
@@ -143,7 +159,10 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
     });
     const onKey = (event: KeyboardEvent) => {
       const onButton = (event.target as HTMLElement).tagName === 'BUTTON';
-      if ((event.key === 'Enter' || event.key === ' ') && !onButton) pack();
+      if ((event.key === 'Enter' || event.key === ' ') && !onButton) {
+        if (w.phase === 'ready') start();
+        else pack();
+      }
     };
     // A hidden tab hears no key or thumb come up, and should make no sound.
     const onVisibility = () => {
@@ -168,13 +187,13 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
       if (w.phase === 'opening') {
         const before = w.opening;
         w.opening += dt;
-        if (w.opening >= CUTSCENE_SECONDS) w.phase = 'play';
-        if (before < POWER_OFF_AT && w.opening >= POWER_OFF_AT) audio.powerDown();
+        if (w.opening >= CUTSCENE_SECONDS) w.phase = 'ready';
+        if (before < POWER_OFF_AT && w.opening >= POWER_OFF_AT && !rules.light.powered) audio.powerDown();
         audio.fire(w.opening < OUTSIDE_SECONDS ? 0.2 + (0.8 * w.opening) / OUTSIDE_SECONDS : 0.45);
         // Under reduced motion each line holds one still picture, not a film.
         const shownAt = calm ? stillAt(beatAt(w.opening)) : w.opening;
         if (shownAt < OUTSIDE_SECONDS) drawOutside(view, art, shownAt, calm);
-        else drawScene(view, art, insideScene(shownAt, calm));
+        else drawScene(view, art, insideScene(shownAt, calm, rules));
       } else {
         const picking = w.clock < w.pickUntil;
         if (w.phase === 'play') {
@@ -197,14 +216,14 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
               // Full pace, easing off only for the last bit so it never overshoots.
               const dx = w.route[0].x - w.x;
               const dy = w.route[0].y - w.y;
-              const pace = Math.min(1, Math.hypot(dx, dy) / Math.max(1e-6, speedFor(w.packed) * dt)) / Math.hypot(dx, dy);
+              const pace = Math.min(1, Math.hypot(dx, dy) / Math.max(1e-6, speedFor(w.packed, rules) * dt)) / Math.hypot(dx, dy);
               goX = dx * pace;
               goY = dy * pace;
             }
           }
           w.moving = !picking && (goX !== 0 || goY !== 0);
           if (w.moving) {
-            const moved = step(w.x, w.y, goX, goY, dt, speedFor(w.packed));
+            const moved = step(w.x, w.y, goX, goY, dt, speedFor(w.packed, rules), rules.closed);
             // A walk that is held fast (an edge it cannot ease round) gives up.
             if (dt > 0 && moved.x === w.x && moved.y === w.y) {
               w.route = [];
@@ -214,33 +233,34 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
             w.y = moved.y;
             w.facing = facing(goX, goY, w.facing);
           }
-          w.near = nearestItem(w.x, w.y, w.packed);
-          const ready = leavingEarly(seconds - w.elapsed, onDoorMat(w.x, w.y));
+          w.near = nearestItem(w.x, w.y, w.packed, rules);
+          const ready = leavingEarly(seconds - w.elapsed, onDoorMat(w.x, w.y), seconds);
           w.onMat = ready ? w.onMat + dt : 0;
-        } else {
+        } else if (w.phase === 'leaving') {
           w.leaving += dt;
         }
         const left = seconds - w.elapsed;
-        const { smoke, dark } = haze(w.elapsed, seconds);
+        const { smoke, dark } = haze(w.elapsed, seconds, rules.light);
         audio.fire(0.45 + 0.5 * (w.elapsed / seconds));
         camera.current = drawScene(view, art, {
           time: w.clock, camX: w.x, camY: w.y - 1, target: w.target,
           figure: { x: w.x, y: w.y, facing: w.facing, pose: picking ? 'pick' : w.moving ? 'walk' : 'idle', poseTime: picking ? w.clock - w.packedAt : w.clock },
           packed: w.packed, packedAt: w.packedAt, near: w.phase === 'play' ? w.near : null,
-          powered: false, glow: 1, smoke, dark, door: Math.min(1, w.leaving / 0.6),
-          late: left <= LATE_SECONDS, doorArrow: left <= DOOR_ARROW_SECONDS, showBag: true, outlines: w.phase === 'play', calm,
+          powered: rules.light.powered, glow: 1, smoke, dark, door: Math.min(1, w.leaving / 0.6),
+          late: left <= LATE_SECONDS, doorArrow: left <= DOOR_ARROW_SECONDS, showBag: true, outlines: w.phase !== 'leaving', calm,
           // The ring stays full while the door opens, so it is seen to complete.
-          matHold: w.phase === 'play' ? w.onMat / EARLY_EXIT_HOLD : 1,
+          matHold: w.phase === 'leaving' ? 1 : w.onMat / EARLY_EXIT_HOLD,
+          items: rules.items, bagLimit: rules.bagLimit, light: rules.light, barriers: rules.barriers,
         });
       }
 
       const next = {
         playing: w.phase !== 'opening',
+        ready: w.phase === 'ready',
         beat: beatAt(w.opening),
         seconds: Math.max(0, Math.ceil(seconds - w.elapsed)),
         packed: w.packed.length,
         near: w.near,
-        room: roomAt(w.x, w.y),
       };
       if (Object.keys(next).some((key) => next[key as keyof typeof next] !== shown[key as keyof typeof next])) {
         shown = next;
@@ -293,6 +313,12 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
     // The loop owns its own state; it starts once with the canvas.
   }, []);
 
+  // The guide takes focus as it opens, so a screen reader reads it first.
+  useEffect(() => {
+    if (hud.ready) guideRef.current?.focus();
+    else stageRef.current?.focus();
+  }, [hud.ready]);
+
   // The stick: the thumb's offset from where it landed, held inside a circle.
   const stickOrigin = useRef<[number, number] | null>(null);
   const moveStick = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -307,13 +333,25 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
     releaseStick();
   };
 
-  const late = hud.seconds <= LATE_SECONDS;
-  const clock = `${Math.floor(hud.seconds / 60)}:${String(hud.seconds % 60).padStart(2, '0')}`;
-  const full = hud.packed >= BAG_LIMIT;
-  const line = LINES[hud.beat];
+  const clockState = hud.seconds <= LATE_SECONDS ? ' late' : hud.seconds <= WARN_SECONDS ? ' warn' : '';
+  // The one rule that decides the score, under the clock: said at the start,
+  // and again once the door arrow shows.
+  // A full bag says so there too, until the door arrow takes over.
+  const full = hud.packed >= rules.bagLimit;
+  const goal = hud.ready
+    ? null
+    : hud.seconds <= DOOR_ARROW_SECONDS
+      ? copy.HEAD_TO_DOOR
+      : full
+        ? copy.BAG_FULL_GOAL
+        : hud.seconds > seconds - RULE_SECONDS
+          ? copy.DRILL_HINT
+          : null;
+  const clock = copy.DRILL_CLOCK(hud.seconds);
+  const line = linesFor(rules)[hud.beat];
 
   return (
-    <div ref={stageRef} className="drill-stage" tabIndex={-1} aria-label={copy.DRILL_LABEL}>
+    <div ref={stageRef} className={hud.ready ? 'drill-stage ready' : 'drill-stage'} tabIndex={-1} aria-label={copy.DRILL_LABEL}>
       {/* A tap on the floor walks the figure there, round walls and furniture. */}
       <canvas
         ref={canvasRef}
@@ -321,15 +359,27 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
         aria-label={hud.playing ? copy.DRILL_SCENE_LABEL : copy.CUTSCENE_LABEL}
         onPointerDown={walkTo}
       />
-      <div className="drill-top">
-        {hud.playing ? (
-          <div className="drill-counts">
-            <p className={late ? 'drill-timer figure late' : 'drill-timer figure'}>{clock}</p>
-            <p className="drill-bag figure">{copy.BAG_COUNT(hud.packed, BAG_LIMIT)}</p>
+      {/* Over the paused game: the goal in the middle and a line beside each
+          control, which are ringed above it. A tap or click anywhere, or
+          Enter, starts the clock; the controls ignore taps until then. */}
+      {hud.ready ? (
+        <div ref={guideRef} className="drill-guide" role="dialog" aria-labelledby="drill-guide-goal" tabIndex={-1}>
+          {/* The whole screen is one button behind the words, so a tap
+              anywhere starts. Its name is the start line, shown once below. */}
+          <button type="button" className="drill-guide-start-area" aria-label={copy.GUIDE_START(keys)} onClick={start} />
+          <div className="drill-guide-middle">
+            <p id="drill-guide-goal" className="drill-guide-goal">{copy.GUIDE_GOAL}</p>
+            <p className="drill-guide-start" aria-hidden="true">{copy.GUIDE_START(keys)}</p>
           </div>
-        ) : (
-          <span />
-        )}
+          <div className="drill-guide-tips">
+            <p className="drill-guide-tip move">{copy.GUIDE_MOVE(keys).map((part) => <span key={part}>{part} </span>)}</p>
+            <p className="drill-guide-tip grab">{copy.GUIDE_GRAB(keys).map((part) => <span key={part}>{part} </span>)}</p>
+          </div>
+        </div>
+      ) : null}
+      <div className={`drill-top${clockState}`}>
+        {hud.playing ? <p className="drill-timer figure">{clock}</p> : null}
+        {hud.playing && goal ? <p className="drill-goal">{goal}</p> : null}
         <div className="drill-top-actions">
           <SoundButton />
           {hud.playing ? null : (
@@ -345,11 +395,20 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
 
       {hud.playing ? (
         <>
-          <p className="drill-room">{hud.room ? copy.IN_ROOM(hud.room) : copy.DRILL_HINT}</p>
+          {/* Beside the slots it counts. Full, it takes the game's accent and a tick. */}
+          <p className={full ? 'drill-bag full' : 'drill-bag'}>
+            <Glyph kind={full ? 'check' : 'bag'} size={16} line />
+            <span aria-hidden="true">{`${hud.packed}/${rules.bagLimit}`}</span>
+            <span className="visually-hidden">{copy.BAG_COUNT(hud.packed, rules.bagLimit)}</span>
+          </p>
           {/* Spoken twice in the two minutes, at 30 and at 10 seconds, so a reader who
               cannot see the clock still hears it coming. */}
           <p className="visually-hidden" role="status" aria-live="polite">
             {hud.seconds === 30 || hud.seconds === 10 ? copy.SECONDS_LEFT(hud.seconds) : ''}
+          </p>
+          {/* Said once, the moment the bag fills. */}
+          <p className="visually-hidden" role="status" aria-live="polite">
+            {full ? copy.BAG_FULL_GOAL : ''}
           </p>
           <div className="drill-controls">
             <button
@@ -365,28 +424,39 @@ export default function Game({ opening, seconds, onEnd, onUnavailable, onLeave }
               onPointerCancel={dropStick}
               onLostPointerCapture={dropStick}
             >
+              {/* Four arrows say the ring is for moving. The figure still walks
+                  any way the thumb points, diagonals included. */}
+              <svg className="drill-stick-arrows" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+                <path d="M60 9l7 10H53zM60 111l7-10H53zM9 60l10-7v14zM111 60l-10-7v14z" />
+              </svg>
               <span ref={knobRef} className="drill-knob" aria-hidden="true" />
             </button>
             {/* Packs on the press, not the release: a second thumb landing while
                 the first holds the stick often gets no click on a phone. The
                 click only serves the keyboard, where detail is 0. */}
-            {/* Only there when something is in reach, named after it, so the
-                button itself says there is something to pack here. Enter
-                packs from a keyboard at any time. */}
-            {hud.near ? (
-              <button
-                key={hud.near.id}
-                type="button"
-                className="drill-pack"
-                disabled={full}
-                onPointerDown={pack}
-                onClick={(event) => {
-                  if (event.detail === 0) pack();
-                }}
-              >
-                {full ? copy.BAG_FULL : copy.PACK_ITEM(hud.near.name)}
-              </button>
-            ) : null}
+            {/* Always in the same place, so the thumb finds it. It lights up
+                and names the thing once one is in reach, and is dim with
+                nothing near. Enter packs from a keyboard at any time. */}
+            <button
+              type="button"
+              className="drill-grab"
+              disabled={!hud.near || full}
+              onPointerDown={pack}
+              onClick={(event) => {
+                if (event.detail === 0) pack();
+              }}
+            >
+              {hud.near ? (
+                <span key={hud.near.id} className="drill-grab-name">
+                  {full ? copy.BAG_FULL : copy.GRAB_ITEM(hud.near.name)}
+                </span>
+              ) : (
+                <span className="visually-hidden">{copy.NOTHING_IN_REACH}</span>
+              )}
+              <span className="drill-grab-ring">
+                <Glyph kind="grab" size={34} line />
+              </span>
+            </button>
           </div>
         </>
       ) : (

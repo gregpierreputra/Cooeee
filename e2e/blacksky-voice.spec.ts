@@ -187,6 +187,12 @@ test('Empty then Normal: nothing is spoken before the tap; the tap speaks the lo
     .not.toBe('rgba(0, 0, 0, 0)');
   await expect(caption(page)).toHaveText(long);
   expect(await caption(page).evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
+  // It floats above the leave hold, never over the dial.
+  const words = (await caption(page).boundingBox())!;
+  const dial = (await page.locator('.blacksky-dial').boundingBox())!;
+  const hold = (await page.locator('.blacksky-leave-button').boundingBox())!;
+  expect(words.y).toBeGreaterThanOrEqual(dial.y + dial.height);
+  expect(words.y + words.height).toBeLessThanOrEqual(hold.y);
 
   // The caption clears when the sentence ends; voice stays on.
   await page.evaluate(() => window.__endSpeech());

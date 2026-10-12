@@ -20,7 +20,10 @@ import Choose from '../../src/ui/Rehearsal/Choose';
 import RehearsalEntry from '../../src/ui/Rehearsal/Entry';
 import { startRun } from '../../src/ui/Rehearsal/run-state';
 import Drill from '../../src/ui/Drill/Drill';
-import { markDrilled } from '../../src/ui/Drill/drill-state';
+import { pinTwist } from '../../src/ui/Drill/drill-state';
+import BlockScreen from '../../src/ui/Block/BlockScreen';
+import GameTiles from '../../src/ui/Games/GameTiles';
+import WordScreen from '../../src/ui/Word/WordScreen';
 import AppHeader from '../../src/ui/components/AppHeader';
 import BackBar from '../../src/ui/components/BackBar';
 import BottomNav from '../../src/ui/components/BottomNav';
@@ -29,7 +32,7 @@ import { Destinations } from '../../src/ui/PackNew/Destinations';
 import { Search } from '../../src/ui/PackNew/Search';
 import { Size } from '../../src/ui/PackNew/Size';
 import nspFixture from './nsp-fixture.json';
-import { roadsFixture } from './roads-fixture';
+import { LOCALITIES_FIXTURE, roadsFixture } from './roads-fixture';
 import '../../src/ui/theme.css';
 
 declare global {
@@ -145,6 +148,13 @@ const savedPack: Pack = {
 // address is what reaches the keep-or-replace step.
 if (window.location.pathname === '/conflict' && await db.packs.count() === 0) {
   await db.packs.put({ ...savedPack, address: testCandidate.address });
+  // ?mode=notes: the saved pack already holds two notes.
+  if (new URLSearchParams(window.location.search).get('mode') === 'notes') {
+    await db.notes.bulkPut([
+      { id: 'old-note-1', packId: savedPack.id, text: 'Spare key under the blue pot.', updatedAt: 1 },
+      { id: 'old-note-2', packId: savedPack.id, text: 'Gate code 4471.', updatedAt: 2 },
+    ]);
+  }
 }
 
 const conflictMode = new URLSearchParams(window.location.search).get('mode');
@@ -220,9 +230,15 @@ if (window.location.pathname === '/size') {
   };
   sizeFlow = (
     <Size
-      offer={offer}
-      address={sizeContent.pack.address}
-      download={download}
+      summary={{
+        name: sizeContent.pack.name,
+        address: sizeContent.pack.address,
+        area: 'This address is in a Bushfire Prone Area.',
+        places: ['Kalorama Oval'],
+        note: 'None',
+      }}
+      offer={sizeMode === 'preparing' ? null : offer}
+      save={download}
       onContinue={() => { window.__continueCount += 1; }}
     />
   );
@@ -238,15 +254,17 @@ const detailLayer: ExposureLayer = {
   packId: 'detail-pack',
   group: 'designation',
   code: 'BPA',
-  status: 'present',
-  features: [{ planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' }],
+  // ?mode=outside: an address the map does not show inside the area.
+  ...(detailMode === 'outside'
+    ? { status: 'none-mapped-here' as const, features: [] }
+    : { status: 'present' as const, features: [{ planNumber: 'LEGL./25-138', gazettalDate: '10/07/2025' }] }),
   checkedAt: detailSavedAt,
   source: { ...packSource, retrievedAt: detailSavedAt },
 };
 const cfaSource = {
   publisher: 'Country Fire Authority',
   url: 'https://www.cfa.vic.gov.au/plan-prepare/neighbourhood-safer-places',
-  licence: 'CFA website list — permission to be confirmed',
+  licence: 'Free to use, confirmed by the CFA',
   retrievedAt: detailSavedAt,
 };
 const detailDestination: Destination = detailMode === 'absence'
@@ -394,7 +412,7 @@ if (window.location.pathname === '/home') {
   if (homeMode !== 'none') {
     await db.packs.put({ ...savedPack, verifiedAt: homeNow - homeDays * 86_400_000 });
   }
-  // A second, one-day-fresher pack, so the list has an order to assert.
+  // A second pack, its place saved a day later, so the list has an order to assert.
   if (homePacks > 1) {
     await db.packs.put({
       ...savedPack,
@@ -403,6 +421,7 @@ if (window.location.pathname === '/home') {
       address: testCandidate.address,
       lat: testCandidate.lat,
       lon: testCandidate.lon,
+      createdAt: savedPack.createdAt + 86_400_000,
       verifiedAt: homeNow - (homeDays - 1) * 86_400_000,
     });
   }
@@ -424,6 +443,7 @@ if (window.location.pathname === '/home') {
 // The BlackSky pack picker: two complete packs, in the mode's own colours.
 // Headless Chromium denies geolocation, so the chosen pack shows as reference
 // text with its mark control.
+const nearbyMapFiles = { loadRoads: async () => roadsFixture(), loadLocalities: async () => LOCALITIES_FIXTURE };
 let blackSkyFlow = confirmation;
 if (window.location.pathname === '/blacksky') {
   await Promise.all(db.tables.map((table) => table.clear()));
@@ -436,6 +456,8 @@ if (window.location.pathname === '/blacksky') {
       address: testCandidate.address,
       lat: testCandidate.lat,
       lon: testCandidate.lon,
+      // Saved after Ferny Creek, so Home's order lists it first.
+      createdAt: Date.UTC(2026, 7, 25),
     },
   ]);
   document.documentElement.dataset.mode = 'blacksky';
@@ -599,7 +621,7 @@ if (window.location.pathname === '/nearby') {
     const feedAge = nearbyMode === 'stale' ? 3 * 3_600_000 : 10 * 60_000;
     const verified = ago(2 * 86_400_000);
     await db.staticFacilities.bulkAdd([
-      { facility_id: 1, type: 'NSP', name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', lat: -37.808, lon: 145.36, lga_name: 'Yarra Ranges', designation_status: 'designated', last_verified_at: verified },
+      { facility_id: 1, type: 'NSP', name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', lat: -37.808, lon: 145.36, lga_name: 'Yarra Ranges', site_kind: 'open_space', designation_status: 'designated', last_verified_at: verified },
       { facility_id: 2, type: 'CFR', name: 'Ferny Creek Community Fire Refuge', address: 'School Road, Ferny Creek 3786', lat: -37.88323, lon: 145.333062, lga_name: 'Yarra Ranges', designation_status: 'designated', last_verified_at: verified },
     ]);
     await db.postcodes.bulkAdd([{ postcode: '3766', centroid_lat: -37.813, centroid_lon: 145.362 }]);
@@ -616,7 +638,14 @@ if (window.location.pathname === '/nearby') {
       { key: 'dynamic_source_last_success_at', value: ago(feedAge) },
     ]);
   }
-  nearbyFlow = <Nearby now={nearbyNow} fetcher={async () => { throw new Error('no network'); }} />;
+  // The map's roads and towns as BlackSky's tests have them, as the harness has no precache.
+  nearbyFlow = (
+    <Nearby
+      now={nearbyNow}
+      fetcher={async () => { throw new Error('no network'); }}
+      mapFiles={nearbyMapFiles}
+    />
+  );
 }
 
 // E5-US1-AC4. The rehearsal entry gate, at a fixed instant, over a pack seeded
@@ -749,12 +778,6 @@ if (window.location.pathname === '/rehearse' && !(rehearseKeep && (await db.pack
   rehearseFlow = <RehearsalHarness />;
 }
 if (window.location.pathname === '/rehearse') rehearseFlow = <RehearsalHarness />;
-// E9. The drill stands in front of every rehearsal. The rehearsal's own specs
-// step past it here, as a person who skipped it would; ?drill=1 keeps it.
-if (new URLSearchParams(window.location.search).get('drill') !== '1') {
-  markDrilled('rehearse-pack');
-  markDrilled('saved-pack');
-}
 
 
 // The remount control is HARNESS FURNITURE, not product UI. It is rendered
@@ -817,9 +840,12 @@ function RehearsalHarness() {
         <>
           <BackBar />
           <RehearsalEntry packId="rehearse-pack" now={rehearseNow} />
+          {/* BlackSky is reached from its hold in the bar, as in the app. */}
+          <BottomNav />
         </>
       ) : null}
-      <div style={harnessStyle} data-harness="true">
+      {/* Room under the furniture, so the fixed bottom bar never covers it. */}
+      <div style={{ ...harnessStyle, marginBottom: '8rem' }} data-harness="true">
         <span>test harness</span>
         <LocationProbe />
         <button
@@ -848,7 +874,7 @@ if (window.location.pathname === '/rehearse-choose') {
   await db.packs.bulkPut(
     [
       savedPack,
-      { ...savedPack, id: 'second-pack', name: 'Kalorama', address: testCandidate.address, verifiedAt: savedPack.verifiedAt + 1 },
+      { ...savedPack, id: 'second-pack', name: 'Kalorama', address: testCandidate.address, createdAt: savedPack.createdAt + 1, verifiedAt: savedPack.verifiedAt + 1 },
     ].slice(0, count),
   );
   chooseFlow = (
@@ -861,11 +887,51 @@ if (window.location.pathname === '/rehearse-choose') {
   );
 }
 
+// The drill's twist changes every three days, so every spec plays the classic
+// drill unless it asks for a twist by name: ?twist=night.
+pinTwist(new URLSearchParams(window.location.search).get('twist') ?? 'classic');
+
+// The games on the Rehearse screen. They are played on a fixed day, so a spec
+// knows the word and the yard: 10 October 2026, word number 1, in Melbourne.
+// ?day=N moves it on N days. ?history=won,won,lost seeds the days before
+// today for Cooee Word's streak, the last entry being yesterday.
+const gameParams = new URLSearchParams(window.location.search);
+const GAME_DAY = 20_736 + Number(gameParams.get('day') ?? '0');
+const gameNow = GAME_DAY * 86_400_000 + 2 * 3_600_000; // noon in Melbourne
+let gamesFlow = confirmation;
+if (['/word', '/block', '/games'].includes(window.location.pathname)) {
+  // Seeded once per tab, so a reload finds the game as it was left.
+  if (sessionStorage.getItem('harness.games') === null) {
+  sessionStorage.setItem('harness.games', 'seeded');
+  await Promise.all([db.wordDays.clear(), db.blockPlays.clear()]);
+  const history = (gameParams.get('history') ?? '').split(',').filter(Boolean);
+  await db.wordDays.bulkPut(
+    history.map((status, i) => {
+      const day = GAME_DAY - history.length + i;
+      const guesses = status === 'won' ? ['ember'] : Array(6).fill('smoke');
+      return { day, answer: 'ember', guesses, status: status as 'won' | 'lost', updatedAt: gameNow, finishedAt: gameNow };
+    }),
+  );
+  }
+  const blockSeconds = Number(gameParams.get('seconds')) || undefined;
+  gamesFlow =
+    window.location.pathname === '/word' ? <WordScreen now={gameNow} />
+    : window.location.pathname === '/block' ? <BlockScreen now={gameNow} seconds={blockSeconds} />
+    : (
+      <main className="page rehearsal-condition">
+        <GameTiles now={gameNow} onDrill={() => { document.title = 'drill chosen'; }} />
+        <div style={harnessStyle} data-harness="true">
+          <LocationProbe />
+        </div>
+      </main>
+    );
+}
+
 // E9. The drill on its own, with a clock as short as the spec asks for.
 // ?seconds=3 ends it almost at once; the app never passes this.
 const drillSeconds = Number(new URLSearchParams(window.location.search).get('seconds')) || undefined;
 const drillFlow = (
-  <Drill packId="saved-pack" seconds={drillSeconds} onDone={() => { document.title = 'drill done'; }} />
+  <Drill seconds={drillSeconds} onDone={() => { document.title = 'drill done'; }} />
 );
 
 const offerShouldFail = new URLSearchParams(window.location.search).get('offer') === 'fail';
@@ -905,6 +971,7 @@ createRoot(root).render(
         : window.location.pathname === '/rehearse' ? rehearseFlow
         : window.location.pathname === '/rehearse-choose' ? chooseFlow
         : window.location.pathname === '/drill' ? drillFlow
+        : ['/word', '/block', '/games'].includes(window.location.pathname) ? gamesFlow
         : window.location.pathname === '/detail' || window.location.pathname === '/detail-launch'
           ? detailFlow
         : window.location.pathname === '/detail-print'

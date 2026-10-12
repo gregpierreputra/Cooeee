@@ -11,6 +11,7 @@ import type {
   DataHealth,
   FacilityType,
   LatLon,
+  SiteKind,
   SnapshotActivation,
   SourceStatus,
 } from './types';
@@ -41,14 +42,36 @@ export type PlaceState = 'live' | 'cached' | 'unavailable';
 export type NearbyRow = {
   type: FacilityType;
   title: string;
-  place: { name: string; address: string | null; distance: string } | null;
+  /** `about` is an NSP's footer: CFA's word for the place, when known, and that no one is there. */
+  place: {
+    name: string;
+    address: string | null;
+    distance: string;
+    about?: { kind: string | null; note: string };
+  } | null;
   state: PlaceState;
   stateLabel: string;
   timestamp: string | null;
   note: string | null;
 };
-export type NearbyGroup = { kind: 'bushfire' | 'relief'; heading: string; note: string; rows: NearbyRow[] };
-export type NearbyView = { groups: NearbyGroup[]; health: SourceLine[] };
+export type NearbyGroup = {
+  kind: 'bushfire' | 'relief';
+  heading: string;
+  note: string;
+  rows: NearbyRow[];
+  /** The data sources behind this group's cards, and any that serve both. */
+  sources: SourceLine[];
+};
+export type NearbyView = { groups: NearbyGroup[] };
+
+/** Which group each data source feeds, in the order a group lists them. A
+ *  source not named here, such as the postcode list both groups measure from,
+ *  is listed with both, after each group's own. */
+const SOURCE_GROUP: Record<string, NearbyGroup['kind']> = {
+  cfa_nsp_arcgis: 'bushfire',
+  cfr_static_list: 'bushfire',
+  vicemergency_feed: 'relief',
+};
 
 /** The device has something to answer from once either bundle has ever landed. */
 export const hasNearbyData = (cache: NearbyCache): boolean =>
@@ -75,6 +98,23 @@ export function nearestOfType<T extends LatLon & { type: FacilityType }>(
     if (nearest === null || metres < nearest.distanceM) nearest = { row, distanceM: metres };
   }
   return nearest;
+}
+
+/** The nearest few places of one type within reachM of the origin, nearest
+ *  first, for Nearby's map. */
+export function placesNear(
+  facilities: BundleFacility[],
+  origin: LatLon,
+  type: BundleFacility['type'],
+  count: number,
+  reachM: number,
+): { row: BundleFacility; distanceM: number }[] {
+  return facilities
+    .filter((row) => row.type === type)
+    .map((row) => ({ row, distanceM: distanceM(origin, row) }))
+    .filter((near) => near.distanceM <= reachM)
+    .sort((a, b) => a.distanceM - b.distanceM)
+    .slice(0, count);
 }
 
 /** The one age rule, shared with the pack card, the header and the Source ring. */
@@ -123,6 +163,12 @@ const unavailableRow = (type: FacilityType, title: string): NearbyRow => ({
   note: withHotline(copy.NOT_DOWNLOADED_YET(title)),
 });
 
+/** CFA's word for the place, or null when it is not known, and that no one is there. */
+const nspAbout = (kind: SiteKind | null | undefined) => ({
+  kind: kind ? copy.NSP_SITE_KIND[kind] : null,
+  note: copy.NSP_NO_SERVICES,
+});
+
 function staticRow(
   now: number,
   origin: LatLon,
@@ -144,7 +190,12 @@ function staticRow(
     type,
     title,
     place: nearest
-      ? { name: nearest.row.name, address: nearest.row.address, distance: formatDistanceM(nearest.distanceM) }
+      ? {
+          name: nearest.row.name,
+          address: nearest.row.address,
+          distance: formatDistanceM(nearest.distanceM),
+          ...(type === 'NSP' ? { about: nspAbout(nearest.row.site_kind) } : {}),
+        }
       : null,
     state,
     stateLabel: stateLabel(state, now - Date.parse(syncedAt)),
@@ -196,7 +247,7 @@ function dynamicRow(
   };
 }
 
-function healthLines(now: number, cache: NearbyCache): SourceLine[] {
+function healthLines(now: number, cache: NearbyCache, kind: NearbyGroup['kind']): SourceLine[] {
   const health = parseHealth(cache);
   // The dynamic snapshot carries a fresher reading of the feed than the static bundle.
   if (cache.meta.dynamic_source_status) {
@@ -205,13 +256,38 @@ function healthLines(now: number, cache: NearbyCache): SourceLine[] {
       last_success_at: cache.meta.dynamic_source_last_success_at ?? null,
     };
   }
-  return Object.entries(health).map(([id, source]) => ({
+  const forGroup = Object.entries(health).filter(([id]) => (SOURCE_GROUP[id] ?? kind) === kind);
+  // The group's own sources first, in SOURCE_GROUP's order; shared ones after,
+  // in the order the data gave them. The sort keeps equal ranks in place.
+  const own = Object.keys(SOURCE_GROUP);
+  const rank = (id: string) => (id in SOURCE_GROUP ? own.indexOf(id) : own.length);
+  forGroup.sort(([a], [b]) => rank(a) - rank(b));
+  return forGroup.map(([id, source]) => ({
     lead: copy.SOURCE_NAMES[id] ?? id,
+    status: source.status,
     text: copy.HEALTH_TEXT(
       copy.SOURCE_STATUS_WORD[source.status],
-      source.last_success_at ? ageLabel(now - Date.parse(source.last_success_at)) : copy.NEVER,
+      source.last_success_at ? ageLabel(now - Date.parse(source.last_success_at)) : null,
     ),
   }));
+}
+
+/** One place as text to send, say to family to meet there: what it is, its
+ *  name and address, how current it is and any warning on its card. The
+ *  distance is left out, as it is measured from the sender. */
+export function placeShareText(row: NearbyRow): string {
+  if (!row.place) return '';
+  const { name, address, about } = row.place;
+  return [
+    row.title,
+    name,
+    address,
+    about ? [about.kind, about.note].filter(Boolean).join(' · ') : null,
+    row.timestamp,
+    row.note,
+    '',
+    copy.SHARED_PLACE_FROM,
+  ].filter((line) => line !== null).join('\n');
 }
 
 /** Every facility type, always, each labelled on its own (spec §7.5). */
@@ -228,14 +304,15 @@ export function nearbyView(
         heading: copy.GROUP_BUSHFIRE,
         note: copy.GROUP_BUSHFIRE_NOTE,
         rows: STATIC_TYPES.map((type) => staticRow(now, origin, cache, session, type)),
+        sources: healthLines(now, cache, 'bushfire'),
       },
       {
         kind: 'relief',
         heading: copy.GROUP_RELIEF,
         note: copy.GROUP_RELIEF_NOTE,
         rows: DYNAMIC_TYPES.map((type) => dynamicRow(now, origin, cache, session, type)),
+        sources: healthLines(now, cache, 'relief'),
       },
     ],
-    health: healthLines(now, cache),
   };
 }

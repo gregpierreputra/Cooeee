@@ -38,6 +38,9 @@ import PackPrint from './ui/PackPrint';
 import Recover from './ui/Recover';
 import Choose from './ui/Rehearsal/Choose';
 import RehearsalEntry from './ui/Rehearsal/Entry';
+import BlockScreen from './ui/Block/BlockScreen';
+import DrillScreen from './ui/Drill/DrillScreen';
+import WordScreen from './ui/Word/WordScreen';
 import { Search } from './ui/PackNew/Search';
 
 /** main.tsx dispatches this when the service worker has a new version waiting.
@@ -207,7 +210,7 @@ function PackDetailRoute() {
   return <PackDetail packId={packId} />;
 }
 
-/** One page of a pack, to print, from the pack's menu on Home. */
+/** One page of a pack, to print, from the pack's menu on Home or its pack page. */
 function PackPrintRoute() {
   const { packId = '' } = useParams();
   return <PackPrint packId={packId} />;
@@ -306,6 +309,10 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           <Route path="/packs/:packId/print" element={<PackPrintRoute />} />
           <Route path="/packs/new" element={<Search />} />
           <Route path="/rehearse" element={<Choose />} />
+          {/* The games: static paths, so they rank above a pack id. */}
+          <Route path="/rehearse/drill" element={<DrillScreen />} />
+          <Route path="/rehearse/word" element={<WordScreen />} />
+          <Route path="/rehearse/block" element={<BlockScreen />} />
           <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
           <Route path="/nearby" element={<Nearby />} />
           <Route path="/recover" element={<Recover />} />

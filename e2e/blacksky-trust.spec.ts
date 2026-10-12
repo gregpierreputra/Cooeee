@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { relativeBearing } from '../src/core/blacksky-dial';
 import { COMPASS_SILENT_MS, FIX_STALE_MS, TICK_MS } from '../src/core/constants';
-import { MARK_AT_SAVED_PLACE, TURN_ON_COMPASS } from '../src/core/copy';
+import { MARK_AT_SAVED_PLACE, NO_GPS, TURN_ON_COMPASS } from '../src/core/copy';
 import { bearingDeg, magneticDeclinationDeg } from '../src/core/geo';
 import { titleCase } from '../src/core/home';
 import {
@@ -9,6 +9,7 @@ import {
   drawnAngle,
   openDial,
   pushPosition,
+  refusePosition,
   turnPhone,
 } from './blacksky-position';
 
@@ -77,6 +78,41 @@ test('facing the place, the arrow stands straight up and the pin sits under the 
   expect(await drawnAngle(page, '.blacksky-dial-ring')).toBe(norm(-bearing));
 });
 
+// Phone test, 11 Oct: part way through a walk the dial went and the no-fix
+// screen took its place. Some phones report the permission refused while a
+// watch that was working goes quiet. The position already held is kept: it is
+// shown as it ages, and the bar says the signal is lost, as for any quiet GPS.
+test('a refusal after a position keeps the dial, and as the position ages the bar says the signal is lost', async ({
+  page,
+}) => {
+  await page.clock.install();
+  await openDial(page, 'pack');
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(page.locator('.blacksky-figure-main')).toHaveText('2.60 km');
+
+  await refusePosition(page);
+  await page.clock.fastForward(TICK_MS);
+  await expect(centre(page)).toBeVisible();
+  await expect(page.getByText(NO_GPS)).toHaveCount(0);
+
+  await page.clock.fastForward(FIX_STALE_MS);
+  await expect(bar(page)).toHaveText('GPS signal lost');
+  await expect(centre(page)).toBeVisible();
+
+  // A position arriving again takes the bar away.
+  await pushPosition(page, AT_FERNY_CREEK);
+  await page.clock.fastForward(TICK_MS);
+  await expect(page.getByText('GPS signal lost', { exact: true })).toBeHidden();
+});
+
+// Refused before any position: nothing to point from, so the no-fix screen.
+test('a refusal before any position shows the no-fix screen', async ({ page }) => {
+  await openDial(page, 'pack');
+  await refusePosition(page);
+  await expect(page.getByText(NO_GPS)).toBeVisible();
+  await expect(centre(page)).toHaveCount(0);
+});
+
 test('an old position shows the bar and a dimmed about distance, and a fresh one removes both', async ({
   page,
 }) => {
@@ -126,7 +162,7 @@ test('a vague position is prefixed about, with no bar while it is fresh', async 
   await expect(bar(page)).toHaveCount(0);
 });
 
-test('a position from a mark shows the bar with from your saved place, and a dashed arrow at the place', async ({
+test('a position from a mark shows the bar measuring from your saved place, and a dashed arrow at the place', async ({
   page,
 }) => {
   await openDial(page, 'pack');
@@ -135,15 +171,20 @@ test('a position from a mark shows the bar with from your saved place, and a das
     .click();
 
   await expect(page.getByText('GPS signal lost', { exact: true })).toBeVisible();
-  await expect(page.locator('.blacksky-bar')).toContainText('from your saved place');
+  await expect(page.locator('.blacksky-bar')).toContainText('Measuring from your saved place');
   // No glyph at the centre: the bar already says where the position is from.
   // The arrow is dashed and, north up, points at the place (due north of here).
   await expect(centre(page)).toHaveAttribute('data-centre', 'outline');
   await expect(page.locator(".blacksky-dial-arrow[data-stale='true']")).toHaveCount(1);
   expect(await arrowAndPin(page)).toEqual({ arrow: 0, pin: 0 });
-  await expect(page.getByText('about', { exact: true })).toBeVisible();
-  // E3-US1-AC4's own words stay: always ESTIMATE, the uncertainty growing.
-  await expect(page.getByText(/^ESTIMATE from your mark, ± \d+ m and growing$/)).toBeVisible();
+  // E3-US1-AC4's rule stays: always ESTIMATE, over the distance where about
+  // stands for a fix, with the figure beside it growing; the figure opens what
+  // that means.
+  await expect(page.locator('.blacksky-dial-about')).toHaveText('ESTIMATE');
+  const readout = page.getByRole('button', { name: /^ESTIMATE ± \d+ m$/ });
+  await expect(readout).toBeVisible();
+  await readout.click();
+  await expect(page.getByText(/^Measured from the place you marked, not GPS\./)).toBeVisible();
 
   // A real fix always beats the mark: the bar and the glyph go.
   await pushPosition(page, AT_FERNY_CREEK);
@@ -223,9 +264,15 @@ test('at 9.9 km/h the compass drives the dial; at 10.1 km/h with a GPS heading, 
   const kmh = (n: number) => n / 3.6;
   const compassHeading = String((90 + DECLINATION + 360) % 360);
 
+  // A phone's compass sends a stream of readings, so the test keeps sending
+  // them while it waits: one lone reading can land before the dial listens.
+  const compassReads = async () => {
+    await turnPhone(page, FACING_EAST);
+    return heading(page);
+  };
+
   await pushPosition(page, { ...AT_FERNY_CREEK, heading: 200, speed: kmh(9.9) });
-  await turnPhone(page, FACING_EAST);
-  await expect.poll(() => heading(page)).toBe(compassHeading);
+  await expect.poll(compassReads).toBe(compassHeading);
 
   // Faster than 10 km/h: the direction of movement, already true north.
   await pushPosition(page, { ...AT_FERNY_CREEK, heading: 200, speed: kmh(10.1) });
@@ -234,9 +281,8 @@ test('at 9.9 km/h the compass drives the dial; at 10.1 km/h with a GPS heading, 
   await expect(centre(page)).toHaveAttribute('data-centre', 'arrow');
 
   // Fast, but the position sensor gives no heading: back to the compass.
-  await turnPhone(page, FACING_EAST);
   await pushPosition(page, { ...AT_FERNY_CREEK, heading: null, speed: kmh(60) });
-  await expect.poll(() => heading(page)).toBe(compassHeading);
+  await expect.poll(compassReads).toBe(compassHeading);
 });
 
 test('movement turns the dial even where the compass was never allowed', async ({ page }) => {

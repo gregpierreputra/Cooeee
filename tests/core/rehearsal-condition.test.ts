@@ -108,7 +108,7 @@ describe('the chosen condition', () => {
 
 describe('the wording of this screen', () => {
   it('names what the rehearsal runs without, pending the copy review', () => {
-    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse without…');
+    expect(copy.CHOOSE_CONDITION_HEADING).toBe('Rehearse with…');
   });
 
   it('names no hazard: a condition is a way the phone fails, not a way a hazard behaves', () => {
@@ -154,7 +154,6 @@ describe('a condition after the word without', () => {
       [
         copy.RESULT_CONDITION_LINE(without),
         copy.NO_GAPS_DETAIL(without),
-        copy.JOURNEY_CONDITION_LINE(without),
       ].forEach((sentence) => expect(sentence).not.toMatch(/\bwithout no\b/i));
     });
   });

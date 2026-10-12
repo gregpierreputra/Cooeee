@@ -13,7 +13,7 @@ const UNREADABLE = `${ORIGIN}/rehearse?mode=unreadable`;
 
 const NO_DATA = 'No mobile data';
 const NO_FIX = 'No location fix';
-const CHOOSE_HEADING = 'Rehearse without…';
+const CHOOSE_HEADING = 'Rehearse with…';
 
 const bar = (page: Page) => page.locator('.rehearsal-bar');
 
@@ -96,7 +96,7 @@ test.describe('AC2 the bar marks the run', () => {
 
     // Chosen and not yet gone on: setup, not a run (E5-US1-AC5), so still no bar.
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
-    await expect(page.getByRole('heading', { name: 'Rehearse the way there' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: NO_DATA, exact: true })).toBeVisible();
     await expect(bar(page)).toHaveCount(0);
   });
 
@@ -195,7 +195,7 @@ test.describe('AC3 a cold start', () => {
 
     await page.getByRole('button', { name: new RegExp(NO_DATA) }).click();
     // Chosen, not gone: nothing is kept yet (E5-US1-AC5).
-    await expect(page.getByRole('heading', { name: 'Rehearse the way there' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: NO_DATA, exact: true })).toBeVisible();
     expect((await deviceStorage(page)).recordCounts.rehearsals).toBe(0);
     await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
     await expect(bar(page)).toBeVisible();
@@ -269,7 +269,8 @@ test.describe('AC5 returning asks how it ended', () => {
     await expect(endings.nth(0)).toHaveAccessibleName(/^I went there/);
     await expect(endings.nth(1)).toHaveAccessibleName(/^I did not go, a dry run/);
     await expect(page.locator('[aria-pressed="true"], [aria-checked="true"], :checked')).toHaveCount(0);
-    await expect(page.getByText(', without a location fix. Only you can say how it ended.')).toBeVisible();
+    await expect(page.getByText(', without a location fix.')).toBeVisible();
+    await expect(page.getByText('Only you can say how it ended.', { exact: true })).toBeVisible();
 
     // Left unanswered: away from the screen and back, then another cold start.
     await page.getByTestId('remount').click();

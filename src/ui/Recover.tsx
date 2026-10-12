@@ -13,9 +13,11 @@ import CallCard from './components/CallCard';
 import { focusMain } from './components/focusMain';
 import Glyph from './components/Glyph';
 import ProvenanceLine from './components/ProvenanceLine';
+import { shareOrCopy } from './components/shareOrCopy';
 import StateCard from './components/StateCard';
 import WellbeingLines from './components/WellbeingLines';
 import Roadmap from './Roadmap';
+import TabLabel from './components/TabLabel';
 
 type RecoverProps = {
   loadPrograms?: () => Promise<RecoveryProgram[]>;
@@ -43,11 +45,13 @@ export default function Recover({
   const [params, setParams] = useSearchParams();
   const choice = parseChoice(params.get('need'));
   const [kept, setKept] = useState(() => readKept(localFlagStore()));
-  // UAT: releasing a program on the Saved list made its card vanish mid-read.
-  // The list holds the programs kept when it was opened until the person leaves;
-  // each card still shows its live Save or Saved state.
+  // UAT: releasing a program on the Saved list made its card vanish mid-read,
+  // and saving one on any list moved it to the top under the finger. Every list
+  // holds the programs kept when it was opened, for what it shows and its
+  // order, until the person leaves or reloads; each card still shows its live
+  // Save or Saved state.
   const [keptOnEntry, setKeptOnEntry] = useState<string[] | null>(null);
-  const keptListed = choice === 'kept' ? (keptOnEntry ?? kept) : kept;
+  const keptListed = keptOnEntry ?? kept;
   // A share note belongs to the category it was made on, so it shows only while
   // that category is open. Moving to another category hides it on the very first
   // frame, and a result that arrives after the reader has moved on stays with the
@@ -93,34 +97,18 @@ export default function Recover({
   useEffect(() => {
     setShared(null);
     setConfirmClear(false);
-    setKeptOnEntry(choice === 'kept' ? kept : null);
+    setKeptOnEntry(kept);
     focusMain();
   }, [choice]);
 
   const choose = (next: Choice) => setParams({ need: next });
 
 
-  // The phone's own share sheet where there is one (a text message needs no
-  // data), otherwise the clipboard. A share the person cancels reports nothing;
-  // a share sheet that refuses falls back to the clipboard.
+  // The note shows only on the list it was shared from.
   async function share(text: string) {
     const on = choice;
-    try {
-      await navigator.share({ text });
-      return;
-    } catch (error) {
-      // Cancelled by the person, or a second tap while the share sheet is still
-      // open (InvalidStateError). Neither is a share that failed, so neither
-      // earns the clipboard note while the real sheet is on screen.
-      const name = error instanceof DOMException ? error.name : '';
-      if (name === 'AbortError' || name === 'InvalidStateError') return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setShared({ on, state: 'copied' });
-    } catch {
-      setShared({ on, state: 'unavailable' });
-    }
+    const result = await shareOrCopy(text);
+    if (result === 'copied' || result === 'unavailable') setShared({ on, state: result });
   }
 
   // The page itself, empty, while the store answers, so focus has somewhere to land.
@@ -155,7 +143,7 @@ export default function Recover({
     return (
       <main className="page recover">
         <header className="hero">
-          <span className="kicker">{copy.NAV_RECOVER}</span>
+          <TabLabel tab="recover" text={copy.NAV_RECOVER} />
           <h1>{copy.RECOVER_QUESTION}</h1>
           <p className="muted with-glyph">
             <Glyph kind="lock" line />
@@ -188,7 +176,7 @@ export default function Recover({
         </div>
         {/* The single needs under their own eyebrow, set apart from the group above. */}
         <section className="recover-needs">
-          <h2 className="kicker">{copy.BY_NEED}</h2>
+          <h2 className="kicker section-label">{copy.BY_NEED}</h2>
           <ul className="list">
             {rows.map((row) => (
               <li key={row.key}>
@@ -209,9 +197,10 @@ export default function Recover({
     return (
       <main className="page recover">
         <header className="hero">
-          <span className="kicker">{copy.NAV_RECOVER}</span>
+          <TabLabel tab="recover" text={copy.NAV_RECOVER} />
           <h1>{copy.WHO_TO_CALL}</h1>
-          <p className="muted with-glyph">
+          {/* Footnotes in the small grey, as on the pack page. */}
+          <p className="muted place-note with-glyph">
             <Glyph kind="calls" line />
             {copy.CALLS_LINE}
           </p>
@@ -220,7 +209,7 @@ export default function Recover({
             recovery itself, 000 then the hotline first, then the lines for how a
             person is coping. */}
         <section className="call-group">
-          <h2 className="kicker">{copy.RECOVERY_LINES}</h2>
+          <h2 className="kicker section-label">{copy.RECOVERY_LINES}</h2>
           <ul className="list">
             <CallCard name={copy.TRIPLE_ZERO_LABEL} detail={copy.TRIPLE_ZERO_DETAIL} number={TRIPLE_ZERO} tone="emergency" />
             {callList(programs).map((entry) => (
@@ -235,8 +224,8 @@ export default function Recover({
           </ul>
         </section>
         <section className="call-group">
-          <h2 className="kicker">{copy.TALK_TO_SOMEONE}</h2>
-          <p className="muted">{copy.TALK_TO_SOMEONE_LINE}</p>
+          <h2 className="kicker section-label">{copy.TALK_TO_SOMEONE}</h2>
+          <p className="muted place-note">{copy.TALK_TO_SOMEONE_LINE}</p>
           <WellbeingLines />
         </section>
       </main>
@@ -274,9 +263,11 @@ export default function Recover({
   return (
     <main className="page recover">
       <header className="hero">
-        <span className="kicker">{copy.NAV_RECOVER}</span>
+        <TabLabel tab="recover" text={copy.NAV_RECOVER} />
         <h1>{heading}</h1>
-        <p className="caveat">{copy.RECOVER_MAY_MATCH}</p>
+        {/* A footnote to the heading, in the same small grey as the other
+            notes that qualify a list, not a line to read first. */}
+        <p className="muted place-note">{copy.RECOVER_MAY_MATCH}</p>
         {stale ? (
           <p className="with-glyph tone-amber">
             <Glyph kind="caution" line />
@@ -331,13 +322,17 @@ export default function Recover({
                 ))}
               </ul>
               <p className="muted">{program.covers}</p>
-              <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} />
+              {/* A fact about the program, with its summary, before the
+                  Source footnote that ends the card's words. */}
               {saved.includes(program.id) ? (
                 <p className="figure in-packs with-glyph">
                   <Glyph kind="saved" line />
                   {copy.IN_YOUR_PACKS}
                 </p>
               ) : null}
+              {/* Source as words, like Not for you? on Home. Its links are the
+                  card's own buttons below, so none sit beside it. */}
+              <ProvenanceLine source={program.source} now={now} extra={[{ label: copy.SOURCE_LICENCE, value: program.source.licence }]} />
               {/* Save and the web page side by side at equal size, the call
                   beneath at full width. */}
               <div className="program-actions">

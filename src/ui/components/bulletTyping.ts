@@ -5,6 +5,33 @@ const BULLET = '• ';
  *  straight after a bullet the box already started. */
 const TYPED_BULLET = /^([ \t]*)(?:• )?[-*] /gm;
 
+/** Scroll the box just far enough that the line holding the caret is in view.
+ *  The caret's height is read from an unseen copy of the box holding the text
+ *  up to the caret, so the box itself, and its Undo, are never touched. */
+function showCaret(box: HTMLTextAreaElement) {
+  const style = getComputedStyle(box);
+  const copy = document.createElement('div');
+  copy.textContent = `${box.value.slice(0, box.selectionEnd)}\u200b`;
+  Object.assign(copy.style, {
+    position: 'absolute',
+    visibility: 'hidden',
+    top: '0',
+    left: '-9999px',
+    boxSizing: 'border-box',
+    width: `${box.clientWidth}px`,
+    padding: style.padding,
+    font: style.font,
+    letterSpacing: style.letterSpacing,
+    lineHeight: style.lineHeight,
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'break-word',
+  });
+  document.body.append(copy);
+  const caretBottom = copy.scrollHeight - parseFloat(style.paddingBottom);
+  copy.remove();
+  if (caretBottom > box.scrollTop + box.clientHeight) box.scrollTop = caretBottom - box.clientHeight;
+}
+
 /** Put new text into the box and keep the caret where it was meant to be.
  *  Written to the box directly, so React finds nothing to change and leaves
  *  the caret alone. */
@@ -38,6 +65,13 @@ export function continueBullets(event: KeyboardEvent<HTMLTextAreaElement>, onTex
   const text = empty ? value.slice(0, lineStart) + value.slice(lineEnd) : `${value.slice(0, at)}\n${BULLET}${value.slice(at)}`;
   if (text.length > box.maxLength && box.maxLength > 0) return;
   event.preventDefault();
-  place(box, text, empty ? lineStart : at + 1 + BULLET.length);
-  onText(text);
+  // A new bullet is typed through the browser, as a key would type it, so Undo
+  // takes it back; its input event reports the text. A browser without the
+  // command has the text placed directly. Either way the box then follows the
+  // caret down, as it would for a typed line.
+  if (empty || !document.execCommand('insertText', false, `\n${BULLET}`)) {
+    place(box, text, empty ? lineStart : at + 1 + BULLET.length);
+    onText(text);
+  }
+  showCaret(box);
 }

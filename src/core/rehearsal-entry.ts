@@ -42,7 +42,7 @@ export type UnreadablePart = 'stored-items' | 'saved-places' | 'the-whole-pack';
 export type RehearsalGate =
   /** The pack is finished, readable and holds hazard content. Everything past
    *  this point belongs to a later acceptance criterion. */
-  | { state: 'ready'; packId: string; packName: string; hazards: RehearsalHazard[] }
+  | { state: 'ready'; packId: string; packName: string; packAddress: string; hazards: RehearsalHazard[] }
   /** otherCompletePacks is how many complete packs the device holds that are
    *  not the one asked for. It is 0 in the plain case, and the screen says a
    *  different sentence when it is not, because "no pack is stored on this
@@ -165,5 +165,5 @@ export function rehearsalGate(input: RehearsalInput): RehearsalGate {
     };
   }
 
-  return { state: 'ready', packId, packName, hazards };
+  return { state: 'ready', packId, packName, packAddress: content.pack.address, hazards };
 }

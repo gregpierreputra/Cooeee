@@ -5,7 +5,7 @@ import { acknowledgeFirstOpen, waitForController } from './helpers';
 // build. One script error on any of them fails the run. A mistake that breaks
 // rendering everywhere (a bad effect in the app shell, say) shows up here on
 // its own, rather than as a scatter of unrelated looking failures.
-const ROUTES = ['/', '/packs/new', '/nearby', '/recover', '/recover?need=kept', '/about', '/rehearse', '/packs/no-such-pack', '/rehearse/no-such-pack'];
+const ROUTES = ['/', '/packs/new', '/nearby', '/recover', '/recover?need=kept', '/about', '/rehearse', '/rehearse/word', '/rehearse/block', '/packs/no-such-pack', '/rehearse/no-such-pack'];
 
 for (const offline of [false, true]) {
   test(`every route renders with no script error, ${offline ? 'with the network off' : 'online'}`, async ({ page, context }) => {

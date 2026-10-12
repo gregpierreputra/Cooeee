@@ -151,7 +151,7 @@ export async function acknowledgeFirstOpen(page: Page) {
  *  already on screen. */
 export async function startJourney(page: Page, condition: string, url?: string) {
   if (url) await page.goto(url);
-  await expect(page.getByRole('heading', { name: 'Rehearse without…' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(condition) }).click();
   await page.getByRole('main').getByRole('button', { name: "I'm going now", exact: true }).click();
   await expect(page.locator('.rehearsal-bar')).toBeVisible();
@@ -180,7 +180,7 @@ export async function rehearseToResult(
   await page.getByRole('main').getByRole('button', { name: ending, exact: true }).click();
   await expect(
     page.getByRole('main').getByRole('heading', {
-      level: 2,
+      level: 1,
       name: /^(What this rehearsal found|Nothing was missing in this rehearsal)$/,
     }),
   ).toBeVisible();
@@ -242,9 +242,12 @@ export async function storedRehearsals(page: Page): Promise<Record<string, unkno
   });
 }
 
-/** Opens every visible Source ring, so the publisher and licence lines it
- *  holds can be read. Each click opens one, so the closed count falls to zero. */
+/** Opens every visible Source ring or Source text toggle, so the publisher and
+ *  licence lines it holds can be read. Each click opens one, so the closed
+ *  count falls to zero. */
 export async function openSources(page: Page) {
-  const closed = page.getByRole('button', { name: 'About the source', expanded: false }).locator('visible=true');
+  const closed = page
+    .getByRole('button', { name: 'Source', exact: true, expanded: false })
+    .locator('visible=true');
   while ((await closed.count()) > 0) await closed.first().click();
 }

@@ -38,25 +38,26 @@ export const unfinishedFrom = (run: RehearsalRun): UnfinishedRehearsal => ({
 
 /** One answer as the screen offers it. There is no selected field, so nothing
  *  can be chosen for her. */
-export type EndingRow = { ending: RehearsalEnding; label: string; detail: string };
+export type EndingRow = { ending: RehearsalEnding; label: string };
 
-const ENDING_COPY: Record<RehearsalEnding, { label: string; detail: string }> = {
-  walked: { label: copy.ENDING_WALKED, detail: copy.ENDING_WALKED_DETAIL },
-  'dry-run': { label: copy.ENDING_DRY_RUN, detail: copy.ENDING_DRY_RUN_DETAIL },
+const ENDING_LABEL: Record<RehearsalEnding, string> = {
+  walked: copy.ENDING_WALKED,
+  'dry-run': copy.ENDING_DRY_RUN,
 };
 
 export const endingRows = (): EndingRow[] =>
-  REHEARSAL_ENDINGS.map((ending) => ({ ending, ...ENDING_COPY[ending] }));
+  REHEARSAL_ENDINGS.map((ending) => ({ ending, label: ENDING_LABEL[ending] }));
 
 /** What returning to an unfinished rehearsal asks. */
-export type UnfinishedView = { heading: string; detail: string; rows: EndingRow[] };
+export type UnfinishedView = { heading: string; started: string; ask: string; rows: EndingRow[] };
 
 export const unfinishedView = (unfinished: UnfinishedRehearsal): UnfinishedView => ({
   heading: copy.UNFINISHED_HEADING,
-  detail: copy.UNFINISHED_DETAIL(
+  started: copy.UNFINISHED_STARTED(
     conditionWithout(unfinished.condition),
     formatSavedDate(unfinished.startedAt),
   ),
+  ask: copy.UNFINISHED_ASK,
   rows: endingRows(),
 });
 
@@ -131,6 +132,18 @@ export function endingRecord(
 /** How an ending is stated on the result, beside the condition line. Her time is
  *  stated and never judged: nothing beside it, nothing to measure it against,
  *  and no bearing on any gap. */
+/** The parts of the ending line set in bold, in order: what kind of ending it
+ *  was, then her time and the distance counted. None for a line not recorded. */
+export function endingBold(ending: Ending): string[] {
+  if (ending.state === 'dry-run') return [copy.RESULT_DRY_RUN_LEAD];
+  if (ending.state !== 'walked') return [];
+  if (ending.elapsedMs === undefined) return [copy.RESULT_WALKED_NO_TIME];
+  const time = durationWords(ending.elapsedMs);
+  return ending.distanceM === undefined
+    ? [copy.RESULT_WALKED_NO_TIME, time]
+    : [copy.RESULT_WALKED_NO_TIME, time, formatDistanceM(ending.distanceM)];
+}
+
 export function endingLine(ending: Ending): string {
   switch (ending.state) {
     case 'walked':

@@ -2,8 +2,8 @@
 // fixed header. Everything here is pure: the screen renders what these
 // functions return and decides nothing of its own.
 
-import { MS_PER_DAY } from './constants';
 import * as copy from './copy';
+import { melbourneDay } from './day';
 import { packAgeLabel } from './pack';
 import { ageLabel, savedAgeDays } from './provenance';
 import type { Pack } from './types';
@@ -30,8 +30,6 @@ export function headerAge(now: number, verifiedAt: number | null): HeaderAge {
   return { kind: 'checked', days, text: copy.CHECKED_AGO(ageLabel(now - verifiedAt)) };
 }
 
-const melbourneDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Melbourne' });
-
 /** Which preparation line is shown, from a seed the screen captures once.
  *
  *  Whole Melbourne calendar days since the epoch, so the choice is the same for
@@ -40,8 +38,7 @@ const melbourneDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Me
  *  random source makes the screen untestable. Written to survive a seed before
  *  1970 rather than return a negative index. */
 export function preparationLineIndex(seed: number, count: number): number {
-  // en-CA formats as YYYY-MM-DD, which parses back as that day's UTC midnight.
-  const day = Date.parse(melbourneDate.format(seed)) / MS_PER_DAY;
+  const day = melbourneDay(seed);
   return ((day % count) + count) % count;
 }
 
@@ -70,17 +67,22 @@ export const NAV_ITEMS: readonly NavItem[] = [
 ];
 
 /** Everything the home screen renders, decided in one place: every saved pack,
- *  newest first, each with the pack card's own age wording, and the day's
+ *  newest place first, each with the pack card's own age wording, and the day's
  *  preparation line. Building is offered in every state, so the list can grow. */
 export type HomeView = {
   packs: { pack: Pack; ageLine: string }[];
   preparation: PreparationLine;
 };
 
+/** The one order packs are listed in, on Home and in BlackSky alike: by when
+ *  the place was first saved, newest first. A replace keeps that date, so a
+ *  refreshed pack stays where the reader left it. */
+export const newestPlaceFirst = (a: Pack, b: Pack): number => b.createdAt - a.createdAt;
+
 export function homeView(now: number, packs: Pack[]): HomeView {
   return {
     packs: [...packs]
-      .sort((a, b) => b.verifiedAt - a.verifiedAt)
+      .sort(newestPlaceFirst)
       // The pack card's own wording: 'Saved N days ago'.
       .map((pack) => ({ pack, ageLine: packAgeLabel(now, pack.verifiedAt) })),
     preparation: preparationLine(now),

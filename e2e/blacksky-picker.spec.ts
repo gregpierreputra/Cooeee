@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { BLACKSKY_PACK_KEY } from '../src/core/constants';
-import { CHOOSE_PACK, MARK_AT_SAVED_PLACE, NO_GPS_YET, PACK_COVERS_HERE } from '../src/core/copy';
+import { CHANGE_PACK, CHOOSE_PACK, MARK_AT_SAVED_PLACE, NO_GPS_YET, PACK_COVERS_HERE, PACK_LOADED } from '../src/core/copy';
 import { titleCase } from '../src/core/home';
 import { HARNESS } from './helpers';
 
@@ -21,22 +21,44 @@ test('the picker loads only the chosen pack and remembers it', async ({ page }) 
   const markFerny = page.getByRole('button', { name: MARK_FERNY });
   const markKalorama = page.getByRole('button', { name: MARK_KALORAMA });
   await expect(choices).toHaveCount(2);
+  // Home's order: the place saved most recently first.
+  await expect(choices).toHaveText([/Kalorama/, /Ferny Creek/]);
   await expect(page.locator('.blacksky-pack[aria-pressed="true"]')).toHaveCount(0);
   await expect(markFerny).toHaveCount(0);
   await expect(markKalorama).toHaveCount(0);
   await expect(page.getByText(NO_GPS_YET)).toBeVisible();
 
+  // Choosing folds the list to the chosen pack, ringed, with an arrow to change it.
   await ferny.click();
-  await expect(ferny).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(PACK_LOADED)).toBeVisible();
+  await expect(choices).toHaveCount(1);
+  await expect(ferny).toHaveAttribute('aria-expanded', 'false');
+  // Change is said with the card's collapsed state; on screen, an arrow.
+  await expect(ferny).toHaveAccessibleName(new RegExp(`${CHANGE_PACK}$`));
+  await expect(ferny.locator('.blacksky-pack-change .hint-chevron')).toBeVisible();
+  // The arrow is centred on the card's height, at its right edge.
+  const card = (await ferny.boundingBox())!;
+  const arrow = (await ferny.locator('.blacksky-pack-change .hint-chevron').boundingBox())!;
+  expect(Math.abs(arrow.y + arrow.height / 2 - (card.y + card.height / 2))).toBeLessThanOrEqual(1);
+  expect(card.x + card.width - (arrow.x + arrow.width)).toBeLessThan(24);
+  await expect(ferny).toBeFocused();
   await expect(markFerny).toBeVisible();
   await expect(markKalorama).toHaveCount(0);
 
   await page.reload();
-  await expect(ferny).toHaveAttribute('aria-pressed', 'true');
+  await expect(choices).toHaveCount(1);
+  await expect(ferny).toBeVisible();
   await expect(markFerny).toBeVisible();
 
+  // Change opens the list again with the chosen pack pressed; another choice
+  // folds it to that pack.
+  await ferny.click();
+  await expect(choices).toHaveCount(2);
+  await expect(ferny).toHaveAttribute('aria-pressed', 'true');
+  await expect(ferny).toBeFocused();
   await kalorama.click();
-  await expect(kalorama).toHaveAttribute('aria-pressed', 'true');
+  await expect(choices).toHaveCount(1);
+  await expect(kalorama).toHaveAttribute('aria-expanded', 'false');
   await expect(markKalorama).toBeVisible();
   await expect(markFerny).toHaveCount(0);
 });
