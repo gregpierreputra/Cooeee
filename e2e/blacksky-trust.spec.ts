@@ -264,9 +264,15 @@ test('at 9.9 km/h the compass drives the dial; at 10.1 km/h with a GPS heading, 
   const kmh = (n: number) => n / 3.6;
   const compassHeading = String((90 + DECLINATION + 360) % 360);
 
+  // A phone's compass sends a stream of readings, so the test keeps sending
+  // them while it waits: one lone reading can land before the dial listens.
+  const compassReads = async () => {
+    await turnPhone(page, FACING_EAST);
+    return heading(page);
+  };
+
   await pushPosition(page, { ...AT_FERNY_CREEK, heading: 200, speed: kmh(9.9) });
-  await turnPhone(page, FACING_EAST);
-  await expect.poll(() => heading(page)).toBe(compassHeading);
+  await expect.poll(compassReads).toBe(compassHeading);
 
   // Faster than 10 km/h: the direction of movement, already true north.
   await pushPosition(page, { ...AT_FERNY_CREEK, heading: 200, speed: kmh(10.1) });
@@ -275,9 +281,8 @@ test('at 9.9 km/h the compass drives the dial; at 10.1 km/h with a GPS heading, 
   await expect(centre(page)).toHaveAttribute('data-centre', 'arrow');
 
   // Fast, but the position sensor gives no heading: back to the compass.
-  await turnPhone(page, FACING_EAST);
   await pushPosition(page, { ...AT_FERNY_CREEK, heading: null, speed: kmh(60) });
-  await expect.poll(() => heading(page)).toBe(compassHeading);
+  await expect.poll(compassReads).toBe(compassHeading);
 });
 
 test('movement turns the dial even where the compass was never allowed', async ({ page }) => {
