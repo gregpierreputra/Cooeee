@@ -6349,8 +6349,10 @@ body.drill-open .banner {
 /* The title, with the card's one big number at the right of it: large,
    heavy and in the game's colour, its small label before it on the same
    line, so the number adds no height under the title. */
-/* The title and the highest score on one line where they fit. Where they do
-   not, the score drops under the title, so the title never breaks a word. */
+/* The title and the highest score share the first line: the score stays at
+   the right, and the title folds between words. Only where even one word
+   would not fit beside the score does the score drop under the title, so a
+   word is never cut. */
 .game-tile-head {
   display: flex;
   flex-wrap: wrap;
@@ -6359,8 +6361,9 @@ body.drill-open .banner {
   gap: 0.25rem 0.75rem;
 }
 .game-tile-head .game-tile-title {
+  flex: 1 1 0;
   min-width: min-content;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
 }
 .game-tile-stat {
   display: flex;

@@ -1636,8 +1636,9 @@ export const BLOCK_TILE_TITLE = 'Ready the Block';
 export const BLOCK_TILE_DETAIL = 'Find eight fire risks round a home in three minutes.';
 export const BLOCK_TILE_TODAY = (today: number | null) => (today === null ? 'Not played today' : `Today ${today}`);
 /** Before the big highest score out of 100, on the drill and Block cards.
- *  Never best: the app does not call anything the best. */
-export const GAME_STAT_HIGHEST = 'Highest';
+ *  Short, so it stays on the title's line on a small phone. Never best: the
+ *  app does not call anything the best. */
+export const GAME_STAT_HIGHEST = 'Top';
 export const BLOCK_LABEL = 'Ready the Block';
 export const BLOCK_INTRO_HEADING = 'Find the fire risks';
 /** The three things to know, each drawn as the game draws it, over a few
