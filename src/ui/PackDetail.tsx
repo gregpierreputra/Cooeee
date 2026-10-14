@@ -452,8 +452,12 @@ export default function PackDetail({
         {/* E5-US5 — every rehearsal of this pack, newest first, in the result's
             own words. */}
         <Section kind="rehearse" title={copy.REHEARSALS} count={history.length}>
+          {/* Nothing yet, in the dashed box Home uses for no pack saved, so an
+              empty list reads as room waiting to be filled. */}
           {history.length === 0 ? (
-            <p>{copy.NOT_YET_REHEARSED}</p>
+            <div className="empty-state">
+              <p>{copy.NOT_YET_REHEARSED}</p>
+            </div>
           ) : (
             <ShortList
               items={history}
@@ -478,7 +482,9 @@ export default function PackDetail({
         {/* E9 — every drill, from whichever pack page, newest first. */}
         <Section kind="rehearse" title={copy.DRILLS} count={drills.length}>
           {drills.length === 0 ? (
-            <p>{copy.NOT_YET_DRILLED}</p>
+            <div className="empty-state">
+              <p>{copy.NOT_YET_DRILLED}</p>
+            </div>
           ) : (
             <ShortList
               items={drills}
