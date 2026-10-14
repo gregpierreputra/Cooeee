@@ -185,3 +185,21 @@ test('Show on a map opens a map of the nearest places and refuges, with no signa
   await page.keyboard.press('Enter');
   await expect(page.locator('.nearby-map .area-map-label')).toHaveText('Centre of postcode 3766');
 });
+
+// The map is sized as a pack's is: it widens to take in the places the list
+// names, up to 120 km across, and says in words any it still cannot hold.
+test('the map widens to hold the refuge the list names, and names one past its widest', async ({ page, context }) => {
+  await openOffline(page, context, 'cached');
+  const map = page.locator('.nearby-map');
+
+  await page.getByLabel('Type a postcode').fill('3777');
+  await page.getByRole('button', { name: 'Show on a map' }).click();
+  await expect(map.getByRole('button', { name: /^Ferny Creek Community Fire Refuge · .*, Community Fire Refuge$/ })).toBeVisible();
+  await expect(map).toContainText('58 km across');
+  await expect(map).not.toContainText('off this map');
+
+  await page.getByLabel('Type a postcode').fill('3550');
+  await expect(map).toContainText('120 km across');
+  await expect(map).toContainText('No Neighbourhood Safer Place or Community Fire Refuge within 60 km.');
+  await expect(map.getByText(/^Ferny Creek Community Fire Refuge is .* away, off this map\.$/)).toBeVisible();
+});

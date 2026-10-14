@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { mapAcrossKm, mapBoxAround } from '../../core/area-map-view';
-import { AREA_MAP_HALF_KM, NEARBY_MAP_HALF_PX, ROADS_LOCALITY_PX } from '../../core/constants';
+import { NEARBY_MAP_HALF_PX, ROADS_LOCALITY_PX } from '../../core/constants';
 import * as copy from '../../core/copy';
 import { decodeLocalities, type Locality } from '../../core/localities';
 import { drawNearbyMap, type NearbyMapDrawing } from '../../core/nearby-map';
@@ -39,19 +39,25 @@ function hold<L extends object, T>(cache: WeakMap<L, Promise<T>>, loader: L, rea
 /** Nearby's map: the main roads and town names round where distances are
  *  measured from, drawn on the phone from files it already holds, with the
  *  nearest Neighbourhood Safer Places and Community Fire Refuges marked, each
- *  kind with its own drawing and named in the key. Explored like a pack's map. */
+ *  kind with its own drawing and named in the key. Explored like a pack's map,
+ *  and sized as one is: halfKm each way, wide enough for the places the list
+ *  names, with any still past its edge said in words beneath. */
 export default function NearbyMap({
   origin,
   originName,
   places,
+  halfKm,
+  offMap,
   loaders,
 }: {
   origin: LatLon;
   originName: string;
   places: MapPlace[];
+  halfKm: number;
+  offMap: string[];
   loaders: MapLoaders;
 }) {
-  const [drawing, setDrawing] = useState<{ at: LatLon; map: NearbyMapDrawing; hasRoads: boolean } | null>(null);
+  const [drawing, setDrawing] = useState<{ at: LatLon; halfKm: number; map: NearbyMapDrawing; hasRoads: boolean } | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -66,17 +72,17 @@ export default function NearbyMap({
       }, NO_LOCALITIES),
     ]).then(([roads, localities]) => {
       const marks = places.flatMap((place) => (place.lat === undefined || place.lon === undefined ? [] : [{ lat: place.lat, lon: place.lon }]));
-      if (live) setDrawing({ at: origin, map: drawNearbyMap(roads, localities, origin, marks), hasRoads: roads !== null });
+      if (live) setDrawing({ at: origin, halfKm, map: drawNearbyMap(roads, localities, origin, marks, halfKm), hasRoads: roads !== null });
     });
     return () => {
       live = false;
     };
-  }, [origin, loaders]);
+  }, [origin, halfKm, loaders]);
 
-  const box = mapBoxAround(origin, AREA_MAP_HALF_KM);
+  const box = mapBoxAround(origin, halfKm);
   const half = NEARBY_MAP_HALF_PX;
-  // A drawing for an earlier origin is never shown under this one's marks.
-  const shown = drawing?.at === origin ? drawing : null;
+  // A drawing for an earlier origin or size is never shown under this one's marks.
+  const shown = drawing?.at === origin && drawing.halfKm === halfKm ? drawing : null;
   const picture = (
     <svg className="nearby-map-picture" viewBox={`${-half} ${-half} ${2 * half} ${2 * half}`} role="img" aria-label={copy.NEARBY_MAP_ALT}>
       <rect className="nearby-map-ground" x={-half} y={-half} width={2 * half} height={2 * half} />
@@ -111,7 +117,12 @@ export default function NearbyMap({
           </ul>
         </figcaption>
       </figure>
-      {places.length === 0 ? <p className="muted place-note">{copy.NEARBY_MAP_NONE}</p> : null}
+      {places.length === 0 ? <p className="muted place-note">{copy.NEARBY_MAP_NONE(halfKm)}</p> : null}
+      {offMap.map((line) => (
+        <p key={line} className="muted place-note">
+          {line}
+        </p>
+      ))}
       {shown && !shown.hasRoads ? <p className="muted place-note">{copy.NEARBY_MAP_NO_ROADS}</p> : null}
     </div>
   );
