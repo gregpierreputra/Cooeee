@@ -663,6 +663,12 @@ input[aria-invalid='true'] {
   animation: note-fade 0.4s ease 2s forwards;
 }
 
+/* Note deleted stays grey, as the delete was already confirmed and nothing is
+   wrong, and fades as Note saved does, so it clears on its own. */
+.note-mark-deleted {
+  animation: note-fade 0.4s ease 2s forwards;
+}
+
 .note-card-saved {
   border-color: var(--accent);
 }
