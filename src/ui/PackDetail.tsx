@@ -642,8 +642,13 @@ function RehearsalGaps({ gaps, found }: { gaps: string; found: HistoryRow['found
             <li key={index}>
               <p className="gap-title">{gap.title}</p>
               <p className="muted">{gap.reason}</p>
-              <p className="muted">
-                <b>{copy.ACTION_LABEL}.</b> {gap.action}
+              {/* What to do on its own line, led by the result page's arrow and
+                  at full strength, so it reads apart from the reason above. */}
+              <p className="with-glyph gap-history-action">
+                <Glyph kind="go" line />
+                <span>
+                  <b>{copy.ACTION_LABEL}.</b> {gap.action}
+                </span>
               </p>
             </li>
           ))}

@@ -5441,6 +5441,12 @@ p.gap-reason-label {
 .gap-title {
   font-weight: var(--w-bold);
 }
+/* On the pack page, a gap's What to do sits a little apart from its reason. */
+.gap-history-action {
+  gap: 0.5rem;
+  margin-top: 0.375rem;
+  color: var(--ink);
+}
 
 /* E5-US2-AC2/AC3/AC4 — what has moved since the last rehearsal of this pack.
    Groups are told apart by their HEADINGS and by nothing else: no colour, no
