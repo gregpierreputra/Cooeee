@@ -104,17 +104,16 @@ export const NOT_THIS_PLACE = 'Not this place';
 export const BUILD_A_PACK = 'New offline pack';
 export const ADDRESS_SEARCH_TITLE = 'Your address';
 export const ADDRESS_FIELD_LABEL = 'Street address';
-export const ABOUT_ADDRESS = 'Why the exact address';
-/** At the field itself: the street address is the point every official place
- *  of last resort is measured from, so it has to be the right one. */
-export const ADDRESS_FIELD_HINT = 'Your official places of last resort are measured from it.';
-/** Said before the search, so an address with no official place close by is
- *  never a surprise at the places step. */
-export const ADDRESS_SEARCH_DISCLOSURE =
-  'Some addresses have none close by, and some areas have none. Cooeee lists the nearest the Country Fire Authority publishes.';
+export const ABOUT_ADDRESS = 'About your address';
+/** The street address is the point every official place of last resort is
+ *  measured from. Says what such a place is, as testers new to the app did
+ *  not know the term. */
+export const ADDRESS_FIELD_HINT =
+  'Cooeee finds the official places of last resort nearest to it. These are places to go in a bushfire when every other plan has failed.';
 /** Use my location on the address search. The position is sent to the address
- *  register, so the screen says so before the button is tapped. */
-export const ADDRESS_LOCATE_DISCLOSURE = 'Sends your position to the Victorian address register. Not stored.';
+ *  register, so the note beside the title says so. Cooeee keeps nothing, and
+ *  the line claims nothing about the register itself. */
+export const ADDRESS_LOCATE_DISCLOSURE = 'The location button sends your position to the Victorian address register. Cooeee does not keep it.';
 export const ADDRESS_LOCATE_FOUND = 'Addresses nearest you';
 export const ADDRESS_LOCATE_FAILED = 'Position unavailable. Type the address.';
 export const ADDRESS_LOCATE_DENIED = 'Location is off for Cooeee. Turn it on in your phone settings, or type the address.';

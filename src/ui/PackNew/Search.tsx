@@ -825,12 +825,11 @@ export function Search({
         <div className="search-content">
           <header className="hero">
             <FlowSteps at={0} />
-            {/* Why the exact address matters, that some have no place close by,
-                and where a position goes, wait behind the ring beside the title. */}
+            {/* What the address is for, and where a position goes, wait behind
+                the ring beside the title. */}
             <Hint label={copy.ABOUT_ADDRESS} head={<h1>{copy.ADDRESS_SEARCH_TITLE}</h1>}>
               <ul className="info-lines glyph-lines">
                 <li><Glyph kind="place" line />{copy.ADDRESS_FIELD_HINT}</li>
-                <li><Glyph kind="found" line />{copy.ADDRESS_SEARCH_DISCLOSURE}</li>
                 <li><Glyph kind="lock" line />{copy.ADDRESS_LOCATE_DISCLOSURE}</li>
               </ul>
             </Hint>
