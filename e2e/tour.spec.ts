@@ -26,9 +26,28 @@ const count = (n: number) => `${n}/${N}`;
 // itself or holds the spotlight whose shadow dims it.
 const dimmed = (page: Page) => expect(page.locator('.tour.tour-dim, .tour:has(.tour-spot)')).toHaveCount(1);
 const box = async (page: Page, selector: string) => (await page.locator(selector).boundingBox())!;
+/** The ring glides to each stop and the page scrolls smoothly to it: wait until
+ *  both have come to rest before measuring. */
+async function settled(page: Page) {
+  const where = () =>
+    page.evaluate(() => {
+      const spot = document.querySelector('.tour-spot')?.getBoundingClientRect();
+      return `${Math.round(window.scrollY)}:${spot ? Math.round(spot.top) : ''}`;
+    });
+  let last = '';
+  await expect
+    .poll(async () => {
+      const now = await where();
+      const still = now === last;
+      last = now;
+      return still;
+    }, { intervals: [100] })
+    .toBe(true);
+}
 
 // UAT: the feature must never sit under the panel or the bars above it.
 async function inTheClear(page: Page) {
+  await settled(page);
   const spot = await box(page, '.tour-spot');
   const panel = await box(page, '.tour-panel');
   const header = await box(page, '.app-header');
@@ -88,6 +107,7 @@ test('opens on a welcome, steps across screens with the controls held still, and
   // The page holds still beneath the tour, so the spotlight stays on its
   // feature. Wheeled whichever way would have room: bringing the feature into
   // view may already have taken the page to its foot.
+  await settled(page);
   const before = await box(page, '.tour-spot');
   const atTop = await page.evaluate(() => window.scrollY === 0);
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
@@ -119,6 +139,25 @@ test('never starts on a later open; the ring starts it and Escape ends it', asyn
   await expect(page.getByRole('dialog')).toContainText(count(1));
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+// Stepping back from a stop that rings its tab clears that ring: no stop
+// before it has a tab, so none rings one.
+test('stepping back from a tab stop leaves no tab ringed', async ({ page }) => {
+  await acknowledgeFirstOpen(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: TOUR_HINT }).click();
+  const dialog = page.getByRole('dialog');
+  const nearby = TOUR_STEPS.findIndex((step) => 'tab' in step) + 2;
+  for (let n = 2; n <= nearby; n += 1) await dialog.getByRole('button', { name: TOUR_NEXT }).click();
+  await expect(page.locator('.tour-tab-spot')).toHaveCount(1);
+
+  for (let n = nearby - 1; n >= 2; n -= 1) {
+    await dialog.getByRole('button', { name: TOUR_BACK }).click();
+    await expect(dialog).toContainText(count(n));
+    await expect(page.locator('.tour-spot')).toBeVisible();
+    await expect(page.locator('.tour-tab-spot')).toHaveCount(0);
+  }
 });
 
 // UAT: on a phone, every stop's feature is brought clear of the panel and the
@@ -153,6 +192,7 @@ test.describe('on a phone', () => {
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('button', { name: TOUR_NEXT }).click();
     await expect(dialog).toContainText(count(2));
+    await settled(page);
     const placed = await page.evaluate(() => window.scrollY);
     await page.mouse.move(200, 300);
     await page.mouse.wheel(0, 600);
@@ -172,6 +212,7 @@ test('the BlackSky stop rings the compass and opens what BlackSky does', async (
   const stop = TOUR_STEPS.findIndex((step) => step.target === '.nav-blacksky') + 2;
   for (let n = 2; n <= stop; n += 1) await dialog.getByRole('button', { name: TOUR_NEXT }).click();
   await expect(dialog).toContainText(count(stop));
+  await settled(page);
   const spot = (await page.locator('.tour-spot').boundingBox())!;
   const compass = (await page.locator('.nav-blacksky').boundingBox())!;
   expect(Math.abs(spot.x + spot.width / 2 - (compass.x + compass.width / 2))).toBeLessThan(2);
