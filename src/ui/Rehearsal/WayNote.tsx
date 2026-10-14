@@ -122,11 +122,13 @@ export default function WayNote({
           // Saved and Removed fade as the pack page's notes do, then clear.
           onAnimationEnd={() => setMark((value) => (value === 'saved' || value === 'removed' ? 'gone' : value))}
         >
+          {/* Keyed by the words, so a new message gets its own two seconds.
+              Only Saved and Removed pass; the cautions stay until acted on. */}
           {status ? (
-            <>
+            <span key={status.text} className={`with-glyph${status.tone === 'caution' ? '' : ' way-note-fade'}`}>
               <Glyph kind={status.glyph} line />
               {status.text}
-            </>
+            </span>
           ) : null}
         </p>
         <div className="note-actions">

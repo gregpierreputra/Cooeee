@@ -599,6 +599,20 @@ test.describe('AC5 her note about the way', () => {
     expect((await storedNotes(page))[0].text).toBe(WORDS);
   });
 
+  test('Removed gets its own two seconds when it follows Saved quickly', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    await field(page).fill(WORDS);
+    await saveControl(page).click();
+    await expect(page.getByText("Saved to this pack's notes.")).toBeVisible();
+    await page.waitForTimeout(1200);
+    await removeControl(page).click();
+    await expect(page.getByText('Removed from this pack.')).toBeVisible();
+    // Past the two seconds since Saved: a shared timer would have faded it.
+    await page.waitForTimeout(1200);
+    await expect(page.getByText('Removed from this pack.')).toHaveCSS('opacity', '1');
+    await expect(page.getByText('Removed from this pack.')).toHaveCount(0);
+  });
+
   test('the buttons stay put while the line under the box changes', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
     // The first control under the box, Save or Remove, whichever stands there.

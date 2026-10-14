@@ -5315,10 +5315,14 @@ p.gap-reason-label {
 }
 .way-note-saved {
   color: var(--accent);
-  animation: note-fade 0.4s ease 2s forwards;
 }
 .way-note-quiet {
   color: var(--ink-2);
+}
+/* Saved and Removed pass: shown for two seconds, then faded. Set on the words,
+   not on their line, so each new message is a new element with its own two
+   seconds, while the line stays put for screen readers. */
+.way-note-fade {
   animation: note-fade 0.4s ease 2s forwards;
 }
 .way-note .note-actions {
