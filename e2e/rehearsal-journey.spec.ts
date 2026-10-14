@@ -442,7 +442,7 @@ test.describe('AC5 the two endings', () => {
       await endingControl(page, label).click();
 
       await expect(page.getByRole('heading', { name: RESULT_HEADING })).toBeVisible();
-      await expect(page.locator('.gap-row h3')).toHaveText(['Live direction and distance to your saved places']);
+      await expect(page.locator('.gap-row h3')).toHaveText(['The arrow to your saved places']);
       await expect(bar(page)).toBeVisible();
 
       await expect.poll(async () => (await storedRehearsals(page))[0]?.ending).toBe(ending);

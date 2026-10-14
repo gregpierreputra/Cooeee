@@ -158,7 +158,7 @@ describe('every gap is one the reader can act on', () => {
       expect(action.actionId).toBe(GAP_ACTION_ID[gapType]);
       expect(action.action.length).toBeGreaterThan(0);
       expect(action.title.length).toBeGreaterThan(0);
-      expect(action.meaning.length).toBeGreaterThan(0);
+      expect(action.reason.length).toBeGreaterThan(0);
     });
   });
 
@@ -183,11 +183,11 @@ describe('every gap is one the reader can act on', () => {
       kind: 'condition-persistent',
       hazard: 'bushfire',
     });
-    expect(packContent.meaning).not.toBe(persistent.meaning);
-    expect(packContent.meaning).toBe('Missing from your pack.');
-    expect(persistent.meaning).toBe('Not available under this condition.');
+    expect(packContent.reason).not.toBe(persistent.reason);
+    expect(packContent.reason).toMatch(/this pack/);
+    expect(persistent.reason).toMatch(/Without a location fix/);
     [packContent, persistent].forEach((row) => {
-      expect(`${row.meaning} ${row.action}`).not.toMatch(
+      expect(`${row.reason} ${row.action}`).not.toMatch(
         /\b(severe|severity|critical|urgent|worst|priority|rank|score|level)\b/i,
       );
     });
@@ -210,7 +210,7 @@ describe('every gap is one the reader can act on', () => {
     const everyString = everyGapType
       .flatMap((gapType) => {
         const action = actionFor({ gapType, kind: GAP_KIND[gapType], hazard: 'bushfire' });
-        return [action.title, action.meaning, action.action];
+        return [action.title, action.reason, action.action];
       })
       .join(' ');
     expect(everyString).not.toMatch(/\bunprepared\b|\bnot ready\b|\byou (are|aren't) (ready|prepared)\b/i);

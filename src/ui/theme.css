@@ -5166,11 +5166,6 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   font-size: var(--step-1);
   margin: 0;
 }
-/* Which kind of gap, said under the title. */
-.gap-meaning {
-  font-size: var(--step-s);
-}
-
 /* Names the line beneath it as the reason or the one thing to do, so neither is read
    as more explanation. Led by its drawing, at the size of the other labels. */
 .gap-action-label,

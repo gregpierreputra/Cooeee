@@ -48,7 +48,6 @@ describe('E5-US5 the rehearsal history on the pack page', () => {
             actionId: 'build-pack-again-for-places',
             title: copy.GAP_PLACES,
             reason: copy.GAP_REASON_PLACES,
-            meaning: copy.GAP_MEANING_PACK_CONTENT,
             action: copy.ACTION_BUILD_AGAIN_PLACES,
           },
         ],

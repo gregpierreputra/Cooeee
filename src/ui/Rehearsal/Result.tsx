@@ -207,12 +207,7 @@ export default function Result({
         <ul className="list gap-list">
           {result.rows.map((row) => (
             <li key={`${row.gapType}:${row.hazardLine}`} className="card gap-row">
-              <span className="kicker">{row.hazardLine}</span>
               <h3>{row.title}</h3>
-              {/* Which of the two kinds this is, said in words under the title.
-                  The two kinds are told apart by this sentence and by nothing
-                  else: no severity, no ranking, no separate list, no colour. */}
-              <p className="muted gap-meaning">{row.meaning}</p>
               <p className="gap-reason-label with-glyph">
                 <Glyph kind="why" line />
                 {copy.GAP_REASON_LABEL}

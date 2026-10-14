@@ -15,8 +15,10 @@ const CHOOSE_HEADING = 'Rehearse with…';
 const WALKED_LINE = 'You went there. It took you 14 minutes.';
 const DRY_RUN_LINE = 'A dry run. You ended it without going.';
 
-const PACK_CONTENT_MEANING = 'Missing from your pack.';
-const CONDITION_MEANING = 'Not available under this condition.';
+/** Each kind of gap is told apart by its reason: what this pack is missing, or
+ *  what the condition takes away. */
+const PACK_CONTENT_REASON = 'None were saved when this pack was built.';
+const CONDITION_REASON = 'Without a location fix the phone cannot point the way or say how far.';
 
 // E5-US2-AC1 — one action for each gap.
 
@@ -41,26 +43,23 @@ test.describe('AC1 each gap arrives with one action', () => {
   test('a pack-content gap and a condition gap read differently', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP);
 
-    await expect(page.getByText(PACK_CONTENT_MEANING)).toBeVisible();
-    await expect(page.getByText(CONDITION_MEANING)).toBeVisible();
-    // Both kinds are on screen, in one list, told apart only by their words.
+    await expect(page.getByText(PACK_CONTENT_REASON)).toBeVisible();
+    await expect(page.getByText(CONDITION_REASON)).toBeVisible();
+    // Both kinds are on screen, in one list, told apart only by their reasons.
     await expect(page.locator('.gap-list')).toHaveCount(1);
   });
 
-  test('every gap names whose journey it belongs to', async ({ page }) => {
+  test('a gap opens on its own name, with no journey label, as every rehearsal is a bushfire one', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP);
 
-    const rows = page.locator('.gap-row');
-    const count = await rows.count();
-    for (let i = 0; i < count; i += 1) {
-      await expect(rows.nth(i).locator('.kicker')).toHaveText('Bushfire journey');
-    }
+    await expect(page.locator('.gap-row').first()).toBeVisible();
+    await expect(page.locator('.gap-row .kicker')).toHaveCount(0);
   });
 
   test('a contingency action never says the capability has come back', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WHOLE);
 
-    const row = page.locator('.gap-row', { hasText: CONDITION_MEANING });
+    const row = page.locator('.gap-row', { hasText: CONDITION_REASON });
     await expect(row).toHaveCount(1);
     await expect(row).not.toContainText('restored');
     await expect(row).not.toContainText('back online');
@@ -207,12 +206,12 @@ test.describe('AC1 marking an action done', () => {
   test('is attributed to the reader, and never reads as the capability returning', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, KEEP);
     await expect(page.locator('.gap-row').first()).toBeVisible();
-    const row = page.locator('.gap-row', { hasText: CONDITION_MEANING });
+    const row = page.locator('.gap-row', { hasText: CONDITION_REASON });
 
     await row.getByRole('button', { name: 'Mark this done' }).click();
     await expect(row.locator('.gap-done')).toContainText('You marked this done');
     // The gap is still stated, in the same words, beside the completion.
-    await expect(row).toContainText(CONDITION_MEANING);
+    await expect(row).toContainText(CONDITION_REASON);
     await expect(row).not.toContainText('restored');
     await expect(row).not.toContainText('available again');
   });
@@ -222,13 +221,14 @@ test.describe('AC1 marking an action done', () => {
     await rehearseToResult(page, NO_FIX, KEEP);
     await expect(page.locator('.gap-row').first()).toBeVisible();
     const before = await page.locator('.gap-row h3').allInnerTexts();
-    const meanings = await page.locator('.gap-row > p.muted').allInnerTexts();
+    const reasons = await page.locator('.gap-reason-label + p').allInnerTexts();
+    expect(reasons.length).toBeGreaterThan(0);
 
     await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
     await expect(firstRow(page).locator('.gap-done')).toBeVisible();
 
     expect(await page.locator('.gap-row h3').allInnerTexts()).toEqual(before);
-    expect(await page.locator('.gap-row > p.muted').allInnerTexts()).toEqual(meanings);
+    expect(await page.locator('.gap-reason-label + p').allInnerTexts()).toEqual(reasons);
   });
 
   test('marks only the action it belongs to', async ({ page }) => {
@@ -249,7 +249,7 @@ test.describe('AC1 undoing a marking', () => {
     await expect(page.locator('.gap-row').first()).toBeVisible();
     const row = firstRow(page);
     const title = await row.locator('h3').innerText();
-    const meaning = await row.locator('p.muted').first().innerText();
+    const reason = await row.locator('.gap-reason-label + p').innerText();
 
     await row.getByRole('button', { name: 'Mark this done' }).click();
     await expect(row.locator('.gap-done')).toBeVisible();
@@ -264,7 +264,7 @@ test.describe('AC1 undoing a marking', () => {
 
     // The gap is not newly detected: it reads exactly as it did before.
     await expect(row.locator('h3')).toHaveText(title);
-    await expect(row.locator('p.muted').first()).toHaveText(meaning);
+    await expect(row.locator('.gap-reason-label + p')).toHaveText(reason);
     // Nothing reads as the gap having just been found: undoing a completion is
     // a correction to the reader's record, not a change to what the run found.
     // (The word "again" is not checked for: the actions themselves say "build

@@ -1212,23 +1212,22 @@ export const HAZARD_NAME: Record<'bushfire' | 'heat', string> = {
 };
 export const GAP_HAZARD_LINE = (hazard: string) => `${hazard} journey`;
 
-// The two kinds, told apart by these words and by nothing else.
+/** Said on the journey where a pack has no official place to show. */
 export const GAP_MEANING_PACK_CONTENT = 'Missing from your pack.';
-/** The condition's kind. What to do instead follows in its own panel. */
-export const GAP_MEANING_CONDITION = 'Not available under this condition.';
 
-// What could not be relied on.
-export const GAP_DESIGNATION = 'The official area designation for this address';
-export const GAP_PLACES = 'The official places saved with this pack';
+// What could not be relied on, named plainly, so the Why under it adds to it
+// rather than saying it again.
+export const GAP_DESIGNATION = 'Bushfire area';
+export const GAP_PLACES = 'Official places of last resort';
 /** The label over the places on the journey screens, short enough for one line. */
 export const JOURNEY_PLACES_LABEL = 'Official places in this pack';
-export const GAP_PROVENANCE = 'The publisher and saved date on every stored item';
-export const GAP_LIVE_DIRECTION = 'Live direction and distance to your saved places';
+export const GAP_PROVENANCE = 'Where each item came from';
+export const GAP_LIVE_DIRECTION = 'The arrow to your saved places';
 
 // UAT: a gap was named but not explained. Why each one was found, in one line.
 export const GAP_REASON_LABEL = 'Why';
 export const GAP_REASON_DESIGNATION = 'This pack holds no answer from the official map for this address.';
-export const GAP_REASON_PLACES = 'No official place of last resort was saved with this pack.';
+export const GAP_REASON_PLACES = 'None were saved when this pack was built.';
 export const GAP_REASON_PROVENANCE = 'Some saved items do not show who published them or when.';
 export const GAP_REASON_LIVE_DIRECTION = 'Without a location fix the phone cannot point the way or say how far.';
 
@@ -1307,7 +1306,7 @@ export const PACK_CHANGE_UNKNOWN = 'Whether the pack changed between them was no
 // nothing here says on foot or walking. None of them treats a place as where
 // she plans to go on the day, and none of them rates the trip:
 // no time to beat, no fast or slow, nothing to pass. The place list reuses
-// GAP_PLACES as its heading and GAP_MEANING_PACK_CONTENT when there is none; the
+// JOURNEY_PLACES_LABEL as its heading and GAP_MEANING_PACK_CONTENT when there is none; the
 // hold reuses HOLD_FOR_BLACKSKY and HOLD_TO_ENTER; the day's priority reuses
 // OFFICIAL_INSTRUCTIONS_FIRST. All new strings below are [DRAFT] pending
 // Sharon's copy review.
