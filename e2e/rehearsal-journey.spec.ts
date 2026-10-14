@@ -44,7 +44,7 @@ const WHAT_IT_IS =
   'A calm-day trip to a saved official place, with BlackSky open.';
 const WHAT_IT_IS_FOR =
   'Practice at knowing the way, how long it takes and which turns you take.';
-const INSTRUCTIONS_FIRST = 'Follow Country Fire Authority and emergency service instructions first.';
+const INSTRUCTIONS_FIRST = 'Always follow instructions from the Country Fire Authority and emergency services.';
 const PLACES_HEADING = 'Official places in this pack';
 const NO_PLACE_SAVED = 'Missing from your pack.';
 const PLACE = 'Kalorama Reserve';

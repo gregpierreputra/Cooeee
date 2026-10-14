@@ -153,7 +153,7 @@ export const AREA_NOT_PUBLISHED =
 export const AREA_MAP_IS_NOT_FIRE_REACH =
   'Fire can still reach you.';
 export const OFFICIAL_INSTRUCTIONS_FIRST =
-  'Follow Country Fire Authority and emergency service instructions first.';
+  'Always follow instructions from the Country Fire Authority and emergency services.';
 export const AREA_CHECK_COULD_NOT_RUN = 'The bushfire area check is unavailable right now.';
 export const AREA_NOT_SAVED = 'Nothing saved. Your address is still here. Try again with a connection.';
 

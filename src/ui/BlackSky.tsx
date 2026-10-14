@@ -651,9 +651,10 @@ export default function BlackSky({
       )}
       {/* Under the dial, never above it: the dial is the one thing first. */}
       {chosen && !chosen.placesVerified ? <StateCard heading={copy.PLACES_UNVERIFIED} /> : null}
-      {/* The loaded pack's reminder closes every state of the screen, once, as
-          a quiet note: the dial is what is read first. */}
-      <p className="muted blacksky-reminder">{chosen?.pack.reminder || copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+      {/* The reminder closes every state of the screen, once, as a quiet note:
+          the dial is what is read first. Read from the app, not the pack, so a
+          pack saved before a rewording still shows the current words. */}
+      <p className="muted blacksky-reminder">{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
     </main>
   );
 }
