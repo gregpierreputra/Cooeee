@@ -460,7 +460,9 @@ a {
 }
 
 @media (hover: hover) {
-  .pack-card:hover {
+  /* The card lights as a way into the pack, except under its settings ring,
+     whose tap opens the settings: then only the ring lights. */
+  .pack-card:hover:not(:has(.card-more:hover)) {
     border-color: var(--accent);
   }
 }
@@ -491,8 +493,10 @@ a {
   position: absolute;
   inset: -6px;
 }
-.pack-card .card-more:hover,
-.pack-card .card-more:focus-visible {
+/* Every small ring lights up under the pointer or keyboard focus: the pack
+   card's settings and the pack page's print alike. */
+.card-more:hover,
+.card-more:focus-visible {
   border-color: var(--accent);
   color: var(--ink);
 }
