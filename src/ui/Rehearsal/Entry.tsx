@@ -158,7 +158,12 @@ export default function RehearsalEntry({
     return chosen !== null ? (
       <JourneyBefore packId={gate.packId} condition={chosen} onGone={() => setChosen(null)} />
     ) : (
-      <Condition packName={shownPackName(gate.packName)} packAddress={gate.packAddress} onChoose={setChosen} />
+      <Condition
+        packName={shownPackName(gate.packName)}
+        packAddress={gate.packAddress}
+        packIcon={gate.packIcon}
+        onChoose={setChosen}
+      />
     );
   }
 

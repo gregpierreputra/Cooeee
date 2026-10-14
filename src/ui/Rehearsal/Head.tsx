@@ -8,11 +8,14 @@ import TabLabel from '../components/TabLabel';
  *  component, so every rehearsal screen opens the same way. */
 export default function Head({
   title,
+  titleIcon,
   detail,
   detailGlyph,
   pack,
 }: {
   title?: string;
+  /** The pack's own drawing, ringed beside the title, as the pack page opens. */
+  titleIcon?: PackIcon;
   detail?: string;
   /** A drawing to lead the line under the title, where it states a fact. */
   detailGlyph?: GlyphKind;
@@ -23,7 +26,14 @@ export default function Head({
   return (
     <header className="hero">
       <TabLabel tab="rehearse" text={copy.NAV_REHEARSE} />
-      {title ? <h1>{title}</h1> : null}
+      {title && titleIcon ? (
+        <div className="card-head">
+          <Glyph kind={titleIcon} />
+          <h1>{title}</h1>
+        </div>
+      ) : title ? (
+        <h1>{title}</h1>
+      ) : null}
       {pack?.name ? (
         <p className="hero-pack with-glyph">
           <span className="hero-pack-lead">{copy.REHEARSING_PACK}</span>

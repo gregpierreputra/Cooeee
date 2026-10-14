@@ -176,6 +176,7 @@ describe('the pack can be rehearsed', () => {
       packId: 'pack-1',
       packName: 'Kalorama',
       packAddress: content().pack.address,
+      packIcon: 'place',
       hazards: ['bushfire'],
     });
   });
