@@ -173,9 +173,9 @@ export default function Result({
   const summary = (
     <Section kind="rehearse" title={copy.RESULT_SUMMARY_LABEL} heading>
       <div className="card result-summary">
-        {/* The condition's phrase in bold, the ending by its parts. The two
-            paragraphs keep one style: only the words inside them differ. */}
-        <p>{boldParts(result.conditionLine, [result.conditionLine.replace(/\.$/, '')])}</p>
+        {/* The condition leads the card at the gap names' size, so every card
+            on the page opens the same way. The ending follows, its parts in bold. */}
+        <p className="result-condition">{result.conditionLine}</p>
         <p>{boldParts(result.endingLine, result.endingBold)}</p>
         {/* What was checked, after how it ended, when nothing was missing. */}
         {result.state === 'no-gaps' ? <p className="muted place-note">{result.detail}</p> : null}

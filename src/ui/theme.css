@@ -5287,6 +5287,11 @@ p.gap-reason-label {
 .result-summary b {
   font-weight: var(--w-bold);
 }
+/* The card's lead line, set as a gap card's name is. */
+.result-summary .result-condition {
+  font-size: var(--step-1);
+  font-weight: var(--w-bold);
+}
 .result-summary .progress {
   display: grid;
   margin-top: 0.5rem;

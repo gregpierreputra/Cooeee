@@ -454,10 +454,10 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
 
     const walked = await read(page, 'I have arrived');
     const dryRun = await read(await context.newPage(), 'End without going');
-    // Nothing but the words sets them apart: the same treatment as each other,
-    // and as the condition line beside them.
+    // Nothing but the words sets the two endings apart. The condition line
+    // above them leads the card in its own treatment, the same for both.
     expect(walked.ending).toBe(dryRun.ending);
-    expect(walked.ending).toBe(walked.condition);
+    expect(walked.condition).toBe(dryRun.condition);
   });
 
   test('the progress view carries no time, no trend and no ending', async ({ page }) => {
