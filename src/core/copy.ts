@@ -948,7 +948,7 @@ export const DISCLOSURE_ADDRESS =
 
 export const DISCLOSURE_POSITION_HEADING = 'When Cooeee asks for your position';
 export const DISCLOSURE_POSITION =
-  'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device. You can refuse, and everything else still works.';
+  'In BlackSky, rehearsals, and when you tap to use your location. Only finding your address sends it out, to the Victorian address register. Cooeee never keeps it. You can refuse.';
 
 /** The quieter line under the four statements: who to go to for what Cooeee
  *  itself will never provide. */

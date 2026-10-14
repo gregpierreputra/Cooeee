@@ -352,9 +352,9 @@ describe('first-open disclosure', () => {
     );
   });
 
-  it('states when the position is asked for and that it is never sent', () => {
+  it('states when the position is asked for, the one place it is sent, and that it is never kept', () => {
     expect(copy.DISCLOSURE_POSITION).toBe(
-      'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device. You can refuse, and everything else still works.',
+      'In BlackSky, rehearsals, and when you tap to use your location. Only finding your address sends it out, to the Victorian address register. Cooeee never keeps it. You can refuse.',
     );
   });
 
