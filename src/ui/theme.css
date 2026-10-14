@@ -5310,20 +5310,16 @@ p.gap-reason-label {
   font-size: var(--step-s);
   font-weight: var(--w-bold);
 }
-/* Save, once the words are kept: the teal outline and a tick, done. */
-.way-note .way-note-kept {
-  color: var(--accent);
-  border-color: var(--accent);
-  cursor: default;
-}
 .way-note-caution {
   color: var(--stale);
 }
 .way-note-saved {
   color: var(--accent);
+  animation: note-fade 0.4s ease 2s forwards;
 }
 .way-note-quiet {
   color: var(--ink-2);
+  animation: note-fade 0.4s ease 2s forwards;
 }
 .way-note .note-actions {
   flex-direction: column;

@@ -1420,10 +1420,8 @@ export const WAY_NOTE_HEADING = 'What you learnt about the way';
 export const WAY_NOTE_DETAIL = 'Optional. The turns, what you met, what you would change. BlackSky shows it offline.';
 /** [DRAFT] pending Sharon's copy review. */
 export const WAY_NOTE_LABEL = 'Your note about the way';
-/** Once saved: where it went, and the way to take it back out. */
+/** Once saved: where it went, said on the line under the box, then faded. */
 export const WAY_NOTE_KEPT = "Saved to this pack's notes.";
-/** The Save control once the words are kept, until they change. */
-export const WAY_NOTE_SAVED = 'Saved to this pack';
 /** Puts back the words last saved, after a change. */
 export const WAY_NOTE_UNDO = 'Undo changes';
 export const WAY_NOTE_REMOVE = 'Remove from this pack';

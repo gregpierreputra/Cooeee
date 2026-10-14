@@ -484,8 +484,8 @@ test.describe('AC5 her note about the way', () => {
   const WORDS = 'Left at the church, not the second gate.\nThe footbridge floods — use the road.';
   const field = (page: Page) => page.getByLabel(WAY_NOTE_LABEL);
   const saveControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Save', exact: true });
-  /** Save, once the words are kept and unchanged. */
-  const keptControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Saved to this pack' });
+  /** Remove, in Save's place once the words are kept and unchanged. */
+  const removeControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Remove from this pack' });
 
   test('is offered after a walked rehearsal, and not after a dry run', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
@@ -521,7 +521,7 @@ test.describe('AC5 her note about the way', () => {
 
     await field(page).fill(WORDS);
     await saveControl(page).click();
-    await expect(keptControl(page)).toBeVisible();
+    await expect(removeControl(page)).toBeVisible();
 
     await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
     const [note] = await storedNotes(page);
@@ -549,60 +549,63 @@ test.describe('AC5 her note about the way', () => {
 
   test('a saved note can be taken back out, keeping her words in the field', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
-    const remove = page.getByRole('main').getByRole('button', { name: 'Remove from this pack' });
+    const remove = removeControl(page);
     await expect(remove).toHaveCount(0);
     await field(page).fill(WORDS);
     await saveControl(page).click();
-    await expect(keptControl(page)).toBeVisible();
+    await expect(remove).toBeVisible();
     await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
 
     await remove.click();
     await expect(page.getByText('Removed from this pack.')).toBeVisible();
     await expect.poll(async () => (await storedNotes(page)).length).toBe(0);
     await expect(field(page)).toHaveValue(WORDS);
-    // One line says where it stands: removed, until she types again.
+    // One line says where it stands: removed, which fades and clears, and
+    // nothing more until she types again.
     await expect(page.getByText('Not saved yet.')).toHaveCount(0);
     await expect(remove).toHaveCount(0);
+    await expect(page.getByText('Removed from this pack.')).toHaveCount(0);
+    await expect(page.getByText('Not saved yet.')).toHaveCount(0);
     await field(page).press('End');
     await field(page).pressSequentially('!');
     await expect(page.getByText('Not saved yet.')).toBeVisible();
     await expect(page.getByText('Removed from this pack.')).toHaveCount(0);
   });
 
-  test('saved, the control says so and does nothing until the words change, which Undo changes puts back', async ({
+  test('saved, the line says so and fades, Remove takes Save\'s place, and a change brings Save back with Undo changes', async ({
     page,
   }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
     await field(page).fill(WORDS);
     await saveControl(page).click();
-    await expect(keptControl(page)).toHaveAttribute('aria-disabled', 'true');
+    // One control: Remove stands where Save was, and the line says it is saved.
+    await expect(removeControl(page)).toBeVisible();
+    await expect(saveControl(page)).toHaveCount(0);
     await expect(page.getByRole('status').filter({ hasText: "Saved to this pack's notes." })).toHaveCount(1);
-    await expect.poll(async () => (await storedNotes(page))[0]?.updatedAt).toBeTruthy();
-    const savedAt = (await storedNotes(page))[0].updatedAt;
-    // A tap on it, as a thumb would give, writes nothing.
-    await keptControl(page).click({ force: true });
-    await page.waitForTimeout(300);
-    expect((await storedNotes(page))[0].updatedAt).toBe(savedAt);
+    // It fades and clears on its own, with nothing in its place.
+    await expect(page.getByText("Saved to this pack's notes.")).toHaveCount(0);
+    await expect(page.getByText('Not saved yet.')).toHaveCount(0);
 
-    // A change: Save again, and Undo changes in place of Remove.
+    // A change: Save again, with Undo changes in place of Remove.
     await field(page).press('End');
     await field(page).pressSequentially(' Carry water.');
     await expect(saveControl(page)).toBeVisible();
     await expect(page.getByText('Not saved yet.')).toBeVisible();
-    await expect(page.getByRole('main').getByRole('button', { name: 'Remove from this pack' })).toHaveCount(0);
+    await expect(removeControl(page)).toHaveCount(0);
     await page.getByRole('main').getByRole('button', { name: 'Undo changes' }).click();
     await expect(field(page)).toHaveValue(WORDS);
-    await expect(keptControl(page)).toBeVisible();
+    await expect(removeControl(page)).toBeVisible();
     await expect(page.getByText('Not saved yet.')).toHaveCount(0);
     expect((await storedNotes(page))[0].text).toBe(WORDS);
   });
 
   test('the buttons stay put while the line under the box changes', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
-    const save = page.getByRole('main').getByRole('button', { name: /^Save/ });
+    // The first control under the box, Save or Remove, whichever stands there.
+    const first = page.locator('.way-note .note-actions button').first();
     // Measured inside the card, so scrolling the page does not count.
     const top = () =>
-      save.evaluate((el) =>
+      first.evaluate((el) =>
         Math.round(el.getBoundingClientRect().top - el.closest('.note-card')!.getBoundingClientRect().top),
       );
     const empty = await top();
@@ -610,9 +613,9 @@ test.describe('AC5 her note about the way', () => {
     await expect(page.getByText('Not saved yet.')).toBeVisible();
     expect(await top()).toBe(empty);
     await saveControl(page).click();
-    await expect(keptControl(page)).toBeVisible();
+    await expect(removeControl(page)).toBeVisible();
     expect(await top()).toBe(empty);
-    await page.getByRole('main').getByRole('button', { name: 'Remove from this pack' }).click();
+    await removeControl(page).click();
     await expect(page.getByText('Removed from this pack.')).toBeVisible();
     expect(await top()).toBe(empty);
   });
