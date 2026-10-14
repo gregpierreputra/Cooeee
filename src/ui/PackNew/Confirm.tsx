@@ -62,19 +62,27 @@ export function Confirm({ candidate, initialName, initialIcon, takenName, onConf
             <Glyph kind="place" line />
             {candidate.address}
           </p>
-          <label htmlFor="place-name">{copy.PLACE_NAME_LABEL}</label>
-          <input
-            id="place-name"
-            name="placeName"
-            type="text"
-            value={name}
-            maxLength={PACK_NAME_MAX_CHARS}
-            enterKeyHint="next"
-            onKeyDown={nameKeyDown}
-            aria-invalid={taken || undefined}
-            aria-describedby={taken ? 'place-name-taken' : undefined}
-            onChange={(event) => setName(event.currentTarget.value)}
-          />
+          <label htmlFor="place-name">{copy.NAME_THIS_PLACE}</label>
+          {/* The pen says the name can be changed. It is a second label, so a
+              tap on it puts the cursor in the field, and it has no words of its
+              own, so the field is still read as Name this place. */}
+          <div className="name-field">
+            <input
+              id="place-name"
+              name="placeName"
+              type="text"
+              value={name}
+              maxLength={PACK_NAME_MAX_CHARS}
+              enterKeyHint="next"
+              onKeyDown={nameKeyDown}
+              aria-invalid={taken || undefined}
+              aria-describedby={taken ? 'place-name-taken' : undefined}
+              onChange={(event) => setName(event.currentTarget.value)}
+            />
+            <label htmlFor="place-name" className="name-field-pen">
+              <Glyph kind="edit" line />
+            </label>
+          </div>
           {taken ? (
             <p id="place-name-taken" className="field-message with-glyph" role="status">
               <Glyph kind="caution" line />

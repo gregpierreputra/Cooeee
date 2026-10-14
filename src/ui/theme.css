@@ -1264,6 +1264,33 @@ main:focus {
   padding-top: 2rem;
 }
 
+/* The name field with a pen at its right edge, inside the field, quiet like
+   the field's own text hint. The field leaves room so text never runs under it. */
+.name-field {
+  position: relative;
+}
+.name-field input {
+  width: 100%;
+  padding-right: 3rem;
+}
+.name-field-pen {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  display: flex;
+  transform: translateY(-50%);
+  color: var(--ink-3);
+  cursor: text;
+}
+.name-field-pen .glyph.line-glyph svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+/* The pen lights up with the field's own teal ring while the name is being typed. */
+.name-field:focus-within .name-field-pen {
+  color: var(--accent);
+}
+
 .returned-address {
   margin: 0;
   padding: 1.25rem;

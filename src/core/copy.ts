@@ -95,6 +95,9 @@ export const RELOAD_NOW = 'Reload';
 // E1-US1-AC1 address confirmation
 export const CONFIRM_ADDRESS_QUESTION = 'Is this the place?';
 export const PLACE_NAME_LABEL = 'Place name';
+/** The name field on Is this the place?, worded as what to do, as a filled
+ *  field read as a finished answer rather than one to change. */
+export const NAME_THIS_PLACE = 'Name this place';
 export const SAVE_THIS_PLACE = 'Save this place';
 export const SEARCH_AGAIN = 'Search again';
 /** The no to Is this the place?: back to the search, what was typed kept. */

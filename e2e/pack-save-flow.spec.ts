@@ -23,7 +23,7 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill(name);
+  await page.getByLabel('Name this place').fill(name);
   await page.getByRole('button', { name: 'Save this place' }).click();
   await expect(page.getByRole('heading')).toHaveText(
     'This address is inside a Bushfire Prone Area.',
@@ -54,7 +54,7 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Kalorama');
+  await page.getByLabel('Name this place').fill('Kalorama');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   const boxes = page.getByRole('checkbox');
@@ -241,11 +241,11 @@ test('a second address becomes a second pack beside the first, with no question 
   // One name per pack: the suburb is already the first pack's name, so the
   // name step starts on the street instead, in normal case. A name typed over
   // it that another pack has is said, and a different one goes on.
-  await expect(page.getByLabel('Place name')).toHaveValue('8 Ridge Road');
-  await page.getByLabel('Place name').fill('kalorama');
+  await expect(page.getByLabel('Name this place')).toHaveValue('8 Ridge Road');
+  await page.getByLabel('Name this place').fill('kalorama');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await expect(page.locator('.field-message')).toHaveText(PACK_NAME_TAKEN);
-  await page.getByLabel('Place name').fill('8 Ridge Road');
+  await page.getByLabel('Name this place').fill('8 Ridge Road');
   await expect(page.locator('.field-message')).toHaveCount(0);
   await page.getByRole('button', { name: 'Save this place' }).click();
 
@@ -333,7 +333,7 @@ test("a place's tick box scrolls under the Back bar, not over it", async ({ page
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Our house');
+  await page.getByLabel('Name this place').fill('Our house');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   const bar = await page.locator('.back-bar').boundingBox();
@@ -362,7 +362,7 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Our house');
+  await page.getByLabel('Name this place').fill('Our house');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   const boxes = page.getByRole('checkbox');
@@ -392,7 +392,7 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await expect(page.getByRole('heading')).toHaveText('This address is inside a Bushfire Prone Area.');
   // The address, with the name as given.
   await back.click();
-  await expect(page.getByLabel('Place name')).toHaveValue('Our house');
+  await expect(page.getByLabel('Name this place')).toHaveValue('Our house');
   await back.click();
   await expect(page.getByLabel('Street address')).toBeVisible();
   await expect(page).toHaveURL(/\/packs\/new$/);
@@ -526,7 +526,7 @@ test('the pack map widens to its chosen places, and names one too far for it', a
   await page.getByLabel('Street address').fill('MAIN');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: FAR_ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Bimbourie');
+  await page.getByLabel('Name this place').fill('Bimbourie');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   const boxes = page.getByRole('checkbox');

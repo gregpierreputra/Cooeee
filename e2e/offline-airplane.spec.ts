@@ -45,7 +45,7 @@ test('every offline feature works in airplane mode, and the online ones say they
   await page.goto('/packs/new');
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Kalorama');
+  await page.getByLabel('Name this place').fill('Kalorama');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await chooseLastResortPlaces(page);
