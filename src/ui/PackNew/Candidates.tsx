@@ -1,3 +1,4 @@
+import { useId } from "react";
 import * as copy from "../../core/copy";
 import type { AddressCandidate } from "../../core/types";
 
@@ -16,9 +17,13 @@ type CandidatesProps = {
  * announced by the field's own status region in Search.tsx, so that a list
  * appearing or changing under a screen reader is spoken once, in one place. */
 export function Candidates({ candidates, onChoose, onNone }: CandidatesProps) {
+  const headingId = useId();
   return (
     <div className="candidate-section">
-      <ul className="candidate-list" aria-label={copy.CANDIDATE_LIST_LABEL}>
+      {/* The heading and each row's chevron set the results apart from the
+          field above, so a row never reads as a second field. */}
+      <h2 id={headingId} className="kicker candidate-heading">{copy.CANDIDATE_LIST_HEADING}</h2>
+      <ul className="candidate-list" aria-labelledby={headingId}>
         {candidates.map((candidate) => (
           // The resolution makes the address unique, so a repeated key would
           // be a broken invariant rather than expected data.
@@ -29,6 +34,9 @@ export function Candidates({ candidates, onChoose, onNone }: CandidatesProps) {
               onClick={() => onChoose(candidate)}
             >
               {candidate.address}
+              <svg className="candidate-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           </li>
         ))}

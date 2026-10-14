@@ -43,7 +43,7 @@ test('AC2 lists every returned candidate in service order with no selection', as
   await search(page);
 
   await expect(page.getByText('Choose your address from the list.')).toHaveCount(0);
-  const list = page.getByRole('list', { name: 'Address candidates' });
+  const list = page.getByRole('list', { name: 'Choose your address' });
   await expect(list.getByRole('listitem')).toHaveCount(3);
   await expect(list.getByRole('button')).toHaveText(addresses);
   for (const button of await list.getByRole('button').all()) {
@@ -59,7 +59,7 @@ test('AC2 keeps a single result as an unselected one-item list', async ({ page }
   } }));
 
   await search(page);
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('listitem')).toHaveCount(1);
   await expect(page.getByRole('heading', { name: 'Is this the place?' })).toHaveCount(0);
 });
 
@@ -184,7 +184,7 @@ test('AC2 collapses one repeated address returned at a single point', async ({ p
     addressFeature('8 RIDGE ROAD KALORAMA 3766', 'KALORAMA', 145.366, -37.818),
   ]);
 
-  const list = page.getByRole('list', { name: 'Address candidates' });
+  const list = page.getByRole('list', { name: 'Choose your address' });
   await expect(list.getByRole('button')).toHaveText([DUP, '8 RIDGE ROAD KALORAMA 3766']);
 });
 
@@ -199,7 +199,7 @@ test('AC2 keeps different unit and street numbers as separate lines', async ({ p
   await searchWith(page, distinct.map((address) =>
     addressFeature(address, 'KALORAMA', 145.36594, -37.817939)));
 
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('button'))
     .toHaveText(distinct);
 });
 
@@ -209,7 +209,7 @@ test('AC2 retains the one flagged record when the points conflict', async ({ pag
     addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'Y'),
   ]);
 
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('button'))
     .toHaveText([DUP]);
 });
 
@@ -221,7 +221,7 @@ test('AC2 an address the register holds at two unflagged points can still be cho
   ]);
 
   // Listed once, in the register's order, with no coordinate on screen.
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('button'))
     .toHaveText(['4 RIDGE ROAD KALORAMA 3766', DUP]);
   await expect(page.locator('main')).not.toContainText(/145\.|-37\.|pfi/i);
 
@@ -237,7 +237,7 @@ test('AC2 two flagged records at conflicting points are offered once, never rank
     addressFeature(DUP, 'KALORAMA', 145.365951, -37.817944, 'Y'),
   ]);
 
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('button'))
     .toHaveText([DUP]);
   await expect(page.locator('main')).not.toContainText(/best|closest|likely|score/i);
 });
@@ -261,7 +261,7 @@ test('AC2 searches while typing, with no submit', async ({ page }) => {
   await page.goto(SEARCH_URL);
   await page.getByLabel('Street address').pressSequentially('RIDGE', { delay: 30 });
 
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('button'))
     .toHaveText(['6 RIDGE ROAD KALORAMA 3766']);
   // The field is still the field: a live list must not take the screen away from
   // the text it is answering.
@@ -279,7 +279,7 @@ test('AC2 sends nothing below the minimum, and says what to do instead', async (
   await page.waitForTimeout(600);
 
   await expect(page.getByRole('status')).toHaveText('Enter at least 3 characters.');
-  await expect(page.getByRole('list', { name: 'Address candidates' })).toHaveCount(0);
+  await expect(page.getByRole('list', { name: 'Choose your address' })).toHaveCount(0);
   expect(requests).toEqual([]);
 });
 
@@ -290,7 +290,7 @@ test('AC2 debounce collapses a typing burst into one request', async ({ page }) 
 
   await page.goto(SEARCH_URL);
   await page.getByLabel('Street address').pressSequentially('RIDGE ROAD KALORAMA', { delay: 20 });
-  await expect(page.getByRole('list', { name: 'Address candidates' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Choose your address' })).toBeVisible();
   await page.waitForTimeout(600);
 
   // Nineteen characters, one outbound query — the debounce is what bounds the
@@ -316,7 +316,7 @@ test('AC2 state (a): while a search is pending, nothing is claimed about a resul
   await expect(status).not.toContainText(NO_MATCH_SENTENCE);
   await expect(status).not.toContainText(SEARCH_COULD_NOT_RUN);
   await expect(status).not.toContainText('returned');
-  await expect(page.getByRole('list', { name: 'Address candidates' })).toHaveCount(0);
+  await expect(page.getByRole('list', { name: 'Choose your address' })).toHaveCount(0);
   // No spinner, anywhere, in any state of this screen.
   await expect(page.locator('.spinner, [role="progressbar"], svg[class*="spin"]')).toHaveCount(0);
 
@@ -380,14 +380,14 @@ test('AC2 a stale response can never overwrite a newer one', async ({ page }) =>
   await staleReached;
   await field.fill('RIDGE');
 
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('button'))
     .toHaveText([FRESH]);
 
   // Now let the superseded response go. It answers text the user has moved past
   // and must not reach the screen, whatever order the two replies arrive in.
   releaseStale();
   await page.waitForTimeout(500);
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('button'))
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('button'))
     .toHaveText([FRESH]);
   await expect(page.getByText(STALE)).toHaveCount(0);
   await expect(page.getByRole('status'))
@@ -413,7 +413,7 @@ test('AC2 states how many records the register returned and that ten is a cap', 
     '10 addresses found. Type more to narrow it.',
   );
   // The stated number of lines is the number of lines.
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('listitem'))
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('listitem'))
     .toHaveCount(10);
 });
 
@@ -458,7 +458,7 @@ test('AC2 dismissal lasts until the query changes', async ({ page }) => {
   ]);
   await search(page);
 
-  const list = page.getByRole('list', { name: 'Address candidates' });
+  const list = page.getByRole('list', { name: 'Choose your address' });
   await expect(list).toBeVisible();
   await page.getByRole('button', { name: 'Not my address' }).click();
 
@@ -483,14 +483,14 @@ test('AC2 Enter forces the search, without doubling requests', async ({ page }) 
   await page.goto(SEARCH_URL);
   await page.getByLabel('Street address').fill('RIDGE');
   await addressField(page).press('Enter');
-  await expect(page.getByRole('list', { name: 'Address candidates' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Choose your address' })).toBeVisible();
   await page.waitForTimeout(600);
   expect(requests).toHaveLength(1);
 
   // Enter again re-asks the register for the same text: the user's call,
   // not something the screen does on its own.
   await addressField(page).press('Enter');
-  await expect(page.getByRole('list', { name: 'Address candidates' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Choose your address' })).toBeVisible();
   await page.waitForTimeout(600);
   expect(requests).toHaveLength(2);
 });
@@ -535,7 +535,7 @@ test('AC2 nothing typed, returned or rejected is written to the device', async (
   // a correction, all before anything is confirmed.
   for (const query of ['RID', 'RIDGE', 'RIDGE ROAD', 'KALORAMA']) {
     await field.fill(query);
-    await expect(page.getByRole('list', { name: 'Address candidates' })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Choose your address' })).toBeVisible();
   }
   await page.getByRole('button', { name: 'Not my address' }).click();
   await field.fill('RIDGE');
@@ -557,7 +557,7 @@ test('Use my location lists the nearest register addresses, and typing takes the
 
   // Nearest first, whatever order the register answered in.
   await expect(page.getByRole('status')).toContainText('Addresses nearest you');
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('listitem').first()).toContainText('1774-1776 DANDENONG ROAD');
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('listitem').first()).toContainText('1774-1776 DANDENONG ROAD');
   expect(requests).toEqual([
     // The smallest radius first, and it found addresses, so nothing wider is asked.
     "property_status = 'A' AND DWITHIN(geom, POINT(-37.916205 145.129435), 25, meters)",
@@ -580,7 +580,7 @@ test('Use my location says how rough a vague position is, refuses one too rough,
   await context.setGeolocation({ latitude: -37.916205, longitude: 145.129435, accuracy: 400 });
   await locate.click();
   await expect(status).toContainText('Your position is only known to within 400 m.');
-  await expect(page.getByRole('list', { name: 'Address candidates' }).getByRole('listitem').first()).toContainText('1778 DANDENONG ROAD');
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('listitem').first()).toContainText('1778 DANDENONG ROAD');
 
   await context.setGeolocation({ latitude: -37.916205, longitude: 145.129435, accuracy: 5_000 });
   await locate.click();

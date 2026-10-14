@@ -128,7 +128,9 @@ export const ADDRESS_LOCATE_OUTSIDE = 'You are outside Victoria. Type a Victoria
 export const ADDRESS_LOCATE_NONE = 'No address near you. Type it instead.';
 export const SEARCH_IN_PROGRESS = 'Searching…';
 export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
-export const CANDIDATE_LIST_LABEL = 'Address candidates';
+/** Over the address results, so the rows read as a list to tap rather than
+ *  more fields, and the list's name when read aloud. */
+export const CANDIDATE_LIST_HEADING = 'Choose your address';
 export const NONE_OF_THESE = 'Not my address';
 /** The register describes one address at more than one point and does not say
  * which it means. Stated as the limit it is, never as a result. */
