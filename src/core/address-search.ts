@@ -7,6 +7,7 @@ import {
   ROAD_DIRECTIONS,
   ROAD_TYPES,
 } from './constants';
+import type { Locality } from './localities';
 import type { AddressCandidate, AddressRecord } from './types';
 
 /** The outcome of turning one address response into things a user may choose. */
@@ -17,7 +18,14 @@ export type AddressCandidateResolution = {
    * collapsing. Rendered next to the number of lines so a capped response reads
    * as a cap and not as the whole register. */
   returnedCount: number;
+
+  /** Set when the list is the addresses nearest a town or station that was
+   *  typed, rather than addresses matching the text. */
+  near?: NearPlace;
 };
+
+/** A town or station typed in place of an address. */
+export type NearPlace = { kind: 'town' | 'station'; name: string };
 
 /** What the register said about ONE query.
  * The query it answers is carried with it, 
@@ -48,6 +56,7 @@ type AddressSearchState =
       kind: 'candidates';
       candidates: AddressCandidate[];
       returnedCount: number;
+      near?: NearPlace;
     }
   | { kind: 'no-match' }
   | { kind: 'unavailable' }
@@ -370,6 +379,53 @@ export function placeNameFilterForCql(query: string): string | null {
   return `(building_name LIKE ${name} OR complex_name LIKE ${name})`;
 }
 
+/** Typed words alone, upper case: letters and single spaces, as town,
+ *  station and place names are kept. */
+function nameWords(query: string): string {
+  return query
+    .slice(0, ADDRESS_QUERY_MAX_CHARS)
+    .toUpperCase()
+    .replace(/['’]/g, '')
+    .replace(/[^A-Z ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** The station named, when the text is a name then the word station, such as
+ *  "Clayton station". Null for anything with a number in it. */
+export function stationName(query: string): string | null {
+  if (/\d/.test(query)) return null;
+  const match = /^(.+?) (?:RAILWAY |TRAIN )?STATION$/.exec(nameWords(query));
+  return match && match[1].length >= ADDRESS_QUERY_MIN_CHARS ? match[1].slice(0, ADDRESS_WORD_MAX_CHARS) : null;
+}
+
+/** The station, by its exact name, among the register's rail stations. */
+export function stationFilterForCql(name: string): string {
+  return `feature_type_code = 'rail_station' AND name = ${quoted(name)}`;
+}
+
+/** The town or suburb typed on its own, as one of the phone's own locality
+ *  names. Null for anything with a number in it, which is an address. */
+export function localityNamed(localities: readonly Locality[], query: string): Locality | null {
+  if (/\d/.test(query)) return null;
+  const words = nameWords(query);
+  return localities.find((locality) => nameWords(locality.name) === words) ?? null;
+}
+
+/** A town's own named point, by its name as the phone's list keeps it. */
+export function townPointFilterForCql(name: string): string {
+  return `place_name = ${quoted(nameWords(name))}`;
+}
+
+/** A named place such as a university or a hospital, in the state's index of
+ *  named features, kept only where it is linked to an official address. */
+export function landmarkFilterForCql(query: string): string | null {
+  if (/\d/.test(query)) return null;
+  const words = nameWords(query).split(' ').filter(Boolean).slice(0, 8).map((word) => word.slice(0, ADDRESS_WORD_MAX_CHARS));
+  if (words.join('').length < ADDRESS_QUERY_MIN_CHARS) return null;
+  return `name LIKE ${quoted(`%${words.join('%')}%`)} AND vmadd_pfi IS NOT NULL`;
+}
+
 /** Exclude inactive records, then resolve each exact `ezi_address` to one
  * candidate at its first-seen position. The grouping key is the returned
  * address string verbatim, with no trimming, case folding or punctuation
@@ -408,6 +464,7 @@ export function completedSearchState(
         kind: 'candidates',
         candidates: [...resolution.candidates],
         returnedCount: resolution.returnedCount,
+        near: resolution.near,
       };
 }
 

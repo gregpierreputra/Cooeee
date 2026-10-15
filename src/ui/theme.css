@@ -1240,6 +1240,15 @@ main:focus {
   flex: none;
   color: var(--ink-3);
 }
+/* A named place over its address: the name in teal, the address beneath. */
+.candidate-text {
+  display: grid;
+  gap: 0.125rem;
+}
+.candidate-place {
+  color: var(--accent);
+  font-size: var(--step-s);
+}
 
 .candidate-list {
   list-style: none;

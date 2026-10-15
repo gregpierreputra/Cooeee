@@ -1,5 +1,6 @@
 import { useId } from "react";
 import * as copy from "../../core/copy";
+import { titleCase } from "../../core/home";
 import type { AddressCandidate } from "../../core/types";
 
 type CandidatesProps = {
@@ -33,7 +34,16 @@ export function Candidates({ candidates, onChoose, onNone }: CandidatesProps) {
               type="button"
               onClick={() => onChoose(candidate)}
             >
-              {candidate.address}
+              {/* A place found by its name says it over its address, so it is
+                  plain which address the pack is built on. */}
+              {candidate.placeName ? (
+                <span className="candidate-text">
+                  <span className="candidate-place">{titleCase(candidate.placeName)}</span>
+                  {candidate.address}
+                </span>
+              ) : (
+                candidate.address
+              )}
               <svg className="candidate-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
                 <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

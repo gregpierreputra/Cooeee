@@ -122,6 +122,10 @@ export const LAST_RESORT_MEANING = 'Places the Country Fire Authority names to g
  *  the line claims nothing about the register itself. */
 export const ADDRESS_LOCATE_DISCLOSURE = 'The location button sends your position to the Victorian address register. Cooeee does not keep it.';
 export const ADDRESS_LOCATE_FOUND = 'Addresses nearest you';
+/** A town or station typed in place of an address: the list is the addresses
+ *  nearest it, and that is said, so none reads as the place itself. */
+export const ADDRESS_NEAR_TOWN = (town: string) => `Addresses nearest the centre of ${town}`;
+export const ADDRESS_NEAR_STATION = (station: string) => `Addresses nearest ${station} station`;
 export const ADDRESS_LOCATE_FAILED = 'Position unavailable. Type the address.';
 export const ADDRESS_LOCATE_DENIED = 'Location is off for Cooeee. Turn it on in your phone settings, or type the address.';
 export const ADDRESS_LOCATE_SLOW = 'Your position took too long to find. Try again, or type the address.';
@@ -131,7 +135,9 @@ export const ADDRESS_LOCATE_TOO_ROUGH = 'Your position is too rough to find your
 export const ADDRESS_LOCATE_OUTSIDE = 'You are outside Victoria. Type a Victorian address.';
 export const ADDRESS_LOCATE_NONE = 'No address near you. Type it instead.';
 export const SEARCH_IN_PROGRESS = 'Searching…';
-export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
+/** Says, before anything is typed, that a town, a station or a named place
+ *  finds an address too. */
+export const ADDRESS_QUERY_TOO_SHORT = 'Type an address, town, station or place.';
 /** Over the address results, so the rows read as a list to tap rather than
  *  more fields, and the list's name when read aloud. */
 export const CANDIDATE_LIST_HEADING = 'Choose your address';

@@ -85,6 +85,10 @@ function typedSearchLine(live: ReturnType<typeof liveSearchState>): string {
     case 'unavailable':
       return `${copy.SEARCH_COULD_NOT_RUN} ${copy.SEARCH_FAILURE_MEANING}`;
     case 'candidates': {
+      if (live.near) {
+        const name = titleCase(live.near.name);
+        return live.near.kind === 'town' ? copy.ADDRESS_NEAR_TOWN(name) : copy.ADDRESS_NEAR_STATION(name);
+      }
       const count = copy.ADDRESS_RESULT_COUNT(live.candidates.length);
       return addressResultsAtLimit(live.returnedCount) ? `${count}. ${copy.ADDRESS_RESULT_CAPPED}` : count;
     }

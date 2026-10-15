@@ -195,14 +195,74 @@ describe('address search request', () => {
       return new Response(JSON.stringify({ type: 'FeatureCollection', features: [] }), { status: 200 });
     };
     await fetchAddressCandidates('monash university', empty);
-    expect(filters).toHaveLength(3);
+    expect(filters).toHaveLength(4);
     expect(filters[1]).toContain("'MON%");
-    expect(filters[2]).toContain('building_name');
+    // A named place, such as a campus, before a building's own name.
+    expect(filters[2]).toContain('vmadd_pfi IS NOT NULL');
+    expect(filters[3]).toContain('building_name');
 
     // A typed number is never a place name, so that last question is not asked.
     filters.length = 0;
     await fetchAddressCandidates('12 ridge road', empty);
     expect(filters).toHaveLength(2);
+  });
+
+  it('lists the addresses nearest a town typed on its own, and says it is that town', async () => {
+    const asked: string[] = [];
+    const fetcher = async (input: RequestInfo | URL) => {
+      asked.push(new URL(String(input)).searchParams.get('CQL_FILTER') ?? '');
+      return new Response(JSON.stringify(featureCollection([feature()])), { status: 200 });
+    };
+    const towns = async () => [{ name: 'KALORAMA', lat: -37.818, lon: 145.366 }];
+    const resolution = await fetchAddressCandidates('Kalorama', fetcher, undefined, towns);
+    expect(resolution.near).toEqual({ kind: 'town', name: 'KALORAMA' });
+    expect(resolution.candidates.map(({ address }) => address)).toEqual(['6 RIDGE ROAD KALORAMA 3766']);
+    // The town's own named point first, then the addresses nearest it.
+    expect(asked[0]).toBe("place_name = 'KALORAMA'");
+    expect(asked[1]).toContain('DWITHIN');
+    // A number makes it an address, searched as typed.
+    asked.length = 0;
+    expect((await fetchAddressCandidates('6 Kalorama', fetcher, undefined, towns)).near).toBeUndefined();
+    expect(asked[0]).not.toContain('DWITHIN');
+  });
+
+  it('lists the addresses nearest a station by its exact name, and falls back to the address search when there is none', async () => {
+    const asked: string[] = [];
+    const station = { type: 'Feature', geometry: { type: 'Point', coordinates: [145.12, -37.92] }, properties: { name: 'CLAYTON' } };
+    const fetcher = (stationFound: boolean) => async (input: RequestInfo | URL) => {
+      const params = new URL(String(input)).searchParams;
+      asked.push(`${params.get('typeNames')} ${params.get('CQL_FILTER')}`);
+      const features = params.get('typeNames') === 'open-data-platform:tr_rail_infrastructure' ? (stationFound ? [station] : []) : [feature()];
+      return new Response(JSON.stringify(featureCollection(features)), { status: 200 });
+    };
+    const resolution = await fetchAddressCandidates('Clayton station', fetcher(true), undefined, async () => []);
+    expect(resolution.near).toEqual({ kind: 'station', name: 'CLAYTON' });
+    expect(asked[0]).toContain("feature_type_code = 'rail_station' AND name = 'CLAYTON'");
+    asked.length = 0;
+    expect((await fetchAddressCandidates('Nowhere station', fetcher(false), undefined, async () => [])).near).toBeUndefined();
+    expect(asked[1]).toContain('open-data-platform:address');
+  });
+
+  it('finds a named place by its official address, its name carried over the address', async () => {
+    const asked: string[] = [];
+    const campus = { type: 'Feature', geometry: { type: 'Point', coordinates: [145.13, -37.91] }, properties: { name: 'MONASH UNIVERSITY - CLAYTON CAMPUS', vmadd_pfi: '426391161' } };
+    const noLink = { type: 'Feature', geometry: { type: 'Point', coordinates: [145.13, -37.91] }, properties: { name: 'MONASH ARMY RESERVE', vmadd_pfi: "1' OR 1=1" } };
+    const address = feature({ properties: { ezi_address: '1-131 WELLINGTON ROAD CLAYTON 3168', locality_name: 'CLAYTON', property_status: 'A', is_primary: 'Y', pfi: '426391161' } });
+    const fetcher = async (input: RequestInfo | URL) => {
+      const params = new URL(String(input)).searchParams;
+      const filter = params.get('CQL_FILTER') ?? '';
+      asked.push(filter);
+      const features = params.get('typeNames') === 'open-data-platform:foi_index_centroid'
+        ? [campus, noLink]
+        : filter.includes('pfi IN') ? [address] : [];
+      return new Response(JSON.stringify(featureCollection(features)), { status: 200 });
+    };
+    const resolution = await fetchAddressCandidates('monash university', fetcher, undefined, async () => []);
+    expect(resolution.candidates).toEqual([
+      expect.objectContaining({ address: '1-131 WELLINGTON ROAD CLAYTON 3168', placeName: 'MONASH UNIVERSITY - CLAYTON CAMPUS' }),
+    ]);
+    // Only the register's own digit ids go back into a filter.
+    expect(asked.find((filter) => filter.includes('pfi IN'))).toContain("pfi IN ('426391161')");
   });
 
   it('skips one unreadable record and keeps the good ones beside it', async () => {

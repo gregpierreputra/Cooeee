@@ -93,8 +93,9 @@ test('AC3 distinguishes a valid empty response and retains the typed text', asyn
   await expect(page.getByLabel('Street address')).toHaveValue('NOT A REGISTER ADDRESS');
   await expect(page.getByRole('button', { name: 'Search again' })).toHaveCount(0);
   await expect(page.getByText(/Did you mean|locality|parent suburb/i)).toHaveCount(0);
-  // Asked as typed, then loosely, then by place name, before saying no match.
-  expect(requests).toBe(3);
+  // Asked as typed, then loosely, then as a named place, then by a building's
+  // name, before saying no match.
+  expect(requests).toBe(4);
 });
 
 test('AC3 remains readable at 200 percent text size', async ({ page }) => {
@@ -157,8 +158,9 @@ test('AC4 retry is explicit and issues exactly one new request', async ({ page }
   await tryAgain.click();
   await expect(page.getByRole('status')).toContainText('No match. Check the spelling');
   // One explicit retry. 'RIDGE' holds no number, so its empty answer is asked
-  // three ways (as typed, loosely, by place name) before no match is stated.
-  expect(requests).toBe(5);
+  // four ways (as typed, loosely, as a named place, by a building's name)
+  // before no match is stated.
+  expect(requests).toBe(6);
 });
 
 // ── E1-US1-AC2 duplicate visible candidates ─────────────────────────────────
@@ -273,12 +275,12 @@ test('AC2 sends nothing below the minimum, and says what to do instead', async (
   const requests = await countAddressRequests(page);
 
   await page.goto(SEARCH_URL);
-  await expect(page.getByRole('status')).toHaveText('Enter at least 3 characters.');
+  await expect(page.getByRole('status')).toHaveText('Type an address, town, station or place.');
 
   await page.getByLabel('Street address').pressSequentially('RI', { delay: 30 });
   await page.waitForTimeout(600);
 
-  await expect(page.getByRole('status')).toHaveText('Enter at least 3 characters.');
+  await expect(page.getByRole('status')).toHaveText('Type an address, town, station or place.');
   await expect(page.getByRole('list', { name: 'Choose your address' })).toHaveCount(0);
   expect(requests).toEqual([]);
 });
