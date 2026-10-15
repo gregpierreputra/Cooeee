@@ -3055,6 +3055,10 @@ html:has(.blacksky-sheet[open]) {
   background-image: none;
   text-align: center;
 }
+/* Holds the tab bar's hint pill, set below the way out further on. */
+.way-out-slot {
+  position: relative;
+}
 .way-out-compass {
   position: relative;
   flex: none;
@@ -3822,7 +3826,8 @@ body.touring .page {
   transition: stroke-dashoffset 2s linear;
 }
 /* The hint after a tap floats above the compass, so it moves nothing. */
-.nav-blacksky-slot .blacksky-hold-hint {
+.nav-blacksky-slot .blacksky-hold-hint,
+.way-out-slot .blacksky-hold-hint {
   position: absolute;
   bottom: calc(100% + 36px);
   left: 50%;
@@ -3836,6 +3841,13 @@ body.touring .page {
   /* 16 px, the same pill entering and leaving: one instruction, said alike on
      both sides of the door. */
   font-size: var(--step-0);
+}
+/* On the welcome the pill floats just below the way out, so it covers no
+   other button. It shows only once a short tap has lifted, so no thumb is in
+   its way. */
+.way-out-slot .blacksky-hold-hint {
+  top: calc(100% + 0.625rem);
+  bottom: auto;
 }
 
 .bottom-nav-item {

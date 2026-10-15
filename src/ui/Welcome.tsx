@@ -1,15 +1,22 @@
-import * as copy from '../core/copy';
-import Glyph from './components/Glyph';
-import { Compass } from './components/BottomNav';
-import HoldButton from './components/HoldButton';
-import Mark from './components/Mark';
+import { NAV_HOLD_HINT_MS } from "../core/constants";
+import * as copy from "../core/copy";
+import Glyph from "./components/Glyph";
+import { Compass } from "./components/BottomNav";
+import HoldButton from "./components/HoldButton";
+import Mark from "./components/Mark";
 
 /** The first screen a new person sees, before the disclosure: why the app is
  *  worth having, in three drawings and as few words as will carry them. It
  *  stands before the router like the disclosure and stores nothing. Its main
  *  control leads on to the disclosure, nothing is agreed to here, and a hold
  *  opens BlackSky for someone who cannot wait. */
-export default function Welcome({ onContinue, onWayOut }: { onContinue: () => void; onWayOut: () => void }) {
+export default function Welcome({
+  onContinue,
+  onWayOut,
+}: {
+  onContinue: () => void;
+  onWayOut: () => void;
+}) {
   return (
     <main className="page first-open welcome">
       <header className="hero first-open-hero">
@@ -44,22 +51,33 @@ export default function Welcome({ onContinue, onWayOut }: { onContinue: () => vo
       </ul>
 
       <div className="actions">
-        <button type="button" className="action main-action" onClick={onContinue}>
+        <button
+          type="button"
+          className="action main-action"
+          onClick={onContinue}
+        >
           {copy.SEE_HOW_IT_WORKS}
         </button>
         {/* For someone with a fire close on their first visit: BlackSky on the
             same two second hold as everywhere else, before anything is read. */}
         {/* Drawn as the tab bar's BlackSky compass, the door it opens: the
             ring sweeps round the compass for the two seconds of the hold. */}
-        <HoldButton className="way-out" hint={copy.HOLD_TO_ENTER} onHold={onWayOut}>
-          <span className="way-out-compass">
-            <Compass />
-          </span>
-          <span className="way-out-text">
-            <span className="way-out-title">{copy.WAY_OUT_BUTTON}</span>
-            <span className="way-out-sub">{copy.WAY_OUT_SUB}</span>
-          </span>
-        </HoldButton>
+        <div className="way-out-slot">
+          <HoldButton
+            className="way-out"
+            hint={copy.HOLD_TO_ENTER}
+            hintMs={NAV_HOLD_HINT_MS}
+            onHold={onWayOut}
+          >
+            <span className="way-out-compass">
+              <Compass />
+            </span>
+            <span className="way-out-text">
+              <span className="way-out-title">{copy.WAY_OUT_BUTTON}</span>
+              <span className="way-out-sub">{copy.WAY_OUT_SUB}</span>
+            </span>
+          </HoldButton>
+        </div>
       </div>
     </main>
   );
