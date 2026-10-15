@@ -6554,6 +6554,40 @@ body.drill-open .banner {
     animation: none;
   }
 }
+/* The guesses, with the phone's keyboard field laid over them: a tap on the
+   guesses opens it. Unseen, and at 16px so a phone does not zoom in. */
+.word-board {
+  position: relative;
+}
+.word-phone-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  font-size: 16px;
+  caret-color: transparent;
+  cursor: text;
+}
+.word-phone-open {
+  align-self: center;
+  justify-self: center;
+  margin-inline: auto;
+}
+/* While the phone's keyboard types, the guesses wear the focus ring. */
+.word-board:has(.word-phone-input:focus) {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: var(--r-card);
+}
+.word-how {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.word-how h2 {
+  margin: 0;
+}
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -1618,6 +1618,13 @@ export const WORD_TILE_TODAY = {
 export const WORD_WEEK_LABEL = (solved: number) => `Solved ${solved} of the last 7 days`;
 export const WORD_LABEL = 'Cooee Word';
 export const WORD_NUMBER = (n: number) => `Word ${n}`;
+/** Under the title: what the game is for, said without a tap. */
+export const WORD_PURPOSE = 'Guess today’s bushfire word. Each one comes with a fact about getting ready.';
+/** Over the figures and the colour key, which together are the rules. */
+export const WORD_HOW_TO_PLAY = 'How to play';
+/** The phone's own keyboard, for a small screen where the keys sit below the guesses. */
+export const WORD_TYPE_LABEL = 'Type your guess';
+export const WORD_PHONE_KEYBOARD = 'Type with your phone’s keyboard';
 export const WORD_HINT_LABEL = 'Hint';
 /** The answer's theme, as the hint names it. */
 export const WORD_THEMES = {

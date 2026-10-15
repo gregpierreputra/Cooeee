@@ -58,6 +58,42 @@ test.describe('Cooee Word', () => {
     await expect(page.getByRole('group', { name: 'Letters' })).toHaveCount(0);
   });
 
+  test('says what it is for, and shows how to play as its figures and colour key', async ({ page }) => {
+    await open(page);
+    await expect(page.getByText('Guess today’s bushfire word. Each one comes with a fact about getting ready.')).toBeVisible();
+    const how = page.getByRole('region', { name: 'How to play' });
+    await expect(how).toContainText('tries');
+    await expect(how.locator('.word-legend li')).toHaveText(['Right place', 'In the word', 'Not in the word']);
+    // Nothing to open: the rules are on the page.
+    await expect(page.getByRole('button', { name: 'How to play' })).toHaveCount(0);
+  });
+
+  // On a small phone the keys sit below the guesses, so the phone's own
+  // keyboard is offered too: a tap on the guesses, or the words under them.
+  test('the phone’s own keyboard types a guess, deletes and enters it', async ({ page }) => {
+    await open(page);
+    await page.getByRole('button', { name: 'Type with your phone’s keyboard' }).click();
+    const field = page.getByRole('textbox', { name: 'Type your guess' });
+    await expect(field).toBeFocused();
+    await expect(page.locator('.word-board')).toHaveCSS('outline-style', 'solid');
+    // A phone's keyboard sends what it typed as input, not as named keys.
+    const send = (value: string) =>
+      field.evaluate((el, next) => {
+        (el as HTMLInputElement).value = next;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, value);
+    const first = page.getByRole('list', { name: 'Your guesses' }).getByRole('listitem').first();
+    for (const letter of wrong + 'x') await send(` ${letter}`);
+    await expect(first).toContainText(wrong.toUpperCase());
+    await send('');
+    await send(` ${wrong.at(-1)}`);
+    await send('');
+    await expect(first).toContainText(wrong.slice(0, -1).toUpperCase());
+    await send(` ${wrong.at(-1)}`);
+    await field.press('Enter');
+    await expect(page.locator('.word-message')).toContainText('guesses left');
+  });
+
   test('a solved day adds to the streak from the days before', async ({ page }) => {
     await open(page, '?history=lost,won,won');
     await type(page, answer.word);

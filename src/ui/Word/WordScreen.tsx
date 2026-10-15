@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 import { melbourneDay } from '../../core/day';
@@ -148,6 +148,21 @@ export default function WordScreen({
     [ready, done, typed, guesses, day, saveDay],
   );
 
+  // The phone's keyboard types through a field that always holds one space, so
+  // a delete on an empty guess still reaches it. Letters typed there, or the
+  // space deleted, are read and the space put back. Keys that a phone reports
+  // by name are already typed by the listener below, which stops them here.
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const phoneInput = (event: FormEvent<HTMLInputElement>) => {
+    const field = event.currentTarget;
+    if (field.value === '') type('Backspace');
+    for (const letter of field.value.replace(' ', '').toLowerCase()) {
+      if (/^[a-z]$/.test(letter)) type(letter);
+    }
+    field.value = ' ';
+    field.setSelectionRange(1, 1);
+  };
+
   // A keyboard types too, unless a button has the focus for Enter or Space.
   // The listener reads the latest typing through a ref, so keys pressed
   // faster than a render never act on a guess as it stood a key ago.
@@ -189,21 +204,52 @@ export default function WordScreen({
         <>
           <div className="hero word-hero">
             <h1>{copy.WORD_NUMBER(puzzleNumber(day))}</h1>
+            <p className="muted">{copy.WORD_PURPOSE}</p>
             {ready.list === null ? <p className="muted">{copy.WORD_LIST_UNAVAILABLE}</p> : null}
           </div>
-          <FactTiles facts={copy.WORD_FACTS(ready.answer.length)} />
+          {/* How to play, in pictures rather than sentences: the three figures,
+              then what each colour means. The hint follows, by the guesses. */}
+          <section className="word-how" aria-labelledby="word-how-label">
+            <h2 id="word-how-label" className="kicker section-label">{copy.WORD_HOW_TO_PLAY}</h2>
+            <FactTiles facts={copy.WORD_FACTS(ready.answer.length)} />
+            <ul className="word-legend">
+              <li><span className="word-cell mark-right" aria-hidden="true" />{copy.WORD_KEY_RIGHT}</li>
+              <li><span className="word-cell mark-present" aria-hidden="true" />{copy.WORD_KEY_PRESENT}</li>
+              <li><span className="word-cell mark-absent" aria-hidden="true" />{copy.WORD_KEY_ABSENT}</li>
+            </ul>
+          </section>
           {ready.hint ? (
             <aside className="word-hint" aria-label={copy.WORD_HINT_LABEL}>
               <span className="word-hint-theme">{ready.hint.theme}</span>
               <p className="word-hint-clue">{ready.hint.clue}</p>
             </aside>
           ) : null}
-          <ul className="word-legend">
-            <li><span className="word-cell mark-right" aria-hidden="true" />{copy.WORD_KEY_RIGHT}</li>
-            <li><span className="word-cell mark-present" aria-hidden="true" />{copy.WORD_KEY_PRESENT}</li>
-            <li><span className="word-cell mark-absent" aria-hidden="true" />{copy.WORD_KEY_ABSENT}</li>
-          </ul>
-          <WordGrid answer={ready.answer} guesses={guesses} typed={done ? '' : typed} />
+          {/* A tap on the guesses opens the phone's own keyboard through a field
+              laid over them, so on a small phone the guesses stay in view above
+              it. The keys below still work, and keep their colours. */}
+          <div className="word-board">
+            <WordGrid answer={ready.answer} guesses={guesses} typed={done ? '' : typed} />
+            {done ? null : (
+              <input
+                ref={phoneRef}
+                className="word-phone-input"
+                aria-label={copy.WORD_TYPE_LABEL}
+                defaultValue=" "
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                enterKeyHint="go"
+                onFocus={(event) => event.currentTarget.setSelectionRange(1, 1)}
+                onInput={phoneInput}
+              />
+            )}
+          </div>
+          {done ? null : (
+            <button type="button" className="hint-text word-phone-open" onClick={() => phoneRef.current?.focus()}>
+              {copy.WORD_PHONE_KEYBOARD}
+            </button>
+          )}
           <p className="word-message" role="status" aria-live="polite">
             {message}
           </p>
