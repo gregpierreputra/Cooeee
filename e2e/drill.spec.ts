@@ -1,5 +1,44 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { rulesFor } from '../src/core/drill-twists';
 import { HARNESS } from './helpers';
+
+/** Past the film and the guide, the clock running. */
+async function playing(page: Page, query: string) {
+  await page.goto(`${HARNESS}/drill?${query}`);
+  await page.getByRole('button', { name: 'Start the drill' }).click();
+  await page.getByRole('button', { name: 'Skip', exact: true }).click();
+  await page.getByRole('dialog').click();
+  await expect(page.locator('.drill-stage canvas')).toHaveAttribute('data-camera', /\d/);
+}
+
+/** Where a place in the house, in tiles, is on the page, from the canvas's camera. */
+async function tileOnScreen(page: Page, x: number, y: number) {
+  const canvas = page.locator('.drill-stage canvas');
+  const [left, top, perCss] = (await canvas.getAttribute('data-camera'))!.split(',').map(Number);
+  const frame = (await canvas.boundingBox())!;
+  return { x: frame.x + (x * 16 - left) / perCss, y: frame.y + (y * 16 - top) / perCss };
+}
+
+/** The middle of one slot of the bag strip on the page, laid out as the game lays it out. */
+async function slotOnScreen(page: Page, slot: number, bagLimit: number) {
+  const canvas = page.locator('.drill-stage canvas');
+  const perCss = Number((await canvas.getAttribute('data-camera'))!.split(',')[2]);
+  const frame = (await canvas.boundingBox())!;
+  const width = frame.width * perCss;
+  const size = Math.min(16, Math.floor((width - 8) / bagLimit));
+  const startX = Math.round((width - bagLimit * size) / 2);
+  return { x: frame.x + (startX + slot * size + size / 2) / perCss, y: frame.y + (frame.height * perCss - 20 + 8) / perCss };
+}
+
+/** How many pixels of the house, above the bag strip whose full slots are
+ *  outlined in the same green, are the door arrow's green. */
+const arrowGreen = (page: Page) =>
+  page.locator('.drill-stage canvas').evaluate((canvas: HTMLCanvasElement) => {
+    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, Math.round(canvas.height * 0.8));
+    let count = 0;
+    for (let i = 0; i < data.length; i += 4) if (data[i] === 91 && data[i + 1] === 227 && data[i + 2] === 138) count++;
+    return count;
+  });
 
 // E9. The drill, one of the quick games on Rehearse. Asserted here: its first
 // screen, one short clock played to its debrief, and the record.
@@ -90,6 +129,71 @@ test.describe('E9 the drill', () => {
     await expect(page.getByRole('button', { name: 'Grab the floor lamp' })).toBeEnabled();
     await page.keyboard.press(' ');
     await expect(page.locator('main')).toContainText('Bag 1 of 10');
+  });
+
+  // A thing packed by mistake can go back to its place: Backspace puts back
+  // the last, a tap on the bag strip the one tapped. Each is said under the clock.
+  test('a thing in the bag can be put back, by Backspace or a tap on its slot', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await playing(page, 'seconds=60');
+    const count = page.locator('.drill-bag');
+    await expect(page.getByRole('button', { name: 'Grab the floor lamp' })).toBeEnabled();
+    await page.keyboard.press(' ');
+    await expect(count).toContainText('1/10');
+    // The figure bends to pack: the next grab waits for it.
+    await page.waitForTimeout(450);
+    await expect(page.getByRole('button', { name: 'Grab the family photos' })).toBeEnabled();
+    await page.keyboard.press(' ');
+    await expect(count).toContainText('2/10');
+
+    await page.keyboard.press('Backspace');
+    await expect(count).toContainText('1/10');
+    await expect(page.locator('.drill-goal')).toHaveText('Put back the family photos.');
+    // Back in its place, so it can be grabbed again.
+    await expect(page.getByRole('button', { name: 'Grab the family photos' })).toBeEnabled();
+
+    const slot = await slotOnScreen(page, 0, 10);
+    await page.mouse.click(slot.x, slot.y);
+    await expect(count).toContainText('0/10');
+    await expect(page.locator('.drill-goal')).toHaveText('Put back the floor lamp.');
+  });
+
+  // A full bag turns the count green, sends the player to the door with the
+  // arrow, and a grab tried then shakes the count red.
+  test('a full bag shows the way out and refuses one more', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await playing(page, 'seconds=100&twist=day-pack');
+    const count = page.locator('.drill-bag');
+    expect(await arrowGreen(page)).toBe(0);
+    // The two beside the start, then three more round the living room, off
+    // the door mat, whose hold ring is the arrow's green too.
+    let packed = 0;
+    for (const [x, y] of [[24.5, 7.5], [21.5, 6.3], [21, 4.4], [26.5, 3.6]]) {
+      const at = await tileOnScreen(page, x, y);
+      await page.mouse.click(at.x, at.y);
+      for (let tries = 0; tries < 2 && packed < 5; tries++) {
+        const grab = page.getByRole('button', { name: /^Grab the/ });
+        if (!(await grab.isEnabled({ timeout: 6000 }).catch(() => false))) break;
+        await page.keyboard.press(' ');
+        packed++;
+        await expect(count).toContainText(`${packed}/5`);
+        await page.waitForTimeout(450);
+      }
+      if (packed === 5) break;
+    }
+    expect(packed).toBe(5);
+    await expect(count).toHaveClass(/full/);
+    await expect(page.locator('.drill-goal')).toHaveText('Bag full. Head to the front door.');
+    await expect.poll(() => arrowGreen(page)).toBeGreaterThan(30);
+
+    // Something still in reach, but no room: the count shakes red.
+    const plant = rulesFor('day-pack').items.find((item) => item.id === 'plant')!;
+    const near = await tileOnScreen(page, plant.x, plant.y + 0.4);
+    await page.mouse.click(near.x, near.y);
+    await expect(page.getByRole('button', { name: 'Bag full' })).toHaveAttribute('aria-disabled', 'true', { timeout: 8000 });
+    await page.keyboard.press(' ');
+    await expect(count).toHaveClass(/refused/);
+    await expect(count).toContainText('5/5');
   });
 
   test('the clock says the rule, turns red near the end and sends the player to the door', async ({ page }) => {

@@ -42,6 +42,8 @@ export type Scene = {
   late: boolean;
   doorArrow: boolean;
   showBag: boolean;
+  /** The thing last put back, from which slot and when, for its flight home. */
+  putBack?: { id: string; slot: number; at: number } | null;
   /** A yellow line round every thing that can be packed. Off in the film. */
   outlines: boolean;
   /** 0 to 1: how far the wait on the mat has gone towards leaving early. */
@@ -77,6 +79,36 @@ const STANDING = FURNITURE.filter((piece) => !piece.flat);
 const SLOT = 16;
 /** The height of the bag strip along the bottom of the picture, in source pixels. */
 export const BAG_STRIP = SLOT + 8;
+/** How long a thing takes to fly between its place and its slot, and how
+ *  long its slot glows once it lands, in seconds. */
+const FLIGHT_SECONDS = 0.5;
+const LANDED_SECONDS = 0.6;
+
+/** Where the bag's slots sit along the bottom of a picture this size. */
+function bagLayout(width: number, height: number, bagLimit: number) {
+  const slotSize = Math.min(SLOT, Math.floor((width - 8) / bagLimit));
+  return { slotSize, startX: Math.round((width - bagLimit * slotSize) / 2), y: height - SLOT - 4 };
+}
+
+/** Which slot of the bag a point on the picture falls in, or null. Laid out
+ *  as drawBag lays the slots out, so a tap lands on what is drawn. */
+export function bagSlotAt(width: number, height: number, bagLimit: number, x: number, y: number): number | null {
+  const { slotSize, startX, y: top } = bagLayout(width, height, bagLimit);
+  // A little extra above and below, as a slot is smaller than a fingertip.
+  if (y < top - 6 || y > top + SLOT + 4) return null;
+  const slot = Math.floor((x - startX) / slotSize);
+  return slot >= 0 && slot < bagLimit ? slot : null;
+}
+
+/** 0 to 1 along a flight that began at `at`. Under reduced motion it has
+ *  always landed. */
+const flightAt = (scene: Scene, at: number) => (scene.calm ? 1 : clamp((scene.time - at) / FLIGHT_SECONDS, 0, 1));
+
+/** A thing flying between (fromX, fromY) and (toX, toY), in an arc. */
+function drawFlight(view: View, art: Art, id: string, fromX: number, fromY: number, toX: number, toY: number, t: number, size: number): void {
+  const lift = Math.sin(Math.PI * t) * 24;
+  drawSprite(view, art, id, fromX + (toX - fromX) * t, fromY + (toY - fromY) * t - lift, 0, size);
+}
 
 const loadImage = (name: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -198,6 +230,8 @@ function drawStanding(view: View, art: Art, scene: Scene): void {
   }
   for (const item of scene.items) {
     if (scene.packed.includes(item.id)) continue;
+    // A thing on its way home is drawn in flight, not yet in its place.
+    if (scene.putBack?.id === item.id && flightAt(scene, scene.putBack.at) < 1) continue;
     things.push({ order: restingOrder(item.x, item.y), draw: () => drawItem(view, art, item, scene) });
   }
   // Boards across a shut doorway, drawn as standing in its cell.
@@ -350,26 +384,37 @@ function drawLate(view: View, scene: Scene): void {
  *  is filled, the slots are edged in the game's amber, as its count is. */
 function drawBag(view: View, art: Art, scene: Scene, left: number, top: number): void {
   const { ctx, width, height } = view;
-  const slotSize = Math.min(SLOT, Math.floor((width - 8) / scene.bagLimit));
-  const startX = Math.round((width - scene.bagLimit * slotSize) / 2);
-  const y = height - SLOT - 4;
+  const { slotSize, startX, y } = bagLayout(width, height, scene.bagLimit);
   const full = scene.packed.length >= scene.bagLimit;
+  const slotX = (slot: number) => startX + slot * slotSize;
   for (let slot = 0; slot < scene.bagLimit; slot++) {
-    const x = startX + slot * slotSize;
+    const x = slotX(slot);
     ctx.fillStyle = 'rgba(16, 18, 30, 0.72)';
     ctx.fillRect(x, y, slotSize - 1, SLOT - 1);
-    ctx.strokeStyle = full ? 'rgba(255, 176, 32, 0.95)' : 'rgba(255, 255, 255, 0.28)';
+    ctx.strokeStyle = full ? 'rgba(91, 227, 138, 0.95)' : 'rgba(255, 255, 255, 0.28)';
     ctx.lineWidth = (full ? 2 : 1) / view.scale;
     ctx.strokeRect(x, y, slotSize - 1, SLOT - 1);
     const item = scene.items.find((candidate) => candidate.id === scene.packed[slot]);
     if (!item) continue;
     const newest = slot === scene.packed.length - 1;
-    const flight = newest && !scene.calm ? clamp((scene.time - scene.packedAt) / 0.25, 0, 1) : 1;
-    const fromX = item.x * TILE - left;
-    const fromY = item.y * TILE - top;
+    const flight = newest ? flightAt(scene, scene.packedAt) : 1;
     const toX = x + (slotSize - 1) / 2;
     const toY = y + SLOT - 3;
-    drawSprite(view, art, item.id, fromX + (toX - fromX) * flight, fromY + (toY - fromY) * flight, 0, flight === 1 ? slotSize - 3 : 0);
+    // The slot glows amber a moment as the thing lands in it.
+    const since = scene.time - scene.packedAt - (scene.calm ? 0 : FLIGHT_SECONDS);
+    if (newest && flight === 1 && since < LANDED_SECONDS) {
+      ctx.fillStyle = `rgba(255, 176, 32, ${0.6 * (1 - since / LANDED_SECONDS)})`;
+      ctx.fillRect(x, y, slotSize - 1, SLOT - 1);
+    }
+    if (flight < 1) drawFlight(view, art, item.id, item.x * TILE - left, item.y * TILE - top, toX, toY, flight, 0);
+    else drawSprite(view, art, item.id, toX, toY, 0, slotSize - 3);
+  }
+  // A thing put back flies from its slot to its place in the house.
+  const back = scene.putBack;
+  const item = back && scene.items.find((candidate) => candidate.id === back.id);
+  if (back && item && !scene.packed.includes(item.id)) {
+    const flight = flightAt(scene, back.at);
+    if (flight < 1) drawFlight(view, art, item.id, slotX(back.slot) + (slotSize - 1) / 2, y + SLOT - 3, item.x * TILE - left, item.y * TILE - top, flight, 0);
   }
 }
 

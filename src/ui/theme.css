@@ -5722,6 +5722,16 @@ body.drill-open .banner {
   line-height: 1.2;
   text-wrap: balance;
 }
+/* How to make room in the bag, under the goal. */
+.drill-guide-put-back {
+  margin: 0;
+  padding: 0.4rem 0.875rem;
+  border-radius: var(--r-pill);
+  background: rgba(8, 10, 18, 0.88);
+  font-size: var(--step-s);
+  font-weight: var(--w-bold);
+  text-wrap: balance;
+}
 /* Plain words, not a button: a tap anywhere starts. */
 .drill-guide-start {
   margin: 0;
@@ -5816,11 +5826,55 @@ body.drill-open .banner {
   white-space: nowrap;
   pointer-events: none;
 }
-/* The bag full: the count in the game's accent with a tick. */
+/* The figure bumps as each thing lands in the bag. */
+.drill-bag-figure {
+  display: inline-block;
+  animation: drill-bag-bump 0.35s ease-out 0.5s;
+}
+/* The bag full: the count in the exit arrow's green with a tick, bumping
+   once, so it reads as done and points to the way out. */
 .drill-bag.full {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, rgba(8, 10, 18, 0.62));
+  color: #5be38a;
+  border-color: #5be38a;
+  background: color-mix(in srgb, #5be38a 18%, rgba(8, 10, 18, 0.62));
+  animation: drill-bag-bump 0.45s ease-out 0.5s;
+}
+/* A grab tried on a full bag: the count shakes in red once. */
+.drill-bag.refused {
+  color: var(--offline);
+  border-color: var(--offline);
+  background: color-mix(in srgb, var(--offline) 18%, rgba(8, 10, 18, 0.62));
+  animation: drill-bag-shake 0.4s ease-in-out;
+}
+@keyframes drill-bag-bump {
+  40% {
+    scale: 1.25;
+  }
+}
+@keyframes drill-bag-shake {
+  20%,
+  60% {
+    translate: -5px 0;
+  }
+  40%,
+  80% {
+    translate: 5px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drill-bag-figure,
+  .drill-bag.full {
+    animation: none;
+  }
+  /* Still red, held a moment in place of the shake. */
+  .drill-bag.refused {
+    animation: drill-bag-hold 0.8s;
+  }
+}
+@keyframes drill-bag-hold {
+  to {
+    opacity: 1;
+  }
 }
 .drill-top-actions {
   grid-column: 3;
@@ -6051,7 +6105,11 @@ body.drill-open .banner {
 .drill-grab:disabled {
   cursor: default;
 }
-.drill-grab:disabled .drill-grab-ring {
+.drill-grab[aria-disabled='true'] {
+  cursor: default;
+}
+.drill-grab:disabled .drill-grab-ring,
+.drill-grab[aria-disabled='true'] .drill-grab-ring {
   background: rgba(8, 10, 18, 0.55);
   border-color: color-mix(in srgb, var(--accent) 35%, transparent);
   color: color-mix(in srgb, var(--accent) 50%, transparent);
