@@ -32,8 +32,8 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/rehearse/a', '', NONE)).toBe('/rehearse');
   });
 
-  it('goes from a pack\'s rehearsal back to the pack when the pack page opened it', () => {
-    expect(backTarget('/rehearse/a', '?from=pack', NONE)).toBe('/packs/a');
+  it('goes from a pack\'s rehearsal back to the pack\'s Practice tab when the pack page opened it', () => {
+    expect(backTarget('/rehearse/a', '?from=pack', NONE)).toBe('/packs/a?tab=practice');
   });
 
   it('goes from a chosen condition back to the choice, keeping where it was opened from', () => {
@@ -52,8 +52,10 @@ describe('backTarget, the screen above each screen', () => {
     expect(drillHome('')).toBe('/rehearse');
   });
 
-  it('goes from a pack\'s print page back to the pack when the pack page opened it, else Home', () => {
-    expect(backTarget('/packs/a/print', '?from=pack', NONE)).toBe('/packs/a');
+  it('goes from a pack\'s print page back to the pack, on the tab it was opened from, when the pack page opened it, else Home', () => {
+    expect(backTarget('/packs/a/print', '?from=pack', NONE)).toBe('/packs/a?tab=area');
+    // Back to the tab it was opened from.
+    expect(backTarget('/packs/a/print', '?from=pack&tab=places', NONE)).toBe('/packs/a?tab=places');
     expect(backTarget('/packs/a/print', '', NONE)).toBe('/');
   });
 

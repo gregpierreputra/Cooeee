@@ -14,11 +14,17 @@ export type BackContext = {
 /** The games played from the Rehearse screen, each a screen of its own. */
 export const GAME_PATHS = ['/rehearse/drill', '/rehearse/word', '/rehearse/block'];
 
+/** A pack's page opened on one of its tabs, the one way every screen a pack
+ *  opens returns to it. A tab the page does not know opens Area. */
+export function packTab(packId: string, tab: string): string {
+  return `/packs/${encodeURIComponent(packId)}?tab=${encodeURIComponent(tab)}`;
+}
+
 /** Where the drill returns, by Back or its Done: the Practice tab of the pack
  *  whose page opened it, else the Rehearse screen. */
 export function drillHome(search: string): string {
   const pack = new URLSearchParams(search).get('from');
-  return pack ? `/packs/${encodeURIComponent(pack)}?tab=practice` : '/rehearse';
+  return pack ? packTab(pack, 'practice') : '/rehearse';
 }
 
 /** One entry back in history: the pack builder's step before this one. */
@@ -40,7 +46,7 @@ export function backTarget(
     const params = new URLSearchParams(search);
     if (!params.has('need')) return null;
     const pack = params.get('from');
-    return pack ? `/packs/${encodeURIComponent(pack)}?tab=support` : '/recover';
+    return pack ? packTab(pack, 'support') : '/recover';
   }
   if (NAV_ITEMS.some((item) => item.to === pathname)) return null;
   if (pathname === '/packs/new' && new URLSearchParams(search).has('step')) {
@@ -51,8 +57,8 @@ export function backTarget(
   if (pathname === '/rehearse/drill') return drillHome(search);
   if (GAME_PATHS.includes(pathname)) return '/rehearse';
   // A chosen condition steps back to the choice. The choice goes back where it
-  // was opened from: the pack page when its own Rehearse this pack opened it,
-  // else the Rehearse tab.
+  // was opened from: the pack's Practice tab when its Rehearse this pack opened
+  // it, else the Rehearse tab.
   if (pathname.startsWith('/rehearse/')) {
     if (runPackId !== null) return null;
     const params = new URLSearchParams(search);
@@ -61,12 +67,16 @@ export function backTarget(
       const rest = params.toString();
       return rest ? `${pathname}?${rest}` : pathname;
     }
-    return params.get('from') === 'pack' ? `/packs/${pathname.split('/')[2]}` : '/rehearse';
+    return params.get('from') === 'pack' ? packTab(decodeURIComponent(pathname.split('/')[2]), 'practice') : '/rehearse';
   }
-  // A pack's print page goes back to the pack when the pack page opened it,
-  // else to Home, whose pack menu opens it too.
+  // A pack's print page goes back to the pack, on the tab it was opened from,
+  // when the pack page opened it, else to Home, whose pack menu opens it too.
   const print = /^\/packs\/([^/]+)\/print$/.exec(pathname);
-  if (print) return new URLSearchParams(search).get('from') === 'pack' ? `/packs/${print[1]}` : '/';
+  if (print) {
+    const params = new URLSearchParams(search);
+    if (params.get('from') !== 'pack') return '/';
+    return packTab(decodeURIComponent(print[1]), params.get('tab') ?? 'area');
+  }
   // A pack, the address search, or an address the app does not know.
   return '/';
 }

@@ -94,6 +94,20 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   await expect(page).toHaveURL(/\/rehearse\/drill\?from=/);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(`${packUrl}?tab=practice`);
+
+  // Rehearse this pack, then Back, also comes home to Practice.
+  await page.getByRole('link', { name: 'Rehearse this pack' }).click();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(`${packUrl}?tab=practice`);
+
+  // Print opens from any tab, and Back returns to the tab it was opened from.
+  await page.getByRole('tab', { name: 'Places' }).click();
+  await page.getByRole('link', { name: 'Print this pack' }).click();
+  await expect(page).toHaveURL(/\/print\?from=pack&tab=places/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(`${packUrl}?tab=places`);
+  await expect(page.getByRole('tab', { name: 'Places' })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ page }) => {
