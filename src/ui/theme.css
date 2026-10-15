@@ -4009,6 +4009,14 @@ body:not(:has(.back-bar)) .page:not(.blacksky, .first-open, .gate) {
   color: var(--ink-2);
   cursor: not-allowed;
 }
+/* Saving: it cannot be tapped again, but keeps its colour, so it reads as busy,
+   not as stopped. */
+.main-action.is-busy:disabled {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+  cursor: progress;
+}
 
 /* ── Nearby places ─────────────────────────────────────────────────────────── */
 
@@ -6501,6 +6509,47 @@ body.drill-open .banner {
 }
 
 /* Read by a screen reader, drawn nowhere. */
+/* Work under way: a turning arc in the accent, beside the words that say what. */
+.busy {
+  flex: none;
+  color: var(--accent);
+  animation: busy-turn 0.9s linear infinite;
+}
+/* On a filled button the arc takes the button's own text colour. */
+.main-action .busy {
+  color: inherit;
+}
+@keyframes busy-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.size-busy {
+  gap: 0.5rem;
+}
+/* A value still being worked out: a soft bar where the words will be, not
+   words that could be read as the answer. */
+.pending-bar {
+  display: block;
+  width: 7rem;
+  max-width: 100%;
+  height: 0.85em;
+  margin-top: 0.3em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink-3) 35%, transparent);
+  animation: pending-glow 1.4s ease-in-out infinite;
+}
+@keyframes pending-glow {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .busy,
+  .pending-bar {
+    animation: none;
+  }
+}
 .visually-hidden {
   position: absolute;
   width: 1px;

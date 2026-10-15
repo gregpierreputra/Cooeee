@@ -191,6 +191,8 @@ export const NOTHING_CHANGED = 'Nothing changed.';
 export const READY_TO_SAVE = 'Ready to save';
 export const SAVE_PACK = 'Save this pack';
 export const SAVING_PACK = 'Saving…';
+/** The status line while the pack is written, beside the turning arc. */
+export const SAVING_YOUR_PACK = 'Saving your pack…';
 export const SAVE_STOPPED = 'Saving stopped before it finished.';
 /** The summary's rows: what the pack holds, said before it is saved. */
 export const SUMMARY_AREA = 'Bushfire area';

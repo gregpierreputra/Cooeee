@@ -226,6 +226,8 @@ if (window.location.pathname === '/size') {
       await discardBuildingPack(sizeContent.pack.id);
       throw new Error('synthetic interrupted save');
     }
+    // ?mode=slow holds the save a moment, so its turning state can be seen.
+    if (sizeMode === 'slow') await new Promise((resolve) => setTimeout(resolve, 1500));
     await saveTextOnlyPack(sizeContent, offer, Date.UTC(2026, 7, 28, 4));
   };
   sizeFlow = (
