@@ -3023,9 +3023,8 @@ html:has(.blacksky-sheet[open]) {
   gap: 0.875rem;
   overflow: hidden;
 }
-.marker-guide p {
-  font-size: var(--step-1);
-  font-weight: var(--w-bold);
+.marker-guide h2 {
+  font-size: var(--step-2);
 }
 .marker-guide-timer {
   position: absolute;

@@ -1093,7 +1093,8 @@ function ArrivalGuide({ onDone }: { onDone: () => void }) {
   }, []);
   return (
     <GlassSpot targets={GUIDE_TARGETS} labelledBy={titleId} className="marker-guide">
-      <p id={titleId}>{copy.ARRIVAL_GUIDE}</p>
+      <h2 id={titleId}>{copy.ARRIVAL_GUIDE}</h2>
+      <p className="muted">{copy.ARRIVAL_GUIDE_LINE}</p>
       <button type="button" className="main-action" onClick={onDone}>
         {copy.GO}
       </button>
