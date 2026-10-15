@@ -7526,6 +7526,45 @@ button.flow-step .flow-step-label {
 /* The yard to search, from above, in its own pixels, with dashed rings in
    the Block's colour where risks may hide. They breathe slowly, and hold
    still for anyone who asks for less motion. */
+/* The drill's house from above on its first screen, drawn as the game draws
+   it, with amber rings round the door and a few things to pack. */
+.drill-house-snapshot {
+  position: relative;
+  margin: 0 0 1rem;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  aspect-ratio: 448 / 368;
+  background: #e4dcc8;
+}
+.drill-house-snapshot canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.drill-snapshot-ring {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 3px dashed var(--blacksky-accent);
+  background: color-mix(in srgb, var(--blacksky-accent) 22%, transparent);
+  color: #fff;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7));
+  animation: block-ring 2.4s ease-in-out infinite;
+}
+.drill-snapshot-ring:nth-of-type(2) { animation-delay: 0.6s; }
+.drill-snapshot-ring:nth-of-type(3) { animation-delay: 1.2s; }
+.drill-snapshot-ring:nth-of-type(4) { animation-delay: 1.8s; }
+@media (prefers-reduced-motion: reduce) {
+  .drill-snapshot-ring {
+    animation: none;
+  }
+}
 .block-yard {
   position: relative;
   margin: 0 0 1rem;

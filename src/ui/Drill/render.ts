@@ -6,10 +6,11 @@
 
 import { EXIT_LABEL } from '../../core/copy';
 import { ALL_DRILL_ITEMS, type DrillItem } from '../../core/drill-items';
-import type { Light } from '../../core/drill-twists';
-import { MAT_CENTRE, restingOrder } from '../../core/drill-house';
+import type { DrillRules, Light } from '../../core/drill-twists';
+import { MAT_CENTRE, SPAWN, restingOrder } from '../../core/drill-house';
 import { FURNITURE, GRID, MAT, TILE, wallLift } from '../../core/drill-layout';
 import { ATLAS } from '../../core/drill-atlas';
+import { DOWN } from '../../core/drill-play';
 
 /** The two baked pictures, and the yellow outline of each thing that can be
  *  packed, keyed by its id. */
@@ -67,8 +68,8 @@ const TILES_DOWN = 13;
  *  bottom for the thumb controls, in css pixels. Arrows stay out of both. */
 const HUD_HEIGHT = 110;
 const CONTROLS_HEIGHT = 140;
-const HOUSE_WIDTH = GRID[0].length * TILE;
-const HOUSE_HEIGHT = GRID.length * TILE;
+export const HOUSE_WIDTH = GRID[0].length * TILE;
+export const HOUSE_HEIGHT = GRID.length * TILE;
 const FRAMES_PER_FACING = { idle: 6, walk: 6, pick: 12 };
 const FRAMES_PER_SECOND = { idle: 5, walk: 10, pick: 30 };
 const WINDOWS = FURNITURE.filter((piece) => piece.sprite === 'window');
@@ -480,4 +481,28 @@ export function drawScene(view: View, art: Art, scene: Scene): { left: number; t
   if (scene.doorArrow) drawDoorArrow(view, scene, left, top);
   if (scene.showBag) drawBag(view, art, scene, left, top);
   return { left, top, perCss: toSource };
+}
+
+/** The whole house at rest, for the drill's first screen: the furniture, the
+ *  things to pack with their yellow line and the figure on its start, as the
+ *  game draws them, at `scale` device pixels to one source pixel. Nothing
+ *  moves, so it is drawn once. */
+export function drawSnapshot(canvas: HTMLCanvasElement, art: Art, rules: DrillRules, scale: number): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  canvas.width = HOUSE_WIDTH * scale;
+  canvas.height = HOUSE_HEIGHT * scale;
+  ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const view: View = { ctx, width: HOUSE_WIDTH, height: HOUSE_HEIGHT, scale, ratio: 1 };
+  const scene: Scene = {
+    time: 0, camX: 0, camY: 0, figure: { x: SPAWN.x, y: SPAWN.y, facing: DOWN, pose: 'idle', poseTime: 0 },
+    packed: [], packedAt: 0, near: null, powered: true, glow: 0, smoke: 0, dark: 0, door: 0, late: false,
+    doorArrow: false, showBag: false, outlines: true, matHold: 0, calm: true,
+    items: rules.items, bagLimit: rules.bagLimit, light: rules.light, barriers: rules.barriers,
+  };
+  ctx.drawImage(art.house, 0, 0);
+  drawMat(view, scene);
+  drawStanding(view, art, scene);
+  for (const item of rules.items) drawOutline(view, art, item.id, item.x * TILE, item.y * TILE, 0.75);
 }

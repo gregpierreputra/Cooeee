@@ -13,6 +13,22 @@ test.describe('E9 the drill', () => {
     await expect(page.getByRole('heading', { name: 'Two minutes to leave' })).toHaveCount(0);
   });
 
+  // The house from above, as the game draws it, with rings round the door and
+  // a few things to pack: a picture only, with Start still in view on a phone.
+  test('shows the house as the game draws it, ringed, over the facts', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${HARNESS}/drill`);
+    const snapshot = page.locator('.drill-house-snapshot');
+    await expect(snapshot).toBeVisible();
+    await expect(snapshot).toHaveAttribute('aria-hidden', 'true');
+    await expect(snapshot.locator('.drill-snapshot-ring')).toHaveCount(4);
+    // Drawn: the canvas holds the house, not a blank.
+    await expect
+      .poll(() => snapshot.locator('canvas').evaluate((canvas: HTMLCanvasElement) => canvas.getContext('2d')!.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data[3]))
+      .toBe(255);
+    await expect(page.getByRole('button', { name: 'Start the drill' })).toBeInViewport({ ratio: 1 });
+  });
+
   test('the film shows each fact with its publisher over the fire', async ({ page }) => {
     await page.goto(`${HARNESS}/drill`);
     await page.getByRole('button', { name: 'Start the drill' }).click();
