@@ -7047,9 +7047,19 @@ button.flow-step .flow-step-label {
     transform: none;
   }
 }
+/* The guesses, the line under them and the keys or the result, close
+   together as one control. */
+.word-play {
+  display: grid;
+  gap: 0.5rem;
+}
+/* Once the day is over the line has nothing more to say, so its room goes. */
+.word-play.done .word-message:empty {
+  display: none;
+}
 .word-message {
   min-height: 1.5rem;
-  margin: 0.5rem 0 0.75rem;
+  margin: 0;
   text-align: center;
   font-weight: var(--w-bold);
 }
@@ -7093,7 +7103,7 @@ button.flow-step .flow-step-label {
 .word-result {
   display: grid;
   gap: 1.5rem;
-  margin: 0.5rem 0 1.5rem;
+  margin: 0 0 1.5rem;
 }
 .word-result-card {
   gap: 1rem;

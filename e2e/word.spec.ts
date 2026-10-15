@@ -168,6 +168,10 @@ test.describe('Cooee Word on a touch phone', () => {
     await expect(offer).toBeInViewport();
     const grid = page.getByRole('list', { name: 'Your guesses' });
     expect((await offer.boundingBox())!.y).toBeLessThan((await grid.boundingBox())!.y);
+    // The keys sit close under the guesses, with only the message line between.
+    const gridBottom = (await grid.boundingBox())!;
+    const keys = (await page.getByRole('group', { name: 'Letters' }).or(page.locator('.word-keyboard')).first().boundingBox())!;
+    expect(keys.y - (gridBottom.y + gridBottom.height)).toBeLessThanOrEqual(48);
     await offer.click();
     const field = page.getByRole('textbox', { name: 'Type your guess' });
     await expect(field).toBeFocused();
