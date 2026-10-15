@@ -1249,6 +1249,12 @@ main:focus {
   color: var(--accent);
   font-size: var(--step-s);
 }
+/* How far a nearest address is, quiet under it. */
+.candidate-distance {
+  color: var(--ink-2);
+  font-size: var(--step-s);
+  font-weight: var(--w-med);
+}
 
 .candidate-list {
   list-style: none;

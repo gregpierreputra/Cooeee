@@ -1,5 +1,6 @@
 import { useId } from "react";
 import * as copy from "../../core/copy";
+import { formatDistanceM } from "../../core/destination";
 import { titleCase } from "../../core/home";
 import type { AddressCandidate } from "../../core/types";
 
@@ -35,15 +36,16 @@ export function Candidates({ candidates, onChoose, onNone }: CandidatesProps) {
               onClick={() => onChoose(candidate)}
             >
               {/* A place found by its name says it over its address, so it is
-                  plain which address the pack is built on. */}
-              {candidate.placeName ? (
-                <span className="candidate-text">
-                  <span className="candidate-place">{titleCase(candidate.placeName)}</span>
-                  {candidate.address}
-                </span>
-              ) : (
-                candidate.address
-              )}
+                  plain which address the pack is built on. In a nearest list,
+                  every address says how far away it is; the line above the
+                  list says what from. */}
+              <span className="candidate-text">
+                {candidate.placeName ? <span className="candidate-place">{titleCase(candidate.placeName)}</span> : null}
+                {candidate.address}
+                {candidate.distanceM !== undefined ? (
+                  <span className="candidate-distance">{copy.ADDRESS_DISTANCE_AWAY(formatDistanceM(candidate.distanceM))}</span>
+                ) : null}
+              </span>
               <svg className="candidate-chevron" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
                 <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

@@ -124,8 +124,12 @@ export const ADDRESS_LOCATE_DISCLOSURE = 'The location button sends your positio
 export const ADDRESS_LOCATE_FOUND = 'Addresses nearest you';
 /** A town or station typed in place of an address: the list is the addresses
  *  nearest it, and that is said, so none reads as the place itself. */
-export const ADDRESS_NEAR_TOWN = (town: string) => `Addresses nearest the centre of ${town}`;
-export const ADDRESS_NEAR_STATION = (station: string) => `Addresses nearest ${station} station`;
+export const FROM_TOWN = (town: string) => `the centre of ${town}`;
+export const FROM_STATION = (station: string) => `${station} station`;
+export const ADDRESS_NEAR = (from: string) => `Addresses nearest ${from}`;
+/** Under every address in a nearest list. What it is measured from is said
+ *  once, on the line above the list. */
+export const ADDRESS_DISTANCE_AWAY = (distance: string) => `${distance} away`;
 export const ADDRESS_LOCATE_FAILED = 'Position unavailable. Type the address.';
 export const ADDRESS_LOCATE_DENIED = 'Location is off for Cooeee. Turn it on in your phone settings, or type the address.';
 export const ADDRESS_LOCATE_SLOW = 'Your position took too long to find. Try again, or type the address.';

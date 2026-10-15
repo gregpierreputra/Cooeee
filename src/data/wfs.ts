@@ -374,7 +374,12 @@ export async function fetchAddressesNear(
   const metresAway = (record: AddressRecord) => distanceM(position, record.candidate);
   const isUnit = (record: AddressRecord) => Number(record.candidate.address.includes('/'));
   const nearest = [...records].sort((a, b) => metresAway(a) - metresAway(b) || isUnit(a) - isUnit(b));
-  return resolveAddressCandidates(nearest.slice(0, ADDRESS_RESULT_LIMIT));
+  // Each carries its distance from the point, said on its row.
+  return resolveAddressCandidates(
+    nearest
+      .slice(0, ADDRESS_RESULT_LIMIT)
+      .map((record) => ({ ...record, candidate: { ...record.candidate, distanceM: metresAway(record) } })),
+  );
 }
 
 function pointFilter({ lat, lon }: Pick<PendingPlace, 'lat' | 'lon'>): string {

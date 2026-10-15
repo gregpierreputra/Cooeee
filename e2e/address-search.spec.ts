@@ -552,6 +552,7 @@ test('Use my location lists the nearest register addresses, and typing takes the
   const requests = await countAddressRequests(page, [
     addressFeature('1778 DANDENONG ROAD CLAYTON 3168', 'CLAYTON', 145.1297, -37.9164),
     addressFeature('1774-1776 DANDENONG ROAD CLAYTON 3168', 'CLAYTON', 145.129435, -37.916205),
+    addressFeature('1/1774-1776 DANDENONG ROAD CLAYTON 3168', 'CLAYTON', 145.129435, -37.916205),
   ]);
 
   await page.goto(SEARCH_URL);
@@ -560,6 +561,12 @@ test('Use my location lists the nearest register addresses, and typing takes the
   // Nearest first, whatever order the register answered in.
   await expect(page.getByRole('status')).toContainText('Addresses nearest you');
   await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('listitem').first()).toContainText('1774-1776 DANDENONG ROAD');
+  // Every row says how far away it is, the unit under its building too; the
+  // line above says it is from you.
+  await expect(page.getByRole('list', { name: 'Choose your address' }).getByRole('listitem')).toHaveCount(3);
+  const distances = page.locator('.candidate-distance');
+  await expect(distances).toHaveCount(3);
+  await expect(distances.first()).toHaveText(/^\d+ m away$/);
   expect(requests).toEqual([
     // The smallest radius first, and it found addresses, so nothing wider is asked.
     "property_status = 'A' AND DWITHIN(geom, POINT(-37.916205 145.129435), 25, meters)",
