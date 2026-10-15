@@ -443,7 +443,7 @@ function BushfireMap({ facilities, origin, loaders }: { facilities: NearbyCache[
         lon: row.lon,
         distanceM,
         glyph: type === 'NSP' ? 'place' : 'home',
-        kind: copy.FACILITY_TYPE_NAME[type],
+        kindName: copy.FACILITY_TYPE_NAME[type],
       }))}
       offMap={map.offMap.map(({ row, distanceM }) => copy.PLACE_OFF_MAP(row.name, formatDistanceM(distanceM)))}
     />

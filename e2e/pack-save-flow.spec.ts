@@ -114,6 +114,9 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await placeMark.click();
   await expect(placeMark).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('.area-map-label')).toHaveCount(1);
+  // A saved place's label names its town, never the code its row is kept under.
+  await expect(page.locator('.area-map-label')).not.toContainText('nsp-');
+  await expect(placeMark).not.toHaveAttribute('aria-label', /nsp-/);
   const frameBox = (await page.locator('.area-map-frame').boundingBox())!;
   await page.mouse.click(frameBox.x + 30, frameBox.y + frameBox.height - 30);
   await expect(page.locator('.area-map-label')).toHaveCount(0);
