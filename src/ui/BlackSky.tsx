@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import {
   deriveState,
   estimateFix,
@@ -51,6 +51,7 @@ import {
   FIX_PUBLISH_M,
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
+  GUIDE_MS,
   HOLD_LEAVE_VIBRATE_MS,
   NAV_HOLD_HINT_MS,
   ROADS_LABEL_PX,
@@ -78,6 +79,7 @@ import {
 import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
+import GlassSpot from './components/GlassSpot';
 import Glyph from './components/Glyph';
 import NoteText from './components/NoteText';
 import StateCard from './components/StateCard';
@@ -175,6 +177,11 @@ export default function BlackSky({
   // storage key; the main place never changes by itself while it is set.
   const [shownId, setShownId] = useState<string | null>(null);
   const navigate = useNavigate();
+  // Opened from the welcome's I need a way out now: the marker and the place's
+  // name are spotlit once, as soon as the dial is drawn. Read at arrival, as
+  // the screen's own history entry below carries no state.
+  const { state } = useLocation();
+  const [guiding, setGuiding] = useState(() => (state as { guide?: boolean } | null)?.guide === true);
   // Said at the top once the phone's Back has been pressed, which does not
   // leave. A reopening says nothing: the dark screen speaks for itself.
   const [notice, setNotice] = useState<string | null>(null);
@@ -678,6 +685,7 @@ export default function BlackSky({
           notes={notesBlock}
         />
       )}
+      {guiding && model ? <ArrivalGuide onDone={() => setGuiding(false)} /> : null}
       {/* Under the dial, never above it: the dial is the one thing first. */}
       {chosen && !chosen.placesVerified ? <StateCard heading={copy.PLACES_UNVERIFIED} /> : null}
       {/* The reminder closes every state of the screen, once, as a quiet note:
@@ -1061,6 +1069,30 @@ function DialBody({
       <TurnOnCompass compass={compass} />
       {others.length > 0 ? <OtherPlaces places={others} onShow={onShow} /> : null}
     </section>
+  );
+}
+
+const GUIDE_TARGETS = ['.blacksky-dial-pin', '.blacksky-dial-head h2'];
+
+/** The first arrival from the welcome: the marker and the place's name ringed,
+ *  one line saying to head for the marker, and Go. It closes on Go or after
+ *  GUIDE_MS, with the time left drawn as a bar. On an iPhone, Go is the tap
+ *  that asks for the compass (the screen's first tap asks); a timer cannot ask,
+ *  so Turn on the compass stays for anyone who lets it run out. */
+function ArrivalGuide({ onDone }: { onDone: () => void }) {
+  const titleId = useId();
+  useEffect(() => {
+    const timer = setTimeout(onDone, GUIDE_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <GlassSpot targets={GUIDE_TARGETS} labelledBy={titleId} className="marker-guide">
+      <p id={titleId}>{copy.ARRIVAL_GUIDE}</p>
+      <button type="button" className="main-action" onClick={onDone}>
+        {copy.GO}
+      </button>
+      <span className="marker-guide-timer" aria-hidden="true" />
+    </GlassSpot>
   );
 }
 

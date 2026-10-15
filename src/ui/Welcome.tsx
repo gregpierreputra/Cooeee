@@ -1,12 +1,14 @@
 import * as copy from '../core/copy';
 import Glyph from './components/Glyph';
+import HoldButton from './components/HoldButton';
 import Mark from './components/Mark';
 
 /** The first screen a new person sees, before the disclosure: why the app is
  *  worth having, in three drawings and as few words as will carry them. It
- *  stands before the router like the disclosure, stores nothing, and its one
- *  control leads on to the disclosure — nothing is agreed to here. */
-export default function Welcome({ onContinue }: { onContinue: () => void }) {
+ *  stands before the router like the disclosure and stores nothing. Its main
+ *  control leads on to the disclosure, nothing is agreed to here, and a hold
+ *  opens BlackSky for someone who cannot wait. */
+export default function Welcome({ onContinue, onWayOut }: { onContinue: () => void; onWayOut: () => void }) {
   return (
     <main className="page first-open welcome">
       <header className="hero first-open-hero">
@@ -44,6 +46,12 @@ export default function Welcome({ onContinue }: { onContinue: () => void }) {
         <button type="button" className="action main-action" onClick={onContinue}>
           {copy.SEE_HOW_IT_WORKS}
         </button>
+        {/* For someone with a fire close on their first visit: BlackSky on the
+            same two second hold as everywhere else, before anything is read. */}
+        <HoldButton className="way-out" hint={copy.HOLD_TO_ENTER} onHold={onWayOut}>
+          {copy.WAY_OUT_BUTTON}
+          <span className="blacksky-hold-sub">{copy.WAY_OUT_SUB}</span>
+        </HoldButton>
       </div>
     </main>
   );

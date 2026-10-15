@@ -4,20 +4,24 @@ type Ring = { left: number; top: number; width: number; height: number; borderRa
 
 const PAD = 6; // px of room between a feature and its ring
 
-/** A clear spotlight: a glowing ring round each feature matched by `targets`
- *  and a glass box holding `children`. Nothing is greyed and nothing is
- *  blocked, so the whole screen stays in view and in reach. The rings follow
+/** A spotlight: a ring round each feature matched by `targets` and a box
+ *  holding `children`. Clear by default: a glowing ring and a glass box, with
+ *  nothing greyed and nothing blocked, so the whole screen stays in view and in
+ *  reach. With `shade`, the tour's look: the screen greyed and closed to taps
+ *  but for a hole at each feature, which still takes its tap. The rings follow
  *  their features every frame while shown, and take each feature's own
  *  corners. The box takes focus once, so a screen reader reads it out. */
 export default function GlassSpot({
   targets,
   labelledBy,
   className,
+  shade = false,
   children,
 }: {
   targets: string[];
   labelledBy: string;
   className?: string;
+  shade?: boolean;
   children: ReactNode;
 }) {
   const [rings, setRings] = useState<Ring[]>([]);
@@ -42,7 +46,10 @@ export default function GlassSpot({
             top: rect.top - PAD,
             width: rect.width + 2 * PAD,
             height: rect.height + 2 * PAD,
-            borderRadius: getComputedStyle(element).borderRadius,
+            // A drawing is ringed round, and a square cornered feature such as
+            // a heading gets soft corners.
+            borderRadius:
+              element instanceof SVGElement ? '50%' : parseFloat(getComputedStyle(element).borderRadius) ? getComputedStyle(element).borderRadius : '12px',
           },
         ];
       });
@@ -58,7 +65,14 @@ export default function GlassSpot({
   }, [targets]);
 
   return (
-    <div className="glass-spot">
+    <div className={shade ? 'glass-spot shaded' : 'glass-spot'}>
+      {shade ? (
+        <svg className="glass-spot-shade" aria-hidden="true">
+          {/* The screen, less a hole for each ring: even-odd, so the holes take
+              no tap and the feature under each one does. */}
+          <path fillRule="evenodd" d={`M0 0H${innerWidth}V${innerHeight}H0Z${rings.map(hole).join('')}`} />
+        </svg>
+      ) : null}
       {rings.map((ring, index) => (
         <div key={index} className="glass-spot-ring" style={ring} />
       ))}
@@ -72,5 +86,18 @@ export default function GlassSpot({
         {children}
       </section>
     </div>
+  );
+}
+
+/** A ring's box as a closed path, its corners rounded as the ring's are. */
+function hole({ left, top, width, height, borderRadius }: Ring): string {
+  const radius = borderRadius.endsWith('%') ? (parseFloat(borderRadius) / 100) * width : parseFloat(borderRadius) || 0;
+  const r = Math.min(radius, width / 2, height / 2);
+  const right = left + width;
+  const bottom = top + height;
+  return (
+    `M${left + r} ${top}H${right - r}A${r} ${r} 0 0 1 ${right} ${top + r}V${bottom - r}` +
+    `A${r} ${r} 0 0 1 ${right - r} ${bottom}H${left + r}A${r} ${r} 0 0 1 ${left} ${bottom - r}` +
+    `V${top + r}A${r} ${r} 0 0 1 ${left + r} ${top}Z`
   );
 }

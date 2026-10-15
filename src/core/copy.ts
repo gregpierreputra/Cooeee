@@ -450,6 +450,12 @@ export const TURN_ON_LOCATION = 'Turn on location';
 // Back after a week or more: a clear spotlight on the BlackSky compass.
 export const AWAY_CHECK_TITLE = 'Do you need a way out now?';
 export const AWAY_CHECK_LINE = 'If a fire is close, hold the BlackSky button below for two seconds.';
+// BlackSky opened from the welcome: a spotlight on the marker and the place's
+// name, then the tour offered once BlackSky is left.
+export const ARRIVAL_GUIDE = 'We are pointing you to the nearest place of last resort. Head to the marker.';
+export const GO = 'Go';
+export const TOUR_OFFER_TITLE = 'Would you like a tour of Cooeee?';
+export const TOUR_OFFER_LINE = 'Tap the question mark to see what each part of the app does.';
 
 // BS_Enhancement-AC1 one place on one compass dial
 /** The small label above the main place: where it comes from. Written in
@@ -952,6 +958,9 @@ export const WELCOME_FACTS = [
   { glyph: 'not', line: 'Nothing leaves your phone.' },
 ] as const;
 export const SEE_HOW_IT_WORKS = 'See how it works';
+/** On the welcome, for a new person with a fire close: straight to BlackSky on a hold. */
+export const WAY_OUT_BUTTON = 'I need a way out now';
+export const WAY_OUT_SUB = 'Hold two seconds';
 
 // ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────
 // The four statements are the screen. They are literal on-screen text, never
