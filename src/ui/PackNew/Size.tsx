@@ -6,6 +6,7 @@ import * as copy from '../../core/copy';
 import type { PackOffer } from '../../core/types';
 import BackHomeLink from '../components/BackHomeLink';
 import StateCard from '../components/StateCard';
+import Busy from '../components/Busy';
 import Glyph from '../components/Glyph';
 import { focusMain } from '../components/focusMain';
 import FlowSteps from './FlowSteps';
@@ -67,8 +68,9 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
   }
 
   const saved = state.kind === 'saved';
-  const pending = copy.SUMMARY_PENDING;
-  const rows: { label: string; value: string | string[] }[] = [
+  // null is a value still being worked out, drawn as a soft bar, not as words.
+  const pending = null;
+  const rows: { label: string; value: string | string[] | null }[] = [
     { label: copy.SUMMARY_AREA, value: summary.area },
     { label: copy.SUMMARY_PLACES, value: summary.places.length > 0 ? summary.places : copy.SUMMARY_NONE },
     { label: copy.SUMMARY_NOTE, value: summary.note },
@@ -76,9 +78,13 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
     { label: copy.SUMMARY_SIZE, value: offer ? packOfferSize(offer) : pending },
   ];
 
+  // Preparing and ready are said on the title; the line under the card says
+  // them only to a screen reader, which is not told when a title changes.
+  // Saving is said here, by the button the person has just tapped.
   const status =
-    offer === null ? <p>{copy.PREPARING_PACK_OFFER}</p>
-    : state.kind === 'saving' ? <p>{copy.SAVING_PACK}</p>
+    offer === null ? <p className="visually-hidden">{copy.PREPARING_PACK_OFFER}</p>
+    : state.kind === 'ready' ? <p className="visually-hidden">{copy.READY_TO_SAVE}</p>
+    : state.kind === 'saving' ? <p className="with-glyph size-busy"><Busy />{copy.SAVING_YOUR_PACK}</p>
     : state.kind === 'interrupted' ? (
       <>
         <p className="save-stopped">{copy.SAVE_STOPPED}</p>
@@ -98,6 +104,11 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
               <Glyph kind="does" />
               <h1>{copy.PLACE_SAVED}</h1>
             </div>
+          ) : offer === null ? (
+            <div className="card-head size-preparing">
+              <Busy size={28} />
+              <h1>{copy.PREPARING_PACK_TITLE}</h1>
+            </div>
           ) : (
             <h1>{copy.READY_TO_SAVE}</h1>
           )}
@@ -112,7 +123,12 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
               <div key={row.label}>
                 <dt>{row.label}</dt>
                 <dd>
-                  {Array.isArray(row.value) ? (
+                  {row.value === null ? (
+                    <>
+                      <span className="pending-bar" aria-hidden="true" />
+                      <span className="visually-hidden">{copy.SUMMARY_PENDING}</span>
+                    </>
+                  ) : Array.isArray(row.value) ? (
                     <ul className="pack-summary-list">
                       {row.value.map((item) => <li key={item}>{item}</li>)}
                     </ul>
@@ -149,13 +165,14 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
           </>
         ) : (
           <button
-            className="main-action with-glyph"
+            className={state.kind === 'saving' ? 'main-action with-glyph is-busy' : 'main-action with-glyph'}
             type="button"
             disabled={offer === null || state.kind === 'saving'}
             onClick={() => void run()}
           >
-            <Glyph kind="bag" line />
-            {state.kind === 'interrupted' ? copy.TRY_AGAIN : copy.SAVE_PACK}
+            {/* While saving, the button the person tapped says so, turning. */}
+            {state.kind === 'saving' ? <Busy /> : <Glyph kind="bag" line />}
+            {state.kind === 'saving' ? copy.SAVING_PACK : state.kind === 'interrupted' ? copy.TRY_AGAIN : copy.SAVE_PACK}
           </button>
         )}
       </div>

@@ -8,13 +8,12 @@ import Glyph, { type GlyphKind } from '../components/Glyph';
 import Section from '../components/Section';
 import { continueBullets, typeBullets } from '../components/bulletTyping';
 
-/** What the last tap answered. Cleared by typing. */
-type Mark = 'removed' | 'empty' | 'failed';
+/** What the last tap answered. Cleared by typing. 'gone' is Saved or Removed
+ *  once it has faded: the line stays empty until she types again. */
+type Mark = 'saved' | 'removed' | 'gone' | 'empty' | 'failed';
 
 /** The one line under the field: its tone, its drawing and its words. */
 type Status = { tone: 'saved' | 'caution' | 'quiet'; glyph: GlyphKind; text: string };
-
-const SAVE_TICK = <Glyph kind="check" line />;
 
 /** E5-US1-AC5 — her note about the way, offered after a walked rehearsal.
  *
@@ -73,7 +72,7 @@ export default function WayNote({
     try {
       await save(wayNote(packId, text, id, now()));
       setSavedText(text);
-      setMark(null);
+      setMark('saved');
     } catch {
       setMark('failed');
     }
@@ -81,18 +80,18 @@ export default function WayNote({
 
   // The last tap's answer first, then whether the words are kept.
   const status: Status | null =
-    mark === 'removed'
-      ? { tone: 'quiet', glyph: 'trash', text: copy.WAY_NOTE_REMOVED }
-      : mark === 'failed'
-        ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_CHANGE_FAILED }
-        : mark === 'empty'
-          ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_EMPTY }
-          : unsaved
-            ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_UNSAVED }
-            : savedText
-              ? { tone: 'saved', glyph: 'check', text: copy.WAY_NOTE_KEPT }
+    mark === 'saved'
+      ? { tone: 'saved', glyph: 'check', text: copy.WAY_NOTE_KEPT }
+      : mark === 'removed'
+        ? { tone: 'quiet', glyph: 'trash', text: copy.WAY_NOTE_REMOVED }
+        : mark === 'failed'
+          ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_CHANGE_FAILED }
+          : mark === 'empty'
+            ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_EMPTY }
+            : unsaved && mark !== 'gone'
+              ? { tone: 'caution', glyph: 'caution', text: copy.NOTE_UNSAVED }
               : null;
-  // Kept and unchanged: the Save control itself says so.
+  // Kept and unchanged: Remove stands where Save was.
   const kept = savedText !== '' && text === savedText;
 
   return (
@@ -120,33 +119,32 @@ export default function WayNote({
           id="way-note-status"
           className={`way-note-status with-glyph${status ? ` way-note-${status.tone}` : ''}`}
           role="status"
+          // Saved and Removed fade as the pack page's notes do, then clear.
+          onAnimationEnd={() => setMark((value) => (value === 'saved' || value === 'removed' ? 'gone' : value))}
         >
-          {/* Saved is said by the control below, so here it is only heard. */}
-          {status?.tone === 'saved' ? (
-            <span className="visually-hidden">{status.text}</span>
-          ) : status ? (
-            <>
+          {/* Keyed by the words, so a new message gets its own two seconds.
+              Only Saved and Removed pass; the cautions stay until acted on. */}
+          {status ? (
+            <span key={status.text} className={`with-glyph${status.tone === 'caution' ? '' : ' way-note-fade'}`}>
               <Glyph kind={status.glyph} line />
               {status.text}
-            </>
+            </span>
           ) : null}
         </p>
         <div className="note-actions">
-          {/* Kept and unchanged, Save reads as done in the teal outline and does
-              nothing until the words change. aria-disabled, not disabled, so
-              focus stays on it. Outlined, not filled: Done is the page's one
-              filled control. */}
-          <button
-            type="button"
-            className={kept ? 'way-note-kept with-glyph' : undefined}
-            aria-disabled={kept || undefined}
-            onClick={() => (kept ? undefined : void keep())}
-          >
-            {kept ? SAVE_TICK : null}
-            {kept ? copy.WAY_NOTE_SAVED : copy.SAVE_NOTE}
-          </button>
-          {/* Changed since saving: put the saved words back. Kept: take the
-              note back out of the pack. Nothing before the first save. */}
+          {/* One control in one place: Save until the words are kept, then
+              Remove from this pack. The same button, so focus stays on it. */}
+          {kept ? (
+            <button type="button" className="note-delete with-glyph" onClick={() => void takeOut()}>
+              <Glyph kind="trash" line />
+              {copy.WAY_NOTE_REMOVE}
+            </button>
+          ) : (
+            <button type="button" onClick={() => void keep()}>
+              {copy.SAVE_NOTE}
+            </button>
+          )}
+          {/* Changed since saving: put the saved words back. */}
           {savedText && !kept ? (
             <button
               type="button"
@@ -158,11 +156,6 @@ export default function WayNote({
             >
               <Glyph kind="undo" line />
               {copy.WAY_NOTE_UNDO}
-            </button>
-          ) : savedText ? (
-            <button type="button" className="note-delete with-glyph" onClick={() => void takeOut()}>
-              <Glyph kind="trash" line />
-              {copy.WAY_NOTE_REMOVE}
             </button>
           ) : null}
         </div>

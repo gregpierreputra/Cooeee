@@ -45,6 +45,11 @@ describe('packIcon', () => {
 });
 
 describe('defaultPackName', () => {
+  it('offers a named place by its own name, found by that name', () => {
+    const campus = { address: '1-131 WELLINGTON ROAD CLAYTON 3168', localityName: 'CLAYTON', placeName: 'MONASH UNIVERSITY - CLAYTON CAMPUS' };
+    expect(defaultPackName(campus, ['Clayton'])).toBe('MONASH UNIVERSITY - CLAYTON CAMPUS');
+  });
+
   const candidate = { address: '8 RIDGE ROAD KALORAMA 3766', localityName: 'KALORAMA' };
 
   it('is the suburb while no other pack has its name', () => {

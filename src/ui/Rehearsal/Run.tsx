@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
+import { packTab } from '../../core/back';
 import * as copy from '../../core/copy';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import { endRun } from './run-state';
@@ -23,7 +24,7 @@ export default function Run({ run, children }: { run: RehearsalRun; children?: R
   const [params] = useSearchParams();
   const leave = () => {
     endRun();
-    navigate(params.get('from') === 'pack' ? `/packs/${run.packId}` : '/rehearse');
+    navigate(params.get('from') === 'pack' ? packTab(run.packId, 'practice') : '/rehearse');
   };
 
   return (

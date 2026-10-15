@@ -4,6 +4,7 @@ import Glyph from '../components/Glyph';
 import Hint from '../components/Hint';
 import Head from './Head';
 import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-condition';
+import type { PackIcon } from '../../core/types';
 
 /** E5-US1-AC1 — the user says what the rehearsal is run without.
  *
@@ -23,16 +24,19 @@ import { conditionRows, type RehearsalCondition } from '../../core/rehearsal-con
 export default function Condition({
   packName,
   packAddress,
+  packIcon,
   onChoose,
 }: {
-  /** The title and the line under it, so the screen says which place is rehearsed. */
+  /** The title, its drawing and the line under it, so the screen says which
+   *  place is rehearsed, as the pack page does. */
   packName: string;
   packAddress: string;
+  packIcon: PackIcon;
   onChoose: (condition: RehearsalCondition) => void;
 }) {
   return (
     <main className="page rehearsal-condition">
-      <Head title={packName} detail={titleCase(packAddress)} />
+      <Head title={packName} titleIcon={packIcon} detail={titleCase(packAddress)} />
       <h2 className="kicker section-label">{copy.CHOOSE_CONDITION_HEADING}</h2>
 
       <ul className="list condition-list">

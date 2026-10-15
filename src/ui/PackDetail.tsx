@@ -10,14 +10,13 @@ import { shownPackName, titleCase } from '../core/home';
 import { packIcon } from '../core/pack';
 import { formatDistanceM, placeName } from '../core/destination';
 import {
+  ageLabel,
   decideOriginalSourceAccess,
   packDetailAbsence,
   packDetailItems,
   packDetailPlaces,
 } from '../core/provenance';
 import { monogram } from '../core/recover';
-import { drillRows, type DrillRow } from '../core/drill-history';
-import { BAG_LIMIT } from '../core/drill-items';
 import { historyRows, type HistoryRow } from '../core/rehearsal-history';
 import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } from '../core/types';
 import { getCompletePackContent, listAllDrills, listRehearsalsForPack } from '../data/db';
@@ -32,7 +31,6 @@ import WellbeingLines from './components/WellbeingLines';
 import StateCard from './components/StateCard';
 import StatusPage from './components/StatusPage';
 import { useMinuteClock } from './components/useMinuteClock';
-import { DrillWhy, ScoreRing, Sprite } from './Drill/DrillArt';
 import { PlaceFacts } from './PackNew/Destinations';
 import { PackNotes } from './PackNotes';
 
@@ -69,7 +67,9 @@ export default function PackDetail({
   const now = useMinuteClock(fixedNow);
   const [content, setContent] = useState<CompletePackContent | null | undefined>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
-  const [drills, setDrills] = useState<DrillRow[]>([]);
+  // When the newest drill on the phone finished: null with none, undefined
+  // until read, so the pill never flashes the wrong state.
+  const [lastDrill, setLastDrill] = useState<number | null | undefined>(undefined);
   const [offlineSource, setOfflineSource] = useState<PackDetailItem | null>(null);
   // One object URL per stored file (the PDF copies and the area map), made
   // from the bytes already on the device and released with the screen. No
@@ -138,14 +138,16 @@ export default function PackDetail({
     };
   }, [loadRehearsals, packId]);
 
-  // E9 — every drill on the phone, as a drill belongs to no pack.
+  // A drill belongs to no pack: the newest on the phone says whether one was played.
   useEffect(() => {
     let live = true;
     loadDrills().then(
       (rows) => {
-        if (live) setDrills(drillRows(rows));
+        if (live) setLastDrill(rows.length ? Math.max(...rows.map((row) => row.finishedAt)) : null);
       },
-      () => undefined,
+      () => {
+        if (live) setLastDrill(null);
+      },
     );
     return () => {
       live = false;
@@ -221,7 +223,7 @@ export default function PackDetail({
         <p className="muted">{content.pack.address}</p>
         {/* The same page the pack's menu on Home prints, as a small ring at the
             top right, where a pack card on Home keeps its menu. */}
-        <Link className="card-more pack-print" to={`/packs/${content.pack.id}/print?from=pack`} aria-label={copy.PRINT_PACK}>
+        <Link className="card-more pack-print" to={`/packs/${encodeURIComponent(content.pack.id)}/print?from=pack&tab=${tab}`} aria-label={copy.PRINT_PACK}>
           <Glyph kind="print" line size={18} />
         </Link>
       </header>
@@ -419,8 +421,9 @@ export default function PackDetail({
               )}
             />
           )}
-          {/* Drawn as New offline pack is: the plus, then the words. */}
-          <Link className="action with-glyph" to="/recover?need=all">
+          {/* Drawn as New offline pack is: the plus, then the words. Marked as
+              from this pack, so Back in Recover comes back here. */}
+          <Link className="action with-glyph" to={`/recover?need=all&from=${encodeURIComponent(content.pack.id)}`}>
             <Glyph kind="plus" line />
             {copy.SAVE_MORE_PROGRAMS(content.recovery.length)}
           </Link>
@@ -452,8 +455,12 @@ export default function PackDetail({
         {/* E5-US5 — every rehearsal of this pack, newest first, in the result's
             own words. */}
         <Section kind="rehearse" title={copy.REHEARSALS} count={history.length}>
+          {/* Nothing yet, in the dashed box Home uses for no pack saved, so an
+              empty list reads as room waiting to be filled. */}
           {history.length === 0 ? (
-            <p>{copy.NOT_YET_REHEARSED}</p>
+            <div className="empty-state">
+              <p>{copy.NOT_YET_REHEARSED}</p>
+            </div>
           ) : (
             <ShortList
               items={history}
@@ -475,43 +482,24 @@ export default function PackDetail({
           )}
         </Section>
 
-        {/* E9 — every drill, from whichever pack page, newest first. */}
-        <Section kind="rehearse" title={copy.DRILLS} count={drills.length}>
-          {drills.length === 0 ? (
-            <p>{copy.NOT_YET_DRILLED}</p>
+        {/* An invitation to the drill, part of getting ready whatever the
+            pack, with whether one has been played on this phone, as a pack's
+            rehearsal pill reads on Rehearse. Its results live on its own
+            screen; Back and Done there come back to this tab. */}
+        <Section kind="drill" title={copy.DRILL_LABEL}>
+          <p className="muted place-note">{copy.DRILL_INVITE_LINE}</p>
+          {lastDrill === undefined ? null : lastDrill === null ? (
+            <p className="rehearsed-pill">{copy.NOT_DRILLED_CARD}</p>
           ) : (
-            <ShortList
-              items={drills}
-              className="list history-list"
-              render={(row) => (
-                // Set as a rehearsal is: the drill's name as the teal label
-                // with the date, the outcome in bold, then the bag.
-                <li key={row.id} className="card history-row practice-card">
-                  <div className="practice-card-head">
-                    <p className="place-kind">{copy.DRILL_INTRO_HEADING}</p>
-                    <p className="muted figure practice-date">{row.date}</p>
-                  </div>
-                  {/* The score as the debrief's ring with its verdict; away from
-                      the door, its door mark and no number, as on the debrief. */}
-                  <div className="drill-outcome">
-                    {row.score !== null ? (
-                      <ScoreRing score={row.score} />
-                    ) : (
-                      <span className="debrief-over-mark">
-                        <Glyph kind="door" />
-                      </span>
-                    )}
-                    <div>
-                      <p className="practice-outcome">{row.score !== null ? copy.DRILL_ROW_DOOR : copy.DRILL_ROW_AWAY}</p>
-                      {row.verdict ? <p className="muted">{row.verdict}</p> : null}
-                      {row.twist ? <p className="muted">{copy.DRILL_ROW_TWIST(row.twist)}</p> : null}
-                    </div>
-                  </div>
-                  <DrillBag row={row} />
-                </li>
-              )}
-            />
+            <p className="rehearsed-pill done with-glyph">
+              <Glyph kind="check" line />
+              {copy.DRILLED_AGO(ageLabel(now - lastDrill))}
+            </p>
           )}
+          <Link className="action with-glyph" to={`/rehearse/drill?from=${encodeURIComponent(content.pack.id)}`}>
+            <Glyph kind="bag" line />
+            {copy.DRILL_TILE_TITLE}
+          </Link>
         </Section>
       </TabPanel>
 
@@ -556,68 +544,6 @@ export default function PackDetail({
   );
 }
 
-/** What one drill's bag held: the essentials packed, the bag as the game's
- *  own pictures edged by what each did, with a slot for each unused space,
- *  then the essentials left in the house and the things that cost points by
- *  name, as the debrief names them, so nothing rests on colour alone. A tap
- *  on a picture says what it is and why, as on the debrief; never a hover. */
-function DrillBag({ row }: { row: DrillRow }) {
-  const [chosen, setChosen] = useState<DrillRow['bag'][number] | null>(null);
-  return (
-    <div className="practice-found">
-      <p className="with-glyph practice-found-line">
-        <Glyph kind="bag" line />
-        {row.essentials}
-      </p>
-      <ul className="debrief-tiles drill-card-tiles" aria-label={copy.IN_YOUR_BAG}>
-        {row.bag.map((item, index) => (
-          <li key={`${item.id}-${index}`}>
-            <button
-              type="button"
-              className={`debrief-tile kind-${item.kind}`}
-              aria-label={item.name}
-              aria-pressed={chosen?.id === item.id}
-              onClick={() => setChosen(chosen?.id === item.id ? null : item)}
-            >
-              <Sprite id={item.id} size={28} />
-            </button>
-          </li>
-        ))}
-        {Array.from({ length: BAG_LIMIT - row.bag.length }, (_, index) => (
-          <li key={`empty-${index}`} className="debrief-empty" aria-hidden="true" />
-        ))}
-      </ul>
-      {/* The reason as a speech bubble pointing up at the tapped picture's
-          column; until a tap, only the small hint. */}
-      <div aria-live="polite">
-        {chosen ? (
-          <DrillWhy key={chosen.id} {...chosen} index={row.bag.indexOf(chosen)} />
-        ) : row.bag.length > 0 ? (
-          <p className="muted place-note">{copy.TAP_FOR_WHY}</p>
-        ) : null}
-      </div>
-      {/* Labelled rows, as on the debrief: a picture, the label in bold, the
-          names in grey. */}
-      {row.leftBehind.length > 0 ? (
-        <p className="with-glyph place-note drill-row">
-          <Glyph kind="stay" line />
-          <span>
-            <b>{copy.LEFT_BEHIND}</b> <span className="muted">{row.leftBehind.join(', ')}</span>
-          </span>
-        </p>
-      ) : null}
-      {row.costYou.length > 0 ? (
-        <p className="with-glyph place-note drill-row">
-          <Glyph kind="caution" line />
-          <span>
-            <b>{copy.KIND_LABELS.bulky}</b> <span className="muted">{row.costYou.join(', ')}</span>
-          </span>
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 /** What one rehearsal found. With nothing found, the four checks by short
  *  name; with gaps, each one named, why it was found and what to do, on the
  *  card where it can be acted on. What a gap is sits behind About gaps. */
@@ -636,8 +562,13 @@ function RehearsalGaps({ gaps, found }: { gaps: string; found: HistoryRow['found
             <li key={index}>
               <p className="gap-title">{gap.title}</p>
               <p className="muted">{gap.reason}</p>
-              <p className="muted">
-                <b>{copy.ACTION_LABEL}.</b> {gap.action}
+              {/* What to do on its own line, led by the result page's arrow and
+                  at full strength, so it reads apart from the reason above. */}
+              <p className="with-glyph gap-history-action">
+                <Glyph kind="go" line />
+                <span>
+                  <b>{copy.ACTION_LABEL}.</b> {gap.action}
+                </span>
               </p>
             </li>
           ))}

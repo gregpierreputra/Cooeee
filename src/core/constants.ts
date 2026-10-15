@@ -143,6 +143,8 @@ export const HOLD_MS = 2_000;
 // How long the tab bar's BlackSky button keeps its "hold" hint after a tap.
 // The bar is on every screen, so a hint that stayed would never go away.
 export const NAV_HOLD_HINT_MS = 4_000;
+/** How long BlackSky's first arrival spotlight stays before the dial is left alone. */
+export const GUIDE_MS = 10_000;
 // How long a call card's Copy says Copied or Not copied before it reads Copy
 // again. It reports a moment, not what the clipboard holds later.
 export const COPY_CONFIRM_MS = 3_000;
@@ -476,6 +478,12 @@ export const BLACKSKY_LATCH_VALUE = 'latched';
  * chooses one, read on the next visit, and only ever compared against the
  * packs in the store, so a stale or foreign value simply matches nothing. */
 export const BLACKSKY_PACK_KEY = 'cooeee.blacksky-pack.v1';
+/** The day this browser last opened Cooeee, as a whole day number and nothing
+ * finer. Read once at start to ask a returning person whether they need a
+ * way out now, then written again. */
+export const LAST_VISIT_KEY = 'cooeee.last-visit.v1';
+/** Days away after which a returning person is asked whether they need a way out now. */
+export const AWAY_DAYS = 7;
 /** The unsaved words of a pack's note, one draft per pack, under this prefix
  *  and the pack id. Cleared by Save, Cancel and Delete, and with the pack. */
 export const NOTE_DRAFT_KEY_PREFIX = 'cooeee.note-draft.v1:';

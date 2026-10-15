@@ -232,6 +232,12 @@ export type AddressCandidate = {
   localityName: string;
   lat: number;
   lon: number;
+  /** The named place this address belongs to, such as a university campus,
+   *  when it was found by that name. Shown over the address, never saved. */
+  placeName?: string;
+  /** How far the address is from the point it was found near: a town, a
+   *  station or the person's own position. Shown on the row, never saved. */
+  distanceM?: number;
 };
 
 /** Parsed Vicmap record metadata used only to filter and collapse candidates.
@@ -240,6 +246,8 @@ export type AddressRecord = {
   candidate: AddressCandidate;
   propertyStatus: string;
   isPrimary: boolean;
+  /** The register's own id for the address, used to match a named place to it. */
+  pfi?: string;
 };
 
 /** The confirmed, still in-memory selection. 

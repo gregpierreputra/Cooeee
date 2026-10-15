@@ -64,6 +64,8 @@ test('a note is added, read, edited, kept and deleted, and the store follows', a
   await expect(notes.locator('.note-card')).toHaveCount(0);
   await expect(notes.getByRole('button', { name: ADD_NOTE })).toBeFocused();
   expect(await storageCounts(page)).toMatchObject({ notes: 0 });
+  // It fades as Note saved does, and clears on its own.
+  await expect(notes.getByRole('status')).toHaveText('');
 });
 
 test('leaving the page with unsaved words brings up the browser’s warning', async ({ page }) => {

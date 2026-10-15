@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
+import { packTab } from '../../core/back';
 import * as copy from '../../core/copy';
 import { shownPackName } from '../../core/home';
 import { rehearsalGate, type RehearsalGate, type RehearsalInput } from '../../core/rehearsal-entry';
@@ -158,7 +159,12 @@ export default function RehearsalEntry({
     return chosen !== null ? (
       <JourneyBefore packId={gate.packId} condition={chosen} onGone={() => setChosen(null)} />
     ) : (
-      <Condition packName={shownPackName(gate.packName)} packAddress={gate.packAddress} onChoose={setChosen} />
+      <Condition
+        packName={shownPackName(gate.packName)}
+        packAddress={gate.packAddress}
+        packIcon={gate.packIcon}
+        onChoose={setChosen}
+      />
     );
   }
 
@@ -196,7 +202,7 @@ export default function RehearsalEntry({
       actions={
         <>
           {returnPackId ? (
-            <Link className="action" to={`/packs/${returnPackId}`}>
+            <Link className="action" to={packTab(returnPackId, 'practice')}>
               {copy.BACK_TO_THIS_PACK}
             </Link>
           ) : null}

@@ -1,4 +1,5 @@
 import * as copy from '../../core/copy';
+import { silencedBySilentMode } from '../../core/device';
 import * as audio from './audio';
 
 /** E9-US4-AC2 — one round button that shows the state it is in: a speaker
@@ -22,4 +23,12 @@ export default function SoundButton() {
       </svg>
     </button>
   );
+}
+
+/** A quiet line beside the Sound button, on an iPhone or iPad only: there
+ *  silent mode mutes the games however loud the phone is, and the page
+ *  cannot see it, so the button alone may say on while nothing plays. */
+export function SilentModeNote() {
+  if (!silencedBySilentMode(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)) return null;
+  return <p className="drill-silent-note">{copy.SOUND_SILENT_NOTE}</p>;
 }

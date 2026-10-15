@@ -58,6 +58,26 @@ test.describe('Cooee Word', () => {
     await expect(page.getByRole('group', { name: 'Letters' })).toHaveCount(0);
   });
 
+  test('says what it is for, and shows how to play as its figures and colour key', async ({ page }) => {
+    await open(page);
+    await expect(page.getByText('Guess today’s bushfire word. Each one comes with a fact about getting ready.')).toBeVisible();
+    const how = page.getByRole('region', { name: 'How to play' });
+    await expect(how).toContainText('tries');
+    await expect(how.locator('.word-legend li')).toHaveText(['Right place', 'In the word', 'Not in the word']);
+    // Nothing to open: the rules are on the page.
+    await expect(page.getByRole('button', { name: 'How to play' })).toHaveCount(0);
+  });
+
+  // On a computer there is no phone keyboard to open, so the words are not
+  // shown, and a click on the guesses still lands where typing goes.
+  test('a computer is not offered the phone’s keyboard', async ({ page }) => {
+    await open(page);
+    await expect(page.getByRole('button', { name: 'Type with your phone’s keyboard' })).toBeHidden();
+    // The field lies over the guesses, so a click there lands in it.
+    await page.locator('.word-board').click();
+    await expect(page.getByRole('textbox', { name: 'Type your guess' })).toBeFocused();
+  });
+
   test('a solved day adds to the streak from the days before', async ({ page }) => {
     await open(page, '?history=lost,won,won');
     await type(page, answer.word);
@@ -134,5 +154,43 @@ test.describe('Cooee Word', () => {
       expect(box.height).toBeGreaterThanOrEqual(44);
       expect(box.width).toBeGreaterThanOrEqual(24);
     }
+  });
+});
+
+// On a small phone the keys sit below the guesses, so the phone's own keyboard
+// is offered too, above the guesses, and by a tap on them.
+test.describe('Cooee Word on a touch phone', () => {
+  test.use({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true });
+
+  test('the phone’s own keyboard is offered above the guesses, and types, deletes and enters a guess', async ({ page }) => {
+    await open(page);
+    const offer = page.getByRole('button', { name: 'Type with your phone’s keyboard' });
+    await expect(offer).toBeInViewport();
+    const grid = page.getByRole('list', { name: 'Your guesses' });
+    expect((await offer.boundingBox())!.y).toBeLessThan((await grid.boundingBox())!.y);
+    // The keys sit close under the guesses, with only the message line between.
+    const gridBottom = (await grid.boundingBox())!;
+    const keys = (await page.getByRole('group', { name: 'Letters' }).or(page.locator('.word-keyboard')).first().boundingBox())!;
+    expect(keys.y - (gridBottom.y + gridBottom.height)).toBeLessThanOrEqual(48);
+    await offer.click();
+    const field = page.getByRole('textbox', { name: 'Type your guess' });
+    await expect(field).toBeFocused();
+    await expect(page.locator('.word-board')).toHaveCSS('outline-style', 'solid');
+    // A phone's keyboard sends what it typed as input, not as named keys.
+    const send = (value: string) =>
+      field.evaluate((el, next) => {
+        (el as HTMLInputElement).value = next;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, value);
+    const first = page.getByRole('list', { name: 'Your guesses' }).getByRole('listitem').first();
+    for (const letter of wrong + 'x') await send(` ${letter}`);
+    await expect(first).toContainText(wrong.toUpperCase());
+    await send('');
+    await send(` ${wrong.at(-1)}`);
+    await send('');
+    await expect(first).toContainText(wrong.slice(0, -1).toUpperCase());
+    await send(` ${wrong.at(-1)}`);
+    await field.press('Enter');
+    await expect(page.locator('.word-message')).toContainText('guesses left');
   });
 });

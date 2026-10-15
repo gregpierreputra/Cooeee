@@ -22,6 +22,19 @@ describe('the camera over the yard', () => {
     expect(whole.top).toBe(-(PHONE.height - BLOCK_HEIGHT) / 2);
   });
 
+  it('lets every edge of the yard come out from under the bars', () => {
+    const barred = { ...PHONE, insetTop: 300, insetBottom: 200 };
+    // Dragged as far down as it goes, the yard's top sits just under the top bar.
+    const top = clampCamera({ left: 0, top: -9999, scale: 5 }, barred);
+    expect(screenToYard(0, 300, top).y).toBeCloseTo(0);
+    // And as far up, its bottom sits just above the bottom buttons.
+    const bottom = clampCamera({ left: 0, top: 9999, scale: 5 }, barred);
+    expect(screenToYard(0, PHONE.height - 200, bottom).y).toBeCloseTo(BLOCK_HEIGHT);
+    // Zoomed right out, the whole yard fits between the bars.
+    const { min } = zoomLevels(barred);
+    expect(BLOCK_HEIGHT * min).toBeLessThanOrEqual(PHONE.height - 500);
+  });
+
   it('keeps the point under the fingers where it is when zooming', () => {
     const camera = centredOn(280, 200, 4, PHONE);
     const before = screenToYard(500, 900, camera);

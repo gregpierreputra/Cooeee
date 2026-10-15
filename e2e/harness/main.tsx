@@ -226,6 +226,8 @@ if (window.location.pathname === '/size') {
       await discardBuildingPack(sizeContent.pack.id);
       throw new Error('synthetic interrupted save');
     }
+    // ?mode=slow holds the save a moment, so its turning state can be seen.
+    if (sizeMode === 'slow') await new Promise((resolve) => setTimeout(resolve, 1500));
     await saveTextOnlyPack(sizeContent, offer, Date.UTC(2026, 7, 28, 4));
   };
   sizeFlow = (
@@ -320,6 +322,10 @@ if (['/detail', '/detail-launch', '/detail-print'].includes(window.location.path
   });
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
+  // ?mode=drilled: one drill played on the phone two days before the clock.
+  if (detailMode === 'drilled') {
+    await db.drills.put({ id: 'detail-drill', finishedAt: detailNow - 2 * 86_400_000, reachedDoor: false, score: 0, packed: [] });
+  }
   // E5-US5. ?mode=rehearsed: the pack has been rehearsed once, and walked.
   if (detailMode === 'rehearsed') {
     await db.rehearsals.put({
@@ -624,7 +630,13 @@ if (window.location.pathname === '/nearby') {
       { facility_id: 1, type: 'NSP', name: 'Kalorama Memorial Reserve', address: 'Ridge Road, Kalorama', lat: -37.808, lon: 145.36, lga_name: 'Yarra Ranges', site_kind: 'open_space', designation_status: 'designated', last_verified_at: verified },
       { facility_id: 2, type: 'CFR', name: 'Ferny Creek Community Fire Refuge', address: 'School Road, Ferny Creek 3786', lat: -37.88323, lon: 145.333062, lga_name: 'Yarra Ranges', designation_status: 'designated', last_verified_at: verified },
     ]);
-    await db.postcodes.bulkAdd([{ postcode: '3766', centroid_lat: -37.813, centroid_lon: 145.362 }]);
+    // Kalorama by both places; Healesville with the refuge past 20 km; Bendigo
+    // with both past the widest map.
+    await db.postcodes.bulkAdd([
+      { postcode: '3766', centroid_lat: -37.813, centroid_lon: 145.362 },
+      { postcode: '3777', centroid_lat: -37.654, centroid_lon: 145.515 },
+      { postcode: '3550', centroid_lat: -36.757, centroid_lon: 144.28 },
+    ]);
     await db.dynamicSnapshot.bulkAdd([
       { activation_id: 1, type: 'RELIEF', name: 'Lilydale Community Centre', address: 'Lilydale', lat: -37.756, lon: 145.35, source_updated_at: ago(feedAge) },
     ]);

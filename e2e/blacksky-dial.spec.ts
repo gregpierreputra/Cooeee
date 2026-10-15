@@ -1,14 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 import { relativeBearing } from '../src/core/blacksky-dial';
 import {
-  APP_NAME,
   HOLD_TO_LEAVE,
   LEAVE_BLACKSKY,
   MARK_AT_SAVED_PLACE,
   NO_GPS,
+  LOCATION_OFF,
   NO_PACK_HERE,
   NO_PLACE_TO_POINT_AT,
   SORTED_BY_DISTANCE,
+  TURN_ON_LOCATION,
 } from '../src/core/copy';
 import { titleCase } from '../src/core/home';
 import {
@@ -17,6 +18,7 @@ import {
   drawnAngle,
   openDial,
   pushPosition,
+  refusePosition,
 } from './blacksky-position';
 
 // BS_Enhancement-AC1: one place on one compass dial. One test per state the
@@ -222,7 +224,7 @@ test('Leave is a round hold where the compass stands, the page fades behind it, 
   expect(Math.round(before.height)).toBe(60);
   expect(Math.abs(before.x + before.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(1);
   expect(Math.round(before.y)).toBe(viewport.height - 56 - 32);
-  await expect(page.locator('.blacksky-leave .bottom-nav-label')).toHaveText(APP_NAME);
+  await expect(page.locator('.blacksky-leave .bottom-nav-label')).toHaveText(LEAVE_BLACKSKY);
   // No bar: the foot is clear at its top and black under the button.
   const fade = await page.locator('.blacksky-leave').evaluate((el) => getComputedStyle(el).backgroundImage);
   expect(fade).toContain('linear-gradient');
@@ -496,6 +498,16 @@ test.describe('on a 360 by 660 screen', () => {
       rowOverflows: false,
     });
   });
+});
+
+test('Location refused with no pack: Turn on location asks again and the dial follows', async ({ page }) => {
+  await openDial(page, 'no-pack');
+  await refusePosition(page);
+  await expect(page.getByText(LOCATION_OFF)).toBeVisible();
+  await page.getByRole('button', { name: TURN_ON_LOCATION }).click();
+  await expect(page.getByText(LOCATION_OFF)).toBeHidden();
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
 });
 
 test('Normal, no pack: the nearest state-wide site is the subject', async ({ page }) => {

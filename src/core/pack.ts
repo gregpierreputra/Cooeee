@@ -1,4 +1,4 @@
-import { PACK_RADIUS_KM } from './constants';
+import { PACK_NAME_MAX_CHARS, PACK_RADIUS_KM } from './constants';
 import { OFFICIAL_INSTRUCTIONS_FIRST, SAVED_AGO } from './copy';
 import { ageLabel } from './provenance';
 import type { Pack, PackIcon, PackSeed, PendingPlace, Source } from './types';
@@ -36,16 +36,19 @@ export function streetPart(address: string, locality: string): string {
   return at > 0 && /^\d{4}$/.test(postcode) ? address.slice(0, at) : address;
 }
 
-/** The name the builder offers: the suburb, or the street when another pack
- *  already has the suburb's name, so a second pack in one suburb is told
- *  apart by what it is, not by a number. */
+/** The name the builder offers: a named place's own name when it was found by
+ *  that name, else the suburb, or the street when another pack already has the
+ *  suburb's name, so a second pack in one suburb is told apart by what it is,
+ *  not by a number. */
 export const defaultPackName = (
-  candidate: { address: string; localityName: string },
+  candidate: { address: string; localityName: string; placeName?: string },
   savedNames: readonly string[],
 ): string =>
-  savedNames.some((name) => samePackName(name, candidate.localityName))
-    ? streetPart(candidate.address, candidate.localityName)
-    : candidate.localityName;
+  candidate.placeName
+    ? candidate.placeName.slice(0, PACK_NAME_MAX_CHARS)
+    : savedNames.some((name) => samePackName(name, candidate.localityName))
+      ? streetPart(candidate.address, candidate.localityName)
+      : candidate.localityName;
 
 /** The seed for a pack built from an already-confirmed place and an
  * already-fetched official area result. 

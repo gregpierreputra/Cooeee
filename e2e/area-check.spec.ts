@@ -31,7 +31,7 @@ test('AC5 shows designation, publisher/date and instruction priority in order', 
   ]);
   // The pack's reminder is the card's footer, with no phone beside it.
   await expect(state.locator('.area-priority')).toHaveText(
-    'Follow Country Fire Authority and emergency service instructions first.',
+    'Always follow instructions from the Country Fire Authority and emergency services.',
   );
   await expect(state.locator('.area-priority .glyph')).toHaveCount(0);
   await expect(state).not.toContainText(/safe|protected|low risk|no risk|high risk|danger level/i);

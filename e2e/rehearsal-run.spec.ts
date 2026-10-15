@@ -300,7 +300,7 @@ test.describe('AC5 returning asks how it ended', () => {
 
       // The existing result, finding the same gaps whichever ending she gave.
       await expect(page.getByRole('heading', { name: 'What this rehearsal found' })).toBeVisible();
-      await expect(page.locator('.gap-row h3')).toHaveText(['Live direction and distance to your saved places']);
+      await expect(page.locator('.gap-row h3')).toHaveText(['The arrow to your saved places']);
       await expect(bar(page)).toBeVisible();
 
       // The kept row became the finished one, with her ending.

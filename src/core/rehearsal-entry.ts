@@ -8,8 +8,9 @@
 // created in any of the four, so the gate is pure and the screen renders what
 // it returns.
 
+import { packIcon } from './pack';
 import { formatSavedDate } from './provenance';
-import type { CompletePackContent, Destination, ExposureLayer, LayerCode } from './types';
+import type { CompletePackContent, Destination, ExposureLayer, LayerCode, PackIcon } from './types';
 
 /** The hazards a rehearsal can run for. Iteration 2 carries two and no third:
  *  bushfire from the designation layers, heat from the cool places the heat
@@ -42,7 +43,7 @@ export type UnreadablePart = 'stored-items' | 'saved-places' | 'the-whole-pack';
 export type RehearsalGate =
   /** The pack is finished, readable and holds hazard content. Everything past
    *  this point belongs to a later acceptance criterion. */
-  | { state: 'ready'; packId: string; packName: string; packAddress: string; hazards: RehearsalHazard[] }
+  | { state: 'ready'; packId: string; packName: string; packAddress: string; packIcon: PackIcon; hazards: RehearsalHazard[] }
   /** otherCompletePacks is how many complete packs the device holds that are
    *  not the one asked for. It is 0 in the plain case, and the screen says a
    *  different sentence when it is not, because "no pack is stored on this
@@ -165,5 +166,5 @@ export function rehearsalGate(input: RehearsalInput): RehearsalGate {
     };
   }
 
-  return { state: 'ready', packId, packName, packAddress: content.pack.address, hazards };
+  return { state: 'ready', packId, packName, packAddress: content.pack.address, packIcon: packIcon(content.pack), hazards };
 }

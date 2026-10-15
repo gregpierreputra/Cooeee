@@ -15,8 +15,10 @@ const CHOOSE_HEADING = 'Rehearse with…';
 const WALKED_LINE = 'You went there. It took you 14 minutes.';
 const DRY_RUN_LINE = 'A dry run. You ended it without going.';
 
-const PACK_CONTENT_MEANING = 'Missing from your pack.';
-const CONDITION_MEANING = 'Not available under this condition.';
+/** Each kind of gap is told apart by its reason: what this pack is missing, or
+ *  what the condition takes away. */
+const PACK_CONTENT_REASON = 'None were saved when this pack was built.';
+const CONDITION_REASON = 'Without a location fix the phone cannot point the way or say how far.';
 
 // E5-US2-AC1 — one action for each gap.
 
@@ -41,26 +43,23 @@ test.describe('AC1 each gap arrives with one action', () => {
   test('a pack-content gap and a condition gap read differently', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP);
 
-    await expect(page.getByText(PACK_CONTENT_MEANING)).toBeVisible();
-    await expect(page.getByText(CONDITION_MEANING)).toBeVisible();
-    // Both kinds are on screen, in one list, told apart only by their words.
+    await expect(page.getByText(PACK_CONTENT_REASON)).toBeVisible();
+    await expect(page.getByText(CONDITION_REASON)).toBeVisible();
+    // Both kinds are on screen, in one list, told apart only by their reasons.
     await expect(page.locator('.gap-list')).toHaveCount(1);
   });
 
-  test('every gap names whose journey it belongs to', async ({ page }) => {
+  test('a gap opens on its own name, with no journey label, as every rehearsal is a bushfire one', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP);
 
-    const rows = page.locator('.gap-row');
-    const count = await rows.count();
-    for (let i = 0; i < count; i += 1) {
-      await expect(rows.nth(i).locator('.kicker')).toHaveText('Bushfire journey');
-    }
+    await expect(page.locator('.gap-row').first()).toBeVisible();
+    await expect(page.locator('.gap-row .kicker')).toHaveCount(0);
   });
 
   test('a contingency action never says the capability has come back', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WHOLE);
 
-    const row = page.locator('.gap-row', { hasText: CONDITION_MEANING });
+    const row = page.locator('.gap-row', { hasText: CONDITION_REASON });
     await expect(row).toHaveCount(1);
     await expect(row).not.toContainText('restored');
     await expect(row).not.toContainText('back online');
@@ -207,12 +206,12 @@ test.describe('AC1 marking an action done', () => {
   test('is attributed to the reader, and never reads as the capability returning', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, KEEP);
     await expect(page.locator('.gap-row').first()).toBeVisible();
-    const row = page.locator('.gap-row', { hasText: CONDITION_MEANING });
+    const row = page.locator('.gap-row', { hasText: CONDITION_REASON });
 
     await row.getByRole('button', { name: 'Mark this done' }).click();
     await expect(row.locator('.gap-done')).toContainText('You marked this done');
     // The gap is still stated, in the same words, beside the completion.
-    await expect(row).toContainText(CONDITION_MEANING);
+    await expect(row).toContainText(CONDITION_REASON);
     await expect(row).not.toContainText('restored');
     await expect(row).not.toContainText('available again');
   });
@@ -222,13 +221,14 @@ test.describe('AC1 marking an action done', () => {
     await rehearseToResult(page, NO_FIX, KEEP);
     await expect(page.locator('.gap-row').first()).toBeVisible();
     const before = await page.locator('.gap-row h3').allInnerTexts();
-    const meanings = await page.locator('.gap-row > p.muted').allInnerTexts();
+    const reasons = await page.locator('.gap-reason-label + p').allInnerTexts();
+    expect(reasons.length).toBeGreaterThan(0);
 
     await firstRow(page).getByRole('button', { name: 'Mark this done' }).click();
     await expect(firstRow(page).locator('.gap-done')).toBeVisible();
 
     expect(await page.locator('.gap-row h3').allInnerTexts()).toEqual(before);
-    expect(await page.locator('.gap-row > p.muted').allInnerTexts()).toEqual(meanings);
+    expect(await page.locator('.gap-reason-label + p').allInnerTexts()).toEqual(reasons);
   });
 
   test('marks only the action it belongs to', async ({ page }) => {
@@ -249,7 +249,7 @@ test.describe('AC1 undoing a marking', () => {
     await expect(page.locator('.gap-row').first()).toBeVisible();
     const row = firstRow(page);
     const title = await row.locator('h3').innerText();
-    const meaning = await row.locator('p.muted').first().innerText();
+    const reason = await row.locator('.gap-reason-label + p').innerText();
 
     await row.getByRole('button', { name: 'Mark this done' }).click();
     await expect(row.locator('.gap-done')).toBeVisible();
@@ -264,7 +264,7 @@ test.describe('AC1 undoing a marking', () => {
 
     // The gap is not newly detected: it reads exactly as it did before.
     await expect(row.locator('h3')).toHaveText(title);
-    await expect(row.locator('p.muted').first()).toHaveText(meaning);
+    await expect(row.locator('.gap-reason-label + p')).toHaveText(reason);
     // Nothing reads as the gap having just been found: undoing a completion is
     // a correction to the reader's record, not a change to what the run found.
     // (The word "again" is not checked for: the actions themselves say "build
@@ -454,10 +454,10 @@ test.describe('AC5 the result says how the rehearsal ended', () => {
 
     const walked = await read(page, 'I have arrived');
     const dryRun = await read(await context.newPage(), 'End without going');
-    // Nothing but the words sets them apart: the same treatment as each other,
-    // and as the condition line beside them.
+    // Nothing but the words sets the two endings apart. The condition line
+    // above them leads the card in its own treatment, the same for both.
     expect(walked.ending).toBe(dryRun.ending);
-    expect(walked.ending).toBe(walked.condition);
+    expect(walked.condition).toBe(dryRun.condition);
   });
 
   test('the progress view carries no time, no trend and no ending', async ({ page }) => {
@@ -484,8 +484,8 @@ test.describe('AC5 her note about the way', () => {
   const WORDS = 'Left at the church, not the second gate.\nThe footbridge floods — use the road.';
   const field = (page: Page) => page.getByLabel(WAY_NOTE_LABEL);
   const saveControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Save', exact: true });
-  /** Save, once the words are kept and unchanged. */
-  const keptControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Saved to this pack' });
+  /** Remove, in Save's place once the words are kept and unchanged. */
+  const removeControl = (page: Page) => page.getByRole('main').getByRole('button', { name: 'Remove from this pack' });
 
   test('is offered after a walked rehearsal, and not after a dry run', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
@@ -521,7 +521,7 @@ test.describe('AC5 her note about the way', () => {
 
     await field(page).fill(WORDS);
     await saveControl(page).click();
-    await expect(keptControl(page)).toBeVisible();
+    await expect(removeControl(page)).toBeVisible();
 
     await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
     const [note] = await storedNotes(page);
@@ -549,60 +549,77 @@ test.describe('AC5 her note about the way', () => {
 
   test('a saved note can be taken back out, keeping her words in the field', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
-    const remove = page.getByRole('main').getByRole('button', { name: 'Remove from this pack' });
+    const remove = removeControl(page);
     await expect(remove).toHaveCount(0);
     await field(page).fill(WORDS);
     await saveControl(page).click();
-    await expect(keptControl(page)).toBeVisible();
+    await expect(remove).toBeVisible();
     await expect.poll(async () => (await storedNotes(page)).length).toBe(1);
 
     await remove.click();
     await expect(page.getByText('Removed from this pack.')).toBeVisible();
     await expect.poll(async () => (await storedNotes(page)).length).toBe(0);
     await expect(field(page)).toHaveValue(WORDS);
-    // One line says where it stands: removed, until she types again.
+    // One line says where it stands: removed, which fades and clears, and
+    // nothing more until she types again.
     await expect(page.getByText('Not saved yet.')).toHaveCount(0);
     await expect(remove).toHaveCount(0);
+    await expect(page.getByText('Removed from this pack.')).toHaveCount(0);
+    await expect(page.getByText('Not saved yet.')).toHaveCount(0);
     await field(page).press('End');
     await field(page).pressSequentially('!');
     await expect(page.getByText('Not saved yet.')).toBeVisible();
     await expect(page.getByText('Removed from this pack.')).toHaveCount(0);
   });
 
-  test('saved, the control says so and does nothing until the words change, which Undo changes puts back', async ({
+  test('saved, the line says so and fades, Remove takes Save\'s place, and a change brings Save back with Undo changes', async ({
     page,
   }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
     await field(page).fill(WORDS);
     await saveControl(page).click();
-    await expect(keptControl(page)).toHaveAttribute('aria-disabled', 'true');
+    // One control: Remove stands where Save was, and the line says it is saved.
+    await expect(removeControl(page)).toBeVisible();
+    await expect(saveControl(page)).toHaveCount(0);
     await expect(page.getByRole('status').filter({ hasText: "Saved to this pack's notes." })).toHaveCount(1);
-    await expect.poll(async () => (await storedNotes(page))[0]?.updatedAt).toBeTruthy();
-    const savedAt = (await storedNotes(page))[0].updatedAt;
-    // A tap on it, as a thumb would give, writes nothing.
-    await keptControl(page).click({ force: true });
-    await page.waitForTimeout(300);
-    expect((await storedNotes(page))[0].updatedAt).toBe(savedAt);
+    // It fades and clears on its own, with nothing in its place.
+    await expect(page.getByText("Saved to this pack's notes.")).toHaveCount(0);
+    await expect(page.getByText('Not saved yet.')).toHaveCount(0);
 
-    // A change: Save again, and Undo changes in place of Remove.
+    // A change: Save again, with Undo changes in place of Remove.
     await field(page).press('End');
     await field(page).pressSequentially(' Carry water.');
     await expect(saveControl(page)).toBeVisible();
     await expect(page.getByText('Not saved yet.')).toBeVisible();
-    await expect(page.getByRole('main').getByRole('button', { name: 'Remove from this pack' })).toHaveCount(0);
+    await expect(removeControl(page)).toHaveCount(0);
     await page.getByRole('main').getByRole('button', { name: 'Undo changes' }).click();
     await expect(field(page)).toHaveValue(WORDS);
-    await expect(keptControl(page)).toBeVisible();
+    await expect(removeControl(page)).toBeVisible();
     await expect(page.getByText('Not saved yet.')).toHaveCount(0);
     expect((await storedNotes(page))[0].text).toBe(WORDS);
   });
 
+  test('Removed gets its own two seconds when it follows Saved quickly', async ({ page }) => {
+    await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
+    await field(page).fill(WORDS);
+    await saveControl(page).click();
+    await expect(page.getByText("Saved to this pack's notes.")).toBeVisible();
+    await page.waitForTimeout(1200);
+    await removeControl(page).click();
+    await expect(page.getByText('Removed from this pack.')).toBeVisible();
+    // Past the two seconds since Saved: a shared timer would have faded it.
+    await page.waitForTimeout(1200);
+    await expect(page.getByText('Removed from this pack.')).toHaveCSS('opacity', '1');
+    await expect(page.getByText('Removed from this pack.')).toHaveCount(0);
+  });
+
   test('the buttons stay put while the line under the box changes', async ({ page }) => {
     await rehearseToResult(page, NO_FIX, WITH_GAP, 'I have arrived');
-    const save = page.getByRole('main').getByRole('button', { name: /^Save/ });
+    // The first control under the box, Save or Remove, whichever stands there.
+    const first = page.locator('.way-note .note-actions button').first();
     // Measured inside the card, so scrolling the page does not count.
     const top = () =>
-      save.evaluate((el) =>
+      first.evaluate((el) =>
         Math.round(el.getBoundingClientRect().top - el.closest('.note-card')!.getBoundingClientRect().top),
       );
     const empty = await top();
@@ -610,9 +627,9 @@ test.describe('AC5 her note about the way', () => {
     await expect(page.getByText('Not saved yet.')).toBeVisible();
     expect(await top()).toBe(empty);
     await saveControl(page).click();
-    await expect(keptControl(page)).toBeVisible();
+    await expect(removeControl(page)).toBeVisible();
     expect(await top()).toBe(empty);
-    await page.getByRole('main').getByRole('button', { name: 'Remove from this pack' }).click();
+    await removeControl(page).click();
     await expect(page.getByText('Removed from this pack.')).toBeVisible();
     expect(await top()).toBe(empty);
   });

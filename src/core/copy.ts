@@ -47,7 +47,8 @@ export const ONLINE_NOTICE = 'Online';
 export const OFFLINE_NOTICE = 'Offline. Packs still work.';
 export const DISMISS_NOTICE = 'Dismiss connection notice';
 
-export const NO_PACKS_HINT = 'Build one while you have a connection.';
+/** Says what a pack is, as testers new to the app did not know the word. */
+export const NO_PACKS_HINT = "A pack keeps one address's bushfire information on this phone. Build one while you have a connection.";
 /** "1 day", "3 days": a pack saved yesterday must not read "1 days ago". */
 const dayCount = (days: number) => (days === 1 ? '1 day' : `${days} days`);
 /** A pack card's age, from ageLabel: "Saved just now", "Saved 5 minutes ago". */
@@ -95,6 +96,9 @@ export const RELOAD_NOW = 'Reload';
 // E1-US1-AC1 address confirmation
 export const CONFIRM_ADDRESS_QUESTION = 'Is this the place?';
 export const PLACE_NAME_LABEL = 'Place name';
+/** The name field on Is this the place?, worded as what to do, as a filled
+ *  field read as a finished answer rather than one to change. */
+export const NAME_THIS_PLACE = 'Name this place';
 export const SAVE_THIS_PLACE = 'Save this place';
 export const SEARCH_AGAIN = 'Search again';
 /** The no to Is this the place?: back to the search, what was typed kept. */
@@ -104,18 +108,28 @@ export const NOT_THIS_PLACE = 'Not this place';
 export const BUILD_A_PACK = 'New offline pack';
 export const ADDRESS_SEARCH_TITLE = 'Your address';
 export const ADDRESS_FIELD_LABEL = 'Street address';
-export const ABOUT_ADDRESS = 'Why the exact address';
-/** At the field itself: the street address is the point every official place
- *  of last resort is measured from, so it has to be the right one. */
-export const ADDRESS_FIELD_HINT = 'Your official places of last resort are measured from it.';
-/** Said before the search, so an address with no official place close by is
- *  never a surprise at the places step. */
-export const ADDRESS_SEARCH_DISCLOSURE =
-  'Some addresses have none close by, and some areas have none. Cooeee lists the nearest the Country Fire Authority publishes.';
+export const ABOUT_ADDRESS = 'About your address';
+/** The street address is the point every official place of last resort is
+ *  measured from. Says what such a place is, as testers new to the app did
+ *  not know the term. */
+export const ADDRESS_FIELD_HINT =
+  'Cooeee finds the official places of last resort nearest to it. These are places the Country Fire Authority names to go to in a bushfire when every other plan has failed.';
+/** What a place of last resort is, said the same way wherever it is defined:
+ *  as the address note says it, testers new to the app did not know the term. */
+export const LAST_RESORT_MEANING = 'Places the Country Fire Authority names to go to in a bushfire when every other plan has failed.';
 /** Use my location on the address search. The position is sent to the address
- *  register, so the screen says so before the button is tapped. */
-export const ADDRESS_LOCATE_DISCLOSURE = 'Sends your position to the Victorian address register. Not stored.';
+ *  register, so the note beside the title says so. Cooeee keeps nothing, and
+ *  the line claims nothing about the register itself. */
+export const ADDRESS_LOCATE_DISCLOSURE = 'The location button sends your position to the Victorian address register. Cooeee does not keep it.';
 export const ADDRESS_LOCATE_FOUND = 'Addresses nearest you';
+/** A town or station typed in place of an address: the list is the addresses
+ *  nearest it, and that is said, so none reads as the place itself. */
+export const FROM_TOWN = (town: string) => `the centre of ${town}`;
+export const FROM_STATION = (station: string) => `${station} station`;
+export const ADDRESS_NEAR = (from: string) => `Addresses nearest ${from}`;
+/** Under every address in a nearest list. What it is measured from is said
+ *  once, on the line above the list. */
+export const ADDRESS_DISTANCE_AWAY = (distance: string) => `${distance} away`;
 export const ADDRESS_LOCATE_FAILED = 'Position unavailable. Type the address.';
 export const ADDRESS_LOCATE_DENIED = 'Location is off for Cooeee. Turn it on in your phone settings, or type the address.';
 export const ADDRESS_LOCATE_SLOW = 'Your position took too long to find. Try again, or type the address.';
@@ -125,8 +139,12 @@ export const ADDRESS_LOCATE_TOO_ROUGH = 'Your position is too rough to find your
 export const ADDRESS_LOCATE_OUTSIDE = 'You are outside Victoria. Type a Victorian address.';
 export const ADDRESS_LOCATE_NONE = 'No address near you. Type it instead.';
 export const SEARCH_IN_PROGRESS = 'Searching…';
-export const ADDRESS_QUERY_TOO_SHORT = 'Enter at least 3 characters.';
-export const CANDIDATE_LIST_LABEL = 'Address candidates';
+/** Says, before anything is typed, that a town, a station or a named place
+ *  finds an address too. */
+export const ADDRESS_QUERY_TOO_SHORT = 'Type an address, town, station or place.';
+/** Over the address results, so the rows read as a list to tap rather than
+ *  more fields, and the list's name when read aloud. */
+export const CANDIDATE_LIST_HEADING = 'Choose your address';
 export const NONE_OF_THESE = 'Not my address';
 /** The register describes one address at more than one point and does not say
  * which it means. Stated as the limit it is, never as a result. */
@@ -154,7 +172,7 @@ export const AREA_NOT_PUBLISHED =
 export const AREA_MAP_IS_NOT_FIRE_REACH =
   'Fire can still reach you.';
 export const OFFICIAL_INSTRUCTIONS_FIRST =
-  'Follow Country Fire Authority and emergency service instructions first.';
+  'Always follow instructions from the Country Fire Authority and emergency services.';
 export const AREA_CHECK_COULD_NOT_RUN = 'The bushfire area check is unavailable right now.';
 export const AREA_NOT_SAVED = 'Nothing saved. Your address is still here. Try again with a connection.';
 
@@ -171,8 +189,13 @@ export const NOTHING_CHANGED = 'Nothing changed.';
 // the person does with a pack. "Download" is kept for what comes from the
 // internet, such as the places list.
 export const READY_TO_SAVE = 'Ready to save';
+/** The save step's title while the pack is still being prepared, beside the
+ *  turning arc: Ready to save would claim a Save that cannot yet be tapped. */
+export const PREPARING_PACK_TITLE = 'Preparing your pack';
 export const SAVE_PACK = 'Save this pack';
 export const SAVING_PACK = 'Saving…';
+/** The status line while the pack is written, beside the turning arc. */
+export const SAVING_YOUR_PACK = 'Saving your pack…';
 export const SAVE_STOPPED = 'Saving stopped before it finished.';
 /** The summary's rows: what the pack holds, said before it is saved. */
 export const SUMMARY_AREA = 'Bushfire area';
@@ -243,7 +266,7 @@ export const NEARBY_MAP_KEY_HERE = 'Measured from here';
 export const NEARBY_MAP_POSTCODE = (code: string) => `Centre of postcode ${code}`;
 export const NEARBY_MAP_POSITION = 'Your position';
 export const NEARBY_MAP_NO_ROADS = "The map's roads are not on this phone yet. Open the app with a connection to download them.";
-export const NEARBY_MAP_NONE = 'No Neighbourhood Safer Place or Community Fire Refuge within 20 km.';
+export const NEARBY_MAP_NONE = (km: number) => `No Neighbourhood Safer Place or Community Fire Refuge within ${km} km.`;
 /** The viewer's buttons. A finger pinches and moves; these zoom. */
 export const MAP_ZOOM_IN = 'Zoom in';
 export const MAP_ZOOM_OUT = 'Zoom out';
@@ -417,6 +440,25 @@ export const ACCURACY_DETAIL = (m: number) => `Your phone puts you within ${m} m
 
 // The compass. iOS only hands the orientation sensor over after a tap.
 export const TURN_ON_COMPASS = 'Turn on the compass';
+// Location refused in BlackSky: a way to ask again, and where to look if the
+// phone will not ask.
+export const LOCATION_OFF = 'Location is off.';
+export const LOCATION_OFF_DETAIL =
+  "Turn it on so the dial can point you to the nearest place of last resort. If nothing happens, allow location for Cooeee in your phone's settings.";
+export const TURN_ON_LOCATION = 'Turn on location';
+
+// Back after a week or more: a clear spotlight on the BlackSky compass.
+export const AWAY_CHECK_TITLE = 'Do you need a way out now?';
+export const AWAY_CHECK_LINE = 'If a fire is close, hold the BlackSky button below for two seconds.';
+// BlackSky opened from the welcome: a spotlight on the marker and the place's
+// name, then the tour offered once BlackSky is left.
+export const ARRIVAL_GUIDE = 'Head to the marker';
+/** What the marker is, in the words LAST_RESORT_MEANING defines it with. */
+export const ARRIVAL_GUIDE_LINE =
+  'It shows your nearest place of last resort, a place the Country Fire Authority names to go to in a bushfire when every other plan has failed.';
+export const GO = 'Go';
+export const TOUR_OFFER_TITLE = 'Would you like a tour of Cooeee?';
+export const TOUR_OFFER_LINE = 'Tap the question mark to see what each part of the app does.';
 
 // BS_Enhancement-AC1 one place on one compass dial
 /** The small label above the main place: where it comes from. Written in
@@ -579,11 +621,9 @@ export const PREP_PLAN_LINE = 'Decide where you would go and how, before you nee
 // E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter. Two seconds.';
-export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
-/** The name of BlackSky's round hold, where the compass that opened it sits.
- *  Cooeee is the word under it, so the name holds it, as Hold for BlackSky
- *  holds the word under the compass. */
-export const LEAVE_BLACKSKY = 'Hold for Cooeee';
+export const HOLD_TO_LEAVE = 'Hold for two seconds.';
+/** The name of BlackSky's round hold, and the words under it. */
+export const LEAVE_BLACKSKY = 'Hold to leave BlackSky';
 export const BLACKSKY_BLOCKED = 'Not opened. Hold its button two seconds to enter.';
 /** Said at the top of BlackSky when the phone's Back was pressed: the round
  *  hold at its foot says how to leave. */
@@ -866,7 +906,7 @@ export const WELCOME_TERMS = ['koo-EE', 'guuu-wii', 'Dharug', 'come here', 'kept
 export const COOEEE_INFO_LINES = [
   { glyph: 'what', title: 'What it is', text: 'Official bushfire information for your places, kept on your phone.' },
   { glyph: 'why', title: 'Why it exists', text: 'In a fire, the power and the signal often go first.' },
-  { glyph: 'does', title: 'What it does', text: 'Build packs, find official places, and hold for BlackSky when nothing else works.' },
+  { glyph: 'does', title: 'What it does', text: 'Build packs, find places of last resort, and hold for BlackSky when nothing else works.' },
   { glyph: 'not', title: 'What it does not do', text: 'It does not watch conditions or contact you. VicEmergency tells you when to act.' },
   { glyph: 'stays', title: 'Where your information stays', text: 'Your address stays on this phone. Cooeee runs no server that could keep it.' },
 ] as const;
@@ -885,13 +925,13 @@ export const SKIP_TOUR = 'Skip tour';
  *  the panel while the tour holds the page still. */
 export const TOUR_STEPS = [
   { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'A daily preparation step, from Country Fire Authority guidance or your pack.' },
-  { path: '/', target: '.home .pack-card:not(.pack-card ~ .pack-card), .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
+  { path: '/', target: '.home .pack-card:not(.pack-card ~ .pack-card), .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: "A pack is one address's bushfire information, kept on this phone." },
   { path: '/', target: '.home .main-action', glyph: 'plus', title: 'New offline pack', line: 'Add a pack for home, work, school or family.' },
-  { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to official places offline.', more: 'blacksky' },
+  { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to your saved places.', more: 'blacksky' },
   { path: '/', target: '.app-header-inner', glyph: 'clock', title: 'The header', line: "Tap Cooeee to go home. The pill shows your oldest pack's age." },
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
   { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
-  { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
+  { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby places', line: 'Places of last resort are where to go when all else fails.' },
   { path: '/rehearse', target: '.rehearsal-entry .card, .rehearsal-condition .empty-state, .condition-list:not(.pack-choice-list), .pack-choice-list > li:first-child', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: REHEARSE_LINE },
   { path: '/recover', target: '.recover .hero', tab: '.bottom-nav-item[href="/recover"]', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
@@ -900,7 +940,7 @@ export const TOUR_STEPS = [
  *  opens: what BlackSky does, each line led by its glyph. */
 export const ABOUT_BLACKSKY = 'More about BlackSky';
 export const BLACKSKY_INFO_LINES = [
-  { glyph: 'go', text: 'Points to the nearest official places of last resort.' },
+  { glyph: 'go', text: 'Points to the nearest official places of last resort, where to go when all else fails.' },
   { glyph: 'offline', text: 'Works with no signal. Your pack is already on this phone.' },
   { glyph: 'moon', text: 'Black and amber spare the battery and your night vision.' },
   { glyph: 'clock', text: 'Hold two seconds to enter or leave. A tap does nothing.' },
@@ -921,6 +961,9 @@ export const WELCOME_FACTS = [
   { glyph: 'not', line: 'Nothing leaves your phone.' },
 ] as const;
 export const SEE_HOW_IT_WORKS = 'See how it works';
+/** On the welcome, for a new person with a fire close: straight to BlackSky on a hold. */
+export const WAY_OUT_BUTTON = 'I need a way out now';
+export const WAY_OUT_SUB = 'Hold for two seconds';
 
 // ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────
 // The four statements are the screen. They are literal on-screen text, never
@@ -944,7 +987,7 @@ export const DISCLOSURE_ADDRESS =
 
 export const DISCLOSURE_POSITION_HEADING = 'When Cooeee asks for your position';
 export const DISCLOSURE_POSITION =
-  'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device. You can refuse, and everything else still works.';
+  'In BlackSky, rehearsals, and when you tap to use your location. Only finding your address sends it out, to the Victorian address register. Cooeee never keeps it. You can refuse.';
 
 /** The quieter line under the four statements: who to go to for what Cooeee
  *  itself will never provide. */
@@ -973,7 +1016,7 @@ export const GATE_UNAVAILABLE = 'The password cannot be checked right now.';
 
 export const NAV_NEARBY = 'Nearby';
 export const NEARBY_KICKER = 'Nearby places';
-export const NEARBY_TITLE = 'Nearest official places';
+export const NEARBY_TITLE = 'Places near you';
 export const ABOUT_GROUP = (group: string) => `About ${group}`;
 
 export const USE_MY_LOCATION = 'Use my location';
@@ -996,12 +1039,16 @@ export const NOT_A_RANKING = 'Not a ranking.';
  *  line passed through KeyTerms. Plain words only: they are joined into a regex. */
 export const KEY_TERMS = ['Bushfire Prone Area', 'Fire can still reach you'] as const;
 
-export const DOWNLOADING_PLACES = 'Downloading the official places…';
+export const DOWNLOADING_PLACES = 'Downloading the official lists…';
 export const FIRST_RUN_TITLE = 'Nothing downloaded yet';
 export const FIRST_RUN_LINE = 'Connect once to download. Then it opens with no signal.';
 
 export const GROUP_BUSHFIRE = 'Bushfire places of last resort';
 export const GROUP_BUSHFIRE_NOTE = 'Designated by the Country Fire Authority for their own township. Bushfire only.';
+/** Each kind said in plain words beside the note, as testers new to the app
+ *  did not know them. Both follow the Country Fire Authority's own account. */
+export const NSP_MEANS = 'A Neighbourhood Safer Place is an open space or building to go to as a last resort. It has no staff or services.';
+export const CFR_MEANS = "A Community Fire Refuge is a building that gives short-term shelter from a fire's heat, as a last resort.";
 export const GROUP_RELIEF = 'Relief and recovery';
 /** The two tabs over the Nearby groups, short enough to sit side by side. */
 export const TAB_BUSHFIRE = 'Bushfire places';
@@ -1208,23 +1255,22 @@ export const HAZARD_NAME: Record<'bushfire' | 'heat', string> = {
 };
 export const GAP_HAZARD_LINE = (hazard: string) => `${hazard} journey`;
 
-// The two kinds, told apart by these words and by nothing else.
+/** Said on the journey where a pack has no official place to show. */
 export const GAP_MEANING_PACK_CONTENT = 'Missing from your pack.';
-/** The condition's kind. What to do instead follows in its own panel. */
-export const GAP_MEANING_CONDITION = 'Not available under this condition.';
 
-// What could not be relied on.
-export const GAP_DESIGNATION = 'The official area designation for this address';
-export const GAP_PLACES = 'The official places saved with this pack';
+// What could not be relied on, named plainly, so the Why under it adds to it
+// rather than saying it again.
+export const GAP_DESIGNATION = 'Bushfire area';
+export const GAP_PLACES = 'Official places of last resort';
 /** The label over the places on the journey screens, short enough for one line. */
-export const JOURNEY_PLACES_LABEL = 'Official places in this pack';
-export const GAP_PROVENANCE = 'The publisher and saved date on every stored item';
-export const GAP_LIVE_DIRECTION = 'Live direction and distance to your saved places';
+export const JOURNEY_PLACES_LABEL = 'Places of last resort in this pack';
+export const GAP_PROVENANCE = 'Where each item came from';
+export const GAP_LIVE_DIRECTION = 'The arrow to your saved places';
 
 // UAT: a gap was named but not explained. Why each one was found, in one line.
 export const GAP_REASON_LABEL = 'Why';
 export const GAP_REASON_DESIGNATION = 'This pack holds no answer from the official map for this address.';
-export const GAP_REASON_PLACES = 'No official place of last resort was saved with this pack.';
+export const GAP_REASON_PLACES = 'None were saved when this pack was built.';
 export const GAP_REASON_PROVENANCE = 'Some saved items do not show who published them or when.';
 export const GAP_REASON_LIVE_DIRECTION = 'Without a location fix the phone cannot point the way or say how far.';
 
@@ -1240,7 +1286,7 @@ export const GAPS_CHECKED = 'Area answer · Saved places · Sources · Live dire
 
 // The one action for each. None of them says the capability has come back.
 export const ACTION_BUILD_AGAIN_DESIGNATION = 'Build this pack again online to store the official area designation.';
-export const ACTION_BUILD_AGAIN_PLACES = 'Build this pack again online to store the official places.';
+export const ACTION_BUILD_AGAIN_PLACES = 'Build this pack again online to store its places of last resort.';
 export const ACTION_BUILD_AGAIN_PROVENANCE = 'Build this pack again online so every item has its publisher and date.';
 /** Says what to do instead, and does not pretend the phone will find the way. */
 export const ACTION_WRITE_THE_WAY_DOWN = 'Write down the way from your door to each saved place. Keep it with your kit.';
@@ -1303,7 +1349,7 @@ export const PACK_CHANGE_UNKNOWN = 'Whether the pack changed between them was no
 // nothing here says on foot or walking. None of them treats a place as where
 // she plans to go on the day, and none of them rates the trip:
 // no time to beat, no fast or slow, nothing to pass. The place list reuses
-// GAP_PLACES as its heading and GAP_MEANING_PACK_CONTENT when there is none; the
+// JOURNEY_PLACES_LABEL as its heading and GAP_MEANING_PACK_CONTENT when there is none; the
 // hold reuses HOLD_FOR_BLACKSKY and HOLD_TO_ENTER; the day's priority reuses
 // OFFICIAL_INSTRUCTIONS_FIRST. All new strings below are [DRAFT] pending
 // Sharon's copy review.
@@ -1342,7 +1388,7 @@ export const NO_NOTES_ON_JOURNEY = 'No notes in this pack.';
 export const PHONE_STILL_ONLINE = 'Still online. Turn on aeroplane mode.';
 
 /** [DRAFT] What a rehearsal is. */
-export const JOURNEY_WHAT_IT_IS = 'A calm-day trip to a saved official place, with BlackSky open.';
+export const JOURNEY_WHAT_IT_IS = 'A calm-day trip to a saved place of last resort, with BlackSky open.';
 export const ABOUT_REHEARSAL = 'What a rehearsal is';
 /** [DRAFT] What it is for, and what it is not. */
 export const JOURNEY_WHAT_IT_IS_FOR = 'Practice at knowing the way, how long it takes and which turns you take.';
@@ -1417,10 +1463,8 @@ export const WAY_NOTE_HEADING = 'What you learnt about the way';
 export const WAY_NOTE_DETAIL = 'Optional. The turns, what you met, what you would change. BlackSky shows it offline.';
 /** [DRAFT] pending Sharon's copy review. */
 export const WAY_NOTE_LABEL = 'Your note about the way';
-/** Once saved: where it went, and the way to take it back out. */
+/** Once saved: where it went, said on the line under the box, then faded. */
 export const WAY_NOTE_KEPT = "Saved to this pack's notes.";
-/** The Save control once the words are kept, until they change. */
-export const WAY_NOTE_SAVED = 'Saved to this pack';
 /** Puts back the words last saved, after a change. */
 export const WAY_NOTE_UNDO = 'Undo changes';
 export const WAY_NOTE_REMOVE = 'Remove from this pack';
@@ -1448,6 +1492,12 @@ export const SKIP_CUTSCENE = 'Skip';
 export const NEXT_STAGE = 'Next';
 export const LEAVE_DRILL = 'Leave the drill';
 export const DRILL_TILE_TITLE = 'Play the drill';
+/** Under Play the drill on a pack's Practice tab. No time or bag size, as the
+ *  day's twist can change both. */
+export const DRILL_INVITE_LINE = 'Practise packing your grab bag before the clock runs out.';
+/** Whether a drill has been played on this phone, set as a rehearsal's pill. */
+export const NOT_DRILLED_CARD = 'Not yet drilled';
+export const DRILLED_AGO = (age: string) => `Drilled ${age}`;
 export const DRILL_TILE_DETAIL = 'Two minutes to pack ten things and reach the front door.';
 /** The facts shown over the fire as it worsens, each with its publisher and
  *  the phrases set in the accent colour. Every
@@ -1481,13 +1531,18 @@ export const BAG_FULL = 'Bag full';
 export const BAG_FULL_GOAL = 'Bag full. Head to the front door.';
 export const SECONDS_LEFT = (seconds: number) => `${seconds} seconds left`;
 export const HEAD_TO_DOOR = 'Head to the front door.';
+/** Under the clock a moment after a thing is put back in its place. */
+export const PUT_BACK = (name: string) => `Put back the ${name}.`;
 /** The guide over the paused game, before the clock starts. Touch wording on
  *  a touch screen, mouse and keys wording where there is a fine pointer. Each
  *  control's line comes in two parts, each set on its own line. */
 export const GUIDE_GOAL = 'Pack ten things, then be at the front door when the time ends.';
 export const GUIDE_MOVE = (keys: boolean) => (keys ? ['Drag here or use the arrow keys to walk,', 'or click the floor.'] : ['Drag here to walk,', 'or tap the floor.']);
 export const GUIDE_GRAB = (keys: boolean) => (keys ? ['Lights up next to an item.', 'Click it or press Space to grab.'] : ['Lights up next to an item.', 'Tap it to grab.']);
+export const GUIDE_PUT_BACK = (keys: boolean) => (keys ? 'Click a thing in the bag, or press Backspace, to put it back.' : 'Tap a thing in the bag to put it back.');
 export const GUIDE_START = (keys: boolean) => (keys ? 'Click anywhere or press Space to start' : 'Tap anywhere to start');
+/** Beside the Sound button on an iPhone or iPad, where silent mode mutes the games. */
+export const SOUND_SILENT_NOTE = 'On iPhone and iPad, sound needs silent mode off.';
 export const SOUND = 'Sound';
 export const SOUND_ON = 'Sound on';
 export const SOUND_OFF = 'Sound off';
@@ -1510,8 +1565,13 @@ export const TILE_LABEL = (name: string, points: string) => `${name}, ${points}`
 export const HIGHEST_SO_FAR = (score: number) => `Your highest so far is ${score} out of 100.`;
 export const PLAY_AGAIN = 'Play again';
 export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures. Try the drill on another browser.';
-/** Every drill, on every pack page, as the drill is the same game whatever is saved. */
-export const DRILLS = 'Drills · all packs';
+/** Every drill, on the drill's own screen, as the drill belongs to no pack. */
+export const DRILLS = 'Past drills';
+/** Removes every drill result on the phone, after one question. */
+export const CLEAR_DRILLS = 'Clear drill results';
+export const CLEAR_DRILLS_QUESTION = 'Clear every drill result on this phone?';
+export const KEEP_THEM = 'Keep them';
+export const CLEAR_DRILLS_YES = 'Clear them';
 export const NOT_YET_DRILLED = 'Not yet drilled.';
 export const DRILL_ROW_DOOR = 'At the door';
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';
@@ -1583,6 +1643,13 @@ export const WORD_TILE_TODAY = {
 export const WORD_WEEK_LABEL = (solved: number) => `Solved ${solved} of the last 7 days`;
 export const WORD_LABEL = 'Cooee Word';
 export const WORD_NUMBER = (n: number) => `Word ${n}`;
+/** Under the title: what the game is for, said without a tap. */
+export const WORD_PURPOSE = 'Guess today’s bushfire word. Each one comes with a fact about getting ready.';
+/** Over the figures and the colour key, which together are the rules. */
+export const WORD_HOW_TO_PLAY = 'How to play';
+/** The phone's own keyboard, for a small screen where the keys sit below the guesses. */
+export const WORD_TYPE_LABEL = 'Type your guess';
+export const WORD_PHONE_KEYBOARD = 'Type with your phone’s keyboard';
 export const WORD_HINT_LABEL = 'Hint';
 /** The answer's theme, as the hint names it. */
 export const WORD_THEMES = {
@@ -1667,8 +1734,17 @@ export const BLOCK_SCENE_LABEL = 'A home and its yard seen from above, with eigh
 export const BLOCK_FOUND_COUNT = (found: number) => `Found ${found} of 8`;
 export const BLOCK_FOUND = (name: string) => `Found ${name}.`;
 export const BLOCK_AGAIN = 'You found that one already.';
-export const BLOCK_CLEARED = 'That one has already been dealt with. A wrong tap costs 4 points.';
-export const BLOCK_DECOY = (name: string) => `${name}. Nothing to fix there. A wrong tap costs 4 points.`;
+/** A tap on a risk already dealt with names what is there now. The points it
+ *  costs are said beside it, as on every tap that changes the score. */
+export const BLOCK_CLEARED = (name: string) => `${capital(name)}. Already dealt with, nothing to fix.`;
+export const BLOCK_DECOY = (name: string) => `${name}. Nothing to fix there.`;
+/** The score so far, beside the count, worked out as the result will be. */
+export const BLOCK_SCORE_LABEL = 'Score';
+/** The score as the game goes, with a true minus sign below 0. */
+export const BLOCK_SCORE_FIGURE = (score: number) => (score < 0 ? `\u2212${-score}` : `${score}`);
+/** How a tap changed the score, beside its message. */
+export const BLOCK_POINT_CHANGE = (points: number) => (points >= 0 ? `+${points}` : `\u2212${-points}`);
+export const BLOCK_POINTS_SAID = (points: number) => `${points >= 0 ? 'plus' : 'minus'} ${Math.abs(points)} points`;
 export const BLOCK_NOTHING = 'Nothing there. Look for anything that could catch an ember.';
 export const BLOCK_HINT = (left: number) => `Hint, ${left} left`;
 export const BLOCK_HINT_DETAIL = 'A hint costs 10 points.';

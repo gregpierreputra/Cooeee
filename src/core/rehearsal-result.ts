@@ -27,7 +27,6 @@ export type GapRow = {
   hazardLine: string;
   title: string;
   reason: string;
-  meaning: string;
   action: string;
   actionId: string;
   /** The date the reader marked this action done, already written the way every
@@ -66,7 +65,6 @@ const rowFor = (detected: DetectedGap, doneAt: number | undefined): GapRow => {
     hazardLine: copy.GAP_HAZARD_LINE(copy.HAZARD_NAME[detected.hazard]),
     title: action.title,
     reason: action.reason,
-    meaning: action.meaning,
     action: action.action,
     actionId: action.actionId,
     doneOn: doneAt === undefined ? null : formatSavedDate(doneAt),

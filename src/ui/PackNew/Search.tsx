@@ -6,6 +6,7 @@ import {
   addressResultsAtLimit,
   liveSearchState,
   type AddressCandidateResolution,
+  type NearPlace,
   type SettledSearch,
 } from '../../core/address-search';
 import { areaCheckView, bpaExposureLayer } from '../../core/area-check';
@@ -71,6 +72,12 @@ import { Size, type PackSummary } from './Size';
 const searchAddressRegister = (query: string, signal: AbortSignal) =>
   fetchAddressCandidates(query, undefined, signal);
 
+/** What a nearest list is measured from, in the words its lines use. */
+function nearFrom(near: NearPlace): string {
+  const name = titleCase(near.name);
+  return near.kind === 'town' ? copy.FROM_TOWN(name) : copy.FROM_STATION(name);
+}
+
 /** The line above the field for the typed search, one short sentence per state. */
 function typedSearchLine(live: ReturnType<typeof liveSearchState>): string {
   switch (live.kind) {
@@ -85,6 +92,7 @@ function typedSearchLine(live: ReturnType<typeof liveSearchState>): string {
     case 'unavailable':
       return `${copy.SEARCH_COULD_NOT_RUN} ${copy.SEARCH_FAILURE_MEANING}`;
     case 'candidates': {
+      if (live.near) return copy.ADDRESS_NEAR(nearFrom(live.near));
       const count = copy.ADDRESS_RESULT_COUNT(live.candidates.length);
       return addressResultsAtLimit(live.returnedCount) ? `${count}. ${copy.ADDRESS_RESULT_CAPPED}` : count;
     }
@@ -825,12 +833,11 @@ export function Search({
         <div className="search-content">
           <header className="hero">
             <FlowSteps at={0} />
-            {/* Why the exact address matters, that some have no place close by,
-                and where a position goes, wait behind the ring beside the title. */}
+            {/* What the address is for, and where a position goes, wait behind
+                the ring beside the title. */}
             <Hint label={copy.ABOUT_ADDRESS} head={<h1>{copy.ADDRESS_SEARCH_TITLE}</h1>}>
               <ul className="info-lines glyph-lines">
                 <li><Glyph kind="place" line />{copy.ADDRESS_FIELD_HINT}</li>
-                <li><Glyph kind="found" line />{copy.ADDRESS_SEARCH_DISCLOSURE}</li>
                 <li><Glyph kind="lock" line />{copy.ADDRESS_LOCATE_DISCLOSURE}</li>
               </ul>
             </Hint>

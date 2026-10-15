@@ -50,8 +50,8 @@ export default function BottomNav() {
 }
 
 /** BlackSky's own arrow inside the four compass ticks, in its amber, and the
- *  ring the hold sweeps round outside it. */
-function Compass() {
+ *  ring the hold sweeps round outside it. Also the welcome's way out. */
+export function Compass() {
   return (
     <>
       <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true" focusable="false">

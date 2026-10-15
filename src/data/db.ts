@@ -622,9 +622,15 @@ export async function saveDrill(drill: Drill): Promise<void> {
 }
 
 /** Every drill on the phone that passes isDrill. Drills belong to no pack,
- *  so every pack page lists them all, and the highest under a twist counts
- *  them all. Deleting or replacing a pack leaves them alone. */
+ *  so the drill's own screen lists them all, and the highest under a twist
+ *  counts them all. Deleting or replacing a pack leaves them alone. */
 export const listAllDrills = async (): Promise<Drill[]> => (await db.drills.toArray()).filter(isDrill);
+
+/** Every drill on the phone removed, and nothing else: asked for on the
+ *  drill's own screen. */
+export const clearDrills = async (): Promise<void> => {
+  await db.drills.clear();
+};
 
 // ── The Rehearse screen's daily games ──────────────────────────────────────
 

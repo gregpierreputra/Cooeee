@@ -25,7 +25,8 @@ const PAD = 8; // px of breathing room around the spotlit feature
 const TAB_PAD_X = 6;
 const TAB_PAD_Y = -4;
 const GAP = 12; // px between the bars above and the feature brought into view
-const TRIES = 30; // a screen has 3 s to render its target before the panel shows alone
+const TRIES = 180; // frames, about 3 s, for a screen to render its target before the panel shows alone
+const GLIDE_MS = 250; // the ring's move from one stop to the next
 
 /** The guided tour: one overlay that greys the screen and surrounds one feature
  *  at a time, explained in a panel docked at the bottom, just above the tab
@@ -46,8 +47,16 @@ export default function Tour() {
   // The tab in the bottom bar that opens the stop's screen, when it has one.
   const [tabRect, setTabRect] = useState<DOMRect | null>(null);
   const panel = useRef<HTMLElement>(null);
+  // Where the rings were last drawn, so the next stop glides on from there.
+  const shown = useRef<{ rect: DOMRect | null; tabRect: DOMRect | null }>({ rect: null, tabRect: null });
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  /** No rings, drawn or remembered, so a new run or a new screen starts clean. */
+  const clear = () => {
+    shown.current = { rect: null, tabRect: null };
+    setRect(null);
+    setTabRect(null);
+  };
 
   useEffect(() => {
     const onStart = () => {
@@ -79,7 +88,7 @@ export default function Tour() {
     panel.current?.focus();
     // The welcome stands alone on Home, with nothing to surround.
     if (step === 0) {
-      setRect(null);
+      clear();
       if (pathname !== '/') navigate('/', { replace: true });
       return;
     }
@@ -89,43 +98,50 @@ export default function Tour() {
     // A stop's path may forward on arrival (/rehearse goes to the one saved
     // pack), so the stop is reached when the path is a prefix, not an equal.
     if (!matchPath({ path, end: path === '/' }, pathname)) {
-      setRect(null); // the layer itself dims the new screen until its target is found
+      clear(); // the layer itself dims the new screen until its target is found, then the ring opens from it
       navigate(path, { replace: true });
       return;
     }
-    // The first sighting brings the feature to the top of the clear space;
-    // later sightings (scroll, resize) only move the box.
-    let placed = false;
-    const measure = () => {
+    // Measured every frame while the stop shows, so the rings follow scrolling,
+    // resizing and anything that moves as the screen finishes loading. For the
+    // first quarter second they glide from where they were, or open from the
+    // feature's centre on a new screen. Reduced motion places them at once.
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const from = shown.current;
+    let start: number | null = null;
+    let frame = 0;
+    let tries = 0;
+    const tick = (now: number) => {
+      frame = requestAnimationFrame(tick);
       const found = document.querySelectorAll(target);
-      if (found.length === 0) return false;
-      if (!placed) {
-        placed = true;
+      if (found.length === 0) {
+        tries += 1;
+        if (tries === TRIES) cancelAnimationFrame(frame);
+        return;
+      }
+      if (start === null) {
+        start = now;
+        // The first sighting brings the feature to the top of the clear space.
         // A feature in the fixed bars is always in view: nothing to scroll.
         if (!found[0].closest('.app-header, .bottom-nav')) {
-          window.scrollBy(0, union(found).top - clearTop() - GAP);
+          window.scrollBy({ top: union(found).top - clearTop() - GAP, behavior: still ? 'auto' : 'smooth' });
         }
       }
-      setRect(union(found));
       const tabFound = tab ? document.querySelector(tab) : null;
-      setTabRect(tabFound ? tabFound.getBoundingClientRect() : null);
-      return true;
+      const k = still ? 1 : easeOut(Math.min(1, (now - start) / GLIDE_MS));
+      const next = {
+        rect: between(from.rect, union(found), k),
+        tabRect: tabFound ? between(from.tabRect, tabFound.getBoundingClientRect(), k) : null,
+      };
+      // Drawn only when something moved, so a still screen costs no renders.
+      if (!same(next.rect, shown.current.rect)) setRect(next.rect);
+      if (!same(next.tabRect, shown.current.tabRect)) setTabRect(next.tabRect);
+      shown.current = next;
     };
-    let tries = 0;
-    const timer = measure()
-      ? 0
-      : window.setInterval(() => {
-          tries += 1;
-          if (measure() || tries === TRIES) window.clearInterval(timer);
-        }, 100);
-    const follow = () => void measure();
-    window.addEventListener('resize', follow);
-    window.addEventListener('scroll', follow, { passive: true });
-    return () => {
-      window.clearInterval(timer);
-      window.removeEventListener('resize', follow);
-      window.removeEventListener('scroll', follow);
-    };
+    // The first measure runs now, before the browser paints, so the rings are
+    // never a frame behind; each later one runs on the next frame.
+    tick(performance.now());
+    return () => cancelAnimationFrame(frame);
   }, [step, pathname]);
 
   const end = () => {
@@ -326,6 +342,23 @@ function grown(rect: DOMRect, pad: number, padY = pad) {
 /** The style that places a ring over a box. */
 function box({ x, y, width, height }: ReturnType<typeof grown>) {
   return { left: x, top: y, width, height };
+}
+
+/** Fast at first, settling gently into place. */
+const easeOut = (k: number) => 1 - (1 - k) ** 3;
+
+/** The box `k` of the way from `from` to `to`. With nothing to start from, it
+ *  opens from the centre of `to`. */
+function between(from: DOMRect | null, to: DOMRect, k: number): DOMRect {
+  const start = from ?? new DOMRect(to.x + to.width / 2, to.y + to.height / 2, 0, 0);
+  const at = (a: number, b: number) => a + (b - a) * k;
+  return new DOMRect(at(start.x, to.x), at(start.y, to.y), at(start.width, to.width), at(start.height, to.height));
+}
+
+/** Whether two boxes would draw on the same pixels. */
+function same(a: DOMRect | null, b: DOMRect | null): boolean {
+  if (a === null || b === null) return a === b;
+  return [a.x - b.x, a.y - b.y, a.width - b.width, a.height - b.height].every((d) => Math.abs(d) < 0.5);
 }
 
 /** The smallest box around every matched element, in viewport coordinates. */

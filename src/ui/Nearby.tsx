@@ -1,21 +1,19 @@
 import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
-  AREA_MAP_HALF_KM,
   NEARBY_CLOCK_MS,
   NEARBY_FIX_MAX_AGE_MS,
   SEARCH_SHOW_MS,
   NEARBY_FIX_TIMEOUT_MS,
-  NEARBY_MAP_PLACES,
-  NEARBY_MAP_REFUGES,
   NEARBY_RESYNC_MS,
 } from '../core/constants';
 import { siteNameBlock } from '../core/blacksky-dial';
 import * as copy from '../core/copy';
+import { formatDistanceM } from '../core/destination';
 import DataSources from './components/DataSources';
 import {
   hasNearbyData,
+  nearbyMap,
   nearbyView,
-  placesNear,
   parsePostcode,
   placeShareText,
   postcodeOrigin,
@@ -312,7 +310,18 @@ export default function Nearby({
                   {/* The heading beside the ring already names the note, so its
                       panel has no title. */}
                   <Hint label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>} titled={false}>
-                    <p>{group.note}</p>
+                    {/* The bushfire places are each said for what they are, in
+                        the drawings the map's key uses, then the note, all in
+                        one list of led lines. */}
+                    {tab === 'bushfire' ? (
+                      <ul className="info-lines glyph-lines">
+                        <li><Glyph kind="place" line />{copy.NSP_MEANS}</li>
+                        <li><Glyph kind="home" line />{copy.CFR_MEANS}</li>
+                        <li><Glyph kind="found" line />{group.note}</li>
+                      </ul>
+                    ) : (
+                      <p>{group.note}</p>
+                    )}
                   </Hint>
                   {/* The bushfire tab's nearest few places on a map, folded until asked for. */}
                   {tab === 'bushfire' && cache ? (
@@ -324,22 +333,7 @@ export default function Nearby({
                         </svg>
                       </button>
                       {mapOpen ? (
-                        <NearbyMap
-                          origin={origin}
-                          originName={origin.name}
-                          loaders={mapFiles}
-                          places={([['NSP', NEARBY_MAP_PLACES, 'place'], ['CFR', NEARBY_MAP_REFUGES, 'home']] as const).flatMap(([type, count, glyph]) =>
-                            placesNear(cache.facilities, origin, type, count, AREA_MAP_HALF_KM * 1000).map(({ row, distanceM }) => ({
-                              id: `${type}-${row.facility_id}`,
-                              name: row.name,
-                              lat: row.lat,
-                              lon: row.lon,
-                              distanceM,
-                              glyph,
-                              kind: copy.FACILITY_TYPE_NAME[type],
-                            })),
-                          )}
-                        />
+                        <BushfireMap facilities={cache.facilities} origin={origin} loaders={mapFiles} />
                       ) : null}
                     </div>
                   ) : null}
@@ -440,5 +434,29 @@ function PlaceRow({ row }: { row: NearbyRow }) {
         </>
       ) : null}
     </li>
+  );
+}
+
+/** The bushfire tab's map: sized to the places the list names, the nearest few
+ *  of each kind marked, and any listed place past its edge said in words. */
+function BushfireMap({ facilities, origin, loaders }: { facilities: NearbyCache['facilities']; origin: Origin; loaders: MapLoaders }) {
+  const map = nearbyMap(facilities, origin);
+  return (
+    <NearbyMap
+      origin={origin}
+      originName={origin.name}
+      loaders={loaders}
+      halfKm={map.halfKm}
+      places={map.marks.map(({ type, row, distanceM }) => ({
+        id: `${type}-${row.facility_id}`,
+        name: row.name,
+        lat: row.lat,
+        lon: row.lon,
+        distanceM,
+        glyph: type === 'NSP' ? 'place' : 'home',
+        kindName: copy.FACILITY_TYPE_NAME[type],
+      }))}
+      offMap={map.offMap.map(({ row, distanceM }) => copy.PLACE_OFF_MAP(row.name, formatDistanceM(distanceM)))}
+    />
   );
 }

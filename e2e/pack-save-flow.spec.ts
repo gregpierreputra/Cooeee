@@ -23,7 +23,7 @@ async function searchConfirmAndReachOffer(page: Page, name = 'Kalorama') {
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill(name);
+  await page.getByLabel('Name this place').fill(name);
   await page.getByRole('button', { name: 'Save this place' }).click();
   await expect(page.getByRole('heading')).toHaveText(
     'This address is inside a Bushfire Prone Area.',
@@ -54,7 +54,7 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Kalorama');
+  await page.getByLabel('Name this place').fill('Kalorama');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   const boxes = page.getByRole('checkbox');
@@ -74,6 +74,40 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   const section = page.locator('.pack-section', { hasText: 'Saved programs' });
   await expect(section.locator('.section-count')).toHaveText('1');
   await expect(section.getByRole('link', { name: 'Saved PDF' })).toHaveAttribute('download', /crisis-payment/);
+
+  // Save more opens every program in Recover, and Back comes home to this
+  // pack's Support tab, not to Recover's list of needs.
+  const packUrl = new URL(page.url()).pathname;
+  await section.getByRole('link', { name: 'Save more in Recover' }).click();
+  await expect(page).toHaveURL(/\/recover\?need=all&from=/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(`${packUrl}?tab=support`);
+  await expect(page.getByRole('tab', { name: 'Support' })).toHaveAttribute('aria-selected', 'true');
+
+  // Practice invites the drill, says none has been played yet, and the drill's
+  // Back comes home to this pack's Practice tab.
+  await page.getByRole('tab', { name: 'Practice' }).click();
+  const drill = page.locator('.pack-section', { hasText: 'Play the drill' });
+  await expect(drill).toContainText('Practise packing your grab bag before the clock runs out.');
+  await expect(drill.locator('.rehearsed-pill')).toHaveText('Not yet drilled');
+  await drill.getByRole('link', { name: 'Play the drill' }).click();
+  await expect(page).toHaveURL(/\/rehearse\/drill\?from=/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(`${packUrl}?tab=practice`);
+
+  // Rehearse this pack, then Back, also comes home to Practice.
+  await page.getByRole('link', { name: 'Rehearse this pack' }).click();
+  await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(`${packUrl}?tab=practice`);
+
+  // Print opens from any tab, and Back returns to the tab it was opened from.
+  await page.getByRole('tab', { name: 'Places' }).click();
+  await page.getByRole('link', { name: 'Print this pack' }).click();
+  await expect(page).toHaveURL(/\/print\?from=pack&tab=places/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(`${packUrl}?tab=places`);
+  await expect(page.getByRole('tab', { name: 'Places' })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ page }) => {
@@ -114,6 +148,9 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   await placeMark.click();
   await expect(placeMark).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('.area-map-label')).toHaveCount(1);
+  // A saved place's label names its town, never the code its row is kept under.
+  await expect(page.locator('.area-map-label')).not.toContainText('nsp-');
+  await expect(placeMark).not.toHaveAttribute('aria-label', /nsp-/);
   const frameBox = (await page.locator('.area-map-frame').boundingBox())!;
   await page.mouse.click(frameBox.x + 30, frameBox.y + frameBox.height - 30);
   await expect(page.locator('.area-map-label')).toHaveCount(0);
@@ -241,11 +278,11 @@ test('a second address becomes a second pack beside the first, with no question 
   // One name per pack: the suburb is already the first pack's name, so the
   // name step starts on the street instead, in normal case. A name typed over
   // it that another pack has is said, and a different one goes on.
-  await expect(page.getByLabel('Place name')).toHaveValue('8 Ridge Road');
-  await page.getByLabel('Place name').fill('kalorama');
+  await expect(page.getByLabel('Name this place')).toHaveValue('8 Ridge Road');
+  await page.getByLabel('Name this place').fill('kalorama');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await expect(page.locator('.field-message')).toHaveText(PACK_NAME_TAKEN);
-  await page.getByLabel('Place name').fill('8 Ridge Road');
+  await page.getByLabel('Name this place').fill('8 Ridge Road');
   await expect(page.locator('.field-message')).toHaveCount(0);
   await page.getByRole('button', { name: 'Save this place' }).click();
 
@@ -333,7 +370,7 @@ test("a place's tick box scrolls under the Back bar, not over it", async ({ page
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Our house');
+  await page.getByLabel('Name this place').fill('Our house');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   const bar = await page.locator('.back-bar').boundingBox();
@@ -362,7 +399,7 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await page.getByLabel('Street address').fill('RIDGE');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Our house');
+  await page.getByLabel('Name this place').fill('Our house');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   const boxes = page.getByRole('checkbox');
@@ -392,7 +429,7 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   await expect(page.getByRole('heading')).toHaveText('This address is inside a Bushfire Prone Area.');
   // The address, with the name as given.
   await back.click();
-  await expect(page.getByLabel('Place name')).toHaveValue('Our house');
+  await expect(page.getByLabel('Name this place')).toHaveValue('Our house');
   await back.click();
   await expect(page.getByLabel('Street address')).toBeVisible();
   await expect(page).toHaveURL(/\/packs\/new$/);
@@ -526,7 +563,7 @@ test('the pack map widens to its chosen places, and names one too far for it', a
   await page.getByLabel('Street address').fill('MAIN');
   await page.getByLabel('Street address').press('Enter');
   await page.getByRole('button', { name: FAR_ADDRESS }).click();
-  await page.getByLabel('Place name').fill('Bimbourie');
+  await page.getByLabel('Name this place').fill('Bimbourie');
   await page.getByRole('button', { name: 'Save this place' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   const boxes = page.getByRole('checkbox');

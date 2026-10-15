@@ -6,6 +6,10 @@ import {
   addressFilterForCql,
   placeNameFilterForCql,
   reorderedFilterForCql,
+  landmarkFilterForCql,
+  localityNamed,
+  stationFilterForCql,
+  stationName,
   addressResultsAtLimit,
   completedSearchState,
   liveSearchState,
@@ -539,5 +543,36 @@ describe('E1-US1-AC2 returned-record count', () => {
     expect(copy.ADDRESS_RESULT_COUNT(8)).toBe('8 addresses found');
     expect(copy.ADDRESS_RESULT_COUNT(1)).toBe('1 address found');
     expect(copy.ADDRESS_RESULT_CAPPED).toBe('Type more to narrow it.');
+  });
+});
+
+describe('a town, a station or a named place typed in place of an address', () => {
+  const towns = [
+    { name: 'LORNE', lat: -38.54, lon: 143.97 },
+    { name: 'ASCOT (BENDIGO)', lat: -36.71, lon: 144.33 },
+  ];
+
+  it('knows a town typed on its own, whatever its case, and never one with a number', () => {
+    expect(localityNamed(towns, ' lorne ')?.name).toBe('LORNE');
+    expect(localityNamed(towns, 'Ascot (Bendigo)')?.name).toBe('ASCOT (BENDIGO)');
+    expect(localityNamed(towns, '12 Lorne')).toBeNull();
+    expect(localityNamed(towns, 'Lorne Street')).toBeNull();
+  });
+
+  it('reads a station from its name then the word station', () => {
+    expect(stationName('Clayton station')).toBe('CLAYTON');
+    expect(stationName('flinders street railway station')).toBe('FLINDERS STREET');
+    expect(stationName('Station Street')).toBeNull();
+    expect(stationName('12 Station')).toBeNull();
+  });
+
+  it('keeps typed text to letters inside every filter it builds', () => {
+    const station = stationName("O'Brien's') OR name LIKE '% station");
+    expect(station).toBe('OBRIENS OR NAME LIKE');
+    expect(stationFilterForCql(station!)).toBe("feature_type_code = 'rail_station' AND name = 'OBRIENS OR NAME LIKE'");
+    const landmark = landmarkFilterForCql("Monash' OR name LIKE '%");
+    expect(landmark).toBe("name LIKE '%MONASH%OR%NAME%LIKE%' AND vmadd_pfi IS NOT NULL");
+    expect(landmarkFilterForCql('12 Monash')).toBeNull();
+    expect(landmarkFilterForCql('ab')).toBeNull();
   });
 });

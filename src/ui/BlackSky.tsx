@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import {
   deriveState,
   estimateFix,
@@ -51,6 +51,7 @@ import {
   FIX_PUBLISH_M,
   DIAL_ARROW_SCALE,
   FIX_STALE_MS,
+  GUIDE_MS,
   HOLD_LEAVE_VIBRATE_MS,
   NAV_HOLD_HINT_MS,
   ROADS_LABEL_PX,
@@ -78,6 +79,7 @@ import {
 import type { Destination, Fix, LatLon, NspSnapshot, Pack, PackWithPlaces } from '../core/types';
 import { localFlagStore } from '../data/acknowledgement';
 import { getNspSnapshot, listCompletePacksWithPlaces } from '../data/db';
+import GlassSpot from './components/GlassSpot';
 import Glyph from './components/Glyph';
 import NoteText from './components/NoteText';
 import StateCard from './components/StateCard';
@@ -159,6 +161,8 @@ export default function BlackSky({
   const [sites, setSites] = useState<NspSnapshot | null>(null);
   const [fix, setFix] = useState<Fix | null>(null);
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  // Counts taps on Turn on location: each one starts the position watch again.
+  const [locationAsks, setLocationAsks] = useState(0);
   const [mark, setMark] = useState<PositionMark | null>(null);
   const [now, setNow] = useState(() => Date.now());
   // Which pack to load when several are saved: chosen at the top of the screen
@@ -173,6 +177,11 @@ export default function BlackSky({
   // storage key; the main place never changes by itself while it is set.
   const [shownId, setShownId] = useState<string | null>(null);
   const navigate = useNavigate();
+  // Opened from the welcome's I need a way out now: the marker and the place's
+  // name are spotlit once, as soon as the dial is drawn. Read at arrival, as
+  // the screen's own history entry below carries no state.
+  const { state } = useLocation();
+  const [guiding, setGuiding] = useState(() => (state as { guide?: boolean } | null)?.guide === true);
   // Said at the top once the phone's Back has been pressed, which does not
   // leave. A reopening says nothing: the dark screen speaks for itself.
   const [notice, setNotice] = useState<string | null>(null);
@@ -187,7 +196,17 @@ export default function BlackSky({
   // The sensors give magnetic north; the bearings are true. The correction
   // depends on where the phone is, which the fix supplies.
   const compass = useCompass(here ? magneticDeclinationDeg(here) : 0);
-  const { setMovement } = compass;
+  const { setMovement, needsPermission, enable } = compass;
+
+  // An iPhone asks for the compass only from a tap, and refuses the lift that
+  // ends the hold into BlackSky. So the first tap anywhere on the screen asks,
+  // and Turn on the compass stays for anyone who said no.
+  useEffect(() => {
+    if (!needsPermission) return;
+    const ask = () => void enable();
+    document.addEventListener('click', ask, { once: true });
+    return () => document.removeEventListener('click', ask);
+  }, [needsPermission, enable]);
 
   // US3-AC2, the power rule: GPS samples land in this ref (no render). A sample
   // FIX_PUBLISH_M or more from the position on screen is shown at once, so the
@@ -338,7 +357,7 @@ export default function BlackSky({
       document.removeEventListener('visibilitychange', onVisibility);
       sleep();
     };
-  }, [setMovement]);
+  }, [setMovement, locationAsks]);
 
   // One way out: the hold on Leave below. The phone's back button pops a
   // history entry, so this screen adds one spare entry on arrival and, on
@@ -591,7 +610,7 @@ export default function BlackSky({
             <HoldSweep />
           </HoldButton>
           <span className="bottom-nav-label" aria-hidden="true">
-            {copy.APP_NAME}
+            {copy.LEAVE_BLACKSKY}
           </span>
           {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
               for as long as they are being said, floating just above the hold
@@ -629,6 +648,23 @@ export default function BlackSky({
       {/* With no dial yet, the compass is offered here, so an iPhone can turn
           it on before the first position and the dial turns once it arrives. */}
       {model && trust ? null : <TurnOnCompass compass={compass} />}
+      {/* Location refused and no mark standing in: a way to ask again, so no
+          one is left on a screen with nothing to point from. */}
+      {permission === 'denied' && !estimate ? (
+        <StateCard heading={copy.LOCATION_OFF} detail={copy.LOCATION_OFF_DETAIL}>
+          <button
+            type="button"
+            className="blacksky-turn-on"
+            onClick={() => {
+              setPermission('prompt');
+              setLocationAsks((asks) => asks + 1);
+            }}
+          >
+            <Glyph kind="locate" line />
+            {copy.TURN_ON_LOCATION}
+          </button>
+        </StateCard>
+      ) : null}
       {screen.kind === 'NO_PACK' && packs.length > 0 ? (
         // Several packs and none chosen yet: only the dial to the nearest
         // official place, from the position, until one is chosen.
@@ -649,11 +685,13 @@ export default function BlackSky({
           notes={notesBlock}
         />
       )}
+      {guiding && model ? <ArrivalGuide onDone={() => setGuiding(false)} /> : null}
       {/* Under the dial, never above it: the dial is the one thing first. */}
       {chosen && !chosen.placesVerified ? <StateCard heading={copy.PLACES_UNVERIFIED} /> : null}
-      {/* The loaded pack's reminder closes every state of the screen, once, as
-          a quiet note: the dial is what is read first. */}
-      <p className="muted blacksky-reminder">{chosen?.pack.reminder || copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
+      {/* The reminder closes every state of the screen, once, as a quiet note:
+          the dial is what is read first. Read from the app, not the pack, so a
+          pack saved before a rewording still shows the current words. */}
+      <p className="muted blacksky-reminder">{copy.OFFICIAL_INSTRUCTIONS_FIRST}</p>
     </main>
   );
 }
@@ -1034,6 +1072,41 @@ function DialBody({
   );
 }
 
+const GUIDE_TARGETS = ['.blacksky-dial-pin', '.blacksky-dial-head h2'];
+
+/** The first arrival from the welcome: the marker and the place's name ringed,
+ *  one line saying to head for the marker, and Go. It closes on Go, on any tap
+ *  on the screen, or after GUIDE_MS, with the time left drawn as a bar. On an iPhone, Go is the tap
+ *  that asks for the compass (the screen's first tap asks); a timer cannot ask,
+ *  so Turn on the compass stays for anyone who lets it run out. */
+function ArrivalGuide({ onDone }: { onDone: () => void }) {
+  const titleId = useId();
+  useEffect(() => {
+    const timer = setTimeout(onDone, GUIDE_MS);
+    // Anyone done reading taps out, anywhere. A click, not a press, so the tap
+    // ends whole and on an iPhone still asks for the compass (see above).
+    document.addEventListener('click', onDone);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', onDone);
+    };
+  }, []);
+  return (
+    <GlassSpot targets={GUIDE_TARGETS} labelledBy={titleId} className="marker-guide">
+      <h2 id={titleId}>{copy.ARRIVAL_GUIDE}</h2>
+      <p className="muted">{copy.ARRIVAL_GUIDE_LINE}</p>
+      <button type="button" className="main-action" onClick={onDone}>
+        {copy.GO}
+      </button>
+      <span
+        className="marker-guide-timer"
+        aria-hidden="true"
+        style={{ '--guide-ms': `${GUIDE_MS}ms` } as CSSProperties}
+      />
+    </GlassSpot>
+  );
+}
+
 /** On an iPhone the compass stays off until it is allowed, which takes one
  *  tap of its own: iOS refuses the lift that ends the hold into BlackSky. */
 function TurnOnCompass({
@@ -1043,7 +1116,8 @@ function TurnOnCompass({
 }) {
   if (compass.live || !compass.needsPermission) return null;
   return (
-    <button type="button" onClick={() => void compass.enable()}>
+    <button type="button" className="blacksky-turn-on" onClick={() => void compass.enable()}>
+      <Glyph kind="compass" line />
       {copy.TURN_ON_COMPASS}
     </button>
   );

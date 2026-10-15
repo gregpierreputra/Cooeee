@@ -12,6 +12,7 @@ import {
   highestBlock,
   hintFor,
   hitTest,
+  runningScore,
   scoreBlock,
   shownFor,
 } from '../../src/core/block';
@@ -146,6 +147,13 @@ describe('the score', () => {
     expect(BLOCK_SECONDS).toBe(180);
   });
 
+  // A cost taken below 0 is shown, and a find always adds what it says.
+  it('runs below 0 as the game goes, and the final score is held at 0', () => {
+    expect(runningScore({ found: 0, wrongTaps: 2, hints: 0 })).toBe(-2 * WRONG_TAP_COST);
+    expect(runningScore({ found: 1, wrongTaps: 2, hints: 0 }) - runningScore({ found: 0, wrongTaps: 2, hints: 0 })).toBe(13);
+    expect(scoreBlock({ found: 0, wrongTaps: 2, hints: 0 })).toBe(0);
+  });
+
   it('keeps the highest of any play, today and ever', () => {
     const play = (day: number, score: number): BlockPlay => ({
       id: `${day}-${score}`, day, finishedAt: 1, score, hazards: [], found: [], wrongTaps: 0, hints: 0,
@@ -175,5 +183,14 @@ describe('a hint', () => {
     expect(Math.hypot(hint.x - target.x, hint.y - (target.y - BLOCK_ATLAS[target.sprite][3] / BLOCK_TILE / 2))).toBeLessThan(hint.radius);
     expect(hintFor(hazards, [hazards[0].id], 20_736, 2)).not.toBeNull();
     expect(hintFor(hazards, hazards.map((hazard) => hazard.id), 20_736, 3)).toBeNull();
+  });
+});
+
+describe('the risks dealt with', () => {
+  it('names every look a dealt-with risk has, so a tap on it says what is there', () => {
+    for (const hazard of BLOCK_HAZARDS) {
+      if (hazard.cleared) expect(hazard.clearedName, hazard.id).toMatch(/^[a-z].+[a-z]$/);
+      else expect(hazard.clearedName, hazard.id).toBeUndefined();
+    }
   });
 });

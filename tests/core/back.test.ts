@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { backTarget, ONE_STEP } from '../../src/core/back';
+import { backTarget, drillHome, ONE_STEP } from '../../src/core/back';
 
 const NONE = { runPackId: null, builder: 'step' } as const;
 
@@ -18,6 +18,12 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/recover', '?need=kept', NONE)).toBe('/recover');
   });
 
+  it("goes from a need opened by a pack's Save more back to that pack's Support tab", () => {
+    expect(backTarget('/recover', '?need=all&from=pack-1', NONE)).toBe('/packs/pack-1?tab=support');
+    // The list of needs is still the tab itself, with no Back.
+    expect(backTarget('/recover', '?from=pack-1', NONE)).toBeNull();
+  });
+
   it.each(['/packs/new', '/packs/some-pack', '/no-such-screen'])('goes from %s up to Home', (path) => {
     expect(backTarget(path, '', NONE)).toBe('/');
   });
@@ -26,8 +32,8 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/rehearse/a', '', NONE)).toBe('/rehearse');
   });
 
-  it('goes from a pack\'s rehearsal back to the pack when the pack page opened it', () => {
-    expect(backTarget('/rehearse/a', '?from=pack', NONE)).toBe('/packs/a');
+  it('goes from a pack\'s rehearsal back to the pack\'s Practice tab when the pack page opened it', () => {
+    expect(backTarget('/rehearse/a', '?from=pack', NONE)).toBe('/packs/a?tab=practice');
   });
 
   it('goes from a chosen condition back to the choice, keeping where it was opened from', () => {
@@ -40,8 +46,16 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget(path, '', { ...NONE, runPackId: 'a' })).toBe('/rehearse');
   });
 
-  it('goes from a pack\'s print page back to the pack when the pack page opened it, else Home', () => {
-    expect(backTarget('/packs/a/print', '?from=pack', NONE)).toBe('/packs/a');
+  it("goes from the drill opened on a pack's Practice tab back to that tab, by Back and by Done", () => {
+    expect(backTarget('/rehearse/drill', '?from=pack-1', NONE)).toBe('/packs/pack-1?tab=practice');
+    expect(drillHome('?from=pack-1')).toBe('/packs/pack-1?tab=practice');
+    expect(drillHome('')).toBe('/rehearse');
+  });
+
+  it('goes from a pack\'s print page back to the pack, on the tab it was opened from, when the pack page opened it, else Home', () => {
+    expect(backTarget('/packs/a/print', '?from=pack', NONE)).toBe('/packs/a?tab=area');
+    // Back to the tab it was opened from.
+    expect(backTarget('/packs/a/print', '?from=pack&tab=places', NONE)).toBe('/packs/a?tab=places');
     expect(backTarget('/packs/a/print', '', NONE)).toBe('/');
   });
 

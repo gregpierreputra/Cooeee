@@ -67,5 +67,5 @@ test('the pack menu offers Print this pack', async ({ page }) => {
 
 test('the pack page offers Print this pack, to the same print page', async ({ page }) => {
   await page.goto(`${HARNESS}/detail`);
-  await expect(page.getByRole('link', { name: copy.PRINT_PACK })).toHaveAttribute('href', '/packs/detail-pack/print?from=pack');
+  await expect(page.getByRole('link', { name: copy.PRINT_PACK })).toHaveAttribute('href', '/packs/detail-pack/print?from=pack&tab=area');
 });

@@ -8,7 +8,7 @@ test('AC1 renders the confirmation order and immutable address', async ({ page }
 
   const heading = page.getByRole('heading', { name: 'Is this the place?' });
   const address = page.getByTestId('returned-address');
-  const name = page.getByLabel('Place name');
+  const name = page.getByLabel('Name this place');
   const save = page.getByRole('button', { name: 'Save this place' });
   const notThisPlace = page.getByRole('button', { name: 'Not this place' });
 
@@ -30,10 +30,10 @@ test('AC1 renders the confirmation order and immutable address', async ({ page }
 test('AC1 keeps a name as typed in memory only, and a blank name cannot be saved', async ({ page }) => {
   await page.goto(HARNESS_URL);
   // A pack always has a name, so a blank one cannot be saved.
-  await page.getByLabel('Place name').fill('   ');
+  await page.getByLabel('Name this place').fill('   ');
   await expect(page.getByRole('button', { name: 'Save this place' })).toBeDisabled();
 
-  await page.getByLabel('Place name').fill('  Home base  ');
+  await page.getByLabel('Name this place').fill('  Home base  ');
   await page.getByRole('radio', { name: 'Home' }).check();
   await page.getByRole('button', { name: 'Save this place' }).click();
 
@@ -53,7 +53,7 @@ test('AC1 keeps a name as typed in memory only, and a blank name cannot be saved
 
 test('Enter in the name moves on to the drawing, and does not save the place', async ({ page }) => {
   await page.goto(HARNESS_URL);
-  const name = page.getByLabel('Place name');
+  const name = page.getByLabel('Name this place');
   // A phone's Enter key reads Next, as a drawing is still to come.
   await expect(name).toHaveAttribute('enterkeyhint', 'next');
   await name.fill('Home base');
@@ -89,10 +89,10 @@ test('AC1 search again retains nothing and makes no request', async ({ page }) =
 
 test('AC1 abandonment retains no edited or pending value', async ({ page }) => {
   await page.goto(HARNESS_URL);
-  await page.getByLabel('Place name').fill('Not retained');
+  await page.getByLabel('Name this place').fill('Not retained');
   await page.reload();
 
-  await expect(page.getByLabel('Place name')).toHaveValue('KALORAMA');
+  await expect(page.getByLabel('Name this place')).toHaveValue('KALORAMA');
   expect(await page.evaluate(() => window.__confirmedPlace)).toBeUndefined();
   expect(await storageState(page)).toEqual({
     indexedDbNames: [],
@@ -104,11 +104,11 @@ test('AC1 abandonment retains no edited or pending value', async ({ page }) => {
 test('AC1 keyboard order, focus and targets are accessible', async ({ page }) => {
   await page.goto(HARNESS_URL);
   // React renders after the load event; a Tab pressed before then lands nowhere.
-  await expect(page.getByLabel('Place name')).toBeVisible();
+  await expect(page.getByLabel('Name this place')).toBeVisible();
 
   // The icon choice is one stop, on the chosen drawing, as for any radio group.
   for (const target of [
-    page.getByLabel('Place name'),
+    page.getByLabel('Name this place'),
     page.getByRole('radio', { name: 'Place' }),
     page.getByRole('button', { name: 'Save this place' }),
     page.getByRole('button', { name: 'Not this place' }),

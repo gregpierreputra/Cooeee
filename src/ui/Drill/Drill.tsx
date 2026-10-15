@@ -10,7 +10,7 @@ import * as audio from './audio';
 import Debrief from './Debrief';
 import { pinnedTwist } from './drill-state';
 import Game, { type DrillOutcome } from './Game';
-import SoundButton from './SoundButton';
+import SoundButton, { SilentModeNote } from './SoundButton';
 import Statline from './Statline';
 import TabLabel from '../components/TabLabel';
 
@@ -83,7 +83,12 @@ export default function Drill({ onDone, seconds: secondsOverride, twist }: Props
         <TabLabel tab="rehearse" text={copy.DRILL_LABEL} />
         {/* Sound plays only from the film on, so the control sits where it
             matters: on this first screen and over the game, not the report. */}
-        {stage === 'statline' ? <SoundButton /> : null}
+        {stage === 'statline' ? (
+          <>
+            <SilentModeNote />
+            <SoundButton />
+          </>
+        ) : null}
       </div>
       {stage === 'statline' ? <Statline rules={rules} onStart={() => start('game')} /> : null}
       {stage === 'game' || stage === 'again' ? (

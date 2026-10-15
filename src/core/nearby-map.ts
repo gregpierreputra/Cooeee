@@ -15,7 +15,7 @@ export type NearbyMapDrawing = { roads: DialRoad[]; names: PlaceName[] };
 const MARK_CLEAR_PX = 18;
 
 /** North up, in pixels from the origin at the middle of a square
- *  AREA_MAP_HALF_KM each way: the same ground and the same plain projection the
+ *  halfKm each way, AREA_MAP_HALF_KM unless widened: the same ground and the same plain projection the
  *  marks are placed on (mapBoxAround and mapPoint). Without the roads file the
  *  picture is the town names alone. */
 export function drawNearbyMap(
@@ -23,9 +23,10 @@ export function drawNearbyMap(
   localities: Locality[],
   origin: LatLon,
   marks: LatLon[] = [],
+  halfKm = AREA_MAP_HALF_KM,
 ): NearbyMapDrawing {
   const halfPx = NEARBY_MAP_HALF_PX;
-  const metresPerPx = (AREA_MAP_HALF_KM * 1000) / halfPx;
+  const metresPerPx = (halfKm * 1000) / halfPx;
   // The circle round the square, so its corners are drawn too; the picture
   // crops it to the square.
   const radiusPx = halfPx * Math.SQRT2;

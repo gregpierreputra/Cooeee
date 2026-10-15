@@ -162,7 +162,7 @@ test.describe('AC4 the way on from a stopped state', () => {
       ]);
       await expect(page.getByRole('link', { name: 'Back to this pack' })).toHaveAttribute(
         'href',
-        '/packs/rehearse-pack',
+        '/packs/rehearse-pack?tab=practice',
       );
     });
   }

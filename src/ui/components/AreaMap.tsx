@@ -9,8 +9,10 @@ import Glyph, { type GlyphKind } from './Glyph';
 type Point = { x: number; y: number };
 
 /** One place on the map. Nearby marks two kinds, so a place can carry its own
- *  drawing and the kind its label names; a pack's places use the defaults. */
-export type MapPlace = Pick<Destination, 'id' | 'name' | 'lat' | 'lon' | 'distanceM'> & { glyph?: GlyphKind; kind?: string };
+ *  drawing and the kind its label names; a pack's places use the defaults.
+ *  kindName, not kind: a saved place has a kind of its own, a code that must
+ *  never reach the label. */
+export type MapPlace = Pick<Destination, 'id' | 'name' | 'lat' | 'lon' | 'distanceM'> & { glyph?: GlyphKind; kindName?: string };
 
 const WHEEL_STEP = 0.01; // zoom per pixel of wheel travel, with Ctrl held or a trackpad pinch
 const WHEEL_MAX = 50; // one wheel notch zooms about as much as a button press
@@ -179,7 +181,7 @@ export default function AreaMap({
                 className="area-map-mark"
                 at={at}
                 title={typeof place.distanceM === 'number' ? `${site} · ${formatDistanceM(place.distanceM)}` : site}
-                line={place.kind ?? line}
+                line={place.kindName ?? line}
                 labelled={labelled}
                 onLabel={setLabelled}
               >

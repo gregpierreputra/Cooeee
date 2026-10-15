@@ -205,7 +205,7 @@ test('the pack page keeps its saved programs in Support, each with its own page 
   await expect(section.getByRole('link', { name: copy.OPEN_SOURCE_FILE })).toHaveAttribute('download', 'program.pdf');
   // The list is every pack's, chosen in Recover, and more are saved from there.
   await expect(section.getByText(copy.SAVED_PROGRAMS_SHARED)).toBeVisible();
-  await expect(section.getByRole('link', { name: copy.SAVE_MORE_PROGRAMS(1) })).toHaveAttribute('href', '/recover?need=all');
+  await expect(section.getByRole('link', { name: copy.SAVE_MORE_PROGRAMS(1) })).toHaveAttribute('href', '/recover?need=all&from=detail-pack');
 });
 
 // The pack page's five tabs: it opens on Area, each tab shows only its own

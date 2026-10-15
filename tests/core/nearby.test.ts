@@ -5,6 +5,7 @@ import {
   hasNearbyData,
   nearbyView,
   nearestOfType,
+  nearbyMap,
   placesNear,
   parsePostcode,
   placeShareText,
@@ -253,7 +254,7 @@ describe('placeShareText', () => {
 });
 
 describe('placesNear', () => {
-  it('lists the nearest places of last resort within reach, nearest first, at most the count', () => {
+  it('lists the nearest places of last resort inside the square, nearest first, at most the count', () => {
     const at = (id: number, lat: number) => facility({ facility_id: id, name: `Place ${id}`, lat, lon: KALORAMA.lon });
     const facilities = [
       at(1, KALORAMA.lat - 0.05),
@@ -262,9 +263,40 @@ describe('placesNear', () => {
       at(4, KALORAMA.lat - 0.5), // about 55 km away
       facility({ facility_id: 5, type: 'CFR', lat: KALORAMA.lat, lon: KALORAMA.lon }),
     ];
-    const near = placesNear(facilities, KALORAMA, 'NSP', 2, 20_000);
+    const near = placesNear(facilities, KALORAMA, 'NSP', 2, 20);
     expect(near.map(({ row }) => row.facility_id)).toEqual([2, 3]);
-    expect(placesNear(facilities, KALORAMA, 'NSP', 5, 20_000).map(({ row }) => row.facility_id)).toEqual([2, 3, 1]);
-    expect(placesNear(facilities, KALORAMA, 'CFR', 5, 20_000).map(({ row }) => row.facility_id)).toEqual([5]);
+    expect(placesNear(facilities, KALORAMA, 'NSP', 5, 20).map(({ row }) => row.facility_id)).toEqual([2, 3, 1]);
+    expect(placesNear(facilities, KALORAMA, 'CFR', 5, 20).map(({ row }) => row.facility_id)).toEqual([5]);
+  });
+  it('takes a place in a corner of the square, past the half width in a straight line', () => {
+    // 15 km north and 15 km east: about 21 km away, inside a square 20 km each way.
+    const corner = facility({ facility_id: 6, lat: KALORAMA.lat + 15 / 111, lon: KALORAMA.lon + 15 / (111 * Math.cos((KALORAMA.lat * Math.PI) / 180)) });
+    expect(placesNear([corner], KALORAMA, 'NSP', 5, 20)).toHaveLength(1);
+  });
+});
+
+describe('nearbyMap', () => {
+  const nsp = facility({ facility_id: 10, lat: KALORAMA.lat - 0.05, lon: KALORAMA.lon });
+  const refugeAt = (km: number) => facility({ facility_id: 11, type: 'CFR', name: 'The refuge', lat: KALORAMA.lat - km / 111, lon: KALORAMA.lon });
+
+  it('stays 20 km each way when the nearest of each kind is inside it', () => {
+    const map = nearbyMap([nsp, refugeAt(10)], KALORAMA);
+    expect(map.halfKm).toBe(20);
+    expect(map.marks.map(({ type }) => type)).toEqual(['NSP', 'CFR']);
+    expect(map.offMap).toEqual([]);
+  });
+
+  it('widens to take in a refuge the list names past 20 km', () => {
+    const map = nearbyMap([nsp, refugeAt(34.5)], KALORAMA);
+    expect(map.halfKm).toBe(38);
+    expect(map.marks.map(({ type }) => type)).toEqual(['NSP', 'CFR']);
+    expect(map.offMap).toEqual([]);
+  });
+
+  it('stops at 60 km and names a refuge still past its edge', () => {
+    const map = nearbyMap([nsp, refugeAt(80)], KALORAMA);
+    expect(map.halfKm).toBe(60);
+    expect(map.marks.map(({ type }) => type)).toEqual(['NSP']);
+    expect(map.offMap.map(({ row }) => row.name)).toEqual(['The refuge']);
   });
 });

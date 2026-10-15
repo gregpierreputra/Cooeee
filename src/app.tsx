@@ -29,9 +29,11 @@ import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
 import Particles from './ui/components/Particles';
 import BottomNav from './ui/components/BottomNav';
+import AwayCheck from './ui/components/AwayCheck';
 import NoticeBar from './ui/components/NoticeBar';
 import Splash from './ui/components/Splash';
 import Tour, { startTour } from './ui/components/Tour';
+import TourOffer from './ui/components/TourOffer';
 import { focusMain } from './ui/components/focusMain';
 import PackDetail from './ui/PackDetail';
 import PackPrint from './ui/PackPrint';
@@ -72,6 +74,16 @@ function BlackSkyResume() {
       navigate('/blacksky', { replace: true });
     }
   }, [pathname]);
+  return null;
+}
+
+/** The welcome's hold: into BlackSky once, as the bar's hold goes, with the
+ *  first arrival spotlight asked for. */
+function RescueStart() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    navigate('/blacksky', { state: { held: true, guide: true } });
+  }, []);
   return null;
 }
 
@@ -235,6 +247,13 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // The welcome is seen once, on the way to the disclosure. Nothing records
   // it: the acknowledgement that follows is the only flag this screen leads to.
   const [welcomed, setWelcomed] = useState(false);
+  // A new person who held I need a way out now: the app opens straight into
+  // BlackSky with nothing agreed to ('hold'), as does a reload while there
+  // ('resume'). They stay a first time visitor: the disclosure shows on the
+  // next visit, and the tour is offered once BlackSky is left ('done' after).
+  const [rescue, setRescue] = useState<'hold' | 'resume' | 'done' | null>(() =>
+    screen === 'first-open' && isBlackSkyLatched(localFlagStore()) ? 'resume' : null,
+  );
   // Each first run screen replaces the last in the same document, so the window
   // keeps its scroll. On a small phone the welcome's button is below the fold,
   // and the disclosure then opened at its checkbox with the four statements
@@ -271,11 +290,11 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       );
     }
 
-    if (screen === 'first-open' && !welcomed) {
-      return <Welcome onContinue={() => setWelcomed(true)} />;
+    if (screen === 'first-open' && !rescue && !welcomed) {
+      return <Welcome onContinue={() => setWelcomed(true)} onWayOut={() => setRescue('hold')} />;
     }
 
-    if (screen === 'first-open') {
+    if (screen === 'first-open' && !rescue) {
       return (
         <FirstOpen
           onAcknowledge={() => {
@@ -295,6 +314,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
     return (
       <BrowserRouter>
         <BlackSkyResume />
+        {rescue === 'hold' ? <RescueStart /> : null}
         <ScrollToTop />
         <ModeSwitch />
         <NoticeBar />
@@ -322,6 +342,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         </Routes>
         <Tour />
         <BottomNavHost />
+        <AwayCheck />
+        {rescue === 'hold' || rescue === 'resume' ? <TourOffer onDone={() => setRescue('done')} /> : null}
       </BrowserRouter>
     );
   }
@@ -330,9 +352,13 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // or the app itself, so an arrival looks the same wherever it lands.
   return (
     <>
-      <Splash key={replays} play={replays > 0 ? true : undefined} />
+      {/* Not over a return to BlackSky: the dial shows at once. */}
+      <Splash
+        key={replays}
+        play={replays > 0 ? true : isBlackSkyLatched(localFlagStore()) ? false : undefined}
+      />
       {/* The gate, the welcome and the disclosure stand before the router. */}
-      {passed && screen !== 'first-open' ? null : <Particles />}
+      {passed && (screen !== 'first-open' || rescue) ? null : <Particles />}
       {screenFor()}
     </>
   );

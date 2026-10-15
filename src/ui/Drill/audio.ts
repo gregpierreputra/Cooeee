@@ -89,6 +89,14 @@ export const beat = () => tone('sine', 70, 40, 0.18, 0.6);
 export const thud = () => tone('sine', 110, 30, 0.4, 0.7);
 export const powerDown = () => tone('sawtooth', 220, 30, 0.9, 0.2);
 
+/** Start the sound again if the phone stopped it, from inside a tap or a key
+ *  press. A call, a notification or the lock screen can stop it on a phone,
+ *  and a resume that is not part of a tap may be refused, so every touch of
+ *  a game tries again. Nothing happens before unlock() or while it runs. */
+export function wake(): void {
+  if (context && context.state !== 'running') void context.resume();
+}
+
 /** Silence while the tab is hidden or the drill is closed, and back again. */
 export const suspend = () => void context?.suspend();
 export const resume = () => void context?.resume();

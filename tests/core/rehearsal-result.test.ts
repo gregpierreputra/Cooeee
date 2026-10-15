@@ -54,10 +54,12 @@ describe('a result with gaps', () => {
     const result = rehearsalResult(rehearsal([packContentGap, persistentGap]));
     if (result.state !== 'gaps') throw new Error('expected gaps');
 
+    // The reason says which kind: what this pack is missing, or what the
+    // condition takes away.
     const [content, persistent] = result.rows;
-    expect(content.meaning).toBe('Missing from your pack.');
-    expect(persistent.meaning).toBe('Not available under this condition.');
-    expect(content.meaning).not.toBe(persistent.meaning);
+    expect(content.reason).toMatch(/this pack/);
+    expect(persistent.reason).toMatch(/Without a location fix/);
+    expect(content.reason).not.toBe(persistent.reason);
   });
 
   it('names whose journey each gap belongs to', () => {
@@ -146,7 +148,7 @@ describe('a result never marks the reader', () => {
   /** Every sentence of a result other than how it ended. */
   const wordsOf = (result: ReturnType<typeof rehearsalResult>) =>
     result.state === 'gaps'
-      ? [result.conditionLine, ...result.rows.flatMap((row) => [row.hazardLine, row.title, row.meaning, row.action])]
+      ? [result.conditionLine, ...result.rows.flatMap((row) => [row.hazardLine, row.title, row.reason, row.action])]
       : [result.conditionLine, result.heading, result.detail];
 
   it('carries no total, count, percentage, score or grade in its shape', () => {
@@ -282,7 +284,7 @@ describe('an action the reader has marked done', () => {
     expect(record.gaps).toEqual([packContentGap, persistentGap]);
     expect(withOne.map((row) => row.gapType)).toEqual(withNone.map((row) => row.gapType));
     expect(withOne.map((row) => row.action)).toEqual(withNone.map((row) => row.action));
-    expect(withOne.map((row) => row.meaning)).toEqual(withNone.map((row) => row.meaning));
+    expect(withOne.map((row) => row.reason)).toEqual(withNone.map((row) => row.reason));
   });
 
   // TC-5.2.1-I, the reading half: with the completion gone the row is simply

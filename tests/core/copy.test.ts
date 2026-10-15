@@ -208,8 +208,8 @@ describe('deliberate activation', () => {
   });
 
   it('leaving the mode is one plainly named action, and its label says to hold', () => {
-    expect(copy.LEAVE_BLACKSKY).toBe('Hold for Cooeee');
-    expect(copy.HOLD_TO_LEAVE).toBe('Hold to leave. Two seconds.');
+    expect(copy.LEAVE_BLACKSKY).toBe('Hold to leave BlackSky');
+    expect(copy.HOLD_TO_LEAVE).toBe('Hold for two seconds.');
   });
 
   it('a back press is said in one short line, the hold naming the way out', () => {
@@ -262,7 +262,7 @@ describe('the returning-user home', () => {
       'The header',
       'The bottom bar',
       'The address search',
-      'Nearby official places',
+      'Nearby places',
       'Rehearse',
       'Recover',
     ]);
@@ -352,9 +352,9 @@ describe('first-open disclosure', () => {
     );
   });
 
-  it('states when the position is asked for and that it is never sent', () => {
+  it('states when the position is asked for, the one place it is sent, and that it is never kept', () => {
     expect(copy.DISCLOSURE_POSITION).toBe(
-      'Only asked inside BlackSky, the offline screen that points to your saved places. Stays on this device. You can refuse, and everything else still works.',
+      'In BlackSky, rehearsals, and when you tap to use your location. Only finding your address sends it out, to the Victorian address register. Cooeee never keeps it. You can refuse.',
     );
   });
 

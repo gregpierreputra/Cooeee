@@ -1,8 +1,13 @@
 import {
   addressFilterForCql,
+  landmarkFilterForCql,
+  localityNamed,
   placeNameFilterForCql,
   reorderedFilterForCql,
   resolveAddressCandidates,
+  stationFilterForCql,
+  stationName,
+  townPointFilterForCql,
   type AddressCandidateResolution,
 } from '../core/address-search';
 import { extentSnapshotDisagrees, resolveBushfireAreaStatus } from '../core/area-check';
@@ -18,7 +23,9 @@ import {
   MAX_RESPONSE_BYTES,
 } from '../core/constants';
 import { distanceM } from '../core/geo';
+import { decodeLocalities, type Locality } from '../core/localities';
 import { readJsonBounded } from './bounded-body';
+import { LOCALITIES_PATH, readLocalitiesFile } from './localities';
 import type {
   AddressCandidate,
   AddressRecord,
@@ -93,6 +100,7 @@ function parseAddressRecord(value: unknown): AddressRecord {
     candidate: parseAddressFeature(value),
     propertyStatus: value.properties.property_status,
     isPrimary: value.properties.is_primary === 'Y',
+    pfi: typeof value.properties.pfi === 'string' ? value.properties.pfi : undefined,
   };
 }
 
@@ -138,6 +146,32 @@ async function requestAddressRecords(
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   signal: AbortSignal | undefined,
 ): Promise<AddressRecord[]> {
+  const features = await requestFeatures(url, fetcher, signal);
+  // One record the register got wrong (a point outside Victoria, a missing
+  // suburb) must not cost the user every good record beside it, so it is
+  // skipped. When none can be read the register's shape has changed, and that
+  // is a search that could not run, never an honest "no match".
+  const records = features.flatMap((feature: unknown) => {
+    try {
+      return [parseAddressRecord(feature)];
+    } catch {
+      return [];
+    }
+  });
+  if (records.length === 0 && features.length > 0) {
+    throw new TypeError('no address record in the response could be read');
+  }
+  return records;
+}
+
+/** One request to the service, read within its size and time bounds, as its
+ *  list of features. The caller's cancellation is chained into the attempt's
+ *  own timeout. */
+async function requestFeatures(
+  url: string,
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  signal: AbortSignal | undefined,
+): Promise<unknown[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ADDRESS_SEARCH_TIMEOUT_MS);
   const abortWithCaller = () => controller.abort(signal?.reason);
@@ -154,21 +188,7 @@ async function requestAddressRecords(
     const payload: unknown = await readJsonBounded(response, MAX_RESPONSE_BYTES);
     assertRecord(payload, 'response');
     if (!Array.isArray(payload.features)) throw new TypeError('response.features must be an array');
-    // One record the register got wrong (a point outside Victoria, a missing
-    // suburb) must not cost the user every good record beside it, so it is
-    // skipped. When none can be read the register's shape has changed, and that
-    // is a search that could not run, never an honest "no match".
-    const records = payload.features.flatMap((feature: unknown) => {
-      try {
-        return [parseAddressRecord(feature)];
-      } catch {
-        return [];
-      }
-    });
-    if (records.length === 0 && payload.features.length > 0) {
-      throw new TypeError('no address record in the response could be read');
-    }
-    return records;
+    return payload.features;
   } finally {
     clearTimeout(timeout);
     signal?.removeEventListener('abort', abortWithCaller);
@@ -184,7 +204,13 @@ export async function fetchAddressCandidates(
   query: string,
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = fetch,
   signal?: AbortSignal,
+  loadLocalities: () => Promise<Locality[]> = heldLocalities,
 ): Promise<AddressCandidateResolution> {
+  // A town or a station typed on its own is a place, not an address: the
+  // addresses nearest it are listed, and the person still chooses one.
+  const near = await nearNamedPlace(query, fetcher, signal, loadLocalities);
+  if (near) return near;
+
   const ask = (filter: string) =>
     requestAddressRecords(buildAddressSearchUrl(query, filter), fetcher, signal);
 
@@ -204,30 +230,128 @@ export async function fetchAddressCandidates(
   }
 
   // When nothing matched, the register is asked again with the words put back
-  // in order, then loosely (a spelling slip), and last by the name of a building
-  // or site. These are a courtesy on top of an honest "no match": one that
-  // fails, or comes after the time a search may take, ends the asking and the
-  // no match stands. It never turns into "the search could not run". Whatever
-  // comes back is still a real register address that the user must choose.
+  // in order, then loosely (a spelling slip), then for a named place such as a
+  // university, and last by the name of a building or site. These are a
+  // courtesy on top of an honest "no match": one that fails, or comes after the
+  // time a search may take, ends the asking and the no match stands. It never
+  // turns into "the search could not run". Whatever comes back is still a real
+  // register address that the user must choose.
   const started = Date.now();
-  const further = [
-    reorderedFilterForCql(query),
-    addressFilterForCql(query, true),
-    reorderedFilterForCql(query, true),
-    placeNameFilterForCql(query),
+  const placeName = placeNameFilterForCql(query);
+  const further: (() => Promise<AddressRecord[]>)[] = [
+    ...[reorderedFilterForCql(query), addressFilterForCql(query, true), reorderedFilterForCql(query, true)].flatMap(
+      (filter) => (filter === null ? [] : [() => ask(filter)]),
+    ),
+    () => landmarkRecords(query, fetcher, signal),
+    ...(placeName === null ? [] : [() => ask(placeName)]),
   ];
-  for (const filter of further) {
+  for (const step of further) {
     if (resolveAddressCandidates(records).candidates.length > 0) break;
-    if (filter === null) continue;
     if (Date.now() - started > ADDRESS_SEARCH_TIMEOUT_MS) break;
     try {
-      records = await ask(filter);
+      records = await step();
     } catch (error) {
       if (signal?.aborted) throw error;
       break;
     }
   }
   return resolveAddressCandidates(records);
+}
+
+/** The locality names the phone already holds, or, before the app has saved
+ *  them, the same file from the app's own site: the search is online anyway. */
+async function heldLocalities(): Promise<Locality[]> {
+  const raw = (await readLocalitiesFile()) ?? (await (await fetch(LOCALITIES_PATH)).json());
+  return decodeLocalities(raw);
+}
+
+/** A typed station or town, as the addresses nearest it, or null when the text
+ *  names neither and is searched as an address. A station the register does
+ *  not know, or cannot answer for, falls back to the address search. */
+async function nearNamedPlace(
+  query: string,
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  signal: AbortSignal | undefined,
+  loadLocalities: () => Promise<Locality[]>,
+): Promise<AddressCandidateResolution | null> {
+  const station = stationName(query);
+  if (station) {
+    let at: LatLon | null = null;
+    try {
+      const [feature] = await requestFeatures(
+        buildWfsUrl({ typeNames: 'open-data-platform:tr_rail_infrastructure', count: '1', CQL_FILTER: stationFilterForCql(station) }),
+        fetcher,
+        signal,
+      );
+      at = pointOf(feature);
+    } catch (error) {
+      if (signal?.aborted) throw error;
+    }
+    return at ? { ...(await fetchAddressesNear(at, fetcher, signal)), near: { kind: 'station', name: station } } : null;
+  }
+  const town = localityNamed(await loadLocalities().catch(() => []), query);
+  if (!town) return null;
+  // The town's own named point, where its township is, in place of the middle
+  // of its whole area, which for a large rural town can be bush. The phone's
+  // point stands in when the register cannot answer.
+  let at: LatLon = town;
+  try {
+    const [feature] = await requestFeatures(
+      buildWfsUrl({ typeNames: 'open-data-platform:locality_point', count: '1', CQL_FILTER: townPointFilterForCql(town.name) }),
+      fetcher,
+      signal,
+    );
+    at = pointOf(feature) ?? town;
+  } catch (error) {
+    if (signal?.aborted) throw error;
+  }
+  return { ...(await fetchAddressesNear(at, fetcher, signal)), near: { kind: 'town', name: town.name } };
+}
+
+/** A feature's point, when it has one inside Victoria. */
+function pointOf(feature: unknown): LatLon | null {
+  if (typeof feature !== 'object' || feature === null) return null;
+  const geometry = (feature as { geometry?: { type?: unknown; coordinates?: unknown } }).geometry;
+  if (geometry?.type !== 'Point' || !Array.isArray(geometry.coordinates)) return null;
+  const [lon, lat] = geometry.coordinates;
+  return typeof lat === 'number' && typeof lon === 'number' && isInsideVictoria(lat, lon) ? { lat, lon } : null;
+}
+
+/** Named places, such as a university campus, found in the state's index of
+ *  named features and read as their official addresses, each carrying its
+ *  place's name. A place with no linked address is left out. */
+async function landmarkRecords(
+  query: string,
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  signal: AbortSignal | undefined,
+): Promise<AddressRecord[]> {
+  const filter = landmarkFilterForCql(query);
+  if (filter === null) return [];
+  const features = await requestFeatures(
+    buildWfsUrl({ typeNames: 'open-data-platform:foi_index_centroid', count: String(ADDRESS_RESULT_LIMIT), CQL_FILTER: filter }),
+    fetcher,
+    signal,
+  );
+  // Only the register's own ids, digits alone, are ever put back in a filter.
+  const named = new Map<string, string>();
+  for (const feature of features) {
+    const properties = (feature as { properties?: { name?: unknown; vmadd_pfi?: unknown } })?.properties;
+    const pfi = String(properties?.vmadd_pfi ?? '');
+    if (/^\d{1,15}$/.test(pfi) && typeof properties?.name === 'string' && !named.has(pfi)) named.set(pfi, properties.name);
+  }
+  if (named.size === 0) return [];
+  const ids = [...named.keys()];
+  const records = await requestAddressRecords(
+    buildAddressSearchUrl(query, `pfi IN (${ids.map((id) => `'${id}'`).join(',')})`),
+    fetcher,
+    signal,
+  );
+  // In the index's own order, each with its place's name over the address.
+  return ids.flatMap((id) =>
+    records
+      .filter((record) => record.pfi === id)
+      .map((record) => ({ ...record, candidate: { ...record.candidate, placeName: named.get(id) } })),
+  );
 }
 
 /** Use my location: the register's addresses nearest a position, nearest first.
@@ -250,7 +374,12 @@ export async function fetchAddressesNear(
   const metresAway = (record: AddressRecord) => distanceM(position, record.candidate);
   const isUnit = (record: AddressRecord) => Number(record.candidate.address.includes('/'));
   const nearest = [...records].sort((a, b) => metresAway(a) - metresAway(b) || isUnit(a) - isUnit(b));
-  return resolveAddressCandidates(nearest.slice(0, ADDRESS_RESULT_LIMIT));
+  // Each carries its distance from the point, said on its row.
+  return resolveAddressCandidates(
+    nearest
+      .slice(0, ADDRESS_RESULT_LIMIT)
+      .map((record) => ({ ...record, candidate: { ...record.candidate, distanceM: metresAway(record) } })),
+  );
 }
 
 function pointFilter({ lat, lon }: Pick<PendingPlace, 'lat' | 'lon'>): string {

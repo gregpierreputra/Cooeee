@@ -56,22 +56,14 @@ const GAP_ACTION: Record<RehearsalGapType, string> = {
   'live-direction-unavailable': copy.ACTION_WRITE_THE_WAY_DOWN,
 };
 
-/** What the kind means, in plain language. The two kinds are told apart by
- *  these words and by nothing else: no severity, no ranking, no separate list,
- *  no colour. */
-const KIND_MEANING: Record<RehearsalGapKind, string> = {
-  'pack-content': copy.GAP_MEANING_PACK_CONTENT,
-  'condition-persistent': copy.GAP_MEANING_CONDITION,
-};
-
 export type GapAction = {
   actionId: string;
   /** What could not be relied on. */
   title: string;
-  /** Why it was found. */
+  /** Why it was found. It also tells the two kinds apart in words: what this
+   *  pack is missing, or what the condition takes away. No severity, no
+   *  ranking, no separate list, no colour. */
   reason: string;
-  /** Which of the two kinds this is, said in words. */
-  meaning: string;
   /** The one thing to do about it. */
   action: string;
 };
@@ -81,6 +73,5 @@ export const actionFor = (detected: DetectedGap): GapAction => ({
   actionId: GAP_ACTION_ID[detected.gapType],
   title: GAP_TITLE[detected.gapType],
   reason: GAP_REASON[detected.gapType],
-  meaning: KIND_MEANING[detected.kind],
   action: GAP_ACTION[detected.gapType],
 });

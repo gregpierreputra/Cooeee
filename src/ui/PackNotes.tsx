@@ -216,7 +216,7 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
       </ul>
       {/* Always present, so the live region exists before it speaks. */}
       <p
-        className={`note-mark${status === 'saved' ? ' note-mark-saved' : ''}`}
+        className={`note-mark${status === 'saved' ? ' note-mark-saved' : status === 'deleted' ? ' note-mark-deleted' : ''}`}
         role="status"
         onAnimationEnd={() => setStatus(null)}
       >

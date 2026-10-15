@@ -173,9 +173,9 @@ export default function Result({
   const summary = (
     <Section kind="rehearse" title={copy.RESULT_SUMMARY_LABEL} heading>
       <div className="card result-summary">
-        {/* The condition's phrase in bold, the ending by its parts. The two
-            paragraphs keep one style: only the words inside them differ. */}
-        <p>{boldParts(result.conditionLine, [result.conditionLine.replace(/\.$/, '')])}</p>
+        {/* The condition leads the card at the gap names' size, so every card
+            on the page opens the same way. The ending follows, its parts in bold. */}
+        <p className="result-condition">{result.conditionLine}</p>
         <p>{boldParts(result.endingLine, result.endingBold)}</p>
         {/* What was checked, after how it ended, when nothing was missing. */}
         {result.state === 'no-gaps' ? <p className="muted place-note">{result.detail}</p> : null}
@@ -207,12 +207,7 @@ export default function Result({
         <ul className="list gap-list">
           {result.rows.map((row) => (
             <li key={`${row.gapType}:${row.hazardLine}`} className="card gap-row">
-              <span className="kicker">{row.hazardLine}</span>
               <h3>{row.title}</h3>
-              {/* Which of the two kinds this is, said in words under the title.
-                  The two kinds are told apart by this sentence and by nothing
-                  else: no severity, no ranking, no separate list, no colour. */}
-              <p className="muted gap-meaning">{row.meaning}</p>
               <p className="gap-reason-label with-glyph">
                 <Glyph kind="why" line />
                 {copy.GAP_REASON_LABEL}

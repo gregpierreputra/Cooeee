@@ -1,4 +1,5 @@
-import { DYNAMIC_SNAPSHOT_MAX_AGE_MS } from './constants';
+import { areaMapHalfKm, farthestKm } from './area-map-view';
+import { DYNAMIC_SNAPSHOT_MAX_AGE_MS, NEARBY_MAP_PLACES, NEARBY_MAP_REFUGES } from './constants';
 import * as copy from './copy';
 import { formatDistanceM } from './destination';
 import { DYNAMIC_TYPES, FACILITY_SOURCE, STATIC_TYPES } from './facility-sources';
@@ -100,19 +101,38 @@ export function nearestOfType<T extends LatLon & { type: FacilityType }>(
   return nearest;
 }
 
-/** The nearest few places of one type within reachM of the origin, nearest
- *  first, for Nearby's map. */
+type MapType = 'NSP' | 'CFR';
+const MAP_COUNT: Record<MapType, number> = { NSP: NEARBY_MAP_PLACES, CFR: NEARBY_MAP_REFUGES };
+
+/** Nearby's map of the bushfire places. It reaches halfKm each way, sized as a
+ *  pack's map is to hold the nearest Neighbourhood Safer Place and the nearest
+ *  Community Fire Refuge the list names, up to the most a map reaches. It marks
+ *  the nearest few of each inside it, and names any listed place still past
+ *  its edge, so the list never names a place the map leaves out unsaid. */
+export function nearbyMap(facilities: BundleFacility[], origin: LatLon) {
+  const listed = (['NSP', 'CFR'] as const).flatMap((type) => nearestOfType(facilities, origin, type) ?? []);
+  const halfKm = areaMapHalfKm(origin, listed.map(({ row }) => row));
+  return {
+    halfKm,
+    marks: (['NSP', 'CFR'] as const).flatMap((type: MapType) =>
+      placesNear(facilities, origin, type, MAP_COUNT[type], halfKm).map((near) => ({ type, ...near })),
+    ),
+    offMap: listed.filter(({ row }) => farthestKm(origin, [row]) > halfKm),
+  };
+}
+
+/** The nearest few places of one type inside the square halfKm each way from
+ *  the origin, nearest first. A square, not a circle, as the map is one. */
 export function placesNear(
   facilities: BundleFacility[],
   origin: LatLon,
   type: BundleFacility['type'],
   count: number,
-  reachM: number,
+  halfKm: number,
 ): { row: BundleFacility; distanceM: number }[] {
   return facilities
-    .filter((row) => row.type === type)
+    .filter((row) => row.type === type && farthestKm(origin, [row]) <= halfKm)
     .map((row) => ({ row, distanceM: distanceM(origin, row) }))
-    .filter((near) => near.distanceM <= reachM)
     .sort((a, b) => a.distanceM - b.distanceM)
     .slice(0, count);
 }
