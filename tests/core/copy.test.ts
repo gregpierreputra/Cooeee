@@ -262,7 +262,7 @@ describe('the returning-user home', () => {
       'The header',
       'The bottom bar',
       'The address search',
-      'Nearby official places',
+      'Nearby places',
       'Rehearse',
       'Recover',
     ]);

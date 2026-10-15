@@ -47,7 +47,8 @@ export const ONLINE_NOTICE = 'Online';
 export const OFFLINE_NOTICE = 'Offline. Packs still work.';
 export const DISMISS_NOTICE = 'Dismiss connection notice';
 
-export const NO_PACKS_HINT = 'Build one while you have a connection.';
+/** Says what a pack is, as testers new to the app did not know the word. */
+export const NO_PACKS_HINT = "A pack keeps one address's bushfire information on this phone. Build one while you have a connection.";
 /** "1 day", "3 days": a pack saved yesterday must not read "1 days ago". */
 const dayCount = (days: number) => (days === 1 ? '1 day' : `${days} days`);
 /** A pack card's age, from ageLabel: "Saved just now", "Saved 5 minutes ago". */
@@ -112,7 +113,10 @@ export const ABOUT_ADDRESS = 'About your address';
  *  measured from. Says what such a place is, as testers new to the app did
  *  not know the term. */
 export const ADDRESS_FIELD_HINT =
-  'Cooeee finds the official places of last resort nearest to it. These are places to go in a bushfire when every other plan has failed.';
+  'Cooeee finds the official places of last resort nearest to it. These are places the Country Fire Authority names to go to in a bushfire when every other plan has failed.';
+/** What a place of last resort is, said the same way wherever it is defined:
+ *  as the address note says it, testers new to the app did not know the term. */
+export const LAST_RESORT_MEANING = 'Places the Country Fire Authority names to go to in a bushfire when every other plan has failed.';
 /** Use my location on the address search. The position is sent to the address
  *  register, so the note beside the title says so. Cooeee keeps nothing, and
  *  the line claims nothing about the register itself. */
@@ -870,7 +874,7 @@ export const WELCOME_TERMS = ['koo-EE', 'guuu-wii', 'Dharug', 'come here', 'kept
 export const COOEEE_INFO_LINES = [
   { glyph: 'what', title: 'What it is', text: 'Official bushfire information for your places, kept on your phone.' },
   { glyph: 'why', title: 'Why it exists', text: 'In a fire, the power and the signal often go first.' },
-  { glyph: 'does', title: 'What it does', text: 'Build packs, find official places, and hold for BlackSky when nothing else works.' },
+  { glyph: 'does', title: 'What it does', text: 'Build packs, find places of last resort, and hold for BlackSky when nothing else works.' },
   { glyph: 'not', title: 'What it does not do', text: 'It does not watch conditions or contact you. VicEmergency tells you when to act.' },
   { glyph: 'stays', title: 'Where your information stays', text: 'Your address stays on this phone. Cooeee runs no server that could keep it.' },
 ] as const;
@@ -889,13 +893,13 @@ export const SKIP_TOUR = 'Skip tour';
  *  the panel while the tour holds the page still. */
 export const TOUR_STEPS = [
   { path: '/', target: '.preparation', glyph: 'clock', title: "Today's reminder", line: 'A daily preparation step, from Country Fire Authority guidance or your pack.' },
-  { path: '/', target: '.home .pack-card:not(.pack-card ~ .pack-card), .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: 'Each pack opens with no signal. Its dots rename or print it.' },
+  { path: '/', target: '.home .pack-card:not(.pack-card ~ .pack-card), .home .empty-state', glyph: 'layer', title: 'Your saved packs', line: "A pack is one address's bushfire information, kept on this phone." },
   { path: '/', target: '.home .main-action', glyph: 'plus', title: 'New offline pack', line: 'Add a pack for home, work, school or family.' },
-  { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to official places offline.', more: 'blacksky' },
+  { path: '/', target: '.nav-blacksky', glyph: 'moon', title: 'Hold for BlackSky', line: 'Hold the compass two seconds. It points to your saved places.', more: 'blacksky' },
   { path: '/', target: '.app-header-inner', glyph: 'clock', title: 'The header', line: "Tap Cooeee to go home. The pill shows your oldest pack's age." },
   { path: '/', target: '.bottom-nav-inner', glyph: 'all', title: 'The bottom bar', line: 'Every screen, one thumb away. BlackSky opens only by holding.' },
   { path: '/packs/new', target: '.search-hint, .search-row', glyph: 'found', title: 'The address search', line: 'Type a Victorian street address, then pick yours from the list.' },
-  { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby official places', line: 'Official places near you, by distance. Not a ranking.' },
+  { path: '/nearby', target: '.nearby .hero', tab: '.bottom-nav-item[href="/nearby"]', glyph: 'place', title: 'Nearby places', line: 'Places of last resort are where to go when all else fails.' },
   { path: '/rehearse', target: '.rehearsal-entry .card, .rehearsal-condition .empty-state, .condition-list:not(.pack-choice-list), .pack-choice-list > li:first-child', tab: '.bottom-nav-item[href="/rehearse"]', glyph: 'rehearse', title: 'Rehearse', line: REHEARSE_LINE },
   { path: '/recover', target: '.recover .hero', tab: '.bottom-nav-item[href="/recover"]', glyph: 'kept', title: 'Recover', line: 'Say what you need and see support that may match.' },
 ] as const;
@@ -904,7 +908,7 @@ export const TOUR_STEPS = [
  *  opens: what BlackSky does, each line led by its glyph. */
 export const ABOUT_BLACKSKY = 'More about BlackSky';
 export const BLACKSKY_INFO_LINES = [
-  { glyph: 'go', text: 'Points to the nearest official places of last resort.' },
+  { glyph: 'go', text: 'Points to the nearest official places of last resort, where to go when all else fails.' },
   { glyph: 'offline', text: 'Works with no signal. Your pack is already on this phone.' },
   { glyph: 'moon', text: 'Black and amber spare the battery and your night vision.' },
   { glyph: 'clock', text: 'Hold two seconds to enter or leave. A tap does nothing.' },
@@ -977,7 +981,7 @@ export const GATE_UNAVAILABLE = 'The password cannot be checked right now.';
 
 export const NAV_NEARBY = 'Nearby';
 export const NEARBY_KICKER = 'Nearby places';
-export const NEARBY_TITLE = 'Nearest official places';
+export const NEARBY_TITLE = 'Places near you';
 export const ABOUT_GROUP = (group: string) => `About ${group}`;
 
 export const USE_MY_LOCATION = 'Use my location';
@@ -1000,12 +1004,16 @@ export const NOT_A_RANKING = 'Not a ranking.';
  *  line passed through KeyTerms. Plain words only: they are joined into a regex. */
 export const KEY_TERMS = ['Bushfire Prone Area', 'Fire can still reach you'] as const;
 
-export const DOWNLOADING_PLACES = 'Downloading the official places…';
+export const DOWNLOADING_PLACES = 'Downloading the official lists…';
 export const FIRST_RUN_TITLE = 'Nothing downloaded yet';
 export const FIRST_RUN_LINE = 'Connect once to download. Then it opens with no signal.';
 
 export const GROUP_BUSHFIRE = 'Bushfire places of last resort';
 export const GROUP_BUSHFIRE_NOTE = 'Designated by the Country Fire Authority for their own township. Bushfire only.';
+/** Each kind said in plain words beside the note, as testers new to the app
+ *  did not know them. Both follow the Country Fire Authority's own account. */
+export const NSP_MEANS = 'A Neighbourhood Safer Place is an open space or building to go to as a last resort. It has no staff or services.';
+export const CFR_MEANS = "A Community Fire Refuge is a building that gives short-term shelter from a fire's heat, as a last resort.";
 export const GROUP_RELIEF = 'Relief and recovery';
 /** The two tabs over the Nearby groups, short enough to sit side by side. */
 export const TAB_BUSHFIRE = 'Bushfire places';
@@ -1220,7 +1228,7 @@ export const GAP_MEANING_PACK_CONTENT = 'Missing from your pack.';
 export const GAP_DESIGNATION = 'Bushfire area';
 export const GAP_PLACES = 'Official places of last resort';
 /** The label over the places on the journey screens, short enough for one line. */
-export const JOURNEY_PLACES_LABEL = 'Official places in this pack';
+export const JOURNEY_PLACES_LABEL = 'Places of last resort in this pack';
 export const GAP_PROVENANCE = 'Where each item came from';
 export const GAP_LIVE_DIRECTION = 'The arrow to your saved places';
 
@@ -1243,7 +1251,7 @@ export const GAPS_CHECKED = 'Area answer · Saved places · Sources · Live dire
 
 // The one action for each. None of them says the capability has come back.
 export const ACTION_BUILD_AGAIN_DESIGNATION = 'Build this pack again online to store the official area designation.';
-export const ACTION_BUILD_AGAIN_PLACES = 'Build this pack again online to store the official places.';
+export const ACTION_BUILD_AGAIN_PLACES = 'Build this pack again online to store its places of last resort.';
 export const ACTION_BUILD_AGAIN_PROVENANCE = 'Build this pack again online so every item has its publisher and date.';
 /** Says what to do instead, and does not pretend the phone will find the way. */
 export const ACTION_WRITE_THE_WAY_DOWN = 'Write down the way from your door to each saved place. Keep it with your kit.';
@@ -1345,7 +1353,7 @@ export const NO_NOTES_ON_JOURNEY = 'No notes in this pack.';
 export const PHONE_STILL_ONLINE = 'Still online. Turn on aeroplane mode.';
 
 /** [DRAFT] What a rehearsal is. */
-export const JOURNEY_WHAT_IT_IS = 'A calm-day trip to a saved official place, with BlackSky open.';
+export const JOURNEY_WHAT_IT_IS = 'A calm-day trip to a saved place of last resort, with BlackSky open.';
 export const ABOUT_REHEARSAL = 'What a rehearsal is';
 /** [DRAFT] What it is for, and what it is not. */
 export const JOURNEY_WHAT_IT_IS_FOR = 'Practice at knowing the way, how long it takes and which turns you take.';

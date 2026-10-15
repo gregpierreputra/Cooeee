@@ -93,7 +93,7 @@ describe("the journey screen's words", () => {
 
   it('are exactly the draft wording, pending the copy review', () => {
     expect(before).toEqual([
-      'A calm-day trip to a saved official place, with BlackSky open.',
+      'A calm-day trip to a saved place of last resort, with BlackSky open.',
       'Practice at knowing the way, how long it takes and which turns you take.',
       'Hold for BlackSky once you set off, as you would on the day.',
       "I'm going now",

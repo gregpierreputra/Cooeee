@@ -41,11 +41,11 @@ const NO_GAPS_HEADING = 'Nothing was missing in this rehearsal';
 const HOLD_HINT = 'Hold to enter. Two seconds.';
 
 const WHAT_IT_IS =
-  'A calm-day trip to a saved official place, with BlackSky open.';
+  'A calm-day trip to a saved place of last resort, with BlackSky open.';
 const WHAT_IT_IS_FOR =
   'Practice at knowing the way, how long it takes and which turns you take.';
 const INSTRUCTIONS_FIRST = 'Always follow instructions from the Country Fire Authority and emergency services.';
-const PLACES_HEADING = 'Official places in this pack';
+const PLACES_HEADING = 'Places of last resort in this pack';
 const NO_PLACE_SAVED = 'Missing from your pack.';
 const PLACE = 'Kalorama Reserve';
 const PLACE_WHERE = 'Kalorama Memorial Reserve Road, Kalorama';

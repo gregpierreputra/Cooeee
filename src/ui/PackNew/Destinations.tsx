@@ -168,6 +168,7 @@ export function Destinations({
       <main className="page destinations-page">
         <FlowSteps at={2} />
         <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+        <p className="muted">{copy.LAST_RESORT_MEANING}</p>
         <StateCard heading={statement} />
         {continueAction}
       </main>
@@ -211,6 +212,8 @@ export function Destinations({
     <main className="page destinations-page">
       <FlowSteps at={2} />
       <h1>{copy.DESTINATIONS_STEP_TITLE}</h1>
+      {/* What such a place is, where they are chosen, not behind a ring. */}
+      <p className="muted">{copy.LAST_RESORT_MEANING}</p>
 
       {nonePublished ? (
         <>

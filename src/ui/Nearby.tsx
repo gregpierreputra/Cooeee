@@ -310,7 +310,18 @@ export default function Nearby({
                   {/* The heading beside the ring already names the note, so its
                       panel has no title. */}
                   <Hint label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>} titled={false}>
-                    <p>{group.note}</p>
+                    {/* The bushfire places are each said for what they are, in
+                        the drawings the map's key uses, then the note, all in
+                        one list of led lines. */}
+                    {tab === 'bushfire' ? (
+                      <ul className="info-lines glyph-lines">
+                        <li><Glyph kind="place" line />{copy.NSP_MEANS}</li>
+                        <li><Glyph kind="home" line />{copy.CFR_MEANS}</li>
+                        <li><Glyph kind="found" line />{group.note}</li>
+                      </ul>
+                    ) : (
+                      <p>{group.note}</p>
+                    )}
                   </Hint>
                   {/* The bushfire tab's nearest few places on a map, folded until asked for. */}
                   {tab === 'bushfire' && cache ? (

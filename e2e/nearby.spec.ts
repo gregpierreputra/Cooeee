@@ -17,7 +17,7 @@ const ORIGIN = 'http://127.0.0.1:4174';
 // Load the seeded harness online, then cut the network before doing anything.
 async function openOffline(page: Page, context: BrowserContext, mode: string) {
   await page.goto(`${ORIGIN}/nearby?mode=${mode}`);
-  await page.getByRole('heading', { name: 'Nearest official places' }).waitFor();
+  await page.getByRole('heading', { name: 'Places near you' }).waitFor();
   await context.setOffline(true);
 }
 
@@ -143,7 +143,7 @@ test('AC6 offline and never synced, the first-run state is stated rather than a 
 test('Share on a place copies it to send, without the distance', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: ORIGIN });
   await page.goto(`${ORIGIN}/nearby?mode=fresh`);
-  await page.getByRole('heading', { name: 'Nearest official places' }).waitFor();
+  await page.getByRole('heading', { name: 'Places near you' }).waitFor();
   await findPostcode(page);
   const card = page.locator('.card', { hasText: 'Kalorama Memorial Reserve' });
   const share = card.getByRole('button', { name: 'Share Kalorama Memorial Reserve' });
