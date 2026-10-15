@@ -83,6 +83,17 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(`${packUrl}?tab=support`);
   await expect(page.getByRole('tab', { name: 'Support' })).toHaveAttribute('aria-selected', 'true');
+
+  // Practice invites the drill, says none has been played yet, and the drill's
+  // Back comes home to this pack's Practice tab.
+  await page.getByRole('tab', { name: 'Practice' }).click();
+  const drill = page.locator('.pack-section', { hasText: 'Play the drill' });
+  await expect(drill).toContainText('Practise packing your grab bag before the clock runs out.');
+  await expect(drill.locator('.rehearsed-pill')).toHaveText('Not yet drilled');
+  await drill.getByRole('link', { name: 'Play the drill' }).click();
+  await expect(page).toHaveURL(/\/rehearse\/drill\?from=/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(`${packUrl}?tab=practice`);
 });
 
 test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ page }) => {

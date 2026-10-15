@@ -2,6 +2,7 @@ import * as copy from '../../core/copy';
 import { CLASSIC, type DrillRules } from '../../core/drill-twists';
 import Glyph from '../components/Glyph';
 import FactTiles from '../Games/FactTiles';
+import PastDrills from './PastDrills';
 
 /** E9-US1-AC1 — one quiet screen before the film: what the drill asks in
  *  three tiles drawn as the game draws them (its clock, its bag count and the
@@ -53,6 +54,8 @@ export default function Statline({ rules = CLASSIC, onStart }: { rules?: DrillRu
           {copy.START_DRILL}
         </button>
       </div>
+      {/* Every past drill, under Start, as the drill belongs to no pack. */}
+      <PastDrills />
     </>
   );
 }

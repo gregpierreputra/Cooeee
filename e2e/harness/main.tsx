@@ -320,6 +320,10 @@ if (['/detail', '/detail-launch', '/detail-print'].includes(window.location.path
   });
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
+  // ?mode=drilled: one drill played on the phone two days before the clock.
+  if (detailMode === 'drilled') {
+    await db.drills.put({ id: 'detail-drill', finishedAt: detailNow - 2 * 86_400_000, reachedDoor: false, score: 0, packed: [] });
+  }
   // E5-US5. ?mode=rehearsed: the pack has been rehearsed once, and walked.
   if (detailMode === 'rehearsed') {
     await db.rehearsals.put({

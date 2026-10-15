@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { backTarget, ONE_STEP } from '../../src/core/back';
+import { backTarget, drillHome, ONE_STEP } from '../../src/core/back';
 
 const NONE = { runPackId: null, builder: 'step' } as const;
 
@@ -44,6 +44,12 @@ describe('backTarget, the screen above each screen', () => {
   it.each(['/rehearse/drill', '/rehearse/word', '/rehearse/block'])('goes from the game %s up to Rehearse, whatever is running', (path) => {
     expect(backTarget(path, '', NONE)).toBe('/rehearse');
     expect(backTarget(path, '', { ...NONE, runPackId: 'a' })).toBe('/rehearse');
+  });
+
+  it("goes from the drill opened on a pack's Practice tab back to that tab, by Back and by Done", () => {
+    expect(backTarget('/rehearse/drill', '?from=pack-1', NONE)).toBe('/packs/pack-1?tab=practice');
+    expect(drillHome('?from=pack-1')).toBe('/packs/pack-1?tab=practice');
+    expect(drillHome('')).toBe('/rehearse');
   });
 
   it('goes from a pack\'s print page back to the pack when the pack page opened it, else Home', () => {

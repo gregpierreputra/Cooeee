@@ -1449,6 +1449,12 @@ export const SKIP_CUTSCENE = 'Skip';
 export const NEXT_STAGE = 'Next';
 export const LEAVE_DRILL = 'Leave the drill';
 export const DRILL_TILE_TITLE = 'Play the drill';
+/** Under Play the drill on a pack's Practice tab. No time or bag size, as the
+ *  day's twist can change both. */
+export const DRILL_INVITE_LINE = 'Practise packing your grab bag before the clock runs out.';
+/** Whether a drill has been played on this phone, set as a rehearsal's pill. */
+export const NOT_DRILLED_CARD = 'Not yet drilled';
+export const DRILLED_AGO = (age: string) => `Drilled ${age}`;
 export const DRILL_TILE_DETAIL = 'Two minutes to pack ten things and reach the front door.';
 /** The facts shown over the fire as it worsens, each with its publisher and
  *  the phrases set in the accent colour. Every
@@ -1511,8 +1517,13 @@ export const TILE_LABEL = (name: string, points: string) => `${name}, ${points}`
 export const HIGHEST_SO_FAR = (score: number) => `Your highest so far is ${score} out of 100.`;
 export const PLAY_AGAIN = 'Play again';
 export const DRILL_UNAVAILABLE = 'This browser could not load the drill pictures. Try the drill on another browser.';
-/** Every drill, on every pack page, as the drill is the same game whatever is saved. */
-export const DRILLS = 'Drills · all packs';
+/** Every drill, on the drill's own screen, as the drill belongs to no pack. */
+export const DRILLS = 'Past drills';
+/** Removes every drill result on the phone, after one question. */
+export const CLEAR_DRILLS = 'Clear drill results';
+export const CLEAR_DRILLS_QUESTION = 'Clear every drill result on this phone?';
+export const KEEP_THEM = 'Keep them';
+export const CLEAR_DRILLS_YES = 'Clear them';
 export const NOT_YET_DRILLED = 'Not yet drilled.';
 export const DRILL_ROW_DOOR = 'At the door';
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';

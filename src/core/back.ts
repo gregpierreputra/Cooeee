@@ -14,6 +14,13 @@ export type BackContext = {
 /** The games played from the Rehearse screen, each a screen of its own. */
 export const GAME_PATHS = ['/rehearse/drill', '/rehearse/word', '/rehearse/block'];
 
+/** Where the drill returns, by Back or its Done: the Practice tab of the pack
+ *  whose page opened it, else the Rehearse screen. */
+export function drillHome(search: string): string {
+  const pack = new URLSearchParams(search).get('from');
+  return pack ? `/packs/${encodeURIComponent(pack)}?tab=practice` : '/rehearse';
+}
+
 /** One entry back in history: the pack builder's step before this one. */
 export const ONE_STEP = -1;
 
@@ -39,7 +46,9 @@ export function backTarget(
   if (pathname === '/packs/new' && new URLSearchParams(search).has('step')) {
     return builder === 'hidden' ? null : ONE_STEP;
   }
-  // The games on the Rehearse screen go back to it, whatever is saved.
+  // The games on the Rehearse screen go back to it, whatever is saved; the
+  // drill opened from a pack's page goes back to that pack.
+  if (pathname === '/rehearse/drill') return drillHome(search);
   if (GAME_PATHS.includes(pathname)) return '/rehearse';
   // A chosen condition steps back to the choice. The choice goes back where it
   // was opened from: the pack page when its own Rehearse this pack opened it,

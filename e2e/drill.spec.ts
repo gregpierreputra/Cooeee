@@ -93,16 +93,42 @@ test.describe('E9 the drill', () => {
     await expect(top).toHaveClass(/late/, { timeout: 8000 });
   });
 
-  test('the sound control says its state and the pack page lists no drill yet', async ({ page }) => {
+  test('the sound control says its state, and the drill lists no past drill yet', async ({ page }) => {
     await page.goto(`${HARNESS}/drill`);
     const sound = page.getByRole('button', { name: 'Sound', exact: true });
     await expect(sound).toHaveAttribute('aria-pressed', 'true');
     await sound.click();
     await expect(sound).toHaveAttribute('aria-pressed', 'false');
     await expect(sound).toHaveClass(/off/);
-    await page.goto(`${HARNESS}/detail`);
-    await page.getByRole('tab', { name: 'Practice' }).click();
     await expect(page.locator('main')).toContainText('Not yet drilled.');
+    await expect(page.getByRole('button', { name: 'Clear drill results' })).toHaveCount(0);
+  });
+
+  // Past drills belong to no pack: they are listed under Start on the drill's
+  // own screen, not on the pack page, and can all be cleared after one question.
+  test('a finished drill is listed under Start, and Clear drill results asks first', async ({ page }) => {
+    await page.goto(`${HARNESS}/drill?seconds=2`);
+    await page.getByRole('button', { name: 'Start the drill' }).click();
+    await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    await page.getByRole('dialog').click();
+    await expect(page.getByRole('heading', { name: 'Time ran out away from the door' })).toBeVisible();
+
+    await page.reload();
+    const past = page.locator('.pack-section', { hasText: 'Past drills' });
+    await expect(past.locator('.history-row')).toHaveCount(1);
+    await expect(past).toContainText('Away from the door when time ran out');
+
+    await page.getByRole('button', { name: 'Clear drill results' }).click();
+    await expect(page.getByText('Clear every drill result on this phone?')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Keep them' })).toBeFocused();
+    await page.getByRole('button', { name: 'Keep them' }).click();
+    await expect(past.locator('.history-row')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'Clear drill results' }).click();
+    await page.getByRole('button', { name: 'Clear them' }).click();
+    await expect(past).toContainText('Not yet drilled.');
+    await page.reload();
+    await expect(page.locator('.pack-section', { hasText: 'Past drills' })).toContainText('Not yet drilled.');
   });
 
   test('plays under a twist: its bag, its rule, and its own highest score', async ({ page }) => {
