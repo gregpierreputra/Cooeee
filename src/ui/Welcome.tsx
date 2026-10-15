@@ -1,5 +1,6 @@
 import * as copy from '../core/copy';
 import Glyph from './components/Glyph';
+import { Compass } from './components/BottomNav';
 import HoldButton from './components/HoldButton';
 import Mark from './components/Mark';
 
@@ -48,9 +49,16 @@ export default function Welcome({ onContinue, onWayOut }: { onContinue: () => vo
         </button>
         {/* For someone with a fire close on their first visit: BlackSky on the
             same two second hold as everywhere else, before anything is read. */}
+        {/* Drawn as the tab bar's BlackSky compass, the door it opens: the
+            ring sweeps round the compass for the two seconds of the hold. */}
         <HoldButton className="way-out" hint={copy.HOLD_TO_ENTER} onHold={onWayOut}>
-          {copy.WAY_OUT_BUTTON}
-          <span className="blacksky-hold-sub">{copy.WAY_OUT_SUB}</span>
+          <span className="way-out-compass">
+            <Compass />
+          </span>
+          <span className="way-out-text">
+            <span className="way-out-title">{copy.WAY_OUT_BUTTON}</span>
+            <span className="way-out-sub">{copy.WAY_OUT_SUB}</span>
+          </span>
         </HoldButton>
       </div>
     </main>

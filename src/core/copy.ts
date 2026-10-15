@@ -960,7 +960,7 @@ export const WELCOME_FACTS = [
 export const SEE_HOW_IT_WORKS = 'See how it works';
 /** On the welcome, for a new person with a fire close: straight to BlackSky on a hold. */
 export const WAY_OUT_BUTTON = 'I need a way out now';
-export const WAY_OUT_SUB = 'Hold two seconds';
+export const WAY_OUT_SUB = 'Hold for two seconds';
 
 // ── E1-US1-AC0 first open: understand what Cooeee is before using it ────────
 // The four statements are the screen. They are literal on-screen text, never

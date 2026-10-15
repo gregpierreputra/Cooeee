@@ -40,11 +40,16 @@ test('a new person holds I need a way out now: BlackSky spotlights the marker, G
   await expect(page.locator('.tour-panel')).toBeVisible();
 });
 
-test('the arrival spotlight closes by itself after two seconds, and the offer closes on its cross', async ({ page }) => {
+test('the arrival spotlight stays past two seconds and closes on a tap anywhere, and the offer closes on its cross', async ({ page }) => {
   await intoBlackSky(page);
   const guide = page.getByRole('dialog', { name: ARRIVAL_GUIDE });
   await expect(guide).toBeVisible();
-  await expect(guide).toBeHidden({ timeout: 3_000 });
+  // Time to read the rings: still there well past the old two seconds.
+  await page.waitForTimeout(3_000);
+  await expect(guide).toBeVisible();
+  // Someone done reading taps out anywhere, here on the distance.
+  await page.locator('.blacksky-dial-distance').click();
+  await expect(guide).toBeHidden();
   await hold(page, page.getByRole('button', { name: LEAVE_BLACKSKY }));
   const offer = page.getByRole('dialog', { name: TOUR_OFFER_TITLE });
   await offer.getByRole('button', { name: CLOSE }).click();

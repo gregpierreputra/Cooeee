@@ -144,7 +144,7 @@ export const HOLD_MS = 2_000;
 // The bar is on every screen, so a hint that stayed would never go away.
 export const NAV_HOLD_HINT_MS = 4_000;
 /** How long BlackSky's first arrival spotlight stays before the dial is left alone. */
-export const GUIDE_MS = 2_000;
+export const GUIDE_MS = 10_000;
 // How long a call card's Copy says Copied or Not copied before it reads Copy
 // again. It reports a moment, not what the clipboard holds later.
 export const COPY_CONFIRM_MS = 3_000;

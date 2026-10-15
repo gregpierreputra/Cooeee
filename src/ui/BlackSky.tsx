@@ -1075,15 +1075,21 @@ function DialBody({
 const GUIDE_TARGETS = ['.blacksky-dial-pin', '.blacksky-dial-head h2'];
 
 /** The first arrival from the welcome: the marker and the place's name ringed,
- *  one line saying to head for the marker, and Go. It closes on Go or after
- *  GUIDE_MS, with the time left drawn as a bar. On an iPhone, Go is the tap
+ *  one line saying to head for the marker, and Go. It closes on Go, on any tap
+ *  on the screen, or after GUIDE_MS, with the time left drawn as a bar. On an iPhone, Go is the tap
  *  that asks for the compass (the screen's first tap asks); a timer cannot ask,
  *  so Turn on the compass stays for anyone who lets it run out. */
 function ArrivalGuide({ onDone }: { onDone: () => void }) {
   const titleId = useId();
   useEffect(() => {
     const timer = setTimeout(onDone, GUIDE_MS);
-    return () => clearTimeout(timer);
+    // Anyone done reading taps out, anywhere. A click, not a press, so the tap
+    // ends whole and on an iPhone still asks for the compass (see above).
+    document.addEventListener('click', onDone);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', onDone);
+    };
   }, []);
   return (
     <GlassSpot targets={GUIDE_TARGETS} labelledBy={titleId} className="marker-guide">
@@ -1091,7 +1097,11 @@ function ArrivalGuide({ onDone }: { onDone: () => void }) {
       <button type="button" className="main-action" onClick={onDone}>
         {copy.GO}
       </button>
-      <span className="marker-guide-timer" aria-hidden="true" />
+      <span
+        className="marker-guide-timer"
+        aria-hidden="true"
+        style={{ '--guide-ms': `${GUIDE_MS}ms` } as CSSProperties}
+      />
     </GlassSpot>
   );
 }
