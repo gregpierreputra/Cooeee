@@ -6574,6 +6574,12 @@ body.drill-open .banner {
   justify-self: center;
   margin-inline: auto;
 }
+/* A mouse and a keyboard need no phone keyboard: typing already works. */
+@media (pointer: fine) {
+  .word-phone-open {
+    display: none;
+  }
+}
 /* While the phone's keyboard types, the guesses wear the focus ring. */
 .word-board:has(.word-phone-input:focus) {
   outline: 2px solid var(--accent);

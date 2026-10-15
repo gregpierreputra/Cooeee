@@ -68,30 +68,14 @@ test.describe('Cooee Word', () => {
     await expect(page.getByRole('button', { name: 'How to play' })).toHaveCount(0);
   });
 
-  // On a small phone the keys sit below the guesses, so the phone's own
-  // keyboard is offered too: a tap on the guesses, or the words under them.
-  test('the phone’s own keyboard types a guess, deletes and enters it', async ({ page }) => {
+  // On a computer there is no phone keyboard to open, so the words are not
+  // shown, and a click on the guesses still lands where typing goes.
+  test('a computer is not offered the phone’s keyboard', async ({ page }) => {
     await open(page);
-    await page.getByRole('button', { name: 'Type with your phone’s keyboard' }).click();
-    const field = page.getByRole('textbox', { name: 'Type your guess' });
-    await expect(field).toBeFocused();
-    await expect(page.locator('.word-board')).toHaveCSS('outline-style', 'solid');
-    // A phone's keyboard sends what it typed as input, not as named keys.
-    const send = (value: string) =>
-      field.evaluate((el, next) => {
-        (el as HTMLInputElement).value = next;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-      }, value);
-    const first = page.getByRole('list', { name: 'Your guesses' }).getByRole('listitem').first();
-    for (const letter of wrong + 'x') await send(` ${letter}`);
-    await expect(first).toContainText(wrong.toUpperCase());
-    await send('');
-    await send(` ${wrong.at(-1)}`);
-    await send('');
-    await expect(first).toContainText(wrong.slice(0, -1).toUpperCase());
-    await send(` ${wrong.at(-1)}`);
-    await field.press('Enter');
-    await expect(page.locator('.word-message')).toContainText('guesses left');
+    await expect(page.getByRole('button', { name: 'Type with your phone’s keyboard' })).toBeHidden();
+    // The field lies over the guesses, so a click there lands in it.
+    await page.locator('.word-board').click();
+    await expect(page.getByRole('textbox', { name: 'Type your guess' })).toBeFocused();
   });
 
   test('a solved day adds to the streak from the days before', async ({ page }) => {
@@ -170,5 +154,39 @@ test.describe('Cooee Word', () => {
       expect(box.height).toBeGreaterThanOrEqual(44);
       expect(box.width).toBeGreaterThanOrEqual(24);
     }
+  });
+});
+
+// On a small phone the keys sit below the guesses, so the phone's own keyboard
+// is offered too, above the guesses, and by a tap on them.
+test.describe('Cooee Word on a touch phone', () => {
+  test.use({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true });
+
+  test('the phone’s own keyboard is offered above the guesses, and types, deletes and enters a guess', async ({ page }) => {
+    await open(page);
+    const offer = page.getByRole('button', { name: 'Type with your phone’s keyboard' });
+    await expect(offer).toBeInViewport();
+    const grid = page.getByRole('list', { name: 'Your guesses' });
+    expect((await offer.boundingBox())!.y).toBeLessThan((await grid.boundingBox())!.y);
+    await offer.click();
+    const field = page.getByRole('textbox', { name: 'Type your guess' });
+    await expect(field).toBeFocused();
+    await expect(page.locator('.word-board')).toHaveCSS('outline-style', 'solid');
+    // A phone's keyboard sends what it typed as input, not as named keys.
+    const send = (value: string) =>
+      field.evaluate((el, next) => {
+        (el as HTMLInputElement).value = next;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, value);
+    const first = page.getByRole('list', { name: 'Your guesses' }).getByRole('listitem').first();
+    for (const letter of wrong + 'x') await send(` ${letter}`);
+    await expect(first).toContainText(wrong.toUpperCase());
+    await send('');
+    await send(` ${wrong.at(-1)}`);
+    await send('');
+    await expect(first).toContainText(wrong.slice(0, -1).toUpperCase());
+    await send(` ${wrong.at(-1)}`);
+    await field.press('Enter');
+    await expect(page.locator('.word-message')).toContainText('guesses left');
   });
 });

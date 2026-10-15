@@ -224,6 +224,13 @@ export default function WordScreen({
               <p className="word-hint-clue">{ready.hint.clue}</p>
             </aside>
           ) : null}
+          {/* Above the guesses, so on a small phone it is in view with them. On
+              a computer, with nothing to open, it is not shown. */}
+          {done ? null : (
+            <button type="button" className="hint-text word-phone-open" onClick={() => phoneRef.current?.focus()}>
+              {copy.WORD_PHONE_KEYBOARD}
+            </button>
+          )}
           {/* A tap on the guesses opens the phone's own keyboard through a field
               laid over them, so on a small phone the guesses stay in view above
               it. The keys below still work, and keep their colours. */}
@@ -245,11 +252,6 @@ export default function WordScreen({
               />
             )}
           </div>
-          {done ? null : (
-            <button type="button" className="hint-text word-phone-open" onClick={() => phoneRef.current?.focus()}>
-              {copy.WORD_PHONE_KEYBOARD}
-            </button>
-          )}
           <p className="word-message" role="status" aria-live="polite">
             {message}
           </p>
