@@ -68,6 +68,24 @@ test.describe('E9 the drill', () => {
     await expect(page.getByRole('button', { name: 'Start the drill' })).toBeInViewport({ ratio: 1 });
   });
 
+  // Silent mode mutes the games on an iPhone or iPad however loud it is, and
+  // the page cannot see it, so the Sound button says so there, and only there.
+  test('says silent mode mutes the sound beside the Sound button, on an iPhone only', async ({ page, browser }) => {
+    await page.goto(`${HARNESS}/drill`);
+    await expect(page.getByRole('button', { name: 'Sound' })).toBeVisible();
+    await expect(page.locator('.drill-silent-note')).toHaveCount(0);
+    const iphone = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+      viewport: { width: 390, height: 844 },
+    });
+    const phone = await iphone.newPage();
+    for (const game of ['drill', 'block']) {
+      await phone.goto(`${HARNESS}/${game}`);
+      await expect(phone.locator('.drill-head')).toContainText('On iPhone and iPad, sound needs silent mode off.');
+    }
+    await iphone.close();
+  });
+
   test('the film shows each fact with its publisher over the fire', async ({ page }) => {
     await page.goto(`${HARNESS}/drill`);
     await page.getByRole('button', { name: 'Start the drill' }).click();

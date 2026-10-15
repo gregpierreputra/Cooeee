@@ -1521,6 +1521,8 @@ export const GUIDE_MOVE = (keys: boolean) => (keys ? ['Drag here or use the arro
 export const GUIDE_GRAB = (keys: boolean) => (keys ? ['Lights up next to an item.', 'Click it or press Space to grab.'] : ['Lights up next to an item.', 'Tap it to grab.']);
 export const GUIDE_PUT_BACK = (keys: boolean) => (keys ? 'Click a thing in the bag, or press Backspace, to put it back.' : 'Tap a thing in the bag to put it back.');
 export const GUIDE_START = (keys: boolean) => (keys ? 'Click anywhere or press Space to start' : 'Tap anywhere to start');
+/** Beside the Sound button on an iPhone or iPad, where silent mode mutes the games. */
+export const SOUND_SILENT_NOTE = 'On iPhone and iPad, sound needs silent mode off.';
 export const SOUND = 'Sound';
 export const SOUND_ON = 'Sound on';
 export const SOUND_OFF = 'Sound off';

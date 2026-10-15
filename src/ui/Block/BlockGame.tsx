@@ -209,6 +209,10 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
       else if (event.key === '-') zoomStep(-1);
     };
     const onVisibility = () => (document.hidden ? audio.suspend() : audio.resume());
+    // Every tap and key press in the game starts the sound again if the
+    // phone stopped it, as a resume on the tab showing again may be refused.
+    window.addEventListener('pointerdown', audio.wake, true);
+    window.addEventListener('keydown', audio.wake, true);
     window.addEventListener('keydown', onKey);
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -261,6 +265,8 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
     return () => {
       live = false;
       stopLoop();
+      window.removeEventListener('pointerdown', audio.wake, true);
+      window.removeEventListener('keydown', audio.wake, true);
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('visibilitychange', onVisibility);
       document.body.classList.remove('drill-open');

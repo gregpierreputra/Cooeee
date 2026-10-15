@@ -10,7 +10,7 @@ import type { BlockPlay } from '../../core/types';
 import { listBlockPlays, saveBlockPlay } from '../../data/db';
 import { focusMain } from '../components/focusMain';
 import * as audio from '../Drill/audio';
-import SoundButton from '../Drill/SoundButton';
+import SoundButton, { SilentModeNote } from '../Drill/SoundButton';
 import BlockDebrief from './BlockDebrief';
 import BlockGame, { type BlockOutcome } from './BlockGame';
 import Glyph from '../components/Glyph';
@@ -119,7 +119,12 @@ export default function BlockScreen({ now, seconds = BLOCK_SECONDS, loadPlays = 
     <main className="page drill-page block-page">
       <div className="drill-head">
         <TabLabel tab="rehearse" text={copy.BLOCK_LABEL} />
-        {stage === 'intro' ? <SoundButton /> : null}
+        {stage === 'intro' ? (
+          <>
+            <SilentModeNote />
+            <SoundButton />
+          </>
+        ) : null}
       </div>
       {stage === 'intro' ? (
         <>

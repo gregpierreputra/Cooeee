@@ -204,6 +204,10 @@ export default function Game({ opening, seconds, rules, onEnd, onUnavailable, on
         audio.resume();
       }
     };
+    // Every tap and key press in the game starts the sound again if the
+    // phone stopped it, as a resume on the tab showing again may be refused.
+    window.addEventListener('pointerdown', audio.wake, true);
+    window.addEventListener('keydown', audio.wake, true);
     window.addEventListener('keydown', onKey);
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -340,6 +344,8 @@ export default function Game({ opening, seconds, rules, onEnd, onUnavailable, on
       live = false;
       stopLoop();
       detachKeys();
+      window.removeEventListener('pointerdown', audio.wake, true);
+      window.removeEventListener('keydown', audio.wake, true);
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('visibilitychange', onVisibility);
       document.body.classList.remove('drill-open');
