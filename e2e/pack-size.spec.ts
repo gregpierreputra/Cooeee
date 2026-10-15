@@ -86,7 +86,9 @@ test('AC9 interrupted staging cleans immediately and preserves the previous pack
 test('AC9 the summary shows while the pack is still being prepared, and Save waits for it', async ({ page }) => {
   await page.goto(`${SIZE_URL}?mode=preparing`);
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ready to save');
+  // The title says what is happening, with the turning arc beside it, and a
+  // screen reader hears it on the line under the card.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Preparing your pack');
   await expect(page.getByRole('status')).toHaveText('Preparing your pack…');
   await expect(page.getByTestId('saved-address')).toHaveText('6 RIDGE ROAD KALORAMA 3766');
   await expect(summaryRow(page, 'Places of last resort')).toHaveText('Kalorama Oval');
@@ -94,7 +96,7 @@ test('AC9 the summary shows while the pack is still being prepared, and Save wai
   await expect(page.getByRole('button', { name: 'Save this pack' })).toBeDisabled();
   // It looks like work under way: a turning arc by the line, and soft bars
   // where the values will be, never words that read as the answer.
-  await expect(page.getByRole('status').locator('.busy')).toBeVisible();
+  await expect(page.locator('.size-preparing .busy')).toBeVisible();
   await expect(summaryRow(page, 'Size').locator('.pending-bar')).toBeVisible();
   await expect(summaryRow(page, 'Size').locator('.visually-hidden')).toHaveText('Working this out…');
   await expect(page.locator('.busy')).not.toHaveCSS('animation-name', 'none');
@@ -113,7 +115,7 @@ test('AC9 while saving, the status line and the button both turn and say so', as
 test('AC9 with reduced motion the working marks hold still', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`${SIZE_URL}?mode=preparing`);
-  await expect(page.getByRole('status').locator('.busy')).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.size-preparing .busy')).toHaveCSS('animation-name', 'none');
   await expect(page.locator('.pending-bar').first()).toHaveCSS('animation-name', 'none');
   await expect(page.getByRole('status')).toHaveText('Preparing your pack…');
 });

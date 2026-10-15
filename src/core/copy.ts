@@ -189,6 +189,9 @@ export const NOTHING_CHANGED = 'Nothing changed.';
 // the person does with a pack. "Download" is kept for what comes from the
 // internet, such as the places list.
 export const READY_TO_SAVE = 'Ready to save';
+/** The save step's title while the pack is still being prepared, beside the
+ *  turning arc: Ready to save would claim a Save that cannot yet be tapped. */
+export const PREPARING_PACK_TITLE = 'Preparing your pack';
 export const SAVE_PACK = 'Save this pack';
 export const SAVING_PACK = 'Saving…';
 /** The status line while the pack is written, beside the turning arc. */

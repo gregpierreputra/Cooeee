@@ -78,8 +78,12 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
     { label: copy.SUMMARY_SIZE, value: offer ? packOfferSize(offer) : pending },
   ];
 
+  // Preparing and ready are said on the title; the line under the card says
+  // them only to a screen reader, which is not told when a title changes.
+  // Saving is said here, by the button the person has just tapped.
   const status =
-    offer === null ? <p className="with-glyph size-busy"><Busy />{copy.PREPARING_PACK_OFFER}</p>
+    offer === null ? <p className="visually-hidden">{copy.PREPARING_PACK_OFFER}</p>
+    : state.kind === 'ready' ? <p className="visually-hidden">{copy.READY_TO_SAVE}</p>
     : state.kind === 'saving' ? <p className="with-glyph size-busy"><Busy />{copy.SAVING_YOUR_PACK}</p>
     : state.kind === 'interrupted' ? (
       <>
@@ -99,6 +103,11 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
             <div className="card-head">
               <Glyph kind="does" />
               <h1>{copy.PLACE_SAVED}</h1>
+            </div>
+          ) : offer === null ? (
+            <div className="card-head size-preparing">
+              <Busy size={28} />
+              <h1>{copy.PREPARING_PACK_TITLE}</h1>
             </div>
           ) : (
             <h1>{copy.READY_TO_SAVE}</h1>

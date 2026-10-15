@@ -6527,6 +6527,10 @@ body.drill-open .banner {
 .size-busy {
   gap: 0.5rem;
 }
+/* Centred on the first line, so it sits level with the words beside it. */
+.size-busy > .busy {
+  margin-top: calc((1lh - 18px) / 2);
+}
 /* A value still being worked out: a soft bar where the words will be, not
    words that could be read as the answer. */
 .pending-bar {
