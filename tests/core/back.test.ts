@@ -18,6 +18,12 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/recover', '?need=kept', NONE)).toBe('/recover');
   });
 
+  it("goes from a need opened by a pack's Save more back to that pack's Support tab", () => {
+    expect(backTarget('/recover', '?need=all&from=pack-1', NONE)).toBe('/packs/pack-1?tab=support');
+    // The list of needs is still the tab itself, with no Back.
+    expect(backTarget('/recover', '?from=pack-1', NONE)).toBeNull();
+  });
+
   it.each(['/packs/new', '/packs/some-pack', '/no-such-screen'])('goes from %s up to Home', (path) => {
     expect(backTarget(path, '', NONE)).toBe('/');
   });

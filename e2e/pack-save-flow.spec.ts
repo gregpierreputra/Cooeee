@@ -74,6 +74,15 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   const section = page.locator('.pack-section', { hasText: 'Saved programs' });
   await expect(section.locator('.section-count')).toHaveText('1');
   await expect(section.getByRole('link', { name: 'Saved PDF' })).toHaveAttribute('download', /crisis-payment/);
+
+  // Save more opens every program in Recover, and Back comes home to this
+  // pack's Support tab, not to Recover's list of needs.
+  const packUrl = new URL(page.url()).pathname;
+  await section.getByRole('link', { name: 'Save more in Recover' }).click();
+  await expect(page).toHaveURL(/\/recover\?need=all&from=/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL(`${packUrl}?tab=support`);
+  await expect(page.getByRole('tab', { name: 'Support' })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ page }) => {

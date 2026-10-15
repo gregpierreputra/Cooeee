@@ -27,8 +27,14 @@ export function backTarget(
   { runPackId, builder }: BackContext,
 ): string | typeof ONE_STEP | null {
   if (pathname.startsWith('/blacksky')) return null;
-  // A chosen need is a step inside Recover; the list of needs is its tab.
-  if (pathname === '/recover') return new URLSearchParams(search).has('need') ? '/recover' : null;
+  // A chosen need is a step inside Recover; the list of needs is its tab. Opened
+  // from a pack's Save more, it goes back to that pack's Support tab instead.
+  if (pathname === '/recover') {
+    const params = new URLSearchParams(search);
+    if (!params.has('need')) return null;
+    const pack = params.get('from');
+    return pack ? `/packs/${encodeURIComponent(pack)}?tab=support` : '/recover';
+  }
   if (NAV_ITEMS.some((item) => item.to === pathname)) return null;
   if (pathname === '/packs/new' && new URLSearchParams(search).has('step')) {
     return builder === 'hidden' ? null : ONE_STEP;

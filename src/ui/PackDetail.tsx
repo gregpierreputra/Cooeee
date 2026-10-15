@@ -419,8 +419,9 @@ export default function PackDetail({
               )}
             />
           )}
-          {/* Drawn as New offline pack is: the plus, then the words. */}
-          <Link className="action with-glyph" to="/recover?need=all">
+          {/* Drawn as New offline pack is: the plus, then the words. Marked as
+              from this pack, so Back in Recover comes back here. */}
+          <Link className="action with-glyph" to={`/recover?need=all&from=${encodeURIComponent(content.pack.id)}`}>
             <Glyph kind="plus" line />
             {copy.SAVE_MORE_PROGRAMS(content.recovery.length)}
           </Link>
