@@ -8,7 +8,13 @@ import { BLOCK_HEIGHT, BLOCK_TILE, BLOCK_WIDTH } from './block-layout';
 /** Where the picture's top left corner is over the yard, in source pixels,
  *  and the zoom, in device pixels per source pixel. */
 export type Camera = { left: number; top: number; scale: number };
-export type Viewport = { width: number; height: number };
+/** The screen, in device pixels. insetTop and insetBottom are the strips the
+ *  game's own bars cover at the top and the bottom: the yard may be moved
+ *  clear of them, so nothing in it is ever hidden under a bar. */
+export type Viewport = { width: number; height: number; insetTop?: number; insetBottom?: number };
+
+/** The height the yard can be seen in, between the bars. */
+const clearHeight = (view: Viewport) => view.height - (view.insetTop ?? 0) - (view.insetBottom ?? 0);
 
 /** About this many tiles fit across at the starting zoom: close enough that
  *  each thing is easy to tap, wide enough to see where it is. */
@@ -18,20 +24,26 @@ const CLOSEST_TILES_ACROSS = 6;
 
 /** The zooms on offer, from the whole yard in view to close up. */
 export function zoomLevels(view: Viewport): { min: number; start: number; max: number } {
-  const whole = Math.max(1, Math.floor(Math.min(view.width / BLOCK_WIDTH, view.height / BLOCK_HEIGHT)));
+  const whole = Math.max(1, Math.floor(Math.min(view.width / BLOCK_WIDTH, clearHeight(view) / BLOCK_HEIGHT)));
   const start = Math.max(whole, Math.round(view.width / (START_TILES_ACROSS * BLOCK_TILE)));
   const max = Math.max(start, Math.floor(view.width / (CLOSEST_TILES_ACROSS * BLOCK_TILE)));
   return { min: whole, start, max };
 }
 
-/** Keep the yard on screen: a side larger than the view never scrolls past
- *  its edge, and a side smaller than the view sits in the middle of it. */
+/** Keep the yard on screen: a side larger than the clear space never scrolls
+ *  past its edge, but its edge may come out from under a bar, and a side
+ *  smaller than the clear space sits in the middle of it. */
 export function clampCamera(camera: Camera, view: Viewport): Camera {
-  const across = view.width / camera.scale;
-  const down = view.height / camera.scale;
-  const fit = (start: number, shown: number, total: number) =>
-    total <= shown ? -(shown - total) / 2 : Math.min(total - shown, Math.max(0, start));
-  return { scale: camera.scale, left: fit(camera.left, across, BLOCK_WIDTH), top: fit(camera.top, down, BLOCK_HEIGHT) };
+  const s = camera.scale;
+  const fit = (start: number, shown: number, total: number, before = 0, after = 0) => {
+    const clear = shown - before - after;
+    return total <= clear ? 0 - before - (clear - total) / 2 : Math.min(total - shown + after, Math.max(0 - before, start));
+  };
+  return {
+    scale: s,
+    left: fit(camera.left, view.width / s, BLOCK_WIDTH),
+    top: fit(camera.top, view.height / s, BLOCK_HEIGHT, (view.insetTop ?? 0) / s, (view.insetBottom ?? 0) / s),
+  };
 }
 
 /** A camera at this zoom with the yard point (x, y), in source pixels, in

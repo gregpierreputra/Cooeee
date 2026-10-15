@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import * as copy from '../../core/copy';
-import { BLOCK_SECONDS, HINT_LIMIT, boxOf, hintFor, hitTest, shownFor } from '../../core/block';
+import { BLOCK_SECONDS, HINT_COST, HINT_LIMIT, WRONG_TAP_COST, boxOf, hintFor, hitTest, runningScore, shownFor } from '../../core/block';
 import { BLOCK_DECOYS, BLOCK_HAZARDS, BLOCK_PICKS, type BlockHazard } from '../../core/block-hazards';
 import { BLOCK_TILE } from '../../core/block-layout';
 import { centredOn, isTap, panBy, pinchScale, screenToYard, zoomAbout, zoomLevels, type Camera, type Viewport } from '../../core/block-view';
 import * as audio from '../Drill/audio';
 import SoundButton from '../Drill/SoundButton';
+import Glyph from '../components/Glyph';
 import { startLoop } from '../Drill/loop';
 import { drawBlock, loadBlockArt, type Mark } from './block-render';
 
@@ -31,6 +32,25 @@ const KEY_PAN_CSS = 48;
  *  as the drill's does. */
 const WARN_SECONDS = 30;
 const LATE_SECONDS = 10;
+/** How long the yard stays, still, after the last find or the end of the
+ *  clock, so the last ring and what it means are seen before the result. */
+const END_PAUSE_MS = 1500;
+/** Scrolling this far, in pixels, is one step of zoom, so a trackpad's many
+ *  small scroll events do not race from one end of the zoom to the other. */
+const WHEEL_STEP = 40;
+/** A part step left over is forgotten after this long without scrolling, so
+ *  the next swipe starts afresh. */
+const WHEEL_REST_MS = 250;
+/** A trackpad pinch arrives as scrolling with Ctrl held, in much smaller
+ *  amounts than a swipe, so it is scaled up to feel as quick. */
+const PINCH_SCALE = 5;
+
+/** What a tap said: its words, whether it found a risk, cost points or
+ *  neither, and how it changed the score. */
+type Said = { text: string; tone: 'found' | 'wrong' | 'plain'; points?: number };
+
+/** The points one more find adds, as the score rounds them. */
+const findPoints = (found: number) => Math.round((100 * found) / BLOCK_PICKS) - Math.round((100 * (found - 1)) / BLOCK_PICKS);
 
 const nameOf = (id: string): string =>
   BLOCK_HAZARDS.find((hazard) => hazard.id === id)?.name ?? BLOCK_DECOYS.find((decoy) => decoy.id === id)?.name ?? '';
@@ -53,10 +73,16 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
     camera: null as Camera | null,
     view: { width: 1, height: 1 } as Viewport,
     ratio: 1,
+    // Over: the clock has stopped and taps count no more, but the yard stays
+    // for END_PAUSE_MS before `ended`, when the result takes over.
+    over: false,
     ended: false,
   });
-  const [hud, setHud] = useState({ seconds, found: 0, hints: 0 });
-  const [message, setMessage] = useState('');
+  const [hud, setHud] = useState({ seconds, found: 0, hints: 0, score: 0 });
+  const [said, setSaid] = useState<Said>({ text: '', tone: 'plain' });
+  const say = (text: string, tone: Said['tone'] = 'plain', points?: number) => setSaid({ text, tone, points });
+  const wheelTravel = useRef(0);
+  const wheelAt = useRef(0);
   const pointers = useRef(new Map<number, { x: number; y: number; startX: number; startY: number; at: number }>());
   const pinch = useRef<{ distance: number; scale: number } | null>(null);
 
@@ -74,17 +100,25 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
     zoomTo(Math.min(max, Math.max(min, s.camera.scale + step)));
   };
 
+  const endTimer = useRef<number | null>(null);
   const finish = () => {
     const s = state.current;
     if (s.ended) return;
     s.ended = true;
     onEnd({ found: s.found, wrongTaps: s.wrongTaps, hints: s.hints });
   };
+  /** Stop the clock and the taps, and show the result a moment later. */
+  const wrapUp = () => {
+    const s = state.current;
+    if (s.over) return;
+    s.over = true;
+    endTimer.current = window.setTimeout(finish, END_PAUSE_MS);
+  };
 
   /** A tap at a point on the canvas, in device pixels. */
   const tapAt = (px: number, py: number) => {
     const s = state.current;
-    if (!s.camera || s.ended) return;
+    if (!s.camera || s.over) return;
     const { x, y } = screenToYard(px, py, s.camera);
     const hit = hitTest(x, y, hazards, s.found, (TAP_PAD_CSS * s.ratio) / s.camera.scale);
     if (hit.kind === 'hazard') {
@@ -97,29 +131,32 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
       else if (s.hint && Math.hypot(s.hint.x - hazard.x, s.hint.y - hazard.y) < 3) s.hint = null;
       audio.blip();
       navigator.vibrate?.(10);
-      setMessage(copy.BLOCK_FOUND(hazard.name));
-      if (s.found.length === BLOCK_PICKS) finish();
+      // The last find says what it found, then that all are found.
+      const all = s.found.length === BLOCK_PICKS;
+      say(all ? `${copy.BLOCK_FOUND(hazard.name)} ${copy.BLOCK_ALL_FOUND}.` : copy.BLOCK_FOUND(hazard.name), 'found', findPoints(s.found.length));
+      if (all) wrapUp();
     } else if (hit.kind === 'again') {
-      setMessage(copy.BLOCK_AGAIN);
+      say(copy.BLOCK_AGAIN);
     } else if (hit.kind === 'nothing') {
-      setMessage(copy.BLOCK_NOTHING);
+      say(copy.BLOCK_NOTHING);
     } else {
       s.wrongTaps += 1;
       s.marks.push({ kind: 'wrong', x, y, w: 0, h: 0, at: s.clock });
       audio.beat();
-      setMessage(hit.kind === 'decoy' ? copy.BLOCK_DECOY(nameOf(hit.id)) : copy.BLOCK_CLEARED);
+      const cleared = BLOCK_HAZARDS.find((hazard) => hazard.id === hit.id)?.clearedName ?? '';
+      say(hit.kind === 'decoy' ? copy.BLOCK_DECOY(nameOf(hit.id)) : copy.BLOCK_CLEARED(cleared), 'wrong', -WRONG_TAP_COST);
     }
   };
 
   const useHint = () => {
     const s = state.current;
-    if (s.hints >= HINT_LIMIT || s.ended || !s.camera) return;
+    if (s.hints >= HINT_LIMIT || s.over || !s.camera) return;
     const hint = hintFor(hazards, s.found, day, s.hints + 1);
     if (!hint) return;
     s.hints += 1;
     s.hint = hint;
     s.camera = centredOn(hint.x * BLOCK_TILE, hint.y * BLOCK_TILE, Math.max(s.camera.scale, levels().start), s.view);
-    setMessage(copy.BLOCK_HINT_SHOWN);
+    say(copy.BLOCK_HINT_SHOWN, 'plain', -HINT_COST);
   };
 
   useEffect(() => {
@@ -129,7 +166,7 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
     const s = state.current;
     let stopLoop = () => {};
     let live = true;
-    let shown = { seconds, found: 0, hints: 0 };
+    let shown = { seconds, found: 0, hints: 0, score: 0 };
     let cameraText = '';
 
     document.body.classList.add('drill-open');
@@ -143,7 +180,14 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
         canvas.width = width;
         canvas.height = height;
       }
-      s.view = { width, height };
+      // The bars over the yard, measured each frame: the count at the top and
+      // the zoom and hint buttons at the bottom. The yard may be moved clear of both.
+      const box = canvas.getBoundingClientRect();
+      const count = stage.querySelector('.block-found')?.getBoundingClientRect();
+      const controls = stage.querySelector('.block-controls')?.getBoundingClientRect();
+      const insetTop = count ? Math.max(0, Math.round((count.bottom - box.top) * s.ratio)) : 0;
+      const insetBottom = controls ? Math.max(0, Math.round((box.bottom - controls.top) * s.ratio)) : 0;
+      s.view = { width, height, insetTop, insetBottom };
       // The first frame looks at the house, close enough to tap.
       if (!s.camera) s.camera = centredOn(17.5 * BLOCK_TILE, 12 * BLOCK_TILE, zoomLevels(s.view).start, s.view);
       else s.camera = panBy(s.camera, 0, 0, s.view);
@@ -171,7 +215,7 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
     const frame = (art: Awaited<ReturnType<typeof loadBlockArt>>, dt: number): boolean => {
       fit();
       s.clock += dt;
-      if (!s.ended) s.elapsed += dt;
+      if (!s.over) s.elapsed += dt;
       const camera = s.camera!;
       drawBlock(canvas, art, {
         time: s.clock,
@@ -187,13 +231,21 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
         // Where the picture sits, for the end to end tests to tap a known thing.
         canvas.dataset.camera = nextCamera;
       }
-      const next = { seconds: Math.max(0, Math.ceil(seconds - s.elapsed)), found: s.found.length, hints: s.hints };
-      if (next.seconds !== shown.seconds || next.found !== shown.found || next.hints !== shown.hints) {
+      const next = {
+        seconds: Math.max(0, Math.ceil(seconds - s.elapsed)),
+        found: s.found.length,
+        hints: s.hints,
+        score: runningScore({ found: s.found.length, wrongTaps: s.wrongTaps, hints: s.hints }),
+      };
+      if (next.seconds !== shown.seconds || next.found !== shown.found || next.hints !== shown.hints || next.score !== shown.score) {
         if (next.seconds < shown.seconds && next.seconds < 10) audio.beat();
         shown = next;
         setHud(next);
       }
-      if (!s.ended && s.elapsed >= seconds) finish();
+      if (!s.over && s.elapsed >= seconds) {
+        setSaid({ text: copy.BLOCK_TIME_UP, tone: 'plain' });
+        wrapUp();
+      }
       return !s.ended;
     };
 
@@ -212,6 +264,7 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('visibilitychange', onVisibility);
       document.body.classList.remove('drill-open');
+      if (endTimer.current !== null) window.clearTimeout(endTimer.current);
       audio.suspend();
     };
     // The loop owns its own state; it starts once with the canvas.
@@ -258,14 +311,37 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
     const moved = Math.hypot(held.x - held.startX, held.y - held.startY) / state.current.ratio;
     if (isTap(moved, performance.now() - held.at, TAP_SLOP_CSS)) tapAt(held.x, held.y);
   };
-  const wheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
+  const wheel = (event: WheelEvent) => {
+    // Scrolling or pinching over the yard zooms the yard only, never the page
+    // behind it or the whole page with its buttons.
+    event.preventDefault();
     const s = state.current;
     if (!s.camera) return;
-    const box = event.currentTarget.getBoundingClientRect();
+    // Lines and pages are turned into pixels, then added up: one step of zoom
+    // for every WHEEL_STEP scrolled, however many events it came in.
+    if (event.timeStamp - wheelAt.current > WHEEL_REST_MS) wheelTravel.current = 0;
+    wheelAt.current = event.timeStamp;
+    const pixels = event.deltaY * (event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? 800 : 1);
+    wheelTravel.current += event.ctrlKey ? pixels * PINCH_SCALE : pixels;
+    if (Math.abs(wheelTravel.current) < WHEEL_STEP) return;
+    const step = wheelTravel.current < 0 ? 1 : -1;
+    wheelTravel.current = 0;
+    const box = (event.currentTarget as HTMLCanvasElement).getBoundingClientRect();
     const { min, max } = levels();
-    const scale = Math.min(max, Math.max(min, s.camera.scale + (event.deltaY < 0 ? 1 : -1)));
+    const scale = Math.min(max, Math.max(min, s.camera.scale + step));
     zoomTo(scale, (event.clientX - box.left) * s.ratio, (event.clientY - box.top) * s.ratio);
   };
+
+  // React listens to the wheel without the right to stop the browser, so the
+  // yard listens itself, allowed to keep the scroll and the pinch to itself.
+  const onWheel = useRef(wheel);
+  onWheel.current = wheel;
+  useEffect(() => {
+    const canvas = canvasRef.current!;
+    const listen = (event: WheelEvent) => onWheel.current(event);
+    canvas.addEventListener('wheel', listen, { passive: false });
+    return () => canvas.removeEventListener('wheel', listen);
+  }, []);
 
   const clock = `${Math.floor(hud.seconds / 60)}:${String(hud.seconds % 60).padStart(2, '0')}`;
   const hintsLeft = HINT_LIMIT - hud.hints;
@@ -281,16 +357,38 @@ export default function BlockGame({ day, hazards, seconds = BLOCK_SECONDS, onEnd
         onPointerMove={move}
         onPointerUp={up}
         onPointerCancel={up}
-        onWheel={wheel}
       />
       {/* Laid out as the drill's: the clock in the middle, the sound and close
           buttons at the right, and the count and what a tap found under the clock. */}
       <div className={`drill-top${clockState}`}>
         <p className="drill-timer figure">{clock}</p>
         <div className="block-status">
-          <p className="block-found figure">{copy.BLOCK_FOUND_COUNT(hud.found)}</p>
-          <p className="block-message" role="status" aria-live="polite">
-            {message || (hud.seconds === 30 || hud.seconds === 10 ? copy.SECONDS_LEFT(hud.seconds) : '')}
+          <div className="block-counts">
+            <p className="block-found figure">{copy.BLOCK_FOUND_COUNT(hud.found)}</p>
+            {/* The score stands out from the count: a label over a larger figure,
+                red below 0, that bumps each time it changes. */}
+            <p className={`block-score${hud.score < 0 ? ' below' : ''}`}>
+              <span className="block-score-label">{copy.BLOCK_SCORE_LABEL}</span>
+              <span key={hud.score} className="block-score-figure figure">{copy.BLOCK_SCORE_FIGURE(hud.score)}</span>
+            </p>
+          </div>
+          {/* What a tap found, in its tone: a tick in green for a risk, a cross
+              in red for a wrong tap, with how it changed the score. */}
+          <p className={`block-message tone-${said.text ? said.tone : 'plain'}`} role="status" aria-live="polite">
+            {said.text ? (
+              <>
+                {said.tone === 'found' ? <Glyph kind="check" line /> : said.tone === 'wrong' ? <Glyph kind="close" line /> : null}
+                <span>{said.text}</span>
+                {said.points !== undefined ? (
+                  <span className="block-points">
+                    <span aria-hidden="true">{copy.BLOCK_POINT_CHANGE(said.points)}</span>
+                    <span className="visually-hidden">{copy.BLOCK_POINTS_SAID(said.points)}</span>
+                  </span>
+                ) : null}
+              </>
+            ) : hud.seconds === 30 || hud.seconds === 10 ? (
+              copy.SECONDS_LEFT(hud.seconds)
+            ) : null}
           </p>
         </div>
         <div className="drill-top-actions">

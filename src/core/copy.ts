@@ -1709,8 +1709,17 @@ export const BLOCK_SCENE_LABEL = 'A home and its yard seen from above, with eigh
 export const BLOCK_FOUND_COUNT = (found: number) => `Found ${found} of 8`;
 export const BLOCK_FOUND = (name: string) => `Found ${name}.`;
 export const BLOCK_AGAIN = 'You found that one already.';
-export const BLOCK_CLEARED = 'That one has already been dealt with. A wrong tap costs 4 points.';
-export const BLOCK_DECOY = (name: string) => `${name}. Nothing to fix there. A wrong tap costs 4 points.`;
+/** A tap on a risk already dealt with names what is there now. The points it
+ *  costs are said beside it, as on every tap that changes the score. */
+export const BLOCK_CLEARED = (name: string) => `${capital(name)}. Already dealt with, nothing to fix.`;
+export const BLOCK_DECOY = (name: string) => `${name}. Nothing to fix there.`;
+/** The score so far, beside the count, worked out as the result will be. */
+export const BLOCK_SCORE_LABEL = 'Score';
+/** The score as the game goes, with a true minus sign below 0. */
+export const BLOCK_SCORE_FIGURE = (score: number) => (score < 0 ? `\u2212${-score}` : `${score}`);
+/** How a tap changed the score, beside its message. */
+export const BLOCK_POINT_CHANGE = (points: number) => (points >= 0 ? `+${points}` : `\u2212${-points}`);
+export const BLOCK_POINTS_SAID = (points: number) => `${points >= 0 ? 'plus' : 'minus'} ${Math.abs(points)} points`;
 export const BLOCK_NOTHING = 'Nothing there. Look for anything that could catch an ember.';
 export const BLOCK_HINT = (left: number) => `Hint, ${left} left`;
 export const BLOCK_HINT_DETAIL = 'A hint costs 10 points.';

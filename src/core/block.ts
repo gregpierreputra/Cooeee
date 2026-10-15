@@ -83,11 +83,18 @@ export function hitTest(px: number, py: number, hazards: BlockHazard[], found: s
   return best?.hit ?? { kind: 'nothing' };
 }
 
-/** The score, out of 100: an even share for each risk found, less the cost of
- *  wrong taps and hints, held between 0 and 100. */
-export function scoreBlock({ found, wrongTaps, hints }: { found: number; wrongTaps: number; hints: number }): number {
-  const score = Math.round((100 * found) / BLOCK_PICKS) - WRONG_TAP_COST * wrongTaps - HINT_COST * hints;
-  return Math.max(0, Math.min(100, score));
+type Tally = { found: number; wrongTaps: number; hints: number };
+
+/** The score as the game goes: an even share for each risk found, less the
+ *  cost of every wrong tap and hint. It can fall below 0, so every cost is
+ *  seen when it is taken and every find adds the points it says. */
+export function runningScore({ found, wrongTaps, hints }: Tally): number {
+  return Math.round((100 * found) / BLOCK_PICKS) - WRONG_TAP_COST * wrongTaps - HINT_COST * hints;
+}
+
+/** The final score, out of 100: the running score held between 0 and 100. */
+export function scoreBlock(tally: Tally): number {
+  return Math.max(0, Math.min(100, runningScore(tally)));
 }
 
 /** Where a hint points: a circle, in tiles, round one risk not yet found.

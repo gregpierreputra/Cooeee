@@ -109,6 +109,13 @@ export function drawBlock(canvas: HTMLCanvasElement, art: BlockArt, scene: Block
   ctx.setTransform(scale, 0, 0, scale, Math.round(-left * scale), Math.round(-top * scale));
   ctx.drawImage(art.yard, 0, 0);
 
+  // A soft light ring on the ground under every thing in the yard, risks,
+  // their safe versions and the harmless things alike, so each one is easy to
+  // see and the game is about telling which matter, not spotting tiny pixels.
+  // It glows brighter for the first few seconds so the eye finds them.
+  const glow = scene.calm || scene.time > RING_GLOW_SECONDS ? 0 : 0.35 * (1 + Math.cos((scene.time / RING_GLOW_SECONDS) * Math.PI));
+  for (const thing of scene.things) drawRing(ctx, thing, scale, glow);
+
   const standing = [...BLOCK_SCENERY, ...scene.things].sort((a, b) => a.y - b.y);
   for (const thing of standing) drawSprite(ctx, art, thing.sprite, thing.x, thing.y);
 
@@ -128,4 +135,22 @@ export function drawBlock(canvas: HTMLCanvasElement, art: BlockArt, scene: Block
     ctx.stroke();
     ctx.setLineDash([]);
   }
+}
+
+/** How long the rings glow brighter after the yard opens, in seconds. */
+const RING_GLOW_SECONDS = 3;
+
+/** The ring under one thing: an oval at its feet, a little wider than it,
+ *  drawn about two device pixels thick whatever the zoom. */
+function drawRing(ctx: CanvasRenderingContext2D, thing: Placed, scale: number, glow: number): void {
+  const [, , w] = BLOCK_ATLAS[thing.sprite];
+  const cx = thing.x * BLOCK_TILE;
+  const cy = thing.y * BLOCK_TILE;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, w / 2 + 3, Math.max(3, w / 5), 0, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.16 + glow / 3})`;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, 2 / scale);
+  ctx.strokeStyle = `rgba(255, 255, 255, ${0.6 + glow})`;
+  ctx.stroke();
 }
