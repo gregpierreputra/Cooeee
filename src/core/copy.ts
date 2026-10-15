@@ -440,6 +440,16 @@ export const ACCURACY_DETAIL = (m: number) => `Your phone puts you within ${m} m
 
 // The compass. iOS only hands the orientation sensor over after a tap.
 export const TURN_ON_COMPASS = 'Turn on the compass';
+// Location refused in BlackSky: a way to ask again, and where to look if the
+// phone will not ask.
+export const LOCATION_OFF = 'Location is off.';
+export const LOCATION_OFF_DETAIL =
+  "Turn it on so the dial can point you to the nearest place of last resort. If nothing happens, allow location for Cooeee in your phone's settings.";
+export const TURN_ON_LOCATION = 'Turn on location';
+
+// Back after a week or more: a clear spotlight on the BlackSky compass.
+export const AWAY_CHECK_TITLE = 'Do you need a way out now?';
+export const AWAY_CHECK_LINE = 'If a fire is close, hold the BlackSky button below for two seconds.';
 
 // BS_Enhancement-AC1 one place on one compass dial
 /** The small label above the main place: where it comes from. Written in
@@ -602,11 +612,9 @@ export const PREP_PLAN_LINE = 'Decide where you would go and how, before you nee
 // E3-US3-AC1 deliberate activation
 /** Shown after a stray tap on the hold control — the tap itself does nothing. */
 export const HOLD_TO_ENTER = 'Hold to enter. Two seconds.';
-export const HOLD_TO_LEAVE = 'Hold to leave. Two seconds.';
-/** The name of BlackSky's round hold, where the compass that opened it sits.
- *  Cooeee is the word under it, so the name holds it, as Hold for BlackSky
- *  holds the word under the compass. */
-export const LEAVE_BLACKSKY = 'Hold for Cooeee';
+export const HOLD_TO_LEAVE = 'Hold for two seconds.';
+/** The name of BlackSky's round hold, and the words under it. */
+export const LEAVE_BLACKSKY = 'Hold to leave BlackSky';
 export const BLACKSKY_BLOCKED = 'Not opened. Hold its button two seconds to enter.';
 /** Said at the top of BlackSky when the phone's Back was pressed: the round
  *  hold at its foot says how to leave. */

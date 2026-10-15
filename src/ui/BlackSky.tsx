@@ -159,6 +159,8 @@ export default function BlackSky({
   const [sites, setSites] = useState<NspSnapshot | null>(null);
   const [fix, setFix] = useState<Fix | null>(null);
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  // Counts taps on Turn on location: each one starts the position watch again.
+  const [locationAsks, setLocationAsks] = useState(0);
   const [mark, setMark] = useState<PositionMark | null>(null);
   const [now, setNow] = useState(() => Date.now());
   // Which pack to load when several are saved: chosen at the top of the screen
@@ -187,7 +189,17 @@ export default function BlackSky({
   // The sensors give magnetic north; the bearings are true. The correction
   // depends on where the phone is, which the fix supplies.
   const compass = useCompass(here ? magneticDeclinationDeg(here) : 0);
-  const { setMovement } = compass;
+  const { setMovement, needsPermission, enable } = compass;
+
+  // An iPhone asks for the compass only from a tap, and refuses the lift that
+  // ends the hold into BlackSky. So the first tap anywhere on the screen asks,
+  // and Turn on the compass stays for anyone who said no.
+  useEffect(() => {
+    if (!needsPermission) return;
+    const ask = () => void enable();
+    document.addEventListener('click', ask, { once: true });
+    return () => document.removeEventListener('click', ask);
+  }, [needsPermission, enable]);
 
   // US3-AC2, the power rule: GPS samples land in this ref (no render). A sample
   // FIX_PUBLISH_M or more from the position on screen is shown at once, so the
@@ -338,7 +350,7 @@ export default function BlackSky({
       document.removeEventListener('visibilitychange', onVisibility);
       sleep();
     };
-  }, [setMovement]);
+  }, [setMovement, locationAsks]);
 
   // One way out: the hold on Leave below. The phone's back button pops a
   // history entry, so this screen adds one spare entry on arrival and, on
@@ -591,7 +603,7 @@ export default function BlackSky({
             <HoldSweep />
           </HoldButton>
           <span className="bottom-nav-label" aria-hidden="true">
-            {copy.APP_NAME}
+            {copy.LEAVE_BLACKSKY}
           </span>
           {/* Everything spoken is also shown (WCAG 1.2.1): exactly the words,
               for as long as they are being said, floating just above the hold
@@ -629,6 +641,23 @@ export default function BlackSky({
       {/* With no dial yet, the compass is offered here, so an iPhone can turn
           it on before the first position and the dial turns once it arrives. */}
       {model && trust ? null : <TurnOnCompass compass={compass} />}
+      {/* Location refused and no mark standing in: a way to ask again, so no
+          one is left on a screen with nothing to point from. */}
+      {permission === 'denied' && !estimate ? (
+        <StateCard heading={copy.LOCATION_OFF} detail={copy.LOCATION_OFF_DETAIL}>
+          <button
+            type="button"
+            className="blacksky-turn-on"
+            onClick={() => {
+              setPermission('prompt');
+              setLocationAsks((asks) => asks + 1);
+            }}
+          >
+            <Glyph kind="locate" line />
+            {copy.TURN_ON_LOCATION}
+          </button>
+        </StateCard>
+      ) : null}
       {screen.kind === 'NO_PACK' && packs.length > 0 ? (
         // Several packs and none chosen yet: only the dial to the nearest
         // official place, from the position, until one is chosen.
@@ -1044,7 +1073,8 @@ function TurnOnCompass({
 }) {
   if (compass.live || !compass.needsPermission) return null;
   return (
-    <button type="button" onClick={() => void compass.enable()}>
+    <button type="button" className="blacksky-turn-on" onClick={() => void compass.enable()}>
+      <Glyph kind="compass" line />
       {copy.TURN_ON_COMPASS}
     </button>
   );

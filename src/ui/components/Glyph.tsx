@@ -8,7 +8,7 @@ import type { PackIcon } from '../../core/types';
 export type GlyphKind =
   | Choice
   | 'map' | 'layer' | 'place' | 'note'
-  | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate'
+  | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate' | 'compass'
   | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag' | 'word' | 'block'
   | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline' | 'saved'
   | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close' | 'grab' | 'undo' | 'tap'
@@ -35,6 +35,7 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   not: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M6 6l12 12',
   stays: 'M8 2.5h8a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 20V4A1.5 1.5 0 0 1 8 2.5zM11 18h2',
   relief: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM12 10v6M9 13h6',
+  compass: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17M15 9l-1.8 4.2L9 15l1.8-4.2z',
   locate: 'M12 3v3M12 18v3M3 12h3M18 12h3M12 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9',
   // E5 Rehearsal: a replay arrow, the same drawing as the bar's Rehearse.
   rehearse: 'M4 12a8 8 0 1 1 2.3 5.7M4 18v-4h4M12 8v4l2.5 2.5',

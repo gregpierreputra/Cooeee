@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE, GATE_KEY, GATE_VALUE } from '../src/core/constants';
+import { ACKNOWLEDGEMENT_KEY, ACKNOWLEDGEMENT_VALUE, GATE_KEY, GATE_VALUE, LAST_VISIT_KEY } from '../src/core/constants';
 import { passGate } from './helpers';
 import {
   ACKNOWLEDGE_CHECKBOX,
@@ -208,7 +208,8 @@ test('the screen makes no request off this origin and asks for no position', asy
 });
 
 // The stored flag holds an acknowledgement marker and nothing else: no date, no
-// identifier, no counter, and nothing about the person.
+// identifier, no counter, and nothing about the person. Beside it sits only the
+// day of the last visit, a whole day number, for the week-away danger check.
 test('the acknowledgement is one flag holding one marker', async ({ page }) => {
   await openDisclosure(page);
   await checkbox(page).check();
@@ -224,5 +225,9 @@ test('the acknowledgement is one flag holding one marker', async ({ page }) => {
         }),
       ),
     ),
-  ).toEqual({ [GATE_KEY]: GATE_VALUE, [ACKNOWLEDGEMENT_KEY]: ACKNOWLEDGEMENT_VALUE });
+  ).toEqual({
+    [GATE_KEY]: GATE_VALUE,
+    [ACKNOWLEDGEMENT_KEY]: ACKNOWLEDGEMENT_VALUE,
+    [LAST_VISIT_KEY]: String(Math.floor(Date.now() / 86_400_000)),
+  });
 });

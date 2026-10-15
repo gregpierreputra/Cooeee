@@ -208,8 +208,8 @@ describe('deliberate activation', () => {
   });
 
   it('leaving the mode is one plainly named action, and its label says to hold', () => {
-    expect(copy.LEAVE_BLACKSKY).toBe('Hold for Cooeee');
-    expect(copy.HOLD_TO_LEAVE).toBe('Hold to leave. Two seconds.');
+    expect(copy.LEAVE_BLACKSKY).toBe('Hold to leave BlackSky');
+    expect(copy.HOLD_TO_LEAVE).toBe('Hold for two seconds.');
   });
 
   it('a back press is said in one short line, the hold naming the way out', () => {

@@ -154,7 +154,9 @@ export default function BlackSkyDial({
               <text
                 className="blacksky-dial-letter"
                 textAnchor="middle"
-                dominantBaseline="central"
+                // The capitals' middle on the letter's own spot, which it turns
+                // about, so a letter turns in place and never circles it.
+                y={LETTER_SIZE * 0.36}
                 fontSize={LETTER_SIZE}
                 // On the map, the amber edge is 2.5 screen pixels at any size.
                 strokeWidth={map ? 2.5 / map.pxPerUnit : undefined}

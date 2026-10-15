@@ -29,6 +29,7 @@ import AppHeader from './ui/components/AppHeader';
 import BackBar from './ui/components/BackBar';
 import Particles from './ui/components/Particles';
 import BottomNav from './ui/components/BottomNav';
+import AwayCheck from './ui/components/AwayCheck';
 import NoticeBar from './ui/components/NoticeBar';
 import Splash from './ui/components/Splash';
 import Tour, { startTour } from './ui/components/Tour';
@@ -322,6 +323,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         </Routes>
         <Tour />
         <BottomNavHost />
+        <AwayCheck />
       </BrowserRouter>
     );
   }
@@ -330,7 +332,11 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // or the app itself, so an arrival looks the same wherever it lands.
   return (
     <>
-      <Splash key={replays} play={replays > 0 ? true : undefined} />
+      {/* Not over a return to BlackSky: the dial shows at once. */}
+      <Splash
+        key={replays}
+        play={replays > 0 ? true : isBlackSkyLatched(localFlagStore()) ? false : undefined}
+      />
       {/* The gate, the welcome and the disclosure stand before the router. */}
       {passed && screen !== 'first-open' ? null : <Particles />}
       {screenFor()}

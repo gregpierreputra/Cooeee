@@ -119,7 +119,7 @@ export function useCompass(declinationDeg: number) {
     requestPaint.current();
   }, []);
 
-  const enable = async () => {
+  const enable = useCallback(async () => {
     const request = orientationEvents()?.requestPermission;
     if (!request) return;
     try {
@@ -128,7 +128,7 @@ export function useCompass(declinationDeg: number) {
       return; // refused outside a tap: the button stays for the next one
     }
     if (grantedThisPage) setGranted(true);
-  };
+  }, []);
 
   /** The heading turning the dial right now, TRUE north, or null when the dial
    *  is north up. */

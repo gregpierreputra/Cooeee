@@ -476,6 +476,12 @@ export const BLACKSKY_LATCH_VALUE = 'latched';
  * chooses one, read on the next visit, and only ever compared against the
  * packs in the store, so a stale or foreign value simply matches nothing. */
 export const BLACKSKY_PACK_KEY = 'cooeee.blacksky-pack.v1';
+/** The day this browser last opened Cooeee, as a whole day number and nothing
+ * finer. Read once at start to ask a returning person whether they need a
+ * way out now, then written again. */
+export const LAST_VISIT_KEY = 'cooeee.last-visit.v1';
+/** Days away after which a returning person is asked whether they need a way out now. */
+export const AWAY_DAYS = 7;
 /** The unsaved words of a pack's note, one draft per pack, under this prefix
  *  and the pack id. Cleared by Save, Cancel and Delete, and with the pack. */
 export const NOTE_DRAFT_KEY_PREFIX = 'cooeee.note-draft.v1:';
