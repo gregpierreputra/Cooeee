@@ -11,7 +11,7 @@ import {
 } from 'react-router';
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
-import { BLOCKED_NOTICE_MS } from './core/constants';
+import { BLOCKED_NOTICE_MS, WORD_GAME_SHOWN } from './core/constants';
 import { canStepBack } from './ui/components/history';
 import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
@@ -343,7 +343,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           <Route path="/rehearse" element={<Choose />} />
           {/* The games: static paths, so they rank above a pack id. */}
           <Route path="/rehearse/drill" element={<DrillScreen />} />
-          <Route path="/rehearse/word" element={<WordScreen />} />
+          {/* Kept, but offered nowhere: an old link lands on Rehearse. */}
+          <Route path="/rehearse/word" element={WORD_GAME_SHOWN ? <WordScreen /> : <Navigate to="/rehearse" replace />} />
           <Route path="/rehearse/block" element={<BlockScreen />} />
           <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
           <Route path="/nearby" element={<Nearby />} />

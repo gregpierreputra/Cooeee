@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import * as copy from '../../core/copy';
 import { blockTileView } from '../../core/block';
+import { WORD_GAME_SHOWN } from '../../core/constants';
 import { melbourneDay } from '../../core/day';
 import { rulesFor, twistForDay } from '../../core/drill-twists';
 import type { BlockPlay, Drill, WordDay } from '../../core/types';
@@ -22,9 +23,10 @@ type Props = {
   now?: number;
 };
 
-/** The three games on the Rehearse screens under their label, the drill
- *  first. Each card says where it stands in small pills: highest scores, the
- *  drill's twist, Word's streak and today, and a week of dots for Word. */
+/** The games on the Rehearse screens under their label, the drill first,
+ *  Cooee Word's card only while WORD_GAME_SHOWN is on. Each card says where
+ *  it stands in small pills: highest scores, the drill's twist, Word's streak
+ *  and today, and a week of dots for Word. */
 export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock = listBlockPlays, loadDrills = listAllDrills, now }: Props) {
   const navigate = useNavigate();
   const clock = useMinuteClock(now);
@@ -74,21 +76,23 @@ export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock 
     <section className="game-tiles" aria-labelledby="games-title">
       <h2 id="games-title" className="kicker section-label">{copy.GAMES}</h2>
       <DrillTile onPlay={onDrill} twist={twist} highest={drillHighest} />
-      <GameTile
-        variant="word"
-        glyph="word"
-        title={copy.WORD_TILE_TITLE}
-        detail={copy.WORD_TILE_DETAIL}
-        pills={[wordToday]}
-        stat={word.streak > 0 ? { figure: word.streak, label: copy.WORD_STAT_STREAK } : undefined}
-        onPlay={() => navigate('/rehearse/word')}
-      >
-        <span className="word-week" role="img" aria-label={copy.WORD_WEEK_LABEL(week.filter(Boolean).length)}>
-          {week.map((solved, i) => (
-            <span key={i} className={solved ? 'solved' : undefined} />
-          ))}
-        </span>
-      </GameTile>
+      {WORD_GAME_SHOWN ? (
+        <GameTile
+          variant="word"
+          glyph="word"
+          title={copy.WORD_TILE_TITLE}
+          detail={copy.WORD_TILE_DETAIL}
+          pills={[wordToday]}
+          stat={word.streak > 0 ? { figure: word.streak, label: copy.WORD_STAT_STREAK } : undefined}
+          onPlay={() => navigate('/rehearse/word')}
+        >
+          <span className="word-week" role="img" aria-label={copy.WORD_WEEK_LABEL(week.filter(Boolean).length)}>
+            {week.map((solved, i) => (
+              <span key={i} className={solved ? 'solved' : undefined} />
+            ))}
+          </span>
+        </GameTile>
+      ) : null}
       <GameTile
         variant="block"
         glyph="block"

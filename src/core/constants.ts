@@ -503,3 +503,8 @@ export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is
  *  addresses would be someone else's, so the position is not used. */
 export const LOCATE_ROUGH_M = 50;
 export const LOCATE_TOO_ROUGH_M = 1_000;
+
+// Cooee Word is kept in the code but offered nowhere: an industry mentor found
+// a word game out of place beside disaster preparation. True brings back its
+// card on Rehearse and its address.
+export const WORD_GAME_SHOWN = false;
