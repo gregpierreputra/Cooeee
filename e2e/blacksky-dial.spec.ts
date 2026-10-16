@@ -518,6 +518,10 @@ test('No pack and no position yet: the screen says it is waiting for GPS, then t
   await expect(page.getByText(NO_GPS_YET)).toBeVisible();
   await expect(page.getByText(NO_GPS_YET_DETAIL)).toBeVisible();
   await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
+  // The location card is outlined to stand out; the missing pack is the dashed
+  // space a pack would fill, as on Home.
+  await expect(page.locator('.state-card-status')).toContainText(NO_GPS_YET);
+  await expect(page.locator('.empty-state')).toContainText(NO_PACK_HERE);
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
   await expect(page.getByText(NO_GPS_YET)).toHaveCount(0);

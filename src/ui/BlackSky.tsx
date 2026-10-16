@@ -675,7 +675,7 @@ export default function BlackSky({
       {/* Location refused and no mark standing in: a way to ask again, so no
           one is left on a screen with nothing to point from. */}
       {permission === 'denied' && !estimate ? (
-        <StateCard heading={copy.LOCATION_OFF} detail={blocked ? copy.LOCATION_BLOCKED_DETAIL : copy.LOCATION_OFF_DETAIL}>
+        <StateCard glyph="locate" heading={copy.LOCATION_OFF} detail={blocked ? copy.LOCATION_BLOCKED_DETAIL : copy.LOCATION_OFF_DETAIL}>
           {blocked ? null : (
             <button
               type="button"
@@ -700,7 +700,7 @@ export default function BlackSky({
             {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
           </>
         ) : (
-          <StateCard heading={copy.NO_GPS_YET} />
+          <StateCard glyph="locate" heading={copy.NO_GPS_YET} />
         )
       ) : (
         <ScreenBody
@@ -817,8 +817,14 @@ function ScreenBody({
           {dial}
           {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
           {/* No position yet: said first, so the missing dial is explained. */}
-          {!screen.confidence && waiting ? <StateCard heading={copy.NO_GPS_YET} detail={copy.NO_GPS_YET_DETAIL} /> : null}
-          <StateCard heading={copy.NO_PACK_HERE} detail={copy.NO_PACKS_HINT} />
+          {!screen.confidence && waiting ? <StateCard glyph="locate" heading={copy.NO_GPS_YET} detail={copy.NO_GPS_YET_DETAIL} /> : null}
+          {/* The space a pack would fill, dashed as on Home, so it reads as
+              nothing saved and never as a state to act on here. */}
+          <section className="empty-state">
+            <Glyph kind="saved" />
+            <h2>{copy.NO_PACK_HERE}</h2>
+            <p className="muted">{copy.NO_PACKS_HINT}</p>
+          </section>
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
             <p>{copy.PREP_KIT_LINE}</p>
@@ -836,7 +842,7 @@ function ScreenBody({
           {/* The state and what can be done about it, in one card. US1-AC4:
               the mark control. Offered for every ACQUIRING reason — someone
               who denied GPS is exactly who needs it. */}
-          <StateCard heading={copy.NO_GPS} detail={copy.MARK_HINT}>
+          <StateCard glyph="locate" heading={copy.NO_GPS} detail={copy.MARK_HINT}>
             {/* Two centred lines: the pin leading I'm standing at, then the
                 address on its own. Named in one sentence for a screen reader. */}
             <button
