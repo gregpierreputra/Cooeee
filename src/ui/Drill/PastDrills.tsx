@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as copy from '../../core/copy';
 import { drillRows, type DrillRow } from '../../core/drill-history';
-import { BAG_LIMIT } from '../../core/drill-items';
 import type { Drill } from '../../core/types';
 import { clearDrills, listAllDrills } from '../../data/db';
 import Glyph from '../components/Glyph';
@@ -148,7 +147,7 @@ function DrillBag({ row }: { row: DrillRow }) {
             </button>
           </li>
         ))}
-        {Array.from({ length: BAG_LIMIT - row.bag.length }, (_, index) => (
+        {Array.from({ length: Math.max(0, row.bagLimit - row.bag.length) }, (_, index) => (
           <li key={`empty-${index}`} className="debrief-empty" aria-hidden="true" />
         ))}
       </ul>

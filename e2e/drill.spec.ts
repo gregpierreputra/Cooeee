@@ -255,6 +255,7 @@ test.describe('E9 the drill', () => {
     const past = page.locator('.pack-section', { hasText: 'Past drills' });
     await expect(past.locator('.history-row')).toHaveCount(1);
     await expect(past.locator('.history-row .place-kind')).toHaveText('Classic');
+    await expect(past.locator('.history-row .debrief-empty')).toHaveCount(10);
     await expect(past).toContainText('Away from the door when time ran out');
 
     await page.getByRole('button', { name: 'Clear drill results' }).click();
@@ -277,6 +278,14 @@ test.describe('E9 the drill', () => {
     await page.getByRole('button', { name: 'Start the drill' }).click();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await expect(page.locator('main')).toContainText('Bag 0 of 7');
+
+    // Listed under Start with the twist's own seven empty slots, as on the debrief.
+    await page.getByRole('dialog').click();
+    await expect(page.getByRole('heading', { name: 'Time ran out away from the door' })).toBeVisible();
+    await page.reload();
+    const row = page.locator('.pack-section', { hasText: 'Past drills' }).locator('.history-row');
+    await expect(row.locator('.place-kind')).toHaveText('Small bag');
+    await expect(row.locator('.debrief-empty')).toHaveCount(7);
   });
 });
 

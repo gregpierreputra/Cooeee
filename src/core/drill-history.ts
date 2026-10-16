@@ -16,6 +16,8 @@ export type DrillRow = {
   date: string;
   /** The twist it was played under, by name: Classic with none. */
   label: string;
+  /** How many the bag held under that twist, so its empty slots match the debrief. */
+  bagLimit: number;
   score: number | null;
   verdict: string | null;
   essentials: string;
@@ -37,6 +39,7 @@ export const drillRows = (drills: Drill[]): DrillRow[] =>
         id: drill.id,
         date: formatSavedDate(drill.finishedAt),
         label: rules.name,
+        bagLimit: rules.bagLimit,
         score: drill.reachedDoor ? drill.score : null,
         verdict: drill.reachedDoor ? copy.VERDICT(drill.score) : null,
         essentials: copy.DRILL_ROW_ESSENTIALS(

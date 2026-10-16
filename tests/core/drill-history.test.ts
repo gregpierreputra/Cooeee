@@ -36,6 +36,8 @@ describe('E9 the drill record', () => {
       drill({ id: 'long', finishedAt: 1_900_000_000_000, twist: 'early-start' }),
     ]);
     expect(rows.map((row) => row.label)).toEqual(['Early start', 'One minute', 'Classic']);
+    // The bag's size under that twist, so its empty slots match the debrief.
+    expect(rows.map((row) => row.bagLimit)).toEqual([10, 6, 10]);
   });
 
   it('finds the highest score among drills that reached the door', () => {
