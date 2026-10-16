@@ -16,10 +16,13 @@ import {
   packDetailItems,
   packDetailPlaces,
 } from '../core/provenance';
+import { readKept } from '../core/kept';
 import { monogram } from '../core/recover';
 import { historyRows, type HistoryRow } from '../core/rehearsal-history';
 import type { CompletePackContent, Drill, PackDetailItem, PackFile, Rehearsal } from '../core/types';
+import { localFlagStore } from '../data/acknowledgement';
 import { getCompletePackContent, listAllDrills, listRehearsalsForPack } from '../data/db';
+import { syncKeptIntoPacks } from '../data/pack-programs';
 import AreaMap from './components/AreaMap';
 import Glyph, { type GlyphKind } from './components/Glyph';
 import Hint from './components/Hint';
@@ -50,8 +53,12 @@ type PackDetailProps = {
   loadContent?: (id: string) => Promise<CompletePackContent | undefined>;
   loadRehearsals?: (id: string) => Promise<Rehearsal[]>;
   loadDrills?: () => Promise<Drill[]>;
+  syncKept?: () => Promise<boolean>;
   now?: number;
 };
+
+/** Every saved pack takes in the programs saved in Recover, as Home does. */
+const syncSavedPrograms = () => syncKeptIntoPacks(readKept(localFlagStore()));
 
 /** A network-blind pack view. Every value comes from the complete-pack store;
  * every source tap is intercepted before browser navigation and requires a
@@ -61,6 +68,7 @@ export default function PackDetail({
   loadContent = getCompletePackContent,
   loadRehearsals = listRehearsalsForPack,
   loadDrills = listAllDrills,
+  syncKept = syncSavedPrograms,
   now: fixedNow,
 }: PackDetailProps) {
   // Every age on the page moves on with the clock while it stays open.
@@ -76,6 +84,9 @@ export default function PackDetail({
   // request is involved.
   const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
   const closeRef = useRef<HTMLButtonElement>(null);
+  // Turns true once the pack has taken in a change saved in Recover, so a
+  // program saved there shows here on Back without a trip to Home.
+  const [synced, setSynced] = useState(false);
   // The open tab lives in the address, matched against the tabs on offer;
   // anything else opens on Area. Replaced, not pushed, so Back leaves the pack.
   const [params, setParams] = useSearchParams();
@@ -121,7 +132,20 @@ export default function PackDetail({
       live = false;
       Object.values(urls).forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [loadContent, packId]);
+  }, [loadContent, packId, synced]);
+
+  // The pack shows straight from the store first; the sync can wait on a page
+  // copy, and the pack is read again only if the sync changed it. The answer is
+  // never thrown away: when the effect runs twice, the first sync makes the
+  // change and the second finds nothing left to do, so only the first can say.
+  useEffect(() => {
+    syncKept().then(
+      (changed) => {
+        if (changed) setSynced(true);
+      },
+      () => {},
+    );
+  }, [syncKept]);
 
   // E5-US5 — the pack's own rehearsals, from the device store. A store that
   // cannot be read lists none: the section says so rather than failing the page.
