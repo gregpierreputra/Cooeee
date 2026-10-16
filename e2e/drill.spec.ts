@@ -252,12 +252,13 @@ test.describe('E9 the drill', () => {
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await page.getByRole('dialog').click();
     await expect(page.getByRole('heading', { name: 'Time ran out away from the door' })).toBeVisible();
-    // The report ends with things to talk over together.
+    // The report ends with things to talk over together, the last about an
+    // essential this drill left behind (here all of them, medicines first).
     const talk = page.locator('section', { has: page.getByRole('heading', { name: 'Talk it over' }) });
     await expect(talk.getByRole('listitem')).toHaveText([
       'Where is your real emergency kit kept?',
       'Who would carry what if you had to leave?',
-      'What would you pack for a pet?',
+      'You left the medicines behind. Who in your home needs medicines every day?',
     ]);
 
     await page.reload();

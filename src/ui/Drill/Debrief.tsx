@@ -151,14 +151,15 @@ export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, on
         </section>
       ) : null}
 
-      {/* What to talk over together, so the drill leads to the real kit. */}
+      {/* What to talk over together, so the drill leads to the real kit: the
+          last question is about an essential this drill left behind. */}
       <section className="card debrief-card" aria-labelledby="debrief-talk">
         <h2 id="debrief-talk" className="debrief-label">
           <Glyph kind="note" />
           {copy.DRILL_TALK_HEADING}
         </h2>
         <ul className="debrief-talk">
-          {copy.DRILL_TALK_PROMPTS.map((prompt) => (
+          {copy.DRILL_TALK_PROMPTS(left).map((prompt) => (
             <li key={prompt}>{prompt}</li>
           ))}
         </ul>

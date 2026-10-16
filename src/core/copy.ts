@@ -1562,11 +1562,35 @@ export const IN_YOUR_BAG = 'In your bag';
 export const LEFT_BEHIND = 'Left behind';
 /** After the drill: things to talk over together, so it leads to the real kit. */
 export const DRILL_TALK_HEADING = 'Talk it over';
-export const DRILL_TALK_PROMPTS = [
-  'Where is your real emergency kit kept?',
-  'Who would carry what if you had to leave?',
-  'What would you pack for a pet?',
-];
+/** A question for each essential, in the order they are asked about: the
+ *  first one this drill left behind gets the third question. */
+const DRILL_TALK_ITEM: Record<string, string> = {
+  medicines: 'Who in your home needs medicines every day?',
+  water: 'How much water would your family need for a day?',
+  firstaid: 'Do you know where the first aid kit is at home?',
+  charger: 'Where do you keep the phone charger, and who would grab it?',
+  papers: 'Where are your important papers kept?',
+  blanket: 'Where could a wool blanket live so it is ready in the car?',
+  masks: 'Where could you keep masks so everyone can grab one?',
+  torch: 'Where is your torch at home, and does it work?',
+  radio: 'How would you hear the news if the phones stopped working?',
+  clothes: 'Which long sleeved clothes would each of you wear?',
+  boots: 'Which sturdy shoes would each of you wear?',
+};
+/** Two questions every time, then one about an essential left behind, or
+ *  about a pet when every essential was packed. */
+export const DRILL_TALK_PROMPTS = (left: { id: string; name: string }[]): string[] => {
+  const item = Object.keys(DRILL_TALK_ITEM)
+    .map((id) => left.find((thing) => thing.id === id))
+    .find(Boolean) ?? left[0];
+  return [
+    'Where is your real emergency kit kept?',
+    'Who would carry what if you had to leave?',
+    item
+      ? `You left the ${item.name} behind. ${DRILL_TALK_ITEM[item.id] ?? 'Where would you find that at home?'}`
+      : 'What would you pack for a pet?',
+  ];
+};
 export const OF_LIMIT = (count: number, limit: number) => `${count} of ${limit}`;
 export const TAP_FOR_WHY = 'Tap a thing to see why.';
 export const SIGNED_POINTS = (points: number) => (points > 0 ? `+${points}` : points < 0 ? `\u2212${-points}` : '0');

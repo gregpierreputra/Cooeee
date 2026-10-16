@@ -62,6 +62,22 @@ describe('E9 the drill record', () => {
     expect(copy.DRILL_FACTS.map((fact) => fact.text).join(' ')).not.toMatch(/lives/);
   });
 
+  it('asks about an essential left behind, or a pet once every essential is packed', () => {
+    const last = (left: { id: string; name: string }[]) => copy.DRILL_TALK_PROMPTS(left)[2];
+    expect(copy.DRILL_TALK_PROMPTS([]).slice(0, 2)).toEqual([
+      'Where is your real emergency kit kept?',
+      'Who would carry what if you had to leave?',
+    ]);
+    expect(last([])).toBe('What would you pack for a pet?');
+    // Medicines are asked about before water, whatever order they come in.
+    expect(last([{ id: 'water', name: 'drinking water' }, { id: 'medicines', name: 'medicines' }])).toBe(
+      'You left the medicines behind. Who in your home needs medicines every day?',
+    );
+    expect(last([{ id: 'torch', name: 'torch' }])).toBe('You left the torch behind. Where is your torch at home, and does it work?');
+    // An essential with no question of its own still gets one.
+    expect(last([{ id: 'goggles', name: 'goggles' }])).toBe('You left the goggles behind. Where would you find that at home?');
+  });
+
   it('finds the highest score among drills that reached the door', () => {
     expect(highestScore([])).toBeNull();
     expect(highestScore([drill({ reachedDoor: false, score: 0 })])).toBeNull();
