@@ -87,3 +87,40 @@ test('Back on a pack\'s rehearsal goes up to Rehearse, which always lists the pa
   await back(page).click();
   await expect(page).toHaveURL(/\/rehearse$/);
 });
+
+// Back returns a screen to where it was left, from the bar or the phone, and a
+// new screen still opens at its top.
+test('Back from a roadmap link returns to the roadmap where it was left', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await tab(page, 'Recover').click();
+  await page.locator('.roadmap-button').click();
+  const link = page.locator('a.roadmap-link[href^="/recover"]').nth(2);
+  await link.scrollIntoViewIfNeeded();
+  const left = await page.evaluate(() => window.scrollY);
+  expect(left).toBeGreaterThan(0);
+
+  await link.click();
+  await expect(page).toHaveURL(/from=roadmap/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await back(page).click();
+  await expect(page).toHaveURL(/\/recover\?need=roadmap$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(left);
+
+  await link.click();
+  await page.goBack();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(left);
+});
+
+test('Back from Spot the fire risks returns Rehearse to where it was left', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 });
+  await tab(page, 'Rehearse').click();
+  const tile = page.getByRole('button', { name: new RegExp(copy.BLOCK_TILE_TITLE) });
+  await tile.scrollIntoViewIfNeeded();
+  const left = await page.evaluate(() => window.scrollY);
+  expect(left).toBeGreaterThan(0);
+  await tile.click();
+  await expect(page).toHaveURL(/\/rehearse\/block$/);
+  await back(page).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(left);
+});

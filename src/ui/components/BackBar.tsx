@@ -3,6 +3,7 @@ import { backTarget, ONE_STEP } from '../../core/back';
 import * as copy from '../../core/copy';
 import { useBuilderBack } from '../PackNew/builder-back';
 import RehearsalBar from '../Rehearsal/RehearsalBar';
+import { BACK_STATE } from './scroll-memory';
 import { useRehearsalRun } from '../Rehearsal/run-state';
 
 /** The one persistent way back, at the top of every screen below a tab. Back
@@ -41,7 +42,7 @@ export default function BackBar() {
       {runBar}
       {target ? (
         <div className="back-bar-inner">
-          <button type="button" onClick={() => (target === ONE_STEP ? navigate(ONE_STEP) : navigate(target))}>
+          <button type="button" onClick={() => (target === ONE_STEP ? navigate(ONE_STEP) : navigate(target, { state: BACK_STATE }))}>
             <span aria-hidden="true">‹</span> {copy.BACK}
           </button>
         </div>

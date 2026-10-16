@@ -511,3 +511,7 @@ export const LOCATE_TOO_ROUGH_M = 1_000;
 // a word game out of place beside disaster preparation. True brings back its
 // card on Rehearse and its address.
 export const WORD_GAME_SHOWN = false;
+
+/** How long Back waits for a screen to grow tall enough to return to where it
+ *  was left, before scrolling as far as it can. */
+export const SCROLL_RESTORE_WAIT_MS = 1000;

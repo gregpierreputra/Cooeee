@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   BrowserRouter,
   Route,
@@ -13,6 +13,7 @@ import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
 import { BLOCKED_NOTICE_MS, GATE_SHOWN, WORD_GAME_SHOWN } from './core/constants';
 import { canStepBack } from './ui/components/history';
+import { BACK_STATE, rememberScroll, restoreScroll, savedScroll } from './ui/components/scroll-memory';
 import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
 import { pruneKept } from './core/kept';
@@ -155,13 +156,35 @@ function BlockedNotice() {
   );
 }
 
-/** A new route starts at its top. The browser keeps the window's scroll when
- *  the router swaps one screen for another in the same document. */
-function ScrollToTop() {
-  const { pathname } = useLocation();
+/** A new screen starts at its top: the browser keeps the window's scroll when
+ *  the router swaps one screen for another in the same document. Recover's
+ *  categories are screens of their own on one path. Back, from the bar or the
+ *  phone, returns to where the screen was left instead. The pack builder
+ *  places its own steps. */
+function ScrollPlacement() {
+  const { pathname, search, state } = useLocation();
+  const navigationType = useNavigationType();
+  const url = pathname + search;
+  const shown = useRef({ url, pathname });
   useEffect(() => {
-    window.scrollTo(0, 0); // in braces, see the first run effect in App
-  }, [pathname]);
+    // The app places every screen itself, so the browser's own guess on the
+    // phone's back cannot fight it.
+    window.history.scrollRestoration = 'manual';
+    const onScroll = () => rememberScroll(shown.current.url, window.scrollY);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  // Before paint, so a shorter screen's scroll is never kept for the last one.
+  useLayoutEffect(() => {
+    const before = shown.current;
+    shown.current = { url, pathname };
+    const back = navigationType === 'POP' || (state as typeof BACK_STATE | null)?.back === true;
+    const saved = savedScroll(url);
+    if (back && saved !== undefined && pathname !== '/packs/new') return restoreScroll(saved);
+    if (before.url === url || before.pathname !== pathname || pathname === '/recover') {
+      window.scrollTo(0, 0); // in braces, see the first run effect in App
+    }
+  }, [url]);
   return null;
 }
 
@@ -328,7 +351,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <BlackSkyResume />
         {rescue === 'hold' ? <RescueStart /> : null}
         {rescue ? <RescueEnd onLeft={() => setRescue(null)} /> : null}
-        <ScrollToTop />
+        <ScrollPlacement />
         <ModeSwitch />
         <NoticeBar />
         <ParticlesHost />
