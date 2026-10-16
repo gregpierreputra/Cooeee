@@ -6846,9 +6846,32 @@ body.drill-open .banner {
     opacity: 0.45;
   }
 }
+/* Ready: the ring closes, then the tick draws, in half a second. */
+.ready-mark {
+  flex: none;
+  color: var(--accent);
+}
+.ready-mark-ring,
+.ready-mark-tick {
+  stroke-dasharray: 1;
+  animation: ready-draw 0.3s ease-out both;
+}
+.ready-mark-tick {
+  animation-delay: 0.25s;
+}
+@keyframes ready-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .busy,
-  .pending-bar {
+  .pending-bar,
+  .ready-mark-ring,
+  .ready-mark-tick {
     animation: none;
   }
 }

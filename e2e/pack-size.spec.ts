@@ -9,6 +9,9 @@ test('AC9 states the size before any write', async ({ page }) => {
   await page.goto(SIZE_URL);
 
   await expect(page.locator('main').locator('h1, button')).toHaveText(['Ready to save', 'Save this pack']);
+  // The finished arc beside the heading, a picture only.
+  await expect(page.locator('.hero .ready-mark')).toBeVisible();
+  await expect(page.locator('.hero .ready-mark')).toHaveAttribute('aria-hidden', 'true');
   await expect(page.getByTestId('saved-address')).toHaveText('6 RIDGE ROAD KALORAMA 3766');
   await expect(page.locator('.pack-summary dt')).toHaveText([
     'Bushfire area', 'Places of last resort', 'Note', 'Saved programs', 'Size',
