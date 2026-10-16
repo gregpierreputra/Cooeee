@@ -49,8 +49,12 @@ export function backTarget(
     return pack ? packTab(pack, 'support') : '/recover';
   }
   if (NAV_ITEMS.some((item) => item.to === pathname)) return null;
-  if (pathname === '/packs/new' && new URLSearchParams(search).has('step')) {
-    return builder === 'hidden' ? null : ONE_STEP;
+  if (pathname === '/packs/new') {
+    const params = new URLSearchParams(search);
+    if (params.has('step')) return builder === 'hidden' ? null : ONE_STEP;
+    // Opened from an empty Rehearse or Recover tab, the search goes back to it.
+    const from = params.get('from');
+    if (from === 'rehearse' || from === 'recover') return `/${from}`;
   }
   // The games on the Rehearse screen go back to it, whatever is saved; the
   // drill opened from a pack's page goes back to that pack.

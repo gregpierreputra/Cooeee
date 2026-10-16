@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import * as copy from '../src/core/copy';
-import { acknowledgeFirstOpen } from './helpers';
+import { acknowledgeFirstOpen, addressFeature, mockOfficialServices } from './helpers';
 
 // Against the real bundle, as this is about the browser's own history. Back
 // goes up to the screen above, never to whichever tab was open before, and it
@@ -47,6 +47,33 @@ test('Back from building a pack goes Home, even with another tab behind it', asy
   await back(page).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(back(page)).toHaveCount(0);
+});
+
+test('Back from building a pack goes to the empty Rehearse tab that opened it', async ({ page }) => {
+  await tab(page, 'Rehearse').click();
+  await page.getByRole('main').getByRole('link', { name: copy.BUILD_A_PACK }).click();
+  await back(page).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
+  await expect(back(page)).toHaveCount(0);
+});
+
+test('a step into the builder keeps the tab it came from for Back', async ({ page }) => {
+  await mockOfficialServices(page, {
+    candidates: [addressFeature('1 RIDGE ROAD KALORAMA', 'KALORAMA', 145.36594, -37.817939)],
+    lgaName: 'YARRA RANGES',
+    bpaHits: [],
+  });
+  await tab(page, 'Rehearse').click();
+  await page.getByRole('main').getByRole('link', { name: copy.BUILD_A_PACK }).click();
+  await page.getByLabel('Street address').fill('RIDGE');
+  await page.getByLabel('Street address').press('Enter');
+  await page.getByRole('button', { name: '1 RIDGE ROAD KALORAMA' }).click();
+  await expect(page).toHaveURL(/from=rehearse&step=/);
+
+  await back(page).click();
+  await expect(page).toHaveURL(/\/packs\/new\?from=rehearse$/);
+  await back(page).click();
+  await expect(page).toHaveURL(/\/rehearse$/);
 });
 
 test('Back from an address the app does not know goes Home', async ({ page }) => {

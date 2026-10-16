@@ -67,5 +67,9 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/packs/new', '?step=note', NONE)).toBe(ONE_STEP);
     expect(backTarget('/packs/new', '?step=area', { ...NONE, builder: 'hidden' })).toBeNull();
     expect(backTarget('/packs/new', '', NONE)).toBe('/');
+    expect(backTarget('/packs/new', '?from=rehearse', NONE)).toBe('/rehearse');
+    expect(backTarget('/packs/new', '?from=recover', NONE)).toBe('/recover');
+    expect(backTarget('/packs/new', '?from=elsewhere', NONE)).toBe('/');
+    expect(backTarget('/packs/new', '?from=rehearse&step=note', NONE)).toBe(ONE_STEP);
   });
 });

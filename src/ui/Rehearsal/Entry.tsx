@@ -207,7 +207,7 @@ export default function RehearsalEntry({
             </Link>
           ) : null}
           {/* Drawn as on Home: the plus, then the words. */}
-          <Link className={`action with-glyph${buildingIsTheFix(gate) ? ' main-action' : ''}`} to="/packs/new">
+          <Link className={`action with-glyph${buildingIsTheFix(gate) ? ' main-action' : ''}`} to="/packs/new?from=rehearse">
             <Glyph kind="plus" line />
             {copy.BUILD_A_PACK}
           </Link>
