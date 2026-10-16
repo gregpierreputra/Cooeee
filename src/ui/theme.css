@@ -1875,10 +1875,6 @@ main:focus {
   --bs-below: calc(var(--bs-leave) + var(--bs-gap) + 56px);
 }
 
-.blacksky:has(> .blacksky-notice) {
-  --bs-line: calc(1.5rem + var(--bs-gap));
-}
-
 /* A phone with room to spare (taller than 700 px) opens the gaps round the
    dial, so the name, the distance row and the dial each stand clear. A short
    phone keeps them tight: its dial is already at its floor. A laptop opens
@@ -3826,15 +3822,29 @@ body.touring .page {
   bottom: calc(100% + 36px);
   left: 50%;
   transform: translateX(-50%);
-  white-space: nowrap;
-  padding: 0.375rem 0.75rem;
+  /* One line when it fits; the longer Back line breaks at its sentence into
+     two even lines, with corners round enough for one line or two. */
+  width: max-content;
+  max-width: min(calc(100vw - 2rem), 17.5rem);
+  text-align: center;
+  text-wrap: balance;
+  padding: 0.375rem 1rem;
   border: 1px solid var(--blacksky-accent);
-  border-radius: var(--r-pill);
+  border-radius: 1.5rem;
   background: var(--blacksky-bg);
   color: var(--blacksky-accent);
   /* 16 px, the same pill entering and leaving: one instruction, said alike on
      both sides of the door. */
   font-size: var(--step-0);
+  animation: hint-pop 0.2s ease-out;
+}
+/* Each tap shows it anew, so a second tap is seen to land. It grows in
+   place, never down onto the button under it. */
+@keyframes hint-pop {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
 }
 /* On the welcome the pill floats just below the way out, so it covers no
    other button. It shows only once a short tap has lifted, so no thumb is in
@@ -6865,7 +6875,8 @@ body.drill-open .banner {
   .busy,
   .pending-bar,
   .ready-mark-ring,
-  .ready-mark-tick {
+  .ready-mark-tick,
+  .blacksky-hold-hint {
     animation: none;
   }
 }

@@ -624,9 +624,9 @@ export const HOLD_TO_LEAVE = 'Hold for two seconds.';
 /** The name of BlackSky's round hold, and the words under it. */
 export const LEAVE_BLACKSKY = 'Hold to leave BlackSky';
 export const BLACKSKY_BLOCKED = 'Not opened. Hold its button two seconds to enter.';
-/** Said at the top of BlackSky when the phone's Back was pressed: the round
- *  hold at its foot says how to leave. */
-export const BACK_PRESSED = 'Back does not leave BlackSky.';
+/** Said in the pill over the hold to leave when the phone's Back was pressed:
+ *  why nothing happened, then the one way out. */
+export const BACK_PRESSED = 'Back does not leave BlackSky. Hold for two seconds.';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 

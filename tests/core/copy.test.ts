@@ -212,8 +212,8 @@ describe('deliberate activation', () => {
     expect(copy.HOLD_TO_LEAVE).toBe('Hold for two seconds.');
   });
 
-  it('a back press is said in one short line, the hold naming the way out', () => {
-    expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky.');
+  it('a back press is said over the hold, with the way out', () => {
+    expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky. Hold for two seconds.');
   });
 });
 

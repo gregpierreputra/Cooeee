@@ -184,7 +184,8 @@ export default function BlackSky({
   const [guiding, setGuiding] = useState(() => (state as { guide?: boolean } | null)?.guide === true);
   // Said at the top once the phone's Back has been pressed, which does not
   // leave. A reopening says nothing: the dark screen speaks for itself.
-  const [notice, setNotice] = useState<string | null>(null);
+  // Counts the Back presses, each said in the pill over the hold to leave.
+  const [backPresses, setBackPresses] = useState(0);
 
   // US1-AC4: with no fix, a marked position stands in for one. estimateFix
   // returns null once its growing uncertainty passes the confidence threshold,
@@ -370,7 +371,7 @@ export default function BlackSky({
     navigate('/blacksky');
     const onBack = () => {
       navigate('/blacksky');
-      setNotice(copy.BACK_PRESSED);
+      setBackPresses((count) => count + 1);
     };
     window.addEventListener('popstate', onBack);
     return () => window.removeEventListener('popstate', onBack);
@@ -602,6 +603,8 @@ export default function BlackSky({
             }}
             hint={copy.HOLD_TO_LEAVE}
             hintMs={NAV_HOLD_HINT_MS}
+            nudge={backPresses}
+            nudgeHint={copy.BACK_PRESSED}
             label={copy.LEAVE_BLACKSKY}
             className="blacksky-leave-button"
             vibrateMs={HOLD_LEAVE_VIBRATE_MS}
@@ -619,12 +622,6 @@ export default function BlackSky({
           {voice.caption ? <p className="blacksky-caption">{voice.caption}</p> : null}
         </div>
       </div>
-      {/* Why BlackSky is still open after Back was pressed. */}
-      {notice ? (
-        <p className="muted blacksky-notice" role="status">
-          {notice}
-        </p>
-      ) : null}
       {packs.length > 1 ? (
         <PackPicker
           packs={choices.map(({ pack }) => pack)}
