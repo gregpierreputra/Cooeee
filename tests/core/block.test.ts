@@ -165,13 +165,11 @@ describe('the score', () => {
     expect(blockTileView(plays, 3)).toEqual({ today: null, highest: 70 });
   });
 
-  it('says it in words on the card and the report', () => {
-    expect(copy.BLOCK_TILE_TODAY(null)).toBe('Not played today');
-    expect(copy.BLOCK_TILE_TODAY(76)).toBe('Today 76');
+  it('says the report plainly, as a count of what was found', () => {
     expect(copy.BLOCK_PENALTIES(1, 2)).toBe('1 wrong tap, 2 hints');
-    expect(copy.BLOCK_VERDICT(90)).toBe('Sharp eyes');
-    expect(copy.BLOCK_VERDICT(60)).toBe('Good spotting');
-    expect(copy.BLOCK_VERDICT(10)).toBe('Plenty still to spot');
+    expect(copy.BLOCK_RESULT(6)).toBe('You found six of eight risks');
+    expect(copy.BLOCK_RESULT(0)).toBe('You found none of the eight risks');
+    expect(copy.BLOCK_RESULT(8)).toBe('You found all eight risks');
   });
 });
 

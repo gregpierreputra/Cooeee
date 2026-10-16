@@ -11,8 +11,12 @@ test.describe('the game cards on the Rehearse screen', () => {
     await expect(cards.nth(0)).toContainText('Pack a bag with your kids');
     // A family activity, not one to beat: no top score on its card.
     await expect(cards.nth(0).locator('.game-tile-stat')).toHaveCount(0);
-    await expect(cards.nth(1)).toContainText('Ready the Block');
-    await expect(cards.nth(1)).toContainText('Not played today');
+    await expect(cards.nth(1)).toContainText('Spot the fire risks');
+    await expect(cards.nth(1)).toContainText('Practise finding fire risks round a home, then check your own.');
+    // A check for adults, not a game: no score or daily pill on its card.
+    await expect(cards.nth(1).locator('.game-tile-stat, .game-tile-pill')).toHaveCount(0);
+    // The drill is for doing with children, the check is about your own home.
+    await expect(page.locator('.game-tiles > .section-label')).toHaveText(['With your kids', 'Around your home']);
     await expect(page.getByText('Cooee Word')).toHaveCount(0);
   });
 
@@ -29,7 +33,7 @@ test.describe('the game cards on the Rehearse screen', () => {
       const box = (await card.boundingBox())!;
       expect(box.height).toBeGreaterThanOrEqual(44);
     }
-    await page.getByRole('button', { name: /Ready the Block/ }).click();
+    await page.getByRole('button', { name: /Spot the fire risks/ }).click();
     await expect(page.locator('[data-harness]')).toContainText('/rehearse/block');
   });
 });

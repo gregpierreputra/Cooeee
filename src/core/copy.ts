@@ -653,8 +653,10 @@ export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
-/** The label over the activity cards on Rehearse. */
-export const GAMES = 'Learn together';
+/** The labels over the activity cards on Rehearse: the drill is for doing
+ *  with children, the risk check for adults about their own home. */
+export const GAMES_KIDS = 'With your kids';
+export const GAMES_HOME = 'Around your home';
 /** What Rehearse is for, on its tour stop and when no pack is saved yet. */
 export const REHEARSE_LINE = 'Practise the way to a saved place on a calm day.';
 /** The large title on the Rehearse tab's first screen. */
@@ -1706,15 +1708,11 @@ export const WORD_PAST_UNFINISHED = 'Not finished';
 export const WORD_UNAVAILABLE = 'Cooee Word could not load on this browser.';
 export const BACK_TO_REHEARSE = 'Back to Rehearse';
 
-// Ready the Block
-export const BLOCK_TILE_TITLE = 'Ready the Block';
-export const BLOCK_TILE_DETAIL = 'Find eight fire risks round a home in three minutes.';
-export const BLOCK_TILE_TODAY = (today: number | null) => (today === null ? 'Not played today' : `Today ${today}`);
-/** Before the big highest score out of 100, on the drill and Block cards.
- *  Short, so it stays on the title's line on a small phone. Never best: the
- *  app does not call anything the best. */
-export const GAME_STAT_HIGHEST = 'Top';
-export const BLOCK_LABEL = 'Ready the Block';
+// Spot the fire risks (Ready the Block in the code): practice for adults,
+// leading to a check of their own home, so its card carries no score.
+export const BLOCK_TILE_TITLE = 'Spot the fire risks';
+export const BLOCK_TILE_DETAIL = 'Practise finding fire risks round a home, then check your own.';
+export const BLOCK_LABEL = 'Spot the fire risks';
 export const BLOCK_INTRO_HEADING = 'Find the fire risks';
 /** The three things to know, each drawn as the game draws it, over a few
  *  words: its found count, its clock, and a tap. */
@@ -1759,19 +1757,30 @@ export const BLOCK_HINT_DETAIL = 'A hint costs 10 points.';
 export const BLOCK_HINT_SHOWN = 'Look inside the ring.';
 export const ZOOM_IN = 'Zoom in';
 export const ZOOM_OUT = 'Zoom out';
-export const LEAVE_BLOCK = 'Leave Ready the Block';
+export const LEAVE_BLOCK = 'Leave the fire risk check';
 export const BLOCK_TIME_UP = 'Time is up';
 export const BLOCK_ALL_FOUND = 'You found all eight';
-export const BLOCK_VERDICT = (score: number) => (score >= 80 ? 'Sharp eyes' : score >= 50 ? 'Good spotting' : 'Plenty still to spot');
+/** The report's heading: plainly how many were found. */
+export const BLOCK_RESULT = (found: number) =>
+  found === 8
+    ? 'You found all eight risks'
+    : found === 0
+      ? 'You found none of the eight risks'
+      : `You found ${NUMBER_WORD(found)} of eight risks`;
+/** Beside the penalties when every risk was found before the time ran out. */
+export const BLOCK_IN_TIME = 'Finished in time';
+export const BLOCK_LOOK_AGAIN = 'Look again';
 export const BLOCK_FOUND_BADGE = 'Found';
 export const BLOCK_MISSED_BADGE = 'Missed';
 export const BLOCK_PENALTIES = (wrong: number, hints: number) =>
   `${wrong} wrong ${wrong === 1 ? 'tap' : 'taps'}, ${hints} ${hints === 1 ? 'hint' : 'hints'}`;
 export const BLOCK_OUTCOME_LINE = (ending: string, penalties: string) => `${ending} \u00b7 ${penalties}`;
 export const BLOCK_LIST_HEADING = 'Today’s eight risks';
+/** The report's last card: from the picture to the person's own home. */
+export const BLOCK_CHECK_HOME_HEADING = 'Now check your place';
 export const BLOCK_CHECK_HOME = 'Is one of these at your place? Fix one this week.';
 export const BLOCK_SOURCE_LINE = 'The risks follow the Country Fire Authority’s guide to preparing your property.';
-export const BLOCK_UNAVAILABLE = 'This browser could not load the pictures for Ready the Block.';
+export const BLOCK_UNAVAILABLE = 'This browser could not load the pictures for Spot the fire risks.';
 /** The drill card's line for this twist's time and bag. */
 export const DRILL_TILE_DETAIL_FOR = (seconds: number, bag: number) =>
   `For families. ${capital(TIME_WORDS(seconds))} to pack ${NUMBER_WORD(bag)} things together and reach the front door.`;
