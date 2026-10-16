@@ -10,6 +10,7 @@ import {
   NOTE_LABEL,
   NOTE_SAVED,
   NOTE_UNSAVED,
+  NO_NOTES_YET,
   SAVE_NOTE,
 } from '../src/core/copy';
 import { HARNESS, storageCounts } from './helpers';
@@ -29,9 +30,12 @@ test('a note is added, read, edited, kept and deleted, and the store follows', a
   await openNotes(page);
   const notes = page.locator('.pack-notes');
   await expect(notes.getByRole('button', { name: SAVE_NOTE })).toHaveCount(0);
+  // No notes yet, in the dashed box, gone while the first is written.
+  await expect(notes.locator('.empty-state')).toHaveText(NO_NOTES_YET);
 
   await notes.getByRole('button', { name: ADD_NOTE }).click();
   await expect(notes.getByLabel(NOTE_LABEL)).toBeFocused();
+  await expect(notes.locator('.empty-state')).toHaveCount(0);
   await expect(notes.getByRole('button', { name: SAVE_NOTE })).toBeDisabled();
   await expect(notes.getByRole('button', { name: DELETE_NOTE })).toHaveCount(0);
   await notes.getByLabel(NOTE_LABEL).fill('Turn the gas off at the meter.');
@@ -62,6 +66,7 @@ test('a note is added, read, edited, kept and deleted, and the store follows', a
   await notes.locator('.card-confirm-yes').click();
   await expect(notes.getByRole('status')).toHaveText(NOTE_DELETED);
   await expect(notes.locator('.note-card')).toHaveCount(0);
+  await expect(notes.locator('.empty-state')).toHaveText(NO_NOTES_YET);
   await expect(notes.getByRole('button', { name: ADD_NOTE })).toBeFocused();
   expect(await storageCounts(page)).toMatchObject({ notes: 0 });
   // It fades as Note saved does, and clears on its own.

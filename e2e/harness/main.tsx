@@ -323,7 +323,8 @@ if (['/detail', '/detail-launch', '/detail-print'].includes(window.location.path
   await db.layers.put(detailLayer);
   await db.destinations.put(detailDestination);
   // The pack's program is the one saved in Recover, so the page's sync keeps it.
-  localStorage.setItem('cooeee.kept.v1', JSON.stringify([detailRecovery.programId]));
+  // ?mode=unkept: it was let go in Recover, so the sync takes it out.
+  localStorage.setItem('cooeee.kept.v1', JSON.stringify(detailMode === 'unkept' ? [] : [detailRecovery.programId]));
   // ?mode=drilled: one drill played on the phone two days before the clock.
   if (detailMode === 'drilled') {
     await db.drills.put({ id: 'detail-drill', finishedAt: detailNow - 2 * 86_400_000, reachedDoor: false, score: 0, packed: [] });

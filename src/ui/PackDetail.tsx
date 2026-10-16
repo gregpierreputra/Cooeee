@@ -413,8 +413,11 @@ export default function PackDetail({
             way to save more is to Recover's full list. */}
         <Section kind="kept" title={copy.SAVED_PROGRAMS} count={content.recovery.length}>
           <p className="muted place-note">{copy.SAVED_PROGRAMS_SHARED}</p>
+          {/* Nothing yet, in the same dashed box as Practice's rehearsals. */}
           {content.recovery.length === 0 ? (
-            <p className="muted">{copy.NO_SAVED_PROGRAMS}</p>
+            <div className="empty-state">
+              <p>{copy.NO_SAVED_PROGRAMS}</p>
+            </div>
           ) : (
             <ShortList
               items={content.recovery}

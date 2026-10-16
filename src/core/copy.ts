@@ -387,6 +387,7 @@ export const KEEP_OLD_NOTES = (count: number) => (count === 1 ? 'Keep it' : 'Kee
 
 export const NOTES = 'Notes';
 export const ADD_NOTE = 'Add a note';
+export const NO_NOTES_YET = 'No notes yet.';
 export const SAVE_NOTE = 'Save';
 export const DELETE_NOTE = 'Delete';
 export const NOTE_SAVED = 'Note saved.';
@@ -714,7 +715,7 @@ export const PACK_TAB_PRACTICE = 'Practice';
 /** Under a long list on the pack page: the rest of it, then back to three. */
 export const SHOW_MORE = (count: number) => `Show ${count} more`;
 export const SHOW_FEWER = 'Show fewer';
-export const NO_SAVED_PROGRAMS = 'None saved yet.';
+export const NO_SAVED_PROGRAMS = 'No programs saved yet.';
 /** Every pack carries the programs saved in Recover, so the pack says so. */
 export const SAVED_PROGRAMS_SHARED = 'The same in every pack. Choose them in Recover.';
 /** "More" only once there is one already. */

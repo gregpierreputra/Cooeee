@@ -208,6 +208,17 @@ test('the pack page keeps its saved programs in Support, each with its own page 
   await expect(section.getByRole('link', { name: copy.SAVE_MORE_PROGRAMS(1) })).toHaveAttribute('href', '/recover?need=all&from=detail-pack');
 });
 
+// A program let go in Recover leaves the pack, and an empty list says so in
+// the dashed box Practice uses for no rehearsals.
+test('a pack with no saved programs says so in a dashed box', async ({ page }) => {
+  await page.goto(`${HARNESS}/detail?mode=unkept`);
+  await page.getByRole('tab', { name: copy.PACK_TAB_SUPPORT }).click();
+  const section = page.locator('.pack-section', { hasText: copy.SAVED_PROGRAMS });
+  await expect(section.locator('.section-count')).toHaveText('0');
+  await expect(section.locator('.empty-state')).toHaveText(copy.NO_SAVED_PROGRAMS);
+  await expect(section.getByRole('link', { name: copy.SAVE_MORE_PROGRAMS(0) })).toBeVisible();
+});
+
 // The pack page's five tabs: it opens on Area, each tab shows only its own
 // panel, and the arrow keys move between them. Every block keeps its glyph.
 test('the pack page opens on Area and shows one tab at a time', async ({ page }) => {
