@@ -598,9 +598,11 @@ export const OUTSIDE_PACK_AREA = (distance: string, pack: string) =>
 // zero network. The numbers are safety copy: exact-match tested, never retyped.
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 
-// E3-US2-AC2 no pack stored. Said the same as on Home: with no pack at all,
-// there is no place a pack could cover.
-export const NO_PACK_HERE = 'No pack saved yet.';
+// E3-US2-AC2 no pack stored: one quiet line saying why the dial points at the
+// official list, as a pack cannot be built from inside BlackSky.
+export const NO_PACK_HERE = 'No pack saved on this phone.';
+/** After NO_PACK_HERE, only when the official list is on the phone to point at. */
+export const NO_PACK_DIAL_FROM_LIST = 'The dial points to the nearest place on the official list.';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack';
@@ -618,6 +620,7 @@ export const NO_GPS_YET_DETAIL = 'The dial to the nearest place of last resort s
 // Built-in static preparation guidance, readable on a fresh install that has
 // never been online since setup.
 export const PREPARATION_GUIDANCE_TITLE = 'Before an emergency';
+export const PREP_PACK_LINE = "Save a pack for your place once you're back online, so BlackSky can show your places.";
 export const PREP_KIT_LINE =
   'Keep water, medications, a torch and a battery radio where you can grab them.';
 export const PREP_PLAN_LINE = 'Decide where you would go and how, before you need to.';

@@ -707,6 +707,7 @@ export default function BlackSky({
           screen={screen}
           estimating={estimate !== null}
           waiting={permission !== 'denied'}
+          listed={(sites?.sites.length ?? 0) > 0}
           onMark={setMark}
           dial={dial}
           notes={notesBlock}
@@ -794,6 +795,7 @@ function ScreenBody({
   screen,
   estimating,
   waiting,
+  listed,
   onMark,
   dial,
   notes,
@@ -802,6 +804,8 @@ function ScreenBody({
   estimating: boolean;
   /** Location is not refused, so a position may still come. */
   waiting: boolean;
+  /** The official list is on the phone, so the dial has places to point at. */
+  listed: boolean;
   onMark: (mark: PositionMark) => void;
   dial: ReactNode;
   notes: ReactNode;
@@ -817,16 +821,16 @@ function ScreenBody({
           {dial}
           {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
           {/* No position yet: said first, so the missing dial is explained. */}
-          {!screen.confidence && waiting ? <StateCard glyph="locate" heading={copy.NO_GPS_YET} detail={copy.NO_GPS_YET_DETAIL} /> : null}
-          {/* The space a pack would fill, dashed as on Home, so it reads as
-              nothing saved and never as a state to act on here. */}
-          <section className="empty-state">
-            <Glyph kind="saved" />
-            <h2>{copy.NO_PACK_HERE}</h2>
-            <p className="muted">{copy.NO_PACKS_HINT}</p>
-          </section>
+          {!screen.confidence && waiting ? <StateCard glyph="locate" heading={copy.NO_GPS_YET} detail={listed ? copy.NO_GPS_YET_DETAIL : undefined} /> : null}
+          {/* Why the dial points at the official list: a quiet line, not a
+              box, as nothing can be done about it from here. Saving a pack is
+              the first of the steps for next time. */}
+          <p className="muted blacksky-no-pack">
+            {listed ? `${copy.NO_PACK_HERE} ${copy.NO_PACK_DIAL_FROM_LIST}` : copy.NO_PACK_HERE}
+          </p>
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
+            <p>{copy.PREP_PACK_LINE}</p>
             <p>{copy.PREP_KIT_LINE}</p>
             <p>{copy.PREP_PLAN_LINE}</p>
           </section>

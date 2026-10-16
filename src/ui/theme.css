@@ -2771,7 +2771,8 @@ html:has(.blacksky-sheet[open]) {
   overflow-wrap: anywhere;
 }
 
-.blacksky-reminder {
+.blacksky-reminder,
+.blacksky-no-pack {
   margin: 0;
 }
 

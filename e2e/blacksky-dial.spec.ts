@@ -9,8 +9,10 @@ import {
   LOCATION_OFF,
   NO_GPS_YET,
   NO_GPS_YET_DETAIL,
+  NO_PACK_DIAL_FROM_LIST,
   NO_PACK_HERE,
   NO_PLACE_TO_POINT_AT,
+  PREP_PACK_LINE,
   SORTED_BY_DISTANCE,
   TURN_ON_LOCATION,
 } from '../src/core/copy';
@@ -518,10 +520,11 @@ test('No pack and no position yet: the screen says it is waiting for GPS, then t
   await expect(page.getByText(NO_GPS_YET)).toBeVisible();
   await expect(page.getByText(NO_GPS_YET_DETAIL)).toBeVisible();
   await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
-  // The location card is outlined to stand out; the missing pack is the dashed
-  // space a pack would fill, as on Home.
+  // The location card is outlined to stand out; the missing pack is one quiet
+  // line, and saving one leads the steps for next time.
   await expect(page.locator('.state-card-status')).toContainText(NO_GPS_YET);
-  await expect(page.locator('.empty-state')).toContainText(NO_PACK_HERE);
+  await expect(page.locator('.blacksky-no-pack')).toHaveText(`${NO_PACK_HERE} ${NO_PACK_DIAL_FROM_LIST}`);
+  await expect(page.locator('.blacksky-guidance p').first()).toHaveText(PREP_PACK_LINE);
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
   await expect(page.getByText(NO_GPS_YET)).toHaveCount(0);
@@ -599,6 +602,9 @@ test('Empty: a position but nothing to point at keeps the notes and Leave', asyn
   await openDial(page, 'empty');
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(page.getByText(NO_PLACE_TO_POINT_AT)).toBeVisible();
+  // With no list there is nothing for the dial to point at, so the line says
+  // only that no pack is saved.
+  await expect(page.locator('.blacksky-no-pack')).toHaveText(NO_PACK_HERE);
   await expect(page.getByRole('button', { name: LEAVE_BLACKSKY })).toBeVisible();
 });
 
