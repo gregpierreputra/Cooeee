@@ -525,8 +525,13 @@ test('No pack and no position yet: the screen says it is waiting for GPS, then t
   await expect(page.locator('.state-card-status')).toContainText(NO_GPS_YET);
   // The term is first met in the strip, with its meaning, not in the card above.
   await expect(page.locator('.state-card-status')).not.toContainText('last resort');
-  await expect(page.locator('.blacksky-no-pack')).toHaveText(`${NO_PACK_HERE} ${NO_PACK_DIAL_FROM_LIST}`);
-  await expect(page.locator('.blacksky-guidance p').first()).toHaveText(PREP_PACK_LINE);
+  await expect(page.locator('.blacksky-no-pack-head')).toHaveText(NO_PACK_HERE);
+  await expect(page.locator('.blacksky-no-pack')).toContainText(NO_PACK_DIAL_FROM_LIST);
+  // The steps for next time stay folded until asked for.
+  const steps = page.getByText(PREP_PACK_LINE);
+  await expect(steps).toBeHidden();
+  await page.locator('.blacksky-guidance summary').click();
+  await expect(steps).toBeVisible();
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
   await expect(page.getByText(NO_GPS_YET)).toHaveCount(0);
@@ -607,6 +612,7 @@ test('Empty: a position but nothing to point at keeps the notes and Leave', asyn
   // With no list there is nothing for the dial to point at, so the line says
   // only that no pack is saved.
   await expect(page.locator('.blacksky-no-pack')).toHaveText(NO_PACK_HERE);
+  await expect(page.locator('.blacksky-no-pack')).not.toContainText(NO_PACK_DIAL_FROM_LIST);
   await expect(page.getByRole('button', { name: LEAVE_BLACKSKY })).toBeVisible();
 });
 

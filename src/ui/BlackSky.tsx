@@ -827,16 +827,29 @@ function ScreenBody({
               elsewhere in the app, kept quieter than a card as nothing can be
               done about it from here. Saving a pack is the first of the steps
               for next time. */}
-          <p className="muted with-glyph blacksky-no-pack">
+          <div className="blacksky-no-pack">
             <Glyph kind="saved" line />
-            <span>{listed ? `${copy.NO_PACK_HERE} ${copy.NO_PACK_DIAL_FROM_LIST}` : copy.NO_PACK_HERE}</span>
-          </p>
-          <section className="card blacksky-guidance">
-            <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
-            <p>{copy.PREP_PACK_LINE}</p>
-            <p>{copy.PREP_KIT_LINE}</p>
-            <p>{copy.PREP_PLAN_LINE}</p>
-          </section>
+            <div>
+              <p className="blacksky-no-pack-head">{copy.NO_PACK_HERE}</p>
+              {listed ? <p className="muted">{copy.NO_PACK_DIAL_FROM_LIST}</p> : null}
+            </div>
+          </div>
+          {/* Steps for after BlackSky, folded as the notes fold: the same row,
+              closed until asked for, so what matters now stays first. */}
+          <details className="blacksky-guidance">
+            <summary className="pack-section-head">
+              <Glyph kind="bag" />
+              <span className="kicker">{copy.PREPARATION_GUIDANCE_TITLE}</span>
+              <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </summary>
+            <div className="card">
+              <p>{copy.PREP_PACK_LINE}</p>
+              <p>{copy.PREP_KIT_LINE}</p>
+              <p>{copy.PREP_PLAN_LINE}</p>
+            </div>
+          </details>
         </>
       );
     // US1-AC2: no fix at all, so nothing to point from. The saved information

@@ -2736,13 +2736,15 @@ html:has(.blacksky-sheet[open]) {
    on the no-fix reference screen it starts folded. The summary is headed as a
    pack page section, 56 px high (the layout keeps it on the first screen), with
    the chevron at its end; each note is a card, at reading size. */
-.blacksky-notes summary {
+.blacksky-notes summary,
+.blacksky-guidance summary {
   min-height: 56px;
   cursor: pointer;
   list-style: none;
 }
 
-.blacksky-notes summary::-webkit-details-marker {
+.blacksky-notes summary::-webkit-details-marker,
+.blacksky-guidance summary::-webkit-details-marker {
   display: none;
 }
 
@@ -2751,11 +2753,13 @@ html:has(.blacksky-sheet[open]) {
   font-size: var(--step-0);
 }
 
-.blacksky-notes .hint-chevron {
+.blacksky-notes .hint-chevron,
+.blacksky-guidance .hint-chevron {
   margin-left: auto;
 }
 
-.blacksky-notes[open] .hint-chevron {
+.blacksky-notes[open] .hint-chevron,
+.blacksky-guidance[open] .hint-chevron {
   transform: rotate(90deg);
 }
 
@@ -2777,13 +2781,30 @@ html:has(.blacksky-sheet[open]) {
 /* No pack in BlackSky: the dashed edge of the empty pack spaces elsewhere, in
    a slim strip quieter than any card. */
 .blacksky-no-pack {
-  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
   padding: 0.625rem 0.875rem;
   font-size: var(--step-s);
+  color: var(--ink-2);
   border: 1px dashed color-mix(in srgb, var(--ink-3) 60%, transparent);
   border-radius: var(--r-card);
 }
+.blacksky-no-pack p {
+  margin: 0;
+}
+/* The fact first, a little heavier, as a card's heading leads its detail. */
+.blacksky-no-pack-head {
+  font-weight: var(--w-med);
+}
+.blacksky-no-pack > .line-glyph {
+  height: 1lh;
+}
 
+.blacksky-guidance .card {
+  display: grid;
+  gap: 0.5rem;
+}
 .blacksky-guidance p {
   margin: 0;
 }
