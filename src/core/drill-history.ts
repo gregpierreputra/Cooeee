@@ -27,6 +27,13 @@ export type DrillRow = {
   bag: { id: string; name: string; why: string; kind: ScoreGroup['kind']; points: string | null }[];
 };
 
+/** The essentials packed, counted against what the bag could hold, so a
+ *  small bag full of essentials never reads as a shortfall beside its score. */
+const essentialsLine = (packed: number, inHouse: number, bagLimit: number): string =>
+  bagLimit < inHouse && packed === bagLimit
+    ? copy.DRILL_ROW_ESSENTIALS_FULL(packed)
+    : copy.DRILL_ROW_ESSENTIALS(packed, Math.min(inHouse, bagLimit));
+
 /** Each drill is read under its own twist, so a row says what that drill's
  *  debrief said, whatever twist is on today. */
 export const drillRows = (drills: Drill[]): DrillRow[] =>
@@ -42,9 +49,10 @@ export const drillRows = (drills: Drill[]): DrillRow[] =>
         bagLimit: rules.bagLimit,
         score: drill.reachedDoor ? drill.score : null,
         verdict: drill.reachedDoor ? copy.VERDICT(drill.score) : null,
-        essentials: copy.DRILL_ROW_ESSENTIALS(
+        essentials: essentialsLine(
           rows.filter(({ item }) => kindOf(item.weight) === 'essential').length,
           rules.reachable.filter((item) => kindOf(item.weight) === 'essential').length,
+          rules.bagLimit,
         ),
         leftBehind: leftBehind(drill.packed, rules).map((item) => item.name),
         costYou: rows.filter(({ effect }) => effect === 'took').map(({ item }) => item.name),

@@ -1577,6 +1577,8 @@ export const NOT_YET_DRILLED = 'Not yet drilled.';
 export const DRILL_ROW_DOOR = 'At the door';
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';
 export const DRILL_ROW_ESSENTIALS = (packed: number, total: number) => `${packed} of ${total} essentials packed`;
+/** A bag too small for every essential, filled with them: the best it could do. */
+export const DRILL_ROW_ESSENTIALS_FULL = (packed: number) => `${packed} essentials packed, all the bag could hold`;
 
 // ── Games on the Rehearse screen: the drill's twists, Cooee Word, Ready the Block
 // Three games with a number in them, like the drill. Every number is about

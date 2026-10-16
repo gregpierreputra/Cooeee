@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { drillRows, highestScore } from '../../src/core/drill-history';
+import { kindOf } from '../../src/core/drill-score';
+import { rulesFor } from '../../src/core/drill-twists';
 import type { Drill } from '../../src/core/types';
 
 const drill = (over: Partial<Drill>): Drill => ({
@@ -38,6 +40,19 @@ describe('E9 the drill record', () => {
     expect(rows.map((row) => row.label)).toEqual(['Early start', 'One minute', 'Classic']);
     // The bag's size under that twist, so its empty slots match the debrief.
     expect(rows.map((row) => row.bagLimit)).toEqual([10, 6, 10]);
+  });
+
+  it('counts the essentials against what the bag could hold', () => {
+    const essentials = rulesFor('one-minute').reachable
+      .filter((item) => kindOf(item.weight) === 'essential')
+      .map((item) => item.id);
+    const row = (packed: string[]) => drillRows([drill({ twist: 'one-minute', packed })])[0];
+    // A bag of six with six essentials is the best it could do, though four stay behind.
+    expect(row(essentials.slice(0, 6)).essentials).toBe('6 essentials packed, all the bag could hold');
+    expect(row(essentials.slice(0, 6)).leftBehind).toHaveLength(4);
+    expect(row(essentials.slice(0, 4)).essentials).toBe('4 of 6 essentials packed');
+    // Room in the boot holds more than every essential, so it counts out of all of them.
+    expect(drillRows([drill({ twist: 'room-in-the-boot', packed: ['water'] })])[0].essentials).toBe('1 of 10 essentials packed');
   });
 
   it('finds the highest score among drills that reached the door', () => {
