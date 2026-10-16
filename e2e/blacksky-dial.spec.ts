@@ -523,6 +523,8 @@ test('No pack and no position yet: the screen says it is waiting for GPS, then t
   // The location card is outlined to stand out; the missing pack is one quiet
   // line, and saving one leads the steps for next time.
   await expect(page.locator('.state-card-status')).toContainText(NO_GPS_YET);
+  // The term is first met in the strip, with its meaning, not in the card above.
+  await expect(page.locator('.state-card-status')).not.toContainText('last resort');
   await expect(page.locator('.blacksky-no-pack')).toHaveText(`${NO_PACK_HERE} ${NO_PACK_DIAL_FROM_LIST}`);
   await expect(page.locator('.blacksky-guidance p').first()).toHaveText(PREP_PACK_LINE);
   await pushPosition(page, AT_FERNY_CREEK);

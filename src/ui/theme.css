@@ -2771,9 +2771,17 @@ html:has(.blacksky-sheet[open]) {
   overflow-wrap: anywhere;
 }
 
-.blacksky-reminder,
+.blacksky-reminder {
+  margin: 0;
+}
+/* No pack in BlackSky: the dashed edge of the empty pack spaces elsewhere, in
+   a slim strip quieter than any card. */
 .blacksky-no-pack {
   margin: 0;
+  padding: 0.625rem 0.875rem;
+  font-size: var(--step-s);
+  border: 1px dashed color-mix(in srgb, var(--ink-3) 60%, transparent);
+  border-radius: var(--r-card);
 }
 
 .blacksky-guidance p {

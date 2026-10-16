@@ -822,11 +822,14 @@ function ScreenBody({
           {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
           {/* No position yet: said first, so the missing dial is explained. */}
           {!screen.confidence && waiting ? <StateCard glyph="locate" heading={copy.NO_GPS_YET} detail={listed ? copy.NO_GPS_YET_DETAIL : undefined} /> : null}
-          {/* Why the dial points at the official list: a quiet line, not a
-              box, as nothing can be done about it from here. Saving a pack is
-              the first of the steps for next time. */}
-          <p className="muted blacksky-no-pack">
-            {listed ? `${copy.NO_PACK_HERE} ${copy.NO_PACK_DIAL_FROM_LIST}` : copy.NO_PACK_HERE}
+          {/* Why the dial points at the official list, and what a place of
+              last resort is: a slim dashed strip, the mark of a missing pack
+              elsewhere in the app, kept quieter than a card as nothing can be
+              done about it from here. Saving a pack is the first of the steps
+              for next time. */}
+          <p className="muted with-glyph blacksky-no-pack">
+            <Glyph kind="saved" line />
+            <span>{listed ? `${copy.NO_PACK_HERE} ${copy.NO_PACK_DIAL_FROM_LIST}` : copy.NO_PACK_HERE}</span>
           </p>
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>

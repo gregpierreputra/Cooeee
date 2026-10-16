@@ -445,7 +445,7 @@ export const TURN_ON_COMPASS = 'Turn on the compass';
 // phone will not ask.
 export const LOCATION_OFF = 'Location is off.';
 export const LOCATION_OFF_DETAIL =
-  "Turn it on so the dial can point you to the nearest place of last resort. If nothing happens, allow location for Cooeee in your phone's settings.";
+  "Turn it on so the dial can point you to the nearest place to go. If nothing happens, allow location for Cooeee in your phone's settings.";
 export const TURN_ON_LOCATION = 'Turn on location';
 /** The browser has stopped asking, after a block or a few refusals, and no page
  *  can make it ask again: only its own settings can. */
@@ -601,8 +601,11 @@ export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 // E3-US2-AC2 no pack stored: one quiet line saying why the dial points at the
 // official list, as a pack cannot be built from inside BlackSky.
 export const NO_PACK_HERE = 'No pack saved on this phone.';
-/** After NO_PACK_HERE, only when the official list is on the phone to point at. */
-export const NO_PACK_DIAL_FROM_LIST = 'The dial points to the nearest place on the official list.';
+/** After NO_PACK_HERE, only when the official list is on the phone to point at.
+ *  Someone with no pack has never seen the term, so it is said with its
+ *  meaning, in the words ARRIVAL_GUIDE_LINE uses. */
+export const NO_PACK_DIAL_FROM_LIST =
+  'The dial points to the nearest place of last resort, a place the Country Fire Authority names to go to in a bushfire when every other plan has failed.';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack';
@@ -614,8 +617,9 @@ export const CHOOSE_PACK_HINT = 'Loads its places and notes.';
 export const PACK_COVERS_HERE = 'Covers where you are';
 /** With several packs, none chosen and no fix: the one thing the screen can say. */
 export const NO_GPS_YET = 'No GPS signal yet.';
-/** With no pack and no position, under No GPS signal yet: what is waited for. */
-export const NO_GPS_YET_DETAIL = 'The dial to the nearest place of last resort shows once your phone finds you.';
+/** With no pack and no position, under No GPS signal yet: what is waited for.
+ *  The place it points to is named and explained once, in the line beneath. */
+export const NO_GPS_YET_DETAIL = 'The dial shows once your phone finds you.';
 
 // Built-in static preparation guidance, readable on a fresh install that has
 // never been online since setup.
