@@ -48,7 +48,7 @@ export const OFFLINE_NOTICE = 'Offline. Packs still work.';
 export const DISMISS_NOTICE = 'Dismiss connection notice';
 
 /** Says what a pack is, as testers new to the app did not know the word. */
-export const NO_PACKS_HINT = "A pack keeps one address's bushfire information on this phone. Build one while you have a connection.";
+export const NO_PACKS_HINT = "A pack keeps a place's bushfire information on this phone. Build it while online.";
 /** "1 day", "3 days": a pack saved yesterday must not read "1 days ago". */
 const dayCount = (days: number) => (days === 1 ? '1 day' : `${days} days`);
 /** A pack card's age, from ageLabel: "Saved just now", "Saved 5 minutes ago". */
@@ -646,8 +646,11 @@ export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a netwo
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
 
 /** Home with no pack: a dashed space where packs will be, under Your packs. */
-export const NO_PACK_SAVED = 'Packs you save will show up here.';
+export const NO_PACK_SAVED = 'No pack saved yet';
 export const YOUR_PACKS = 'Your packs';
+/** Over the packs on Rehearse, which is for picking one. Your packs stays
+ *  while none is saved, as there is nothing to choose. */
+export const CHOOSE_PACK_TO_REHEARSE = 'Choose a pack to rehearse';
 
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';

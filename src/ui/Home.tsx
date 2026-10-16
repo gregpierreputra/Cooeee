@@ -221,6 +221,7 @@ export default function Home({ now }: { now?: number }) {
         // The space the packs will fill, drawn dashed so it reads as empty
         // rather than as a card. The New offline pack button below fills it.
         <section className="empty-state">
+          <Glyph kind="saved" />
           <h2>{copy.NO_PACK_SAVED}</h2>
           <p className="muted">{copy.NO_PACKS_HINT}</p>
           {/* The nudge, one amber line in the same card: saved programs are

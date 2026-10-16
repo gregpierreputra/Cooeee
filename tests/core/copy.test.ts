@@ -56,7 +56,7 @@ describe('shell copy', () => {
   });
 
   it('says a pack is missing without implying anything about the place', () => {
-    expect(copy.NO_PACKS_HINT).toContain('while you have a connection');
+    expect(copy.NO_PACKS_HINT).toContain('while online');
   });
 
   it('welcomes in three moments and two facts, one short line each', () => {
@@ -240,8 +240,9 @@ describe('the fixed header', () => {
 
 describe('the returning-user home', () => {
   it('says where packs will show, under their own eyebrow, and offers to build one', () => {
-    expect(copy.NO_PACK_SAVED).toBe('Packs you save will show up here.');
+    expect(copy.NO_PACK_SAVED).toBe('No pack saved yet');
     expect(copy.YOUR_PACKS).toBe('Your packs');
+    expect(copy.CHOOSE_PACK_TO_REHEARSE).toBe('Choose a pack to rehearse');
     expect(copy.BUILD_A_PACK).toBe('New offline pack');
   });
 
