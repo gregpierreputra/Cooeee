@@ -467,6 +467,9 @@ export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';
  * accepted the password. */
 export const GATE_KEY = 'cooeee.gate.v1';
 export const GATE_VALUE = 'passed';
+/** Off for the expo, so anyone with the link opens the app with no password.
+ *  The gate's screen and its server check are kept: true brings it back. */
+export const GATE_SHOWN = false;
 
 /** Which screen was open last. BlackSky sets this flag when it opens and only
  * the hold on Leave BlackSky clears it, so a visit that starts anywhere else is

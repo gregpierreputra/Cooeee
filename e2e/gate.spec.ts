@@ -1,69 +1,89 @@
 import { expect, test } from '@playwright/test';
-import { GATE_KEY, GATE_VALUE } from '../src/core/constants';
+import { GATE_KEY, GATE_SHOWN, GATE_VALUE } from '../src/core/constants';
 import { GATE_INCORRECT, GATE_LOCKED, GATE_SUBMIT, GATE_TITLE, SEE_HOW_IT_WORKS } from '../src/core/copy';
 
 // Feature 1, against the real production bundle. Nothing serves /api under
-// vite preview, so each test plays the server's answer itself.
-const answer = (status: number, body: object) => ({
-  status,
-  contentType: 'application/json',
-  body: JSON.stringify(body),
-});
+// vite preview, so each test plays the server's answer itself. The gate is
+// switched off for the expo: then anyone with the link reaches the welcome,
+// and the gate's own tests wait until it is switched back on.
 
-test('a wrong password stays on the gate, and the third miss locks it', async ({ page }) => {
-  let misses = 0;
+test('with the gate off, the link opens straight on the welcome', async ({ page }) => {
+  test.skip(GATE_SHOWN, 'The gate is on');
+  let asked = false;
   await page.route('**/api/v1/gate', (route) => {
-    misses += 1;
-    return route.fulfill(
-      misses < 3
-        ? answer(401, { error: 'incorrect', attemptsLeft: 3 - misses })
-        : answer(429, { error: 'locked', retryAfterSeconds: 45 }),
-    );
+    asked = true;
+    return route.abort();
   });
   await page.goto('/');
-  const field = page.getByLabel(GATE_TITLE);
-  const enter = page.getByRole('button', { name: GATE_SUBMIT });
-  await expect(enter).toBeDisabled();
-
-  await field.fill('wrong');
-  await enter.click();
-  await expect(page.getByRole('status')).toHaveText(GATE_INCORRECT(2));
-  await expect(field).toHaveValue('');
-  await field.fill('wrong');
-  await enter.click();
-  await expect(page.getByRole('status')).toHaveText(GATE_INCORRECT(1));
-  await field.fill('wrong');
-  await enter.click();
-  await expect(page.getByRole('status')).toHaveText(GATE_LOCKED(45));
-  await expect(field).toBeDisabled();
-  expect(await page.evaluate(() => localStorage.length)).toBe(0);
-});
-
-test('the password reaches the welcome page and stores one flag', async ({ page }) => {
-  const sent: unknown[] = [];
-  await page.route('**/api/v1/gate', (route) => {
-    sent.push(route.request().postDataJSON());
-    return route.fulfill(answer(200, { ok: true }));
-  });
-  await page.goto('/');
-  await page.getByLabel(GATE_TITLE).fill('open-sesame');
-  await page.getByRole('button', { name: GATE_SUBMIT }).click();
   await expect(page.getByRole('button', { name: SEE_HOW_IT_WORKS })).toBeVisible();
-
-  expect(sent).toEqual([{ password: 'open-sesame' }]);
-  expect(
-    await page.evaluate(() =>
-      Object.fromEntries(Array.from({ length: localStorage.length }, (_u, i) => [localStorage.key(i)!, localStorage.getItem(localStorage.key(i)!)])),
-    ),
-  ).toEqual({ [GATE_KEY]: GATE_VALUE });
+  await expect(page.getByLabel(GATE_TITLE)).toHaveCount(0);
+  expect(asked).toBe(false);
 });
 
-// The mark sits in its ring centred over the name, on the gate as on the
-// welcome and the disclosure that follow it.
-test('the mark is centred over the name on the gate', async ({ page }) => {
-  await page.goto('/');
-  const ring = (await page.locator('.gate .first-open-mark').boundingBox())!;
-  const name = (await page.locator('.gate h1').boundingBox())!;
-  const middle = (box: { x: number; width: number }) => box.x + box.width / 2;
-  expect(Math.abs(middle(ring) - middle(name))).toBeLessThan(2);
+test.describe('the gate, while it is on', () => {
+  test.skip(!GATE_SHOWN, 'The gate is switched off for the expo');
+
+  const answer = (status: number, body: object) => ({
+    status,
+    contentType: 'application/json',
+    body: JSON.stringify(body),
+  });
+
+  test('a wrong password stays on the gate, and the third miss locks it', async ({ page }) => {
+    let misses = 0;
+    await page.route('**/api/v1/gate', (route) => {
+      misses += 1;
+      return route.fulfill(
+        misses < 3
+          ? answer(401, { error: 'incorrect', attemptsLeft: 3 - misses })
+          : answer(429, { error: 'locked', retryAfterSeconds: 45 }),
+      );
+    });
+    await page.goto('/');
+    const field = page.getByLabel(GATE_TITLE);
+    const enter = page.getByRole('button', { name: GATE_SUBMIT });
+    await expect(enter).toBeDisabled();
+
+    await field.fill('wrong');
+    await enter.click();
+    await expect(page.getByRole('status')).toHaveText(GATE_INCORRECT(2));
+    await expect(field).toHaveValue('');
+    await field.fill('wrong');
+    await enter.click();
+    await expect(page.getByRole('status')).toHaveText(GATE_INCORRECT(1));
+    await field.fill('wrong');
+    await enter.click();
+    await expect(page.getByRole('status')).toHaveText(GATE_LOCKED(45));
+    await expect(field).toBeDisabled();
+    expect(await page.evaluate(() => localStorage.length)).toBe(0);
+  });
+
+  test('the password reaches the welcome page and stores one flag', async ({ page }) => {
+    const sent: unknown[] = [];
+    await page.route('**/api/v1/gate', (route) => {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill(answer(200, { ok: true }));
+    });
+    await page.goto('/');
+    await page.getByLabel(GATE_TITLE).fill('open-sesame');
+    await page.getByRole('button', { name: GATE_SUBMIT }).click();
+    await expect(page.getByRole('button', { name: SEE_HOW_IT_WORKS })).toBeVisible();
+
+    expect(sent).toEqual([{ password: 'open-sesame' }]);
+    expect(
+      await page.evaluate(() =>
+        Object.fromEntries(Array.from({ length: localStorage.length }, (_u, i) => [localStorage.key(i)!, localStorage.getItem(localStorage.key(i)!)])),
+      ),
+    ).toEqual({ [GATE_KEY]: GATE_VALUE });
+  });
+
+  // The mark sits in its ring centred over the name, on the gate as on the
+  // welcome and the disclosure that follow it.
+  test('the mark is centred over the name on the gate', async ({ page }) => {
+    await page.goto('/');
+    const ring = (await page.locator('.gate .first-open-mark').boundingBox())!;
+    const name = (await page.locator('.gate h1').boundingBox())!;
+    const middle = (box: { x: number; width: number }) => box.x + box.width / 2;
+    expect(Math.abs(middle(ring) - middle(name))).toBeLessThan(2);
+  });
 });

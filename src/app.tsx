@@ -11,7 +11,7 @@ import {
 } from 'react-router';
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
-import { BLOCKED_NOTICE_MS, WORD_GAME_SHOWN } from './core/constants';
+import { BLOCKED_NOTICE_MS, GATE_SHOWN, WORD_GAME_SHOWN } from './core/constants';
 import { canStepBack } from './ui/components/history';
 import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
@@ -253,8 +253,9 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // which a route renders behind it. A store that cannot be read reads as "not
   // acknowledged", which shows the screen rather than blocking the app.
   const [screen, setScreen] = useState(() => openingScreen(localFlagStore()));
-  // Feature 1: the development gate stands in front of the disclosure itself.
-  const [passed, setPassed] = useState(() => readGate(localFlagStore()));
+  // Feature 1: the development gate stands in front of the disclosure itself,
+  // while GATE_SHOWN is on. Off, every visitor has passed it.
+  const [passed, setPassed] = useState(() => !GATE_SHOWN || readGate(localFlagStore()));
   // The welcome is seen once, on the way to the disclosure. Nothing records
   // it: the acknowledgement that follows is the only flag this screen leads to.
   const [welcomed, setWelcomed] = useState(false);
