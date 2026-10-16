@@ -197,7 +197,7 @@ describe('several packs stored', () => {
 // E3-US2-AC2: the no-pack statement — absence stated plainly, nothing invented.
 describe('no pack stored', () => {
   it('states that no saved pack covers this place', () => {
-    expect(copy.NO_PACK_HERE).toBe('No saved pack covers this place.');
+    expect(copy.NO_PACK_HERE).toBe('No pack saved yet.');
   });
 });
 

@@ -163,6 +163,9 @@ export default function BlackSky({
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   // Counts taps on Turn on location: each one starts the position watch again.
   const [locationAsks, setLocationAsks] = useState(0);
+  // The browser's own answer for this site, where it gives one: blocked means
+  // it will refuse without asking, so Turn on location could do nothing.
+  const [blocked, setBlocked] = useState(false);
   const [mark, setMark] = useState<PositionMark | null>(null);
   const [now, setNow] = useState(() => Date.now());
   // Which pack to load when several are saved: chosen at the top of the screen
@@ -359,6 +362,30 @@ export default function BlackSky({
       sleep();
     };
   }, [setMovement, locationAsks]);
+
+  // Whether location is blocked for this site, and the moment that changes:
+  // allowed again in the browser's settings, the watch starts at once. A
+  // browser that cannot say keeps Turn on location as it is.
+  useEffect(() => {
+    let status: PermissionStatus | null = null;
+    const read = () => {
+      if (!status) return;
+      setBlocked(status.state === 'denied');
+      if (status.state === 'granted') {
+        setPermission('prompt');
+        setLocationAsks((asks) => asks + 1);
+      }
+    };
+    navigator.permissions?.query({ name: 'geolocation' }).then(
+      (answer) => {
+        status = answer;
+        setBlocked(answer.state === 'denied');
+        answer.addEventListener('change', read);
+      },
+      () => undefined,
+    );
+    return () => status?.removeEventListener('change', read);
+  }, []);
 
   // One way out: the hold on Leave below. The phone's back button pops a
   // history entry, so this screen adds one spare entry on arrival and, on
@@ -648,18 +675,20 @@ export default function BlackSky({
       {/* Location refused and no mark standing in: a way to ask again, so no
           one is left on a screen with nothing to point from. */}
       {permission === 'denied' && !estimate ? (
-        <StateCard heading={copy.LOCATION_OFF} detail={copy.LOCATION_OFF_DETAIL}>
-          <button
-            type="button"
-            className="blacksky-turn-on"
-            onClick={() => {
-              setPermission('prompt');
-              setLocationAsks((asks) => asks + 1);
-            }}
-          >
-            <Glyph kind="locate" line />
-            {copy.TURN_ON_LOCATION}
-          </button>
+        <StateCard heading={copy.LOCATION_OFF} detail={blocked ? copy.LOCATION_BLOCKED_DETAIL : copy.LOCATION_OFF_DETAIL}>
+          {blocked ? null : (
+            <button
+              type="button"
+              className="blacksky-turn-on"
+              onClick={() => {
+                setPermission('prompt');
+                setLocationAsks((asks) => asks + 1);
+              }}
+            >
+              <Glyph kind="locate" line />
+              {copy.TURN_ON_LOCATION}
+            </button>
+          )}
         </StateCard>
       ) : null}
       {screen.kind === 'NO_PACK' && packs.length > 0 ? (
@@ -677,6 +706,7 @@ export default function BlackSky({
         <ScreenBody
           screen={screen}
           estimating={estimate !== null}
+          waiting={permission !== 'denied'}
           onMark={setMark}
           dial={dial}
           notes={notesBlock}
@@ -763,12 +793,15 @@ function PackPicker({
 function ScreenBody({
   screen,
   estimating,
+  waiting,
   onMark,
   dial,
   notes,
 }: {
   screen: Screen;
   estimating: boolean;
+  /** Location is not refused, so a position may still come. */
+  waiting: boolean;
   onMark: (mark: PositionMark) => void;
   dial: ReactNode;
   notes: ReactNode;
@@ -783,6 +816,8 @@ function ScreenBody({
         <>
           {dial}
           {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
+          {/* No position yet: said first, so the missing dial is explained. */}
+          {!screen.confidence && waiting ? <StateCard heading={copy.NO_GPS_YET} detail={copy.NO_GPS_YET_DETAIL} /> : null}
           <StateCard heading={copy.NO_PACK_HERE} detail={copy.NO_PACKS_HINT} />
           <section className="card blacksky-guidance">
             <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
