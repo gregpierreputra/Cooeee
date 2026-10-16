@@ -33,7 +33,6 @@ import AwayCheck from './ui/components/AwayCheck';
 import NoticeBar from './ui/components/NoticeBar';
 import Splash from './ui/components/Splash';
 import Tour, { startTour } from './ui/components/Tour';
-import TourOffer from './ui/components/TourOffer';
 import { focusMain } from './ui/components/focusMain';
 import PackDetail from './ui/PackDetail';
 import PackPrint from './ui/PackPrint';
@@ -84,6 +83,18 @@ function RescueStart() {
   useEffect(() => {
     navigate('/blacksky', { state: { held: true, guide: true } });
   }, []);
+  return null;
+}
+
+/** A new person's visit to BlackSky ends when they leave it: with nothing
+ *  agreed to, they go back to the welcome rather than on into the app. */
+function RescueEnd({ onLeft }: { onLeft: () => void }) {
+  const { pathname } = useLocation();
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    if (pathname.startsWith('/blacksky')) setSeen(true);
+    else if (seen) onLeft();
+  }, [pathname]);
   return null;
 }
 
@@ -249,9 +260,9 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   const [welcomed, setWelcomed] = useState(false);
   // A new person who held I need a way out now: the app opens straight into
   // BlackSky with nothing agreed to ('hold'), as does a reload while there
-  // ('resume'). They stay a first time visitor: the disclosure shows on the
-  // next visit, and the tour is offered once BlackSky is left ('done' after).
-  const [rescue, setRescue] = useState<'hold' | 'resume' | 'done' | null>(() =>
+  // ('resume'). They stay a first time visitor: leaving BlackSky takes them
+  // back to the welcome, so the app itself only opens once they have agreed.
+  const [rescue, setRescue] = useState<'hold' | 'resume' | null>(() =>
     screen === 'first-open' && isBlackSkyLatched(localFlagStore()) ? 'resume' : null,
   );
   // Each first run screen replaces the last in the same document, so the window
@@ -262,7 +273,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
     // In braces on purpose: newer browsers return a promise from scrollTo, and
     // React takes whatever an effect returns for its cleanup function.
     window.scrollTo(0, 0);
-  }, [passed, welcomed, screen]);
+  }, [passed, welcomed, screen, rescue]);
   // The call plays once more after the disclosure, over the first Home. A new
   // key mounts a fresh splash; `play` tells it not to ask how the page loaded.
   const [replays, setReplays] = useState(0);
@@ -315,6 +326,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       <BrowserRouter>
         <BlackSkyResume />
         {rescue === 'hold' ? <RescueStart /> : null}
+        {rescue ? <RescueEnd onLeft={() => setRescue(null)} /> : null}
         <ScrollToTop />
         <ModeSwitch />
         <NoticeBar />
@@ -343,7 +355,6 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Tour />
         <BottomNavHost />
         <AwayCheck />
-        {rescue === 'hold' || rescue === 'resume' ? <TourOffer onDone={() => setRescue('done')} /> : null}
       </BrowserRouter>
     );
   }

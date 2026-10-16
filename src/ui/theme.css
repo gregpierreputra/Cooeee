@@ -2999,12 +2999,6 @@ html:has(.blacksky-sheet[open]) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-.tour-offer {
-  inset-inline: 1rem;
-  top: 7.5rem; /* under the header and the notice bar above it */
-  max-width: 560px;
-  margin: 0 auto;
-}
 
 /* BlackSky's first arrival: in the mode's own amber, never white, the box
    over the foot of the screen just above the hold, Go across it and the time
