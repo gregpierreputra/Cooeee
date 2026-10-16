@@ -254,6 +254,7 @@ test.describe('E9 the drill', () => {
     await page.reload();
     const past = page.locator('.pack-section', { hasText: 'Past drills' });
     await expect(past.locator('.history-row')).toHaveCount(1);
+    await expect(past.locator('.history-row .place-kind')).toHaveText('Classic');
     await expect(past).toContainText('Away from the door when time ran out');
 
     await page.getByRole('button', { name: 'Clear drill results' }).click();

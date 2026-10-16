@@ -14,8 +14,8 @@ import type { Drill } from './types';
 export type DrillRow = {
   id: string;
   date: string;
-  /** The twist's name, or null for the classic drill. */
-  twist: string | null;
+  /** The twist it was played under, by name: Classic with none. */
+  label: string;
   score: number | null;
   verdict: string | null;
   essentials: string;
@@ -36,7 +36,7 @@ export const drillRows = (drills: Drill[]): DrillRow[] =>
       return {
         id: drill.id,
         date: formatSavedDate(drill.finishedAt),
-        twist: rules.twist === 'classic' ? null : rules.name,
+        label: rules.name,
         score: drill.reachedDoor ? drill.score : null,
         verdict: drill.reachedDoor ? copy.VERDICT(drill.score) : null,
         essentials: copy.DRILL_ROW_ESSENTIALS(

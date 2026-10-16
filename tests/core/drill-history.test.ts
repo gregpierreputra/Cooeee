@@ -29,6 +29,15 @@ describe('E9 the drill record', () => {
     ]);
   });
 
+  it('labels each drill with the twist it was played under, Classic with none', () => {
+    const rows = drillRows([
+      drill({ id: 'classic' }),
+      drill({ id: 'short', finishedAt: 1_800_000_000_000, twist: 'one-minute' }),
+      drill({ id: 'long', finishedAt: 1_900_000_000_000, twist: 'early-start' }),
+    ]);
+    expect(rows.map((row) => row.label)).toEqual(['Early start', 'One minute', 'Classic']);
+  });
+
   it('finds the highest score among drills that reached the door', () => {
     expect(highestScore([])).toBeNull();
     expect(highestScore([drill({ reachedDoor: false, score: 0 })])).toBeNull();

@@ -1621,7 +1621,6 @@ export const DRILL_TWIST_HIDDEN = 'Twist';
 export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this twist is ${score} out of 100.`;
 /** Under the score when the twist's bag is not ten, or some things are out of reach. */
 export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this twist’s bag could hold.';
-export const DRILL_ROW_TWIST = (name: string) => `${name} twist`;
 
 // Cooee Word
 export const WORD_TILE_TITLE = 'Cooee Word';
