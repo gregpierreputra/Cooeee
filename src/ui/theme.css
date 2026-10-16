@@ -6630,6 +6630,13 @@ body.drill-open .banner {
 .debrief-source {
   font-size: var(--step-s);
 }
+/* Talk it over: each question on its own line, set as plain reading. */
+.debrief-talk {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
 
 /* The ways into the games from the Rehearse screens: warm and coloured where
    every other row there is neutral, with a glyph and a way on, so each reads

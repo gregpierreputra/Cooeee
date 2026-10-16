@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as copy from '../../src/core/copy';
 import { drillRows, highestScore } from '../../src/core/drill-history';
 import { kindOf } from '../../src/core/drill-score';
 import { rulesFor } from '../../src/core/drill-twists';
@@ -13,7 +14,7 @@ describe('E9 the drill record', () => {
     const rows = drillRows([drill({ id: 'old' }), drill({ id: 'new', finishedAt: 1_800_000_000_000, reachedDoor: false, score: 0, packed: [] })]);
     expect(rows.map((row) => row.id)).toEqual(['new', 'old']);
     expect([rows[0].score, rows[0].verdict]).toEqual([null, null]);
-    expect([rows[1].score, rows[1].verdict]).toEqual([50, 'Partly packed']);
+    expect([rows[1].score, rows[1].verdict]).toEqual([50, 'Nearly there']);
   });
 
   it('names the essentials packed and left behind, and what cost points, from the bag alone', () => {
@@ -53,6 +54,12 @@ describe('E9 the drill record', () => {
     expect(row(essentials.slice(0, 4)).essentials).toBe('4 of 6 essentials packed');
     // Room in the boot holds more than every essential, so it counts out of all of them.
     expect(drillRows([drill({ twist: 'room-in-the-boot', packed: ['water'] })])[0].essentials).toBe('1 of 10 essentials packed');
+  });
+
+  it('words each score kindly, for a child doing it with a parent', () => {
+    expect([copy.VERDICT(90), copy.VERDICT(60), copy.VERDICT(10)]).toEqual(['Well packed', 'Nearly there', 'Good start']);
+    // The opening film keeps to how fast fire moves, never a toll of lives.
+    expect(copy.DRILL_FACTS.map((fact) => fact.text).join(' ')).not.toMatch(/lives/);
   });
 
   it('finds the highest score among drills that reached the door', () => {

@@ -246,10 +246,19 @@ test.describe('E9 the drill', () => {
   // own screen, not on the pack page, and can all be cleared after one question.
   test('a finished drill is listed under Start, and Clear drill results asks first', async ({ page }) => {
     await page.goto(`${HARNESS}/drill?seconds=2`);
+    // Framed for families: who it is for, before Start.
+    await expect(page.locator('.hero')).toContainText('Made for children about 6 to 12. Do it together, then talk about what you packed.');
     await page.getByRole('button', { name: 'Start the drill' }).click();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await page.getByRole('dialog').click();
     await expect(page.getByRole('heading', { name: 'Time ran out away from the door' })).toBeVisible();
+    // The report ends with things to talk over together.
+    const talk = page.locator('section', { has: page.getByRole('heading', { name: 'Talk it over' }) });
+    await expect(talk.getByRole('listitem')).toHaveText([
+      'Where is your real emergency kit kept?',
+      'Who would carry what if you had to leave?',
+      'What would you pack for a pet?',
+    ]);
 
     await page.reload();
     const past = page.locator('.pack-section', { hasText: 'Past drills' });

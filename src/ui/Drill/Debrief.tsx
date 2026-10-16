@@ -151,6 +151,19 @@ export default function Debrief({ outcome, rules = CLASSIC, highest, onAgain, on
         </section>
       ) : null}
 
+      {/* What to talk over together, so the drill leads to the real kit. */}
+      <section className="card debrief-card" aria-labelledby="debrief-talk">
+        <h2 id="debrief-talk" className="debrief-label">
+          <Glyph kind="note" />
+          {copy.DRILL_TALK_HEADING}
+        </h2>
+        <ul className="debrief-talk">
+          {copy.DRILL_TALK_PROMPTS.map((prompt) => (
+            <li key={prompt}>{prompt}</li>
+          ))}
+        </ul>
+      </section>
+
       <p className="muted place-note debrief-source">{copy.DRILL_SOURCE}</p>
 
       {/* Done, as every game ends, back to Rehearse; then another go. */}

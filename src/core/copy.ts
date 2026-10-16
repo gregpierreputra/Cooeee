@@ -653,8 +653,8 @@ export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
-/** The label over the game cards on Rehearse. */
-export const GAMES = 'Quick games';
+/** The label over the activity cards on Rehearse. */
+export const GAMES = 'Learn together';
 /** What Rehearse is for, on its tour stop and when no pack is saved yet. */
 export const REHEARSE_LINE = 'Practise the way to a saved place on a calm day.';
 /** The large title on the Rehearse tab's first screen. */
@@ -1490,14 +1490,16 @@ export const START_DRILL = 'Start the drill';
 export const SKIP_CUTSCENE = 'Skip';
 export const NEXT_STAGE = 'Next';
 export const LEAVE_DRILL = 'Leave the drill';
-export const DRILL_TILE_TITLE = 'Play the drill';
-/** Under Play the drill on a pack's Practice tab. No time or bag size, as the
- *  day's twist can change both. */
-export const DRILL_INVITE_LINE = 'Practise packing your grab bag before the clock runs out.';
+export const DRILL_TILE_TITLE = 'Pack a bag with your kids';
+/** Over the drill's link on a pack's Practice tab. No time or bag size, as
+ *  the day's challenge can change both. */
+export const DRILL_INVITE_LINE = 'A family activity. Pack the grab bag together before the clock runs out.';
+/** Under the drill's heading, before Start: who it is made for, and how. */
+export const DRILL_FOR_FAMILIES = 'Made for children about 6 to 12. Do it together, then talk about what you packed.';
 /** Whether a drill has been played on this phone, set as a rehearsal's pill. */
 export const NOT_DRILLED_CARD = 'Not yet drilled';
 export const DRILLED_AGO = (age: string) => `Drilled ${age}`;
-export const DRILL_TILE_DETAIL = 'Two minutes to pack ten things and reach the front door.';
+export const DRILL_TILE_DETAIL = 'For families. Two minutes to pack ten things together and reach the front door.';
 /** The facts shown over the fire as it worsens, each with its publisher and
  *  the phrases set in the accent colour. Every
  *  line was checked against the page it is credited to (21 September 2026). */
@@ -1506,7 +1508,6 @@ export const DRILL_FACTS = [
   { text: 'On Black Saturday, embers lit fires more than 30 kilometres ahead.', key: ['30 kilometres'], source: 'Country Fire Authority' },
   { text: 'Within minutes of starting, the Kilmore East fire could not be contained.', key: ['Within minutes'], source: '2009 Victorian Bushfires Royal Commission' },
   { text: 'A wind change turned its side into a front 50 kilometres wide.', key: ['50 kilometres wide'], source: 'Country Fire Authority' },
-  { text: 'Black Saturday, 7 February 2009, took 173 lives.', key: ['7 February 2009', '173 lives'], source: '2009 Victorian Bushfires Royal Commission' },
 ];
 /** The line once the film cuts inside the house, with the lights still on. */
 export const DRILL_INSIDE_LINE = { text: 'Inside, the news is on. The light at the window turns orange.', key: ['turns orange'] };
@@ -1552,11 +1553,18 @@ export const OVER_DETAIL = 'Nothing counts if you are still inside.';
 export const DRILL_SOURCE =
   'The points follow what the Country Fire Authority says to take with you, from its Fire Ready Kit.';
 /** The debrief's word for a score, beside the ring. */
-export const VERDICT = (score: number) => (score >= 80 ? 'Well packed' : score >= 50 ? 'Partly packed' : 'Poorly packed');
+export const VERDICT = (score: number) => (score >= 80 ? 'Well packed' : score >= 50 ? 'Nearly there' : 'Good start');
 /** The four kinds of thing, as the debrief's colour key names them. */
 export const KIND_LABELS = { essential: 'Essential', listed: 'Useful', neutral: 'No effect', bulky: 'Cost you' };
 export const IN_YOUR_BAG = 'In your bag';
 export const LEFT_BEHIND = 'Left behind';
+/** After the drill: things to talk over together, so it leads to the real kit. */
+export const DRILL_TALK_HEADING = 'Talk it over';
+export const DRILL_TALK_PROMPTS = [
+  'Where is your real emergency kit kept?',
+  'Who would carry what if you had to leave?',
+  'What would you pack for a pet?',
+];
 export const OF_LIMIT = (count: number, limit: number) => `${count} of ${limit}`;
 export const TAP_FOR_WHY = 'Tap a thing to see why.';
 export const SIGNED_POINTS = (points: number) => (points > 0 ? `+${points}` : points < 0 ? `\u2212${-points}` : '0');
@@ -1609,18 +1617,18 @@ export const DRILL_TOUR_LINES_FOR = (seconds: number, bag: number, powered: bool
   { text: `Find and pack ${NUMBER_WORD(bag)} things. Each one is outlined in yellow.`, key: [`${NUMBER_WORD(bag)} things`, 'yellow'] },
   { text: 'Then get out the front door before the time is up.', key: ['front door'] },
 ];
-export const DRILL_TWIST_LABEL = 'This drill’s twist';
+export const DRILL_TWIST_LABEL = 'This drill’s challenge';
 export const DRILL_TWIST_LINE = (name: string, rule: string) => `${name}. ${rule}`;
 /** The twist on the drill card, and how long it stays. */
 /** Beside today's twist tag on the drill card. The tag is a rule of the
  *  game, so it is filled, unlike the outlined pills of the person's results. */
 export const DRILL_TILE_CHANGES = (daysLeft: number) =>
   daysLeft <= 1 ? 'Changes tomorrow' : `Changes in ${NUMBER_WORD(daysLeft)} days`;
-/** Read before the tag's name, so it is heard as a twist. */
-export const DRILL_TWIST_HIDDEN = 'Twist';
-export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this twist is ${score} out of 100.`;
+/** Read before the tag's name, so it is heard as a challenge. */
+export const DRILL_TWIST_HIDDEN = 'Challenge';
+export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this challenge is ${score} out of 100.`;
 /** Under the score when the twist's bag is not ten, or some things are out of reach. */
-export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this twist’s bag could hold.';
+export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this challenge’s bag could hold.';
 
 // Cooee Word
 export const WORD_TILE_TITLE = 'Cooee Word';
@@ -1766,4 +1774,4 @@ export const BLOCK_SOURCE_LINE = 'The risks follow the Country Fire Authority’
 export const BLOCK_UNAVAILABLE = 'This browser could not load the pictures for Ready the Block.';
 /** The drill card's line for this twist's time and bag. */
 export const DRILL_TILE_DETAIL_FOR = (seconds: number, bag: number) =>
-  `${capital(TIME_WORDS(seconds))} to pack ${NUMBER_WORD(bag)} things and reach the front door.`;
+  `For families. ${capital(TIME_WORDS(seconds))} to pack ${NUMBER_WORD(bag)} things together and reach the front door.`;

@@ -24,12 +24,12 @@ test.describe('AC2 which pack to rehearse', () => {
     await page.goto(`${HARNESS}/rehearse-choose?packs=1`);
     await expect(page.getByRole('heading', { name: /Your packs/ })).toBeVisible();
     await expect(page.locator('.pack-choice-list .pack-card')).toHaveCount(1);
-    await expect(page.getByRole('button', { name: /Play the drill/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Pack a bag with your kids/ })).toBeVisible();
   });
 
   test('the drill opens on its own page, like the other games', async ({ page }) => {
     await page.goto(`${HARNESS}/rehearse-choose?packs=2`);
-    await page.getByRole('button', { name: /Play the drill/ }).click();
+    await page.getByRole('button', { name: /Pack a bag with your kids/ }).click();
     await expect(page.getByTestId('location')).toHaveText('/rehearse/drill');
   });
 

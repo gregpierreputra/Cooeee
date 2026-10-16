@@ -5,9 +5,9 @@ import { blockTileView } from '../../core/block';
 import { WORD_GAME_SHOWN } from '../../core/constants';
 import { melbourneDay } from '../../core/day';
 import { rulesFor, twistForDay } from '../../core/drill-twists';
-import type { BlockPlay, Drill, WordDay } from '../../core/types';
+import type { BlockPlay, WordDay } from '../../core/types';
 import { solvedWeek, wordTileView } from '../../core/word';
-import { listAllDrills, listBlockPlays, listWordDays } from '../../data/db';
+import { listBlockPlays, listWordDays } from '../../data/db';
 import DrillTile from '../Drill/DrillTile';
 import { pinnedTwist } from '../Drill/drill-state';
 import { useMinuteClock } from '../components/useMinuteClock';
@@ -18,22 +18,20 @@ type Props = {
   /** Injectable for tests: where the cards read the games' records. */
   loadWord?: () => Promise<WordDay[]>;
   loadBlock?: () => Promise<BlockPlay[]>;
-  loadDrills?: () => Promise<Drill[]>;
   /** A fixed time, for tests. */
   now?: number;
 };
 
-/** The games on the Rehearse screens under their label, the drill first,
- *  Cooee Word's card only while WORD_GAME_SHOWN is on. Each card says where
- *  it stands in small pills: highest scores, the drill's twist, Word's streak
- *  and today, and a week of dots for Word. */
-export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock = listBlockPlays, loadDrills = listAllDrills, now }: Props) {
+/** The activities on the Rehearse screens under their label, the drill
+ *  first, Cooee Word's card only while WORD_GAME_SHOWN is on. Each card says
+ *  where it stands in small pills: the drill's challenge, Ready the Block's
+ *  highest, Word's streak and today, and a week of dots for Word. */
+export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock = listBlockPlays, now }: Props) {
   const navigate = useNavigate();
   const clock = useMinuteClock(now);
   const today = melbourneDay(clock);
   const [words, setWords] = useState<WordDay[]>([]);
   const [plays, setPlays] = useState<BlockPlay[]>([]);
-  const [drills, setDrills] = useState<Drill[]>([]);
 
   useEffect(() => {
     let live = true;
@@ -50,16 +48,10 @@ export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock 
       },
       () => undefined,
     );
-    loadDrills().then(
-      (rows) => {
-        if (live) setDrills(rows);
-      },
-      () => undefined,
-    );
     return () => {
       live = false;
     };
-  }, [loadWord, loadBlock, loadDrills]);
+  }, [loadWord, loadBlock]);
 
   const rules = rulesFor(pinnedTwist() ?? twistForDay(today).id);
   const twist =
@@ -70,12 +62,11 @@ export default function GameTiles({ onDrill, loadWord = listWordDays, loadBlock 
   const block = blockTileView(plays, today);
   const wordToday = word.today === 'in-progress' ? copy.WORD_TILE_TODAY['in-progress'](word.guessesUsed) : copy.WORD_TILE_TODAY[word.today];
   const week = solvedWeek(words, today);
-  const drillHighest = drills.length === 0 ? null : Math.max(...drills.map((drill) => drill.score));
 
   return (
     <section className="game-tiles" aria-labelledby="games-title">
       <h2 id="games-title" className="kicker section-label">{copy.GAMES}</h2>
-      <DrillTile onPlay={onDrill} twist={twist} highest={drillHighest} />
+      <DrillTile onPlay={onDrill} twist={twist} />
       {WORD_GAME_SHOWN ? (
         <GameTile
           variant="word"
