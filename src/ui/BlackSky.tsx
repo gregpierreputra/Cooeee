@@ -844,11 +844,13 @@ function ScreenBody({
                 <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </summary>
-            <div className="card">
-              <p>{copy.PREP_PACK_LINE}</p>
-              <p>{copy.PREP_KIT_LINE}</p>
-              <p>{copy.PREP_PLAN_LINE}</p>
-            </div>
+            {/* Each step led by its own drawing, as the app's other lists of
+                lines are. */}
+            <ul className="card info-lines glyph-lines">
+              <li><Glyph kind="saved" line />{copy.PREP_PACK_LINE}</li>
+              <li><Glyph kind="bag" line />{copy.PREP_KIT_LINE}</li>
+              <li><Glyph kind="door" line />{copy.PREP_PLAN_LINE}</li>
+            </ul>
           </details>
         </>
       );

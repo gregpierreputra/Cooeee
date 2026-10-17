@@ -2801,12 +2801,13 @@ html:has(.blacksky-sheet[open]) {
   height: 1lh;
 }
 
+/* The steps keep the card's room and BlackSky's 16 px reading floor, which
+   the shared list of lines sets smaller. */
 .blacksky-guidance .card {
-  display: grid;
-  gap: 0.5rem;
-}
-.blacksky-guidance p {
   margin: 0;
+  padding: 1.125rem 1.25rem;
+  font-size: var(--step-0);
+  color: var(--ink);
 }
 
 

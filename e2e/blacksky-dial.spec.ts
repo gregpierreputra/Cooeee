@@ -532,6 +532,8 @@ test('No pack and no position yet: the screen says it is waiting for GPS, then t
   await expect(steps).toBeHidden();
   await page.locator('.blacksky-guidance summary').click();
   await expect(steps).toBeVisible();
+  // Three steps, each its own line led by a drawing.
+  await expect(page.locator('.blacksky-guidance li .line-glyph')).toHaveCount(3);
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
   await expect(page.getByText(NO_GPS_YET)).toHaveCount(0);
