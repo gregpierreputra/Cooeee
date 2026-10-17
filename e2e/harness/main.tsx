@@ -240,6 +240,7 @@ if (window.location.pathname === '/size') {
         note: 'None',
       }}
       offer={sizeMode === 'preparing' ? null : offer}
+      packId={sizeContent.pack.id}
       save={download}
       onContinue={() => { window.__continueCount += 1; }}
     />

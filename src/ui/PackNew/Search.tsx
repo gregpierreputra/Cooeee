@@ -706,6 +706,7 @@ export function Search({
       <Size
         summary={summary}
         offer={ready?.offer ?? null}
+        packId={ready?.content.pack.id ?? null}
         save={async () => {
           if (!ready) return;
           setSaveStage('saving');
