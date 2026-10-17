@@ -48,7 +48,7 @@ export const OFFLINE_NOTICE = 'Offline. Packs still work.';
 export const DISMISS_NOTICE = 'Dismiss connection notice';
 
 /** Says what a pack is, as testers new to the app did not know the word. */
-export const NO_PACKS_HINT = "A pack keeps one address's bushfire information on this phone. Build one while you have a connection.";
+export const NO_PACKS_HINT = "A pack keeps a place's bushfire information on this phone. Build it while online.";
 /** "1 day", "3 days": a pack saved yesterday must not read "1 days ago". */
 const dayCount = (days: number) => (days === 1 ? '1 day' : `${days} days`);
 /** A pack card's age, from ageLabel: "Saved just now", "Saved 5 minutes ago". */
@@ -387,6 +387,7 @@ export const KEEP_OLD_NOTES = (count: number) => (count === 1 ? 'Keep it' : 'Kee
 
 export const NOTES = 'Notes';
 export const ADD_NOTE = 'Add a note';
+export const NO_NOTES_YET = 'No notes yet.';
 export const SAVE_NOTE = 'Save';
 export const DELETE_NOTE = 'Delete';
 export const NOTE_SAVED = 'Note saved.';
@@ -444,21 +445,23 @@ export const TURN_ON_COMPASS = 'Turn on the compass';
 // phone will not ask.
 export const LOCATION_OFF = 'Location is off.';
 export const LOCATION_OFF_DETAIL =
-  "Turn it on so the dial can point you to the nearest place of last resort. If nothing happens, allow location for Cooeee in your phone's settings.";
+  "Turn it on so the dial can point you to the nearest place to go. If nothing happens, allow location for Cooeee in your phone's settings.";
 export const TURN_ON_LOCATION = 'Turn on location';
+/** The browser has stopped asking, after a block or a few refusals, and no page
+ *  can make it ask again: only its own settings can. */
+export const LOCATION_BLOCKED_DETAIL =
+  "Your browser has stopped asking. Allow location for Cooeee in the browser's site settings, and the dial will follow.";
 
 // Back after a week or more: a clear spotlight on the BlackSky compass.
 export const AWAY_CHECK_TITLE = 'Do you need a way out now?';
 export const AWAY_CHECK_LINE = 'If a fire is close, hold the BlackSky button below for two seconds.';
 // BlackSky opened from the welcome: a spotlight on the marker and the place's
-// name, then the tour offered once BlackSky is left.
+// name. Leaving BlackSky goes back to the welcome.
 export const ARRIVAL_GUIDE = 'Head to the marker';
 /** What the marker is, in the words LAST_RESORT_MEANING defines it with. */
 export const ARRIVAL_GUIDE_LINE =
   'It shows your nearest place of last resort, a place the Country Fire Authority names to go to in a bushfire when every other plan has failed.';
 export const GO = 'Go';
-export const TOUR_OFFER_TITLE = 'Would you like a tour of Cooeee?';
-export const TOUR_OFFER_LINE = 'Tap the question mark to see what each part of the app does.';
 
 // BS_Enhancement-AC1 one place on one compass dial
 /** The small label above the main place: where it comes from. Written in
@@ -595,8 +598,14 @@ export const OUTSIDE_PACK_AREA = (distance: string, pack: string) =>
 // zero network. The numbers are safety copy: exact-match tested, never retyped.
 export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 
-// E3-US2-AC2 no pack stored
-export const NO_PACK_HERE = 'No saved pack covers this place.';
+// E3-US2-AC2 no pack stored: one quiet line saying why the dial points at the
+// official list, as a pack cannot be built from inside BlackSky.
+export const NO_PACK_HERE = 'No pack saved on this phone yet.';
+/** After NO_PACK_HERE, only when the official list is on the phone to point at.
+ *  Someone with no pack has never seen the term, so it is said with its
+ *  meaning, in the tour's short words for it. */
+export const NO_PACK_DIAL_FROM_LIST =
+  'The dial points to the nearest official place of last resort, where to go when all else fails.';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack';
@@ -608,10 +617,14 @@ export const CHOOSE_PACK_HINT = 'Loads its places and notes.';
 export const PACK_COVERS_HERE = 'Covers where you are';
 /** With several packs, none chosen and no fix: the one thing the screen can say. */
 export const NO_GPS_YET = 'No GPS signal yet.';
+/** With no pack and no position, under No GPS signal yet: what is waited for.
+ *  The place it points to is named and explained once, in the line beneath. */
+export const NO_GPS_YET_DETAIL = 'The dial shows once your phone finds you.';
 
 // Built-in static preparation guidance, readable on a fresh install that has
 // never been online since setup.
 export const PREPARATION_GUIDANCE_TITLE = 'Before an emergency';
+export const PREP_PACK_LINE = "Save a pack for your place once you're back online, so BlackSky can show your places.";
 export const PREP_KIT_LINE =
   'Keep water, medications, a torch and a battery radio where you can grab them.';
 export const PREP_PLAN_LINE = 'Decide where you would go and how, before you need to.';
@@ -625,9 +638,9 @@ export const HOLD_TO_LEAVE = 'Hold for two seconds.';
 /** The name of BlackSky's round hold, and the words under it. */
 export const LEAVE_BLACKSKY = 'Hold to leave BlackSky';
 export const BLACKSKY_BLOCKED = 'Not opened. Hold its button two seconds to enter.';
-/** Said at the top of BlackSky when the phone's Back was pressed: the round
- *  hold at its foot says how to leave. */
-export const BACK_PRESSED = 'Back does not leave BlackSky.';
+/** Said in the pill over the hold to leave when the phone's Back was pressed:
+ *  why nothing happened, then the one way out. */
+export const BACK_PRESSED = 'Back does not leave BlackSky. Hold for two seconds.';
 
 // ── E1-US2-AC6 returning-user home and the fixed header ────────────────────
 
@@ -647,15 +660,20 @@ export const CONNECTION_ONLINE_LABEL = 'Connection: your browser reports a netwo
 export const CONNECTION_OFFLINE_LABEL = 'Connection: your browser reports no network.';
 
 /** Home with no pack: a dashed space where packs will be, under Your packs. */
-export const NO_PACK_SAVED = 'Packs you save will show up here.';
+export const NO_PACK_SAVED = 'No pack saved yet';
 export const YOUR_PACKS = 'Your packs';
+/** Over the packs on Rehearse, which is for picking one. Your packs stays
+ *  while none is saved, as there is nothing to choose. */
+export const CHOOSE_PACK_TO_REHEARSE = 'Choose a pack to rehearse';
 
 export const NAV_LABEL = 'Main';
 export const NAV_HOME = 'Home';
 export const NAV_RECOVER = 'Recover';
 export const NAV_REHEARSE = 'Rehearse';
-/** The label over the game cards on Rehearse. */
-export const GAMES = 'Quick games';
+/** The labels over the activity cards on Rehearse: the drill is for doing
+ *  with children, the risk check for adults about their own home. */
+export const GAMES_KIDS = 'With your kids';
+export const GAMES_HOME = 'Around your home';
 /** What Rehearse is for, on its tour stop and when no pack is saved yet. */
 export const REHEARSE_LINE = 'Practise the way to a saved place on a calm day.';
 /** The large title on the Rehearse tab's first screen. */
@@ -714,7 +732,7 @@ export const PACK_TAB_PRACTICE = 'Practice';
 /** Under a long list on the pack page: the rest of it, then back to three. */
 export const SHOW_MORE = (count: number) => `Show ${count} more`;
 export const SHOW_FEWER = 'Show fewer';
-export const NO_SAVED_PROGRAMS = 'None saved yet.';
+export const NO_SAVED_PROGRAMS = 'No programs saved yet.';
 /** Every pack carries the programs saved in Recover, so the pack says so. */
 export const SAVED_PROGRAMS_SHARED = 'The same in every pack. Choose them in Recover.';
 /** "More" only once there is one already. */
@@ -1491,14 +1509,16 @@ export const START_DRILL = 'Start the drill';
 export const SKIP_CUTSCENE = 'Skip';
 export const NEXT_STAGE = 'Next';
 export const LEAVE_DRILL = 'Leave the drill';
-export const DRILL_TILE_TITLE = 'Play the drill';
-/** Under Play the drill on a pack's Practice tab. No time or bag size, as the
- *  day's twist can change both. */
-export const DRILL_INVITE_LINE = 'Practise packing your grab bag before the clock runs out.';
+export const DRILL_TILE_TITLE = 'Pack a bag with your kids';
+/** Over the drill's link on a pack's Practice tab. No time or bag size, as
+ *  the day's challenge can change both. */
+export const DRILL_INVITE_LINE = 'A family activity. Pack the grab bag together before the clock runs out.';
+/** Under the drill's heading, before Start: who it is made for, and how. */
+export const DRILL_FOR_FAMILIES = 'Made for children about 6 to 12. Do it together, then talk about what you packed.';
 /** Whether a drill has been played on this phone, set as a rehearsal's pill. */
 export const NOT_DRILLED_CARD = 'Not yet drilled';
 export const DRILLED_AGO = (age: string) => `Drilled ${age}`;
-export const DRILL_TILE_DETAIL = 'Two minutes to pack ten things and reach the front door.';
+export const DRILL_TILE_DETAIL = 'For families. Two minutes to pack ten things together and reach the front door.';
 /** The facts shown over the fire as it worsens, each with its publisher and
  *  the phrases set in the accent colour. Every
  *  line was checked against the page it is credited to (21 September 2026). */
@@ -1507,7 +1527,6 @@ export const DRILL_FACTS = [
   { text: 'On Black Saturday, embers lit fires more than 30 kilometres ahead.', key: ['30 kilometres'], source: 'Country Fire Authority' },
   { text: 'Within minutes of starting, the Kilmore East fire could not be contained.', key: ['Within minutes'], source: '2009 Victorian Bushfires Royal Commission' },
   { text: 'A wind change turned its side into a front 50 kilometres wide.', key: ['50 kilometres wide'], source: 'Country Fire Authority' },
-  { text: 'Black Saturday, 7 February 2009, took 173 lives.', key: ['7 February 2009', '173 lives'], source: '2009 Victorian Bushfires Royal Commission' },
 ];
 /** The line once the film cuts inside the house, with the lights still on. */
 export const DRILL_INSIDE_LINE = { text: 'Inside, the news is on. The light at the window turns orange.', key: ['turns orange'] };
@@ -1553,11 +1572,42 @@ export const OVER_DETAIL = 'Nothing counts if you are still inside.';
 export const DRILL_SOURCE =
   'The points follow what the Country Fire Authority says to take with you, from its Fire Ready Kit.';
 /** The debrief's word for a score, beside the ring. */
-export const VERDICT = (score: number) => (score >= 80 ? 'Well packed' : score >= 50 ? 'Partly packed' : 'Poorly packed');
+export const VERDICT = (score: number) => (score >= 80 ? 'Well packed' : score >= 50 ? 'Nearly there' : 'Good start');
 /** The four kinds of thing, as the debrief's colour key names them. */
 export const KIND_LABELS = { essential: 'Essential', listed: 'Useful', neutral: 'No effect', bulky: 'Cost you' };
 export const IN_YOUR_BAG = 'In your bag';
 export const LEFT_BEHIND = 'Left behind';
+/** After the drill: things to talk over together, so it leads to the real kit. */
+export const DRILL_TALK_HEADING = 'Talk it over';
+/** A question for each essential, in the order they are asked about: the
+ *  first one this drill left behind gets the third question. */
+const DRILL_TALK_ITEM: Record<string, string> = {
+  medicines: 'Who in your home needs medicines every day?',
+  water: 'How much water would your family need for a day?',
+  firstaid: 'Do you know where the first aid kit is at home?',
+  charger: 'Where do you keep the phone charger, and who would grab it?',
+  papers: 'Where are your important papers kept?',
+  blanket: 'Where could a wool blanket live so it is ready in the car?',
+  masks: 'Where could you keep masks so everyone can grab one?',
+  torch: 'Where is your torch at home, and does it work?',
+  radio: 'How would you hear the news if the phones stopped working?',
+  clothes: 'Which long sleeved clothes would each of you wear?',
+  boots: 'Which sturdy shoes would each of you wear?',
+};
+/** Two questions every time, then one about an essential left behind, or
+ *  about a pet when every essential was packed. */
+export const DRILL_TALK_PROMPTS = (left: { id: string; name: string }[]): string[] => {
+  const item = Object.keys(DRILL_TALK_ITEM)
+    .map((id) => left.find((thing) => thing.id === id))
+    .find(Boolean) ?? left[0];
+  return [
+    'Where is your real emergency kit kept?',
+    'Who would carry what if you had to leave?',
+    item
+      ? `You left the ${item.name} behind. ${DRILL_TALK_ITEM[item.id] ?? 'Where would you find that at home?'}`
+      : 'What would you pack for a pet?',
+  ];
+};
 export const OF_LIMIT = (count: number, limit: number) => `${count} of ${limit}`;
 export const TAP_FOR_WHY = 'Tap a thing to see why.';
 export const SIGNED_POINTS = (points: number) => (points > 0 ? `+${points}` : points < 0 ? `\u2212${-points}` : '0');
@@ -1576,6 +1626,8 @@ export const NOT_YET_DRILLED = 'Not yet drilled.';
 export const DRILL_ROW_DOOR = 'At the door';
 export const DRILL_ROW_AWAY = 'Away from the door when time ran out';
 export const DRILL_ROW_ESSENTIALS = (packed: number, total: number) => `${packed} of ${total} essentials packed`;
+/** A bag too small for every essential, filled with them: the best it could do. */
+export const DRILL_ROW_ESSENTIALS_FULL = (packed: number) => `${packed} essentials packed, all the bag could hold`;
 
 // ── Games on the Rehearse screen: the drill's twists, Cooee Word, Ready the Block
 // Three games with a number in them, like the drill. Every number is about
@@ -1608,19 +1660,18 @@ export const DRILL_TOUR_LINES_FOR = (seconds: number, bag: number, powered: bool
   { text: `Find and pack ${NUMBER_WORD(bag)} things. Each one is outlined in yellow.`, key: [`${NUMBER_WORD(bag)} things`, 'yellow'] },
   { text: 'Then get out the front door before the time is up.', key: ['front door'] },
 ];
-export const DRILL_TWIST_LABEL = 'This drill’s twist';
+export const DRILL_TWIST_LABEL = 'This drill’s challenge';
 export const DRILL_TWIST_LINE = (name: string, rule: string) => `${name}. ${rule}`;
 /** The twist on the drill card, and how long it stays. */
 /** Beside today's twist tag on the drill card. The tag is a rule of the
  *  game, so it is filled, unlike the outlined pills of the person's results. */
 export const DRILL_TILE_CHANGES = (daysLeft: number) =>
   daysLeft <= 1 ? 'Changes tomorrow' : `Changes in ${NUMBER_WORD(daysLeft)} days`;
-/** Read before the tag's name, so it is heard as a twist. */
-export const DRILL_TWIST_HIDDEN = 'Twist';
-export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this twist is ${score} out of 100.`;
+/** Read before the tag's name, so it is heard as a challenge. */
+export const DRILL_TWIST_HIDDEN = 'Challenge';
+export const HIGHEST_FOR_TWIST = (score: number) => `Your highest with this challenge is ${score} out of 100.`;
 /** Under the score when the twist's bag is not ten, or some things are out of reach. */
-export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this twist’s bag could hold.';
-export const DRILL_ROW_TWIST = (name: string) => `${name} twist`;
+export const DRILL_TWIST_SCORE_NOTE = 'Scored out of the most this challenge’s bag could hold.';
 
 // Cooee Word
 export const WORD_TILE_TITLE = 'Cooee Word';
@@ -1698,15 +1749,11 @@ export const WORD_PAST_UNFINISHED = 'Not finished';
 export const WORD_UNAVAILABLE = 'Cooee Word could not load on this browser.';
 export const BACK_TO_REHEARSE = 'Back to Rehearse';
 
-// Ready the Block
-export const BLOCK_TILE_TITLE = 'Ready the Block';
-export const BLOCK_TILE_DETAIL = 'Find eight fire risks round a home in three minutes.';
-export const BLOCK_TILE_TODAY = (today: number | null) => (today === null ? 'Not played today' : `Today ${today}`);
-/** Before the big highest score out of 100, on the drill and Block cards.
- *  Short, so it stays on the title's line on a small phone. Never best: the
- *  app does not call anything the best. */
-export const GAME_STAT_HIGHEST = 'Top';
-export const BLOCK_LABEL = 'Ready the Block';
+// Spot the fire risks (Ready the Block in the code): practice for adults,
+// leading to a check of their own home, so its card carries no score.
+export const BLOCK_TILE_TITLE = 'Spot the fire risks';
+export const BLOCK_TILE_DETAIL = 'Practise finding fire risks round a home, then check your own.';
+export const BLOCK_LABEL = 'Spot the fire risks';
 export const BLOCK_INTRO_HEADING = 'Find the fire risks';
 /** The three things to know, each drawn as the game draws it, over a few
  *  words: its found count, its clock, and a tap. */
@@ -1751,19 +1798,30 @@ export const BLOCK_HINT_DETAIL = 'A hint costs 10 points.';
 export const BLOCK_HINT_SHOWN = 'Look inside the ring.';
 export const ZOOM_IN = 'Zoom in';
 export const ZOOM_OUT = 'Zoom out';
-export const LEAVE_BLOCK = 'Leave Ready the Block';
+export const LEAVE_BLOCK = 'Leave the fire risk check';
 export const BLOCK_TIME_UP = 'Time is up';
 export const BLOCK_ALL_FOUND = 'You found all eight';
-export const BLOCK_VERDICT = (score: number) => (score >= 80 ? 'Sharp eyes' : score >= 50 ? 'Good spotting' : 'Plenty still to spot');
+/** The report's heading: plainly how many were found. */
+export const BLOCK_RESULT = (found: number) =>
+  found === 8
+    ? 'You found all eight risks'
+    : found === 0
+      ? 'You found none of the eight risks'
+      : `You found ${NUMBER_WORD(found)} of eight risks`;
+/** Beside the penalties when every risk was found before the time ran out. */
+export const BLOCK_IN_TIME = 'Finished in time';
+export const BLOCK_LOOK_AGAIN = 'Look again';
 export const BLOCK_FOUND_BADGE = 'Found';
 export const BLOCK_MISSED_BADGE = 'Missed';
 export const BLOCK_PENALTIES = (wrong: number, hints: number) =>
   `${wrong} wrong ${wrong === 1 ? 'tap' : 'taps'}, ${hints} ${hints === 1 ? 'hint' : 'hints'}`;
 export const BLOCK_OUTCOME_LINE = (ending: string, penalties: string) => `${ending} \u00b7 ${penalties}`;
 export const BLOCK_LIST_HEADING = 'Today’s eight risks';
+/** The report's last card: from the picture to the person's own home. */
+export const BLOCK_CHECK_HOME_HEADING = 'Now check your place';
 export const BLOCK_CHECK_HOME = 'Is one of these at your place? Fix one this week.';
 export const BLOCK_SOURCE_LINE = 'The risks follow the Country Fire Authority’s guide to preparing your property.';
-export const BLOCK_UNAVAILABLE = 'This browser could not load the pictures for Ready the Block.';
+export const BLOCK_UNAVAILABLE = 'This browser could not load the pictures for Spot the fire risks.';
 /** The drill card's line for this twist's time and bag. */
 export const DRILL_TILE_DETAIL_FOR = (seconds: number, bag: number) =>
-  `${capital(TIME_WORDS(seconds))} to pack ${NUMBER_WORD(bag)} things and reach the front door.`;
+  `For families. ${capital(TIME_WORDS(seconds))} to pack ${NUMBER_WORD(bag)} things together and reach the front door.`;

@@ -1875,10 +1875,6 @@ main:focus {
   --bs-below: calc(var(--bs-leave) + var(--bs-gap) + 56px);
 }
 
-.blacksky:has(> .blacksky-notice) {
-  --bs-line: calc(1.5rem + var(--bs-gap));
-}
-
 /* A phone with room to spare (taller than 700 px) opens the gaps round the
    dial, so the name, the distance row and the dial each stand clear. A short
    phone keeps them tight: its dial is already at its floor. A laptop opens
@@ -2740,13 +2736,15 @@ html:has(.blacksky-sheet[open]) {
    on the no-fix reference screen it starts folded. The summary is headed as a
    pack page section, 56 px high (the layout keeps it on the first screen), with
    the chevron at its end; each note is a card, at reading size. */
-.blacksky-notes summary {
+.blacksky-notes summary,
+.blacksky-guidance summary {
   min-height: 56px;
   cursor: pointer;
   list-style: none;
 }
 
-.blacksky-notes summary::-webkit-details-marker {
+.blacksky-notes summary::-webkit-details-marker,
+.blacksky-guidance summary::-webkit-details-marker {
   display: none;
 }
 
@@ -2755,11 +2753,13 @@ html:has(.blacksky-sheet[open]) {
   font-size: var(--step-0);
 }
 
-.blacksky-notes .hint-chevron {
+.blacksky-notes .hint-chevron,
+.blacksky-guidance .hint-chevron {
   margin-left: auto;
 }
 
-.blacksky-notes[open] .hint-chevron {
+.blacksky-notes[open] .hint-chevron,
+.blacksky-guidance[open] .hint-chevron {
   transform: rotate(90deg);
 }
 
@@ -2778,9 +2778,36 @@ html:has(.blacksky-sheet[open]) {
 .blacksky-reminder {
   margin: 0;
 }
-
-.blacksky-guidance p {
+/* No pack in BlackSky: the dashed edge of the empty pack spaces elsewhere, in
+   a slim strip quieter than any card. */
+.blacksky-no-pack {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  font-size: var(--step-s);
+  color: var(--ink-2);
+  border: 1px dashed color-mix(in srgb, var(--ink-3) 60%, transparent);
+  border-radius: var(--r-card);
+}
+.blacksky-no-pack p {
   margin: 0;
+}
+/* The fact first, a little heavier, as a card's heading leads its detail. */
+.blacksky-no-pack-head {
+  font-weight: var(--w-med);
+}
+.blacksky-no-pack > .line-glyph {
+  height: 1lh;
+}
+
+/* The steps keep the card's room and BlackSky's 16 px reading floor, which
+   the shared list of lines sets smaller. */
+.blacksky-guidance .card {
+  margin: 0;
+  padding: 1.125rem 1.25rem;
+  font-size: var(--step-0);
+  color: var(--ink);
 }
 
 
@@ -2998,12 +3025,6 @@ html:has(.blacksky-sheet[open]) {
   background: var(--surface);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-}
-.tour-offer {
-  inset-inline: 1rem;
-  top: 7.5rem; /* under the header and the notice bar above it */
-  max-width: 560px;
-  margin: 0 auto;
 }
 
 /* BlackSky's first arrival: in the mode's own amber, never white, the box
@@ -3832,15 +3853,29 @@ body.touring .page {
   bottom: calc(100% + 36px);
   left: 50%;
   transform: translateX(-50%);
-  white-space: nowrap;
-  padding: 0.375rem 0.75rem;
+  /* One line when it fits; the longer Back line breaks at its sentence into
+     two even lines, with corners round enough for one line or two. */
+  width: max-content;
+  max-width: min(calc(100vw - 2rem), 17.5rem);
+  text-align: center;
+  text-wrap: balance;
+  padding: 0.375rem 1rem;
   border: 1px solid var(--blacksky-accent);
-  border-radius: var(--r-pill);
+  border-radius: 1.5rem;
   background: var(--blacksky-bg);
   color: var(--blacksky-accent);
   /* 16 px, the same pill entering and leaving: one instruction, said alike on
      both sides of the door. */
   font-size: var(--step-0);
+  animation: hint-pop 0.2s ease-out;
+}
+/* Each tap shows it anew, so a second tap is seen to land. It grows in
+   place, never down onto the button under it. */
+@keyframes hint-pop {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
 }
 /* On the welcome the pill floats just below the way out, so it covers no
    other button. It shows only once a short tap has lifted, so no thumb is in
@@ -6616,15 +6651,15 @@ body.drill-open .banner {
   border-radius: 50%;
   background: var(--kind);
 }
-.debrief-why {
-  min-height: 3.25rem;
-  padding: 0.75rem 1rem;
-  border-radius: var(--r-card);
-  background: var(--surface);
-  border: 1px solid var(--line);
-}
 .debrief-source {
   font-size: var(--step-s);
+}
+/* Talk it over: each question on its own line, set as plain reading. */
+.debrief-talk {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.25rem;
 }
 
 /* The ways into the games from the Rehearse screens: warm and coloured where
@@ -6635,6 +6670,10 @@ body.drill-open .banner {
   display: grid;
   gap: 0.75rem;
   margin: 0.25rem 0 1.25rem;
+}
+/* The second label sits clear of the card above it. */
+.game-tiles > .section-label:not(:first-child) {
+  margin-top: 0.75rem;
 }
 .game-tile {
   display: flex;
@@ -6846,9 +6885,33 @@ body.drill-open .banner {
     opacity: 0.45;
   }
 }
+/* Ready: the ring closes, then the tick draws, in half a second. */
+.ready-mark {
+  flex: none;
+  color: var(--accent);
+}
+.ready-mark-ring,
+.ready-mark-tick {
+  stroke-dasharray: 1;
+  animation: ready-draw 0.3s ease-out both;
+}
+.ready-mark-tick {
+  animation-delay: 0.25s;
+}
+@keyframes ready-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .busy,
-  .pending-bar {
+  .pending-bar,
+  .ready-mark-ring,
+  .ready-mark-tick,
+  .blacksky-hold-hint {
     animation: none;
   }
 }
@@ -6991,6 +7054,21 @@ p.with-glyph > .glyph.line-glyph {
 .empty-state .nudge {
   justify-content: center;
   margin-top: 0.375rem;
+}
+/* A card about the phone's own state, such as its location: outlined in the
+   accent and led by its drawing, so it stands apart from the cards about
+   what is saved. */
+.state-card-status {
+  border: 1.5px solid var(--accent);
+}
+.state-card-status > h2.with-glyph {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.state-card-status > h2 > .line-glyph {
+  height: 1lh;
 }
 /* The pack builder's step strip: small rings joined by a line, done steps
    filled, the current one ringed and named. */

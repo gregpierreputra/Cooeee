@@ -14,6 +14,10 @@ type HoldButtonProps = {
   /** Hides the hint again after this long. Only for a hint that floats over
    *  the screen, so taking it away moves nothing under the finger. */
   hintMs?: number;
+  /** Counts up each time the screen wants `nudgeHint` said in the hint's
+   *  place, as BlackSky does when Back is pressed. */
+  nudge?: number;
+  nudgeHint?: string;
 };
 
 /** A mode switch fires on a HOLD, not a tap: a pocket press must not flip the
@@ -43,13 +47,21 @@ export default function HoldButton({
   vibrateMs = HOLD_VIBRATE_MS,
   label,
   hintMs,
+  nudge = 0,
+  nudgeHint,
 }: HoldButtonProps) {
-  const [showHint, setShowHint] = useState(false);
+  // The words in the hint, and a count that goes up each time it is shown, so
+  // every short tap starts its time over and its pop in plays again.
+  const [shown, setShown] = useState<{ text: string; count: number } | null>(null);
+  const showHint = (text: string) => setShown((was) => ({ text, count: (was?.count ?? 0) + 1 }));
   useEffect(() => {
-    if (!showHint || hintMs === undefined) return undefined;
-    const hide = window.setTimeout(() => setShowHint(false), hintMs);
+    if (!shown || hintMs === undefined) return undefined;
+    const hide = window.setTimeout(() => setShown(null), hintMs);
     return () => window.clearTimeout(hide);
-  }, [showHint, hintMs]);
+  }, [shown, hintMs]);
+  useEffect(() => {
+    if (nudge > 0 && nudgeHint) showHint(nudgeHint);
+  }, [nudge]);
   const holdTimer = useRef<number | null>(null);
   // When the hold began, and whether one is running. The fill is drawn from
   // this, not from the browser's own pressed state, so the fill and the timer
@@ -98,7 +110,7 @@ export default function HoldButton({
       return;
     }
     clearHold();
-    setShowHint(true);
+    showHint(hint);
   };
 
   // The browser took the pointer, or focus went: the hold is not done by the
@@ -106,7 +118,7 @@ export default function HoldButton({
   const cancelHold = () => {
     if (holdTimer.current === null) return;
     clearHold();
-    setShowHint(true);
+    showHint(hint);
   };
 
   // The pointer has moved. With the pointer captured every move is delivered
@@ -187,9 +199,9 @@ export default function HoldButton({
       >
         {children}
       </button>
-      {showHint ? (
-        <p className="muted blacksky-hold-hint" role="status">
-          {hint}
+      {shown ? (
+        <p key={shown.count} className="muted blacksky-hold-hint" role="status">
+          {shown.text}
         </p>
       ) : null}
     </>

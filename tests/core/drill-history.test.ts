@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import * as copy from '../../src/core/copy';
 import { drillRows, highestScore } from '../../src/core/drill-history';
+import { kindOf } from '../../src/core/drill-score';
+import { rulesFor } from '../../src/core/drill-twists';
 import type { Drill } from '../../src/core/types';
 
 const drill = (over: Partial<Drill>): Drill => ({
@@ -11,7 +14,7 @@ describe('E9 the drill record', () => {
     const rows = drillRows([drill({ id: 'old' }), drill({ id: 'new', finishedAt: 1_800_000_000_000, reachedDoor: false, score: 0, packed: [] })]);
     expect(rows.map((row) => row.id)).toEqual(['new', 'old']);
     expect([rows[0].score, rows[0].verdict]).toEqual([null, null]);
-    expect([rows[1].score, rows[1].verdict]).toEqual([50, 'Partly packed']);
+    expect([rows[1].score, rows[1].verdict]).toEqual([50, 'Nearly there']);
   });
 
   it('names the essentials packed and left behind, and what cost points, from the bag alone', () => {
@@ -27,6 +30,52 @@ describe('E9 the drill record', () => {
     expect(row.bag.map(({ id, kind }) => [id, kind])).toEqual([
       ['water', 'essential'], ['medicines', 'essential'], ['television', 'bulky'], ['kettle', 'neutral'],
     ]);
+  });
+
+  it('labels each drill with the twist it was played under, Classic with none', () => {
+    const rows = drillRows([
+      drill({ id: 'classic' }),
+      drill({ id: 'short', finishedAt: 1_800_000_000_000, twist: 'one-minute' }),
+      drill({ id: 'long', finishedAt: 1_900_000_000_000, twist: 'early-start' }),
+    ]);
+    expect(rows.map((row) => row.label)).toEqual(['Early start', 'One minute', 'Classic']);
+    // The bag's size under that twist, so its empty slots match the debrief.
+    expect(rows.map((row) => row.bagLimit)).toEqual([10, 6, 10]);
+  });
+
+  it('counts the essentials against what the bag could hold', () => {
+    const essentials = rulesFor('one-minute').reachable
+      .filter((item) => kindOf(item.weight) === 'essential')
+      .map((item) => item.id);
+    const row = (packed: string[]) => drillRows([drill({ twist: 'one-minute', packed })])[0];
+    // A bag of six with six essentials is the best it could do, though four stay behind.
+    expect(row(essentials.slice(0, 6)).essentials).toBe('6 essentials packed, all the bag could hold');
+    expect(row(essentials.slice(0, 6)).leftBehind).toHaveLength(4);
+    expect(row(essentials.slice(0, 4)).essentials).toBe('4 of 6 essentials packed');
+    // Room in the boot holds more than every essential, so it counts out of all of them.
+    expect(drillRows([drill({ twist: 'room-in-the-boot', packed: ['water'] })])[0].essentials).toBe('1 of 10 essentials packed');
+  });
+
+  it('words each score kindly, for a child doing it with a parent', () => {
+    expect([copy.VERDICT(90), copy.VERDICT(60), copy.VERDICT(10)]).toEqual(['Well packed', 'Nearly there', 'Good start']);
+    // The opening film keeps to how fast fire moves, never a toll of lives.
+    expect(copy.DRILL_FACTS.map((fact) => fact.text).join(' ')).not.toMatch(/lives/);
+  });
+
+  it('asks about an essential left behind, or a pet once every essential is packed', () => {
+    const last = (left: { id: string; name: string }[]) => copy.DRILL_TALK_PROMPTS(left)[2];
+    expect(copy.DRILL_TALK_PROMPTS([]).slice(0, 2)).toEqual([
+      'Where is your real emergency kit kept?',
+      'Who would carry what if you had to leave?',
+    ]);
+    expect(last([])).toBe('What would you pack for a pet?');
+    // Medicines are asked about before water, whatever order they come in.
+    expect(last([{ id: 'water', name: 'drinking water' }, { id: 'medicines', name: 'medicines' }])).toBe(
+      'You left the medicines behind. Who in your home needs medicines every day?',
+    );
+    expect(last([{ id: 'torch', name: 'torch' }])).toBe('You left the torch behind. Where is your torch at home, and does it work?');
+    // An essential with no question of its own still gets one.
+    expect(last([{ id: 'goggles', name: 'goggles' }])).toBe('You left the goggles behind. Where would you find that at home?');
   });
 
   it('finds the highest score among drills that reached the door', () => {

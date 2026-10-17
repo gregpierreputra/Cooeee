@@ -76,21 +76,24 @@ test('the wizard carries a saved program into the saved pack', async ({ page }) 
   await expect(section.getByRole('link', { name: 'Saved PDF' })).toHaveAttribute('download', /crisis-payment/);
 
   // Save more opens every program in Recover, and Back comes home to this
-  // pack's Support tab, not to Recover's list of needs.
+  // pack's Support tab, not to Recover's list of needs, with the program just
+  // saved already in the pack's list.
   const packUrl = new URL(page.url()).pathname;
   await section.getByRole('link', { name: 'Save more in Recover' }).click();
   await expect(page).toHaveURL(/\/recover\?need=all&from=/);
+  await page.getByRole('button', { name: 'Save', exact: true }).first().click();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(`${packUrl}?tab=support`);
   await expect(page.getByRole('tab', { name: 'Support' })).toHaveAttribute('aria-selected', 'true');
+  await expect(section.locator('.section-count')).toHaveText('2');
 
   // Practice invites the drill, says none has been played yet, and the drill's
   // Back comes home to this pack's Practice tab.
   await page.getByRole('tab', { name: 'Practice' }).click();
-  const drill = page.locator('.pack-section', { hasText: 'Play the drill' });
-  await expect(drill).toContainText('Practise packing your grab bag before the clock runs out.');
+  const drill = page.locator('.pack-section', { hasText: 'Pack a bag with your kids' });
+  await expect(drill).toContainText('A family activity. Pack the grab bag together before the clock runs out.');
   await expect(drill.locator('.rehearsed-pill')).toHaveText('Not yet drilled');
-  await drill.getByRole('link', { name: 'Play the drill' }).click();
+  await drill.getByRole('link', { name: 'Pack a bag with your kids' }).click();
   await expect(page).toHaveURL(/\/rehearse\/drill\?from=/);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(`${packUrl}?tab=practice`);

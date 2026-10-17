@@ -163,6 +163,9 @@ export default function BlackSky({
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   // Counts taps on Turn on location: each one starts the position watch again.
   const [locationAsks, setLocationAsks] = useState(0);
+  // The browser's own answer for this site, where it gives one: blocked means
+  // it will refuse without asking, so Turn on location could do nothing.
+  const [blocked, setBlocked] = useState(false);
   const [mark, setMark] = useState<PositionMark | null>(null);
   const [now, setNow] = useState(() => Date.now());
   // Which pack to load when several are saved: chosen at the top of the screen
@@ -184,7 +187,8 @@ export default function BlackSky({
   const [guiding, setGuiding] = useState(() => (state as { guide?: boolean } | null)?.guide === true);
   // Said at the top once the phone's Back has been pressed, which does not
   // leave. A reopening says nothing: the dark screen speaks for itself.
-  const [notice, setNotice] = useState<string | null>(null);
+  // Counts the Back presses, each said in the pill over the hold to leave.
+  const [backPresses, setBackPresses] = useState(0);
 
   // US1-AC4: with no fix, a marked position stands in for one. estimateFix
   // returns null once its growing uncertainty passes the confidence threshold,
@@ -359,6 +363,30 @@ export default function BlackSky({
     };
   }, [setMovement, locationAsks]);
 
+  // Whether location is blocked for this site, and the moment that changes:
+  // allowed again in the browser's settings, the watch starts at once. A
+  // browser that cannot say keeps Turn on location as it is.
+  useEffect(() => {
+    let status: PermissionStatus | null = null;
+    const read = () => {
+      if (!status) return;
+      setBlocked(status.state === 'denied');
+      if (status.state === 'granted') {
+        setPermission('prompt');
+        setLocationAsks((asks) => asks + 1);
+      }
+    };
+    navigator.permissions?.query({ name: 'geolocation' }).then(
+      (answer) => {
+        status = answer;
+        setBlocked(answer.state === 'denied');
+        answer.addEventListener('change', read);
+      },
+      () => undefined,
+    );
+    return () => status?.removeEventListener('change', read);
+  }, []);
+
   // One way out: the hold on Leave below. The phone's back button pops a
   // history entry, so this screen adds one spare entry on arrival and, on
   // every pop, puts itself straight back and says so. The latch in browser
@@ -370,7 +398,7 @@ export default function BlackSky({
     navigate('/blacksky');
     const onBack = () => {
       navigate('/blacksky');
-      setNotice(copy.BACK_PRESSED);
+      setBackPresses((count) => count + 1);
     };
     window.addEventListener('popstate', onBack);
     return () => window.removeEventListener('popstate', onBack);
@@ -602,6 +630,8 @@ export default function BlackSky({
             }}
             hint={copy.HOLD_TO_LEAVE}
             hintMs={NAV_HOLD_HINT_MS}
+            nudge={backPresses}
+            nudgeHint={copy.BACK_PRESSED}
             label={copy.LEAVE_BLACKSKY}
             className="blacksky-leave-button"
             vibrateMs={HOLD_LEAVE_VIBRATE_MS}
@@ -619,12 +649,6 @@ export default function BlackSky({
           {voice.caption ? <p className="blacksky-caption">{voice.caption}</p> : null}
         </div>
       </div>
-      {/* Why BlackSky is still open after Back was pressed. */}
-      {notice ? (
-        <p className="muted blacksky-notice" role="status">
-          {notice}
-        </p>
-      ) : null}
       {packs.length > 1 ? (
         <PackPicker
           packs={choices.map(({ pack }) => pack)}
@@ -651,18 +675,20 @@ export default function BlackSky({
       {/* Location refused and no mark standing in: a way to ask again, so no
           one is left on a screen with nothing to point from. */}
       {permission === 'denied' && !estimate ? (
-        <StateCard heading={copy.LOCATION_OFF} detail={copy.LOCATION_OFF_DETAIL}>
-          <button
-            type="button"
-            className="blacksky-turn-on"
-            onClick={() => {
-              setPermission('prompt');
-              setLocationAsks((asks) => asks + 1);
-            }}
-          >
-            <Glyph kind="locate" line />
-            {copy.TURN_ON_LOCATION}
-          </button>
+        <StateCard glyph="locate" heading={copy.LOCATION_OFF} detail={blocked ? copy.LOCATION_BLOCKED_DETAIL : copy.LOCATION_OFF_DETAIL}>
+          {blocked ? null : (
+            <button
+              type="button"
+              className="blacksky-turn-on"
+              onClick={() => {
+                setPermission('prompt');
+                setLocationAsks((asks) => asks + 1);
+              }}
+            >
+              <Glyph kind="locate" line />
+              {copy.TURN_ON_LOCATION}
+            </button>
+          )}
         </StateCard>
       ) : null}
       {screen.kind === 'NO_PACK' && packs.length > 0 ? (
@@ -674,12 +700,14 @@ export default function BlackSky({
             {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
           </>
         ) : (
-          <StateCard heading={copy.NO_GPS_YET} />
+          <StateCard glyph="locate" heading={copy.NO_GPS_YET} />
         )
       ) : (
         <ScreenBody
           screen={screen}
           estimating={estimate !== null}
+          waiting={permission !== 'denied'}
+          listed={(sites?.sites.length ?? 0) > 0}
           onMark={setMark}
           dial={dial}
           notes={notesBlock}
@@ -766,12 +794,18 @@ function PackPicker({
 function ScreenBody({
   screen,
   estimating,
+  waiting,
+  listed,
   onMark,
   dial,
   notes,
 }: {
   screen: Screen;
   estimating: boolean;
+  /** Location is not refused, so a position may still come. */
+  waiting: boolean;
+  /** The official list is on the phone, so the dial has places to point at. */
+  listed: boolean;
   onMark: (mark: PositionMark) => void;
   dial: ReactNode;
   notes: ReactNode;
@@ -786,12 +820,38 @@ function ScreenBody({
         <>
           {dial}
           {screen.confidence ? <ConfidenceLines confidence={screen.confidence} /> : null}
-          <StateCard heading={copy.NO_PACK_HERE} detail={copy.NO_PACKS_HINT} />
-          <section className="card blacksky-guidance">
-            <h2>{copy.PREPARATION_GUIDANCE_TITLE}</h2>
-            <p>{copy.PREP_KIT_LINE}</p>
-            <p>{copy.PREP_PLAN_LINE}</p>
-          </section>
+          {/* No position yet: said first, so the missing dial is explained. */}
+          {!screen.confidence && waiting ? <StateCard glyph="locate" heading={copy.NO_GPS_YET} detail={listed ? copy.NO_GPS_YET_DETAIL : undefined} /> : null}
+          {/* Why the dial points at the official list, and what a place of
+              last resort is: a slim dashed strip, the mark of a missing pack
+              elsewhere in the app, kept quieter than a card as nothing can be
+              done about it from here. Saving a pack is the first of the steps
+              for next time. */}
+          <div className="blacksky-no-pack">
+            <Glyph kind="saved" line />
+            <div>
+              <p className="blacksky-no-pack-head">{copy.NO_PACK_HERE}</p>
+              {listed ? <p className="muted">{copy.NO_PACK_DIAL_FROM_LIST}</p> : null}
+            </div>
+          </div>
+          {/* Steps for after BlackSky, folded as the notes fold: the same row,
+              closed until asked for, so what matters now stays first. */}
+          <details className="blacksky-guidance">
+            <summary className="pack-section-head">
+              <Glyph kind="steps" />
+              <span className="kicker">{copy.PREPARATION_GUIDANCE_TITLE}</span>
+              <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </summary>
+            {/* Each step led by its own drawing, as the app's other lists of
+                lines are. */}
+            <ul className="card info-lines glyph-lines">
+              <li><Glyph kind="saved" line />{copy.PREP_PACK_LINE}</li>
+              <li><Glyph kind="bag" line />{copy.PREP_KIT_LINE}</li>
+              <li><Glyph kind="door" line />{copy.PREP_PLAN_LINE}</li>
+            </ul>
+          </details>
         </>
       );
     // US1-AC2: no fix at all, so nothing to point from. The saved information
@@ -804,7 +864,7 @@ function ScreenBody({
           {/* The state and what can be done about it, in one card. US1-AC4:
               the mark control. Offered for every ACQUIRING reason — someone
               who denied GPS is exactly who needs it. */}
-          <StateCard heading={copy.NO_GPS} detail={copy.MARK_HINT}>
+          <StateCard glyph="locate" heading={copy.NO_GPS} detail={copy.MARK_HINT}>
             {/* Two centred lines: the pin leading I'm standing at, then the
                 address on its own. Named in one sentence for a screen reader. */}
             <button

@@ -9,7 +9,7 @@ export type GlyphKind =
   | Choice
   | 'map' | 'layer' | 'place' | 'note'
   | 'what' | 'why' | 'does' | 'not' | 'stays' | 'relief' | 'locate' | 'compass'
-  | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag' | 'word' | 'block'
+  | 'rehearse' | 'go' | 'found' | 'drill' | 'door' | 'bag' | 'word' | 'block' | 'steps'
   | 'plus' | 'trash' | 'clock' | 'lock' | 'share' | 'print' | 'online' | 'offline' | 'saved'
   | 'caution' | 'web' | 'tour' | 'moon' | 'copy' | 'check' | 'edit' | 'close' | 'grab' | 'undo' | 'tap'
   | Exclude<PackIcon, 'place'>;
@@ -43,6 +43,8 @@ const GLYPH_PATHS: Record<GlyphKind, string> = {
   go: 'M5 12h13M13 6l6 6-6 6M5 7v10',
   door: 'M6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21M3 21h18M14.5 12.5h.01',
   bag: 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2',
+  // Things to do: three lines, each led by a tick.
+  steps: 'M4 7l1.5 1.5L8.5 5.5M11 7h9M4 12l1.5 1.5L8.5 10.5M11 12h9M4 17l1.5 1.5L8.5 15.5M11 17h9',
   drill: 'M12 21c-3.9 0-6.5-2.7-6.5-6.2 0-3.3 2.4-5.4 3.8-8.3.5 2 1.6 3.2 2.9 3.8.3-2.7 1.4-4.8 3.3-6.3.2 3.3 3 5.5 3 9.2 0 4.3-2.6 7.8-6.5 7.8zM12 21c-1.7 0-3-1.3-3-3 0-1.9 1.6-2.8 2.4-4.4.9 1.1 3.6 2.2 3.6 4.5 0 1.6-1.2 2.9-3 2.9z',
   // Cooee Word: four letter tiles.
   word: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',

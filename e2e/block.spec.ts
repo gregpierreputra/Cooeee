@@ -191,13 +191,16 @@ test.describe('Ready the Block', () => {
   test('time running out shows every risk, found or missed, with why', async ({ page }) => {
     await page.goto(`${HARNESS}/block?seconds=2`);
     await page.getByRole('button', { name: 'Start looking' }).click();
-    await expect(page.getByRole('heading', { name: 'Plenty still to spot' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'You found none of the eight risks' })).toBeVisible({ timeout: 10_000 });
     const rows = page.locator('.block-row');
     await expect(rows).toHaveCount(8);
     await expect(rows.first()).toContainText('Missed');
     await expect(rows.first()).toContainText(hazards[0].reason);
     await expect(page.locator('main')).toContainText('Your highest so far is 0 out of 100.');
-    await page.getByRole('button', { name: 'Play again' }).click();
+    // It ends on the person's own home.
+    const home = page.locator('section', { has: page.getByRole('heading', { name: 'Now check your place' }) });
+    await expect(home).toContainText('Is one of these at your place? Fix one this week.');
+    await page.getByRole('button', { name: 'Look again' }).click();
     await expect(page.getByRole('img', { name: /yard seen from above/ })).toBeVisible();
   });
 });

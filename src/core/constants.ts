@@ -467,6 +467,9 @@ export const ACKNOWLEDGEMENT_VALUE = 'acknowledged';
  * accepted the password. */
 export const GATE_KEY = 'cooeee.gate.v1';
 export const GATE_VALUE = 'passed';
+/** Off for the expo, so anyone with the link opens the app with no password.
+ *  The gate's screen and its server check are kept: true brings it back. */
+export const GATE_SHOWN = false;
 
 /** Which screen was open last. BlackSky sets this flag when it opens and only
  * the hold on Leave BlackSky clears it, so a visit that starts anywhere else is
@@ -503,3 +506,12 @@ export const NEARBY_FIX_MAX_AGE_MS = 60_000; // a position the OS already has is
  *  addresses would be someone else's, so the position is not used. */
 export const LOCATE_ROUGH_M = 50;
 export const LOCATE_TOO_ROUGH_M = 1_000;
+
+// Cooee Word is kept in the code but offered nowhere: an industry mentor found
+// a word game out of place beside disaster preparation. True brings back its
+// card on Rehearse and its address.
+export const WORD_GAME_SHOWN = false;
+
+/** How long Back waits for a screen to grow tall enough to return to where it
+ *  was left, before scrolling as far as it can. */
+export const SCROLL_RESTORE_WAIT_MS = 1000;

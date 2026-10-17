@@ -11,7 +11,8 @@ import { currentCopyName, loadSourceFiles } from './source-files';
 // row from an older snapshot build, or a page copy the register no longer
 // names, is replaced with the current one, so a pack keeps up on ordinary days.
 
-async function syncPack(pack: Pack, kept: readonly string[], programs: RecoveryProgram[]): Promise<void> {
+/** True when the pack changed. */
+async function syncPack(pack: Pack, kept: readonly string[], programs: RecoveryProgram[]): Promise<boolean> {
   const have = await db.packPrograms.where('packId').equals(pack.id).toArray();
   const stale = have
     .filter((row) => programs.some((p) => p.id === row.programId && p.source.retrievedAt !== row.source.retrievedAt))
@@ -32,7 +33,7 @@ async function syncPack(pack: Pack, kept: readonly string[], programs: RecoveryP
     const name = currentCopyName(url);
     return name !== undefined && !keys.has(`${pack.id}:${name}`);
   });
-  if (diff.add.length === 0 && diff.remove.length === 0 && missing.length === 0) return;
+  if (diff.add.length === 0 && diff.remove.length === 0 && missing.length === 0) return false;
   const [layers, destinations, stored] = await Promise.all([
     db.layers.where('packId').equals(pack.id).toArray(),
     db.destinations.where('packId').equals(pack.id).toArray(),
@@ -69,14 +70,15 @@ async function syncPack(pack: Pack, kept: readonly string[], programs: RecoveryP
     },
   };
 
-  await db.transaction('rw', [db.packs, db.packPrograms, db.files], async () => {
+  return db.transaction('rw', [db.packs, db.packPrograms, db.files], async () => {
     // A pack deleted or superseded since it was read gets no orphan rows.
-    if ((await db.packs.get(pack.id))?.status !== 'complete') return;
+    if ((await db.packs.get(pack.id))?.status !== 'complete') return false;
     await db.packPrograms.where('packId').equals(pack.id).filter((row) => diff.remove.includes(row.programId)).delete();
     await db.packPrograms.bulkPut(rows);
     await db.files.where('packId').equals(pack.id).filter(dropped).delete();
     await db.files.bulkPut(added);
     await db.packs.update(pack.id, update);
+    return true;
   });
 }
 
@@ -89,12 +91,14 @@ async function syncPack(pack: Pack, kept: readonly string[], programs: RecoveryP
 // tabs syncing at once ever shows up in practice.
 let queue: Promise<void> = Promise.resolve();
 
-/** Bring every complete pack in line with the kept list. */
-export function syncKeptIntoPacks(kept: readonly string[]): Promise<void> {
+/** Bring every complete pack in line with the kept list. True when any pack changed. */
+export function syncKeptIntoPacks(kept: readonly string[]): Promise<boolean> {
   const run = queue.then(async () => {
     const [packs, programs] = await Promise.all([listCompletePacks(), db.programs.toArray()]);
-    for (const pack of packs) await syncPack(pack, kept, programs);
+    let changed = false;
+    for (const pack of packs) changed = (await syncPack(pack, kept, programs)) || changed;
+    return changed;
   });
-  queue = run.catch(() => {});
+  queue = run.then(() => {}, () => {});
   return run;
 }

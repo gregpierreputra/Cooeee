@@ -5,9 +5,14 @@ import {
   LEAVE_BLACKSKY,
   MARK_AT_SAVED_PLACE,
   NO_GPS,
+  LOCATION_BLOCKED_DETAIL,
   LOCATION_OFF,
+  NO_GPS_YET,
+  NO_GPS_YET_DETAIL,
+  NO_PACK_DIAL_FROM_LIST,
   NO_PACK_HERE,
   NO_PLACE_TO_POINT_AT,
+  PREP_PACK_LINE,
   SORTED_BY_DISTANCE,
   TURN_ON_LOCATION,
 } from '../src/core/copy';
@@ -510,6 +515,54 @@ test('Location refused with no pack: Turn on location asks again and the dial fo
   await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
 });
 
+test('No pack and no position yet: the screen says it is waiting for GPS, then the dial replaces it', async ({ page }) => {
+  await openDial(page, 'no-pack');
+  await expect(page.getByText(NO_GPS_YET)).toBeVisible();
+  await expect(page.getByText(NO_GPS_YET_DETAIL)).toBeVisible();
+  await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
+  // The location card is outlined to stand out; the missing pack is one quiet
+  // line, and saving one leads the steps for next time.
+  await expect(page.locator('.state-card-status')).toContainText(NO_GPS_YET);
+  // The term is first met in the strip, with its meaning, not in the card above.
+  await expect(page.locator('.state-card-status')).not.toContainText('last resort');
+  await expect(page.locator('.blacksky-no-pack-head')).toHaveText(NO_PACK_HERE);
+  await expect(page.locator('.blacksky-no-pack')).toContainText(NO_PACK_DIAL_FROM_LIST);
+  // The steps for next time stay folded until asked for.
+  const steps = page.getByText(PREP_PACK_LINE);
+  await expect(steps).toBeHidden();
+  await page.locator('.blacksky-guidance summary').click();
+  await expect(steps).toBeVisible();
+  // Three steps, each its own line led by a drawing.
+  await expect(page.locator('.blacksky-guidance li .line-glyph')).toHaveCount(3);
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
+  await expect(page.getByText(NO_GPS_YET)).toHaveCount(0);
+});
+
+test('Location blocked by the browser: no button that cannot work, and the dial follows once it is allowed', async ({
+  page,
+}) => {
+  // The browser's own answer for the site, which a spec can turn.
+  await page.addInitScript(() => {
+    const status = Object.assign(new EventTarget(), { state: 'denied' });
+    (window as unknown as { __allowLocation: () => void }).__allowLocation = () => {
+      status.state = 'granted';
+      status.dispatchEvent(new Event('change'));
+    };
+    navigator.permissions.query = async () => status as unknown as PermissionStatus;
+  });
+  await openDial(page, 'no-pack');
+  await refusePosition(page);
+  await expect(page.getByText(LOCATION_OFF)).toBeVisible();
+  await expect(page.getByText(LOCATION_BLOCKED_DETAIL)).toBeVisible();
+  await expect(page.getByRole('button', { name: TURN_ON_LOCATION })).toHaveCount(0);
+
+  await page.evaluate(() => (window as unknown as { __allowLocation: () => void }).__allowLocation());
+  await expect(page.getByText(LOCATION_OFF)).toBeHidden();
+  await pushPosition(page, AT_FERNY_CREEK);
+  await expect(name(page)).toHaveText('Belgrave Recreation Reserve');
+});
+
 test('Normal, no pack: the nearest state-wide site is the subject', async ({ page }) => {
   await openDial(page, 'no-pack');
   await pushPosition(page, AT_FERNY_CREEK);
@@ -520,7 +573,7 @@ test('Normal, no pack: the nearest state-wide site is the subject', async ({ pag
   await expect(page.locator('.blacksky-dial-head p')).toHaveCount(0);
   await expect(distance(page)).toHaveText('2.13 km');
   await expect(othersLine(page)).toHaveText('2 other places · 4.09–5.07 km');
-  // E3-US2-AC2's rule is unchanged: the screen still says no pack covers this.
+  // E3-US2-AC2's rule is unchanged: the screen still says no pack is saved.
   await expect(page.getByText(NO_PACK_HERE)).toBeVisible();
   await expectNoCalls(page);
 });
@@ -558,6 +611,10 @@ test('Empty: a position but nothing to point at keeps the notes and Leave', asyn
   await openDial(page, 'empty');
   await pushPosition(page, AT_FERNY_CREEK);
   await expect(page.getByText(NO_PLACE_TO_POINT_AT)).toBeVisible();
+  // With no list there is nothing for the dial to point at, so the line says
+  // only that no pack is saved.
+  await expect(page.locator('.blacksky-no-pack')).toHaveText(NO_PACK_HERE);
+  await expect(page.locator('.blacksky-no-pack')).not.toContainText(NO_PACK_DIAL_FROM_LIST);
   await expect(page.getByRole('button', { name: LEAVE_BLACKSKY })).toBeVisible();
 });
 

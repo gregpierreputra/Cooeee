@@ -93,16 +93,13 @@ test('every offline feature works in airplane mode, and the online ones say they
   await page.locator('.pack-choice-list .pack-name a').first().click();
   await expect(page.getByRole('heading', { name: 'Rehearse with…' })).toBeVisible();
   await page.goto('/rehearse');
-  await page.getByRole('button', { name: /Play the drill/ }).click();
+  await page.getByRole('button', { name: /Pack a bag with your kids/ }).click();
   await page.getByRole('button', { name: 'Start the drill' }).click();
   await page.getByRole('button', { name: 'Skip', exact: true }).click();
   // The bag's size follows the day's twist.
   await expect(page.locator('main')).toContainText(/Bag 0 of \d+/);
 
-  // The two daily games, with their pictures and their word list, from the cache.
-  await page.goto('/rehearse');
-  await page.getByRole('button', { name: /Cooee Word/ }).click();
-  await expect(page.getByRole('heading', { name: /^Word \d+$/ })).toBeVisible();
+  // The daily game, with its pictures, from the cache.
   await page.goto('/rehearse/block');
   await page.getByRole('button', { name: 'Start looking' }).click();
   await expect(page.getByRole('img', { name: /yard seen from above/ })).toBeVisible();

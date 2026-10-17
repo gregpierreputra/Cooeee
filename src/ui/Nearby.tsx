@@ -312,7 +312,9 @@ export default function Nearby({
                   <Hint label={copy.ABOUT_GROUP(group.heading)} head={<h2>{group.heading}</h2>} titled={false}>
                     {/* The bushfire places are each said for what they are, in
                         the drawings the map's key uses, then the note, all in
-                        one list of led lines. */}
+                        one list of led lines. VicEmergency gives no account of
+                        each relief kind, so that tab has its note alone, led
+                        the same way. */}
                     {tab === 'bushfire' ? (
                       <ul className="info-lines glyph-lines">
                         <li><Glyph kind="place" line />{copy.NSP_MEANS}</li>
@@ -320,7 +322,9 @@ export default function Nearby({
                         <li><Glyph kind="found" line />{group.note}</li>
                       </ul>
                     ) : (
-                      <p>{group.note}</p>
+                      <ul className="info-lines glyph-lines">
+                        <li><Glyph kind="found" line />{group.note}</li>
+                      </ul>
                     )}
                   </Hint>
                   {/* The bushfire tab's nearest few places on a map, folded until asked for. */}

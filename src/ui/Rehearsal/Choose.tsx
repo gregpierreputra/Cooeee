@@ -58,8 +58,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
     <main className="page rehearsal-condition">
       <Head title={copy.REHEARSE_TITLE} />
       <h2 className="kicker section-label packs-title">
-        {copy.YOUR_PACKS}
-        {rows.length > 0 ? <span className="packs-count">{rows.length}</span> : null}
+        {rows.length > 0 ? copy.CHOOSE_PACK_TO_REHEARSE : copy.YOUR_PACKS}
       </h2>
 
       {/* No pack: the dashed space the packs will fill, as on Home, and the
@@ -71,7 +70,7 @@ export default function Choose({ loadPacks = listCompletePacks }: { loadPacks?: 
             <h3>{copy.NO_PACK_TO_REHEARSE}</h3>
             <p className="muted">{copy.NO_PACK_TO_REHEARSE_DETAIL}</p>
           </section>
-          <Link className="action main-action with-glyph" to="/packs/new">
+          <Link className="action main-action with-glyph" to="/packs/new?from=rehearse">
             <Glyph kind="plus" line />
             {copy.BUILD_A_PACK}
           </Link>

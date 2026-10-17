@@ -65,6 +65,7 @@ export default function Statline({ rules = CLASSIC, onStart }: { rules?: DrillRu
     <>
       <div className="hero">
         <h1>{classic ? copy.DRILL_INTRO_HEADING : copy.DRILL_INTRO_HEADING_FOR(rules.seconds)}</h1>
+        <p className="muted">{copy.DRILL_FOR_FAMILIES}</p>
       </div>
       <HouseSnapshot rules={rules} />
       <FactTiles

@@ -6,6 +6,7 @@ import {
   HOURS_AGO,
   MAY_BE_OUTDATED,
   MINUTES_AGO,
+  GROUP_RELIEF_NOTE,
   COPIED_LINE,
   SHARED_PLACE_FROM,
   STATE_CACHED,
@@ -58,6 +59,11 @@ test('each tab opens its own note, closed again after a switch', async ({ page, 
   await openTab(page, 'Relief centres');
   await expect(ring).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.nearby-group .hint-panel')).toHaveCount(0);
+
+  // The relief note is led by a drawing, as the bushfire note's lines are.
+  await ring.click();
+  await expect(page.locator('.nearby-group .hint-panel .glyph-lines li')).toHaveCount(1);
+  await expect(page.locator('.nearby-group .hint-panel')).toContainText(GROUP_RELIEF_NOTE);
 });
 
 const rowFor = (page: Page, title: string) =>

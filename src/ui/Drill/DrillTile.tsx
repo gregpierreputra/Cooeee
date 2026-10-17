@@ -1,16 +1,15 @@
 import * as copy from '../../core/copy';
 import GameTile from '../Games/GameTile';
 
-/** The way into the drill from the Rehearse screens: with a twist on, a tag
- *  saying which and how long it stays, and its best score once played. */
+/** The way into the drill from the Rehearse screens, as a family activity:
+ *  with a challenge on, a tag saying which and how long it stays. No best
+ *  score, so it reads as something to do together, not to beat. */
 export default function DrillTile({
   onPlay,
   twist,
-  highest,
 }: {
   onPlay: () => void;
   twist?: { name: string; daysLeft: number; seconds: number; bag: number } | null;
-  highest: number | null;
 }) {
   return (
     <GameTile
@@ -20,7 +19,6 @@ export default function DrillTile({
       detail={twist ? copy.DRILL_TILE_DETAIL_FOR(twist.seconds, twist.bag) : copy.DRILL_TILE_DETAIL}
       tag={twist ? { label: twist.name, detail: copy.DRILL_TILE_CHANGES(twist.daysLeft) } : undefined}
       pills={[]}
-      stat={highest === null ? undefined : { figure: highest, label: copy.GAME_STAT_HIGHEST }}
       onPlay={onPlay}
     />
   );

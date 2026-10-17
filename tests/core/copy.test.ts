@@ -56,7 +56,7 @@ describe('shell copy', () => {
   });
 
   it('says a pack is missing without implying anything about the place', () => {
-    expect(copy.NO_PACKS_HINT).toContain('while you have a connection');
+    expect(copy.NO_PACKS_HINT).toContain('while online');
   });
 
   it('welcomes in three moments and two facts, one short line each', () => {
@@ -197,7 +197,7 @@ describe('several packs stored', () => {
 // E3-US2-AC2: the no-pack statement — absence stated plainly, nothing invented.
 describe('no pack stored', () => {
   it('states that no saved pack covers this place', () => {
-    expect(copy.NO_PACK_HERE).toBe('No saved pack covers this place.');
+    expect(copy.NO_PACK_HERE).toBe('No pack saved on this phone yet.');
   });
 });
 
@@ -212,8 +212,8 @@ describe('deliberate activation', () => {
     expect(copy.HOLD_TO_LEAVE).toBe('Hold for two seconds.');
   });
 
-  it('a back press is said in one short line, the hold naming the way out', () => {
-    expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky.');
+  it('a back press is said over the hold, with the way out', () => {
+    expect(copy.BACK_PRESSED).toBe('Back does not leave BlackSky. Hold for two seconds.');
   });
 });
 
@@ -240,8 +240,9 @@ describe('the fixed header', () => {
 
 describe('the returning-user home', () => {
   it('says where packs will show, under their own eyebrow, and offers to build one', () => {
-    expect(copy.NO_PACK_SAVED).toBe('Packs you save will show up here.');
+    expect(copy.NO_PACK_SAVED).toBe('No pack saved yet');
     expect(copy.YOUR_PACKS).toBe('Your packs');
+    expect(copy.CHOOSE_PACK_TO_REHEARSE).toBe('Choose a pack to rehearse');
     expect(copy.BUILD_A_PACK).toBe('New offline pack');
   });
 

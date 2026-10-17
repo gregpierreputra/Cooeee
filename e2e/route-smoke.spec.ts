@@ -35,3 +35,13 @@ for (const offline of [false, true]) {
     await context.setOffline(false);
   });
 }
+
+// Cooee Word is kept in the code but offered nowhere: its old address lands on
+// Rehearse, which has no card for it.
+test('the word game is offered nowhere, and its old address lands on Rehearse', async ({ page }) => {
+  await acknowledgeFirstOpen(page);
+  await page.goto('/rehearse/word');
+  await expect(page).toHaveURL('/rehearse');
+  await expect(page.locator('.game-tile')).toHaveCount(2);
+  await expect(page.getByText('Cooee Word')).toHaveCount(0);
+});

@@ -21,8 +21,8 @@ function StepLink({ link }: { link: copy.RoadmapLink }) {
   }
   const [to, label] =
     link === 'nearby' ? ['/nearby', copy.ROADMAP_NEARBY]
-    : link === 'calls' ? ['/recover?need=calls', copy.WHO_TO_CALL]
-    : [`/recover?need=${link}`, copy.NEED_PHRASE[link]];
+    : link === 'calls' ? ['/recover?need=calls&from=roadmap', copy.WHO_TO_CALL]
+    : [`/recover?need=${link}&from=roadmap`, copy.NEED_PHRASE[link]];
   return (
     <Link className="with-glyph roadmap-link" to={to}>
       <Glyph kind={link === 'nearby' ? 'place' : link} line />

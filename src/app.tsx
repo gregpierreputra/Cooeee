@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   BrowserRouter,
   Route,
@@ -11,8 +11,9 @@ import {
 } from 'react-router';
 import { openingScreen, writeAcknowledgement } from './core/acknowledgement';
 import { isBlackSkyLatched } from './core/blacksky-latch';
-import { BLOCKED_NOTICE_MS } from './core/constants';
+import { BLOCKED_NOTICE_MS, GATE_SHOWN, WORD_GAME_SHOWN } from './core/constants';
 import { canStepBack } from './ui/components/history';
+import { BACK_STATE, rememberScroll, restoreScroll, savedScroll } from './ui/components/scroll-memory';
 import * as copy from './core/copy';
 import { readGate, writeGate } from './core/gate';
 import { pruneKept } from './core/kept';
@@ -33,7 +34,6 @@ import AwayCheck from './ui/components/AwayCheck';
 import NoticeBar from './ui/components/NoticeBar';
 import Splash from './ui/components/Splash';
 import Tour, { startTour } from './ui/components/Tour';
-import TourOffer from './ui/components/TourOffer';
 import { focusMain } from './ui/components/focusMain';
 import PackDetail from './ui/PackDetail';
 import PackPrint from './ui/PackPrint';
@@ -84,6 +84,18 @@ function RescueStart() {
   useEffect(() => {
     navigate('/blacksky', { state: { held: true, guide: true } });
   }, []);
+  return null;
+}
+
+/** A new person's visit to BlackSky ends when they leave it: with nothing
+ *  agreed to, they go back to the welcome rather than on into the app. */
+function RescueEnd({ onLeft }: { onLeft: () => void }) {
+  const { pathname } = useLocation();
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    if (pathname.startsWith('/blacksky')) setSeen(true);
+    else if (seen) onLeft();
+  }, [pathname]);
   return null;
 }
 
@@ -144,13 +156,35 @@ function BlockedNotice() {
   );
 }
 
-/** A new route starts at its top. The browser keeps the window's scroll when
- *  the router swaps one screen for another in the same document. */
-function ScrollToTop() {
-  const { pathname } = useLocation();
+/** A new screen starts at its top: the browser keeps the window's scroll when
+ *  the router swaps one screen for another in the same document. Recover's
+ *  categories are screens of their own on one path. Back, from the bar or the
+ *  phone, returns to where the screen was left instead. The pack builder
+ *  places its own steps. */
+function ScrollPlacement() {
+  const { pathname, search, state } = useLocation();
+  const navigationType = useNavigationType();
+  const url = pathname + search;
+  const shown = useRef({ url, pathname });
   useEffect(() => {
-    window.scrollTo(0, 0); // in braces, see the first run effect in App
-  }, [pathname]);
+    // The app places every screen itself, so the browser's own guess on the
+    // phone's back cannot fight it.
+    window.history.scrollRestoration = 'manual';
+    const onScroll = () => rememberScroll(shown.current.url, window.scrollY);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  // Before paint, so a shorter screen's scroll is never kept for the last one.
+  useLayoutEffect(() => {
+    const before = shown.current;
+    shown.current = { url, pathname };
+    const back = navigationType === 'POP' || (state as typeof BACK_STATE | null)?.back === true;
+    const saved = savedScroll(url);
+    if (back && saved !== undefined && pathname !== '/packs/new') return restoreScroll(saved);
+    if (before.url === url || before.pathname !== pathname || pathname === '/recover') {
+      window.scrollTo(0, 0); // in braces, see the first run effect in App
+    }
+  }, [url]);
   return null;
 }
 
@@ -242,16 +276,17 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
   // which a route renders behind it. A store that cannot be read reads as "not
   // acknowledged", which shows the screen rather than blocking the app.
   const [screen, setScreen] = useState(() => openingScreen(localFlagStore()));
-  // Feature 1: the development gate stands in front of the disclosure itself.
-  const [passed, setPassed] = useState(() => readGate(localFlagStore()));
+  // Feature 1: the development gate stands in front of the disclosure itself,
+  // while GATE_SHOWN is on. Off, every visitor has passed it.
+  const [passed, setPassed] = useState(() => !GATE_SHOWN || readGate(localFlagStore()));
   // The welcome is seen once, on the way to the disclosure. Nothing records
   // it: the acknowledgement that follows is the only flag this screen leads to.
   const [welcomed, setWelcomed] = useState(false);
   // A new person who held I need a way out now: the app opens straight into
   // BlackSky with nothing agreed to ('hold'), as does a reload while there
-  // ('resume'). They stay a first time visitor: the disclosure shows on the
-  // next visit, and the tour is offered once BlackSky is left ('done' after).
-  const [rescue, setRescue] = useState<'hold' | 'resume' | 'done' | null>(() =>
+  // ('resume'). They stay a first time visitor: leaving BlackSky takes them
+  // back to the welcome, so the app itself only opens once they have agreed.
+  const [rescue, setRescue] = useState<'hold' | 'resume' | null>(() =>
     screen === 'first-open' && isBlackSkyLatched(localFlagStore()) ? 'resume' : null,
   );
   // Each first run screen replaces the last in the same document, so the window
@@ -262,7 +297,7 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
     // In braces on purpose: newer browsers return a promise from scrollTo, and
     // React takes whatever an effect returns for its cleanup function.
     window.scrollTo(0, 0);
-  }, [passed, welcomed, screen]);
+  }, [passed, welcomed, screen, rescue]);
   // The call plays once more after the disclosure, over the first Home. A new
   // key mounts a fresh splash; `play` tells it not to ask how the page loaded.
   const [replays, setReplays] = useState(0);
@@ -315,7 +350,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
       <BrowserRouter>
         <BlackSkyResume />
         {rescue === 'hold' ? <RescueStart /> : null}
-        <ScrollToTop />
+        {rescue ? <RescueEnd onLeft={() => setRescue(null)} /> : null}
+        <ScrollPlacement />
         <ModeSwitch />
         <NoticeBar />
         <ParticlesHost />
@@ -331,7 +367,8 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
           <Route path="/rehearse" element={<Choose />} />
           {/* The games: static paths, so they rank above a pack id. */}
           <Route path="/rehearse/drill" element={<DrillScreen />} />
-          <Route path="/rehearse/word" element={<WordScreen />} />
+          {/* Kept, but offered nowhere: an old link lands on Rehearse. */}
+          <Route path="/rehearse/word" element={WORD_GAME_SHOWN ? <WordScreen /> : <Navigate to="/rehearse" replace />} />
           <Route path="/rehearse/block" element={<BlockScreen />} />
           <Route path="/rehearse/:packId" element={<RehearsalRoute />} />
           <Route path="/nearby" element={<Nearby />} />
@@ -343,7 +380,6 @@ export default function App({ applyUpdate }: { applyUpdate: () => void }) {
         <Tour />
         <BottomNavHost />
         <AwayCheck />
-        {rescue === 'hold' || rescue === 'resume' ? <TourOffer onDone={() => setRescue('done')} /> : null}
       </BrowserRouter>
     );
   }

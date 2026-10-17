@@ -123,7 +123,7 @@ export default function Recover({
       <main className="page recover">
         <StateCard heading={copy.RECOVER_NONE_TITLE} detail={copy.RECOVER_NONE_LINE} />
         <div className="actions">
-          <Link className="action main-action" to="/packs/new">{copy.BUILD_A_PACK}</Link>
+          <Link className="action main-action" to="/packs/new?from=recover">{copy.BUILD_A_PACK}</Link>
           <OfficialChannel href={GENERAL_CHANNEL_URL} />
         </div>
       </main>

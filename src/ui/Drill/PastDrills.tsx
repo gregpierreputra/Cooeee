@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as copy from '../../core/copy';
 import { drillRows, type DrillRow } from '../../core/drill-history';
-import { BAG_LIMIT } from '../../core/drill-items';
 import type { Drill } from '../../core/types';
 import { clearDrills, listAllDrills } from '../../data/db';
 import Glyph from '../components/Glyph';
@@ -69,11 +68,12 @@ export default function PastDrills({
             items={drills}
             className="list history-list"
             render={(row) => (
-              // Set as a rehearsal is: the drill's name as the teal label
-              // with the date, the outcome in bold, then the bag.
+              // Set as a rehearsal is: the twist as the teal label, as a
+              // rehearsal's condition is, with the date, the outcome in bold,
+              // then the bag.
               <li key={row.id} className="card history-row practice-card">
                 <div className="practice-card-head">
-                  <p className="place-kind">{copy.DRILL_INTRO_HEADING}</p>
+                  <p className="place-kind">{row.label}</p>
                   <p className="muted figure practice-date">{row.date}</p>
                 </div>
                 {/* The score as the debrief's ring with its verdict; away from
@@ -89,7 +89,6 @@ export default function PastDrills({
                   <div>
                     <p className="practice-outcome">{row.score !== null ? copy.DRILL_ROW_DOOR : copy.DRILL_ROW_AWAY}</p>
                     {row.verdict ? <p className="muted">{row.verdict}</p> : null}
-                    {row.twist ? <p className="muted">{copy.DRILL_ROW_TWIST(row.twist)}</p> : null}
                   </div>
                 </div>
                 <DrillBag row={row} />
@@ -148,7 +147,7 @@ function DrillBag({ row }: { row: DrillRow }) {
             </button>
           </li>
         ))}
-        {Array.from({ length: BAG_LIMIT - row.bag.length }, (_, index) => (
+        {Array.from({ length: Math.max(0, row.bagLimit - row.bag.length) }, (_, index) => (
           <li key={`empty-${index}`} className="debrief-empty" aria-hidden="true" />
         ))}
       </ul>

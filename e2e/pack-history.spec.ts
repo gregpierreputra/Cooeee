@@ -37,10 +37,10 @@ test('a rehearsed pack lists the rehearsal with its date, condition, ending and 
 test('Practice invites the drill and says when one was last played on this phone', async ({ page }) => {
   await page.goto(`${HARNESS}/detail?mode=drilled`);
   await page.getByRole('tab', { name: PACK_TAB_PRACTICE }).click();
-  const drill = page.locator('.pack-section', { hasText: 'Play the drill' });
+  const drill = page.locator('.pack-section', { hasText: 'Pack a bag with your kids' });
   await expect(drill.locator('.rehearsed-pill')).toHaveText('Drilled 2 days ago');
   await expect(drill.locator('.rehearsed-pill .glyph')).toHaveCount(1);
   await page.goto(`${HARNESS}/detail`);
   await page.getByRole('tab', { name: PACK_TAB_PRACTICE }).click();
-  await expect(page.locator('.pack-section', { hasText: 'Play the drill' }).locator('.rehearsed-pill')).toHaveText('Not yet drilled');
+  await expect(page.locator('.pack-section', { hasText: 'Pack a bag with your kids' }).locator('.rehearsed-pill')).toHaveText('Not yet drilled');
 });

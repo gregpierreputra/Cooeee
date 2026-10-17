@@ -18,6 +18,11 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/recover', '?need=kept', NONE)).toBe('/recover');
   });
 
+  it('goes from a need opened on the roadmap back to the roadmap', () => {
+    expect(backTarget('/recover', '?need=property&from=roadmap', NONE)).toBe('/recover?need=roadmap');
+    expect(backTarget('/recover', '?need=calls&from=roadmap', NONE)).toBe('/recover?need=roadmap');
+  });
+
   it("goes from a need opened by a pack's Save more back to that pack's Support tab", () => {
     expect(backTarget('/recover', '?need=all&from=pack-1', NONE)).toBe('/packs/pack-1?tab=support');
     // The list of needs is still the tab itself, with no Back.
@@ -67,5 +72,9 @@ describe('backTarget, the screen above each screen', () => {
     expect(backTarget('/packs/new', '?step=note', NONE)).toBe(ONE_STEP);
     expect(backTarget('/packs/new', '?step=area', { ...NONE, builder: 'hidden' })).toBeNull();
     expect(backTarget('/packs/new', '', NONE)).toBe('/');
+    expect(backTarget('/packs/new', '?from=rehearse', NONE)).toBe('/rehearse');
+    expect(backTarget('/packs/new', '?from=recover', NONE)).toBe('/recover');
+    expect(backTarget('/packs/new', '?from=elsewhere', NONE)).toBe('/');
+    expect(backTarget('/packs/new', '?from=rehearse&step=note', NONE)).toBe(ONE_STEP);
   });
 });

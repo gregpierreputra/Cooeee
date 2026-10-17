@@ -41,16 +41,22 @@ export function backTarget(
 ): string | typeof ONE_STEP | null {
   if (pathname.startsWith('/blacksky')) return null;
   // A chosen need is a step inside Recover; the list of needs is its tab. Opened
-  // from a pack's Save more, it goes back to that pack's Support tab instead.
+  // from the roadmap, it goes back to the roadmap; from a pack's Save more, to
+  // that pack's Support tab.
   if (pathname === '/recover') {
     const params = new URLSearchParams(search);
     if (!params.has('need')) return null;
-    const pack = params.get('from');
-    return pack ? packTab(pack, 'support') : '/recover';
+    const from = params.get('from');
+    if (from === 'roadmap') return '/recover?need=roadmap';
+    return from ? packTab(from, 'support') : '/recover';
   }
   if (NAV_ITEMS.some((item) => item.to === pathname)) return null;
-  if (pathname === '/packs/new' && new URLSearchParams(search).has('step')) {
-    return builder === 'hidden' ? null : ONE_STEP;
+  if (pathname === '/packs/new') {
+    const params = new URLSearchParams(search);
+    if (params.has('step')) return builder === 'hidden' ? null : ONE_STEP;
+    // Opened from an empty Rehearse or Recover tab, the search goes back to it.
+    const from = params.get('from');
+    if (from === 'rehearse' || from === 'recover') return `/${from}`;
   }
   // The games on the Rehearse screen go back to it, whatever is saved; the
   // drill opened from a pack's page goes back to that pack.

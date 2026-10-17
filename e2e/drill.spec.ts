@@ -246,14 +246,26 @@ test.describe('E9 the drill', () => {
   // own screen, not on the pack page, and can all be cleared after one question.
   test('a finished drill is listed under Start, and Clear drill results asks first', async ({ page }) => {
     await page.goto(`${HARNESS}/drill?seconds=2`);
+    // Framed for families: who it is for, before Start.
+    await expect(page.locator('.hero')).toContainText('Made for children about 6 to 12. Do it together, then talk about what you packed.');
     await page.getByRole('button', { name: 'Start the drill' }).click();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await page.getByRole('dialog').click();
     await expect(page.getByRole('heading', { name: 'Time ran out away from the door' })).toBeVisible();
+    // The report ends with things to talk over together, the last about an
+    // essential this drill left behind (here all of them, medicines first).
+    const talk = page.locator('section', { has: page.getByRole('heading', { name: 'Talk it over' }) });
+    await expect(talk.getByRole('listitem')).toHaveText([
+      'Where is your real emergency kit kept?',
+      'Who would carry what if you had to leave?',
+      'You left the medicines behind. Who in your home needs medicines every day?',
+    ]);
 
     await page.reload();
     const past = page.locator('.pack-section', { hasText: 'Past drills' });
     await expect(past.locator('.history-row')).toHaveCount(1);
+    await expect(past.locator('.history-row .place-kind')).toHaveText('Classic');
+    await expect(past.locator('.history-row .debrief-empty')).toHaveCount(10);
     await expect(past).toContainText('Away from the door when time ran out');
 
     await page.getByRole('button', { name: 'Clear drill results' }).click();
@@ -276,6 +288,14 @@ test.describe('E9 the drill', () => {
     await page.getByRole('button', { name: 'Start the drill' }).click();
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
     await expect(page.locator('main')).toContainText('Bag 0 of 7');
+
+    // Listed under Start with the twist's own seven empty slots, as on the debrief.
+    await page.getByRole('dialog').click();
+    await expect(page.getByRole('heading', { name: 'Time ran out away from the door' })).toBeVisible();
+    await page.reload();
+    const row = page.locator('.pack-section', { hasText: 'Past drills' }).locator('.history-row');
+    await expect(row.locator('.place-kind')).toHaveText('Small bag');
+    await expect(row.locator('.debrief-empty')).toHaveCount(7);
   });
 });
 

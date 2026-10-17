@@ -564,6 +564,9 @@ export function Search({
   // builder is left, and a reload with nothing held starts at the search.
   const [params, setParams] = useSearchParams();
   const urlStep = params.get('step');
+  // The tab the builder was opened from is kept beside the step, for Back.
+  const from = params.get('from');
+  const stepParams = (step: string | null) => ({ ...(from ? { from } : {}), ...(step ? { step } : {}) });
   const hadStep = useRef(false);
   useEffect(() => {
     const wasInSteps = hadStep.current;
@@ -571,7 +574,7 @@ export function Search({
     if (wasInSteps && urlStep === null) {
       if (saveStage === 'saved') navigate('/', { replace: true });
       // A check or the save is running: hold the step until it is done.
-      else if (busy) setParams({ step: at });
+      else if (busy) setParams(stepParams(at));
       else stepBack();
       return;
     }
@@ -579,10 +582,10 @@ export function Search({
       if (urlStep === null) return;
       // Search again from a later step pops the entry; a reload just drops it.
       if (wasInSteps) navigate(-1);
-      else setParams({}, { replace: true });
+      else setParams(stepParams(null), { replace: true });
       return;
     }
-    if (urlStep !== at) setParams({ step: at }, { replace: urlStep !== null });
+    if (urlStep !== at) setParams(stepParams(at), { replace: urlStep !== null });
   }, [urlStep, at]);
 
   // The Back bar hides while a check or the save runs, and once the pack is

@@ -195,25 +195,33 @@ export function PackNotes({ packId, notes: stored, save = putNote, remove = dele
 
   return (
     <div className="pack-notes" ref={listRef}>
-      <ul className="list">
-        {notes.map((note) =>
-          editing?.id === note.id ? editor(editing) : (
-            <li key={note.id} className="card note-card note-read" data-note={note.id}>
-              <div className="note-text">
-                <NoteText text={note.text} />
-              </div>
-              {/* One note at a time is edited, so Edit waits while another is open. */}
-              {editing ? null : (
-                <button type="button" className="note-edit with-glyph" onClick={() => startEdit(note)}>
-                  <Glyph kind="edit" line />
-                  {copy.EDIT_NOTE}
-                  <span className="visually-hidden"> {note.text.slice(0, EDIT_NAME_CHARS)}</span>
-                </button>
-              )}
-            </li>
-          ))}
-        {editing?.isNew ? editor(editing) : null}
-      </ul>
+      {/* Nothing yet, in the same dashed box as Practice's rehearsals, in
+          place of the list until a note is being written. */}
+      {notes.length === 0 && !editing ? (
+        <div className="empty-state">
+          <p>{copy.NO_NOTES_YET}</p>
+        </div>
+      ) : (
+        <ul className="list">
+          {notes.map((note) =>
+            editing?.id === note.id ? editor(editing) : (
+              <li key={note.id} className="card note-card note-read" data-note={note.id}>
+                <div className="note-text">
+                  <NoteText text={note.text} />
+                </div>
+                {/* One note at a time is edited, so Edit waits while another is open. */}
+                {editing ? null : (
+                  <button type="button" className="note-edit with-glyph" onClick={() => startEdit(note)}>
+                    <Glyph kind="edit" line />
+                    {copy.EDIT_NOTE}
+                    <span className="visually-hidden"> {note.text.slice(0, EDIT_NAME_CHARS)}</span>
+                  </button>
+                )}
+              </li>
+            ))}
+          {editing?.isNew ? editor(editing) : null}
+        </ul>
+      )}
       {/* Always present, so the live region exists before it speaks. */}
       <p
         className={`note-mark${status === 'saved' ? ' note-mark-saved' : status === 'deleted' ? ' note-mark-deleted' : ''}`}

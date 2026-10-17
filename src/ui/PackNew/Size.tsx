@@ -7,6 +7,7 @@ import type { PackOffer } from '../../core/types';
 import BackHomeLink from '../components/BackHomeLink';
 import StateCard from '../components/StateCard';
 import Busy from '../components/Busy';
+import ReadyMark from '../components/ReadyMark';
 import Glyph from '../components/Glyph';
 import { focusMain } from '../components/focusMain';
 import FlowSteps from './FlowSteps';
@@ -110,7 +111,12 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
               <h1>{copy.PREPARING_PACK_TITLE}</h1>
             </div>
           ) : (
-            <h1>{copy.READY_TO_SAVE}</h1>
+            // The arc closes into a ring with a tick, in the same place, so
+            // the heading holds still as preparing ends.
+            <div className="card-head size-preparing">
+              <ReadyMark size={28} />
+              <h1>{copy.READY_TO_SAVE}</h1>
+            </div>
           )}
         </header>
         <div className="card pack-summary">
