@@ -603,9 +603,9 @@ export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 export const NO_PACK_HERE = 'No pack saved on this phone yet.';
 /** After NO_PACK_HERE, only when the official list is on the phone to point at.
  *  Someone with no pack has never seen the term, so it is said with its
- *  meaning, in the words ARRIVAL_GUIDE_LINE uses. */
+ *  meaning, in the tour's short words for it. */
 export const NO_PACK_DIAL_FROM_LIST =
-  'The dial points to the nearest place of last resort, a place the Country Fire Authority names to go to in a bushfire when every other plan has failed.';
+  'The dial points to the nearest official place of last resort, where to go when all else fails.';
 
 // Several saved packs: which one to load, asked at the top of the screen.
 export const CHOOSE_PACK = 'Choose a pack';
