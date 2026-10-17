@@ -838,7 +838,7 @@ function ScreenBody({
               closed until asked for, so what matters now stays first. */}
           <details className="blacksky-guidance">
             <summary className="pack-section-head">
-              <Glyph kind="bag" />
+              <Glyph kind="steps" />
               <span className="kicker">{copy.PREPARATION_GUIDANCE_TITLE}</span>
               <svg className="hint-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
                 <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

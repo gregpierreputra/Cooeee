@@ -600,7 +600,7 @@ export const VICEMERGENCY_HOTLINE = 'VicEmergency hotline 1800 226 226.';
 
 // E3-US2-AC2 no pack stored: one quiet line saying why the dial points at the
 // official list, as a pack cannot be built from inside BlackSky.
-export const NO_PACK_HERE = 'No pack saved on this phone.';
+export const NO_PACK_HERE = 'No pack saved on this phone yet.';
 /** After NO_PACK_HERE, only when the official list is on the phone to point at.
  *  Someone with no pack has never seen the term, so it is said with its
  *  meaning, in the words ARRIVAL_GUIDE_LINE uses. */
