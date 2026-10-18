@@ -1305,9 +1305,15 @@ main:focus {
 .name-field {
   position: relative;
 }
-.name-field input {
+.name-field input,
+.name-field textarea {
   width: 100%;
   padding-right: 3rem;
+}
+/* On the tall note box the pen sits in the top corner, by the first line. */
+.note-field .name-field-pen {
+  top: 0.9rem;
+  transform: none;
 }
 .name-field-pen {
   position: absolute;

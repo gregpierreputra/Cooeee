@@ -75,14 +75,24 @@ export function Note({ example, initial, onContinue, replacing }: NoteProps) {
         <label htmlFor="pack-note" className="kicker">
           {replacing ? copy.NOTE_ADD_ANOTHER : copy.NOTE_FOR_THIS_PLACE}
         </label>
-        <textarea
-          id="pack-note"
-          value={text}
-          maxLength={NOTE_MAX_CHARS}
-          onChange={(event) => setText(typeBullets(event))}
-          onKeyDown={(event) => continueBullets(event, setText)}
-          aria-describedby="note-more-later"
-        />
+        {/* A box full of finished text reads as the app's own, so say it is a
+            starter to change. A replace starts empty, so the line is not needed. */}
+        {replacing ? null : <p id="note-starter" className="muted place-note">{copy.NOTE_STARTER}</p>}
+        {/* The pen from the name field on the step before: the box can be
+            changed, and a tap on the pen puts the cursor in it. */}
+        <div className="name-field note-field">
+          <textarea
+            id="pack-note"
+            value={text}
+            maxLength={NOTE_MAX_CHARS}
+            onChange={(event) => setText(typeBullets(event))}
+            onKeyDown={(event) => continueBullets(event, setText)}
+            aria-describedby={replacing ? 'note-more-later' : 'note-starter note-more-later'}
+          />
+          <label htmlFor="pack-note" className="name-field-pen">
+            <Glyph kind="edit" line />
+          </label>
+        </div>
         {/* One note here; the pack's Notes tab takes more, so nothing has to be
             squeezed into this one box. */}
         <p id="note-more-later" className="muted place-note">{copy.NOTE_MORE_LATER}</p>
