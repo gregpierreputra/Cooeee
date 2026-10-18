@@ -5579,10 +5579,14 @@ p.gap-reason-label {
 .result-summary b {
   font-weight: var(--w-bold);
 }
-/* The card's lead line, set as a gap card's name is. */
+/* The card's lead line, set as a gap card's name is, led by the condition's
+   picture in the muted ink so the words stay the lead. */
 .result-summary .result-condition {
   font-size: var(--step-1);
   font-weight: var(--w-bold);
+}
+.result-summary .result-condition .glyph {
+  color: var(--ink-2);
 }
 .result-summary .progress {
   display: grid;

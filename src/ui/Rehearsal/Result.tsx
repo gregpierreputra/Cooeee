@@ -4,6 +4,7 @@ import { detectGaps } from '../../core/rehearsal-checks';
 import { endingRecord } from '../../core/rehearsal-ending';
 import { comparableEarlier, rehearsalProgress } from '../../core/rehearsal-progress';
 import { rehearsalResult } from '../../core/rehearsal-result';
+import type { RehearsalCondition } from '../../core/rehearsal-condition';
 import type { RehearsalRun } from '../../core/rehearsal-run';
 import type { ActionCompletion, CompletePackContent, Rehearsal } from '../../core/types';
 import {
@@ -15,7 +16,7 @@ import {
   undoActionDone,
 } from '../../data/db';
 import { offersWayNote } from '../../core/rehearsal-note';
-import Glyph from '../components/Glyph';
+import Glyph, { type GlyphKind } from '../components/Glyph';
 import Section from '../components/Section';
 import Head from './Head';
 import ProgressView from './Progress';
@@ -46,6 +47,14 @@ type ResultProps = {
   mark?: (packId: string, actionId: string, doneAt: number) => Promise<void>;
   undo?: (packId: string, actionId: string) => Promise<void>;
   now?: () => number;
+};
+
+/** The condition's own picture before Rehearsed without, so the card says
+ *  which rehearsal this was at a glance: the drawings for no mobile data and
+ *  for no location fix that the rest of the app already uses. */
+const CONDITION_GLYPH: Record<RehearsalCondition, GlyphKind> = {
+  'no-data': 'offline',
+  'no-location-fix': 'locate',
 };
 
 /** E5-US2-AC1 — what the rehearsal found, and what the reader has done about it.
@@ -175,7 +184,10 @@ export default function Result({
       <div className="card result-summary">
         {/* The condition leads the card at the gap names' size, so every card
             on the page opens the same way. The ending follows, its parts in bold. */}
-        <p className="result-condition">{result.conditionLine}</p>
+        <p className="result-condition with-glyph">
+          <Glyph kind={CONDITION_GLYPH[finished.condition]} line />
+          {result.conditionLine}
+        </p>
         <p>{boldParts(result.endingLine, result.endingBold)}</p>
         {/* What was checked, after how it ended, when nothing was missing. */}
         {result.state === 'no-gaps' ? <p className="muted place-note">{result.detail}</p> : null}
