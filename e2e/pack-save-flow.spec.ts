@@ -412,9 +412,9 @@ test('Back steps back through the pack builder and keeps every answer', async ({
   // Where the note is kept, in words alone, with no saved sign: nothing is saved yet.
   await expect(page.locator('.note-page .hero p')).toHaveText('Kept on this phone. Opens in BlackSky with no signal.');
   await expect(page.locator('.note-page .hero p .glyph')).toHaveCount(0);
-  // One note here, and a footnote under the box saying more can follow.
+  // The box says its text is a starter to change, then that more notes can follow.
   await expect(page.getByLabel('Note for this place')).toHaveAccessibleDescription(
-    "Add more notes any time from your pack's Notes tab.",
+    "A starter written for this address. Change any of it, or keep it as is. Add more notes any time from your pack's Notes tab.",
   );
   await page.getByLabel('Note for this place').fill('Meet at the oval gate.');
   await page.getByRole('button', { name: 'Keep this note' }).click();
