@@ -379,6 +379,8 @@ export const NOTE_ADD_ANOTHER = 'Add another note';
 /** The box's heading on the note step for a new place: what goes in it, not the
  *  step's own title again. */
 export const NOTE_FOR_THIS_PLACE = 'Note for this place';
+/** Under that heading: the box holds an example, and it is theirs to change. */
+export const NOTE_STARTER = 'A starter written for this address. Change any of it, or keep it as is.';
 export const NOTES_KEPT = (count: number) => (count === 1 ? 'It stays with the new pack.' : 'These stay with the new pack.');
 export const NOTES_DROPPED = (count: number) =>
   count === 1 ? 'It will be removed when the new pack is saved.' : 'These will be removed when the new pack is saved.';

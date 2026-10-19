@@ -25,6 +25,8 @@ type SizeProps = {
   summary: PackSummary;
   /** Null while the pack is still being prepared. */
   offer: PackOffer | null;
+  /** The saved pack's id, so Recover's Back returns to its Support tab. */
+  packId: string | null;
   save: () => Promise<void>;
   onContinue: () => void;
 };
@@ -51,7 +53,7 @@ const isStorageFull = (error: unknown): boolean => {
  * Map tiles are out of Iteration 1, so there is one kind of pack and therefore
  * one action: a choice between two things, one of which cannot be built, would
  * be a decision the user does not actually have. */
-export function Size({ summary, offer, save, onContinue }: SizeProps) {
+export function Size({ summary, offer, packId, save, onContinue }: SizeProps) {
   const [state, setState] = useState<SaveState>({ kind: 'ready' });
   // The heading changes once the save ends either way, so focus starts there again.
   useEffect(() => {
@@ -164,8 +166,10 @@ export function Size({ summary, offer, save, onContinue }: SizeProps) {
             <button className="main-action" type="button" onClick={onContinue}>
               {copy.OPEN_SAVED_PACK}
             </button>
-            {offer?.textManifest.recovery.count === 0 ? (
-              <Link className="action" to="/recover">{copy.CHOOSE_IN_RECOVER}</Link>
+            {packId && offer?.textManifest.recovery.count === 0 ? (
+              <Link className="action" to={`/recover?need=all&from=${encodeURIComponent(packId)}`}>
+                {copy.CHOOSE_IN_RECOVER}
+              </Link>
             ) : null}
             <BackHomeLink />
           </>
