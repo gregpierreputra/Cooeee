@@ -124,7 +124,7 @@ test('AC1/AC9 production journey: search to a saved, reopenable pack', async ({ 
   // One summary of what the steps chose, with the size worked out before the save.
   await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
   await expect(page.locator('.pack-summary .source-rows dd').first()).toContainText('Bushfire Prone Area');
-  await expect(page.locator('.pack-summary .source-rows dd').last()).toHaveText(/\d+ KB/);
+  await expect(page.locator('.pack-summary .source-rows dd').last()).toHaveText(/^\d+(\.\d)? (KB|MB)$/);
   await page.getByRole('button', { name: 'Save this pack' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Place saved');
   await expect(page.getByTestId('saved-address')).toHaveText(ADDRESS);
