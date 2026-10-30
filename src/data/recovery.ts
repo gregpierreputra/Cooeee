@@ -10,7 +10,7 @@ import { putPrograms } from './db';
 // from the service-worker precache after the first visit.
 //
 // ponytail: one hard-coded snapshot filename, as data/nsp.ts.
-export const RECOVERY_SNAPSHOT_PATH = '/data/recovery.v2026-09-11.json';
+export const RECOVERY_SNAPSHOT_PATH = '/data/recovery.v2026-10-29.json';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TELEPHONE = /^[0-9 +]+$/;

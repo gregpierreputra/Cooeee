@@ -1,7 +1,7 @@
 {
   "file": "roads-vic.bin",
-  "snapshotDate": "2026-09-27",
-  "retrievedAt": 1790515007922,
+  "snapshotDate": "2026-10-29",
+  "retrievedAt": 1793318171043,
   "source": {
     "publisher": "Department of Transport and Planning",
     "dataset": "Vicmap Transport, road network (tr_road)",
@@ -15,19 +15,19 @@
     3
   ],
   "featuresPerClass": {
-    "0": 8002,
-    "1": 30387,
-    "2": 57863,
-    "3": 74288
+    "0": 8004,
+    "1": 30374,
+    "2": 57882,
+    "3": 72630
   },
   "linesPerClass": {
-    "0": 1696,
-    "1": 2281,
-    "2": 5043,
-    "3": 6964
+    "0": 1698,
+    "1": 2283,
+    "2": 5039,
+    "3": 6803
   },
-  "lines": 15984,
-  "points": 107235,
+  "lines": 15823,
+  "points": 105939,
   "toleranceM": 25,
   "gridM": 5,
   "bounds": {
@@ -36,6 +36,6 @@
     "maxLon": 150.05325,
     "maxLat": -33.00001
   },
-  "bytes": 514664,
-  "gzipBytes": 369428
+  "bytes": 507487,
+  "gzipBytes": 364251
 }
