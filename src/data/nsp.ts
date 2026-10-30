@@ -9,7 +9,7 @@ import { getNspSnapshot, putNspSnapshot } from './db';
 //
 // ponytail: one hard-coded snapshot filename; read the current version from
 // public/data/index.json once a snapshot-seed layer exists.
-export const NSP_SNAPSHOT_PATH = '/data/nsp.v2026-09-02.json';
+export const NSP_SNAPSHOT_PATH = '/data/nsp.v2026-10-29.json';
 
 const GEOCODES = ['exact', 'street', 'township', 'none'] as const;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
